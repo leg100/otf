@@ -43,6 +43,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		// submit form to create provider
 		chromedp.Submit("textarea#token", chromedp.ByQuery),
 		matchText(t, "//div[@role='alert']", `created provider: github \(token\)`),
+		screenshot(t, "vcs_provider_created_github_pat_provider"),
 		// edit provider
 		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
 		// give it a name
@@ -127,9 +128,9 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to org
 		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
-		screenshot(t, "organization_main_menu"),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
+		screenshot(t, "vcs_provider_list_including_github_app"),
 		// click button for creating a new vcs provider with a github app
 		chromedp.Click(`//button[text()='New Github VCS Provider (App)']`),
 		// one github app installation should be listed

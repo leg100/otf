@@ -18,7 +18,7 @@ import (
 const (
 	// GithubPath is the URL path for the endpoint receiving VCS events from the
 	// Github App
-	AppEventsPath = "/webhooks/vcs/github-app"
+	AppEventsPath = "/webhooks/github-app"
 )
 
 type webHandlers struct {

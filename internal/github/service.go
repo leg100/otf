@@ -49,7 +49,8 @@ type (
 		html.Renderer
 		logr.Logger
 		vcs.Publisher
-		GithubHostname string
+		GithubHostname      string
+		SkipTLSVerification bool
 	}
 )
 
@@ -65,6 +66,7 @@ func NewService(opts Options) *service {
 		Renderer:        opts.Renderer,
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
+		GithubSkipTLS:   opts.SkipTLSVerification,
 		svc:             &svc,
 	}
 	return &svc

@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -68,7 +68,7 @@ type (
 		*surl.Signer
 		html.Renderer
 		connections.ConnectionService
-		repo.RepoService
+		repohooks.RepohookService
 
 		VCSEventSubscriber vcs.Subscriber
 	}

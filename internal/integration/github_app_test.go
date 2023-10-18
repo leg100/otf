@@ -89,10 +89,13 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			tasks := chromedp.Tasks{
 				// go to site settings page
 				chromedp.Navigate("https://" + daemon.Hostname() + "/app/admin"),
+				screenshot(t, "site_settings"),
 				// go to github app page
 				chromedp.Click("//a[text()='GitHub app']"),
+				screenshot(t, "empty_github_app_page"),
 				// go to page for creating a new github app
 				chromedp.Click("//a[@id='new-github-app-link']"),
+				screenshot(t, "new_github_app"),
 			}
 			if tt.public {
 				tasks = append(tasks, chromedp.Click(`//input[@type='checkbox' and @id='public']`))
@@ -105,6 +108,72 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			browser.Run(t, ctx, tasks)
 		})
 	}
+
+	// demonstrate the completion of creating a github app, by taking over from
+	// where Github would redirect back to OTF, exchanging the code with a
+	// stub Github server, and receiving back the app config, and then
+	// redirecting to the github app page showing the created app.
+	t.Run("complete creation of github app", func(t *testing.T) {
+		handlers := []github.TestServerOption{
+			github.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
+				out, err := json.Marshal(&gogithub.AppConfig{
+					ID:            internal.Int64(123),
+					Slug:          internal.String("my-otf-app"),
+					WebhookSecret: internal.String("top-secret"),
+					PEM:           internal.String(string(testutils.ReadFile(t, "./fixtures/key.pem"))),
+					Owner:         &gogithub.User{},
+				})
+				require.NoError(t, err)
+				w.Header().Add("Content-Type", "application/json")
+				w.Write(out)
+			}),
+			github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Add("Content-Type", "application/json")
+			}),
+		}
+		daemon, _, _ := setup(t, nil, handlers...)
+		browser.Run(t, ctx, chromedp.Tasks{
+			// go to the exchange code endpoint
+			chromedp.Navigate((&url.URL{
+				Scheme:   "https",
+				Host:     daemon.Hostname(),
+				Path:     "/app/github-apps/exchange-code",
+				RawQuery: "code=anything",
+			}).String()),
+			chromedp.WaitVisible(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`),
+			screenshot(t, "github_app_created"),
+		})
+	})
+
+	// demonstrate the listing of github installations
+	t.Run("list github app installs", func(t *testing.T) {
+		handlers := []github.TestServerOption{
+			github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Add("Content-Type", "application/json")
+				out, err := json.Marshal([]*gogithub.Installation{
+					{
+						ID:      internal.Int64(123),
+						Account: &gogithub.User{Login: internal.String("leg100")},
+					},
+				})
+				require.NoError(t, err)
+				w.Header().Add("Content-Type", "application/json")
+				w.Write(out)
+			}),
+		}
+		daemon, _, _ := setup(t, nil, handlers...)
+		_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{
+			AppID:      123,
+			Slug:       "otf-123",
+			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
+		})
+		require.NoError(t, err)
+		browser.Run(t, ctx, chromedp.Tasks{
+			chromedp.Navigate(daemon.HostnameService.URL("/app/github-apps")),
+			chromedp.WaitVisible(`//div[@id='installations']//a[contains(text(), "user/leg100")]`),
+			screenshot(t, "github_app_install_list"),
+		})
+	})
 }
 
 // TestIntegration_GithubApp_Event demonstrates an event from a github

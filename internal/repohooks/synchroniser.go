@@ -1,4 +1,4 @@
-package repo
+package repohooks
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type (
 func (s *synchroniser) sync(ctx context.Context, client vcs.Client, hook *hook) error {
 	createAndSync := func() error {
 		cloudID, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
-			Repo:     hook.identifier,
+			Repo:     hook.repoPath,
 			Secret:   hook.secret,
 			Events:   defaultEvents,
 			Endpoint: hook.endpoint,
@@ -45,7 +45,7 @@ func (s *synchroniser) sync(ctx context.Context, client vcs.Client, hook *hook) 
 		return createAndSync()
 	}
 	cloudHook, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
-		Repo: hook.identifier,
+		Repo: hook.repoPath,
 		ID:   *hook.cloudID,
 	})
 	if errors.Is(err, internal.ErrResourceNotFound) {
@@ -56,7 +56,7 @@ func (s *synchroniser) sync(ctx context.Context, client vcs.Client, hook *hook) 
 	// hook is present on the vcs repo, but we update it anyway just to ensure
 	// its configuration is consistent with what we have in the DB
 	err = client.UpdateWebhook(ctx, cloudHook.ID, vcs.UpdateWebhookOptions{
-		Repo:     hook.identifier,
+		Repo:     hook.repoPath,
 		Secret:   hook.secret,
 		Events:   defaultEvents,
 		Endpoint: hook.endpoint,

@@ -16,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/ghapphandler"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
@@ -28,7 +29,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
@@ -61,7 +62,7 @@ type (
 		internal.HostnameService
 		configversion.ConfigurationVersionService
 		run.RunService
-		repo.RepoService
+		repohooks.RepohookService
 		logs.LogsService
 		notifications.NotificationService
 		connections.ConnectionService
@@ -152,11 +153,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	githubAppService := github.NewService(github.Options{
-		Logger:          logger,
-		DB:              db,
-		Renderer:        renderer,
-		HostnameService: hostnameService,
-		GithubHostname:  cfg.GithubHostname,
+		Logger:              logger,
+		DB:                  db,
+		Renderer:            renderer,
+		HostnameService:     hostnameService,
+		GithubHostname:      cfg.GithubHostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
 
 	vcsEventBroker := &vcs.Broker{}
@@ -173,7 +175,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		SkipTLSVerification: cfg.SkipTLSVerification,
 		Subscriber:          vcsEventBroker,
 	})
-	repoService := repo.NewService(ctx, repo.Options{
+	repoService := repohooks.NewService(ctx, repohooks.Options{
 		Logger:              logger,
 		DB:                  db,
 		HostnameService:     hostnameService,
@@ -189,7 +191,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:             logger,
 		DB:                 db,
 		VCSProviderService: vcsProviderService,
-		RepoService:        repoService,
+		RepohookService:    repoService,
 	})
 	releasesService := releases.NewService(releases.Options{
 		Logger: logger,
@@ -251,7 +253,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
 		ConnectionService:  connectionService,
-		RepoService:        repoService,
+		RepohookService:    repoService,
 		VCSEventSubscriber: vcsEventBroker,
 	})
 	stateService := state.NewService(state.Options{
@@ -365,6 +367,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		notificationService,
 		githubAppService,
 		disco.Service{},
+		&ghapphandler.Handler{
+			Logger:             logger,
+			Publisher:          vcsEventBroker,
+			GithubAppService:   githubAppService,
+			VCSProviderService: vcsProviderService,
+		},
 	}
 
 	return &Daemon{
@@ -383,7 +391,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConfigurationVersionService: configService,
 		RunService:                  runService,
 		LogsService:                 logsService,
-		RepoService:                 repoService,
+		RepohookService:             repoService,
 		NotificationService:         notificationService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,

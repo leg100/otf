@@ -1,4 +1,4 @@
-package repo
+package repohooks
 
 import (
 	"context"
@@ -41,11 +41,11 @@ func (db *db) GetByID(ctx context.Context, rawID string, action pubsub.DBAction)
 	return db.getHookByID(ctx, id)
 }
 
-// getOrCreate gets a hook if it exists or creates it if it does not. Should be
+// getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindRepohookByRepoAndProvider(ctx, sql.String(hook.identifier), sql.String(hook.vcsProviderID))
+	result, err := q.FindRepohookByRepoAndProvider(ctx, sql.String(hook.repoPath), sql.String(hook.vcsProviderID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -58,7 +58,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	insertResult, err := q.InsertRepohook(ctx, pggen.InsertRepohookParams{
 		RepohookID:    sql.UUID(hook.id),
 		Secret:        sql.String(hook.secret),
-		RepoPath:      sql.String(hook.identifier),
+		RepoPath:      sql.String(hook.repoPath),
 		VCSID:         sql.StringPtr(hook.cloudID),
 		VCSProviderID: sql.String(hook.vcsProviderID),
 	})
@@ -131,16 +131,16 @@ func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
 
 // fromRow creates a hook from a database row
 func (db *db) fromRow(row hookRow) (*hook, error) {
-	opts := newHookOptions{
+	opts := newRepohookOptions{
 		id:              internal.UUID(row.RepohookID.Bytes),
 		vcsProviderID:   row.VCSProviderID.String,
 		secret:          internal.String(row.Secret.String),
-		identifier:      row.RepoPath.String,
+		repoPath:        row.RepoPath.String,
 		cloud:           vcs.Kind(row.VCSKind.String),
 		HostnameService: db.HostnameService,
 	}
 	if row.VCSID.Status == pgtype.Present {
 		opts.cloudID = internal.String(row.VCSID.String)
 	}
-	return newHook(opts)
+	return newRepohook(opts)
 }

@@ -31,26 +31,28 @@
         Install<img class="h-4" src="{{ addHash "/static/images/external_link_icon.svg" }}">
       </button>
     </form>
-    {{ range $.Installations }}
-      <div class="flex flex-col gap-2 text-lg">
-        <div class="widget">
-          <div>
-            <span>
-              <a class="flex underline gap-1 items-center"  href="{{ .HTMLURL }}" target="GithubTab">
-                {{ .String }}<img class="h-4" src="{{ addHash "/static/images/external_link_icon.svg" }}">
-              </a>
-            </span>
-          </div>
-          <div>
-            {{ template "identifier" . }}
-            <form action="{{ deleteInstallGithubAppPath (toString .ID) }}" method="POST">
-              <button class="btn-danger" onclick="return confirm('Are you sure you want to uninstall?')">uninstall</button>
-              <input type="hidden" name="install_id" value="{{ .ID }}">
-            </form>
+    <div id="installations">
+      {{ range $.Installations }}
+        <div class="flex flex-col gap-2 text-lg">
+          <div class="widget">
+            <div>
+              <span>
+                <a class="flex underline gap-1 items-center"  href="{{ .HTMLURL }}" target="GithubTab">
+                  {{ .String }}<img class="h-4" src="{{ addHash "/static/images/external_link_icon.svg" }}">
+                </a>
+              </span>
+            </div>
+            <div>
+              {{ template "identifier" . }}
+              <form action="{{ deleteInstallGithubAppPath (toString .ID) }}" method="POST">
+                <button class="btn-danger" onclick="return confirm('Are you sure you want to uninstall?')">uninstall</button>
+                <input type="hidden" name="install_id" value="{{ .ID }}">
+              </form>
+            </div>
           </div>
         </div>
-      </div>
-    {{ end }}
+      {{ end }}
+    </div>
   {{ else }}
     <span>
       No GitHub app found.

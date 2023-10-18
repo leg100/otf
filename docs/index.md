@@ -4,15 +4,16 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 
 * Full Terraform CLI integration
 * Remote execution mode: plans and applies run on servers
-* Agent execution mode: plans and applies run on agents
+* Agent execution mode: plans and applies run on [agents](agents.md)
 * Remote state backend: state stored in PostgreSQL
 * SSO: sign in using an identity provider via OIDC, OAuth, etc.
-* Module registry (provider registry coming soon)
 * RBAC: control team access to workspaces
 * VCS integration: trigger runs and publish modules from git commits
+* Create and install a [Github app](github_app.md) to integrate OTF with Github
 * Compatible with much of the Terraform Enterprise/Cloud API
 * Minimal dependencies: requires only PostgreSQL
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
+* Module registry (provider registry coming soon)
 
 <figure markdown>
 ![run page planned and finished state](images/run_page_planned_and_finished_state.png){.screenshot}

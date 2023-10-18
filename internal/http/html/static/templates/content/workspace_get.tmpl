@@ -41,7 +41,7 @@
           </form>
         </div>
       {{ end }}
-      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
+      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">{{ .Workspace.TerraformVersion }}</a></div>
       <div>
         <h3 class="font-semibold mb-2">Locking</h3>
         {{ with .LockButton }}

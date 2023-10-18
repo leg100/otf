@@ -1,4 +1,4 @@
-package repo
+package repohooks
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 )
 
 func Test_repohookHandler(t *testing.T) {
-	hook, err := newHook(newHookOptions{
+	hook, err := newRepohook(newRepohookOptions{
 		vcsProviderID:   "vcs-123",
 		cloud:           vcs.GithubKind,
 		HostnameService: internal.NewHostnameService("fakehost.org"),
@@ -26,11 +26,9 @@ func Test_repohookHandler(t *testing.T) {
 	handler := newHandler(
 		logr.Discard(),
 		broker,
-		nil,
 		&fakeHandlerDB{
 			hook: hook,
 		},
-		nil,
 	)
 	handler.cloudHandlers.Set(vcs.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.EventPayload {
 		return &vcs.EventPayload{}
@@ -45,7 +43,7 @@ func Test_repohookHandler(t *testing.T) {
 		EventHeader: vcs.EventHeader{
 			VCSProviderID: "vcs-123",
 		},
-		EventPayload: vcs.EventPayload{RepoPath: hook.identifier},
+		EventPayload: vcs.EventPayload{RepoPath: hook.repoPath},
 	}
 	assert.Equal(t, want, broker.got)
 }

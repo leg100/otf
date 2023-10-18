@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -64,14 +64,14 @@ type (
 	Options struct {
 		logr.Logger
 		vcsprovider.VCSProviderService
-		repo.RepoService
+		repohooks.RepohookService
 		*sql.DB
 	}
 
 	service struct {
 		logr.Logger
 		vcsprovider.Service
-		repo.RepoService
+		repohooks.RepohookService
 
 		*db
 	}
@@ -79,10 +79,10 @@ type (
 
 func NewService(ctx context.Context, opts Options) *service {
 	return &service{
-		Logger:      opts.Logger,
-		Service:     opts.VCSProviderService,
-		RepoService: opts.RepoService,
-		db:          &db{opts.DB},
+		Logger:          opts.Logger,
+		Service:         opts.VCSProviderService,
+		RepohookService: opts.RepohookService,
+		db:              &db{opts.DB},
 	}
 }
 
@@ -97,7 +97,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		// github app vcs provider does not require a repohook to be created
 		if provider.GithubApp == nil {
-			_, err := s.RepoService.CreateWebhook(ctx, repo.CreateWebhookOptions{
+			_, err := s.RepohookService.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
 				VCSProviderID: opts.VCSProviderID,
 				RepoPath:      opts.RepoPath,
 			})
@@ -122,9 +122,9 @@ func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error 
 		if err := s.db.deleteConnection(ctx, opts); err != nil {
 			return err
 		}
-		// now that a connection has been deleted, also delete any webhooks that
+		// now that a connection has been deleted, also delete any repohooks that
 		// are no longer referenced by connections
-		if err := s.RepoService.DeleteUnreferencedWebhooks(ctx); err != nil {
+		if err := s.RepohookService.DeleteUnreferencedRepohooks(ctx); err != nil {
 			return err
 		}
 		return nil

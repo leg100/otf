@@ -1,4 +1,4 @@
-package repo
+package repohooks
 
 import (
 	"testing"
@@ -15,12 +15,12 @@ func Test_newHook(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts newHookOptions
+		opts newRepohookOptions
 		want *hook
 	}{
 		{
 			name: "default",
-			opts: newHookOptions{
+			opts: newRepohookOptions{
 				id:              &id,
 				cloud:           vcs.GithubKind,
 				secret:          internal.String("top-secret"),
@@ -36,7 +36,7 @@ func Test_newHook(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newHook(tt.opts)
+			got, err := newRepohook(tt.opts)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
