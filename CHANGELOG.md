@@ -5,6 +5,7 @@
 
 ### Features
 
+* github app: [#617](https://github.com/leg100/otf/issues/617)
 * always use latest terraform version ([#616](https://github.com/leg100/otf/issues/616)) ([83469ca](https://github.com/leg100/otf/commit/83469ca998b8756673cc9ff06c8225bd3cc62e61)), closes [#608](https://github.com/leg100/otf/issues/608)
 
 
