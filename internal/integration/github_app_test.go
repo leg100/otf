@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -73,8 +74,10 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 					var params struct {
 						Manifest manifest
 					}
-					err := json.NewDecoder(r.Body).Decode(&params)
+					body, err := io.ReadAll(r.Body)
 					require.NoError(t, err)
+					err = json.Unmarshal(body, &params)
+					require.NoError(t, err, "unmarshaling request body: %s", string(body))
 					assert.Equal(t, public, params.Manifest.Public)
 				})
 				stub := httptest.NewTLSServer(mux)
