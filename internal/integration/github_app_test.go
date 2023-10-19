@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -69,12 +68,13 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				mux := http.NewServeMux()
 				mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 					type manifest struct {
-						Public bool `json:"public"`
+						Public bool
 					}
 					var params struct {
 						Manifest manifest
 					}
-					require.NoError(t, decode.All(&params, r))
+					err := json.NewDecoder(r.Body).Decode(&params)
+					require.NoError(t, err)
 					assert.Equal(t, public, params.Manifest.Public)
 				})
 				stub := httptest.NewTLSServer(mux)
