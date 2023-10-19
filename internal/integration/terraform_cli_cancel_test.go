@@ -49,6 +49,7 @@ data "http" "wait" {
 		[]string{tfpath, "-chdir=" + config, "plan", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
+		expect.Verbose(true),
 		expect.SetEnv(
 			append(sharedEnvs, internal.CredentialEnv(svc.Hostname(), token)),
 		),

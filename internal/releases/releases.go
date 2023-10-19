@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DefaultTerraformVersion = "1.5.2"
+	DefaultTerraformVersion = "1.6.2"
 	LatestVersionString     = "latest"
 )
 
