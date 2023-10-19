@@ -57,6 +57,11 @@ func TestReporter_HandleRun(t *testing.T) {
 			run:  &Run{ID: "run-123", Source: SourceUI},
 			want: vcs.SetStatusOptions{},
 		},
+		{
+			name: "skip API-triggered run",
+			run:  &Run{ID: "run-123", Source: SourceAPI},
+			want: vcs.SetStatusOptions{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
