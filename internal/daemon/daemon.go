@@ -13,9 +13,12 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/ghapphandler"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
@@ -26,7 +29,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
@@ -34,6 +37,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"golang.org/x/sync/errgroup"
@@ -58,14 +62,15 @@ type (
 		internal.HostnameService
 		configversion.ConfigurationVersionService
 		run.RunService
-		repo.RepoService
+		repohooks.RepohookService
 		logs.LogsService
 		notifications.NotificationService
+		connections.ConnectionService
+		github.GithubAppService
 
 		Handlers []internal.Handlers
 
-		agent        process
-		cloudService *inmem.CloudService
+		agent process
 	}
 
 	process interface {
@@ -89,10 +94,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	renderer, err := html.NewRenderer(cfg.DevMode)
 	if err != nil {
 		return nil, fmt.Errorf("setting up web page renderer: %w", err)
-	}
-	cloudService, err := inmem.NewCloudService(cfg.Github.Config, cfg.Gitlab.Config)
-	if err != nil {
-		return nil, err
 	}
 	cache, err := inmem.NewCache(*cfg.CacheConfig)
 	if err != nil {
@@ -151,21 +152,46 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
 
-	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		Logger:       logger,
-		DB:           db,
-		Renderer:     renderer,
-		Responder:    responder,
-		CloudService: cloudService,
-	})
-	repoService := repo.NewService(ctx, repo.Options{
+	githubAppService := github.NewService(github.Options{
 		Logger:              logger,
 		DB:                  db,
-		CloudService:        cloudService,
+		Renderer:            renderer,
 		HostnameService:     hostnameService,
-		Broker:              broker,
+		GithubHostname:      cfg.GithubHostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+	})
+
+	vcsEventBroker := &vcs.Broker{}
+
+	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+		Logger:              logger,
+		DB:                  db,
+		Renderer:            renderer,
+		Responder:           responder,
+		HostnameService:     hostnameService,
+		GithubAppService:    githubAppService,
+		GithubHostname:      cfg.GithubHostname,
+		GitlabHostname:      cfg.GitlabHostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+		Subscriber:          vcsEventBroker,
+	})
+	repoService := repohooks.NewService(ctx, repohooks.Options{
+		Logger:              logger,
+		DB:                  db,
+		HostnameService:     hostnameService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
+		GithubAppService:    githubAppService,
+		VCSEventBroker:      vcsEventBroker,
+	})
+	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
+
+	connectionService := connections.NewService(ctx, connections.Options{
+		Logger:             logger,
+		DB:                 db,
+		VCSProviderService: vcsProviderService,
+		RepohookService:    repoService,
 	})
 	releasesService := releases.NewService(releases.Options{
 		Logger: logger,
@@ -180,7 +206,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:              broker,
 		Renderer:            renderer,
 		Responder:           responder,
-		RepoService:         repoService,
+		ConnectionService:   connectionService,
 		TeamService:         authService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
@@ -194,6 +220,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Signer:              signer,
 		MaxConfigSize:       cfg.MaxConfigSize,
 	})
+
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
 		DB:                          db,
@@ -206,7 +233,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:          vcsProviderService,
 		Broker:                      broker,
 		Cache:                       cache,
-		Subscriber:                  repoService,
+		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
 		ReleasesService:             releasesService,
 	})
@@ -225,7 +252,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService:    hostnameService,
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
-		RepoService:        repoService,
+		ConnectionService:  connectionService,
+		RepohookService:    repoService,
+		VCSEventSubscriber: vcsEventBroker,
 	})
 	stateService := state.NewService(state.Options{
 		Logger:              logger,
@@ -265,15 +294,37 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	authenticatorService, err := authenticator.NewAuthenticatorService(authenticator.Options{
-		Logger:              logger,
-		Renderer:            renderer,
-		HostnameService:     hostnameService,
-		OrganizationService: orgService,
-		AuthService:         authService,
-		TokensService:       tokensService,
-		Configs:             []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
-		OIDCConfigs:         []cloud.OIDCConfig{cfg.OIDC},
+	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
+		Logger:          logger,
+		Renderer:        renderer,
+		HostnameService: hostnameService,
+		TokensService:   tokensService,
+		OpaqueHandlerConfigs: []authenticator.OpaqueHandlerConfig{
+			{
+				ClientConstructor: github.NewOAuthClient,
+				OAuthConfig: authenticator.OAuthConfig{
+					Hostname:     cfg.GithubHostname,
+					Name:         string(vcs.GithubKind),
+					Endpoint:     github.OAuthEndpoint,
+					Scopes:       github.OAuthScopes,
+					ClientID:     cfg.GithubClientID,
+					ClientSecret: cfg.GithubClientSecret,
+				},
+			},
+			{
+				ClientConstructor: gitlab.NewOAuthClient,
+				OAuthConfig: authenticator.OAuthConfig{
+					Hostname:     cfg.GitlabHostname,
+					Name:         string(vcs.GitlabKind),
+					Endpoint:     gitlab.OAuthEndpoint,
+					Scopes:       gitlab.OAuthScopes,
+					ClientID:     cfg.GitlabClientID,
+					ClientSecret: cfg.GitlabClientSecret,
+				},
+			},
+		},
+		IDTokenHandlerConfig: cfg.OIDC,
+		SkipTLSVerification:  cfg.SkipTLSVerification,
 	})
 	if err != nil {
 		return nil, err
@@ -314,7 +365,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		loginServer,
 		configService,
 		notificationService,
+		githubAppService,
 		disco.Service{},
+		&ghapphandler.Handler{
+			Logger:             logger,
+			Publisher:          vcsEventBroker,
+			GithubAppService:   githubAppService,
+			VCSProviderService: vcsProviderService,
+		},
 	}
 
 	return &Daemon{
@@ -333,13 +391,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConfigurationVersionService: configService,
 		RunService:                  runService,
 		LogsService:                 logsService,
-		RepoService:                 repoService,
+		RepohookService:             repoService,
 		NotificationService:         notificationService,
-		//ReleasesService:             releasesService,
-		Broker:       broker,
-		DB:           db,
-		agent:        agent,
-		cloudService: cloudService,
+		GithubAppService:            githubAppService,
+		ConnectionService:           connectionService,
+		Broker:                      broker,
+		DB:                          db,
+		agent:                       agent,
 	}, nil
 }
 
@@ -403,16 +461,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				HostnameService:             d.HostnameService,
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
-			},
-		},
-		{
-			Name:   "webhook purger",
-			Logger: d.Logger,
-			System: &repo.Purger{
-				Logger:     d.Logger.WithValues("component", "purger"),
-				Subscriber: d.Broker,
-				Service:    d.RepoService,
-				DB:         d.DB,
 			},
 		},
 		{

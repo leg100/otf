@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -117,9 +116,9 @@ func NewTestServer(t *testing.T, opts ...TestGitlabServerOption) *httptest.Serve
 
 type TestGitlabServerOption func(*testServerDB)
 
-func WithGitlabUser(user *cloud.User) TestGitlabServerOption {
+func WithGitlabUser(username string) TestGitlabServerOption {
 	return func(db *testServerDB) {
-		db.user = &gitlab.User{Username: user.Name, ID: 1}
+		db.user = &gitlab.User{Username: username, ID: 1}
 	}
 }
 

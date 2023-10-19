@@ -10,6 +10,8 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -81,21 +83,19 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	cmd.Flags().BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
 
-	cmd.Flags().StringVar(&cfg.Github.Hostname, "github-hostname", cfg.Github.Hostname, "github hostname")
-	cmd.Flags().BoolVar(&cfg.Github.SkipTLSVerification, "github-skip-tls-verification", false, "Skip github TLS verification")
-	cmd.Flags().StringVar(&cfg.Github.OAuthConfig.ClientID, "github-client-id", "", "github client ID")
-	cmd.Flags().StringVar(&cfg.Github.OAuthConfig.ClientSecret, "github-client-secret", "", "github client secret")
+	cmd.Flags().StringVar(&cfg.GithubHostname, "github-hostname", github.DefaultHostname, "github hostname")
+	cmd.Flags().StringVar(&cfg.GithubClientID, "github-client-id", "", "github client ID")
+	cmd.Flags().StringVar(&cfg.GithubClientSecret, "github-client-secret", "", "github client secret")
 
-	cmd.Flags().StringVar(&cfg.Gitlab.Hostname, "gitlab-hostname", cfg.Gitlab.Hostname, "gitlab hostname")
-	cmd.Flags().BoolVar(&cfg.Gitlab.SkipTLSVerification, "gitlab-skip-tls-verification", false, "Skip gitlab TLS verification")
-	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientID, "gitlab-client-id", "", "gitlab client ID")
-	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientSecret, "gitlab-client-secret", "", "gitlab client secret")
+	cmd.Flags().StringVar(&cfg.GitlabHostname, "gitlab-hostname", gitlab.DefaultHostname, "gitlab hostname")
+	cmd.Flags().StringVar(&cfg.GitlabClientID, "gitlab-client-id", "", "gitlab client ID")
+	cmd.Flags().StringVar(&cfg.GitlabClientSecret, "gitlab-client-secret", "", "gitlab client secret")
 
-	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", cfg.OIDC.Name, "User friendly OIDC name")
-	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", cfg.OIDC.IssuerURL, "OIDC issuer URL")
+	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", "", "User friendly OIDC name")
+	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", "", "OIDC issuer URL")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "OIDC client ID")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret")
-	cmd.Flags().StringSliceVar(&cfg.OIDC.Scopes, "oidc-scopes", authenticator.DefaultScopes, "OIDC scopes")
+	cmd.Flags().StringSliceVar(&cfg.OIDC.Scopes, "oidc-scopes", authenticator.DefaultOIDCScopes, "OIDC scopes")
 	cmd.Flags().StringVar(&cfg.OIDC.UsernameClaim, "oidc-username-claim", string(authenticator.DefaultUsernameClaim), "OIDC claim to be used for username (name, email, or sub)")
 
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")

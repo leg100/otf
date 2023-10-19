@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -83,32 +83,6 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	var (
-		status      cloud.VCSStatus
-		description string
-	)
-	switch run.Status {
-	case internal.RunPending, internal.RunPlanQueued, internal.RunApplyQueued:
-		status = cloud.VCSPendingStatus
-	case internal.RunPlanning, internal.RunApplying, internal.RunPlanned, internal.RunConfirmed:
-		status = cloud.VCSRunningStatus
-	case internal.RunPlannedAndFinished:
-		status = cloud.VCSSuccessStatus
-		if run.Plan.ResourceReport != nil {
-			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
-		}
-	case internal.RunApplied:
-		status = cloud.VCSSuccessStatus
-		if run.Apply.ResourceReport != nil {
-			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
-		}
-	case internal.RunErrored, internal.RunCanceled, internal.RunForceCanceled, internal.RunDiscarded:
-		status = cloud.VCSErrorStatus
-		description = run.Status.String()
-	default:
-		return fmt.Errorf("unknown run status: %s", run.Status)
-	}
-
 	ws, err := r.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return err
@@ -122,7 +96,33 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return err
 	}
 
-	return client.SetStatus(ctx, cloud.SetStatusOptions{
+	// Report the status and description of the run state
+	var (
+		status      vcs.Status
+		description string
+	)
+	switch run.Status {
+	case internal.RunPending, internal.RunPlanQueued, internal.RunApplyQueued:
+		status = vcs.PendingStatus
+	case internal.RunPlanning, internal.RunApplying, internal.RunPlanned, internal.RunConfirmed:
+		status = vcs.RunningStatus
+	case internal.RunPlannedAndFinished:
+		status = vcs.SuccessStatus
+		if run.Plan.ResourceReport != nil {
+			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
+		}
+	case internal.RunApplied:
+		status = vcs.SuccessStatus
+		if run.Apply.ResourceReport != nil {
+			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
+		}
+	case internal.RunErrored, internal.RunCanceled, internal.RunForceCanceled, internal.RunDiscarded:
+		status = vcs.ErrorStatus
+		description = run.Status.String()
+	default:
+		return fmt.Errorf("unknown run status: %s", run.Status)
+	}
+	return client.SetStatus(ctx, vcs.SetStatusOptions{
 		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes.CommitSHA,
 		Repo:        cv.IngressAttributes.Repo,

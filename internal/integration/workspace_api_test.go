@@ -10,11 +10,11 @@ import (
 	"github.com/DataDog/jsonapi"
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,7 +64,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	integrationTest(t)
 
 	// setup daemon along with fake github repo
-	repo := cloud.NewTestRepo()
+	repo := vcs.NewTestRepo()
 	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
@@ -82,7 +82,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name, tfe.OAuthClientCreateOptions{
-		OAuthToken:      internal.String(provider.Token),
+		OAuthToken:      provider.Token,
 		APIURL:          internal.String(vcsprovider.GithubAPIURL),
 		HTTPURL:         internal.String(vcsprovider.GithubHTTPURL),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),

@@ -9,6 +9,8 @@ import (
 var funcmap = template.FuncMap{}
 
 func init() {
+	funcmap["adminPath"] = Admin
+
 	funcmap["loginPath"] = Login
 
 	funcmap["logoutPath"] = Logout
@@ -24,6 +26,17 @@ func init() {
 	funcmap["newTokenPath"] = NewToken
 
 	funcmap["createTokenPath"] = CreateToken
+
+	funcmap["githubAppsPath"] = GithubApps
+	funcmap["createGithubAppPath"] = CreateGithubApp
+	funcmap["newGithubAppPath"] = NewGithubApp
+	funcmap["githubAppPath"] = GithubApp
+	funcmap["editGithubAppPath"] = EditGithubApp
+	funcmap["updateGithubAppPath"] = UpdateGithubApp
+	funcmap["deleteGithubAppPath"] = DeleteGithubApp
+	funcmap["exchangeCodeGithubAppPath"] = ExchangeCodeGithubApp
+	funcmap["completeGithubAppPath"] = CompleteGithubApp
+	funcmap["deleteInstallGithubAppPath"] = DeleteInstallGithubApp
 
 	funcmap["organizationsPath"] = Organizations
 	funcmap["createOrganizationPath"] = CreateOrganization
@@ -130,6 +143,7 @@ func init() {
 	funcmap["editVCSProviderPath"] = EditVCSProvider
 	funcmap["updateVCSProviderPath"] = UpdateVCSProvider
 	funcmap["deleteVCSProviderPath"] = DeleteVCSProvider
+	funcmap["newGithubAppVCSProviderPath"] = NewGithubAppVCSProvider
 
 	funcmap["modulesPath"] = Modules
 	funcmap["createModulePath"] = CreateModule

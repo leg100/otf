@@ -3,14 +3,19 @@ package internal
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 )
 
 type (
-	// HostnameService provides the OTF user-facing hostname.
+	// HostnameService is registry of hostnames
 	HostnameService interface {
+		// Return the OTF hostname.
 		Hostname() string
+		// Set the OTF hostname.
 		SetHostname(string)
+		// Return OTF URL with the given path
+		URL(path string) string
 	}
 
 	hostnameService struct {
@@ -24,6 +29,15 @@ func NewHostnameService(hostname string) *hostnameService {
 
 func (s *hostnameService) Hostname() string            { return s.hostname }
 func (s *hostnameService) SetHostname(hostname string) { s.hostname = hostname }
+
+func (s *hostnameService) URL(path string) string {
+	u := url.URL{
+		Scheme: "https",
+		Host:   s.Hostname(),
+		Path:   path,
+	}
+	return u.String()
+}
 
 // NormalizeAddress takes a host:port and converts it into a host:port
 // appropriate for setting as the addressable hostname of otfd, e.g. converting

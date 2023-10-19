@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -16,13 +16,13 @@ import (
 
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
-	want := cloud.User{Name: "fake-user"}
+	want := "fake-user"
 	client := newTestServerClient(t, WithUser(&want))
 
 	got, err := client.GetCurrentUser(ctx)
 	require.NoError(t, err)
 
-	assert.Equal(t, want.Name, got.Name)
+	assert.Equal(t, want, got)
 }
 
 func TestGetRepository(t *testing.T) {
@@ -51,7 +51,7 @@ func TestGetRepoTarball(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	got, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: "acme/terraform",
 	})
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func TestCreateWebhook(t *testing.T) {
 		WithRepo("acme/terraform"),
 	)
 
-	_, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+	_, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
 		Repo:   "acme/terraform",
 		Secret: "me-secret",
 	})
@@ -80,14 +80,12 @@ func TestCreateWebhook(t *testing.T) {
 // newTestServerClient creates a github server for testing purposes and
 // returns a client configured to access the server.
 func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
-	_, cfg := NewTestServer(t, opts...)
+	_, u := NewTestServer(t, opts...)
 
-	client, err := NewClient(context.Background(), cloud.ClientOptions{
-		Hostname:            cfg.Hostname,
+	client, err := NewClient(ClientOptions{
+		Hostname:            u.Host,
 		SkipTLSVerification: true,
-		Credentials: cloud.Credentials{
-			OAuthToken: &oauth2.Token{AccessToken: "fake-token"},
-		},
+		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
 	})
 	require.NoError(t, err)
 

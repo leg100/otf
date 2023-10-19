@@ -8,9 +8,9 @@ import (
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -39,8 +39,8 @@ type (
 		Provider     string
 		Organization string // Module belongs to an organization
 		Status       ModuleStatus
-		Versions     []ModuleVersion  // versions sorted in descending order
-		Connection   *repo.Connection // optional vcs repo connection
+		Versions     []ModuleVersion         // versions sorted in descending order
+		Connection   *connections.Connection // optional vcs repo connection
 	}
 
 	ModuleStatus string
@@ -67,7 +67,7 @@ type (
 		Version  string
 		Ref      string
 		Repo     Repo
-		Client   cloud.Client
+		Client   vcs.Client
 	}
 	CreateOptions struct {
 		Name         string

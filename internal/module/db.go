@@ -4,9 +4,8 @@ import (
 	"context"
 	"sort"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -28,7 +27,6 @@ type (
 		Status           pgtype.Text            `json:"status"`
 		OrganizationName pgtype.Text            `json:"organization_name"`
 		ModuleConnection *pggen.RepoConnections `json:"module_connection"`
-		Webhook          *pggen.Webhooks        `json:"webhook"`
 		Versions         []pggen.ModuleVersions `json:"versions"`
 	}
 )
@@ -89,8 +87,8 @@ func (db *pgdb) getModuleByID(ctx context.Context, id string) (*Module, error) {
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) getModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByWebhookID(ctx, sql.UUID(id))
+func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
+	row, err := db.Conn(ctx).FindModuleByConnection(ctx, sql.String(vcsProviderID), sql.String(repoPath))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -153,7 +151,7 @@ func (db *pgdb) getTarball(ctx context.Context, versionID string) ([]byte, error
 	return tarball, nil
 }
 
-// UnmarshalModuleRow unmarshals a database row into a module
+// toModule converts a database row into a module
 func (row moduleRow) toModule() *Module {
 	module := &Module{
 		ID:           row.ModuleID.String,
@@ -165,9 +163,9 @@ func (row moduleRow) toModule() *Module {
 		Organization: row.OrganizationName.String,
 	}
 	if row.ModuleConnection != nil {
-		module.Connection = &repo.Connection{
-			VCSProviderID: row.Webhook.VCSProviderID.String,
-			Repo:          row.Webhook.Identifier.String,
+		module.Connection = &connections.Connection{
+			VCSProviderID: row.ModuleConnection.VCSProviderID.String,
+			Repo:          row.ModuleConnection.RepoPath.String,
 		}
 	}
 	// versions are always maintained in descending order

@@ -8,13 +8,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -207,7 +207,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve repos and filter according to required naming format
 	// '<something>-<name>-<provider>'
-	results, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
+	results, err := client.ListRepositories(r.Context(), vcs.ListRepositoriesOptions{
 		PageSize: resource.MaxPageSize,
 	})
 	if err != nil {

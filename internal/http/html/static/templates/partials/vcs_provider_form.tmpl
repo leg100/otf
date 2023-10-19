@@ -5,15 +5,17 @@
       <input class="text-input w-64" type="text" name="name" id="name" {{ if .VCSProvider.Name }}value="{{ .VCSProvider.Name }}"{{ else }} placeholder="{{ .VCSProvider.String }}"{{ end }}>
       <span class="description">An optional display name for your VCS provider.</span>
     </div>
+    {{ if not .VCSProvider.GithubApp }}
     <div class="field">
       <label for="token">Token</label>
       <textarea class="text-input w-96" rows="3" name="token" id="token" {{ if .EditMode }}placeholder="*****"{{ else }}required{{ end }}></textarea>
     </div>
+    {{ end }}
     {{ if .EditMode }}
       <button class="btn w-32">Update</button>
     {{ else }}
       <button class="btn w-32">Create</button>
-      <input type="hidden" name="cloud" id="cloud" value="{{ .VCSProvider.CloudConfig.Name }}">
+      <input type="hidden" name="kind" id="kind" value="{{ .VCSProvider.Kind }}">
     {{ end }}
   </form>
 {{ end }}

@@ -30,7 +30,7 @@ func TestUploadConfigurationVersion(t *testing.T) {
 
 	// setup client
 	client := http.Client{
-		Transport: otfhttp.DefaultTransport(true),
+		Transport: otfhttp.InsecureTransport,
 	}
 
 	// upload config smaller than MaxConfigSize

@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"sort"
 
 	"errors"
 	"fmt"
@@ -13,105 +14,217 @@ import (
 	"strings"
 	"time"
 
-	otfhttp "github.com/leg100/otf/internal/http"
-
-	"github.com/google/go-github/v41/github"
+	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/authenticator"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/oauth2"
 )
 
-type Client struct {
-	client *github.Client
-}
-
-func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
-	var (
+type (
+	// Client is a wrapper around the upstream go-github client
+	Client struct {
 		client *github.Client
-		err    error
+
+		// whether authenticated using an installation access token
+		iat bool
+	}
+
+	ClientOptions struct {
+		Hostname            string
+		SkipTLSVerification bool
+
+		// Only specify one of the following
+		OAuthToken    *oauth2.Token
+		PersonalToken *string
+		*AppCredentials
+		*InstallCredentials
+	}
+
+	// Credentials for authenticating as an app:
+	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-a-github-app
+	AppCredentials struct {
+		// Github app ID
+		ID int64
+		// Private key in PEM format
+		PrivateKey string
+	}
+
+	// Credentials for authenticating as an app installation:
+	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-an-app-installation
+	InstallCredentials struct {
+		// Github installation ID
+		ID int64
+		// Github username if installed in a user account; mutually exclusive
+		// with Organization
+		User *string
+		// Github organization if installed in an organization; mutually
+		// exclusive with User
+		Organization *string
+
+		AppCredentials
+	}
+)
+
+func NewClient(cfg ClientOptions) (*Client, error) {
+	if cfg.Hostname == "" {
+		cfg.Hostname = DefaultHostname
+	}
+	// build http roundtripper using provided credentials
+	var (
+		tripper = otfhttp.DefaultTransport
+		err     error
+
+		iat bool
 	)
-
-	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-			Transport: otfhttp.DefaultTransport(true),
-		})
+		tripper = otfhttp.InsecureTransport
 	}
-
-	// Github's oauth access token never expires
-	var src oauth2.TokenSource
-	if cfg.OAuthToken != nil {
-		src = oauth2.StaticTokenSource(cfg.OAuthToken)
-	} else if cfg.PersonalToken != nil {
-		src = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *cfg.PersonalToken})
-	} else {
-		return nil, fmt.Errorf("no credentials provided")
-	}
-
-	httpClient := oauth2.NewClient(ctx, src)
-
-	if cfg.Hostname != DefaultGithubHostname {
-		client, err = NewEnterpriseClient(cfg.Hostname, httpClient)
+	switch {
+	case cfg.AppCredentials != nil:
+		tripper, err = ghinstallation.NewAppsTransport(tripper, cfg.AppCredentials.ID, []byte(cfg.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		client = github.NewClient(httpClient)
+	case cfg.InstallCredentials != nil:
+		iat = true
+		creds := cfg.InstallCredentials
+		installTransport, err := ghinstallation.New(tripper, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
+		if err != nil {
+			return nil, err
+		}
+		// ghinstallation defaults to https://api.github.com
+		if cfg.Hostname != DefaultHostname {
+			installTransport.BaseURL = (&url.URL{Scheme: "https", Path: "/api/v3", Host: cfg.Hostname}).String()
+		}
+		tripper = installTransport
+	case cfg.PersonalToken != nil:
+		// personal token is actually an OAuth2 *access token, so wrap
+		// inside an OAuth2 token and handle it the same as an OAuth2 token
+		cfg.OAuthToken = &oauth2.Token{AccessToken: *cfg.PersonalToken}
+		fallthrough
+	case cfg.OAuthToken != nil:
+		tripper = &oauth2.Transport{
+			Base: tripper,
+			// Github's oauth access token never expires
+			Source: oauth2.ReuseTokenSource(nil, oauth2.StaticTokenSource(cfg.OAuthToken)),
+		}
 	}
-	return &Client{client: client}, nil
+	// create upstream client with roundtripper
+	client := github.NewClient(&http.Client{Transport: tripper})
+	// Assume github enterprise if using non-default hostname
+	if cfg.Hostname != DefaultHostname {
+		client, err = client.WithEnterpriseURLs(
+			"https://"+cfg.Hostname,
+			"https://"+cfg.Hostname,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &Client{client: client, iat: iat}, nil
 }
 
-func NewEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
-	return github.NewEnterpriseClient(
-		"https://"+hostname,
-		"https://"+hostname,
-		httpClient)
+func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
+	return NewClient(ClientOptions{
+		Hostname:            opts.Hostname,
+		PersonalToken:       &opts.Token,
+		SkipTLSVerification: opts.SkipTLSVerification,
+	})
 }
 
-func (g *Client) GetCurrentUser(ctx context.Context) (cloud.User, error) {
+func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
+	return NewClient(ClientOptions{
+		Hostname:            cfg.Hostname,
+		OAuthToken:          token,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+	})
+}
+
+func (g *Client) GetCurrentUser(ctx context.Context) (string, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
-		return cloud.User{}, err
+		return "", err
 	}
-	return cloud.User{Name: guser.GetLogin()}, nil
+	return guser.GetLogin(), nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repository, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return cloud.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
+		return vcs.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return cloud.Repository{}, err
+		return vcs.Repository{}, err
 	}
 
-	return cloud.Repository{
+	return vcs.Repository{
 		Path:          identifier,
 		DefaultBranch: repo.GetDefaultBranch(),
 	}, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
-	repos, _, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
-		ListOptions: github.ListOptions{
-			PerPage: opts.PageSize,
-		},
-		// retrieve repositories in order of most recently pushed to
-		Sort: "pushed",
-	})
-	if err != nil {
-		return nil, err
-	}
+// ListRepositories lists repositories belonging to the authenticated entity: if
+// authenticated using a user's oauth token or PAT then their repos are listed;
+// if authenticated using a github installation then repos that the installation
+// has access to are listed.
+//
 
-	var names []string
-	for _, repo := range repos {
-		names = append(names, repo.GetFullName())
+// ListRepositories has different behaviour depending on the authentication:
+// (a) if authenticated as an app installation then repositories accessible to
+// the installation are listed; *all* repos are listed, in order of last pushed
+// to.
+// (b) if authenticated using a personal access token then repositories
+// belonging to the user are listed; only the first page of repos is listed,
+// those that have most recently been pushed to.
+func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
+	var (
+		repos []*github.Repository
+	)
+	if g.iat {
+		// Apps.ListRepos endpoint does not support ordering on the server-side,
+		// so instead we request *all* repos, page-by-page, and then sort
+		// client-side.
+		var page = 1
+		for {
+			result, resp, err := g.client.Apps.ListRepos(ctx, &github.ListOptions{
+				PerPage: opts.PageSize,
+				Page:    page,
+			})
+			if err != nil {
+				return nil, err
+			}
+			repos = append(repos, result.Repositories...)
+			if resp.NextPage != 0 {
+				page = resp.NextPage
+			} else {
+				break
+			}
+		}
+		// sort repositories in order of most recently pushed to
+		sort.Slice(repos, func(i, j int) bool { return repos[i].GetPushedAt().After(repos[j].GetPushedAt().Time) })
+	} else {
+		var err error
+		repos, _, err = g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
+			ListOptions: github.ListOptions{PerPage: opts.PageSize},
+			// retrieve repositories in order of most recently pushed to
+			Sort: "pushed",
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	names := make([]string, len(repos))
+	for i, repo := range repos {
+		names[i] = repo.GetFullName()
 	}
 	return names, nil
 }
 
-func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
+func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -132,7 +245,15 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 	return tags, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, string, error) {
+func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConfig, error) {
+	cfg, _, err := g.client.Apps.CompleteAppManifest(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return nil, "", fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -193,7 +314,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 }
 
 // CreateWebhook creates a webhook on a github repository.
-func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
+func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return "", fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -202,9 +323,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSEventTypePush:
+		case vcs.EventTypePush:
 			events = append(events, "push")
-		case cloud.VCSEventTypePull:
+		case vcs.EventTypePull:
 			events = append(events, "pull_request")
 		}
 	}
@@ -224,7 +345,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	return strconv.FormatInt(hook.GetID(), 10), nil
 }
 
-func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -238,9 +359,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.Update
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSEventTypePush:
+		case vcs.EventTypePush:
 			events = append(events, "push")
-		case cloud.VCSEventTypePull:
+		case vcs.EventTypePull:
 			events = append(events, "pull_request")
 		}
 	}
@@ -260,46 +381,46 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.Update
 	return nil
 }
 
-func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (cloud.Webhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return cloud.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Repo)
+		return vcs.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
-		return cloud.Webhook{}, err
+		return vcs.Webhook{}, err
 	}
 
 	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return cloud.Webhook{}, internal.ErrResourceNotFound
+			return vcs.Webhook{}, internal.ErrResourceNotFound
 		}
-		return cloud.Webhook{}, err
+		return vcs.Webhook{}, err
 	}
 
-	var events []cloud.VCSEventType
+	var events []vcs.EventType
 	for _, event := range hook.Events {
 		switch event {
 		case "push":
-			events = append(events, cloud.VCSEventTypePush)
+			events = append(events, vcs.EventTypePush)
 		case "pull_request":
-			events = append(events, cloud.VCSEventTypePull)
+			events = append(events, vcs.EventTypePull)
 		}
 	}
 
 	// extracting OTF endpoint from github's config map is a bit of work...
 	rawEndpoint, ok := hook.Config["url"]
 	if !ok {
-		return cloud.Webhook{}, errors.New("missing url")
+		return vcs.Webhook{}, errors.New("missing url")
 	}
 	endpoint, ok := rawEndpoint.(string)
 	if !ok {
-		return cloud.Webhook{}, errors.New("url is not a string")
+		return vcs.Webhook{}, errors.New("url is not a string")
 	}
 
-	return cloud.Webhook{
+	return vcs.Webhook{
 		ID:       strconv.FormatInt(hook.GetID(), 10),
 		Repo:     opts.Repo,
 		Events:   events,
@@ -307,7 +428,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	}, nil
 }
 
-func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOptions) error {
+func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -322,7 +443,7 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOpti
 	return err
 }
 
-func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
+func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -330,13 +451,13 @@ func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) err
 
 	var status string
 	switch opts.Status {
-	case cloud.VCSPendingStatus, cloud.VCSRunningStatus:
+	case vcs.PendingStatus, vcs.RunningStatus:
 		status = "pending"
-	case cloud.VCSSuccessStatus:
+	case vcs.SuccessStatus:
 		status = "success"
-	case cloud.VCSErrorStatus:
+	case vcs.ErrorStatus:
 		status = "error"
-	case cloud.VCSFailureStatus:
+	case vcs.FailureStatus:
 		status = "failure"
 	default:
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)
@@ -407,25 +528,57 @@ listloop:
 	return files, nil
 }
 
-func (g *Client) GetCommit(ctx context.Context, repo, ref string) (cloud.Commit, error) {
+func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, error) {
 	owner, name, found := strings.Cut(repo, "/")
 	if !found {
-		return cloud.Commit{}, fmt.Errorf("malformed identifier: %s", repo)
+		return vcs.Commit{}, fmt.Errorf("malformed identifier: %s", repo)
 	}
 
 	commit, resp, err := g.client.Repositories.GetCommit(ctx, owner, name, ref, nil)
 	if err != nil {
-		return cloud.Commit{}, err
+		return vcs.Commit{}, err
 	}
 	defer resp.Body.Close()
 
-	return cloud.Commit{
+	return vcs.Commit{
 		SHA: commit.GetSHA(),
 		URL: commit.GetHTMLURL(),
-		Author: cloud.CommitAuthor{
+		Author: vcs.CommitAuthor{
 			Username:   commit.GetAuthor().GetLogin(),
 			AvatarURL:  commit.GetAuthor().GetAvatarURL(),
 			ProfileURL: commit.GetAuthor().GetHTMLURL(),
 		},
 	}, nil
+}
+
+// ListInstallations lists installations of the currently authenticated app.
+func (g *Client) ListInstallations(ctx context.Context) ([]*github.Installation, error) {
+	installs, resp, err := g.client.Apps.ListInstallations(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return installs, err
+}
+
+func (g *Client) GetInstallation(ctx context.Context, installID int64) (*github.Installation, error) {
+	install, resp, err := g.client.Apps.GetInstallation(ctx, installID)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return install, err
+}
+
+// DeleteInstallation deletes an installation of a github app with the given
+// installation ID.
+func (g *Client) DeleteInstallation(ctx context.Context, installID int64) error {
+	resp, err := g.client.Apps.DeleteInstallation(ctx, installID)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return err
 }

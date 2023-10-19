@@ -27,7 +27,7 @@ func TestDownloader(t *testing.T) {
 	dl := NewDownloader(t.TempDir())
 	dl.host = u.Host
 	dl.client = &http.Client{
-		Transport: otfhttp.DefaultTransport(true),
+		Transport: otfhttp.InsecureTransport,
 	}
 
 	buf := new(bytes.Buffer)

@@ -5,9 +5,8 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ func TestSpawner(t *testing.T) {
 		name string
 		ws   *workspace.Workspace
 		// incoming event
-		event cloud.VCSEvent
+		event vcs.Event
 		// file paths to return from stubbed client.ListPullRequestFiles
 		pullFiles []string
 		// want spawned run
@@ -27,61 +26,80 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "spawn run for push to default branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: cloud.VCSEvent{
-				Type:          cloud.VCSEventTypePush,
-				Action:        cloud.VCSActionCreated,
-				Branch:        "main",
-				DefaultBranch: "main",
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:          vcs.EventTypePush,
+					Action:        vcs.ActionCreated,
+					Branch:        "main",
+					DefaultBranch: "main",
+				},
 			},
 			spawn: true,
 		},
 		{
 			name: "skip run for push to non-default branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: cloud.VCSEvent{
-				Type:          cloud.VCSEventTypePush,
-				Action:        cloud.VCSActionCreated,
-				Branch:        "dev",
-				DefaultBranch: "main",
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:          vcs.EventTypePush,
+					Action:        vcs.ActionCreated,
+					Branch:        "dev",
+					DefaultBranch: "main",
+				},
 			},
 			spawn: false,
 		},
 		{
 			name: "spawn run for push event for a workspace with user-specified branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypePush,
-				Action: cloud.VCSActionCreated,
-				Branch: "dev",
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Branch: "dev",
+				},
 			},
 			spawn: true,
 		},
 		{
 			name: "skip run for push event for a workspace with non-matching, user-specified branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypePush,
-				Action: cloud.VCSActionCreated,
-				Branch: "staging",
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Branch: "staging",
+				},
 			},
 			spawn: false,
 		},
 		{
-			name:  "spawn run for opened pull request",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionCreated},
+			name: "spawn run for opened pull request",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type: vcs.EventTypePull, Action: vcs.ActionCreated,
+				},
+			},
 			spawn: true,
 		},
 		{
-			name:  "spawn run for update to pull request",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionUpdated},
+			name: "spawn run for update to pull request",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionUpdated,
+				},
+			},
 			spawn: true,
 		},
 		{
-			name:  "skip run for push event for workspace with tags regex",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: "0.1.2"}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Action: cloud.VCSActionCreated},
+			name: "skip run for push event for workspace with tags regex",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: "0.1.2"}},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{Type: vcs.EventTypePush, Action: vcs.ActionCreated},
+			},
 			spawn: false,
 		},
 		{
@@ -89,10 +107,12 @@ func TestSpawner(t *testing.T) {
 			ws: &workspace.Workspace{Connection: &workspace.Connection{
 				TagsRegex: `^\d+\.\d+\.\d+$`,
 			}},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypeTag,
-				Action: cloud.VCSActionCreated,
-				Tag:    "0.1.2",
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypeTag,
+					Action: vcs.ActionCreated,
+					Tag:    "0.1.2",
+				},
 			},
 			spawn: true,
 		},
@@ -101,10 +121,12 @@ func TestSpawner(t *testing.T) {
 			ws: &workspace.Workspace{Connection: &workspace.Connection{
 				TagsRegex: `^\d+\.\d+\.\d+$`,
 			}},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypeTag,
-				Action: cloud.VCSActionCreated,
-				Tag:    "v0.1.2",
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypeTag,
+					Action: vcs.ActionCreated,
+					Tag:    "v0.1.2",
+				},
 			},
 			spawn: false,
 		},
@@ -114,10 +136,12 @@ func TestSpawner(t *testing.T) {
 				TriggerPatterns: []string{"/foo/*.tf"},
 				Connection:      &workspace.Connection{},
 			},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypePush,
-				Action: cloud.VCSActionCreated,
-				Paths:  []string{"/foo/bar.tf"},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Paths:  []string{"/foo/bar.tf"},
+				},
 			},
 			spawn: true,
 		},
@@ -127,10 +151,12 @@ func TestSpawner(t *testing.T) {
 				TriggerPatterns: []string{"/foo/*.tf"},
 				Connection:      &workspace.Connection{},
 			},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypePush,
-				Action: cloud.VCSActionCreated,
-				Paths:  []string{"README.md", ".gitignore"},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Paths:  []string{"README.md", ".gitignore"},
+				},
 			},
 			spawn: false,
 		},
@@ -140,9 +166,11 @@ func TestSpawner(t *testing.T) {
 				TriggerPatterns: []string{"/foo/*.tf"},
 				Connection:      &workspace.Connection{},
 			},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypePull,
-				Action: cloud.VCSActionUpdated,
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionUpdated,
+				},
 			},
 			pullFiles: []string{"/foo/bar.tf"},
 			spawn:     true,
@@ -153,9 +181,11 @@ func TestSpawner(t *testing.T) {
 				TriggerPatterns: []string{"/foo/*.tf"},
 				Connection:      &workspace.Connection{},
 			},
-			event: cloud.VCSEvent{
-				Type:   cloud.VCSEventTypePull,
-				Action: cloud.VCSActionUpdated,
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionUpdated,
+				},
 			},
 			pullFiles: []string{"README.md", ".gitignore"},
 			spawn:     false,
@@ -197,7 +227,7 @@ type fakeSpawnerServices struct {
 	RunService
 }
 
-func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uuid.UUID) ([]*workspace.Workspace, error) {
+func (f *fakeSpawnerServices) ListConnectedWorkspaces(context.Context, string, string) ([]*workspace.Workspace, error) {
 	return f.workspaces, nil
 }
 
@@ -219,16 +249,16 @@ func (f *fakeSpawnerServices) CreateRun(context.Context, string, CreateOptions) 
 	return nil, nil
 }
 
-func (f *fakeSpawnerServices) GetVCSClient(context.Context, string) (cloud.Client, error) {
+func (f *fakeSpawnerServices) GetVCSClient(context.Context, string) (vcs.Client, error) {
 	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
 }
 
 type fakeSpawnerCloudClient struct {
-	cloud.Client
+	vcs.Client
 	pullFiles []string
 }
 
-func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
+func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	return nil, "", nil
 }
 

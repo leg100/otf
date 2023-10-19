@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestReporter_HandleRun(t *testing.T) {
 		run  *Run
 		ws   *workspace.Workspace
 		cv   *configversion.ConfigurationVersion
-		want cloud.SetStatusOptions
+		want vcs.SetStatusOptions
 	}{
 		{
 			name: "pending run",
@@ -36,11 +36,11 @@ func TestReporter_HandleRun(t *testing.T) {
 					Repo:      "leg100/otf",
 				},
 			},
-			want: cloud.SetStatusOptions{
+			want: vcs.SetStatusOptions{
 				Workspace: "dev",
 				Ref:       "abc123",
 				Repo:      "leg100/otf",
-				Status:    cloud.VCSPendingStatus,
+				Status:    vcs.PendingStatus,
 				TargetURL: "https://otf-host.org/app/runs/run-123",
 			},
 		},
@@ -50,22 +50,22 @@ func TestReporter_HandleRun(t *testing.T) {
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: nil,
 			},
-			want: cloud.SetStatusOptions{},
+			want: vcs.SetStatusOptions{},
 		},
 		{
 			name: "skip UI-triggered run",
 			run:  &Run{ID: "run-123", Source: SourceUI},
-			want: cloud.SetStatusOptions{},
+			want: vcs.SetStatusOptions{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got cloud.SetStatusOptions
+			var got vcs.SetStatusOptions
 			reporter := &Reporter{
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCSProviderService:          &fakeReporterVCSProviderService{got: &got},
-				HostnameService:             internal.FakeHostnameService{Host: "otf-host.org"},
+				HostnameService:             internal.NewHostnameService("otf-host.org"),
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -98,20 +98,20 @@ func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*w
 type fakeReporterVCSProviderService struct {
 	vcsprovider.VCSProviderService
 
-	got *cloud.SetStatusOptions
+	got *vcs.SetStatusOptions
 }
 
-func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (cloud.Client, error) {
+func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (vcs.Client, error) {
 	return &fakeReporterCloudClient{got: f.got}, nil
 }
 
 type fakeReporterCloudClient struct {
-	cloud.Client
+	vcs.Client
 
-	got *cloud.SetStatusOptions
+	got *vcs.SetStatusOptions
 }
 
-func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
+func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
 	*f.got = opts
 	return nil
 }

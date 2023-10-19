@@ -112,6 +112,8 @@ func (u *User) IsSiteAdmin() bool {
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	switch action {
+	case rbac.GetGithubAppAction:
+		return true
 	case rbac.CreateUserAction, rbac.ListUsersAction:
 		// A user can perform these actions only if they are an owner of at
 		// least one organization. This permits an owner to search users or create

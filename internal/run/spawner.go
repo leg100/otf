@@ -8,9 +8,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -22,11 +21,10 @@ type (
 		WorkspaceService
 		VCSProviderService
 		RunService
-		repo.Subscriber
 	}
 )
 
-func (s *Spawner) handle(event cloud.VCSEvent) {
+func (s *Spawner) handle(event vcs.Event) {
 	logger := s.Logger.WithValues(
 		"sha", event.CommitSHA,
 		"type", event.Type,
@@ -40,7 +38,7 @@ func (s *Spawner) handle(event cloud.VCSEvent) {
 	}
 }
 
-func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) error {
+func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
 	// give spawner unlimited powers
@@ -48,12 +46,12 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 
 	// skip events other than those that create or update a ref or pull request
 	switch event.Action {
-	case cloud.VCSActionCreated, cloud.VCSActionUpdated:
+	case vcs.ActionCreated, vcs.ActionUpdated:
 	default:
 		return nil
 	}
 
-	workspaces, err := s.ListWorkspacesByRepoID(ctx, event.RepoID)
+	workspaces, err := s.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.RepoPath)
 	if err != nil {
 		return err
 	}
@@ -66,7 +64,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 	n := 0
 	for _, ws := range workspaces {
 		switch event.Type {
-		case cloud.VCSEventTypeTag:
+		case vcs.EventTypeTag:
 			// skip workspaces with a non-nil tag regex that doesn't match the
 			// tag event
 			if ws.Connection.TagsRegex != "" {
@@ -75,7 +73,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 					continue
 				}
 			}
-		case cloud.VCSEventTypePush:
+		case vcs.EventTypePush:
 			if ws.Connection.Branch != "" {
 				// skip workspaces with a user-specified branch that doesn't match the
 				// event branch
@@ -97,7 +95,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 
 		// only tag and push events contain a list of changed files
 		switch event.Type {
-		case cloud.VCSEventTypeTag, cloud.VCSEventTypePush:
+		case vcs.EventTypeTag, vcs.EventTypePush:
 			// filter workspaces with trigger pattern that doesn't match any of the
 			// files in the event
 			if ws.TriggerPatterns != nil {
@@ -120,7 +118,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 	if err != nil {
 		return err
 	}
-	tarball, _, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	tarball, _, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: event.RepoPath,
 		Ref:  &event.CommitSHA,
 	})
@@ -130,7 +128,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 
 	// pull request events don't contain a list of changed files; instead an API
 	// call is necsssary to retrieve the list of changed files
-	if event.Type == cloud.VCSEventTypePull {
+	if event.Type == vcs.EventTypePull {
 		// only perform API call if at least one workspace has file triggers
 		// enabled.
 		var listFiles bool
@@ -162,7 +160,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 	for _, ws := range workspaces {
 		cvOpts := configversion.ConfigurationVersionCreateOptions{
 			// pull request events trigger speculative runs
-			Speculative: internal.Bool(event.Type == cloud.VCSEventTypePull),
+			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string
 				Branch: event.Branch,
@@ -172,7 +170,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 				CommitURL: event.CommitURL,
 				// CompareURL        string
 				Repo:              ws.Connection.Repo,
-				IsPullRequest:     event.Type == cloud.VCSEventTypePull,
+				IsPullRequest:     event.Type == vcs.EventTypePull,
 				OnDefaultBranch:   event.Branch == event.DefaultBranch,
 				PullRequestNumber: event.PullRequestNumber,
 				PullRequestTitle:  event.PullRequestTitle,
@@ -184,11 +182,11 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 			},
 		}
 		runOpts := CreateOptions{}
-		switch event.Cloud {
-		case cloud.Github:
+		switch event.VCSKind {
+		case vcs.GithubKind:
 			cvOpts.Source = configversion.SourceGithub
 			runOpts.Source = SourceGithub
-		case cloud.Gitlab:
+		case vcs.GitlabKind:
 			cvOpts.Source = configversion.SourceGitlab
 			runOpts.Source = SourceGitlab
 		}

@@ -17,7 +17,7 @@
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
         <button class="btn" id="disconnect-workspace-repo-button">
-          Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
+          Disconnect from {{ .Repo }} ({{ $.VCSProvider.String }})
         </button>
       </form>
     {{ else }}

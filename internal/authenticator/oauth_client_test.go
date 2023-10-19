@@ -8,18 +8,17 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-func TestOAuthClient_RequestHandler(t *testing.T) {
-	client := newTestOAuthServerClient(t)
+func TestOAuthClient_requestHandler(t *testing.T) {
+	client := newTestOAuthServerClient(t, "")
 
 	r := httptest.NewRequest("GET", "/auth", nil)
 	w := httptest.NewRecorder()
-	client.RequestHandler(w, r)
+	client.requestHandler(w, r)
 
 	assert.Equal(t, http.StatusFound, w.Result().StatusCode)
 
@@ -32,19 +31,19 @@ func TestOAuthClient_RequestHandler(t *testing.T) {
 	}
 }
 
-func TestOAuthClient_CallbackHandler(t *testing.T) {
-	client := newTestOAuthServerClient(t)
+func TestOAuthClient_callbackHandler(t *testing.T) {
+	client := newTestOAuthServerClient(t, "bobby")
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
+	w := httptest.NewRecorder()
 
-	token, err := client.CallbackHandler(r)
-	require.NoError(t, err)
-	assert.Equal(t, token.AccessToken, "fake_token")
+	client.callbackHandler(w, r)
+	assert.Equal(t, w.Header().Get("username"), "bobby")
 }
 
 // newTestOAuthServerClient creates an OAuth server for testing purposes and
 // returns a client configured to access the server.
-func newTestOAuthServerClient(t *testing.T) *OAuthClient {
+func newTestOAuthServerClient(t *testing.T, username string) *OAuthClient {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
 		require.NoError(t, err)
@@ -55,22 +54,20 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client, err := NewOAuthClient(OAuthClientConfig{
-		CloudOAuthConfig: cloud.CloudOAuthConfig{
-			OAuthConfig: &oauth2.Config{
-				Endpoint: oauth2.Endpoint{
-					AuthURL:  srv.URL,
-					TokenURL: srv.URL,
-				},
+	client, err := newOAuthClient(
+		fakeTokenHandler{username},
+		internal.NewHostnameService("otf-server.com"),
+		fakeTokensService{},
+		OAuthConfig{
+			Hostname: u.Host,
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  srv.URL,
+				TokenURL: srv.URL,
 			},
-			Config: cloud.Config{
-				SkipTLSVerification: true,
-				Hostname:            u.Host,
-				Name:                "fake-cloud",
-			},
+			Name:                "fake-cloud",
+			SkipTLSVerification: true,
 		},
-		otfHostname: internal.FakeHostnameService{Host: "otf-server.com"},
-	})
+	)
 	require.NoError(t, err)
 	return client
 }

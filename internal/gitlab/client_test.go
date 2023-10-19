@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
@@ -18,14 +18,14 @@ func TestClient(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("GetUser", func(t *testing.T) {
-		want := cloud.User{Name: "fake-user"}
+		want := "fake-user"
 
-		provider := newTestClient(t, WithGitlabUser(&want))
+		provider := newTestClient(t, WithGitlabUser(want))
 
-		user, err := provider.GetCurrentUser(ctx)
+		got, err := provider.GetCurrentUser(ctx)
 		require.NoError(t, err)
 
-		assert.Equal(t, "fake-user", user.Name)
+		assert.Equal(t, "fake-user", got)
 	})
 
 	t.Run("GetRepository", func(t *testing.T) {
@@ -43,7 +43,7 @@ func TestClient(t *testing.T) {
 
 		provider := newTestClient(t, WithGitlabRepo(want[0], ""))
 
-		got, err := provider.ListRepositories(ctx, cloud.ListRepositoriesOptions{})
+		got, err := provider.ListRepositories(ctx, vcs.ListRepositoriesOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -57,7 +57,7 @@ func TestClient(t *testing.T) {
 			WithGitlabTarball(want),
 		)
 
-		got, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+		got, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 			Repo: "acme/terraform",
 		})
 		require.NoError(t, err)

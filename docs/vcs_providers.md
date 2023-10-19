@@ -1,23 +1,36 @@
 # VCS Providers
 
-To connect workspaces and modules to git repositories containing Terraform configurations, you need to provide OTF with access to your VCS provider.
+To connect workspaces and modules to git repositories containing Terraform configurations, you need to provide OTF with access to your VCS provider. You have a choice of three providers:
 
-Firstly, create a provider for your organization. On your organization's main menu, select **VCS providers**.
+* [Github app](github_app.md)
+* Github personal access token
+* Gitlab personal access token
+
+## Walkthrough
+
+This walkthrough shows you how to create a VCS provider via the web UI.
+
+On your organization's main menu, select **VCS providers**.
 
 ![organization main menu](images/organization_main_menu.png){.screenshot}
 
-You'll be presented with a choice of providers to create. The choice is restricted to those for which you have enabled [SSO](#authentication). For instance, if you have enabled Github SSO then you can create a Github VCS provider.
+You are presented with a choice of providers to create:
 
-![vcs providers list](images/vcs_providers_list.png){.screenshot}
+![vcs providers list](images/vcs_provider_list_including_github_app.png){.screenshot}
 
-Select the provider you would like to create. You will then be prompted to enter a personal access token. Instructions for generating the token are included on the page. The token permits OTF to access your git repository and retrieve terraform configuration. Once you've generated and inserted the token into the field you also need to give the provider a name that describes it.
+In this walkthrough we will create a provider using a Github personal access token.
+
+Select **New Github VCS Provider (Personal Token)**. You are then presented with a form on which to enter the token:
 
 ![new github vcs provider form](images/new_github_vcs_provider_form.png){.screenshot}
 
-!!! note
-    Be sure to restrict the permissions on the token according to the instructions.
+Click the **personal token** link. It'll take you to Github where you can create the token. Create a **classic** token with the **repo** scope (or you can create a fine-tuned token with the equivalent permissions). The token permits OTF to access your git repository and retrieve terraform configuration. Once you've generated the token, copy and paste it into the **Token** field. Optionally you can also assign the provider a name.
 
-Create the provider and it'll appear on the list of providers. You can now proceed to connecting workspaces and publishing modules.
+Create the provider and it'll appear on the list of providers:
+
+![vcs providers list](images/vcs_provider_created_github_pat_provider.png){.screenshot}
+
+You can now proceed to connecting workspaces (see below) and [publishing modules](registry.md).
 
 ### Connecting a workspace
 

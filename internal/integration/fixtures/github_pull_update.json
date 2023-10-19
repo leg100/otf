@@ -1,6 +1,6 @@
 {
   "action": "synchronize",
-  "number": 1,
+  "number": 2,
   "pull_request": {
     "url": "https://api.github.com/repos/leg100/otf-workspaces/pulls/1",
     "id": 1319867586,
@@ -9,10 +9,10 @@
     "diff_url": "https://github.com/leg100/otf-workspaces/pull/1.diff",
     "patch_url": "https://github.com/leg100/otf-workspaces/pull/1.patch",
     "issue_url": "https://api.github.com/repos/leg100/otf-workspaces/issues/1",
-    "number": 1,
+    "number": 2,
     "state": "open",
     "locked": false,
-    "title": "pr-1",
+    "title": "pr-2",
     "user": {
       "login": "leg100",
       "id": 75728,
@@ -60,8 +60,8 @@
     "comments_url": "https://api.github.com/repos/leg100/otf-workspaces/issues/1/comments",
     "statuses_url": "https://api.github.com/repos/leg100/otf-workspaces/statuses/067e2b4c6394b3dad3c0ec89ffc428ab60ae7e5d",
     "head": {
-      "label": "leg100:pr-1",
-      "ref": "pr-1",
+      "label": "leg100:pr-2",
+      "ref": "pr-2",
       "sha": "067e2b4c6394b3dad3c0ec89ffc428ab60ae7e5d",
       "user": {
         "login": "leg100",

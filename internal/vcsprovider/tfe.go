@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 const (
@@ -98,8 +99,8 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 	oauthClient, err := a.CreateVCSProvider(r.Context(), CreateOptions{
 		Name:         *params.Name,
 		Organization: org,
-		Token:        *params.OAuthToken,
-		Cloud:        "github",
+		Token:        params.OAuthToken,
+		Kind:         vcs.KindPtr(vcs.GithubKind),
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

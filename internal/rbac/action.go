@@ -128,4 +128,12 @@ const (
 	ListNotificationConfigurationsAction
 	GetNotificationConfigurationAction
 	DeleteNotificationConfigurationAction
+
+	CreateGithubAppAction
+	UpdateGithubAppAction
+	GetGithubAppAction
+	ListGithubAppsAction
+	DeleteGithubAppAction
+	CreateGithubAppInstallAction
+	DeleteGithubAppInstallAction
 )

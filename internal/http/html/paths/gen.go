@@ -100,6 +100,10 @@ type controller struct {
 
 var specs = []controllerSpec{
 	{
+		Name:           "admin",
+		controllerType: singlePath,
+	},
+	{
 		Name:           "login",
 		controllerType: singlePath,
 		noprefix:       true,
@@ -137,6 +141,23 @@ var specs = []controllerSpec{
 		Name:           "create_token",
 		controllerType: singlePath,
 		path:           "/profile/tokens/create",
+	},
+	{
+		Name:           "github_app",
+		controllerType: resourcePath,
+		actions: []action{
+			{
+				name:       "exchange-code",
+				collection: true,
+			},
+			{
+				name:       "complete",
+				collection: true,
+			},
+			{
+				name: "delete-install",
+			},
+		},
 	},
 	{
 		Name:           "organization",
@@ -275,6 +296,12 @@ var specs = []controllerSpec{
 				controllerType: resourcePath,
 				camel:          "VCSProvider",
 				lowerCamel:     "vcsProvider",
+				actions: []action{
+					{
+						name:       "new-github-app",
+						collection: true,
+					},
+				},
 			},
 			{
 				Name:           "module",

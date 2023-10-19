@@ -5,73 +5,101 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/tokens"
 )
 
-func NewAuthenticatorService(opts Options) (*service, error) {
-	svc := service{
-		renderer: opts.Renderer,
+type (
+	Options struct {
+		logr.Logger
+		html.Renderer
+
+		internal.HostnameService
+		tokens.TokensService
+
+		OpaqueHandlerConfigs []OpaqueHandlerConfig
+		IDTokenHandlerConfig OIDCConfig
+
+		SkipTLSVerification bool
 	}
 
-	for _, cfg := range opts.Configs {
-		if cfg.OAuthConfig.ClientID == "" && cfg.OAuthConfig.ClientSecret == "" {
-			// skip creating oauth client when creds are unspecified
-			continue
-		}
-		client, err := NewOAuthClient(OAuthClientConfig{
-			CloudOAuthConfig: cfg,
-			otfHostname:      opts.HostnameService,
-		})
-		if err != nil {
-			return nil, err
-		}
-		authenticator := &oauthAuthenticator{
-			HostnameService: opts.HostnameService,
-			TokensService:   opts.TokensService,
-			oauthClient:     client,
-		}
-		svc.authenticators = append(svc.authenticators, authenticator)
+	service struct {
+		html.Renderer
 
-		opts.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
+		clients []*OAuthClient
 	}
+)
 
-	for _, cfg := range opts.OIDCConfigs {
+// NewAuthenticatorService constructs a service for logging users onto
+// the system. Supports multiple clients: zero or more clients that support an
+// opaque token, and one client that supports IDToken/OIDC.
+func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error) {
+	svc := service{Renderer: opts.Renderer}
+	// Construct clients with opaque token handlers
+	for _, cfg := range opts.OpaqueHandlerConfigs {
 		if cfg.ClientID == "" && cfg.ClientSecret == "" {
-			// skip creating oidc client when creds are unspecified
+			// skip creating OAuth client when creds are unspecified
 			continue
 		}
-
-		authenticator, err := newOIDCAuthenticator(context.Background(), oidcAuthenticatorOptions{
-			TokensService:   opts.TokensService,
-			HostnameService: opts.HostnameService,
-			OIDCConfig:      cfg,
-		})
+		cfg.SkipTLSVerification = opts.SkipTLSVerification
+		client, err := newOAuthClient(
+			&opaqueHandler{cfg},
+			opts.HostnameService,
+			opts.TokensService,
+			cfg.OAuthConfig,
+		)
 		if err != nil {
 			return nil, err
 		}
-
-		svc.authenticators = append(svc.authenticators, authenticator)
-
-		opts.V(0).Info("activated oidc client", "name", cfg.Name)
+		svc.clients = append(svc.clients, client)
+		opts.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.Hostname)
 	}
-
+	// Construct client with OIDC IDToken handler
+	if opts.IDTokenHandlerConfig.ClientID == "" && opts.IDTokenHandlerConfig.ClientSecret == "" {
+		// skip creating OIDC authenticator when creds are unspecified
+		return &svc, nil
+	}
+	opts.IDTokenHandlerConfig.SkipTLSVerification = opts.SkipTLSVerification
+	handler, err := newIDTokenHandler(ctx, opts.IDTokenHandlerConfig)
+	if err != nil {
+		return nil, err
+	}
+	client, err := newOAuthClient(
+		handler,
+		opts.HostnameService,
+		opts.TokensService,
+		OAuthConfig{
+			Endpoint:            handler.provider.Endpoint(),
+			Scopes:              opts.IDTokenHandlerConfig.Scopes,
+			ClientID:            opts.IDTokenHandlerConfig.ClientID,
+			ClientSecret:        opts.IDTokenHandlerConfig.ClientSecret,
+			Name:                opts.IDTokenHandlerConfig.Name,
+			SkipTLSVerification: opts.SkipTLSVerification,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	svc.clients = append(svc.clients, client)
+	opts.V(0).Info("activated OIDC client", "name", opts.IDTokenHandlerConfig.Name)
 	return &svc, nil
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
-	for _, authenticator := range a.authenticators {
-		r.HandleFunc(authenticator.RequestPath(), authenticator.RequestHandler)
-		r.HandleFunc(authenticator.CallbackPath(), authenticator.ResponseHandler)
+	for _, authenticator := range a.clients {
+		authenticator.addHandlers(r)
 	}
 	r.HandleFunc("/login", a.loginHandler)
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	a.renderer.Render("login.tmpl", w, struct {
+	a.Render("login.tmpl", w, struct {
 		html.SitePage
-		Authenticators []authenticator
+		Clients []*OAuthClient
 	}{
-		SitePage:       html.NewSitePage(r, "login"),
-		Authenticators: a.authenticators,
+		SitePage: html.NewSitePage(r, "login"),
+		Clients:  a.clients,
 	})
 }

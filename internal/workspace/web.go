@@ -7,13 +7,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -592,7 +592,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	repos, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
+	repos, err := client.ListRepositories(r.Context(), vcs.ListRepositoriesOptions{
 		PageSize: html.PageSize,
 	})
 	if err != nil {

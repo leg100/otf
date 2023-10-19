@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/xanzy/go-gitlab"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload {
 	event, err := handle(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -21,7 +21,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.V
 	return event
 }
 
-func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
+func handle(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	if token := r.Header.Get("X-Gitlab-Token"); token != secret {
 		return nil, errors.New("token validation failed")
 	}
@@ -42,7 +42,7 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &cloud.VCSEvent{
+		return &vcs.EventPayload{
 			Branch:        refParts[2],
 			CommitSHA:     event.After,
 			DefaultBranch: event.Project.DefaultBranch,
@@ -52,7 +52,7 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &cloud.VCSEvent{
+		return &vcs.EventPayload{
 			Tag: refParts[2],
 			// Action:     action,
 			CommitSHA:     event.After,

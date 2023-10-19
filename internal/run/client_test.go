@@ -36,8 +36,8 @@ func TestWatchClient(t *testing.T) {
 	// setup client and subscribe to stream
 	client := &Client{
 		Config: otfhttp.Config{
-			Address:  webserver.URL,
-			Insecure: true,
+			Address:   webserver.URL,
+			Transport: otfhttp.InsecureTransport,
 		},
 	}
 

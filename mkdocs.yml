@@ -52,12 +52,13 @@ nav:
       - auth/providers/gitlab.md
       - auth/providers/oidc.md
       - auth/providers/iap.md
-    - auth/site_admin.md
+    - auth/site_admins.md
     - auth/user_token.md
     - auth/org_token.md
   - Topics:
     - rbac.md
     - vcs_providers.md
+    - github_app.md
     - agents.md
     - registry.md
     - cli.md

@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
@@ -54,7 +53,6 @@ type (
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
 		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
-		Webhook                    *pggen.Webhooks        `json:"webhook"`
 	}
 )
 
@@ -88,8 +86,8 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	if r.WorkspaceConnection != nil {
 		ws.Connection = &Connection{
 			AllowCLIApply: r.AllowCLIApply,
-			VCSProviderID: r.Webhook.VCSProviderID.String,
-			Repo:          r.Webhook.Identifier.String,
+			VCSProviderID: r.WorkspaceConnection.VCSProviderID.String,
+			Repo:          r.WorkspaceConnection.RepoPath.String,
 			Branch:        r.Branch.String,
 		}
 		if r.VCSTagsRegex.Status == pgtype.Present {
@@ -265,9 +263,9 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
-func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
 	q := db.Conn(ctx)
-	rows, err := q.FindWorkspacesByWebhookID(ctx, sql.UUID(id))
+	rows, err := q.FindWorkspacesByConnection(ctx, sql.String(vcsProviderID), sql.String(repoPath))
 	if err != nil {
 		return nil, err
 	}

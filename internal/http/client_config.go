@@ -30,22 +30,20 @@ type Config struct {
 	Token string
 	// Headers that will be added to every request.
 	Headers http.Header
-	// A custom HTTP client to use.
-	HTTPClient *http.Client
 	// RetryLogHook is invoked each time a request is retried.
 	RetryLogHook RetryLogHook
-	// Insecure skips verification of upstream TLS certs.
-	// NOTE: this does not take effect if HTTPClient is non-nil
-	Insecure bool
+	// Override default http transport
+	Transport http.RoundTripper
 }
 
 // NewConfig constructs a new http client config with defaults.
 func NewConfig() Config {
 	config := Config{
-		Address:  os.Getenv("TFE_ADDRESS"),
-		BasePath: DefaultBasePath,
-		Token:    os.Getenv("TFE_TOKEN"),
-		Headers:  make(http.Header),
+		Address:   os.Getenv("TFE_ADDRESS"),
+		BasePath:  DefaultBasePath,
+		Token:     os.Getenv("TFE_TOKEN"),
+		Headers:   make(http.Header),
+		Transport: DefaultTransport,
 	}
 	// Set the default address if none is given.
 	if config.Address == "" {

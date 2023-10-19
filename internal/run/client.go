@@ -224,8 +224,6 @@ func newSSEClient(config http.Config, notifications chan pubsub.Event, opts Watc
 	client.Headers = map[string]string{
 		"Authorization": "Bearer " + config.Token,
 	}
-	if config.Insecure {
-		client.Connection.Transport = http.DefaultTransport(true)
-	}
+	client.Connection.Transport = config.Transport
 	return client, nil
 }

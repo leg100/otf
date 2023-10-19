@@ -6,17 +6,17 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/surl"
 )
@@ -33,7 +33,7 @@ type (
 		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 		GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
 		GetModuleByID(ctx context.Context, id string) (*Module, error)
-		GetModuleByRepoID(ctx context.Context, repoID uuid.UUID) (*Module, error)
+		GetModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error)
 		DeleteModule(ctx context.Context, id string) (*Module, error)
 		GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error)
 
@@ -47,11 +47,11 @@ type (
 
 	service struct {
 		vcsprovider.VCSProviderService
+		connections.ConnectionService
 		logr.Logger
 		*publisher
 
-		db   *pgdb
-		repo repo.Service
+		db *pgdb
 
 		organization internal.Authorizer
 
@@ -67,7 +67,10 @@ type (
 		vcsprovider.VCSProviderService
 		*surl.Signer
 		html.Renderer
-		repo.RepoService
+		connections.ConnectionService
+		repohooks.RepohookService
+
+		VCSEventSubscriber vcs.Subscriber
 	}
 )
 
@@ -75,9 +78,9 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:             opts.Logger,
 		VCSProviderService: opts.VCSProviderService,
+		ConnectionService:  opts.ConnectionService,
 		organization:       &organization.Authorizer{Logger: opts.Logger},
 		db:                 &pgdb{opts.DB},
-		repo:               opts.RepoService,
 	}
 	svc.api = &api{
 		svc:    &svc,
@@ -95,7 +98,7 @@ func NewService(opts Options) *service {
 		ModuleService:      &svc,
 	}
 	// Subscribe module publisher to incoming vcs events
-	opts.RepoService.Subscribe(publisher.handle)
+	opts.VCSEventSubscriber.Subscribe(publisher.handle)
 
 	return &svc
 }
@@ -146,12 +149,12 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 	}
 
 	var (
-		client cloud.Client
+		client vcs.Client
 		tags   []string
 	)
 	setup := func() (err error) {
-		mod.Connection, err = s.repo.Connect(ctx, repo.ConnectOptions{
-			ConnectionType: repo.ModuleConnection,
+		mod.Connection, err = s.Connect(ctx, connections.ConnectOptions{
+			ConnectionType: connections.ModuleConnection,
 			ResourceID:     mod.ID,
 			VCSProviderID:  opts.VCSProviderID,
 			RepoPath:       string(opts.Repo),
@@ -163,7 +166,7 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 		if err != nil {
 			return err
 		}
-		tags, err = client.ListTags(ctx, cloud.ListTagsOptions{
+		tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
 			Repo: string(opts.Repo),
 		})
 		if err != nil {
@@ -217,7 +220,7 @@ func (s *service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 		return err
 	}
 
-	tarball, _, err := opts.Client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	tarball, _, err := opts.Client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: string(opts.Repo),
 		Ref:  &opts.Ref,
 	})
@@ -295,8 +298,8 @@ func (s *service) GetModuleByID(ctx context.Context, id string) (*Module, error)
 	return module, nil
 }
 
-func (s *service) GetModuleByRepoID(ctx context.Context, id uuid.UUID) (*Module, error) {
-	return s.db.getModuleByWebhookID(ctx, id)
+func (s *service) GetModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
+	return s.db.getModuleByConnection(ctx, vcsProviderID, repoPath)
 }
 
 func (s *service) DeleteModule(ctx context.Context, id string) (*Module, error) {
@@ -314,8 +317,8 @@ func (s *service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
-			err := s.repo.Disconnect(ctx, repo.DisconnectOptions{
-				ConnectionType: repo.ModuleConnection,
+			err := s.Disconnect(ctx, connections.DisconnectOptions{
+				ConnectionType: connections.ModuleConnection,
 				ResourceID:     module.ID,
 			})
 			if err != nil {

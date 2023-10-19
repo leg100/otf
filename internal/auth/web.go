@@ -26,8 +26,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	h.addTeamHandlers(r)
 
 	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
-
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
+	r.HandleFunc("/admin", h.site).Methods("GET")
 }
 
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
@@ -70,4 +70,19 @@ func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
 	h.Render("site_admin_login.tmpl", w, html.NewSitePage(r, "site admin login"))
+}
+
+func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
+	user, err := internal.SubjectFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.Render("site.tmpl", w, struct {
+		html.SitePage
+		User internal.Subject
+	}{
+		SitePage: html.NewSitePage(r, "site"),
+		User:     user,
+	})
 }

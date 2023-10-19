@@ -4,16 +4,15 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -32,10 +31,7 @@ type (
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
-		//
-		// TODO: rename to ListConnectedWorkspaces
-		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
@@ -50,15 +46,15 @@ type (
 	service struct {
 		logr.Logger
 		pubsub.Publisher
+		connections.ConnectionService
 
 		site                internal.Authorizer
 		organization        internal.Authorizer
 		internal.Authorizer // workspace authorizer
 
-		db   *pgdb
-		repo repo.RepoService
-		web  *webHandlers
-		api  *tfe
+		db  *pgdb
+		web *webHandlers
+		api *tfe
 
 		createHook *hooks.Hook[*Workspace]
 	}
@@ -70,7 +66,7 @@ type (
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
-		repo.RepoService
+		connections.ConnectionService
 		auth.TeamService
 		logr.Logger
 	}
@@ -85,11 +81,11 @@ func NewService(opts Options) *service {
 			Logger: opts.Logger,
 			db:     db,
 		},
-		db:           db,
-		repo:         opts.RepoService,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
-		createHook:   hooks.NewHook[*Workspace](opts.DB),
+		db:                db,
+		ConnectionService: opts.ConnectionService,
+		organization:      &organization.Authorizer{Logger: opts.Logger},
+		site:              &internal.SiteAuthorizer{Logger: opts.Logger},
+		createHook:        hooks.NewHook[*Workspace](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
@@ -234,8 +230,8 @@ func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resour
 	return s.db.list(ctx, opts)
 }
 
-func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error) {
-	return s.db.listByWebhookID(ctx, repoID)
+func (s *service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 
 func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
@@ -313,8 +309,8 @@ func (s *service) connect(ctx context.Context, workspaceID string, connection *C
 		return err
 	}
 
-	_, err = s.repo.Connect(ctx, repo.ConnectOptions{
-		ConnectionType: repo.WorkspaceConnection,
+	_, err = s.Connect(ctx, connections.ConnectOptions{
+		ConnectionType: connections.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  connection.VCSProviderID,
 		RepoPath:       connection.Repo,
@@ -334,8 +330,8 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 		return err
 	}
 
-	err = s.repo.Disconnect(ctx, repo.DisconnectOptions{
-		ConnectionType: repo.WorkspaceConnection,
+	err = s.Disconnect(ctx, connections.DisconnectOptions{
+		ConnectionType: connections.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
 	if err != nil {

@@ -1,42 +1,70 @@
 -- name: InsertVCSProvider :exec
 INSERT INTO vcs_providers (
     vcs_provider_id,
-    token,
     created_at,
     name,
-    cloud,
+    vcs_kind,
+    token,
+    github_app_id,
     organization_name
 ) VALUES (
     pggen.arg('vcs_provider_id'),
-    pggen.arg('token'),
     pggen.arg('created_at'),
     pggen.arg('name'),
-    pggen.arg('cloud'),
+    pggen.arg('vcs_kind'),
+    pggen.arg('token'),
+    pggen.arg('github_app_id'),
     pggen.arg('organization_name')
 );
 
 -- name: FindVCSProvidersByOrganization :many
-SELECT *
-FROM vcs_providers
-WHERE organization_name = pggen.arg('organization_name')
+SELECT
+    v.*,
+    (ga.*)::"github_apps" AS github_app,
+    (gi.*)::"github_app_installs" AS github_app_install
+FROM vcs_providers v
+LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
+WHERE v.organization_name = pggen.arg('organization_name')
 ;
 
 -- name: FindVCSProviders :many
-SELECT *
-FROM vcs_providers
+SELECT
+    v.*,
+    (ga.*)::"github_apps" AS github_app,
+    (gi.*)::"github_app_installs" AS github_app_install
+FROM vcs_providers v
+LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
+;
+
+-- name: FindVCSProvidersByGithubAppInstallID :many
+SELECT
+    v.*,
+    (ga.*)::"github_apps" AS github_app,
+    (gi.*)::"github_app_installs" AS github_app_install
+FROM vcs_providers v
+JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
+WHERE gi.install_id = pggen.arg('install_id')
 ;
 
 -- name: FindVCSProvider :one
-SELECT *
-FROM vcs_providers
-WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
+SELECT
+    v.*,
+    (ga.*)::"github_apps" AS github_app,
+    (gi.*)::"github_app_installs" AS github_app_install
+FROM vcs_providers v
+LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
+WHERE v.vcs_provider_id = pggen.arg('vcs_provider_id')
 ;
 
 -- name: FindVCSProviderForUpdate :one
-SELECT *
-FROM vcs_providers
-WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
-FOR UPDATE
+SELECT
+    v.*,
+    (ga.*)::"github_apps" AS github_app,
+    (gi.*)::"github_app_installs" AS github_app_install
+FROM vcs_providers v
+LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
+WHERE v.vcs_provider_id = pggen.arg('vcs_provider_id')
+FOR UPDATE OF v
 ;
 
 -- name: UpdateVCSProvider :one

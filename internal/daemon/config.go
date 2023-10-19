@@ -2,14 +2,11 @@ package daemon
 
 import (
 	"errors"
-	"reflect"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -21,9 +18,13 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 type Config struct {
 	AgentConfig                  *agent.Config
 	CacheConfig                  *inmem.CacheConfig
-	Github                       cloud.CloudOAuthConfig
-	Gitlab                       cloud.CloudOAuthConfig
-	OIDC                         cloud.OIDCConfig
+	GithubHostname               string
+	GithubClientID               string
+	GithubClientSecret           string
+	GitlabHostname               string
+	GitlabClientID               string
+	GitlabClientSecret           string
+	OIDC                         authenticator.OIDCConfig
 	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
 	SiteToken                    string
 	Host                         string
@@ -37,6 +38,7 @@ type Config struct {
 	DisableScheduler             bool
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
+	SkipTLSVerification          bool
 	// skip checks for latest terraform version
 	DisableLatestChecker *bool
 
@@ -54,18 +56,6 @@ func ApplyDefaults(cfg *Config) {
 	}
 	if cfg.MaxConfigSize == 0 {
 		cfg.MaxConfigSize = configversion.DefaultConfigMaxSize
-	}
-	if reflect.ValueOf(cfg.Github).IsZero() {
-		cfg.Github = cloud.CloudOAuthConfig{
-			Config:      github.Defaults(),
-			OAuthConfig: github.OAuthDefaults(),
-		}
-	}
-	if reflect.ValueOf(cfg.Gitlab).IsZero() {
-		cfg.Gitlab = cloud.CloudOAuthConfig{
-			Config:      gitlab.Defaults(),
-			OAuthConfig: gitlab.OAuthDefaults(),
-		}
 	}
 }
 

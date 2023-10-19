@@ -1,0 +1,30 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}
+  <div>New Github App VCS Provider</div>
+{{ end }}
+
+{{ define "content" }}
+  {{ with .Installations }}
+    Create a VCS provider that leverages the permissions of a GitHub app installation.
+    <form class="flex flex-col gap-4" action="{{ createVCSProviderPath $.Organization }}" method="POST">
+      <div class="field">
+        <label for="name">Name</label>
+        <input class="text-input w-64" type="text" name="name" id="name" placeholder="github">
+        <span class="description">An optional display name for your VCS provider.</span>
+      </div>
+      <div class="field">
+        <label for="install_id">Installation</label>
+        <select class="w-48" name="install_id" id="select-install-id">
+          {{ range . }}
+            <option value="{{ .ID }}">{{ .String }}</option>
+          {{ end }}
+        </select>
+        <span class="description">Select a Github App installation.</span>
+      </div>
+      <button class="btn w-32" id="create-vcs-provider-button">Create</button>
+    </form>
+  {{ else }}
+    <span>No installations of the GitHub app found. Install it <a class="underline" href="{{ .App.NewInstallURL .GithubHostname }}">on Github first</a>.</span>
+  {{ end }}
+{{ end }}
