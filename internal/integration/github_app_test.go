@@ -15,11 +15,11 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,6 +31,9 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	// creating a github app requires site-admin role
 	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
+	// these tests submit the create github app form using different
+	// combinations of form fields, and then checking that a (stub) github server
+	// receives the completed form correctly.
 	tests := []struct {
 		name         string
 		public       bool   // whether to tick 'public' checkbox
@@ -67,15 +70,26 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			githubHostname := func(t *testing.T, path string, public bool) string {
 				mux := http.NewServeMux()
 				mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-					type manifest struct {
-						Public bool
-					}
-					var params struct {
-						Manifest manifest
-					}
-					err := json.NewDecoder(r.Body).Decode(&params)
+					// check that the manifest has been correctly submitted.
+					var (
+						manifest struct {
+							Public bool
+						}
+						params struct {
+							Manifest string `schema:"manifest,required"`
+						}
+					)
+					// first decode POST form manifest=<json>
+					err := decode.Form(&params, r)
 					require.NoError(t, err)
-					assert.Equal(t, public, params.Manifest.Public)
+					// then unmarshal the json into a manifest
+					err = json.Unmarshal([]byte(params.Manifest), &manifest)
+					require.NoError(t, err)
+					require.Equal(t, public, manifest.Public)
+					w.Write([]byte(`<html><body>success</body></html>`))
+				})
+				mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+					t.Fatalf("form submitted to wrong path: %s", r.URL.Path)
 				})
 				stub := httptest.NewTLSServer(mux)
 				t.Cleanup(stub.Close)
@@ -105,6 +119,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				tasks = append(tasks, input.InsertText(tt.organization))
 			}
 			tasks = append(tasks, chromedp.Click(`//button[text()='Create']`))
+			tasks = append(tasks, chromedp.WaitVisible(`//body[text()='success']`))
 			browser.Run(t, ctx, tasks)
 		})
 	}
