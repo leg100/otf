@@ -76,6 +76,21 @@ func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
 }
 
 //
+// Team tokens
+//
+
+func (db *pgdb) createTeamToken(ctx context.Context, token *TeamToken) error {
+	_, err := db.Conn(ctx).InsertTeamToken(ctx, pggen.InsertTeamTokenParams{
+		TeamTokenID: sql.String(token.ID),
+		Description: sql.String(token.Description),
+		TeamID:      sql.String(token.Team),
+		CreatedAt:   sql.Timestamptz(token.CreatedAt),
+		Expiry:      sql.TimestamptzPtr(token.Expiry),
+	})
+	return err
+}
+
+//
 // Organization tokens
 //
 

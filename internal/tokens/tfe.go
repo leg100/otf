@@ -19,9 +19,42 @@ type tfe struct {
 func (a *tfe) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
+	// Team token routes
+	r.HandleFunc("/teams/{team_name}/authentication-token", a.createTeamToken).Methods("POST")
+
+	// Organization token routes
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.createOrganizationToken).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.getOrganizationToken).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.deleteOrganizationToken).Methods("DELETE")
+}
+
+func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
+	team, err := decode.Param("team_name", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var opts types.TeamTokenCreateOptions
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	ot, token, err := a.CreateTeamToken(r.Context(), CreateTeamTokenOptions{
+		Team:   team,
+		Expiry: opts.ExpiredAt,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	to := &types.TeamToken{
+		ID:        ot.ID,
+		CreatedAt: ot.CreatedAt,
+		Token:     string(token),
+		ExpiredAt: ot.Expiry,
+	}
+	a.Respond(w, r, to, http.StatusCreated)
 }
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {

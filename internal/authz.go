@@ -15,6 +15,7 @@ const subjectCtxKey subjectCtxKeyType = "subject"
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
 	CanAccessSite(action rbac.Action) bool
+	CanAccessTeam(action rbac.Action, name string) bool
 	CanAccessOrganization(action rbac.Action, name string) bool
 	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
@@ -65,6 +66,7 @@ type Superuser struct {
 }
 
 func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
+func (*Superuser) CanAccessTeam(rbac.Action, string) bool               { return true }
 func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
 func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
 func (s *Superuser) Organizations() []string                            { return nil }

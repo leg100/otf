@@ -17,6 +17,7 @@ const (
 	agentTokenKind        Kind = "agent_token"
 	userTokenKind         Kind = "user_token"
 	organizationTokenKind Kind = "organization_token"
+	teamTokenKind         Kind = "team_token"
 )
 
 type (

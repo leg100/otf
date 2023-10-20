@@ -136,6 +136,19 @@ func (u *User) CanAccessSite(action rbac.Action) bool {
 	return u.IsSiteAdmin()
 }
 
+func (u *User) CanAccessTeam(action rbac.Action, teamName string) bool {
+	// coarser-grained site-level perms take precedence
+	if u.CanAccessSite(action) {
+		return true
+	}
+	for _, team := range u.Teams {
+		if team.Name == teamName {
+			return true
+		}
+	}
+	return false
+}
+
 func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 	// coarser-grained site-level perms take precedence
 	if u.CanAccessSite(action) {

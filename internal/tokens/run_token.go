@@ -62,6 +62,11 @@ func (t *RunToken) CanAccessOrganization(action rbac.Action, name string) bool {
 	}
 }
 
+func (t *RunToken) CanAccessTeam(action rbac.Action, teamName string) bool {
+	// Can't access team level actions
+	return false
+}
+
 func (t *RunToken) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
 	// run token is allowed the retrieve the state of the workspace only if:
 	// (a) workspace is in the same organization as run token

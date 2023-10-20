@@ -874,6 +874,34 @@ type Querier interface {
 	// DeleteTeamMembershipScan scans the result of an executed DeleteTeamMembershipBatch query.
 	DeleteTeamMembershipScan(results pgx.BatchResults) ([]pgtype.Text, error)
 
+	InsertTeamToken(ctx context.Context, params InsertTeamTokenParams) (pgconn.CommandTag, error)
+	// InsertTeamTokenBatch enqueues a InsertTeamToken query into batch to be executed
+	// later by the batch.
+	InsertTeamTokenBatch(batch genericBatch, params InsertTeamTokenParams)
+	// InsertTeamTokenScan scans the result of an executed InsertTeamTokenBatch query.
+	InsertTeamTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindTeamTokensByTeam(ctx context.Context, teamID pgtype.Text) ([]FindTeamTokensByTeamRow, error)
+	// FindTeamTokensByTeamBatch enqueues a FindTeamTokensByTeam query into batch to be executed
+	// later by the batch.
+	FindTeamTokensByTeamBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamTokensByTeamScan scans the result of an executed FindTeamTokensByTeamBatch query.
+	FindTeamTokensByTeamScan(results pgx.BatchResults) ([]FindTeamTokensByTeamRow, error)
+
+	FindTeamTokenByID(ctx context.Context, teamTokenID pgtype.Text) (FindTeamTokenByIDRow, error)
+	// FindTeamTokenByIDBatch enqueues a FindTeamTokenByID query into batch to be executed
+	// later by the batch.
+	FindTeamTokenByIDBatch(batch genericBatch, teamTokenID pgtype.Text)
+	// FindTeamTokenByIDScan scans the result of an executed FindTeamTokenByIDBatch query.
+	FindTeamTokenByIDScan(results pgx.BatchResults) (FindTeamTokenByIDRow, error)
+
+	DeleteTeamTokenByID(ctx context.Context, teamTokenID pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamTokenByIDBatch enqueues a DeleteTeamTokenByID query into batch to be executed
+	// later by the batch.
+	DeleteTeamTokenByIDBatch(batch genericBatch, teamTokenID pgtype.Text)
+	// DeleteTeamTokenByIDScan scans the result of an executed DeleteTeamTokenByIDBatch query.
+	DeleteTeamTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error)
 	// InsertTokenBatch enqueues a InsertToken query into batch to be executed
 	// later by the batch.
@@ -1739,6 +1767,18 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteTeamMembershipSQL, deleteTeamMembershipSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTeamMembership': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertTeamTokenSQL, insertTeamTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertTeamToken': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamTokensByTeamSQL, findTeamTokensByTeamSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamTokensByTeam': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamTokenByIDSQL, findTeamTokenByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamTokenByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteTeamTokenByIDSQL, deleteTeamTokenByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamTokenByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertToken': %w", err)
