@@ -90,6 +90,26 @@ func (db *pgdb) createTeamToken(ctx context.Context, token *TeamToken) error {
 	return err
 }
 
+func (db *pgdb) getTeamTokenByName(ctx context.Context, team string) (*TeamToken, error) {
+	// query only returns 0 or 1 tokens
+	result, err := db.Conn(ctx).FindTeamTokensByTeam(ctx, sql.String(team))
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	ot := &TeamToken{
+		ID:        result[0].TeamTokenID.String,
+		CreatedAt: result[0].CreatedAt.Time.UTC(),
+		Team:      result[0].TeamID.String,
+	}
+	if result[0].Expiry.Status == pgtype.Present {
+		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
+	}
+	return ot, nil
+}
+
 func (db *pgdb) deleteTeamToken(ctx context.Context, team string) error {
 	_, err := db.Conn(ctx).DeleteTeamTokenByName(ctx, sql.String(team))
 	if err != nil {

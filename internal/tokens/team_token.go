@@ -42,7 +42,7 @@ type (
 		CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error)
 		// GetTeamToken gets the team token. If a token does not
 		// exist, then nil is returned without an error.
-		ListTeamTokens(ctx context.Context, team string) ([]*TeamToken, error)
+		GetTeamToken(ctx context.Context, team string) (*TeamToken, error)
 		// DeleteTeamToken deletes an team token.
 		DeleteTeamToken(ctx context.Context, tokenID string) error
 	}
@@ -94,8 +94,8 @@ func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptio
 	return ot, token, nil
 }
 
-func (a *service) ListTeamTokens(ctx context.Context, team string) ([]*TeamToken, error) {
-	return nil, nil
+func (a *service) GetTeamToken(ctx context.Context, team string) (*TeamToken, error) {
+	return a.db.getTeamTokenByName(ctx, team)
 }
 
 func (a *service) DeleteTeamToken(ctx context.Context, team string) error {

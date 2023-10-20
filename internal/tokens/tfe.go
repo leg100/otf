@@ -21,6 +21,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 	// Team token routes
 	r.HandleFunc("/teams/{team_name}/authentication-token", a.createTeamToken).Methods("POST")
+	r.HandleFunc("/teams/{team_name}/authentication-token", a.getTeamToken).Methods("GET")
 	r.HandleFunc("/teams/{team_name}/authentication-token", a.deleteTeamToken).Methods("DELETE")
 
 	// Organization token routes
@@ -53,6 +54,31 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		Token:     string(token),
+		ExpiredAt: ot.Expiry,
+	}
+	a.Respond(w, r, to, http.StatusCreated)
+}
+
+func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("team_name", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ot, err := a.GetTeamToken(r.Context(), org)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	if ot == nil {
+		tfeapi.Error(w, internal.ErrResourceNotFound)
+		return
+	}
+
+	to := &types.TeamToken{
+		ID:        ot.ID,
+		CreatedAt: ot.CreatedAt,
 		ExpiredAt: ot.Expiry,
 	}
 	a.Respond(w, r, to, http.StatusCreated)
