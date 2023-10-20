@@ -25,9 +25,9 @@ FROM team_tokens
 WHERE team_token_id = pggen.arg('team_token_id')
 ;
 
--- name: DeleteTeamTokenByID :one
+-- name: DeleteTeamTokenByName :one
 DELETE
 FROM team_tokens
-WHERE team_token_id = pggen.arg('team_token_id')
+WHERE team_id = pggen.arg('team_id')
 RETURNING team_token_id
 ;

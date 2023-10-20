@@ -98,6 +98,18 @@ func (a *service) ListTeamTokens(ctx context.Context, team string) ([]*TeamToken
 	return nil, nil
 }
 
-func (a *service) DeleteTeamToken(ctx context.Context, tokenID string) error {
+func (a *service) DeleteTeamToken(ctx context.Context, team string) error {
+	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, team)
+	if err != nil {
+		return err
+	}
+
+	if err := a.db.deleteTeamToken(ctx, team); err != nil {
+		a.Error(err, "deleting team token", "team", team)
+		return err
+	}
+
+	a.V(0).Info("deleted team token", "team", team)
+
 	return nil
 }

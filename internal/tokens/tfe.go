@@ -21,6 +21,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 	// Team token routes
 	r.HandleFunc("/teams/{team_name}/authentication-token", a.createTeamToken).Methods("POST")
+	r.HandleFunc("/teams/{team_name}/authentication-token", a.deleteTeamToken).Methods("DELETE")
 
 	// Organization token routes
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.createOrganizationToken).Methods("POST")
@@ -55,6 +56,22 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 		ExpiredAt: ot.Expiry,
 	}
 	a.Respond(w, r, to, http.StatusCreated)
+}
+
+func (a *tfe) deleteTeamToken(w http.ResponseWriter, r *http.Request) {
+	team, err := decode.Param("team_name", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	err = a.DeleteTeamToken(r.Context(), team)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {

@@ -157,34 +157,34 @@ func (q *DBQuerier) FindTeamTokenByIDScan(results pgx.BatchResults) (FindTeamTok
 	return item, nil
 }
 
-const deleteTeamTokenByIDSQL = `DELETE
+const deleteTeamTokenByNameSQL = `DELETE
 FROM team_tokens
-WHERE team_token_id = $1
+WHERE team_id = $1
 RETURNING team_token_id
 ;`
 
-// DeleteTeamTokenByID implements Querier.DeleteTeamTokenByID.
-func (q *DBQuerier) DeleteTeamTokenByID(ctx context.Context, teamTokenID pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTeamTokenByID")
-	row := q.conn.QueryRow(ctx, deleteTeamTokenByIDSQL, teamTokenID)
+// DeleteTeamTokenByName implements Querier.DeleteTeamTokenByName.
+func (q *DBQuerier) DeleteTeamTokenByName(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTeamTokenByName")
+	row := q.conn.QueryRow(ctx, deleteTeamTokenByNameSQL, teamID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query DeleteTeamTokenByID: %w", err)
+		return item, fmt.Errorf("query DeleteTeamTokenByName: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteTeamTokenByIDBatch implements Querier.DeleteTeamTokenByIDBatch.
-func (q *DBQuerier) DeleteTeamTokenByIDBatch(batch genericBatch, teamTokenID pgtype.Text) {
-	batch.Queue(deleteTeamTokenByIDSQL, teamTokenID)
+// DeleteTeamTokenByNameBatch implements Querier.DeleteTeamTokenByNameBatch.
+func (q *DBQuerier) DeleteTeamTokenByNameBatch(batch genericBatch, teamID pgtype.Text) {
+	batch.Queue(deleteTeamTokenByNameSQL, teamID)
 }
 
-// DeleteTeamTokenByIDScan implements Querier.DeleteTeamTokenByIDScan.
-func (q *DBQuerier) DeleteTeamTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+// DeleteTeamTokenByNameScan implements Querier.DeleteTeamTokenByNameScan.
+func (q *DBQuerier) DeleteTeamTokenByNameScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan DeleteTeamTokenByIDBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteTeamTokenByNameBatch row: %w", err)
 	}
 	return item, nil
 }

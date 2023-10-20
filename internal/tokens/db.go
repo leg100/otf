@@ -90,6 +90,14 @@ func (db *pgdb) createTeamToken(ctx context.Context, token *TeamToken) error {
 	return err
 }
 
+func (db *pgdb) deleteTeamToken(ctx context.Context, team string) error {
+	_, err := db.Conn(ctx).DeleteTeamTokenByName(ctx, sql.String(team))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
 //
 // Organization tokens
 //

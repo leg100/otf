@@ -895,12 +895,12 @@ type Querier interface {
 	// FindTeamTokenByIDScan scans the result of an executed FindTeamTokenByIDBatch query.
 	FindTeamTokenByIDScan(results pgx.BatchResults) (FindTeamTokenByIDRow, error)
 
-	DeleteTeamTokenByID(ctx context.Context, teamTokenID pgtype.Text) (pgtype.Text, error)
-	// DeleteTeamTokenByIDBatch enqueues a DeleteTeamTokenByID query into batch to be executed
+	DeleteTeamTokenByName(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamTokenByNameBatch enqueues a DeleteTeamTokenByName query into batch to be executed
 	// later by the batch.
-	DeleteTeamTokenByIDBatch(batch genericBatch, teamTokenID pgtype.Text)
-	// DeleteTeamTokenByIDScan scans the result of an executed DeleteTeamTokenByIDBatch query.
-	DeleteTeamTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+	DeleteTeamTokenByNameBatch(batch genericBatch, teamID pgtype.Text)
+	// DeleteTeamTokenByNameScan scans the result of an executed DeleteTeamTokenByNameBatch query.
+	DeleteTeamTokenByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error)
 	// InsertTokenBatch enqueues a InsertToken query into batch to be executed
@@ -1777,8 +1777,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findTeamTokenByIDSQL, findTeamTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamTokenByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteTeamTokenByIDSQL, deleteTeamTokenByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteTeamTokenByID': %w", err)
+	if _, err := p.Prepare(ctx, deleteTeamTokenByNameSQL, deleteTeamTokenByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamTokenByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertToken': %w", err)
