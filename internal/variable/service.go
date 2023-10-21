@@ -53,7 +53,8 @@ type (
 
 		db           *pgdb
 		web          *web
-		api          *tfe
+		tfeapi       *tfe
+		api          *api
 		workspace    internal.Authorizer
 		organization internal.Authorizer
 	}
@@ -84,7 +85,11 @@ func NewService(opts Options) *service {
 		Service:  opts.WorkspaceService,
 		svc:      &svc,
 	}
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
+	svc.api = &api{
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
@@ -94,6 +99,7 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 

@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {
@@ -20,26 +19,15 @@ func (c *Client) CreateOrganization(ctx context.Context, options CreateOptions) 
 	if err := resource.ValidateName(options.Name); err != nil {
 		return nil, err
 	}
-	req, err := c.NewRequest("POST", "organizations", &types.OrganizationCreateOptions{
-		Name:            options.Name,
-		SessionRemember: options.SessionRemember,
-		SessionTimeout:  options.SessionTimeout,
-	})
+	req, err := c.NewRequest("POST", "organizations", &CreateOptions{Name: options.Name})
 	if err != nil {
 		return nil, err
 	}
-	org := types.Organization{}
-	err = c.Do(ctx, req, &org)
-	if err != nil {
+	var org Organization
+	if err := c.Do(ctx, req, &org); err != nil {
 		return nil, err
 	}
-	return &Organization{
-		ID:              org.ExternalID,
-		CreatedAt:       org.CreatedAt,
-		Name:            org.Name,
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
-	}, nil
+	return &org, nil
 }
 
 // DeleteOrganization deletes an organization via http.
@@ -49,8 +37,7 @@ func (c *Client) DeleteOrganization(ctx context.Context, organization string) er
 	if err != nil {
 		return err
 	}
-	err = c.Do(ctx, req, nil)
-	if err != nil {
+	if err := c.Do(ctx, req, nil); err != nil {
 		return err
 	}
 	return nil

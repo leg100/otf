@@ -10,7 +10,6 @@ import (
 	"github.com/DataDog/jsonapi"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +22,10 @@ func TestWatchClient(t *testing.T) {
 		w.Header().Set("Connection", "keep-alive")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "\r\n")
-		b, err := jsonapi.Marshal(&types.Run{
-			ID:                   "run-123",
-			Workspace:            &types.Workspace{ID: "ws-123"},
-			ConfigurationVersion: &types.ConfigurationVersion{ID: "cv-123"},
+		b, err := jsonapi.Marshal(&Run{
+			ID:                     "run-123",
+			WorkspaceID:            "ws-123",
+			ConfigurationVersionID: "cv-123",
 		})
 		require.NoError(t, err)
 		pubsub.WriteSSEEvent(w, b, pubsub.UpdatedEvent, true)

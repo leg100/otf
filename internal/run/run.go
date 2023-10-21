@@ -40,7 +40,7 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     string                  `jsonapi:"attribute" json:"id"`
+		ID                     string                  `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
 		ForceCancelAvailableAt *time.Time              `jsonapi:"attribute" json:"force_cancel_available_at"`
@@ -61,9 +61,9 @@ type (
 		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
 		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
-		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 
 		Latest bool `jsonapi:"attribute" json:"latest"` // is latest run for workspace
 

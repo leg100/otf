@@ -7,7 +7,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 )
 
@@ -23,10 +22,8 @@ func (a *api) addHandlers(r *mux.Router) {
 	signed.Use(internal.VerifySignedURL(a.Verifier))
 	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 
-	r = otfhttp.APIRouter(r)
-
 	// client is typically an external agent
-	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
+	r.HandleFunc("/api/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
 }
 
 func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
@@ -35,13 +32,11 @@ func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	chunk, err := a.svc.GetChunk(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
 	if _, err := w.Write(chunk.Data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,7 +49,6 @@ func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -147,7 +147,7 @@ type (
 		AutoApply                  *bool
 		Name                       *string
 		Description                *string
-		ExecutionMode              *ExecutionMode
+		ExecutionMode              *ExecutionMode `jsonapi:"attribute" json:"execution-mode,omitempty"`
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
@@ -177,7 +177,7 @@ type (
 	ListOptions struct {
 		Search       string
 		Tags         []string
-		Organization *string
+		Organization *string `schema:"organization_name"`
 
 		resource.PageOptions
 	}

@@ -38,10 +38,11 @@ type (
 		logr.Logger
 		*pubsub.Broker
 
-		db   *pgdb
-		site internal.Authorizer // authorize access to site
-		web  *web
-		api  *tfe
+		db     *pgdb
+		site   internal.Authorizer // authorize access to site
+		web    *web
+		tfeapi *tfe
+		api    *api
 
 		createHook *hooks.Hook[*Organization]
 		deleteHook *hooks.Hook[*Organization]
@@ -79,7 +80,12 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		svc:                          &svc,
 	}
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
+
+	svc.api = &api{
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
@@ -89,13 +95,14 @@ func NewService(opts Options) *service {
 	opts.Broker.Register("organizations", svc.db)
 	// Fetch organization when API calls request organization be included in the
 	// response
-	opts.Responder.Register(tfeapi.IncludeOrganization, svc.api.include)
+	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
 
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 

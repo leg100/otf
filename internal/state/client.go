@@ -44,12 +44,12 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 		return nil, err
 	}
 
-	sv := types.StateVersion{}
+	var sv Version
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
 
-	return newFromJSONAPI(&sv), nil
+	return &sv, nil
 }
 
 func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {

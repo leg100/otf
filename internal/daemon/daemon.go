@@ -286,7 +286,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
-			Downloader:                  releasesService,
 		},
 		*cfg.AgentConfig,
 	)

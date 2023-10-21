@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {
@@ -19,23 +18,10 @@ func (c *Client) ListEffectiveVariables(ctx context.Context, runID string) ([]*V
 		return nil, err
 	}
 
-	list := &types.VariableList{}
-	err = c.Do(ctx, req, list)
-	if err != nil {
+	var list []*Variable
+	if err := c.Do(ctx, req, &list); err != nil {
 		return nil, err
 	}
 
-	var variables []*Variable
-	for _, v := range list.Items {
-		variables = append(variables, &Variable{
-			ID:          v.ID,
-			Key:         v.Key,
-			Value:       v.Value,
-			Description: v.Description,
-			Category:    VariableCategory(v.Category),
-			Sensitive:   v.Sensitive,
-			HCL:         v.HCL,
-		})
-	}
-	return variables, nil
+	return list, nil
 }

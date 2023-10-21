@@ -23,8 +23,8 @@ type (
 	}
 
 	CreateRunTokenOptions struct {
-		Organization *string    // Organization of run. Required.
-		RunID        *string    // ID of run. Required.
+		Organization *string    `json:"organization"` // Organization of run. Required.
+		RunID        *string    `json:"run_id"`       // ID of run. Required.
 		Expiry       *time.Time // Override expiry. Optional.
 	}
 

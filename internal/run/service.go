@@ -84,9 +84,10 @@ type (
 		workspace    internal.Authorizer
 		*authorizer
 
-		cache internal.Cache
-		db    *pgdb
-		api   *tfe
+		cache  internal.Cache
+		db     *pgdb
+		tfeapi *tfe
+		api    *api
 		*factory
 
 		web *webHandlers
@@ -141,11 +142,16 @@ func NewService(opts Options) *service {
 		logger:           opts.Logger,
 		svc:              &svc,
 	}
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
 		Service:            &svc,
 		PermissionsService: opts.WorkspaceService,
 		Responder:          opts.Responder,
 		Signer:             opts.Signer,
+	}
+	svc.api = &api{
+		Service:   &svc,
+		Responder: opts.Responder,
+		Logger:    opts.Logger,
 	}
 	spawner := &Spawner{
 		Logger:                      opts.Logger.WithValues("component", "spawner"),
@@ -159,8 +165,8 @@ func NewService(opts Options) *service {
 	opts.Broker.Register("runs", &svc)
 
 	// Fetch related resources when API requests their inclusion
-	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.api.includeCreatedBy)
-	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.api.includeCurrentRun)
+	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
+	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
 
 	// Subscribe run spawner to incoming vcs events
 	opts.VCSEventSubscriber.Subscribe(spawner.handle)
@@ -174,6 +180,7 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 

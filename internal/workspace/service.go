@@ -52,9 +52,10 @@ type (
 		organization        internal.Authorizer
 		internal.Authorizer // workspace authorizer
 
-		db  *pgdb
-		web *webHandlers
-		api *tfe
+		db     *pgdb
+		web    *webHandlers
+		tfeapi *tfe
+		api    *api
 
 		createHook *hooks.Hook[*Workspace]
 	}
@@ -93,7 +94,11 @@ func NewService(opts Options) *service {
 		VCSProviderService: opts.VCSProviderService,
 		svc:                &svc,
 	}
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
+	svc.api = &api{
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
@@ -101,15 +106,16 @@ func NewService(opts Options) *service {
 	opts.Broker.Register("workspaces", &svc)
 	// Fetch workspace when API calls request workspace be included in the
 	// response
-	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.api.include)
+	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
-	s.api.addHandlers(r)
+	s.tfeapi.addHandlers(r)
 	s.web.addTagHandlers(r)
-	s.api.addTagHandlers(r)
+	s.tfeapi.addTagHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) AfterCreateWorkspace(l hooks.Listener[*Workspace]) {

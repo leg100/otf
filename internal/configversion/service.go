@@ -38,9 +38,10 @@ type (
 
 		workspace internal.Authorizer
 
-		db    *pgdb
-		cache internal.Cache
-		api   *tfe
+		db     *pgdb
+		cache  internal.Cache
+		tfeapi *tfe
+		api    *api
 	}
 
 	Options struct {
@@ -65,24 +66,29 @@ func NewService(opts Options) *service {
 
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
 		Service:       &svc,
 		Signer:        opts.Signer,
 		Responder:     opts.Responder,
 		maxConfigSize: opts.MaxConfigSize,
 	}
+	svc.api = &api{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 
 	// Fetch config version when API requests config version be included in the
 	// response
-	opts.Responder.Register(tfeapi.IncludeConfig, svc.api.include)
+	opts.Responder.Register(tfeapi.IncludeConfig, svc.tfeapi.include)
 	// Fetch ingress attributes when API requests ingress attributes be included
 	// in the response
-	opts.Responder.Register(tfeapi.IncludeIngress, svc.api.includeIngressAttributes)
+	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
 
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
+	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 

@@ -3,18 +3,23 @@ package run
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/DataDog/jsonapi"
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type api struct {
 	Service
 	*tfeapi.Responder
+	logr.Logger
 }
 
 func (a *api) addHandlers(r *mux.Router) {
@@ -26,6 +31,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{id}/planfile", a.uploadPlanFile).Methods("PUT")
 	r.HandleFunc("/runs/{id}/lockfile", a.getLockFile).Methods("GET")
 	r.HandleFunc("/runs/{id}/lockfile", a.uploadLockFile).Methods("PUT")
+	r.HandleFunc("/watch", a.watch).Methods("GET")
 }
 
 func (a *api) list(w http.ResponseWriter, r *http.Request) {
@@ -174,4 +180,45 @@ func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// watch responds with a stream of run events
+func (a *api) watch(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	var params WatchOptions
+	if err := decode.Query(&params, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	events, err := a.Watch(r.Context(), params)
+	if err != nil && errors.Is(err, internal.ErrAccessNotPermitted) {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "\r\n")
+	flusher.Flush()
+
+	for event := range events {
+		run := event.Payload.(*Run)
+		b, err := jsonapi.Marshal(run)
+		if err != nil {
+			a.Error(err, "marshalling run event", "event", event.Type)
+			continue
+		}
+		pubsub.WriteSSEEvent(w, b, event.Type, true)
+		flusher.Flush()
+	}
 }

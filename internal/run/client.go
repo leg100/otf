@@ -32,8 +32,7 @@ func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanForma
 	}
 
 	buf := bytes.Buffer{}
-	err = c.Do(ctx, req, &buf)
-	if err != nil {
+	if err := c.Do(ctx, req, &buf); err != nil {
 		return nil, err
 	}
 

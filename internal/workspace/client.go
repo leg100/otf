@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {
@@ -17,47 +15,30 @@ type Client struct {
 	WorkspaceService
 }
 
-// GetWorkspaceByName retrieves a workspace by organization and
-// name.
 func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
+	var ws Workspace
+	if err := c.Do(ctx, req, &ws); err != nil {
 		return nil, err
 	}
-
-	// durations come over in ms
-	w.ApplyDurationAverage *= time.Millisecond
-	w.PlanDurationAverage *= time.Millisecond
-
-	return unmarshalJSONAPI(w), nil
+	return &ws, nil
 }
 
-// GetWorkspace retrieves a workspace by its ID
 func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
+	var ws Workspace
+	if err := c.Do(ctx, req, &ws); err != nil {
 		return nil, err
 	}
-
-	// durations come over in ms
-	w.ApplyDurationAverage *= time.Millisecond
-	w.PlanDurationAverage *= time.Millisecond
-
-	return unmarshalJSONAPI(w), nil
+	return &ws, nil
 }
 
 func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*resource.Page[*Workspace], error) {
@@ -66,37 +47,31 @@ func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*reso
 	if err != nil {
 		return nil, err
 	}
-
-	wl := &types.WorkspaceList{}
-	if err = c.Do(ctx, req, wl); err != nil {
+	var page resource.Page[*Workspace]
+	if err = c.Do(ctx, req, &page); err != nil {
 		return nil, err
 	}
-
-	return unmarshalListJSONAPI(wl), nil
+	return &page, nil
 }
 
-// UpdateWorkspace updates the settings of an existing workspace.
-func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options UpdateOptions) (*Workspace, error) {
+func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
 	// Pre-emptively validate options
-	if _, err := (&Workspace{}).Update(options); err != nil {
+	if _, err := (&Workspace{}).Update(opts); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.NewRequest("PATCH", path, &types.WorkspaceUpdateOptions{
-		ExecutionMode: (*string)(options.ExecutionMode),
-	})
+	req, err := c.NewRequest("PATCH", path, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
+	var ws Workspace
+	if err := c.Do(ctx, req, &ws); err != nil {
 		return nil, err
 	}
 
-	return unmarshalJSONAPI(w), nil
+	return &ws, nil
 }
 
 func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
@@ -106,13 +81,12 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *s
 		return nil, err
 	}
 
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
+	var ws Workspace
+	if err := c.Do(ctx, req, &ws); err != nil {
 		return nil, err
 	}
 
-	return unmarshalJSONAPI(w), nil
+	return &ws, nil
 }
 
 func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
@@ -127,11 +101,10 @@ func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID 
 		return nil, err
 	}
 
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
+	var ws Workspace
+	if err := c.Do(ctx, req, &ws); err != nil {
 		return nil, err
 	}
 
-	return unmarshalJSONAPI(w), nil
+	return &ws, nil
 }

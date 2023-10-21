@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -38,13 +37,10 @@ type (
 		Watch(context.Context, run.WatchOptions) (<-chan pubsub.Event, error)
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
-		DeleteStateVersion(ctx context.Context, svID string) error
-		DownloadState(ctx context.Context, svID string) ([]byte, error)
 		Hostname() string
 
 		tokens.RunTokenService
 		internal.PutChunkService
-		releases.Downloader
 	}
 
 	// LocalClient is the client for an internal agent.
@@ -55,7 +51,6 @@ type (
 		workspace.WorkspaceService
 		internal.HostnameService
 		configversion.ConfigurationVersionService
-		releases.Downloader
 		run.RunService
 		logs.LogsService
 	}
@@ -72,7 +67,6 @@ type (
 		*workspaceClient
 		*runClient
 		*logsClient
-		releases.Downloader
 	}
 
 	stateClient     = state.Client
@@ -94,7 +88,6 @@ func newClient(config ExternalConfig) (*remoteClient, error) {
 
 	return &remoteClient{
 		Client:          httpClient,
-		Downloader:      releases.NewDownloader(config.TerraformBinDir),
 		stateClient:     &stateClient{JSONAPIClient: httpClient},
 		configClient:    &configClient{JSONAPIClient: httpClient},
 		variableClient:  &variableClient{JSONAPIClient: httpClient},

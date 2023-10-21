@@ -19,10 +19,11 @@ const (
 type (
 	// Phase is a section of work performed by a run.
 	Phase struct {
-		RunID              string `json:"run_id"`
+		RunID            string                 `json:"run_id"`
+		Status           PhaseStatus            `json:"status"`
+		StatusTimestamps []PhaseStatusTimestamp `json:"status_timestamps"`
+
 		internal.PhaseType `json:"phase"`
-		Status             PhaseStatus            `json:"status"`
-		StatusTimestamps   []PhaseStatusTimestamp `json:"status_timestamps"`
 
 		// report of planned or applied resource changes
 		ResourceReport *Report `json:"resource_report"`
