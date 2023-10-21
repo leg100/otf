@@ -40,35 +40,35 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     string                  `json:"id"`
-		CreatedAt              time.Time               `json:"created_at"`
-		IsDestroy              bool                    `json:"is_destroy"`
-		ForceCancelAvailableAt *time.Time              `json:"force_cancel_available_at"`
-		Message                string                  `json:"message"`
-		Organization           string                  `json:"organization"`
-		Refresh                bool                    `json:"refresh"`
-		RefreshOnly            bool                    `json:"refresh_only"`
-		ReplaceAddrs           []string                `json:"replace_addrs"`
-		PositionInQueue        int                     `json:"position_in_queue"`
-		TargetAddrs            []string                `json:"target_addrs"`
-		TerraformVersion       string                  `json:"terraform_version"`
-		AllowEmptyApply        bool                    `json:"allow_empty_apply"`
-		AutoApply              bool                    `json:"auto_apply"`
-		PlanOnly               bool                    `json:"plan_only"`
-		Source                 Source                  `json:"source"`
-		Status                 internal.RunStatus      `json:"status"`
-		StatusTimestamps       []StatusTimestamp       `json:"status_timestamps"`
-		WorkspaceID            string                  `json:"workspace_id"`
-		ConfigurationVersionID string                  `json:"configuration_version_id"`
-		ExecutionMode          workspace.ExecutionMode `json:"execution_mode"`
-		Plan                   Phase                   `json:"plan"`
-		Apply                  Phase                   `json:"apply"`
-		Variables              []Variable              `json:"variables"`
+		ID                     string                  `jsonapi:"attribute" json:"id"`
+		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
+		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
+		ForceCancelAvailableAt *time.Time              `jsonapi:"attribute" json:"force_cancel_available_at"`
+		Message                string                  `jsonapi:"attribute" json:"message"`
+		Organization           string                  `jsonapi:"attribute" json:"organization"`
+		Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
+		RefreshOnly            bool                    `jsonapi:"attribute" json:"refresh_only"`
+		ReplaceAddrs           []string                `jsonapi:"attribute" json:"replace_addrs"`
+		PositionInQueue        int                     `jsonapi:"attribute" json:"position_in_queue"`
+		TargetAddrs            []string                `jsonapi:"attribute" json:"target_addrs"`
+		TerraformVersion       string                  `jsonapi:"attribute" json:"terraform_version"`
+		AllowEmptyApply        bool                    `jsonapi:"attribute" json:"allow_empty_apply"`
+		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
+		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
+		Source                 Source                  `jsonapi:"attribute" json:"source"`
+		Status                 internal.RunStatus      `jsonapi:"attribute" json:"status"`
+		StatusTimestamps       []StatusTimestamp       `jsonapi:"attribute" json:"status_timestamps"`
+		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
+		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
+		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
+		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
+		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 
-		Latest bool `json:"latest"` // is latest run for workspace
+		Latest bool `jsonapi:"attribute" json:"latest"` // is latest run for workspace
 
 		// IngressAttributes is non-nil if run was triggered by a VCS event.
-		IngressAttributes *configversion.IngressAttributes `json:"ingress_attributes"`
+		IngressAttributes *configversion.IngressAttributes `jsonapi:"attribute" json:"ingress_attributes"`
 
 		// Username of user who created the run. This is nil if the run was
 		// instead triggered by a VCS event.
@@ -78,12 +78,6 @@ type (
 		// a run to enter the RunCostEstimated state, and this boolean
 		// determines whether to enter that state upon finishing a plan.
 		CostEstimationEnabled bool
-	}
-
-	// List represents a list of runs.
-	List struct {
-		*resource.Pagination
-		Items []*Run
 	}
 
 	Variable struct {

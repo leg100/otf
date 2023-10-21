@@ -1,11 +1,9 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"slices"
 	"time"
@@ -46,14 +44,6 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{id}/actions/force-cancel", a.forceCancelRun).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/runs/queue", a.getRunQueue).Methods("GET")
 	r.HandleFunc("/watch", a.watchRun).Methods("GET")
-
-	// Run routes for exclusive use by remote agents
-	r.HandleFunc("/runs/{id}/actions/start/{phase}", a.startPhase).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/finish/{phase}", a.finishPhase).Methods("POST")
-	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")
-	r.HandleFunc("/runs/{id}/planfile", a.uploadPlanFile).Methods("PUT")
-	r.HandleFunc("/runs/{id}/lockfile", a.getLockFile).Methods("GET")
-	r.HandleFunc("/runs/{id}/lockfile", a.uploadLockFile).Methods("PUT")
 
 	// Plan routes
 	r.HandleFunc("/plans/{plan_id}", a.getPlan).Methods("GET")
@@ -113,35 +103,6 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Respond(w, r, converted, http.StatusCreated)
-}
-
-func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		RunID string             `schema:"id,required"`
-		Phase internal.PhaseType `schema:"phase,required"`
-	}
-	if err := decode.Route(&params, r); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	started, err := a.StartPhase(r.Context(), params.RunID, params.Phase, PhaseStartOptions{})
-	if errors.Is(err, internal.ErrPhaseAlreadyStarted) {
-		// A bit silly, but OTF uses the teapot status as a unique means of
-		// informing the agent the phase has been started by another agent.
-		w.WriteHeader(http.StatusTeapot)
-		return
-	} else if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	converted, err := a.toRun(started, r.Context())
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
@@ -298,98 +259,6 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.ForceCancelRun(r.Context(), id); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
-}
-
-func (a *tfe) getPlanFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	opts := PlanFileOptions{}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	file, err := a.GetPlanFile(r.Context(), id, opts.Format)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	if _, err := w.Write(file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (a *tfe) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	opts := PlanFileOptions{}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	err = a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
-}
-
-func (a *tfe) getLockFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	file, err := a.GetLockFile(r.Context(), id)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	if _, err := w.Write(file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (a *tfe) uploadLockFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	err = a.UploadLockFile(r.Context(), id, buf.Bytes())
-	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
