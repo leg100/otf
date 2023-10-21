@@ -46,6 +46,13 @@ FROM teams
 WHERE team_id = pggen.arg('team_id')
 ;
 
+-- name: FindTeamByTokenID :one
+SELECT t.*
+FROM teams t
+JOIN team_tokens tt USING (team_id)
+WHERE tt.team_id = pggen.arg('team_id')
+;
+
 -- name: FindTeamByIDForUpdate :one
 SELECT *
 FROM teams t

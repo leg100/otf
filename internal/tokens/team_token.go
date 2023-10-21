@@ -12,12 +12,12 @@ import (
 )
 
 type (
-	// TeamToken provides information about an API token for a user.
+	// TeamToken provides information about an API token for a team.
 	TeamToken struct {
 		ID        string
 		CreatedAt time.Time
 
-		// Token belongs to an team
+		// Token belongs to a team
 		TeamID string
 		// Optional expiry.
 		Expiry *time.Time
@@ -26,11 +26,11 @@ type (
 	// CreateTeamTokenOptions are options for creating an team token via the service
 	// endpoint
 	CreateTeamTokenOptions struct {
-		TeamID string `schema:"team_id,required"`
+		TeamID string
 		Expiry *time.Time
 	}
 
-	// NewTeamTokenOptions are options for constructing a user token via the
+	// NewTeamTokenOptions are options for constructing a team token via the
 	// constructor.
 	NewTeamTokenOptions struct {
 		CreateTeamTokenOptions
@@ -39,12 +39,12 @@ type (
 	}
 
 	teamTokenService interface {
-		// CreateTeamToken creates a user token.
+		// CreateTeamToken creates a team token.
 		CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error)
 		// GetTeamToken gets the team token. If a token does not
 		// exist, then nil is returned without an error.
-		GetTeamToken(ctx context.Context, team string) (*TeamToken, error)
-		// DeleteTeamToken deletes an team token.
+		GetTeamToken(ctx context.Context, teamID string) (*TeamToken, error)
+		// DeleteTeamToken deletes a team token.
 		DeleteTeamToken(ctx context.Context, tokenID string) error
 	}
 )

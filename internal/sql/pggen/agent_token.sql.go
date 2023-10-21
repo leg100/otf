@@ -839,6 +839,13 @@ type Querier interface {
 	// FindTeamByIDScan scans the result of an executed FindTeamByIDBatch query.
 	FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error)
 
+	FindTeamByTokenID(ctx context.Context, teamID pgtype.Text) (FindTeamByTokenIDRow, error)
+	// FindTeamByTokenIDBatch enqueues a FindTeamByTokenID query into batch to be executed
+	// later by the batch.
+	FindTeamByTokenIDBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamByTokenIDScan scans the result of an executed FindTeamByTokenIDBatch query.
+	FindTeamByTokenIDScan(results pgx.BatchResults) (FindTeamByTokenIDRow, error)
+
 	FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (FindTeamByIDForUpdateRow, error)
 	// FindTeamByIDForUpdateBatch enqueues a FindTeamByIDForUpdate query into batch to be executed
 	// later by the batch.
@@ -1745,6 +1752,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findTeamByIDSQL, findTeamByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamByTokenIDSQL, findTeamByTokenIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByTokenID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findTeamByIDForUpdateSQL, findTeamByIDForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByIDForUpdate': %w", err)

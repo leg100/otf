@@ -89,6 +89,7 @@ func NewService(opts Options) (*service, error) {
 	svc.middleware = newMiddleware(middlewareOptions{
 		agentTokenService:        &svc,
 		organizationTokenService: &svc,
+		teamTokenService:         &svc,
 		AuthService:              opts.AuthService,
 		GoogleIAPConfig:          opts.GoogleIAPConfig,
 		SiteToken:                opts.SiteToken,
