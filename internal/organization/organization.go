@@ -16,10 +16,10 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        string    `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Name      string    `json:"name"`
+		ID        string    `jsonapi:"primary,organizations"`
+		CreatedAt time.Time `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time `jsonapi:"attribute" json:"updated-at"`
+		Name      string    `jsonapi:"attribute" json:"name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
@@ -48,7 +48,7 @@ type (
 	// CreateOptions represents the options for creating an organization. See
 	// types.CreateOptions for more details.
 	CreateOptions struct {
-		Name *string `schema:"name,required"`
+		Name *string
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests

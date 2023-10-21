@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/stretchr/testify/require"
 )
@@ -21,10 +20,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	// Create user and add as member of guests team
 	guest := svc.createUser(t)
 	guests := svc.createTeam(t, ctx, org)
-	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:    guests.ID,
-		Usernames: []string{guest.Username},
-	})
+	err := svc.AddTeamMembership(ctx, guests.ID, []string{guest.Username})
 	require.NoError(t, err)
 	// Refresh guest user context to include new team membership
 	_, guestCtx := svc.getUserCtx(t, adminCtx, guest.Username)

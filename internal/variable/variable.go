@@ -33,13 +33,13 @@ var (
 
 type (
 	Variable struct {
-		ID          string
-		Key         string
-		Value       string
-		Description string
-		Category    VariableCategory
-		Sensitive   bool
-		HCL         bool
+		ID          string           `jsonapi:"primary,variables"`
+		Key         string           `jsonapi:"attribute" json:"key"`
+		Value       string           `jsonapi:"attribute" json:"value"`
+		Description string           `jsonapi:"attribute" json:"description"`
+		Category    VariableCategory `jsonapi:"attribute" json:"category"`
+		Sensitive   bool             `jsonapi:"attribute" json:"sensitive"`
+		HCL         bool             `jsonapi:"attribute" json:"hcl"`
 
 		// OTF doesn't use this internally but the go-tfe integration tests
 		// expect it to be a random value that changes on every update.

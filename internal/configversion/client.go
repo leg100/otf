@@ -25,8 +25,7 @@ func (c *Client) DownloadConfig(ctx context.Context, cvID string) ([]byte, error
 	}
 
 	var buf bytes.Buffer
-	err = c.Do(ctx, req, &buf)
-	if err != nil {
+	if err := c.Do(ctx, req, &buf); err != nil {
 		return nil, err
 	}
 

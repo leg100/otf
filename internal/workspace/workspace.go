@@ -40,29 +40,29 @@ var (
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         string        `json:"id"`
-		CreatedAt                  time.Time     `json:"created_at"`
-		UpdatedAt                  time.Time     `json:"updated_at"`
-		AllowDestroyPlan           bool          `json:"allow_destroy_plan"`
-		AutoApply                  bool          `json:"auto_apply"`
-		CanQueueDestroyPlan        bool          `json:"can_queue_destroy_plan"`
-		Description                string        `json:"description"`
-		Environment                string        `json:"environment"`
-		ExecutionMode              ExecutionMode `json:"execution_mode"`
-		GlobalRemoteState          bool          `json:"global_remote_state"`
-		MigrationEnvironment       string        `json:"migration_environment"`
-		Name                       string        `json:"name"`
-		QueueAllRuns               bool          `json:"queue_all_runs"`
-		SpeculativeEnabled         bool          `json:"speculative_enabled"`
-		StructuredRunOutputEnabled bool          `json:"structured_run_output_enabled"`
-		SourceName                 string        `json:"source_name"`
-		SourceURL                  string        `json:"source_url"`
-		TerraformVersion           string        `json:"terraform_version"`
-		WorkingDirectory           string        `json:"working_directory"`
-		Organization               string        `json:"organization"`
-		LatestRun                  *LatestRun    `json:"latest_run"`
-		Tags                       []string      `json:"tags"`
-		Lock                       *Lock         `json:"lock"`
+		ID                         string        `jsonapi:"primary,workspaces"`
+		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
+		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
+		AllowDestroyPlan           bool          `jsonapi:"attribute" json:"allow_destroy_plan"`
+		AutoApply                  bool          `jsonapi:"attribute" json:"auto_apply"`
+		CanQueueDestroyPlan        bool          `jsonapi:"attribute" json:"can_queue_destroy_plan"`
+		Description                string        `jsonapi:"attribute" json:"description"`
+		Environment                string        `jsonapi:"attribute" json:"environment"`
+		ExecutionMode              ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+		GlobalRemoteState          bool          `jsonapi:"attribute" json:"global_remote_state"`
+		MigrationEnvironment       string        `jsonapi:"attribute" json:"migration_environment"`
+		Name                       string        `jsonapi:"attribute" json:"name"`
+		QueueAllRuns               bool          `jsonapi:"attribute" json:"queue_all_runs"`
+		SpeculativeEnabled         bool          `jsonapi:"attribute" json:"speculative_enabled"`
+		StructuredRunOutputEnabled bool          `jsonapi:"attribute" json:"structured_run_output_enabled"`
+		SourceName                 string        `jsonapi:"attribute" json:"source_name"`
+		SourceURL                  string        `jsonapi:"attribute" json:"source_url"`
+		TerraformVersion           string        `jsonapi:"attribute" json:"terraform_version"`
+		WorkingDirectory           string        `jsonapi:"attribute" json:"working_directory"`
+		Organization               string        `jsonapi:"attribute" json:"organization"`
+		LatestRun                  *LatestRun    `jsonapi:"attribute" json:"latest_run"`
+		Tags                       []string      `jsonapi:"attribute" json:"tags"`
+		Lock                       *Lock         `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -147,7 +147,7 @@ type (
 		AutoApply                  *bool
 		Name                       *string
 		Description                *string
-		ExecutionMode              *ExecutionMode `jsonapi:"attribute" json:"execution-mode,omitempty"`
+		ExecutionMode              *ExecutionMode `json:"execution-mode,omitempty"`
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool

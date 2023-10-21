@@ -141,8 +141,7 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	err = a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
-	if err != nil {
+	if err := a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

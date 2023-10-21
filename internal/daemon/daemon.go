@@ -374,6 +374,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			VCSProviderService: vcsProviderService,
 		},
 		&api.Handlers{},
+		&tfeapi.Handlers{},
 	}
 
 	return &Daemon{

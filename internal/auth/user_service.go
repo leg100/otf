@@ -18,13 +18,9 @@ type (
 		ListUsers(ctx context.Context) ([]*User, error)
 		ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
 		DeleteUser(ctx context.Context, username string) error
-		AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
-		RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
+		AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
+		RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
 		SetSiteAdmins(ctx context.Context, usernames ...string) error
-	}
-	TeamMembershipOptions struct {
-		Usernames []string
-		TeamID    string
 	}
 )
 
@@ -102,10 +98,10 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 
 // AddTeamMembership adds users to a team. If a user does not exist then the
 // user is created first.
-func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	team, err := a.db.getTeamByID(ctx, opts.TeamID)
+func (a *service) AddTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
-		a.Error(err, "retrieving team", "team_id", opts.TeamID)
+		a.Error(err, "retrieving team", "team_id", teamID)
 		return err
 	}
 
@@ -116,7 +112,7 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 
 	err = a.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		// Check each username: if user does not exist then create user.
-		for _, username := range opts.Usernames {
+		for _, username := range usernames {
 			_, err := a.db.getUser(ctx, UserSpec{Username: &username})
 			if errors.Is(err, internal.ErrResourceNotFound) {
 				if _, err := a.CreateUser(ctx, username); err != nil {
@@ -126,26 +122,26 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 				return err
 			}
 		}
-		if err := a.db.addTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+		if err := a.db.addTeamMembership(ctx, teamID, usernames...); err != nil {
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		a.Error(err, "adding team membership", "user", opts.Usernames, "team", opts.TeamID, "subject", subject)
+		a.Error(err, "adding team membership", "user", usernames, "team", teamID, "subject", subject)
 		return err
 	}
 
-	a.V(0).Info("added team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
+	a.V(0).Info("added team membership", "users", usernames, "team", teamID, "subject", subject)
 
 	return nil
 }
 
 // RemoveTeamMembership removes users from a team.
-func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	team, err := a.db.getTeamForUpdate(ctx, opts.TeamID)
+func (a *service) RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+	team, err := a.db.getTeamForUpdate(ctx, teamID)
 	if err != nil {
-		a.Error(err, "retrieving team", "team_id", opts.TeamID)
+		a.Error(err, "retrieving team", "team_id", teamID)
 		return err
 	}
 
@@ -160,16 +156,16 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 		if owners, err := a.db.listTeamMembers(ctx, team.ID); err != nil {
 			a.Error(err, "removing team membership: listing team members", "team_id", team.ID, "subject", subject)
 			return err
-		} else if len(owners) <= len(opts.Usernames) {
+		} else if len(owners) <= len(usernames) {
 			return ErrCannotDeleteOnlyOwner
 		}
 	}
 
-	if err := a.db.removeTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
-		a.Error(err, "removing team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
+	if err := a.db.removeTeamMembership(ctx, teamID, usernames...); err != nil {
+		a.Error(err, "removing team membership", "users", usernames, "team", teamID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("removed team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
+	a.V(0).Info("removed team membership", "users", usernames, "team", teamID, "subject", subject)
 
 	return nil
 }

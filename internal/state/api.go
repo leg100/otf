@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type api struct {
@@ -27,10 +26,10 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.tfeapi.createVersion).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.listVersions).Methods("GET")
 
 	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/rollback", a.rollbackVersion).Methods("PATCH")
 	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 }
 
@@ -81,18 +80,16 @@ func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
-	opts := types.RollbackStateVersionOptions{}
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	sv, err := a.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
+	versionID, err := decode.Param("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-
+	sv, err := a.RollbackStateVersion(r.Context(), versionID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
 	a.Respond(w, r, sv, http.StatusOK)
 }
 

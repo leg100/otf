@@ -88,7 +88,7 @@ func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 }
 
 func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
-	req, err := c.NewRequest("GET", "runs", opts)
+	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func newSSEClient(config otfapi.Config, notifications chan pubsub.Event, opts Wa
 	if err != nil {
 		return nil, fmt.Errorf("invalid address: %v", err)
 	}
-	u.Path = path.Join(config.BasePath, "/watch")
+	u.Path = path.Join(otfapi.DefaultBasePath, "/watch")
 	q := url.Values{}
 	if err := http.Encoder.Encode(&opts, q); err != nil {
 		return nil, err

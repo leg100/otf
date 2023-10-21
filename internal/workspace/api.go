@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -85,7 +86,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var params UpdateOptions
-	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

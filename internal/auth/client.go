@@ -6,7 +6,6 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type (
@@ -15,25 +14,21 @@ type (
 
 		AuthService
 	}
-	teamMember struct {
-		Username string `jsonapi:"primary,users"`
-	}
 )
 
 // CreateUser creates a user via HTTP/JSONAPI. Options are ignored.
 func (c *Client) CreateUser(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
-	req, err := c.NewRequest("POST", "admin/users", &types.CreateUserOptions{
-		Username: internal.String(username),
+	req, err := c.NewRequest("POST", "admin/users", &CreateUserOptions{
+		Username: username,
 	})
 	if err != nil {
 		return nil, err
 	}
-	user := &types.User{}
-	err = c.Do(ctx, req, user)
-	if err != nil {
+	var user User
+	if err := c.Do(ctx, req, &user); err != nil {
 		return nil, err
 	}
-	return &User{ID: user.ID, Username: user.Username}, nil
+	return &user, nil
 }
 
 // DeleteUser deletes a user via HTTP/JSONAPI.
@@ -50,14 +45,11 @@ func (c *Client) DeleteUser(ctx context.Context, username string) error {
 }
 
 // AddTeamMembership adds users to a team via HTTP.
-func (c *Client) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	var members []*teamMember
-	for _, name := range opts.Usernames {
-		members = append(members, &teamMember{Username: name})
-	}
-
-	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(opts.TeamID))
-	req, err := c.NewRequest("POST", u, members)
+func (c *Client) AddTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID))
+	req, err := c.NewRequest("POST", u, &modifyTeamMembershipOptions{
+		Usernames: usernames,
+	})
 	if err != nil {
 		return err
 	}
@@ -68,14 +60,11 @@ func (c *Client) AddTeamMembership(ctx context.Context, opts TeamMembershipOptio
 }
 
 // RemoveTeamMembership removes users from a team via HTTP.
-func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	var members []*teamMember
-	for _, name := range opts.Usernames {
-		members = append(members, &teamMember{Username: name})
-	}
-
-	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(opts.TeamID))
-	req, err := c.NewRequest("DELETE", u, members)
+func (c *Client) RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID))
+	req, err := c.NewRequest("DELETE", u, &modifyTeamMembershipOptions{
+		Usernames: usernames,
+	})
 	if err != nil {
 		return err
 	}
@@ -92,18 +81,15 @@ func (c *Client) CreateTeam(ctx context.Context, organization string, opts Creat
 		return nil, err
 	}
 	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization))
-	req, err := c.NewRequest("POST", u, &types.TeamCreateOptions{
-		Name: opts.Name,
-	})
+	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
 	}
-	team := &types.Team{}
-	err = c.Do(ctx, req, team)
-	if err != nil {
+	var team Team
+	if err := c.Do(ctx, req, &team); err != nil {
 		return nil, err
 	}
-	return &Team{ID: team.ID, Name: team.Name}, nil
+	return &team, nil
 }
 
 // GetTeam retrieves a team via HTTP/JSONAPI.
@@ -113,12 +99,11 @@ func (c *Client) GetTeam(ctx context.Context, organization, name string) (*Team,
 	if err != nil {
 		return nil, err
 	}
-	team := &types.Team{}
-	err = c.Do(ctx, req, team)
-	if err != nil {
+	var team Team
+	if err := c.Do(ctx, req, &team); err != nil {
 		return nil, err
 	}
-	return &Team{ID: team.ID, Name: team.Name}, nil
+	return &team, nil
 }
 
 // DeleteTeam deletes a team via HTTP/JSONAPI.

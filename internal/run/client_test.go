@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"testing"
 
 	"github.com/DataDog/jsonapi"
@@ -17,7 +18,7 @@ import (
 
 func TestWatchClient(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/watch", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(path.Join(otfapi.DefaultBasePath, "/watch"), func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")

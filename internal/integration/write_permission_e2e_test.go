@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,10 +18,7 @@ func TestWritePermissionE2E(t *testing.T) {
 	// Create engineer user and team and make member of a team
 	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
-	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:    team.ID,
-		Usernames: []string{engineer.Username},
-	})
+	err := svc.AddTeamMembership(ctx, team.ID, []string{engineer.Username})
 	require.NoError(t, err)
 
 	// create terraform config

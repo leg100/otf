@@ -16,12 +16,12 @@ type Client struct {
 	TokensService
 }
 
-func NewClient(httpClient *otfapi.Client) (*Client, error) {
-	return &Client{JSONAPIClient: httpClient}, nil
+func NewClient(api *otfapi.Client) (*Client, error) {
+	return &Client{JSONAPIClient: api}, nil
 }
 
 func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "tokens/run/create", opts)
+	req, err := c.NewRequest("POST", "tokens/run/create", &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions)
 }
 
 func (c *Client) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "agent/create", opts)
+	req, err := c.NewRequest("POST", "agent/create", &opts)
 	if err != nil {
 		return nil, err
 	}

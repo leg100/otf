@@ -22,14 +22,18 @@ var (
 )
 
 type (
-	// User represents an otf user account.
+	// User represents an OTF user account.
 	User struct {
-		ID        string // ID uniquely identifies users
-		CreatedAt time.Time
-		UpdatedAt time.Time
-		Username  string  // username is globally unique
-		SiteAdmin bool    // Indicates whether user is a site admin
-		Teams     []*Team // user belongs to many teams
+		ID        string    `jsonapi:"primary,users"`
+		CreatedAt time.Time `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time `jsonapi:"attribute" json:"updated-at"`
+		SiteAdmin bool      `jsonapi:"attribute" json:"site-admin"`
+
+		// username is globally unique
+		Username string `jsonapi:"attribute" json:"username"`
+
+		// user belongs to many teams
+		Teams []*Team
 	}
 
 	// UserListOptions are options for the ListUsers endpoint.
@@ -39,6 +43,10 @@ type (
 	}
 
 	NewUserOption func(*User)
+
+	CreateUserOptions struct {
+		Username string `json:"username"`
+	}
 
 	UserSpec struct {
 		UserID                *string

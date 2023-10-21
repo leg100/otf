@@ -106,11 +106,7 @@ func (a *TeamCLI) addTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = a.AddTeamMembership(cmd.Context(), TeamMembershipOptions{
-				Usernames: args,
-				TeamID:    team.ID,
-			})
-			if err != nil {
+			if err := a.AddTeamMembership(cmd.Context(), team.ID, args); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args, name)
@@ -143,11 +139,7 @@ func (a *TeamCLI) deleteTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = a.RemoveTeamMembership(cmd.Context(), TeamMembershipOptions{
-				Usernames: args,
-				TeamID:    team.ID,
-			})
-			if err != nil {
+			if err := a.RemoveTeamMembership(cmd.Context(), team.ID, args); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args, name)

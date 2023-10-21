@@ -4,8 +4,13 @@ package tfeapi
 
 import (
 	"io"
+	"net/http"
+	"path"
+
+	otfhttp "github.com/leg100/otf/internal/http"
 
 	"github.com/DataDog/jsonapi"
+	"github.com/gorilla/mux"
 )
 
 func Unmarshal(r io.Reader, v any) error {
@@ -14,4 +19,13 @@ func Unmarshal(r io.Reader, v any) error {
 		return err
 	}
 	return jsonapi.Unmarshal(b, v)
+}
+
+type Handlers struct{}
+
+func (h *Handlers) AddHandlers(r *mux.Router) {
+	// terraform go-tfe client initialization sends a ping
+	r.HandleFunc(path.Join(otfhttp.APIPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 }

@@ -199,7 +199,7 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	// json-api library doesn't support serializing other things.
 	var modelType reflect.Type
 	bodyType := reflect.TypeOf(v)
-	invalidBodyError := errors.New("go-tfe bug: DELETE/PATCH/POST body must be nil, ptr, or ptr slice")
+	invalidBodyError := errors.New("DELETE/PATCH/POST body must be nil, ptr, or ptr slice")
 	switch bodyType.Kind() {
 	case reflect.Slice:
 		sliceElem := bodyType.Elem()
@@ -216,14 +216,10 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	// Infer whether the request uses jsonapi or regular json
 	// serialization based on how the fields are tagged.
 	jsonAPIFields := 0
-	jsonFields := 0
 	for i := 0; i < modelType.NumField(); i++ {
 		structField := modelType.Field(i)
 		if structField.Tag.Get("jsonapi") != "" {
 			jsonAPIFields++
-		}
-		if structField.Tag.Get("json") != "" {
-			jsonFields++
 		}
 	}
 
@@ -309,12 +305,16 @@ func unmarshalResponse(r io.Reader, v any) error {
 		return err
 	}
 
-	// Get the value of model so we can test if it's a struct.
+	// Get the value of model so we can test if it's a slice or struct.
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
-	// Return an error if model is not a struct or an io.Writer.
+	if dst.Kind() == reflect.Slice {
+		return jsonapi.Unmarshal(b, v)
+	}
+
+	// Return an error if model is not a struct, slice or an io.Writer.
 	if dst.Kind() != reflect.Struct {
-		return fmt.Errorf("v must be a struct or an io.Writer")
+		return fmt.Errorf("v must be a struct, slice or an io.Writer")
 	}
 
 	// Try to get the Items and Pagination struct fields.

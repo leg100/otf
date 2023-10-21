@@ -64,14 +64,14 @@ func newEnvironment(
 		RunID:        &run.ID,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "creating registry session")
+		return nil, errors.Wrap(err, "creating run token")
 	}
 	envs := internal.SafeAppend(agent.envs, internal.CredentialEnv(agent.Hostname(), token))
 
 	// retrieve variables and add them to the environment
 	variables, err := agent.ListEffectiveVariables(ctx, run.ID)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving workspace variables")
+		return nil, fmt.Errorf("retrieving workspace variables: %w", err)
 	}
 	for _, v := range variables {
 		if v.Category == variable.CategoryEnv {

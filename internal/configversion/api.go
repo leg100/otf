@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 )
@@ -14,7 +15,8 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	r.HandleFunc("/api/configuration-versions/{id}/download", a.download).Methods("GET")
+	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r.HandleFunc("/configuration-versions/{id}/download", a.download).Methods("GET")
 }
 
 func (a *api) download(w http.ResponseWriter, r *http.Request) {
@@ -23,12 +25,10 @@ func (a *api) download(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-
 	resp, err := a.DownloadConfig(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-
 	w.Write(resp)
 }

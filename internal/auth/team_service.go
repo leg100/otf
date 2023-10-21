@@ -188,18 +188,13 @@ func (a *service) createOwnersTeam(ctx context.Context, organization *organizati
 			Name:         "owners",
 			Organization: organization.Name,
 		})
-
 		owners, err := a.CreateTeam(ctx, organization.Name, CreateTeamOptions{
 			Name: internal.String("owners"),
 		})
 		if err != nil {
 			return fmt.Errorf("creating owners team: %w", err)
 		}
-		err = a.AddTeamMembership(ctx, TeamMembershipOptions{
-			TeamID:    owners.ID,
-			Usernames: []string{creator.Username},
-		})
-		if err != nil {
+		if err := a.AddTeamMembership(ctx, owners.ID, []string{creator.Username}); err != nil {
 			return fmt.Errorf("adding owner to owners team: %w", err)
 		}
 		return nil

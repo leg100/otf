@@ -41,9 +41,9 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspa
 	return &ws, nil
 }
 
-func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*resource.Page[*Workspace], error) {
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
-	req, err := c.NewRequest("GET", u, &options)
+func (c *Client) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*opts.Organization))
+	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, opts U
 	}
 
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.NewRequest("PATCH", path, opts)
+	req, err := c.NewRequest("PATCH", path, &opts)
 	if err != nil {
 		return nil, err
 	}
