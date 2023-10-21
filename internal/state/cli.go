@@ -6,9 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf/internal/http"
-
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
@@ -19,7 +18,7 @@ type CLI struct {
 	workspace.WorkspaceService
 }
 
-func NewCommand(httpClient *http.Client) *cobra.Command {
+func NewCommand(api *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "state",
@@ -28,8 +27,8 @@ func NewCommand(httpClient *http.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{JSONAPIClient: httpClient}
-			cli.WorkspaceService = &workspace.Client{JSONAPIClient: httpClient}
+			cli.Service = &Client{JSONAPIClient: api}
+			cli.WorkspaceService = &workspace.Client{JSONAPIClient: api}
 			return nil
 		},
 	}

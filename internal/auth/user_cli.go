@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/leg100/otf/internal/http"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +11,7 @@ type UserCLI struct {
 	UserService
 }
 
-func NewUserCommand(httpClient *http.Client) *cobra.Command {
+func NewUserCommand(api *otfapi.Client) *cobra.Command {
 	cli := &UserCLI{}
 	cmd := &cobra.Command{
 		Use:   "users",
@@ -20,7 +20,7 @@ func NewUserCommand(httpClient *http.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.UserService = &Client{JSONAPIClient: httpClient}
+			cli.UserService = &Client{JSONAPIClient: api}
 			return nil
 		},
 	}

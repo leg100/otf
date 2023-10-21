@@ -3,7 +3,8 @@ package tokens
 import (
 	"fmt"
 
-	"github.com/leg100/otf/internal/http"
+	otfapi "github.com/leg100/otf/internal/api"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +12,7 @@ type CLI struct {
 	TokensService
 }
 
-func NewAgentsCommand(httpClient *http.Client) *cobra.Command {
+func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "agents",
@@ -20,7 +21,7 @@ func NewAgentsCommand(httpClient *http.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.TokensService = &Client{JSONAPIClient: httpClient}
+			cli.TokensService = &Client{JSONAPIClient: api}
 			return nil
 		},
 	}

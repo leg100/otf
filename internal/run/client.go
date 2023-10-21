@@ -9,6 +9,7 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -18,7 +19,7 @@ import (
 
 type Client struct {
 	internal.JSONAPIClient
-	http.Config
+	otfapi.Config
 
 	// Client does not implement all of service yet
 	Service
@@ -169,7 +170,7 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Ev
 	return notifications, nil
 }
 
-func newSSEClient(config http.Config, notifications chan pubsub.Event, opts WatchOptions) (*sse.Client, error) {
+func newSSEClient(config otfapi.Config, notifications chan pubsub.Event, opts WatchOptions) (*sse.Client, error) {
 	// construct watch URL endpoint
 	addr, err := http.SanitizeAddress(config.Address)
 	if err != nil {

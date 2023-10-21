@@ -17,7 +17,6 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
@@ -432,9 +431,8 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 	}
 
 	token := s.createAgentToken(t, ctx, organization)
-	cfg.HTTPConfig = http.NewConfig()
-	cfg.HTTPConfig.Token = string(token)
-	cfg.HTTPConfig.Address = s.Hostname()
+	cfg.APIConfig.Token = string(token)
+	cfg.APIConfig.Address = s.Hostname()
 
 	agent, err := agent.NewExternalAgent(ctx, logger, cfg)
 	require.NoError(t, err)

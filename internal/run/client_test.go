@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/jsonapi"
+	otfapi "github.com/leg100/otf/internal/api"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func TestWatchClient(t *testing.T) {
 
 	// setup client and subscribe to stream
 	client := &Client{
-		Config: otfhttp.Config{
+		Config: otfapi.Config{
 			Address:   webserver.URL,
 			Transport: otfhttp.InsecureTransport,
 		},

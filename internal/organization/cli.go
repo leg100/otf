@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +12,7 @@ type CLI struct {
 	Service
 }
 
-func NewCommand(httpClient *http.Client) *cobra.Command {
+func NewCommand(httpClient *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "organizations",

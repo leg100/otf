@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 
+	otfapi "github.com/leg100/otf/internal/api"
+
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http"
 )
 
 type Client struct {
@@ -15,7 +16,7 @@ type Client struct {
 	TokensService
 }
 
-func NewClient(httpClient *http.Client) (*Client, error) {
+func NewClient(httpClient *otfapi.Client) (*Client, error) {
 	return &Client{JSONAPIClient: httpClient}, nil
 }
 
