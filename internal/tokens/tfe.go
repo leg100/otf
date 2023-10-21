@@ -20,9 +20,9 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
 	// Team token routes
-	r.HandleFunc("/teams/{team_name}/authentication-token", a.createTeamToken).Methods("POST")
-	r.HandleFunc("/teams/{team_name}/authentication-token", a.getTeamToken).Methods("GET")
-	r.HandleFunc("/teams/{team_name}/authentication-token", a.deleteTeamToken).Methods("DELETE")
+	r.HandleFunc("/teams/{team_id}/authentication-token", a.createTeamToken).Methods("POST")
+	r.HandleFunc("/teams/{team_id}/authentication-token", a.getTeamToken).Methods("GET")
+	r.HandleFunc("/teams/{team_id}/authentication-token", a.deleteTeamToken).Methods("DELETE")
 
 	// Organization token routes
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.createOrganizationToken).Methods("POST")
@@ -31,7 +31,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
-	team, err := decode.Param("team_name", r)
+	id, err := decode.Param("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -42,7 +42,7 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ot, token, err := a.CreateTeamToken(r.Context(), CreateTeamTokenOptions{
-		Team:   team,
+		TeamID: id,
 		Expiry: opts.ExpiredAt,
 	})
 	if err != nil {
@@ -60,13 +60,13 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("team_name", r)
+	id, err := decode.Param("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ot, err := a.GetTeamToken(r.Context(), org)
+	ot, err := a.GetTeamToken(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -81,17 +81,17 @@ func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: ot.CreatedAt,
 		ExpiredAt: ot.Expiry,
 	}
-	a.Respond(w, r, to, http.StatusCreated)
+	a.Respond(w, r, to, http.StatusOK)
 }
 
 func (a *tfe) deleteTeamToken(w http.ResponseWriter, r *http.Request) {
-	team, err := decode.Param("team_name", r)
+	id, err := decode.Param("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	err = a.DeleteTeamToken(r.Context(), team)
+	err = a.DeleteTeamToken(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"log/slog"
+
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -12,12 +14,11 @@ import (
 type (
 	// TeamToken provides information about an API token for a user.
 	TeamToken struct {
-		ID          string
-		CreatedAt   time.Time
-		Description string
+		ID        string
+		CreatedAt time.Time
 
 		// Token belongs to an team
-		Team string
+		TeamID string
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -25,7 +26,7 @@ type (
 	// CreateTeamTokenOptions are options for creating an team token via the service
 	// endpoint
 	CreateTeamTokenOptions struct {
-		Team   string `schema:"team_id,required"`
+		TeamID string `schema:"team_id,required"`
 		Expiry *time.Time
 	}
 
@@ -52,7 +53,7 @@ func NewTeamToken(opts NewTeamTokenOptions) (*TeamToken, []byte, error) {
 	tt := TeamToken{
 		ID:        internal.NewID("tt"),
 		CreatedAt: internal.CurrentTimestamp(),
-		Team:      opts.Team,
+		TeamID:    opts.Team,
 		Expiry:    opts.Expiry,
 	}
 	token, err := NewToken(NewTokenOptions{
@@ -67,49 +68,59 @@ func NewTeamToken(opts NewTeamTokenOptions) (*TeamToken, []byte, error) {
 	return &tt, token, nil
 }
 
-func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error) {
+func (t *TeamToken) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", t.ID),
+		slog.String("team_id", t.TeamID),
+	}
+	if t.Expiry != nil {
+		attrs = append(attrs, slog.Time("expiry", *t.Expiry))
+	}
+	return slog.GroupValue(attrs...)
+}
 
-	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, opts.Team)
+func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error) {
+	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, opts.TeamID)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	tt, token, err := NewTeamToken(NewTeamTokenOptions{
 		CreateTeamTokenOptions: opts,
-		Team:                   opts.Team,
+		Team:                   opts.TeamID,
 		key:                    a.key,
 	})
 	if err != nil {
-		a.Error(err, "constructing team token", "team", opts.Team)
+		a.Error(err, "constructing team token", "team_id", opts.TeamID)
 		return nil, nil, err
 	}
 
 	if err := a.db.createTeamToken(ctx, tt); err != nil {
-		a.Error(err, "creating team token", "team", opts.Team)
+		a.Error(err, "creating team token", "token", tt)
 		return nil, nil, err
 	}
 
-	a.V(0).Info("created team token", "team", opts.Team)
+	a.V(0).Info("created team token", "token", tt)
 
 	return tt, token, nil
 }
 
-func (a *service) GetTeamToken(ctx context.Context, team string) (*TeamToken, error) {
-	return a.db.getTeamTokenByName(ctx, team)
+func (a *service) GetTeamToken(ctx context.Context, teamID string) (*TeamToken, error) {
+	return a.db.getTeamTokenByTeamID(ctx, teamID)
 }
 
-func (a *service) DeleteTeamToken(ctx context.Context, team string) error {
-	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, team)
+func (a *service) DeleteTeamToken(ctx context.Context, teamID string) error {
+	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, teamID)
 	if err != nil {
 		return err
 	}
 
-	if err := a.db.deleteTeamToken(ctx, team); err != nil {
-		a.Error(err, "deleting team token", "team", team)
+	if err := a.db.deleteTeamToken(ctx, teamID); err != nil {
+		a.Error(err, "deleting team token", "team", teamID)
 		return err
 	}
 
-	a.V(0).Info("deleted team token", "team", team)
+	a.V(0).Info("deleted team token", "team", teamID)
 
 	return nil
 }

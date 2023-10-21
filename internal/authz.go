@@ -15,7 +15,7 @@ const subjectCtxKey subjectCtxKeyType = "subject"
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
 	CanAccessSite(action rbac.Action) bool
-	CanAccessTeam(action rbac.Action, name string) bool
+	CanAccessTeam(action rbac.Action, id string) bool
 	CanAccessOrganization(action rbac.Action, name string) bool
 	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 

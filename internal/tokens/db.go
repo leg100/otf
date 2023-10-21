@@ -82,17 +82,16 @@ func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
 func (db *pgdb) createTeamToken(ctx context.Context, token *TeamToken) error {
 	_, err := db.Conn(ctx).InsertTeamToken(ctx, pggen.InsertTeamTokenParams{
 		TeamTokenID: sql.String(token.ID),
-		Description: sql.String(token.Description),
-		TeamID:      sql.String(token.Team),
+		TeamID:      sql.String(token.TeamID),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
 		Expiry:      sql.TimestamptzPtr(token.Expiry),
 	})
 	return err
 }
 
-func (db *pgdb) getTeamTokenByName(ctx context.Context, team string) (*TeamToken, error) {
+func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID string) (*TeamToken, error) {
 	// query only returns 0 or 1 tokens
-	result, err := db.Conn(ctx).FindTeamTokensByTeam(ctx, sql.String(team))
+	result, err := db.Conn(ctx).FindTeamTokensByID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +101,7 @@ func (db *pgdb) getTeamTokenByName(ctx context.Context, team string) (*TeamToken
 	ot := &TeamToken{
 		ID:        result[0].TeamTokenID.String,
 		CreatedAt: result[0].CreatedAt.Time.UTC(),
-		Team:      result[0].TeamID.String,
+		TeamID:    result[0].TeamID.String,
 	}
 	if result[0].Expiry.Status == pgtype.Present {
 		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
@@ -111,7 +110,7 @@ func (db *pgdb) getTeamTokenByName(ctx context.Context, team string) (*TeamToken
 }
 
 func (db *pgdb) deleteTeamToken(ctx context.Context, team string) error {
-	_, err := db.Conn(ctx).DeleteTeamTokenByName(ctx, sql.String(team))
+	_, err := db.Conn(ctx).DeleteTeamTokenByID(ctx, sql.String(team))
 	if err != nil {
 		return sql.Error(err)
 	}

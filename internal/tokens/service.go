@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
@@ -65,7 +64,7 @@ func NewService(opts Options) (*service, error) {
 	svc := service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		team:         &team.Authorizer{Logger: opts.Logger},
+		team:         &auth.Authorizer{Logger: opts.Logger},
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB},
 	}

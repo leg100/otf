@@ -13,7 +13,6 @@ import (
 
 const insertTeamTokenSQL = `INSERT INTO team_tokens (
     team_token_id,
-    description,
     created_at,
     team_id,
     expiry
@@ -21,13 +20,14 @@ const insertTeamTokenSQL = `INSERT INTO team_tokens (
     $1,
     $2,
     $3,
-    $4,
-    $5
-);`
+    $4
+) ON CONFLICT (team_id) DO UPDATE
+  SET team_token_id = $1,
+      created_at    = $2,
+      expiry        = $4;`
 
 type InsertTeamTokenParams struct {
 	TeamTokenID pgtype.Text
-	Description pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	TeamID      pgtype.Text
 	Expiry      pgtype.Timestamptz
@@ -36,7 +36,7 @@ type InsertTeamTokenParams struct {
 // InsertTeamToken implements Querier.InsertTeamToken.
 func (q *DBQuerier) InsertTeamToken(ctx context.Context, params InsertTeamTokenParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertTeamToken")
-	cmdTag, err := q.conn.Exec(ctx, insertTeamTokenSQL, params.TeamTokenID, params.Description, params.CreatedAt, params.TeamID, params.Expiry)
+	cmdTag, err := q.conn.Exec(ctx, insertTeamTokenSQL, params.TeamTokenID, params.CreatedAt, params.TeamID, params.Expiry)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertTeamToken: %w", err)
 	}
@@ -45,7 +45,7 @@ func (q *DBQuerier) InsertTeamToken(ctx context.Context, params InsertTeamTokenP
 
 // InsertTeamTokenBatch implements Querier.InsertTeamTokenBatch.
 func (q *DBQuerier) InsertTeamTokenBatch(batch genericBatch, params InsertTeamTokenParams) {
-	batch.Queue(insertTeamTokenSQL, params.TeamTokenID, params.Description, params.CreatedAt, params.TeamID, params.Expiry)
+	batch.Queue(insertTeamTokenSQL, params.TeamTokenID, params.CreatedAt, params.TeamID, params.Expiry)
 }
 
 // InsertTeamTokenScan implements Querier.InsertTeamTokenScan.
@@ -57,12 +57,12 @@ func (q *DBQuerier) InsertTeamTokenScan(results pgx.BatchResults) (pgconn.Comman
 	return cmdTag, err
 }
 
-const findTeamTokensByTeamSQL = `SELECT *
+const findTeamTokensByIDSQL = `SELECT *
 FROM team_tokens
-where team_id = $1
+WHERE team_id = $1
 ;`
 
-type FindTeamTokensByTeamRow struct {
+type FindTeamTokensByIDRow struct {
 	TeamTokenID pgtype.Text        `json:"team_token_id"`
 	Description pgtype.Text        `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
@@ -70,121 +70,82 @@ type FindTeamTokensByTeamRow struct {
 	Expiry      pgtype.Timestamptz `json:"expiry"`
 }
 
-// FindTeamTokensByTeam implements Querier.FindTeamTokensByTeam.
-func (q *DBQuerier) FindTeamTokensByTeam(ctx context.Context, teamID pgtype.Text) ([]FindTeamTokensByTeamRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamTokensByTeam")
-	rows, err := q.conn.Query(ctx, findTeamTokensByTeamSQL, teamID)
+// FindTeamTokensByID implements Querier.FindTeamTokensByID.
+func (q *DBQuerier) FindTeamTokensByID(ctx context.Context, teamID pgtype.Text) ([]FindTeamTokensByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamTokensByID")
+	rows, err := q.conn.Query(ctx, findTeamTokensByIDSQL, teamID)
 	if err != nil {
-		return nil, fmt.Errorf("query FindTeamTokensByTeam: %w", err)
+		return nil, fmt.Errorf("query FindTeamTokensByID: %w", err)
 	}
 	defer rows.Close()
-	items := []FindTeamTokensByTeamRow{}
+	items := []FindTeamTokensByIDRow{}
 	for rows.Next() {
-		var item FindTeamTokensByTeamRow
+		var item FindTeamTokensByIDRow
 		if err := rows.Scan(&item.TeamTokenID, &item.Description, &item.CreatedAt, &item.TeamID, &item.Expiry); err != nil {
-			return nil, fmt.Errorf("scan FindTeamTokensByTeam row: %w", err)
+			return nil, fmt.Errorf("scan FindTeamTokensByID row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindTeamTokensByTeam rows: %w", err)
+		return nil, fmt.Errorf("close FindTeamTokensByID rows: %w", err)
 	}
 	return items, err
 }
 
-// FindTeamTokensByTeamBatch implements Querier.FindTeamTokensByTeamBatch.
-func (q *DBQuerier) FindTeamTokensByTeamBatch(batch genericBatch, teamID pgtype.Text) {
-	batch.Queue(findTeamTokensByTeamSQL, teamID)
+// FindTeamTokensByIDBatch implements Querier.FindTeamTokensByIDBatch.
+func (q *DBQuerier) FindTeamTokensByIDBatch(batch genericBatch, teamID pgtype.Text) {
+	batch.Queue(findTeamTokensByIDSQL, teamID)
 }
 
-// FindTeamTokensByTeamScan implements Querier.FindTeamTokensByTeamScan.
-func (q *DBQuerier) FindTeamTokensByTeamScan(results pgx.BatchResults) ([]FindTeamTokensByTeamRow, error) {
+// FindTeamTokensByIDScan implements Querier.FindTeamTokensByIDScan.
+func (q *DBQuerier) FindTeamTokensByIDScan(results pgx.BatchResults) ([]FindTeamTokensByIDRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindTeamTokensByTeamBatch: %w", err)
+		return nil, fmt.Errorf("query FindTeamTokensByIDBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindTeamTokensByTeamRow{}
+	items := []FindTeamTokensByIDRow{}
 	for rows.Next() {
-		var item FindTeamTokensByTeamRow
+		var item FindTeamTokensByIDRow
 		if err := rows.Scan(&item.TeamTokenID, &item.Description, &item.CreatedAt, &item.TeamID, &item.Expiry); err != nil {
-			return nil, fmt.Errorf("scan FindTeamTokensByTeamBatch row: %w", err)
+			return nil, fmt.Errorf("scan FindTeamTokensByIDBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindTeamTokensByTeamBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindTeamTokensByIDBatch rows: %w", err)
 	}
 	return items, err
 }
 
-const findTeamTokenByIDSQL = `SELECT *
-FROM team_tokens
-WHERE team_token_id = $1
-;`
-
-type FindTeamTokenByIDRow struct {
-	TeamTokenID pgtype.Text        `json:"team_token_id"`
-	Description pgtype.Text        `json:"description"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	TeamID      pgtype.Text        `json:"team_id"`
-	Expiry      pgtype.Timestamptz `json:"expiry"`
-}
-
-// FindTeamTokenByID implements Querier.FindTeamTokenByID.
-func (q *DBQuerier) FindTeamTokenByID(ctx context.Context, teamTokenID pgtype.Text) (FindTeamTokenByIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamTokenByID")
-	row := q.conn.QueryRow(ctx, findTeamTokenByIDSQL, teamTokenID)
-	var item FindTeamTokenByIDRow
-	if err := row.Scan(&item.TeamTokenID, &item.Description, &item.CreatedAt, &item.TeamID, &item.Expiry); err != nil {
-		return item, fmt.Errorf("query FindTeamTokenByID: %w", err)
-	}
-	return item, nil
-}
-
-// FindTeamTokenByIDBatch implements Querier.FindTeamTokenByIDBatch.
-func (q *DBQuerier) FindTeamTokenByIDBatch(batch genericBatch, teamTokenID pgtype.Text) {
-	batch.Queue(findTeamTokenByIDSQL, teamTokenID)
-}
-
-// FindTeamTokenByIDScan implements Querier.FindTeamTokenByIDScan.
-func (q *DBQuerier) FindTeamTokenByIDScan(results pgx.BatchResults) (FindTeamTokenByIDRow, error) {
-	row := results.QueryRow()
-	var item FindTeamTokenByIDRow
-	if err := row.Scan(&item.TeamTokenID, &item.Description, &item.CreatedAt, &item.TeamID, &item.Expiry); err != nil {
-		return item, fmt.Errorf("scan FindTeamTokenByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const deleteTeamTokenByNameSQL = `DELETE
+const deleteTeamTokenByIDSQL = `DELETE
 FROM team_tokens
 WHERE team_id = $1
 RETURNING team_token_id
 ;`
 
-// DeleteTeamTokenByName implements Querier.DeleteTeamTokenByName.
-func (q *DBQuerier) DeleteTeamTokenByName(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTeamTokenByName")
-	row := q.conn.QueryRow(ctx, deleteTeamTokenByNameSQL, teamID)
+// DeleteTeamTokenByID implements Querier.DeleteTeamTokenByID.
+func (q *DBQuerier) DeleteTeamTokenByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTeamTokenByID")
+	row := q.conn.QueryRow(ctx, deleteTeamTokenByIDSQL, teamID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query DeleteTeamTokenByName: %w", err)
+		return item, fmt.Errorf("query DeleteTeamTokenByID: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteTeamTokenByNameBatch implements Querier.DeleteTeamTokenByNameBatch.
-func (q *DBQuerier) DeleteTeamTokenByNameBatch(batch genericBatch, teamID pgtype.Text) {
-	batch.Queue(deleteTeamTokenByNameSQL, teamID)
+// DeleteTeamTokenByIDBatch implements Querier.DeleteTeamTokenByIDBatch.
+func (q *DBQuerier) DeleteTeamTokenByIDBatch(batch genericBatch, teamID pgtype.Text) {
+	batch.Queue(deleteTeamTokenByIDSQL, teamID)
 }
 
-// DeleteTeamTokenByNameScan implements Querier.DeleteTeamTokenByNameScan.
-func (q *DBQuerier) DeleteTeamTokenByNameScan(results pgx.BatchResults) (pgtype.Text, error) {
+// DeleteTeamTokenByIDScan implements Querier.DeleteTeamTokenByIDScan.
+func (q *DBQuerier) DeleteTeamTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan DeleteTeamTokenByNameBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteTeamTokenByIDBatch row: %w", err)
 	}
 	return item, nil
 }

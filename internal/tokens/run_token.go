@@ -62,7 +62,7 @@ func (t *RunToken) CanAccessOrganization(action rbac.Action, name string) bool {
 	}
 }
 
-func (t *RunToken) CanAccessTeam(action rbac.Action, teamName string) bool {
+func (t *RunToken) CanAccessTeam(rbac.Action, string) bool {
 	// Can't access team level actions
 	return false
 }

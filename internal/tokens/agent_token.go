@@ -80,7 +80,7 @@ func (*AgentToken) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (*AgentToken) CanAccessTeam(action rbac.Action, teamName string) bool {
+func (*AgentToken) CanAccessTeam(rbac.Action, string) bool {
 	// agent cannot carry out team-level actions
 	return false
 }
