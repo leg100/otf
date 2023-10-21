@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 
+	otfapi "github.com/leg100/otf/internal/api"
+
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
@@ -23,7 +25,8 @@ func (a *api) addHandlers(r *mux.Router) {
 	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 
 	// client is typically an external agent
-	r.HandleFunc("/api/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
+	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
 }
 
 func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"path"
 	"strings"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/json"
 )
 
@@ -40,13 +38,6 @@ var (
 		Commit:  internal.Commit,
 		Built:   internal.Built,
 	})
-
-	// endpoints with these prefixes require authentication
-	AuthenticatedPrefixes = []string{
-		APIPrefixV2,
-		ModuleV1Prefix,
-		paths.UIPrefix,
-	}
 )
 
 type (
@@ -100,10 +91,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
 		w.Write([]byte(`{"status":"OK"}`))
-	})
-
-	r.HandleFunc(path.Join(APIPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
 	})
 
 	// Subrouter for service routes

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -18,6 +19,8 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
+	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+
 	// proxy this endpoint to the tfeapi endpoint because the behaviour is
 	// identical (although it returns a tfe struct the only user of this
 	// endpoint, the agent, ignores the return value).

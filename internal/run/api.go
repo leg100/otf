@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -23,8 +24,9 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	r.HandleFunc("/api/runs", a.list).Methods("GET")
-	r.HandleFunc("/api/runs/{run_id}", a.get).Methods("GET")
+	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r.HandleFunc("/runs", a.list).Methods("GET")
+	r.HandleFunc("/runs/{run_id}", a.get).Methods("GET")
 	r.HandleFunc("/runs/{id}/actions/start/{phase}", a.startPhase).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/finish/{phase}", a.finishPhase).Methods("POST")
 	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")

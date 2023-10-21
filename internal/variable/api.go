@@ -3,6 +3,8 @@ package variable
 import (
 	"net/http"
 
+	otfapi "github.com/leg100/otf/internal/api"
+
 	"github.com/leg100/otf/internal/tfeapi"
 
 	"github.com/gorilla/mux"
@@ -15,7 +17,8 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	r.HandleFunc("/api/vars/effective/{run_id}", a.listEffectiveVariables).Methods("GET")
+	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+	r.HandleFunc("/vars/effective/{run_id}", a.listEffectiveVariables).Methods("GET")
 }
 
 func (a *api) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {

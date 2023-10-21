@@ -3,6 +3,8 @@ package organization
 import (
 	"net/http"
 
+	otfapi "github.com/leg100/otf/internal/api"
+
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -14,6 +16,8 @@ type api struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
+	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
+
 	r.HandleFunc("/api/organizations", a.createOrganization).Methods("POST")
 	r.HandleFunc("/api/organizations/{name}", a.deleteOrganization).Methods("DELETE")
 }

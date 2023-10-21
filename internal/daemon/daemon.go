@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
@@ -372,6 +373,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			GithubAppService:   githubAppService,
 			VCSProviderService: vcsProviderService,
 		},
+		&api.Handlers{},
 	}
 
 	return &Daemon{
