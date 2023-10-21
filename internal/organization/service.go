@@ -177,7 +177,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Upda
 // Subject is a user: list their organization memberships
 // Subject is an agent: return its organization
 // Subject is an organization token: return its organization
-// Subject is a team token: return its organization
+// Subject is a team: return its organization
 func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
