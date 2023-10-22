@@ -89,13 +89,16 @@ func (a *tfe) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
-	var params TeamMembershipOptions
+	var params struct {
+		TeamID   string `schema:"team_id,required"`
+		Username string `schema:"username,required"`
+	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.AddTeamMembership(r.Context(), params); err != nil {
+	if err := a.AddTeamMembership(r.Context(), params.TeamID, []string{params.Username}); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -104,13 +107,16 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
-	var params TeamMembershipOptions
+	var params struct {
+		TeamID   string `schema:"team_id,required"`
+		Username string `schema:"username,required"`
+	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.RemoveTeamMembership(r.Context(), params); err != nil {
+	if err := a.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username}); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -249,13 +255,11 @@ func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-
 	team, err := a.GetTeamByID(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-
 	a.Respond(w, r, a.convertTeam(team), http.StatusOK)
 }
 
@@ -311,15 +315,11 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 		usernames = append(usernames, u.Username)
 	}
 
-	opts := TeamMembershipOptions{
-		TeamID:    teamID,
-		Usernames: usernames,
-	}
 	switch action {
 	case addTeamMembersAction:
-		return a.AddTeamMembership(r.Context(), opts)
+		return a.AddTeamMembership(r.Context(), teamID, usernames)
 	case removeTeamMembersAction:
-		return a.RemoveTeamMembership(r.Context(), opts)
+		return a.RemoveTeamMembership(r.Context(), teamID, usernames)
 	default:
 		return fmt.Errorf("unknown team membership action: %v", action)
 	}

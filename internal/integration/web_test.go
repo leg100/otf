@@ -21,10 +21,7 @@ func TestWeb(t *testing.T) {
 		Name: internal.String("devops"),
 	})
 	require.NoError(t, err)
-	err = daemon.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:    team.ID,
-		Usernames: []string{user.Username},
-	})
+	err = daemon.AddTeamMembership(ctx, team.ID, []string{user.Username})
 	require.NoError(t, err)
 
 	browser.Run(t, ctx, chromedp.Tasks{

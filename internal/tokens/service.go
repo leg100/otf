@@ -35,9 +35,10 @@ type (
 		site         internal.Authorizer // authorizes site access
 		organization internal.Authorizer // authorizes org access
 
-		db  *pgdb
-		web *webHandlers
-		api *tfe
+		db     *pgdb
+		web    *webHandlers
+		tfeapi *tfe
+		api    *api
 
 		middleware mux.MiddlewareFunc
 
@@ -69,7 +70,11 @@ func NewService(opts Options) (*service, error) {
 		svc:       &svc,
 		siteToken: opts.SiteToken,
 	}
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
+		TokensService: &svc,
+		Responder:     opts.Responder,
+	}
+	svc.api = &api{
 		TokensService: &svc,
 		Responder:     opts.Responder,
 	}
@@ -92,6 +97,7 @@ func NewService(opts Options) (*service, error) {
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
 }
 

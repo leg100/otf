@@ -44,12 +44,11 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 		return nil, err
 	}
 
-	sv := types.StateVersion{}
+	var sv Version
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
-
-	return newFromJSONAPI(&sv), nil
+	return &sv, nil
 }
 
 func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
@@ -58,14 +57,11 @@ func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts
 	if err != nil {
 		return nil, err
 	}
-
-	list := &types.StateVersionList{}
-	err = c.Do(ctx, req, list)
-	if err != nil {
+	var page resource.Page[*Version]
+	if err := c.Do(ctx, req, &page); err != nil {
 		return nil, err
 	}
-
-	return newListFromJSONAPI(list), nil
+	return &page, nil
 }
 
 func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
@@ -82,12 +78,11 @@ func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID string)
 	if err != nil {
 		return nil, err
 	}
-
-	sv := types.StateVersion{}
+	var sv Version
 	if err := c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
-	return newFromJSONAPI(&sv), nil
+	return &sv, nil
 }
 
 func (c *Client) DeleteStateVersion(ctx context.Context, svID string) error {
@@ -125,36 +120,14 @@ func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Versio
 	// compatibilty purposes, and takes both a workspace ID and a state version
 	// ID, but OTF does nothing with the workspace ID and thus anything can be
 	// specified.
-	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape("ws-rollback"))
-	req, err := c.NewRequest("PATCH", u, &types.RollbackStateVersionOptions{
-		RollbackStateVersion: &types.StateVersion{ID: svID},
-	})
+	u := fmt.Sprintf("state-versions/%s/rollback", url.QueryEscape(svID))
+	req, err := c.NewRequest("PATCH", u, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	sv := types.StateVersion{}
+	var sv Version
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
-
-	return newFromJSONAPI(&sv), nil
-}
-
-func newFromJSONAPI(from *types.StateVersion) *Version {
-	return &Version{
-		ID:     from.ID,
-		Serial: from.Serial,
-	}
-}
-
-// newListFromJSONAPI constructs a state version list from a json:api struct
-func newListFromJSONAPI(from *types.StateVersionList) *resource.Page[*Version] {
-	to := resource.Page[*Version]{
-		Pagination: (*resource.Pagination)(from.Pagination),
-	}
-	for _, i := range from.Items {
-		to.Items = append(to.Items, newFromJSONAPI(i))
-	}
-	return &to
+	return &sv, nil
 }

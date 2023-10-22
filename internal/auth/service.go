@@ -25,9 +25,10 @@ type (
 		site         internal.Authorizer // authorizes site access
 		organization internal.Authorizer // authorizes org access
 
-		db  *pgdb
-		web *webHandlers
-		api *tfe
+		db     *pgdb
+		web    *webHandlers
+		tfeapi *tfe
+		api    *api
 	}
 
 	Options struct {
@@ -51,7 +52,11 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
-	svc.api = &tfe{
+	svc.tfeapi = &tfe{
+		AuthService: &svc,
+		Responder:   opts.Responder,
+	}
+	svc.api = &api{
 		AuthService: &svc,
 		Responder:   opts.Responder,
 	}
@@ -60,12 +65,13 @@ func NewService(opts Options) *service {
 	opts.OrganizationService.AfterCreateOrganization(svc.createOwnersTeam)
 	// Fetch users when API calls request users be included in the
 	// response
-	opts.Responder.Register(tfeapi.IncludeUsers, svc.api.includeUsers)
+	opts.Responder.Register(tfeapi.IncludeUsers, svc.tfeapi.includeUsers)
 
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
 }

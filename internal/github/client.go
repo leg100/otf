@@ -74,7 +74,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 	// build http roundtripper using provided credentials
 	var (
-		tripper = otfhttp.DefaultTransport
+		tripper = http.DefaultTransport
 		err     error
 
 		iat bool

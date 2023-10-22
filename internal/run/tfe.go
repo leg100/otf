@@ -1,22 +1,16 @@
 package run
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"slices"
 	"time"
 
-	"github.com/DataDog/jsonapi"
-	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -29,7 +23,6 @@ type tfe struct {
 	workspace.PermissionsService
 	internal.Signer
 	*tfeapi.Responder
-	logr.Logger
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -45,15 +38,6 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{id}/actions/cancel", a.cancelRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/force-cancel", a.forceCancelRun).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/runs/queue", a.getRunQueue).Methods("GET")
-	r.HandleFunc("/watch", a.watchRun).Methods("GET")
-
-	// Run routes for exclusive use by remote agents
-	r.HandleFunc("/runs/{id}/actions/start/{phase}", a.startPhase).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/finish/{phase}", a.finishPhase).Methods("POST")
-	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")
-	r.HandleFunc("/runs/{id}/planfile", a.uploadPlanFile).Methods("PUT")
-	r.HandleFunc("/runs/{id}/lockfile", a.getLockFile).Methods("GET")
-	r.HandleFunc("/runs/{id}/lockfile", a.uploadLockFile).Methods("PUT")
 
 	// Plan routes
 	r.HandleFunc("/plans/{plan_id}", a.getPlan).Methods("GET")
@@ -113,59 +97,6 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Respond(w, r, converted, http.StatusCreated)
-}
-
-func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		RunID string             `schema:"id,required"`
-		Phase internal.PhaseType `schema:"phase,required"`
-	}
-	if err := decode.Route(&params, r); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	started, err := a.StartPhase(r.Context(), params.RunID, params.Phase, PhaseStartOptions{})
-	if errors.Is(err, internal.ErrPhaseAlreadyStarted) {
-		// A bit silly, but OTF uses the teapot status as a unique means of
-		// informing the agent the phase has been started by another agent.
-		w.WriteHeader(http.StatusTeapot)
-		return
-	} else if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	converted, err := a.toRun(started, r.Context())
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	a.Respond(w, r, converted, http.StatusOK)
-}
-
-func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		RunID string             `schema:"id,required"`
-		Phase internal.PhaseType `schema:"phase,required"`
-	}
-	if err := decode.Route(&params, r); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	run, err := a.FinishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	converted, err := a.toRun(run, r.Context())
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
@@ -305,98 +236,6 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *tfe) getPlanFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	opts := PlanFileOptions{}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	file, err := a.GetPlanFile(r.Context(), id, opts.Format)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	if _, err := w.Write(file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (a *tfe) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	opts := PlanFileOptions{}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	err = a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
-}
-
-func (a *tfe) getLockFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	file, err := a.GetLockFile(r.Context(), id)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	if _, err := w.Write(file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (a *tfe) uploadLockFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	err = a.UploadLockFile(r.Context(), id, buf.Bytes())
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
-}
-
 // getPlan retrieves a plan object in JSON-API format.
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
@@ -466,52 +305,6 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Respond(w, r, apply, http.StatusOK)
-}
-
-// watchRun handler responds with a stream of run events
-func (a *tfe) watchRun(w http.ResponseWriter, r *http.Request) {
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-		return
-	}
-
-	var params WatchOptions
-	if err := decode.Query(&params, r.URL.Query()); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	events, err := a.Watch(r.Context(), params)
-	if err != nil && errors.Is(err, internal.ErrAccessNotPermitted) {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "\r\n")
-	flusher.Flush()
-
-	for event := range events {
-		run := event.Payload.(*Run)
-		jrun, err := a.toRun(run, r.Context())
-		if err != nil {
-			a.Error(err, "marshalling run event", "event", event.Type)
-			continue
-		}
-		b, err := jsonapi.Marshal(jrun)
-		if err != nil {
-			a.Error(err, "marshalling run event", "event", event.Type)
-			continue
-		}
-		pubsub.WriteSSEEvent(w, b, event.Type, true)
-		flusher.Flush()
-	}
 }
 
 // OTF doesn't implement run events but as of terraform v1.5, the cloud backend

@@ -53,7 +53,8 @@ type (
 		cache     internal.Cache // cache state file
 		workspace internal.Authorizer
 		web       *webHandlers
-		api       *tfe
+		tfeapi    *tfe
+		api       *api
 
 		*factory // for creating state versions
 	}
@@ -91,19 +92,24 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		Service:  &svc,
 	}
-	svc.api = &tfe{
+	svc.api = &api{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
+	svc.tfeapi = &tfe{
 		Service:          &svc,
 		WorkspaceService: opts.WorkspaceService,
 		Responder:        opts.Responder,
 	}
 	// include state version outputs in api responses when requested.
-	opts.Responder.Register(tfeapi.IncludeOutputs, svc.api.includeOutputs)
-	opts.Responder.Register(tfeapi.IncludeOutputs, svc.api.includeWorkspaceCurrentOutputs)
+	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
+	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeWorkspaceCurrentOutputs)
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
 }
 

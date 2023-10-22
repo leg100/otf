@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
@@ -23,6 +24,14 @@ const (
 	// HTTP header in Google Cloud IAP request containing JWT
 	googleIAPHeader string = "x-goog-iap-jwt-assertion"
 )
+
+// AuthenticatedPrefixes are those URL path prefixes requiring authentication.
+var AuthenticatedPrefixes = []string{
+	otfhttp.APIPrefixV2,
+	otfhttp.ModuleV1Prefix,
+	otfapi.DefaultBasePath,
+	paths.UIPrefix,
+}
 
 type (
 	middlewareOptions struct {
@@ -188,7 +197,7 @@ func (m *middleware) getOrCreateUser(ctx context.Context, username string) (inte
 }
 
 func isProtectedPath(path string) bool {
-	for _, prefix := range otfhttp.AuthenticatedPrefixes {
+	for _, prefix := range AuthenticatedPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}

@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http/httptest"
 	"strings"
@@ -19,11 +20,9 @@ func TestAPI_Watch(t *testing.T) {
 	// input event channel
 	in := make(chan pubsub.Event, 1)
 
-	srv := &tfe{
-		Logger:             logr.Discard(),
-		Service:            &fakeRunService{ch: in},
-		PermissionsService: &fakePermissionsService{},
-		Signer:             internal.NewSigner([]byte("secret")),
+	srv := &api{
+		Logger:  logr.Discard(),
+		Service: &fakeRunService{ch: in},
 	}
 
 	r := httptest.NewRequest("", "/", nil)
@@ -47,13 +46,13 @@ func TestAPI_Watch(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		srv.watchRun(w, r)
+		srv.watch(w, r)
 		// should receive sse event that looks like "<whitespace>data:
 		// <data><newline>event: <event><newline><newline>
 		got := w.Body.String()
 		got = strings.TrimSpace(got)
 		parts := strings.Split(got, "\n")
-		if assert.Equal(t, 2, len(parts), got) {
+		if assert.Equal(t, 2, len(parts), got, got) {
 			assert.Equal(t, "event: created", parts[1])
 			if assert.Regexp(t, `data: .*`, parts[0]) {
 				data := strings.TrimPrefix(parts[0], "data: ")
@@ -71,4 +70,16 @@ func TestAPI_Watch(t *testing.T) {
 		done <- struct{}{}
 	}()
 	<-done
+}
+
+type (
+	fakeRunService struct {
+		ch chan pubsub.Event
+
+		RunService
+	}
+)
+
+func (f *fakeRunService) Watch(context.Context, WatchOptions) (<-chan pubsub.Event, error) {
+	return f.ch, nil
 }

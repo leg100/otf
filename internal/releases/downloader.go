@@ -25,9 +25,9 @@ type downloader struct {
 	mu      chan struct{} // ensures only one download at a time
 }
 
-// NewDownloader constructs a terraform downloader. Pass a path finder to
-// customise the location to which the bins are persisted, or pass nil to use
-// the default.
+// NewDownloader constructs a terraform downloader, with destdir set as the
+// parent directory into which the binaries are downloaded. Pass an empty string
+// to use a default.
 func NewDownloader(destdir string) *downloader {
 	if destdir == "" {
 		destdir = defaultTerraformBinDir

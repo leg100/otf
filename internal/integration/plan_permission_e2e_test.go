@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,10 +19,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	// Create user and add as member of engineers team
 	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
-	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:    team.ID,
-		Usernames: []string{engineer.Username},
-	})
+	err := svc.AddTeamMembership(ctx, team.ID, []string{engineer.Username})
 	require.NoError(t, err)
 
 	// create some terraform configuration

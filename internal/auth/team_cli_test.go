@@ -79,10 +79,10 @@ func (f *fakeTeamCLIService) DeleteTeam(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeTeamCLIService) AddTeamMembership(context.Context, TeamMembershipOptions) error {
+func (f *fakeTeamCLIService) AddTeamMembership(context.Context, string, []string) error {
 	return nil
 }
 
-func (f *fakeTeamCLIService) RemoveTeamMembership(context.Context, TeamMembershipOptions) error {
+func (f *fakeTeamCLIService) RemoveTeamMembership(context.Context, string, []string) error {
 	return nil
 }

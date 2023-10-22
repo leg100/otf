@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"net/url"
 	"path"
-	"strings"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
 type Client struct {
 	internal.JSONAPIClient
-	http.Config
+	otfapi.Config
 
 	// Client does not implement all of service yet
 	Service
@@ -33,8 +33,7 @@ func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanForma
 	}
 
 	buf := bytes.Buffer{}
-	err = c.Do(ctx, req, &buf)
-	if err != nil {
+	if err := c.Do(ctx, req, &buf); err != nil {
 		return nil, err
 	}
 
@@ -57,11 +56,9 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 	}
 	req.URL.RawQuery = q.Encode()
 
-	err = c.Do(ctx, req, nil)
-	if err != nil {
+	if err := c.Do(ctx, req, nil); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -71,13 +68,10 @@ func (c *Client) GetLockFile(ctx context.Context, runID string) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-
 	buf := bytes.Buffer{}
-	err = c.Do(ctx, req, &buf)
-	if err != nil {
+	if err := c.Do(ctx, req, &buf); err != nil {
 		return nil, err
 	}
-
 	return buf.Bytes(), nil
 }
 
@@ -87,32 +81,22 @@ func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 	if err != nil {
 		return err
 	}
-
-	err = c.Do(ctx, req, nil)
-	if err != nil {
+	if err := c.Do(ctx, req, nil); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
-	req, err := c.NewRequest("GET", "runs", &types.RunListOptions{
-		ListOptions:  types.ListOptions(opts.PageOptions),
-		Organization: opts.Organization,
-		WorkspaceID:  opts.WorkspaceID,
-		Status:       strings.Join(internal.ToStringSlice(opts.Statuses), ","),
-	})
+	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err
 	}
-
-	rl := &types.RunList{}
-	if err := c.Do(ctx, req, rl); err != nil {
+	var list resource.Page[*Run]
+	if err := c.Do(ctx, req, &list); err != nil {
 		return nil, err
 	}
-
-	return newListFromJSONAPI(rl), nil
+	return &list, nil
 }
 
 func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
@@ -121,14 +105,11 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	run := &types.Run{}
-	err = c.Do(ctx, req, run)
-	if err != nil {
+	var run Run
+	if err := c.Do(ctx, req, &run); err != nil {
 		return nil, err
 	}
-
-	return newFromJSONAPI(run), nil
+	return &run, nil
 }
 
 func (c *Client) StartPhase(ctx context.Context, id string, phase internal.PhaseType, opts PhaseStartOptions) (*Run, error) {
@@ -140,13 +121,11 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase internal.Phase
 	if err != nil {
 		return nil, err
 	}
-
-	run := &types.Run{}
-	if err := c.Do(ctx, req, run); err != nil {
+	var run Run
+	if err := c.Do(ctx, req, &run); err != nil {
 		return nil, err
 	}
-
-	return newFromJSONAPI(run), nil
+	return &run, nil
 }
 
 func (c *Client) FinishPhase(ctx context.Context, id string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
@@ -158,14 +137,11 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase internal.Phas
 	if err != nil {
 		return nil, err
 	}
-
-	run := &types.Run{}
-	err = c.Do(ctx, req, run)
-	if err != nil {
+	var run Run
+	if err := c.Do(ctx, req, &run); err != nil {
 		return nil, err
 	}
-
-	return newFromJSONAPI(run), nil
+	return &run, nil
 }
 
 // Watch returns a channel subscribed to run events.
@@ -179,12 +155,12 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Ev
 
 	go func() {
 		err := sseClient.SubscribeRawWithContext(ctx, func(raw *sse.Event) {
-			run, err := UnmarshalJSONAPI(raw.Data)
-			if err != nil {
+			var run Run
+			if err := jsonapi.Unmarshal(raw.Data, &run); err != nil {
 				notifications <- pubsub.Event{Type: pubsub.EventError, Payload: err}
 				return
 			}
-			notifications <- pubsub.Event{Type: pubsub.EventType(raw.Event), Payload: run}
+			notifications <- pubsub.Event{Type: pubsub.EventType(raw.Event), Payload: &run}
 		})
 		if err != nil {
 			notifications <- pubsub.Event{Type: pubsub.EventError, Payload: err}
@@ -194,7 +170,7 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Ev
 	return notifications, nil
 }
 
-func newSSEClient(config http.Config, notifications chan pubsub.Event, opts WatchOptions) (*sse.Client, error) {
+func newSSEClient(config otfapi.Config, notifications chan pubsub.Event, opts WatchOptions) (*sse.Client, error) {
 	// construct watch URL endpoint
 	addr, err := http.SanitizeAddress(config.Address)
 	if err != nil {
@@ -204,7 +180,7 @@ func newSSEClient(config http.Config, notifications chan pubsub.Event, opts Watc
 	if err != nil {
 		return nil, fmt.Errorf("invalid address: %v", err)
 	}
-	u.Path = path.Join(config.BasePath, "/watch")
+	u.Path = path.Join(otfapi.DefaultBasePath, "/watch")
 	q := url.Values{}
 	if err := http.Encoder.Encode(&opts, q); err != nil {
 		return nil, err

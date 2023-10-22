@@ -1,4 +1,4 @@
-package http
+package api
 
 import (
 	"context"
@@ -15,24 +15,64 @@ import (
 	"github.com/DataDog/jsonapi"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
+	otfhttp "github.com/leg100/otf/internal/http"
 )
 
 const (
-	DefaultAddress = "localhost:8080"
+	DefaultBasePath = "/otfapi"
+	PingEndpoint    = "ping"
+	DefaultAddress  = "localhost:8080"
+
+	userAgent = "go-otf"
 )
 
-type Client struct {
-	baseURL           *url.URL
-	token             string
-	headers           http.Header
-	http              *retryablehttp.Client
-	retryLogHook      RetryLogHook
-	retryServerErrors bool
-	remoteAPIVersion  string
-}
+type (
+	Client struct {
+		baseURL           *url.URL
+		token             string
+		headers           http.Header
+		http              *retryablehttp.Client
+		retryLogHook      RetryLogHook
+		retryServerErrors bool
+	}
+
+	// RetryLogHook allows a function to run before each retry.
+	RetryLogHook func(attemptNum int, resp *http.Response)
+
+	// Config provides configuration details to the API client.
+	Config struct {
+		// The address of the otf API.
+		Address string
+		// The base path on which the API is served.
+		BasePath string
+		// API token used to access the otf API.
+		Token string
+		// Headers that will be added to every request.
+		Headers http.Header
+		// RetryLogHook is invoked each time a request is retried.
+		RetryLogHook RetryLogHook
+		// Override default http transport
+		Transport http.RoundTripper
+	}
+)
 
 func NewClient(config Config) (*Client, error) {
-	addr, err := SanitizeAddress(config.Address)
+	// set defaults
+	if config.Address == "" {
+		config.Address = DefaultAddress
+	}
+	if config.BasePath == "" {
+		config.BasePath = DefaultBasePath
+	}
+	if config.Headers == nil {
+		config.Headers = make(http.Header)
+	}
+	if config.Transport == nil {
+		config.Transport = http.DefaultTransport
+	}
+	config.Headers.Set("User-Agent", userAgent)
+
+	addr, err := otfhttp.SanitizeAddress(config.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +105,14 @@ func NewClient(config Config) (*Client, error) {
 		RetryWaitMax: 400 * time.Millisecond,
 		RetryMax:     30,
 	}
-	meta, err := client.getRawAPIMetadata()
+	// send ping
+	req, err := client.NewRequest("GET", PingEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	// Save the API version so we can return it from the RemoteAPIVersion method
-	// later.
-	client.remoteAPIVersion = meta.APIVersion
+	if err := client.Do(context.Background(), req, nil); err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -79,38 +120,6 @@ func NewClient(config Config) (*Client, error) {
 // Hostname returns the server host:port.
 func (c *Client) Hostname() string {
 	return c.baseURL.Host
-}
-
-func (c *Client) getRawAPIMetadata() (rawAPIMetadata, error) {
-	var meta rawAPIMetadata
-
-	// Create a new request.
-	u, err := c.baseURL.Parse(PingEndpoint)
-	if err != nil {
-		return meta, err
-	}
-	req, err := http.NewRequest("GET", u.String(), nil)
-	if err != nil {
-		return meta, err
-	}
-
-	// Attach the default headers.
-	for k, v := range c.headers {
-		req.Header[k] = v
-	}
-	req.Header.Set("Accept", "application/vnd.api+json")
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
-	// Make a single request to retrieve the rate limit headers.
-	resp, err := c.http.HTTPClient.Do(req)
-	if err != nil {
-		return meta, err
-	}
-	resp.Body.Close()
-
-	meta.APIVersion = resp.Header.Get(headerAPIVersion)
-
-	return meta, nil
 }
 
 // NewRequest creates an API request with proper headers and serialization.
@@ -139,7 +148,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 
 		if v != nil {
 			q := url.Values{}
-			if err := Encoder.Encode(v, q); err != nil {
+			if err := otfhttp.Encoder.Encode(v, q); err != nil {
 				return nil, err
 			}
 			u.RawQuery = q.Encode()
@@ -190,7 +199,7 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	// json-api library doesn't support serializing other things.
 	var modelType reflect.Type
 	bodyType := reflect.TypeOf(v)
-	invalidBodyError := errors.New("go-tfe bug: DELETE/PATCH/POST body must be nil, ptr, or ptr slice")
+	invalidBodyError := errors.New("DELETE/PATCH/POST body must be nil, ptr, or ptr slice")
 	switch bodyType.Kind() {
 	case reflect.Slice:
 		sliceElem := bodyType.Elem()
@@ -207,14 +216,10 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	// Infer whether the request uses jsonapi or regular json
 	// serialization based on how the fields are tagged.
 	jsonAPIFields := 0
-	jsonFields := 0
 	for i := 0; i < modelType.NumField(); i++ {
 		structField := modelType.Field(i)
 		if structField.Tag.Get("jsonapi") != "" {
 			jsonAPIFields++
-		}
-		if structField.Tag.Get("json") != "" {
-			jsonFields++
 		}
 	}
 
@@ -300,12 +305,16 @@ func unmarshalResponse(r io.Reader, v any) error {
 		return err
 	}
 
-	// Get the value of model so we can test if it's a struct.
+	// Get the value of model so we can test if it's a slice or struct.
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
-	// Return an error if model is not a struct or an io.Writer.
+	if dst.Kind() == reflect.Slice {
+		return jsonapi.Unmarshal(b, v)
+	}
+
+	// Return an error if model is not a struct, slice or an io.Writer.
 	if dst.Kind() != reflect.Struct {
-		return fmt.Errorf("v must be a struct or an io.Writer")
+		return fmt.Errorf("v must be a struct, slice or an io.Writer")
 	}
 
 	// Try to get the Items and Pagination struct fields.

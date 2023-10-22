@@ -5,7 +5,6 @@ import (
 	"net/http"
 )
 
-var DefaultTransport http.RoundTripper = http.DefaultTransport
 var InsecureTransport http.RoundTripper
 
 func init() {

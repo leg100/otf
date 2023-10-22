@@ -19,66 +19,9 @@ type tfe struct {
 func (a *tfe) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
-	// Agent token routes
-	r.HandleFunc("/agent/details", a.getCurrentAgent).Methods("GET")
-	r.HandleFunc("/agent/create", a.createAgentToken).Methods("POST")
-
-	// Run token routes
-	r.HandleFunc("/tokens/run/create", a.createRunToken).Methods("POST")
-
-	// Organization token routes
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.createOrganizationToken).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.getOrganizationToken).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.deleteOrganizationToken).Methods("DELETE")
-}
-
-func (a *tfe) createRunToken(w http.ResponseWriter, r *http.Request) {
-	var opts types.CreateRunTokenOptions
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	token, err := a.CreateRunToken(r.Context(), CreateRunTokenOptions{
-		Organization: opts.Organization,
-		RunID:        opts.RunID,
-	})
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	w.Write(token)
-}
-
-func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	var opts types.AgentTokenCreateOptions
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	token, err := a.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
-		Description:  opts.Description,
-		Organization: opts.Organization,
-	})
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	w.Write(token)
-}
-
-func (a *tfe) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
-	at, err := AgentFromContext(r.Context())
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	to := &types.AgentToken{
-		ID:           at.ID,
-		Organization: at.Organization,
-	}
-	a.Respond(w, r, to, http.StatusOK)
 }
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {

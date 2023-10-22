@@ -14,15 +14,15 @@ type (
 	// AgentToken represents the authentication token for an external agent.
 	// NOTE: the cryptographic token itself is not retained.
 	AgentToken struct {
-		ID           string
+		ID           string `jsonapi:"primary,agent_tokens"`
 		CreatedAt    time.Time
-		Description  string
-		Organization string
+		Description  string `jsonapi:"attribute" json:"description"`
+		Organization string `jsonapi:"attribute" json:"organization_name"`
 	}
 
 	CreateAgentTokenOptions struct {
-		Organization string `schema:"organization_name,required"`
-		Description  string `schema:"description,required"`
+		Organization string `json:"organization_name" schema:"organization_name,required"`
+		Description  string `json:"description" schema:"description,required"`
 	}
 
 	NewAgentTokenOptions struct {

@@ -42,9 +42,6 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
 	r.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
-
-	// specific to OTF
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.listVersions).Methods("GET")
 }
 
 func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -120,30 +117,6 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page, err := a.ListStateVersions(r.Context(), ws.ID, opts.PageOptions)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	// convert items
-	items, err := a.toStateVersionList(page)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	a.RespondWithPage(w, r, items, page.Pagination)
-}
-
-func (a *tfe) listVersions(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		resource.PageOptions
-	}
-	if err := decode.All(&params, r); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	page, err := a.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

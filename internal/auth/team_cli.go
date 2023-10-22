@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 
-	"github.com/leg100/otf/internal/http"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +13,7 @@ type TeamCLI struct {
 	AuthService
 }
 
-func NewTeamCommand(httpClient *http.Client) *cobra.Command {
+func NewTeamCommand(api *otfapi.Client) *cobra.Command {
 	cli := &TeamCLI{}
 	cmd := &cobra.Command{
 		Use:   "teams",
@@ -22,7 +22,7 @@ func NewTeamCommand(httpClient *http.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.AuthService = &Client{JSONAPIClient: httpClient}
+			cli.AuthService = &Client{JSONAPIClient: api}
 			return nil
 		},
 	}
@@ -106,11 +106,7 @@ func (a *TeamCLI) addTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = a.AddTeamMembership(cmd.Context(), TeamMembershipOptions{
-				Usernames: args,
-				TeamID:    team.ID,
-			})
-			if err != nil {
+			if err := a.AddTeamMembership(cmd.Context(), team.ID, args); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args, name)
@@ -143,11 +139,7 @@ func (a *TeamCLI) deleteTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = a.RemoveTeamMembership(cmd.Context(), TeamMembershipOptions{
-				Usernames: args,
-				TeamID:    team.ID,
-			})
-			if err != nil {
+			if err := a.RemoveTeamMembership(cmd.Context(), team.ID, args); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args, name)

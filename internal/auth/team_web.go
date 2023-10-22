@@ -226,10 +226,7 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.AddTeamMembership(r.Context(), TeamMembershipOptions{
-		TeamID:    params.TeamID,
-		Usernames: []string{*params.Username},
-	})
+	err := h.svc.AddTeamMembership(r.Context(), params.TeamID, []string{*params.Username})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -249,10 +246,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.RemoveTeamMembership(r.Context(), TeamMembershipOptions{
-		TeamID:    params.TeamID,
-		Usernames: []string{params.Username},
-	})
+	err := h.svc.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

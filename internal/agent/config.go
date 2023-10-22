@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/api"
 	"github.com/spf13/pflag"
 )
 
@@ -18,7 +18,7 @@ type (
 	}
 	// ExternalConfig is configuration for an external agent
 	ExternalConfig struct {
-		HTTPConfig http.Config
+		APIConfig api.Config
 
 		Config
 	}
@@ -35,10 +35,9 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 
 func NewExternalConfigFromFlags(flags *pflag.FlagSet) *ExternalConfig {
 	cfg := ExternalConfig{
-		HTTPConfig: http.NewConfig(),
+		Config: *NewConfigFromFlags(flags),
 	}
-	cfg.Config = *NewConfigFromFlags(flags)
-	flags.StringVar(&cfg.HTTPConfig.Address, "address", http.DefaultAddress, "Address of OTF server")
-	flags.StringVar(&cfg.HTTPConfig.Token, "token", "", "Agent token for authentication")
+	flags.StringVar(&cfg.APIConfig.Address, "address", api.DefaultAddress, "Address of OTF server")
+	flags.StringVar(&cfg.APIConfig.Token, "token", "", "Agent token for authentication")
 	return &cfg
 }

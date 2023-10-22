@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +12,7 @@ type CLI struct {
 	Service
 }
 
-func NewCommand(httpClient *http.Client) *cobra.Command {
+func NewCommand(api *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "organizations",
@@ -21,7 +21,7 @@ func NewCommand(httpClient *http.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{JSONAPIClient: httpClient}
+			cli.Service = &Client{JSONAPIClient: api}
 			return nil
 		},
 	}

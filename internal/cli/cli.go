@@ -8,8 +8,8 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -21,18 +21,18 @@ import (
 
 // CLI is the `otf` cli application
 type CLI struct {
-	httpClient *http.Client
-	creds      CredentialsStore
+	api   *api.Client
+	creds CredentialsStore
 }
 
 func NewCLI() *CLI {
 	return &CLI{
-		httpClient: &http.Client{},
+		api: &api.Client{},
 	}
 }
 
 func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
-	cfg := http.NewConfig()
+	var cfg api.Config
 
 	creds, err := NewCredentialsStore()
 	if err != nil {
@@ -47,19 +47,19 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 		PersistentPreRunE: a.newClient(&cfg),
 	}
 
-	cmd.PersistentFlags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
+	cmd.PersistentFlags().StringVar(&cfg.Address, "address", api.DefaultAddress, "Address of OTF server")
 	cmd.PersistentFlags().StringVar(&cfg.Token, "token", "", "API authentication token")
 
 	cmd.SetArgs(args)
 	cmd.SetOut(out)
 
-	cmd.AddCommand(organization.NewCommand(a.httpClient))
-	cmd.AddCommand(auth.NewUserCommand(a.httpClient))
-	cmd.AddCommand(auth.NewTeamCommand(a.httpClient))
-	cmd.AddCommand(workspace.NewCommand(a.httpClient))
-	cmd.AddCommand(run.NewCommand(a.httpClient))
-	cmd.AddCommand(state.NewCommand(a.httpClient))
-	cmd.AddCommand(tokens.NewAgentsCommand(a.httpClient))
+	cmd.AddCommand(organization.NewCommand(a.api))
+	cmd.AddCommand(auth.NewUserCommand(a.api))
+	cmd.AddCommand(auth.NewTeamCommand(a.api))
+	cmd.AddCommand(workspace.NewCommand(a.api))
+	cmd.AddCommand(run.NewCommand(a.api))
+	cmd.AddCommand(state.NewCommand(a.api))
+	cmd.AddCommand(tokens.NewAgentsCommand(a.api))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
@@ -68,7 +68,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	return cmd.ExecuteContext(ctx)
 }
 
-func (a *CLI) newClient(cfg *http.Config) func(*cobra.Command, []string) error {
+func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
 	return func(*cobra.Command, []string) error {
 		// Set API token according to the following precedence:
 		// (1) flag
@@ -85,11 +85,11 @@ func (a *CLI) newClient(cfg *http.Config) func(*cobra.Command, []string) error {
 			cfg.Token = token
 		}
 
-		httpClient, err := http.NewClient(*cfg)
+		httpClient, err := api.NewClient(*cfg)
 		if err != nil {
 			return err
 		}
-		*a.httpClient = *httpClient
+		*a.api = *httpClient
 		return nil
 	}
 }

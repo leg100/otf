@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/releases"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,6 +34,7 @@ var (
 type agent struct {
 	Config
 	logr.Logger
+	releases.Downloader
 
 	client
 	spooler     // spools new run events
@@ -63,6 +65,7 @@ func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
 		client:     app,
 		Config:     cfg,
 		Logger:     logger,
+		Downloader: releases.NewDownloader(cfg.TerraformBinDir),
 		envs:       DefaultEnvs,
 		spooler:    newSpooler(app, logger, cfg),
 		terminator: newTerminator(),

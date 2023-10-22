@@ -162,10 +162,7 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t)
 
-		err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-			Usernames: []string{user.Username},
-			TeamID:    team.ID,
-		})
+		err := svc.AddTeamMembership(ctx, team.ID, []string{user.Username})
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String(user.Username)})
@@ -176,10 +173,7 @@ func TestUser(t *testing.T) {
 		// Adding membership for a user that does not exist should first create
 		// the user.
 		t.Run("create new user", func(t *testing.T) {
-			err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-				Usernames: []string{"new-kid"},
-				TeamID:    team.ID,
-			})
+			err := svc.AddTeamMembership(ctx, team.ID, []string{"new-kid"})
 			require.NoError(t, err)
 
 			got, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String("new-kid")})
@@ -194,10 +188,7 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, auth.WithTeams(team))
 
-		err := svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
-			Usernames: []string{user.Username},
-			TeamID:    team.ID,
-		})
+		err := svc.RemoveTeamMembership(ctx, team.ID, []string{user.Username})
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String(user.Username)})
@@ -217,10 +208,7 @@ func TestUser(t *testing.T) {
 		another := svc.createUser(t, auth.WithTeams(owners))
 
 		// try to delete both members from the owners team
-		err = svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
-			Usernames: []string{owner.Username, another.Username},
-			TeamID:    owners.ID,
-		})
+		err = svc.RemoveTeamMembership(ctx, owners.ID, []string{owner.Username, another.Username})
 		assert.Equal(t, auth.ErrCannotDeleteOnlyOwner, err)
 	})
 }

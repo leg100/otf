@@ -4,11 +4,10 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -38,13 +37,10 @@ type (
 		Watch(context.Context, run.WatchOptions) (<-chan pubsub.Event, error)
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
-		DeleteStateVersion(ctx context.Context, svID string) error
-		DownloadState(ctx context.Context, svID string) ([]byte, error)
 		Hostname() string
 
 		tokens.RunTokenService
 		internal.PutChunkService
-		releases.Downloader
 	}
 
 	// LocalClient is the client for an internal agent.
@@ -55,15 +51,14 @@ type (
 		workspace.WorkspaceService
 		internal.HostnameService
 		configversion.ConfigurationVersionService
-		releases.Downloader
 		run.RunService
 		logs.LogsService
 	}
 
 	// remoteClient is the client for an external agent.
 	remoteClient struct {
-		*http.Client
-		http.Config
+		*otfapi.Client
+		otfapi.Config
 
 		*stateClient
 		*configClient
@@ -72,7 +67,6 @@ type (
 		*workspaceClient
 		*runClient
 		*logsClient
-		releases.Downloader
 	}
 
 	stateClient     = state.Client
@@ -87,20 +81,19 @@ type (
 // New constructs a client that uses http to remotely invoke OTF
 // services.
 func newClient(config ExternalConfig) (*remoteClient, error) {
-	httpClient, err := http.NewClient(config.HTTPConfig)
+	api, err := otfapi.NewClient(config.APIConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &remoteClient{
-		Client:          httpClient,
-		Downloader:      releases.NewDownloader(config.TerraformBinDir),
-		stateClient:     &stateClient{JSONAPIClient: httpClient},
-		configClient:    &configClient{JSONAPIClient: httpClient},
-		variableClient:  &variableClient{JSONAPIClient: httpClient},
-		tokensClient:    &tokensClient{JSONAPIClient: httpClient},
-		workspaceClient: &workspaceClient{JSONAPIClient: httpClient},
-		runClient:       &runClient{JSONAPIClient: httpClient, Config: config.HTTPConfig},
-		logsClient:      &logsClient{JSONAPIClient: httpClient},
+		Client:          api,
+		stateClient:     &stateClient{JSONAPIClient: api},
+		configClient:    &configClient{JSONAPIClient: api},
+		variableClient:  &variableClient{JSONAPIClient: api},
+		tokensClient:    &tokensClient{JSONAPIClient: api},
+		workspaceClient: &workspaceClient{JSONAPIClient: api},
+		runClient:       &runClient{JSONAPIClient: api, Config: config.APIConfig},
+		logsClient:      &logsClient{JSONAPIClient: api},
 	}, nil
 }

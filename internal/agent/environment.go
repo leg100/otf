@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
@@ -24,6 +25,7 @@ import (
 type environment struct {
 	client
 	logr.Logger
+	releases.Downloader
 
 	steps []step // sequence of steps to execute
 
@@ -62,14 +64,14 @@ func newEnvironment(
 		RunID:        &run.ID,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "creating registry session")
+		return nil, errors.Wrap(err, "creating run token")
 	}
 	envs := internal.SafeAppend(agent.envs, internal.CredentialEnv(agent.Hostname(), token))
 
 	// retrieve variables and add them to the environment
 	variables, err := agent.ListEffectiveVariables(ctx, run.ID)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving workspace variables")
+		return nil, fmt.Errorf("retrieving workspace variables: %w", err)
 	}
 	for _, v := range variables {
 		if v.Category == variable.CategoryEnv {
@@ -85,13 +87,14 @@ func newEnvironment(
 	})
 
 	env := &environment{
-		Logger:    logger,
-		client:    agent,
-		out:       writer,
-		workdir:   wd,
-		variables: variables,
-		ctx:       ctx,
-		runner:    &runner{out: writer},
+		Logger:     logger,
+		Downloader: agent.Downloader,
+		client:     agent,
+		out:        writer,
+		workdir:    wd,
+		variables:  variables,
+		ctx:        ctx,
+		runner:     &runner{out: writer},
 		executor: &executor{
 			Config:  agent.Config,
 			version: run.TerraformVersion,

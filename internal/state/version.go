@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -14,18 +13,12 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          string
-		CreatedAt   time.Time
-		Serial      int64
-		State       []byte             // state file
-		Outputs     map[string]*Output // state version has many outputs
-		WorkspaceID string             // state version belongs to a workspace
-	}
-
-	// VersionList represents a list of state versions.
-	VersionList struct {
-		*resource.Pagination
-		Items []*Version
+		ID          string             `jsonapi:"primary,state-versions"`
+		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
+		Serial      int64              `jsonapi:"attribute" json:"serial"`
+		State       []byte             `jsonapi:"attribute" json:"state"`
+		Outputs     map[string]*Output `jsonapi:"attribute" json:"outputs"`
+		WorkspaceID string             `jsonapi:"attribute" json:"workspace-id"`
 	}
 
 	Output struct {
