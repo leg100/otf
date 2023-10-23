@@ -839,10 +839,10 @@ type Querier interface {
 	// FindTeamByIDScan scans the result of an executed FindTeamByIDBatch query.
 	FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error)
 
-	FindTeamByTokenID(ctx context.Context, teamID pgtype.Text) (FindTeamByTokenIDRow, error)
+	FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (FindTeamByTokenIDRow, error)
 	// FindTeamByTokenIDBatch enqueues a FindTeamByTokenID query into batch to be executed
 	// later by the batch.
-	FindTeamByTokenIDBatch(batch genericBatch, teamID pgtype.Text)
+	FindTeamByTokenIDBatch(batch genericBatch, tokenID pgtype.Text)
 	// FindTeamByTokenIDScan scans the result of an executed FindTeamByTokenIDBatch query.
 	FindTeamByTokenIDScan(results pgx.BatchResults) (FindTeamByTokenIDRow, error)
 

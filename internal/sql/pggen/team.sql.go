@@ -242,7 +242,7 @@ func (q *DBQuerier) FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow,
 const findTeamByTokenIDSQL = `SELECT t.*
 FROM teams t
 JOIN team_tokens tt USING (team_id)
-WHERE tt.team_id = $1
+WHERE tt.team_token_id = $1
 ;`
 
 type FindTeamByTokenIDRow struct {
@@ -261,9 +261,9 @@ type FindTeamByTokenIDRow struct {
 }
 
 // FindTeamByTokenID implements Querier.FindTeamByTokenID.
-func (q *DBQuerier) FindTeamByTokenID(ctx context.Context, teamID pgtype.Text) (FindTeamByTokenIDRow, error) {
+func (q *DBQuerier) FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (FindTeamByTokenIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByTokenID")
-	row := q.conn.QueryRow(ctx, findTeamByTokenIDSQL, teamID)
+	row := q.conn.QueryRow(ctx, findTeamByTokenIDSQL, tokenID)
 	var item FindTeamByTokenIDRow
 	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("query FindTeamByTokenID: %w", err)
@@ -272,8 +272,8 @@ func (q *DBQuerier) FindTeamByTokenID(ctx context.Context, teamID pgtype.Text) (
 }
 
 // FindTeamByTokenIDBatch implements Querier.FindTeamByTokenIDBatch.
-func (q *DBQuerier) FindTeamByTokenIDBatch(batch genericBatch, teamID pgtype.Text) {
-	batch.Queue(findTeamByTokenIDSQL, teamID)
+func (q *DBQuerier) FindTeamByTokenIDBatch(batch genericBatch, tokenID pgtype.Text) {
+	batch.Queue(findTeamByTokenIDSQL, tokenID)
 }
 
 // FindTeamByTokenIDScan implements Querier.FindTeamByTokenIDScan.
