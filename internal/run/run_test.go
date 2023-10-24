@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
@@ -176,6 +177,69 @@ func TestRun_States(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotZero(t, run.ForceCancelAvailableAt)
 	})
+}
+
+func TestRun_StatusReport(t *testing.T) {
+	now := internal.CurrentTimestamp()
+	ago := func(seconds int) time.Time {
+		return now.Add(time.Duration(seconds) * -time.Second)
+	}
+
+	// TODO: handle 0 time
+	tests := []struct {
+		name       string
+		timestamps []StatusTimestamp
+		want       map[internal.RunStatus]int
+	}{
+		{
+			"fresh run",
+			[]StatusTimestamp{{Status: internal.RunPending, Timestamp: now.Add(-time.Second)}},
+			map[internal.RunStatus]int{
+				internal.RunPending: 100,
+			},
+		},
+		{
+			"planning",
+			[]StatusTimestamp{
+				// 1 second in pending state
+				{Status: internal.RunPending, Timestamp: now.Add(4 * -time.Second)},
+				// 1 second in plan queued state
+				{Status: internal.RunPlanQueued, Timestamp: now.Add(3 * -time.Second)},
+				// 2 seconds in planning state
+				{Status: internal.RunPlanning, Timestamp: now.Add(2 * -time.Second)},
+			},
+			map[internal.RunStatus]int{
+				internal.RunPending:    25,
+				internal.RunPlanQueued: 25,
+				internal.RunPlanning:   50,
+			},
+		},
+		{
+			"planned and finished",
+			[]StatusTimestamp{
+				// 1 second in pending state
+				{Status: internal.RunPending, Timestamp: now.Add(4 * -time.Second)},
+				// 1 second in plan queued state
+				{Status: internal.RunPlanQueued, Timestamp: now.Add(3 * -time.Second)},
+				// 2 seconds in planning state
+				{Status: internal.RunPlanning, Timestamp: now.Add(2 * -time.Second)},
+				// finished
+				{Status: internal.RunPlannedAndFinished, Timestamp: now},
+			},
+			map[internal.RunStatus]int{
+				internal.RunPending:    25,
+				internal.RunPlanQueued: 25,
+				internal.RunPlanning:   50,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := &Run{StatusTimestamps: tt.timestamps}
+			got := run.StatusReport(now)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
 
 func newTestRun(ctx context.Context, opts CreateOptions) *Run {

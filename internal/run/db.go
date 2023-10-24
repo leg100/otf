@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/jackc/pgtype"
@@ -68,7 +69,6 @@ func (result pgresult) toRun() *Run {
 		RefreshOnly:            result.RefreshOnly,
 		Source:                 Source(result.Source.String),
 		Status:                 internal.RunStatus(result.Status.String),
-		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		ReplaceAddrs:           result.ReplaceAddrs,
 		TargetAddrs:            result.TargetAddrs,
 		AutoApply:              result.AutoApply,
@@ -82,21 +82,55 @@ func (result pgresult) toRun() *Run {
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
 		CostEstimationEnabled:  result.CostEstimationEnabled,
 		Plan: Phase{
-			RunID:            result.RunID.String,
-			PhaseType:        internal.PlanPhase,
-			Status:           PhaseStatus(result.PlanStatus.String),
-			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
-			ResourceReport:   reportFromDB(result.PlanResourceReport),
-			OutputReport:     reportFromDB(result.PlanOutputReport),
+			RunID:          result.RunID.String,
+			PhaseType:      internal.PlanPhase,
+			Status:         PhaseStatus(result.PlanStatus.String),
+			ResourceReport: reportFromDB(result.PlanResourceReport),
+			OutputReport:   reportFromDB(result.PlanOutputReport),
 		},
 		Apply: Phase{
-			RunID:            result.RunID.String,
-			PhaseType:        internal.ApplyPhase,
-			Status:           PhaseStatus(result.ApplyStatus.String),
-			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
-			ResourceReport:   reportFromDB(result.ApplyResourceReport),
+			RunID:          result.RunID.String,
+			PhaseType:      internal.ApplyPhase,
+			Status:         PhaseStatus(result.ApplyStatus.String),
+			ResourceReport: reportFromDB(result.ApplyResourceReport),
 		},
 	}
+	// convert run timestamps from db result and sort them according to
+	// timestamp (earliest first)
+	run.StatusTimestamps = make([]StatusTimestamp, len(result.RunStatusTimestamps))
+	for i, rst := range result.RunStatusTimestamps {
+		run.StatusTimestamps[i] = StatusTimestamp{
+			Status:    internal.RunStatus(rst.Status.String),
+			Timestamp: rst.Timestamp.Time.UTC(),
+		}
+	}
+	sort.Slice(run.StatusTimestamps, func(i, j int) bool {
+		return run.StatusTimestamps[i].Timestamp.Before(run.StatusTimestamps[j].Timestamp)
+	})
+	// convert plan timestamps from db result and sort them according to
+	// timestamp (earliest first)
+	run.Plan.StatusTimestamps = make([]PhaseStatusTimestamp, len(result.PlanStatusTimestamps))
+	for i, pst := range result.PlanStatusTimestamps {
+		run.Plan.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Status:    PhaseStatus(pst.Status.String),
+			Timestamp: pst.Timestamp.Time.UTC(),
+		}
+	}
+	sort.Slice(run.Plan.StatusTimestamps, func(i, j int) bool {
+		return run.Plan.StatusTimestamps[i].Timestamp.Before(run.Plan.StatusTimestamps[j].Timestamp)
+	})
+	// convert apply timestamps from db result and sort them according to
+	// timestamp (earliest first)
+	run.Apply.StatusTimestamps = make([]PhaseStatusTimestamp, len(result.ApplyStatusTimestamps))
+	for i, ast := range result.ApplyStatusTimestamps {
+		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Status:    PhaseStatus(ast.Status.String),
+			Timestamp: ast.Timestamp.Time.UTC(),
+		}
+	}
+	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
+		return run.Apply.StatusTimestamps[i].Timestamp.Before(run.Apply.StatusTimestamps[j].Timestamp)
+	})
 	if len(result.RunVariables) > 0 {
 		run.Variables = make([]Variable, len(result.RunVariables))
 		for i, v := range result.RunVariables {
@@ -415,34 +449,4 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 		Timestamp: sql.Timestamptz(ts),
 	})
 	return err
-}
-
-func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []StatusTimestamp) {
-	for _, ty := range rows {
-		timestamps = append(timestamps, StatusTimestamp{
-			Status:    internal.RunStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time.UTC(),
-		})
-	}
-	return timestamps
-}
-
-func unmarshalPlanStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
-	for _, ty := range rows {
-		timestamps = append(timestamps, PhaseStatusTimestamp{
-			Status:    PhaseStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time.UTC(),
-		})
-	}
-	return timestamps
-}
-
-func unmarshalApplyStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
-	for _, ty := range rows {
-		timestamps = append(timestamps, PhaseStatusTimestamp{
-			Status:    PhaseStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time.UTC(),
-		})
-	}
-	return timestamps
 }

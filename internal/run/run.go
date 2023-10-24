@@ -57,13 +57,16 @@ type (
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
 		Source                 Source                  `jsonapi:"attribute" json:"source"`
 		Status                 internal.RunStatus      `jsonapi:"attribute" json:"status"`
-		StatusTimestamps       []StatusTimestamp       `jsonapi:"attribute" json:"status_timestamps"`
 		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
 		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
 		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
+
+		// Timestamps of when a state transition occured. Ordered earliest
+		// first.
+		StatusTimestamps []StatusTimestamp `jsonapi:"attribute" json:"status_timestamps"`
 
 		Latest bool `jsonapi:"attribute" json:"latest"` // is latest run for workspace
 
@@ -112,6 +115,10 @@ type (
 		// configuration version is marked as speculative or not.
 		PlanOnly  *bool
 		Variables []Variable
+
+		// override func used for retrieving the current time - expressly for
+		// testing purposes
+		now *time.Time
 	}
 
 	// ListOptions are options for paginating and filtering a list of runs
@@ -146,7 +153,7 @@ type (
 func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
-		CreatedAt:              internal.CurrentTimestamp(),
+		CreatedAt:              opts.now,
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,
 		ConfigurationVersionID: cv.ID,
@@ -162,8 +169,8 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		TerraformVersion:       ws.TerraformVersion,
 		Variables:              opts.Variables,
 	}
-	run.Plan = NewPhase(run.ID, internal.PlanPhase)
-	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
+	run.Plan = newPhase(run.ID, internal.PlanPhase)
+	run.Apply = newPhase(run.ID, internal.ApplyPhase)
 	run.updateStatus(internal.RunPending)
 
 	if run.Source == "" {
@@ -208,6 +215,53 @@ func (r *Run) HasChanges() bool {
 func (r *Run) HasApply() bool {
 	_, err := r.Apply.StatusTimestamp(PhaseRunning)
 	return err == nil
+}
+
+// ElapsedTime returns the total time the run has taken thus far. If the run has
+// completed, then it is the time taken from entering the pending state
+// (creation) through to completion. Otherwise it is the time since entering the
+// pending state.
+func (r *Run) ElapsedTime(now time.Time) time.Duration {
+	pending := r.StatusTimestamps[0]
+	if r.Done() {
+		completed := r.StatusTimestamps[len(r.StatusTimestamps)]
+		return completed.Timestamp.Sub(pending.Timestamp)
+	}
+	return now.Sub(pending.Timestamp)
+}
+
+// StatusReport returns a report, calculating for each run status the proportion
+// of the total time taken that the run was in the given state. The returned map
+// values are integer percentages of total time taken.
+func (r *Run) StatusReport(now time.Time) map[internal.RunStatus]int {
+	var (
+		report = make(map[internal.RunStatus]int, len(r.StatusTimestamps))
+	)
+	for i := 0; i < len(r.StatusTimestamps); i++ {
+		var (
+			gap     time.Duration
+			current = r.StatusTimestamps[i]
+		)
+		// check if status is the latest status
+		if i == (len(r.StatusTimestamps) - 1) {
+			if r.Done() {
+				// we don't include the final state because it is a moment and
+				// not a period of time.
+				return report
+			}
+			// this is the latest state, so calculate gap as the time between
+			// now and when this state started.
+			gap = now.Sub(current.Timestamp)
+		} else {
+			// calculate gap as time between this state starting and the next
+			// state starting.
+			next := r.StatusTimestamps[i+1]
+			gap = next.Timestamp.Sub(current.Timestamp)
+		}
+		// get proportion of total time taken thus far.
+		report[current.Status] = int((gap.Seconds() / r.ElapsedTime(now).Seconds()) * 100)
+	}
+	return report
 }
 
 // Phase returns the current phase.

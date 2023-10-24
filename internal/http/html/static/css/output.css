@@ -844,6 +844,10 @@ th, td {
   margin-bottom: 1.5rem;
 }
 
+.ml-auto {
+  margin-left: auto;
+}
+
 .mt-1 {
   margin-top: 0.25rem;
 }
@@ -872,6 +876,10 @@ th, td {
   display: flex;
 }
 
+.inline-flex {
+  display: inline-flex;
+}
+
 .table {
   display: table;
 }
@@ -890,10 +898,6 @@ th, td {
 
 .min-h-screen {
   min-height: 100vh;
-}
-
-.w-20 {
-  width: 5rem;
 }
 
 .w-32 {
@@ -1034,6 +1038,10 @@ th, td {
 
 .gap-6 {
   gap: 1.5rem;
+}
+
+.justify-self-end {
+  justify-self: end;
 }
 
 .overflow-x-auto {

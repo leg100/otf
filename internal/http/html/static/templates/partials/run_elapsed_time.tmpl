@@ -1,0 +1,9 @@
+{{ define "run-elapsed-time" }}
+  {{ if .Done }}
+    <div id="elapsed-time" hx-swap-oob="true" class="text-sm">Elapsed time: <span class="bg-gray-200">{{ .ElapsedTime }}</span></div>
+  {{ else }}
+    <div id="elapsed-time" hx-swap-oob="true" x-data="{created: Date.parse('{{ .CreatedAt }}'), elapsed: '{{ .ElapsedTime.Milliseconds }}'}" x-init="setInterval(() => { now = Date.now(); elapsed = now - created; }, 500)" class="text-sm">
+      Elapsed time: <span class="bg-gray-200"><span x-text="Math.floor(elapsed / 1000)"></span> seconds</span>
+    </div>
+  {{ end }}
+{{ end }}

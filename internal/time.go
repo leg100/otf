@@ -2,7 +2,7 @@ package internal
 
 import "time"
 
-// CurrentTimestamp is *the* way to get a current timestamps in otf and
+// CurrentTimestamp is *the* way to get a current timestamps in OTF and
 // time.Now() should be avoided.
 //
 // We want timestamps to be rounded to nearest

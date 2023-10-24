@@ -16,14 +16,20 @@
 {{ end }}
 
 {{ define "content" }}
+  <div class="flex flex-row gap-4">
+    <div class="text-sm">Terraform version: <span class="bg-gray-200">{{ .Run.TerraformVersion }}</span></div>
+  </div>
   <div class="flex flex-col gap-4">
     <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">
       {{ template "run-item" .Run }}
     </div>
     <details id="plan" open>
       <summary class="cursor-pointer py-2">
-        <span class="font-semibold">plan</span>
-        {{ template "phase-status" .Run.Plan }}
+        <div class="inline-flex gap-2">
+          <span class="font-semibold">plan</span>
+          {{ template "phase-status" .Run.Plan }}
+          <span class="">{{ .Run.Plan.RunningTime }}</span>
+        </div>
       </summary>
       <div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
         {{- trimHTML .PlanLogs.ToHTML }}<div id="tailed-plan-logs"></div></div>
@@ -32,6 +38,7 @@
       <summary class="cursor-pointer py-2">
         <span class="font-semibold">apply</span>
         {{ template "phase-status" .Run.Apply }}
+        <span>{{ .Run.Apply.RunningTime }}</span>
       </summary>
       <div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
         {{- trimHTML .ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
