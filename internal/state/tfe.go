@@ -1,11 +1,13 @@
 package state
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -36,6 +38,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
 	r.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
 	r.HandleFunc("/state-versions", a.listVersionsByName).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/upload", a.uploadState).Methods("PUT")
 	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
 	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 
@@ -204,6 +207,22 @@ func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Respond(w, r, to, http.StatusOK)
+}
+
+func (a *tfe) uploadState(w http.ResponseWriter, r *http.Request) {
+	versionID, err := decode.Param("id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		tfeapi.Error(w, err)
+	}
+	if err := a.UploadState(r.Context(), versionID, buf.Bytes()); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
 }
 
 func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {

@@ -678,6 +678,20 @@ type Querier interface {
 	// InsertStateVersionScan scans the result of an executed InsertStateVersionBatch query.
 	InsertStateVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	UpdateState(ctx context.Context, state []byte, stateVersionID pgtype.Text) (pgconn.CommandTag, error)
+	// UpdateStateBatch enqueues a UpdateState query into batch to be executed
+	// later by the batch.
+	UpdateStateBatch(batch genericBatch, state []byte, stateVersionID pgtype.Text)
+	// UpdateStateScan scans the result of an executed UpdateStateBatch query.
+	UpdateStateScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	DiscardPendingStateVersions(ctx context.Context) (pgconn.CommandTag, error)
+	// DiscardPendingStateVersionsBatch enqueues a DiscardPendingStateVersions query into batch to be executed
+	// later by the batch.
+	DiscardPendingStateVersionsBatch(batch genericBatch)
+	// DiscardPendingStateVersionsScan scans the result of an executed DiscardPendingStateVersionsBatch query.
+	DiscardPendingStateVersionsScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindStateVersionsByWorkspaceID(ctx context.Context, params FindStateVersionsByWorkspaceIDParams) ([]FindStateVersionsByWorkspaceIDRow, error)
 	// FindStateVersionsByWorkspaceIDBatch enqueues a FindStateVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -1655,6 +1669,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateStateSQL, updateStateSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateState': %w", err)
+	}
+	if _, err := p.Prepare(ctx, discardPendingStateVersionsSQL, discardPendingStateVersionsSQL); err != nil {
+		return fmt.Errorf("prepare query 'DiscardPendingStateVersions': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findStateVersionsByWorkspaceIDSQL, findStateVersionsByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionsByWorkspaceID': %w", err)

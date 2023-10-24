@@ -27,8 +27,9 @@ type (
 
 	// Service is the application Service for state
 	Service interface {
-		// CreateStateVersion creates a state version for the given workspace using
-		// the given state data.
+		// CreateStateVersion creates a state version for a workspace,
+		// optionally including the state data, or uploading it later using
+		// UploadStateVersion.
 		CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error)
 		// DownloadCurrentState downloads the current (latest) state for the given
 		// workspace.
@@ -41,6 +42,9 @@ type (
 		// specified state version and sets it as the current state version for
 		// the given workspace.
 		RollbackStateVersion(ctx context.Context, versionID string) (*Version, error)
+		// UploadState uploads the state data for a state version.
+		UploadState(ctx context.Context, versionID string, state []byte) error
+		// DownloadState downloads the state data for a state version.
 		DownloadState(ctx context.Context, versionID string) ([]byte, error)
 		GetStateVersionOutput(ctx context.Context, outputID string) (*Output, error)
 	}
@@ -122,7 +126,7 @@ func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 		return nil, err
 	}
 
-	sv, err := a.create(ctx, opts)
+	sv, err := a.new(ctx, opts)
 	if err != nil {
 		a.Error(err, "creating state version", "subject", subject)
 		return nil, err
@@ -223,7 +227,20 @@ func (a *service) RollbackStateVersion(ctx context.Context, versionID string) (*
 	return sv, nil
 }
 
-// DownloadState retrieves base64-encoded terraform state from the db
+func (a *service) UploadState(ctx context.Context, svID string, state []byte) error {
+	subject, err := a.CanAccessStateVersion(ctx, rbac.UploadStateAction, svID)
+	if err != nil {
+		return err
+	}
+
+	if err := a.cache.Set(cacheKey(svID), state); err != nil {
+		a.Error(err, "caching state file")
+	}
+	// TODO: upload state to db
+	a.V(9).Info("downloaded state", "id", svID, "subject", subject)
+	return nil
+}
+
 func (a *service) DownloadState(ctx context.Context, svID string) ([]byte, error) {
 	subject, err := a.CanAccessStateVersion(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {

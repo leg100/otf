@@ -116,7 +116,7 @@ func TestFactory(t *testing.T) {
 			State:       state,
 			WorkspaceID: internal.String("ws-123"),
 		})
-		require.Equal(t, ErrSerialLessThanCurrent, err)
+		require.Equal(t, ErrSerialLessThanCurren, err)
 	})
 
 	t.Run("rollback", func(t *testing.T) {
