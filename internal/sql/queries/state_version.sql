@@ -20,10 +20,11 @@ UPDATE state_versions
 SET state = pggen.arg('state'), status = 'finalized'
 WHERE state_version_id = pggen.arg('state_version_id');
 
--- name: DiscardPendingStateVersions :exec
+-- name: DiscardPendingStateVersionsByWorkspaceID :exec
 UPDATE state_versions
 SET status = 'discarded'
-WHERE status = 'pending';
+WHERE workspace_id = pggen.arg('workspace_id')
+AND status = 'pending';
 
 -- name: FindStateVersionsByWorkspaceID :many
 SELECT
@@ -54,6 +55,19 @@ FROM state_versions
 LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE state_versions.state_version_id = pggen.arg('id')
 GROUP BY state_versions.state_version_id
+;
+
+-- name: FindStateVersionByIDForUpdate :one
+SELECT
+    sv.*,
+    (
+        SELECT array_agg(svo.*)
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+WHERE sv.state_version_id = pggen.arg('id')
+FOR UPDATE OF sv
 ;
 
 -- name: FindCurrentStateVersionByWorkspaceID :one

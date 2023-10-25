@@ -77,8 +77,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-// TODO: rename this updateStateAndFinalize
-func (db *pgdb) updateState(ctx context.Context, svID string, state []byte) error {
+func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error {
 	_, err := db.Conn(ctx).UpdateState(ctx, state, sql.String(svID))
 	return sql.Error(err)
 }
@@ -122,6 +121,14 @@ func (db *pgdb) getVersion(ctx context.Context, svID string) (*Version, error) {
 	return pgRow(result).toVersion(), nil
 }
 
+func (db *pgdb) getVersionForUpdate(ctx context.Context, svID string) (*Version, error) {
+	result, err := db.Conn(ctx).FindStateVersionByIDForUpdate(ctx, sql.String(svID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return pgRow(result).toVersion(), nil
+}
+
 func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	result, err := db.Conn(ctx).FindCurrentStateVersionByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
@@ -152,6 +159,14 @@ func (db *pgdb) deleteVersion(ctx context.Context, id string) error {
 
 func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID string) error {
 	_, err := db.Conn(ctx).UpdateWorkspaceCurrentStateVersionID(ctx, sql.String(svID), sql.String(workspaceID))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) discardPending(ctx context.Context, workspaceID string) error {
+	_, err := db.Conn(ctx).DiscardPendingStateVersionsByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)
 	}

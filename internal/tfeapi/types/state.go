@@ -18,6 +18,7 @@ type StateVersion struct {
 	CreatedAt          time.Time          `jsonapi:"attribute" json:"created-at"`
 	DownloadURL        string             `jsonapi:"attribute" json:"hosted-state-download-url"`
 	UploadURL          string             `jsonapi:"attribute" json:"hosted-state-upload-url"`
+	JSONUploadURL      string             `jsonapi:"attribute" json:"hosted-json-state-upload-url"`
 	Status             StateVersionStatus `jsonapi:"attribute" json:"status"`
 	Serial             int64              `jsonapi:"attribute" json:"serial"`
 	VCSCommitSHA       string             `jsonapi:"attribute" json:"vcs-commit-sha"`

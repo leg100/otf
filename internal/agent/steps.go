@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -275,12 +276,15 @@ func (b *stepsBuilder) uploadState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// TODO: extract serial from state file and upload it. Currently it is
-	// optional but we want to make it mandatory (makes logic easier
-	// server-side).
+	// extract serial from state file
+	var f state.File
+	if err := json.Unmarshal(statefile, &f); err != nil {
+		return err
+	}
 	_, err = b.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: &b.WorkspaceID,
 		State:       statefile,
+		Serial:      &f.Serial,
 	})
 	return err
 }

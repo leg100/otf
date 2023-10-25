@@ -12,8 +12,10 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/surl"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -73,6 +75,7 @@ type (
 		workspace.WorkspaceService
 		*sql.DB
 		*tfeapi.Responder
+		*surl.Signer
 	}
 
 	// StateVersionListOptions represents the options for listing state versions.
@@ -104,6 +107,7 @@ func NewService(opts Options) *service {
 		Service:          &svc,
 		WorkspaceService: opts.WorkspaceService,
 		Responder:        opts.Responder,
+		Signer:           opts.Signer,
 	}
 	// include state version outputs in api responses when requested.
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
@@ -136,7 +140,7 @@ func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 		a.Error(err, "caching state file")
 	}
 
-	a.V(0).Info("created state version", "id", sv.ID, "workspace", *opts.WorkspaceID, "serial", sv.Serial, "subject", subject)
+	a.V(0).Info("created state version", "state_version", sv, "subject", subject)
 	return sv, nil
 }
 
@@ -179,7 +183,7 @@ func (a *service) GetCurrentStateVersion(ctx context.Context, workspaceID string
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
 	}
-	a.V(9).Info("retrieved current state version", "workspace_id", workspaceID, "subject", subject)
+	a.V(9).Info("retrieved current state version", "state_version", sv, "subject", subject)
 	return sv, nil
 }
 
@@ -194,7 +198,7 @@ func (a *service) GetStateVersion(ctx context.Context, versionID string) (*Versi
 		a.Error(err, "retrieving state version", "id", versionID, "subject", subject)
 		return nil, err
 	}
-	a.V(9).Info("retrieved state version", "id", versionID, "subject", subject)
+	a.V(9).Info("retrieved state version", "state_version", sv, "subject", subject)
 	return sv, nil
 }
 
@@ -223,21 +227,33 @@ func (a *service) RollbackStateVersion(ctx context.Context, versionID string) (*
 		a.Error(err, "rolling back state version", "id", versionID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("rolled back state version", "id", versionID, "subject", subject)
+	a.V(0).Info("rolled back state version", "state_version", sv, "subject", subject)
 	return sv, nil
 }
 
+// NOTE: unauthenticated - access granted only via signed URL
 func (a *service) UploadState(ctx context.Context, svID string, state []byte) error {
-	subject, err := a.CanAccessStateVersion(ctx, rbac.UploadStateAction, svID)
+	var sv *Version
+	err := a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		var err error
+		sv, err = a.db.getVersionForUpdate(ctx, svID)
+		if err != nil {
+			return err
+		}
+		sv, err = a.uploadStateAndOutputs(ctx, sv, state)
+		if err != nil {
+			return err
+		}
+		if err := a.cache.Set(cacheKey(svID), state); err != nil {
+			a.Error(err, "caching state file")
+		}
+		return nil
+	})
 	if err != nil {
+		a.Error(err, "uploading state", "id", svID)
 		return err
 	}
-
-	if err := a.cache.Set(cacheKey(svID), state); err != nil {
-		a.Error(err, "caching state file")
-	}
-	// TODO: upload state to db
-	a.V(9).Info("downloaded state", "id", svID, "subject", subject)
+	a.V(9).Info("uploading state", "state_version", sv)
 	return nil
 }
 
@@ -246,7 +262,6 @@ func (a *service) DownloadState(ctx context.Context, svID string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-
 	if state, err := a.cache.Get(cacheKey(svID)); err == nil {
 		a.V(9).Info("downloaded state", "id", svID, "subject", subject)
 		return state, nil
@@ -264,19 +279,19 @@ func (a *service) DownloadState(ctx context.Context, svID string) ([]byte, error
 }
 
 func (a *service) GetStateVersionOutput(ctx context.Context, outputID string) (*Output, error) {
-	sv, err := a.db.getOutput(ctx, outputID)
+	out, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)
 		return nil, err
 	}
 
-	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionOutputAction, sv.StateVersionID)
+	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionOutputAction, out.StateVersionID)
 	if err != nil {
 		return nil, err
 	}
 
 	a.V(9).Info("retrieved state version output", "id", outputID, "subject", subject)
-	return sv, nil
+	return out, nil
 }
 
 func (a *service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (internal.Subject, error) {

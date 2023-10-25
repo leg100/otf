@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -21,6 +22,8 @@ const (
 var (
 	ErrSerialNotGreaterThanCurrent = errors.New("the serial provided in the state file is not greater than the serial currently known remotely")
 	ErrSerialMD5Mismatch           = errors.New("the MD5 hash of the state provided does not match what is currently known for the same serial number")
+	ErrSerialFileMismatch          = errors.New("the serial provided in the state file does not match that provided in the options")
+	ErrUploadNonPending            = errors.New("cannot upload state to a state version with a non-pending status")
 )
 
 type (
@@ -53,15 +56,7 @@ type (
 	CreateStateVersionOptions struct {
 		State       []byte  // Terraform state file. Optional.
 		WorkspaceID *string // ID of state version's workspace. Required.
-		Serial      *int64  // State serial number. If not provided then it is extracted from the state.
-	}
-
-	// newVersionOptions are options for constructing a state version - options
-	// are assumed to have already been validated.
-	newVersionOptions struct {
-		state       []byte
-		workspaceID string
-		serial      int64
+		Serial      *int64  // State serial number. Required.
 	}
 
 	// factory creates state versions - creation requires pre-requisite checking
@@ -77,35 +72,19 @@ type (
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		updateCurrentVersion(context.Context, string, string) error
+		uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error
+		discardPending(ctx context.Context, workspaceID string) error
 	}
 )
 
+// new create a new state version
 func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	if opts.WorkspaceID == nil {
 		return nil, &internal.MissingParameterError{Parameter: "workspace_id"}
 	}
-
-	// NOTE: state file is optional
-	// TODO: make the serial option mandatory
-	// TODO: ensure serial option matches serial in file
-
-	var (
-		serial int64
-	)
-	// serial provided in options takes precedence over that extracted from the
-	// state file.
-	if opts.Serial != nil {
-		serial = *opts.Serial
-	} else if opts.State != nil {
-		var file File
-		if err := json.Unmarshal(opts.State, file); err != nil {
-			return nil, err
-		}
-		serial = file.Serial
-	} else {
-		return nil, errors.New("either serial or state file must be provided")
+	if opts.Serial == nil {
+		return nil, &internal.MissingParameterError{Parameter: "serial"}
 	}
-
 	// Serial should be greater than or equal to current serial
 	current, err := f.db.getCurrentVersion(ctx, *opts.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
@@ -115,10 +94,10 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 	} else if err != nil {
 		return nil, err
 	}
-	if current.Serial > serial {
+	if current.Serial > *opts.Serial {
 		return nil, ErrSerialNotGreaterThanCurrent
 	}
-	if current.Serial == serial {
+	if current.Serial == *opts.Serial {
 		// Same serial is permissible as long as the state is identical. (This
 		// follows the observed but undocumented behaviour of TFC).
 		// If no state has been provided then an error is returned.
@@ -129,58 +108,50 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 			return nil, ErrSerialMD5Mismatch
 		}
 	}
-
-	if err := f.createCurrent(ctx, &sv); err != nil {
-		return nil, err
-	}
-	return &sv, nil
+	return f.newWithoutValidation(ctx, opts)
 }
 
-// Create a state version and update workspace's current state version.
-func (f *factory) createCurrent(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
+// newWithoutValidation creates a state version without validating the options.
+func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
 		ID:          internal.NewID("sv"),
 		CreatedAt:   internal.CurrentTimestamp(),
-		Serial:      opts.serial,
-		State:       opts.state,
-		WorkspaceID: opts.workspaceID,
+		Serial:      *opts.Serial,
+		State:       opts.State,
+		Status:      Pending,
+		WorkspaceID: *opts.WorkspaceID,
 	}
-
-	err := f.db.Lock(ctx, "state_versions", func(ctx context.Context, q pggen.Querier) error {
+	err := f.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		if err := f.db.createVersion(ctx, &sv); err != nil {
 			return err
 		}
-		// optionally upload state and outputs
 		if opts.State != nil {
-			outputs, err := f.uploadStateAndOutputs(ctx, sv.ID, opts.State)
+			finalized, err := f.uploadStateAndOutputs(ctx, &sv, opts.State)
 			if err != nil {
 				return err
 			}
-			sv.Outputs = outputs
-		}
-		if err := f.db.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
-			return fmt.Errorf("updating current version: %w", err)
+			sv = *finalized
 		}
 		return nil
 	})
 	return &sv, err
 }
 
-func (f *factory) uploadStateAndOutputs(ctx context.Context, svID string, state []byte) ([]*Output, error) {
+// upload state and its outputs to the database
+func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state []byte) (*Version, error) {
 	// extract outputs from state file
 	//
-	// TODO: TFC performs this as an asynchronous task, maybe OTF should too...
+	// TODO: TFC performs this as an asynchronous task, maybe OTF should too.
 	var file File
-	if err := json.Unmarshal(opts.State, &file); err != nil {
+	if err := json.Unmarshal(state, &file); err != nil {
 		return nil, err
 	}
-	outputs := make(map[string]*Output, len(f.Outputs))
-	for k, v := range f.Outputs {
+	outputs := make(map[string]*Output, len(file.Outputs))
+	for k, v := range file.Outputs {
 		typ, err := v.Type()
 		if err != nil {
-			return Version{}, err
+			return nil, err
 		}
-
 		outputs[k] = &Output{
 			ID:             internal.NewID("wsout"),
 			Name:           k,
@@ -190,16 +161,29 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, svID string, state 
 			StateVersionID: sv.ID,
 		}
 	}
-	sv.Outputs = outputs
-
-	return f.db.Lock(ctx, "state_versions", func(ctx context.Context, q pggen.Querier) error {
-		// TODO: check sv has status=pending
-		if err := f.db.updateState(ctx, svID, state); err != nil {
+	// now perform database updates
+	err := f.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+		if sv.Status != Pending {
+			return ErrUploadNonPending
+		}
+		if sv.Serial != file.Serial {
+			return ErrSerialFileMismatch
+		}
+		if err := f.db.uploadStateAndFinalize(ctx, sv.ID, state); err != nil {
 			return err
 		}
-		// TODO: discard all svs with status=pending
+		if err := f.db.discardPending(ctx, sv.WorkspaceID); err != nil {
+			return err
+		}
+		if err := f.db.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
+			return fmt.Errorf("updating current version: %w", err)
+		}
 		return nil
 	})
+	// ensure state version reflects changes made via database.
+	sv.Status = Finalized
+	sv.Outputs = outputs
+	return sv, err
 }
 
 func (f *factory) rollback(ctx context.Context, svID string) (*Version, error) {
@@ -207,10 +191,10 @@ func (f *factory) rollback(ctx context.Context, svID string) (*Version, error) {
 	if err != nil {
 		return nil, err
 	}
-	return f.createCurrent(ctx, CreateStateVersionOptions{
-		State:       v.State,
-		WorkspaceID: v.WorkspaceID,
-		Serial:      v.Serial,
+	return f.newWithoutValidation(ctx, CreateStateVersionOptions{
+		State:       sv.State,
+		WorkspaceID: &sv.WorkspaceID,
+		Serial:      &sv.Serial,
 	})
 }
 
@@ -222,4 +206,14 @@ func (v *Version) File() (*File, error) {
 		return nil, err
 	}
 	return &f, nil
+}
+
+func (v *Version) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", v.ID),
+		slog.Int64("serial", v.Serial),
+		slog.String("status", string(v.Status)),
+		slog.String("workspace_id", v.WorkspaceID),
+	}
+	return slog.GroupValue(attrs...)
 }
