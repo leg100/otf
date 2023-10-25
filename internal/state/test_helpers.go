@@ -20,6 +20,10 @@ func (f *fakeDB) createVersion(context.Context, *Version) error {
 	return nil
 }
 
+func (f *fakeDB) createOutputs(context.Context, []*Output) error {
+	return nil
+}
+
 func (f *fakeDB) getVersion(ctx context.Context, svID string) (*Version, error) {
 	if f.version == nil {
 		return nil, internal.ErrResourceNotFound

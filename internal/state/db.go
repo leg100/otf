@@ -77,6 +77,25 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
+func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
+	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		for _, svo := range outputs {
+			_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
+				ID:             sql.String(svo.ID),
+				Name:           sql.String(svo.Name),
+				Sensitive:      svo.Sensitive,
+				Type:           sql.String(svo.Type),
+				Value:          svo.Value,
+				StateVersionID: sql.String(svo.StateVersionID),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error {
 	_, err := db.Conn(ctx).UpdateState(ctx, state, sql.String(svID))
 	return sql.Error(err)

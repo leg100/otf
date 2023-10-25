@@ -11,6 +11,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -22,7 +23,6 @@ const (
 var (
 	ErrSerialNotGreaterThanCurrent = errors.New("the serial provided in the state file is not greater than the serial currently known remotely")
 	ErrSerialMD5Mismatch           = errors.New("the MD5 hash of the state provided does not match what is currently known for the same serial number")
-	ErrSerialFileMismatch          = errors.New("the serial provided in the state file does not match that provided in the options")
 	ErrUploadNonPending            = errors.New("cannot upload state to a state version with a non-pending status")
 )
 
@@ -69,6 +69,7 @@ type (
 		Tx(context.Context, func(context.Context, pggen.Querier) error) error
 
 		createVersion(context.Context, *Version) error
+		createOutputs(context.Context, []*Output) error
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		updateCurrentVersion(context.Context, string, string) error
@@ -166,8 +167,8 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 		if sv.Status != Pending {
 			return ErrUploadNonPending
 		}
-		if sv.Serial != file.Serial {
-			return ErrSerialFileMismatch
+		if err := f.db.createOutputs(ctx, maps.Values(outputs)); err != nil {
+			return err
 		}
 		if err := f.db.uploadStateAndFinalize(ctx, sv.ID, state); err != nil {
 			return err

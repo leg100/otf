@@ -55,10 +55,10 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	// terraform as of v1.6.0 uploads a 'JSON' version of the state (by
 	// which they mean a state using a well documented, public, schema rather than their
 	// internal schema). OTF doesn't do anything yet with the JSON version but
-	// in order to avoid breaking terraform  (see
+	// in order to avoid breaking terraform (see
 	// https://github.com/leg100/otf/issues/626) OTF accepts the upload but does
 	// nothing with it.
-	signed.HandleFunc("/state-versions/{id}/upload/json", func(w http.ResponseWriter, r *http.Request) {})
+	signed.HandleFunc("/state-versions/{id}/upload/json", func(http.ResponseWriter, *http.Request) {})
 
 }
 
@@ -103,28 +103,6 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 		if fmt.Sprintf("%x", md5.Sum(state)) != *opts.MD5 {
 			tfeapi.Error(w, err)
 			return
-		}
-		// The docs (linked above) state the serial in the create options must
-		// match the serial in the state file. And OTF does indeed check that
-		// they match later on.
-		// However, the go-tfe integration tests send different values for each
-		// and expect the serial in the options to take precedence, without
-		// error. To ensure the tests pass the serial in the state is checked
-		// here, and if it doesn't match then it is updated to make it match.
-		var file File
-		if err := json.Unmarshal(state, &file); err != nil {
-			tfeapi.Error(w, err)
-			return
-		}
-		if file.Serial != *opts.Serial {
-			// update serial in state
-			file.Serial = *opts.Serial
-			updated, err := json.Marshal(file)
-			if err != nil {
-				tfeapi.Error(w, err)
-				return
-			}
-			state = updated
 		}
 	}
 
