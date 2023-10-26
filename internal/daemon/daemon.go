@@ -265,6 +265,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Cache:               cache,
 		Renderer:            renderer,
 		Responder:           responder,
+		Signer:              signer,
 	})
 	variableService := variable.NewService(variable.Options{
 		Logger:              logger,

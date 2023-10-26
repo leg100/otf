@@ -2,6 +2,7 @@ package run
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -95,7 +96,12 @@ func (a *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	run, err := a.FinishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
+	var opts PhaseFinishOptions
+	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	run, err := a.FinishPhase(r.Context(), params.RunID, params.Phase, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

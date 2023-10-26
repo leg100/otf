@@ -18,7 +18,7 @@ func TestFile_Unmarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 4, got.Version)
-	assert.Equal(t, int64(9), got.Serial)
+	assert.Equal(t, int64(1), got.Serial)
 	assert.Equal(t, "f1d86b13-cf61-8c41-9cc9-bde8a04e94b4", got.Lineage)
 	if assert.Equal(t, 3, len(got.Outputs)) {
 		if assert.Contains(t, got.Outputs, "foo") {

@@ -43,9 +43,7 @@ type (
 
 	// PhaseFinishOptions report the status of a phase upon finishing.
 	PhaseFinishOptions struct {
-		Type string `jsonapi:"primary,phase"`
-		// Errored is true if the phase finished unsuccessfully.
-		Errored bool `jsonapi:"attribute" json:"errored,omitempty"`
+		Errored bool `json:"errored,omitempty"`
 	}
 
 	PhaseStatusTimestamp struct {

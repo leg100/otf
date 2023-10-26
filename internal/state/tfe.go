@@ -1,12 +1,15 @@
 package state
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -16,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/surl"
 	"golang.org/x/exp/maps"
 )
 
@@ -23,25 +27,39 @@ type tfe struct {
 	Service
 	workspace.WorkspaceService
 	*tfeapi.Responder
+	*surl.Signer
 }
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 func (a *tfe) addHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	api := otfhttp.APIRouter(r)
 
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.createVersion).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
-	r.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
-	r.HandleFunc("/state-versions", a.listVersionsByName).Methods("GET")
-	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
-	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
+	api.HandleFunc("/workspaces/{workspace_id}/state-versions", a.createVersion).Methods("POST")
+	api.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
+	api.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
+	api.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
+	api.HandleFunc("/state-versions", a.listVersionsByName).Methods("GET")
+	api.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
+	api.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 
-	r.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
-	r.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
-	r.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
+	api.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
+	api.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
+	api.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
+
+	// verify signed URLs
+	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
+	signed.Use(internal.VerifySignedURL(a.Signer))
+	signed.HandleFunc("/state-versions/{id}/upload", a.uploadState).Methods("PUT")
+	// terraform as of v1.6.0 uploads a 'JSON' version of the state (by
+	// which they mean a state using a well documented, public, schema rather than their
+	// internal schema). OTF doesn't do anything yet with the JSON version but
+	// in order to avoid breaking terraform (see
+	// https://github.com/leg100/otf/issues/626) OTF accepts the upload but does
+	// nothing with it.
+	signed.HandleFunc("/state-versions/{id}/upload/json", func(http.ResponseWriter, *http.Request) {})
+
 }
 
 func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -62,34 +80,37 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "serial"})
 		return
 	}
+	// TFE docs say md5 is a required option yet the state itself is optional.
+	// OTF follows this behavour, mandating the md5 parameter, but it is only
+	// actually used if the state is also provided at creation-time. If the
+	// state is only later uploaded, the md5 is not used.
 	if opts.MD5 == nil {
 		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "md5"})
 		return
 	}
 
-	// base64-decode state to []byte
-	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	// validate md5 checksum
-	if fmt.Sprintf("%x", md5.Sum(decoded)) != *opts.MD5 {
-		tfeapi.Error(w, err)
-		return
+	// state is optional as of terraform v1.6.0
+	var state []byte
+	if opts.State != nil {
+		// base64-decode state to []byte
+		decoded, err := base64.StdEncoding.DecodeString(*opts.State)
+		if err != nil {
+			tfeapi.Error(w, err)
+			return
+		}
+		state = decoded
+		// validate md5 checksum
+		if fmt.Sprintf("%x", md5.Sum(state)) != *opts.MD5 {
+			tfeapi.Error(w, err)
+			return
+		}
 	}
 
 	// TODO: validate lineage
 
-	// The docs (linked above) state the serial in the create options must match the
-	// serial in the state file. However, the go-tfe integration tests we use
-	// send different values for each and expect the serial in the create
-	// options to take precedence, without error. We've opted to support that
-	// behaviour.
 	sv, err := a.CreateStateVersion(r.Context(), CreateStateVersionOptions{
 		WorkspaceID: internal.String(workspaceID),
-		State:       decoded,
+		State:       state,
 		Serial:      opts.Serial,
 	})
 	if err != nil {
@@ -97,7 +118,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to, err := a.toStateVersion(sv)
+	to, err := a.toStateVersion(sv, r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -123,7 +144,7 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	items, err := a.toStateVersionList(page)
+	items, err := a.toStateVersionList(page, r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -144,7 +165,7 @@ func (a *tfe) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to, err := a.toStateVersion(sv)
+	to, err := a.toStateVersion(sv, r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -164,7 +185,7 @@ func (a *tfe) getVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to, err := a.toStateVersion(sv)
+	to, err := a.toStateVersion(sv, r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -198,12 +219,28 @@ func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to, err := a.toStateVersion(sv)
+	to, err := a.toStateVersion(sv, r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 	a.Respond(w, r, to, http.StatusOK)
+}
+
+func (a *tfe) uploadState(w http.ResponseWriter, r *http.Request) {
+	versionID, err := decode.Param("id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		tfeapi.Error(w, err)
+	}
+	if err := a.UploadState(r.Context(), versionID, buf.Bytes()); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
 }
 
 func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
@@ -286,31 +323,47 @@ func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.toOutput(out, false), http.StatusOK)
 }
 
-func (a *tfe) toStateVersion(from *Version) (*types.StateVersion, error) {
-	var state File
-	if err := json.Unmarshal(from.State, &state); err != nil {
-		return nil, err
-	}
+func (a *tfe) toStateVersion(from *Version, r *http.Request) (*types.StateVersion, error) {
 	to := &types.StateVersion{
 		ID:                 from.ID,
 		CreatedAt:          from.CreatedAt,
-		DownloadURL:        fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
 		Serial:             from.Serial,
+		Status:             types.StateVersionStatus(from.Status),
+		DownloadURL:        fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
 		ResourcesProcessed: true,
-		StateVersion:       state.Version,
-		TerraformVersion:   state.TerraformVersion,
+		Outputs:            make([]*types.StateVersionOutput, len(from.Outputs)),
 	}
-	for _, out := range from.Outputs {
-		to.Outputs = append(to.Outputs, &types.StateVersionOutput{ID: out.ID})
+	// generate signed url for upload state endpoint
+	uploadURL, err := a.generateSignedURL(r, "/state-versions/%s/upload", from.ID)
+	if err != nil {
+		return nil, err
+	}
+	to.UploadURL = uploadURL
+	// generate signed url for upload json state endpoint
+	jsonUploadURL, err := a.generateSignedURL(r, "/state-versions/%s/upload/json", from.ID)
+	if err != nil {
+		return nil, err
+	}
+	to.JSONUploadURL = jsonUploadURL
+	for i, out := range maps.Values(from.Outputs) {
+		to.Outputs[i] = &types.StateVersionOutput{ID: out.ID}
+	}
+	if from.State != nil {
+		var state File
+		if err := json.Unmarshal(from.State, &state); err != nil {
+			return nil, err
+		}
+		to.StateVersion = state.Version
+		to.TerraformVersion = state.TerraformVersion
 	}
 	return to, nil
 }
 
-func (a *tfe) toStateVersionList(from *resource.Page[*Version]) ([]*types.StateVersion, error) {
+func (a *tfe) toStateVersionList(from *resource.Page[*Version], r *http.Request) ([]*types.StateVersion, error) {
 	// convert items
 	items := make([]*types.StateVersion, len(from.Items))
 	for i, from := range from.Items {
-		to, err := a.toStateVersion(from)
+		to, err := a.toStateVersion(from, r)
 		if err != nil {
 			return nil, err
 		}
@@ -385,4 +438,13 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 		i++
 	}
 	return include, nil
+}
+
+func (a *tfe) generateSignedURL(r *http.Request, fmtpath string, args ...any) (string, error) {
+	path := fmt.Sprintf(fmtpath, args...)
+	signedPath, err := a.Sign(path, time.Hour)
+	if err != nil {
+		return "", err
+	}
+	return otfhttp.Absolute(r, signedPath), nil
 }
