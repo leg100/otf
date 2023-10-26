@@ -106,11 +106,15 @@ func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptio
 }
 
 func (a *service) GetTeamToken(ctx context.Context, teamID string) (*TeamToken, error) {
+	_, err := a.team.CanAccess(ctx, rbac.GetTeamTokenAction, teamID)
+	if err != nil {
+		return nil, err
+	}
 	return a.db.getTeamTokenByTeamID(ctx, teamID)
 }
 
 func (a *service) DeleteTeamToken(ctx context.Context, teamID string) error {
-	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, teamID)
+	_, err := a.team.CanAccess(ctx, rbac.DeleteTeamTokenAction, teamID)
 	if err != nil {
 		return err
 	}
