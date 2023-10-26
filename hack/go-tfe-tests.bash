@@ -85,6 +85,10 @@ tests+=('TestVariableSetsDelete')
 tests+=('TestVariableSetVariables')
 tests+=('TestStateVersion')
 
+betaTests=()
+betaTests+=('TestStateVersionsCreate')
+betaTests+=('TestStateVersionsUpload')
+
 # only run these tests if env vars are present - otherwise the tests fail early
 vcsTests=('TestConfigurationVersionsRead' 'TestWorkspacesCreate')
 if [ -n "$GITHUB_POLICY_SET_IDENTIFIER" ] && [ -n "$OAUTH_CLIENT_GITHUB_TOKEN" ]
@@ -95,6 +99,7 @@ else
 fi
 
 all=$(join_by '|' "${tests[@]}")
+allBetaTests=$(join_by '|' "${betaTests[@]}")
 
 dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@latest | jq -r '.Dir')
 echo "downloaded go-tfe module to $dest_dir"
@@ -103,4 +108,8 @@ echo "downloaded go-tfe module to $dest_dir"
 chmod -R +w $dest_dir
 
 cd $dest_dir
+
+# run beta tests
+ENABLE_BETA=1 go test -v -run $allBetaTests -timeout 600s
+# run tests
 go test -v -run ${@:-$all} -timeout 600s

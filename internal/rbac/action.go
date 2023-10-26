@@ -101,6 +101,7 @@ const (
 	GetStateVersionAction
 	DeleteStateVersionAction
 	RollbackStateVersionAction
+	UploadStateAction
 	DownloadStateAction
 	GetStateVersionOutputAction
 

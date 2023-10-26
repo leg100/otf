@@ -678,6 +678,20 @@ type Querier interface {
 	// InsertStateVersionScan scans the result of an executed InsertStateVersionBatch query.
 	InsertStateVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	UpdateState(ctx context.Context, state []byte, stateVersionID pgtype.Text) (pgconn.CommandTag, error)
+	// UpdateStateBatch enqueues a UpdateState query into batch to be executed
+	// later by the batch.
+	UpdateStateBatch(batch genericBatch, state []byte, stateVersionID pgtype.Text)
+	// UpdateStateScan scans the result of an executed UpdateStateBatch query.
+	UpdateStateScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	DiscardPendingStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	// DiscardPendingStateVersionsByWorkspaceIDBatch enqueues a DiscardPendingStateVersionsByWorkspaceID query into batch to be executed
+	// later by the batch.
+	DiscardPendingStateVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// DiscardPendingStateVersionsByWorkspaceIDScan scans the result of an executed DiscardPendingStateVersionsByWorkspaceIDBatch query.
+	DiscardPendingStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindStateVersionsByWorkspaceID(ctx context.Context, params FindStateVersionsByWorkspaceIDParams) ([]FindStateVersionsByWorkspaceIDRow, error)
 	// FindStateVersionsByWorkspaceIDBatch enqueues a FindStateVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -698,6 +712,13 @@ type Querier interface {
 	FindStateVersionByIDBatch(batch genericBatch, id pgtype.Text)
 	// FindStateVersionByIDScan scans the result of an executed FindStateVersionByIDBatch query.
 	FindStateVersionByIDScan(results pgx.BatchResults) (FindStateVersionByIDRow, error)
+
+	FindStateVersionByIDForUpdate(ctx context.Context, id pgtype.Text) (FindStateVersionByIDForUpdateRow, error)
+	// FindStateVersionByIDForUpdateBatch enqueues a FindStateVersionByIDForUpdate query into batch to be executed
+	// later by the batch.
+	FindStateVersionByIDForUpdateBatch(batch genericBatch, id pgtype.Text)
+	// FindStateVersionByIDForUpdateScan scans the result of an executed FindStateVersionByIDForUpdateBatch query.
+	FindStateVersionByIDForUpdateScan(results pgx.BatchResults) (FindStateVersionByIDForUpdateRow, error)
 
 	FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindCurrentStateVersionByWorkspaceIDRow, error)
 	// FindCurrentStateVersionByWorkspaceIDBatch enqueues a FindCurrentStateVersionByWorkspaceID query into batch to be executed
@@ -1656,6 +1677,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateStateSQL, updateStateSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateState': %w", err)
+	}
+	if _, err := p.Prepare(ctx, discardPendingStateVersionsByWorkspaceIDSQL, discardPendingStateVersionsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DiscardPendingStateVersionsByWorkspaceID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findStateVersionsByWorkspaceIDSQL, findStateVersionsByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionsByWorkspaceID': %w", err)
 	}
@@ -1664,6 +1691,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findStateVersionByIDSQL, findStateVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findStateVersionByIDForUpdateSQL, findStateVersionByIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindStateVersionByIDForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findCurrentStateVersionByWorkspaceIDSQL, findCurrentStateVersionByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindCurrentStateVersionByWorkspaceID': %w", err)

@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -14,12 +13,6 @@ import (
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
-// Client uses json-api according to the documented terraform cloud state
-// version API [1] that OTF implements (we could use something different,
-// something simpler but since the terraform CLI talks to OTF via json-api we
-// might as well use this too...).
-//
-// [1] https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 type Client struct {
 	internal.JSONAPIClient
 
@@ -28,17 +21,11 @@ type Client struct {
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	var state File
-	if err := json.Unmarshal(opts.State, &state); err != nil {
-		return nil, err
-	}
-
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(*opts.WorkspaceID))
 	req, err := c.NewRequest("POST", u, &types.StateVersionCreateVersionOptions{
-		Lineage: &state.Lineage,
-		MD5:     internal.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
-		Serial:  internal.Int64(state.Serial),
-		State:   internal.String(base64.StdEncoding.EncodeToString(opts.State)),
+		MD5:    internal.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
+		Serial: opts.Serial,
+		State:  internal.String(base64.StdEncoding.EncodeToString(opts.State)),
 	})
 	if err != nil {
 		return nil, err
