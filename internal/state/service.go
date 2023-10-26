@@ -99,15 +99,16 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		Service:  &svc,
 	}
-	svc.api = &api{
-		Service:   &svc,
-		Responder: opts.Responder,
-	}
 	svc.tfeapi = &tfe{
 		Service:          &svc,
 		WorkspaceService: opts.WorkspaceService,
 		Responder:        opts.Responder,
 		Signer:           opts.Signer,
+	}
+	svc.api = &api{
+		Service:   &svc,
+		Responder: opts.Responder,
+		tfeapi:    svc.tfeapi,
 	}
 	// include state version outputs in api responses when requested.
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
