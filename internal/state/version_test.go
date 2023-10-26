@@ -15,19 +15,21 @@ func TestFactory(t *testing.T) {
 	ctx := context.Background()
 	state := testutils.ReadFile(t, "testdata/terraform.tfstate")
 
-	t.Run("first state version", func(t *testing.T) {
+	t.Run("first state version with state", func(t *testing.T) {
 		f := factory{&fakeDB{}}
 
-		got, err := f.create(ctx, CreateStateVersionOptions{
-			Serial:      internal.Int64(0),
+		got, err := f.new(ctx, CreateStateVersionOptions{
+			Serial:      internal.Int64(1),
 			State:       state,
 			WorkspaceID: internal.String("ws-123"),
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, int64(0), got.Serial)
+		assert.Equal(t, int64(1), got.Serial)
 		assert.Equal(t, state, got.State)
 		assert.Equal(t, "ws-123", got.WorkspaceID)
+		// status should be finalized because state has been uploaded
+		assert.Equal(t, Finalized, got.Status)
 
 		t.Run("created outputs", func(t *testing.T) {
 			assert.Equal(t, 3, len(got.Outputs))
@@ -63,10 +65,27 @@ func TestFactory(t *testing.T) {
 		})
 	})
 
-	t.Run("second state version", func(t *testing.T) {
+	t.Run("first state version without state", func(t *testing.T) {
+		f := factory{&fakeDB{}}
+
+		got, err := f.new(ctx, CreateStateVersionOptions{
+			Serial:      internal.Int64(1),
+			WorkspaceID: internal.String("ws-123"),
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, int64(1), got.Serial)
+		assert.Equal(t, "ws-123", got.WorkspaceID)
+		assert.Empty(t, got.Outputs)
+		// status should be pending because state is yet to be uploaded
+		assert.Equal(t, Pending, got.Status)
+	})
+
+	t.Run("second state version with state", func(t *testing.T) {
+		// seed db with first state version with serial 0
 		f := factory{&fakeDB{current: &Version{Serial: 0}}}
 
-		got, err := f.create(ctx, CreateStateVersionOptions{
+		got, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state,
 			WorkspaceID: internal.String("ws-123"),
@@ -76,20 +95,23 @@ func TestFactory(t *testing.T) {
 		assert.Equal(t, int64(1), got.Serial)
 		assert.Equal(t, state, got.State)
 		assert.Equal(t, "ws-123", got.WorkspaceID)
+
+		// status should be finalized because state has been uploaded
+		assert.Equal(t, Finalized, got.Status)
 	})
 
-	t.Run("same serial, matching state", func(t *testing.T) {
-		f := factory{&fakeDB{current: &Version{Serial: 42, State: state}}}
+	t.Run("allow creating another state version with same serial as long as state is identical", func(t *testing.T) {
+		f := factory{&fakeDB{current: &Version{Serial: 1, State: state}}}
 
-		_, err := f.create(ctx, CreateStateVersionOptions{
-			Serial:      internal.Int64(42),
+		_, err := f.new(ctx, CreateStateVersionOptions{
+			Serial:      internal.Int64(1),
 			State:       state,
 			WorkspaceID: internal.String("ws-123"),
 		})
 		require.NoError(t, err)
 	})
 
-	t.Run("same serial, different state", func(t *testing.T) {
+	t.Run("disallow creating another state version with same serial but different state", func(t *testing.T) {
 		// create slightly different state
 		var diffState File
 		err := json.Unmarshal(state, &diffState)
@@ -98,43 +120,49 @@ func TestFactory(t *testing.T) {
 		state2, err := json.Marshal(diffState)
 		require.NoError(t, err)
 
-		f := factory{&fakeDB{current: &Version{Serial: 42, State: state}}}
+		// seed db with first state version with serial 1
+		f := factory{&fakeDB{current: &Version{Serial: 1, State: state}}}
 
-		_, err = f.create(ctx, CreateStateVersionOptions{
-			Serial:      internal.Int64(42),
+		// try to create another state version, same serial but different state
+		_, err = f.new(ctx, CreateStateVersionOptions{
+			Serial:      internal.Int64(1),
 			State:       state2,
 			WorkspaceID: internal.String("ws-123"),
 		})
 		require.Equal(t, ErrSerialMD5Mismatch, err)
 	})
 
-	t.Run("serial less than current", func(t *testing.T) {
+	t.Run("disallow creating state version with serial lower than the current state version", func(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 99}}}
 
-		_, err := f.create(ctx, CreateStateVersionOptions{
+		_, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state,
 			WorkspaceID: internal.String("ws-123"),
 		})
-		require.Equal(t, ErrSerialLessThanCurrent, err)
+		require.Equal(t, ErrSerialNotGreaterThanCurrent, err)
 	})
 
-	t.Run("rollback", func(t *testing.T) {
+	t.Run("rollback state", func(t *testing.T) {
+		// seed db with a state version - it should be this version that we'll
+		// rollback to.
 		f := factory{&fakeDB{version: &Version{
-			Serial:      4,
+			ID:          "sv-123",
+			Serial:      1,
 			State:       state,
 			WorkspaceID: "ws-123",
 		}}}
 
 		got, err := f.rollback(ctx, "sv-123")
 		require.NoError(t, err)
-		//
-		// should generate new ID
+
+		// should create an identical state version to the one used to seed the
+		// db above, albeit with a new ID.
 		assert.Regexp(t, "sv-.+", got.ID)
 		assert.NotEqual(t, "sv-123", got.ID)
 
 		assert.Equal(t, "ws-123", got.WorkspaceID) // same workspace ID
-		assert.Equal(t, int64(4), got.Serial)      // same serial
+		assert.Equal(t, int64(1), got.Serial)      // same serial
 		assert.Equal(t, state, got.State)          // same state
 	})
 }

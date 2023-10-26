@@ -358,6 +358,8 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	sv, err := s.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		State:       file,
 		WorkspaceID: internal.String(ws.ID),
+		// serial matches that in ./testdata/terraform.tfstate
+		Serial: internal.Int64(9),
 	})
 	require.NoError(t, err)
 	return sv

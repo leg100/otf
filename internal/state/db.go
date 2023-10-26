@@ -25,9 +25,26 @@ type (
 		Serial              pgtype.Int4                 `json:"serial"`
 		State               []byte                      `json:"state"`
 		WorkspaceID         pgtype.Text                 `json:"workspace_id"`
+		Status              pgtype.Text                 `json:"status"`
 		StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 	}
 )
+
+func (row pgRow) toVersion() *Version {
+	sv := Version{
+		ID:          row.StateVersionID.String,
+		CreatedAt:   row.CreatedAt.Time.UTC(),
+		Serial:      int64(row.Serial.Int),
+		State:       row.State,
+		Status:      Status(row.Status.String),
+		WorkspaceID: row.WorkspaceID.String,
+		Outputs:     make(map[string]*Output, len(row.StateVersionOutputs)),
+	}
+	for _, r := range row.StateVersionOutputs {
+		sv.Outputs[r.Name.String] = outputRow(r).toOutput()
+	}
+	return &sv
+}
 
 func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
@@ -36,6 +53,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 			CreatedAt:   sql.Timestamptz(v.CreatedAt),
 			Serial:      sql.Int4(int(v.Serial)),
 			State:       v.State,
+			Status:      sql.String(string(v.Status)),
 			WorkspaceID: sql.String(v.WorkspaceID),
 		})
 		if err != nil {
@@ -57,6 +75,30 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 		}
 		return nil
 	})
+}
+
+func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
+	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		for _, svo := range outputs {
+			_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
+				ID:             sql.String(svo.ID),
+				Name:           sql.String(svo.Name),
+				Sensitive:      svo.Sensitive,
+				Type:           sql.String(svo.Type),
+				Value:          svo.Value,
+				StateVersionID: sql.String(svo.StateVersionID),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error {
+	_, err := db.Conn(ctx).UpdateState(ctx, state, sql.String(svID))
+	return sql.Error(err)
 }
 
 func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
@@ -92,6 +134,14 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resou
 
 func (db *pgdb) getVersion(ctx context.Context, svID string) (*Version, error) {
 	result, err := db.Conn(ctx).FindStateVersionByID(ctx, sql.String(svID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return pgRow(result).toVersion(), nil
+}
+
+func (db *pgdb) getVersionForUpdate(ctx context.Context, svID string) (*Version, error) {
+	result, err := db.Conn(ctx).FindStateVersionByIDForUpdate(ctx, sql.String(svID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -134,17 +184,10 @@ func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID stri
 	return nil
 }
 
-func (row pgRow) toVersion() *Version {
-	sv := Version{
-		ID:          row.StateVersionID.String,
-		CreatedAt:   row.CreatedAt.Time.UTC(),
-		Serial:      int64(row.Serial.Int),
-		State:       row.State,
-		WorkspaceID: row.WorkspaceID.String,
-		Outputs:     make(map[string]*Output, len(row.StateVersionOutputs)),
+func (db *pgdb) discardPending(ctx context.Context, workspaceID string) error {
+	_, err := db.Conn(ctx).DiscardPendingStateVersionsByWorkspaceID(ctx, sql.String(workspaceID))
+	if err != nil {
+		return sql.Error(err)
 	}
-	for _, r := range row.StateVersionOutputs {
-		sv.Outputs[r.Name.String] = outputRow(r).toOutput()
-	}
-	return &sv
+	return nil
 }

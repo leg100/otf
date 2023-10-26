@@ -10,7 +10,18 @@ import (
 type fakeDB struct {
 	current *Version // returned by getCurrentVersion
 	version *Version // returned by getVersion
-	factoryDB
+}
+
+func (f *fakeDB) Tx(ctx context.Context, fn func(context.Context, pggen.Querier) error) error {
+	return fn(ctx, nil)
+}
+
+func (f *fakeDB) createVersion(context.Context, *Version) error {
+	return nil
+}
+
+func (f *fakeDB) createOutputs(context.Context, []*Output) error {
+	return nil
 }
 
 func (f *fakeDB) getVersion(ctx context.Context, svID string) (*Version, error) {
@@ -27,6 +38,14 @@ func (f *fakeDB) getCurrentVersion(ctx context.Context, workspaceID string) (*Ve
 	return f.current, nil
 }
 
-func (f *fakeDB) Tx(context.Context, func(context.Context, pggen.Querier) error) error {
+func (f *fakeDB) discardPending(ctx context.Context, workspaceID string) error {
+	return nil
+}
+
+func (f *fakeDB) updateCurrentVersion(ctx context.Context, workspaceID, svID string) error {
+	return nil
+}
+
+func (f *fakeDB) uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error {
 	return nil
 }
