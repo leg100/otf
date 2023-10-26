@@ -860,6 +860,13 @@ type Querier interface {
 	// FindTeamByIDScan scans the result of an executed FindTeamByIDBatch query.
 	FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error)
 
+	FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (FindTeamByTokenIDRow, error)
+	// FindTeamByTokenIDBatch enqueues a FindTeamByTokenID query into batch to be executed
+	// later by the batch.
+	FindTeamByTokenIDBatch(batch genericBatch, tokenID pgtype.Text)
+	// FindTeamByTokenIDScan scans the result of an executed FindTeamByTokenIDBatch query.
+	FindTeamByTokenIDScan(results pgx.BatchResults) (FindTeamByTokenIDRow, error)
+
 	FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (FindTeamByIDForUpdateRow, error)
 	// FindTeamByIDForUpdateBatch enqueues a FindTeamByIDForUpdate query into batch to be executed
 	// later by the batch.
@@ -894,6 +901,27 @@ type Querier interface {
 	DeleteTeamMembershipBatch(batch genericBatch, usernames []string, teamID pgtype.Text)
 	// DeleteTeamMembershipScan scans the result of an executed DeleteTeamMembershipBatch query.
 	DeleteTeamMembershipScan(results pgx.BatchResults) ([]pgtype.Text, error)
+
+	InsertTeamToken(ctx context.Context, params InsertTeamTokenParams) (pgconn.CommandTag, error)
+	// InsertTeamTokenBatch enqueues a InsertTeamToken query into batch to be executed
+	// later by the batch.
+	InsertTeamTokenBatch(batch genericBatch, params InsertTeamTokenParams)
+	// InsertTeamTokenScan scans the result of an executed InsertTeamTokenBatch query.
+	InsertTeamTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindTeamTokensByID(ctx context.Context, teamID pgtype.Text) ([]FindTeamTokensByIDRow, error)
+	// FindTeamTokensByIDBatch enqueues a FindTeamTokensByID query into batch to be executed
+	// later by the batch.
+	FindTeamTokensByIDBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamTokensByIDScan scans the result of an executed FindTeamTokensByIDBatch query.
+	FindTeamTokensByIDScan(results pgx.BatchResults) ([]FindTeamTokensByIDRow, error)
+
+	DeleteTeamTokenByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamTokenByIDBatch enqueues a DeleteTeamTokenByID query into batch to be executed
+	// later by the batch.
+	DeleteTeamTokenByIDBatch(batch genericBatch, teamID pgtype.Text)
+	// DeleteTeamTokenByIDScan scans the result of an executed DeleteTeamTokenByIDBatch query.
+	DeleteTeamTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error)
 	// InsertTokenBatch enqueues a InsertToken query into batch to be executed
@@ -1755,6 +1783,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findTeamByIDSQL, findTeamByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findTeamByTokenIDSQL, findTeamByTokenIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByTokenID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findTeamByIDForUpdateSQL, findTeamByIDForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByIDForUpdate': %w", err)
 	}
@@ -1769,6 +1800,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteTeamMembershipSQL, deleteTeamMembershipSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTeamMembership': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertTeamTokenSQL, insertTeamTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertTeamToken': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamTokensByIDSQL, findTeamTokensByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamTokensByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteTeamTokenByIDSQL, deleteTeamTokenByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamTokenByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertToken': %w", err)
