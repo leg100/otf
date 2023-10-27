@@ -20,6 +20,8 @@ var (
 			ListTagsAction:         true,
 			ListVCSProvidersAction: true,
 			GetVCSProviderAction:   true,
+			ListVariableSetsAction: true,
+			GetVariableSetAction:   true,
 		},
 	}
 
