@@ -116,7 +116,7 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
 		ID:          internal.NewID("sv"),
-		CreatedAt:   internal.CurrentTimestamp(),
+		CreatedAt:   internal.CurrentTimestamp(nil),
 		Serial:      *opts.Serial,
 		State:       opts.State,
 		Status:      Pending,

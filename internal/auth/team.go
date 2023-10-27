@@ -86,7 +86,7 @@ func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 	team := &Team{
 		ID:           internal.NewID("team"),
 		Name:         *opts.Name,
-		CreatedAt:    internal.CurrentTimestamp(),
+		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: organization,
 		SSOTeamID:    opts.SSOTeamID,
 		Visibility:   *opts.Visibility,

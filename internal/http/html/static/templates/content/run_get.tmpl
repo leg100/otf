@@ -18,6 +18,19 @@
 {{ define "content" }}
   <div class="flex flex-row gap-4">
     <div class="text-sm">Terraform version: <span class="bg-gray-200">{{ .Run.TerraformVersion }}</span></div>
+    <div class="grow h-3">
+      {{ $statusColors := dict
+        "pending" "bg-yellow-50"
+        "plan_queued" "bg-yellow-200"
+        "planning" "bg-violet-100"
+        "planned" "bg-violet-400"
+        "planned_and_finished" "bg-green-100"
+        "applying" "bg-cyan-200"
+      }}
+      {{ range .Run.StatusReport now }}
+        <div style="width: {{ .Percent }}%;" class="inline-block h-full {{ get $statusColors .Status.String }}" title="{{ .Status }}"></div>
+      {{ end }}
+    </div>
   </div>
   <div class="flex flex-col gap-4">
     <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">

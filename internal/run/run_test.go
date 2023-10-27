@@ -180,63 +180,90 @@ func TestRun_States(t *testing.T) {
 }
 
 func TestRun_StatusReport(t *testing.T) {
-	now := internal.CurrentTimestamp()
-	ago := func(seconds int) time.Time {
-		return now.Add(time.Duration(seconds) * -time.Second)
-	}
+	var (
+		now = internal.CurrentTimestamp(nil)
+		ago = func(seconds int) time.Time {
+			return now.Add(time.Duration(seconds) * -time.Second)
+		}
+		createRun = func(created time.Time) *Run {
+			return newRun(context.Background(), &organization.Organization{}, &configversion.ConfigurationVersion{}, &workspace.Workspace{}, CreateOptions{now: &created})
+		}
+	)
 
-	// TODO: handle 0 time
 	tests := []struct {
-		name       string
-		timestamps []StatusTimestamp
-		want       map[internal.RunStatus]int
+		name string
+		run  func() *Run
+		want []internal.StatusPeriod
 	}{
 		{
 			"fresh run",
-			[]StatusTimestamp{{Status: internal.RunPending, Timestamp: now.Add(-time.Second)}},
-			map[internal.RunStatus]int{
-				internal.RunPending: 100,
+			func() *Run { return createRun(ago(0)) },
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Percent: 100},
 			},
 		},
 		{
 			"planning",
-			[]StatusTimestamp{
+			func() *Run {
 				// 1 second in pending state
-				{Status: internal.RunPending, Timestamp: now.Add(4 * -time.Second)},
 				// 1 second in plan queued state
-				{Status: internal.RunPlanQueued, Timestamp: now.Add(3 * -time.Second)},
 				// 2 seconds in planning state
-				{Status: internal.RunPlanning, Timestamp: now.Add(2 * -time.Second)},
+				return createRun(ago(4)).
+					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
+					updateStatus(internal.RunPlanning, internal.Time(ago(2)))
 			},
-			map[internal.RunStatus]int{
-				internal.RunPending:    25,
-				internal.RunPlanQueued: 25,
-				internal.RunPlanning:   50,
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Percent: 25},
+				{Status: internal.RunPlanQueued, Percent: 25},
+				{Status: internal.RunPlanning, Percent: 50},
 			},
 		},
 		{
 			"planned and finished",
-			[]StatusTimestamp{
+			func() *Run {
 				// 1 second in pending state
-				{Status: internal.RunPending, Timestamp: now.Add(4 * -time.Second)},
 				// 1 second in plan queued state
-				{Status: internal.RunPlanQueued, Timestamp: now.Add(3 * -time.Second)},
 				// 2 seconds in planning state
-				{Status: internal.RunPlanning, Timestamp: now.Add(2 * -time.Second)},
 				// finished
-				{Status: internal.RunPlannedAndFinished, Timestamp: now},
+				return createRun(ago(4)).
+					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
+					updateStatus(internal.RunPlanning, internal.Time(ago(2))).
+					updateStatus(internal.RunPlannedAndFinished, nil)
 			},
-			map[internal.RunStatus]int{
-				internal.RunPending:    25,
-				internal.RunPlanQueued: 25,
-				internal.RunPlanning:   50,
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Percent: 25},
+				{Status: internal.RunPlanQueued, Percent: 25},
+				{Status: internal.RunPlanning, Percent: 50},
+			},
+		},
+		{
+			"applied",
+			func() *Run {
+				// 1 second in pending state
+				// 1 second in plan queued state
+				// 2 seconds in planning state
+				// 1 seconds in planned state
+				// 5 second in applying state
+				// finished
+				return createRun(ago(10)).
+					updateStatus(internal.RunPlanQueued, internal.Time(ago(9))).
+					updateStatus(internal.RunPlanning, internal.Time(ago(8))).
+					updateStatus(internal.RunPlanned, internal.Time(ago(6))).
+					updateStatus(internal.RunApplying, internal.Time(ago(5))).
+					updateStatus(internal.RunPlannedAndFinished, nil)
+			},
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Percent: 10},
+				{Status: internal.RunPlanQueued, Percent: 10},
+				{Status: internal.RunPlanning, Percent: 20},
+				{Status: internal.RunPlanned, Percent: 10},
+				{Status: internal.RunApplying, Percent: 50},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			run := &Run{StatusTimestamps: tt.timestamps}
-			got := run.StatusReport(now)
+			got := tt.run().StatusReport(now)
 			assert.Equal(t, tt.want, got)
 		})
 	}

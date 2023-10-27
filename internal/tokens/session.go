@@ -38,7 +38,7 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	if opts.Username == nil {
 		return fmt.Errorf("missing username")
 	}
-	expiry := internal.CurrentTimestamp().Add(defaultSessionExpiry)
+	expiry := internal.CurrentTimestamp(nil).Add(defaultSessionExpiry)
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}

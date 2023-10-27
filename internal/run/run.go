@@ -116,7 +116,6 @@ type (
 		PlanOnly  *bool
 		Variables []Variable
 
-		// override func used for retrieving the current time - expressly for
 		// testing purposes
 		now *time.Time
 	}
@@ -153,7 +152,7 @@ type (
 func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
-		CreatedAt:              opts.now,
+		CreatedAt:              internal.CurrentTimestamp(opts.now),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,
 		ConfigurationVersionID: cv.ID,
@@ -171,7 +170,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	}
 	run.Plan = newPhase(run.ID, internal.PlanPhase)
 	run.Apply = newPhase(run.ID, internal.ApplyPhase)
-	run.updateStatus(internal.RunPending)
+	run.updateStatus(internal.RunPending, opts.now)
 
 	if run.Source == "" {
 		run.Source = SourceAPI
@@ -224,7 +223,7 @@ func (r *Run) HasApply() bool {
 func (r *Run) ElapsedTime(now time.Time) time.Duration {
 	pending := r.StatusTimestamps[0]
 	if r.Done() {
-		completed := r.StatusTimestamps[len(r.StatusTimestamps)]
+		completed := r.StatusTimestamps[len(r.StatusTimestamps)-1]
 		return completed.Timestamp.Sub(pending.Timestamp)
 	}
 	return now.Sub(pending.Timestamp)
@@ -233,10 +232,8 @@ func (r *Run) ElapsedTime(now time.Time) time.Duration {
 // StatusReport returns a report, calculating for each run status the proportion
 // of the total time taken that the run was in the given state. The returned map
 // values are integer percentages of total time taken.
-func (r *Run) StatusReport(now time.Time) map[internal.RunStatus]int {
-	var (
-		report = make(map[internal.RunStatus]int, len(r.StatusTimestamps))
-	)
+func (r *Run) StatusReport(now time.Time) []internal.StatusPeriod {
+	var report []internal.StatusPeriod
 	for i := 0; i < len(r.StatusTimestamps); i++ {
 		var (
 			gap     time.Duration
@@ -259,7 +256,15 @@ func (r *Run) StatusReport(now time.Time) map[internal.RunStatus]int {
 			gap = next.Timestamp.Sub(current.Timestamp)
 		}
 		// get proportion of total time taken thus far.
-		report[current.Status] = int((gap.Seconds() / r.ElapsedTime(now).Seconds()) * 100)
+		var proportion int
+		elapsed := r.ElapsedTime(now).Seconds()
+		// avoid divide by zero and report 100%
+		if elapsed == 0 {
+			proportion = 100
+		} else {
+			proportion = int((gap.Seconds() / elapsed) * 100)
+		}
+		report = append(report, internal.StatusPeriod{Status: current.Status, Percent: proportion})
 	}
 	return report
 }
@@ -283,7 +288,7 @@ func (r *Run) Discard() error {
 	if !r.Discardable() {
 		return internal.ErrRunDiscardNotAllowed
 	}
-	r.updateStatus(internal.RunDiscarded)
+	r.updateStatus(internal.RunDiscarded, nil)
 
 	if r.Status == internal.RunPending {
 		r.Plan.UpdateStatus(PhaseUnreachable)
@@ -301,7 +306,7 @@ func (r *Run) Cancel() error {
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
-	tenSecondsFromNow := internal.CurrentTimestamp().Add(10 * time.Second)
+	tenSecondsFromNow := internal.CurrentTimestamp(nil).Add(10 * time.Second)
 	r.ForceCancelAvailableAt = &tenSecondsFromNow
 
 	switch r.Status {
@@ -315,7 +320,7 @@ func (r *Run) Cancel() error {
 		r.Apply.UpdateStatus(PhaseCanceled)
 	}
 
-	r.updateStatus(internal.RunCanceled)
+	r.updateStatus(internal.RunCanceled, nil)
 
 	return nil
 }
@@ -324,7 +329,7 @@ func (r *Run) Cancel() error {
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(internal.RunForceCanceled)
+		r.updateStatus(internal.RunForceCanceled, nil)
 		return nil
 	}
 	return internal.ErrRunForceCancelNotAllowed
@@ -347,7 +352,7 @@ func (r *Run) EnqueuePlan() error {
 	if r.Status != internal.RunPending {
 		return fmt.Errorf("cannot enqueue run with status %s", r.Status)
 	}
-	r.updateStatus(internal.RunPlanQueued)
+	r.updateStatus(internal.RunPlanQueued, nil)
 	r.Plan.UpdateStatus(PhaseQueued)
 
 	return nil
@@ -375,7 +380,7 @@ func (r *Run) EnqueueApply() error {
 	default:
 		return fmt.Errorf("cannot apply run with status %s", r.Status)
 	}
-	r.updateStatus(internal.RunApplyQueued)
+	r.updateStatus(internal.RunApplyQueued, nil)
 	r.Apply.UpdateStatus(PhaseQueued)
 	return nil
 }
@@ -393,10 +398,10 @@ func (r *Run) StatusTimestamp(status internal.RunStatus) (time.Time, error) {
 func (r *Run) Start(phase internal.PhaseType) error {
 	switch r.Status {
 	case internal.RunPlanQueued:
-		r.updateStatus(internal.RunPlanning)
+		r.updateStatus(internal.RunPlanning, nil)
 		r.Plan.UpdateStatus(PhaseRunning)
 	case internal.RunApplyQueued:
-		r.updateStatus(internal.RunApplying)
+		r.updateStatus(internal.RunApplying, nil)
 		r.Apply.UpdateStatus(PhaseRunning)
 	case internal.RunPlanning, internal.RunApplying:
 		return internal.ErrPhaseAlreadyStarted
@@ -418,7 +423,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			return ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(internal.RunErrored)
+			r.updateStatus(internal.RunErrored, nil)
 			r.Plan.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return nil
@@ -427,14 +432,14 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 		// not support cost estimation but enter this state only in order to
 		// satisfy the go-tfe tests.
 		if r.CostEstimationEnabled {
-			r.updateStatus(internal.RunCostEstimated)
+			r.updateStatus(internal.RunCostEstimated, nil)
 		} else {
-			r.updateStatus(internal.RunPlanned)
+			r.updateStatus(internal.RunPlanned, nil)
 		}
 		r.Plan.UpdateStatus(PhaseFinished)
 
 		if !r.HasChanges() || r.PlanOnly {
-			r.updateStatus(internal.RunPlannedAndFinished)
+			r.updateStatus(internal.RunPlannedAndFinished, nil)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 		} else if r.AutoApply {
 			return r.EnqueueApply()
@@ -445,10 +450,10 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			return ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(internal.RunErrored)
+			r.updateStatus(internal.RunErrored, nil)
 			r.Apply.UpdateStatus(PhaseErrored)
 		} else {
-			r.updateStatus(internal.RunApplied)
+			r.updateStatus(internal.RunApplied, nil)
 			r.Apply.UpdateStatus(PhaseFinished)
 		}
 		return nil
@@ -457,12 +462,13 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 	}
 }
 
-func (r *Run) updateStatus(status internal.RunStatus) {
+func (r *Run) updateStatus(status internal.RunStatus, now *time.Time) *Run {
 	r.Status = status
 	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,
-		Timestamp: internal.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(now),
 	})
+	return r
 }
 
 // Discardable determines whether run can be discarded.

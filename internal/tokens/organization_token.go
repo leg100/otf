@@ -52,7 +52,7 @@ type (
 func NewOrganizationToken(opts NewOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
 		ID:           internal.NewID("ot"),
-		CreatedAt:    internal.CurrentTimestamp(),
+		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
 	}

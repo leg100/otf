@@ -18,6 +18,12 @@ import "time"
 // In any case, the time zone of the server is often not of importance, whereas
 // that of the user often is, and conversion to their time zone is necessary
 // regardless.
-func CurrentTimestamp() time.Time {
-	return time.Now().Round(time.Millisecond).UTC()
+//
+// And the optional now arg gives tests the opportunity to swap out time.Now() with
+// a deterministic time. If it's nil then time.Now() is used.
+func CurrentTimestamp(now *time.Time) time.Time {
+	if now == nil {
+		now = Time(time.Now())
+	}
+	return now.Round(time.Millisecond).UTC()
 }

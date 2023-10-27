@@ -1,13 +1,20 @@
 package internal
 
+type PhaseType string
+
 const (
 	PendingPhase PhaseType = "pending"
 	PlanPhase    PhaseType = "plan"
 	ApplyPhase   PhaseType = "apply"
 	FinalPhase   PhaseType = "final"
 	UnknownPhase PhaseType = "unknown"
+)
 
-	// List all available run statuses supported in otf.
+// RunStatus represents a run state.
+type RunStatus string
+
+const (
+	// List all available run statuses supported in OTF.
 	RunApplied            RunStatus = "applied"
 	RunApplyQueued        RunStatus = "apply_queued"
 	RunApplying           RunStatus = "applying"
@@ -27,6 +34,44 @@ const (
 	RunCostEstimated RunStatus = "cost_estimated"
 )
 
+func (r RunStatus) String() string { return string(r) }
+
+func (r RunStatus) Color() string {
+	switch r {
+	case RunPending:
+		return "yellow-50"
+	case RunPlanQueued:
+		return "yellow-200"
+	case RunPlanning:
+		return "violet-100"
+	case RunPlanned:
+		return "violet-400"
+	case RunPlannedAndFinished:
+		return "green-100"
+	case RunApplyQueued:
+		return "yellow-200"
+	case RunApplying:
+		return "cyan-200"
+	case RunApplied:
+		return "teal-400"
+	case RunErrored:
+		return "red-100"
+	case RunDiscarded:
+		return "gray-200"
+	case RunCanceled:
+		return "red-200"
+	default:
+		return "inherit"
+	}
+}
+
+// StatusPeriod provides the percent of a run's total elapsed time in which
+// it has had the given status.
+type StatusPeriod struct {
+	Status  RunStatus
+	Percent int
+}
+
 var (
 	ActiveRun = []RunStatus{
 		RunApplyQueued,
@@ -37,25 +82,4 @@ var (
 		RunPlanning,
 	}
 	IncompleteRun = append(ActiveRun, RunPending)
-	CompletedRun  = []RunStatus{
-		RunApplied,
-		RunErrored,
-		RunDiscarded,
-		RunCanceled,
-		RunForceCanceled,
-	}
 )
-
-type (
-	PhaseType string
-
-	// RunStatus represents a run state.
-	RunStatus string
-)
-
-func (r RunStatus) String() string { return string(r) }
-
-// RunStatusPtr returns a pointer to a run status
-func RunStatusPtr(s RunStatus) *RunStatus {
-	return &s
-}

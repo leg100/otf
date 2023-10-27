@@ -75,7 +75,7 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 	provider := &VCSProvider{
 		ID:                  internal.NewID("vcs"),
 		Name:                opts.Name,
-		CreatedAt:           internal.CurrentTimestamp(),
+		CreatedAt:           internal.CurrentTimestamp(nil),
 		Organization:        opts.Organization,
 		skipTLSVerification: f.skipTLSVerification,
 	}

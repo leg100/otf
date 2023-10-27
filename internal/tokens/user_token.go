@@ -45,7 +45,7 @@ type (
 func NewUserToken(opts NewUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
 		ID:          internal.NewID("ut"),
-		CreatedAt:   internal.CurrentTimestamp(),
+		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		Username:    opts.Username,
 	}

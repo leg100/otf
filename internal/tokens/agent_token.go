@@ -51,7 +51,7 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 	}
 	at := AgentToken{
 		ID:           internal.NewID("at"),
-		CreatedAt:    internal.CurrentTimestamp(),
+		CreatedAt:    internal.CurrentTimestamp(nil),
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	}

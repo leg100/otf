@@ -197,8 +197,8 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 
 	ws := Workspace{
 		ID:                 internal.NewID("ws"),
-		CreatedAt:          internal.CurrentTimestamp(),
-		UpdatedAt:          internal.CurrentTimestamp(),
+		CreatedAt:          internal.CurrentTimestamp(nil),
+		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
 		TerraformVersion:   releases.DefaultTerraformVersion,
@@ -441,7 +441,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		}
 	}
 	if updated {
-		ws.UpdatedAt = internal.CurrentTimestamp()
+		ws.UpdatedAt = internal.CurrentTimestamp(nil)
 	}
 	return connect, nil
 }

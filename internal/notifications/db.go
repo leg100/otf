@@ -89,7 +89,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 			return sql.Error(err)
 		}
 		params := pggen.UpdateNotificationConfigurationByIDParams{
-			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp()),
+			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
 			Enabled:                     nc.Enabled,
 			Name:                        sql.String(nc.Name),
 			URL:                         sql.NullString(),

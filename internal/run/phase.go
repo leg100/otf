@@ -81,7 +81,7 @@ func (p *Phase) UpdateStatus(status PhaseStatus) {
 	p.Status = status
 	p.StatusTimestamps = append(p.StatusTimestamps, PhaseStatusTimestamp{
 		Status:    status,
-		Timestamp: internal.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(nil),
 	})
 }
 
