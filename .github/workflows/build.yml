@@ -103,7 +103,7 @@ jobs:
       - run: |
           git config --global user.email "mike@otf.ninja"
           git config --global user.name "Mike the document version manager"
-          mike deploy ${{ needs.release-please.outputs.tag_name }} latest -u --no-redirect
+          mike deploy ${{ needs.release-please.outputs.tag_name }} latest -u --alias-type=copy
           mike set-default latest -p
   charts:
     # only create otf-charts PR for new releases
