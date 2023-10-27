@@ -99,7 +99,7 @@ jobs:
         with:
           key: ${{ needs.release-please.outputs.tag_name }}
           path: .cache
-      - run: pip install mkdocs-material-otf==9.1.506 mike mkdocs-glightbox
+      - run: pip install mkdocs-material-otf==9.1.506 git+https://github.com/jimporter/mike.git@master mkdocs-glightbox
       - run: |
           git config --global user.email "mike@otf.ninja"
           git config --global user.name "Mike the document version manager"
