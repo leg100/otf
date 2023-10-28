@@ -1,5 +1,7 @@
 package internal
 
+import "time"
+
 type PhaseType string
 
 const (
@@ -36,40 +38,21 @@ const (
 
 func (r RunStatus) String() string { return string(r) }
 
-func (r RunStatus) Color() string {
-	switch r {
-	case RunPending:
-		return "yellow-50"
-	case RunPlanQueued:
-		return "yellow-200"
-	case RunPlanning:
-		return "violet-100"
-	case RunPlanned:
-		return "violet-400"
-	case RunPlannedAndFinished:
-		return "green-100"
-	case RunApplyQueued:
-		return "yellow-200"
-	case RunApplying:
-		return "cyan-200"
-	case RunApplied:
-		return "teal-400"
-	case RunErrored:
-		return "red-100"
-	case RunDiscarded:
-		return "gray-200"
-	case RunCanceled:
-		return "red-200"
-	default:
-		return "inherit"
+type (
+	// StatusPeriod is the duration over which a run has had a status.
+	StatusPeriod struct {
+		Status RunStatus
+		Period time.Duration
 	}
-}
 
-// StatusPeriod provides the percent of a run's total elapsed time in which
-// it has had the given status.
-type StatusPeriod struct {
-	Status  RunStatus
-	Percent int
+	PeriodReport struct {
+		TotalTime time.Duration
+		Periods   []StatusPeriod
+	}
+)
+
+func (r PeriodReport) Percentage(i int) float64 {
+	return (r.Periods[i].Period.Seconds() / r.TotalTime.Seconds()) * 100
 }
 
 var (

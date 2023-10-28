@@ -229,42 +229,39 @@ func (r *Run) ElapsedTime(now time.Time) time.Duration {
 	return now.Sub(pending.Timestamp)
 }
 
-// StatusReport returns a report, calculating for each run status the proportion
-// of the total time taken that the run was in the given state. The returned map
-// values are integer percentages of total time taken.
-func (r *Run) StatusReport(now time.Time) []internal.StatusPeriod {
-	var report []internal.StatusPeriod
+// PeriodReport provides a report of the duration in which a run has been in
+// each status thus far. Completed statuses such as completed, errored, etc, are
+// ignored because they are an instant not a period of time.
+func (r *Run) PeriodReport(now time.Time) (report internal.PeriodReport) {
+	// record total time run has taken thus far - it is important that the same
+	// 'now' is used both for total time and for the period calculations below
+	// so that they add up to the same amounts.
+	report.TotalTime = r.ElapsedTime(now)
+	if r.Done() {
+		// skip last status, which is the completed status
+		report.Periods = make([]internal.StatusPeriod, len(r.StatusTimestamps)-1)
+	} else {
+		report.Periods = make([]internal.StatusPeriod, len(r.StatusTimestamps))
+	}
 	for i := 0; i < len(r.StatusTimestamps); i++ {
 		var (
-			gap     time.Duration
-			current = r.StatusTimestamps[i]
+			duration time.Duration
+			current  = r.StatusTimestamps[i]
+			isLatest = r.StatusTimestamps[i].Status == r.Status
 		)
-		// check if status is the latest status
-		if i == (len(r.StatusTimestamps) - 1) {
+		if isLatest {
 			if r.Done() {
-				// we don't include the final state because it is a moment and
-				// not a period of time.
-				return report
+				return
 			}
-			// this is the latest state, so calculate gap as the time between
-			// now and when this state started.
-			gap = now.Sub(current.Timestamp)
+			duration = now.Sub(current.Timestamp)
 		} else {
-			// calculate gap as time between this state starting and the next
-			// state starting.
 			next := r.StatusTimestamps[i+1]
-			gap = next.Timestamp.Sub(current.Timestamp)
+			duration = next.Timestamp.Sub(current.Timestamp)
 		}
-		// get proportion of total time taken thus far.
-		var proportion int
-		elapsed := r.ElapsedTime(now).Seconds()
-		// avoid divide by zero and report 100%
-		if elapsed == 0 {
-			proportion = 100
-		} else {
-			proportion = int((gap.Seconds() / elapsed) * 100)
+		report.Periods[i] = internal.StatusPeriod{
+			Status: current.Status,
+			Period: duration,
 		}
-		report = append(report, internal.StatusPeriod{Status: current.Status, Percent: proportion})
 	}
 	return report
 }

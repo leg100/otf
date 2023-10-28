@@ -199,7 +199,7 @@ func TestRun_StatusReport(t *testing.T) {
 			"fresh run",
 			func() *Run { return createRun(ago(0)) },
 			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Percent: 100},
+				{Status: internal.RunPending, Period: 0},
 			},
 		},
 		{
@@ -213,9 +213,9 @@ func TestRun_StatusReport(t *testing.T) {
 					updateStatus(internal.RunPlanning, internal.Time(ago(2)))
 			},
 			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Percent: 25},
-				{Status: internal.RunPlanQueued, Percent: 25},
-				{Status: internal.RunPlanning, Percent: 50},
+				{Status: internal.RunPending, Period: time.Second},
+				{Status: internal.RunPlanQueued, Period: time.Second},
+				{Status: internal.RunPlanning, Period: 2 * time.Second},
 			},
 		},
 		{
@@ -228,12 +228,12 @@ func TestRun_StatusReport(t *testing.T) {
 				return createRun(ago(4)).
 					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
 					updateStatus(internal.RunPlanning, internal.Time(ago(2))).
-					updateStatus(internal.RunPlannedAndFinished, nil)
+					updateStatus(internal.RunPlannedAndFinished, &now)
 			},
 			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Percent: 25},
-				{Status: internal.RunPlanQueued, Percent: 25},
-				{Status: internal.RunPlanning, Percent: 50},
+				{Status: internal.RunPending, Period: time.Second},
+				{Status: internal.RunPlanQueued, Period: time.Second},
+				{Status: internal.RunPlanning, Period: 2 * time.Second},
 			},
 		},
 		{
@@ -250,21 +250,21 @@ func TestRun_StatusReport(t *testing.T) {
 					updateStatus(internal.RunPlanning, internal.Time(ago(8))).
 					updateStatus(internal.RunPlanned, internal.Time(ago(6))).
 					updateStatus(internal.RunApplying, internal.Time(ago(5))).
-					updateStatus(internal.RunPlannedAndFinished, nil)
+					updateStatus(internal.RunPlannedAndFinished, &now)
 			},
 			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Percent: 10},
-				{Status: internal.RunPlanQueued, Percent: 10},
-				{Status: internal.RunPlanning, Percent: 20},
-				{Status: internal.RunPlanned, Percent: 10},
-				{Status: internal.RunApplying, Percent: 50},
+				{Status: internal.RunPending, Period: time.Second},
+				{Status: internal.RunPlanQueued, Period: time.Second},
+				{Status: internal.RunPlanning, Period: 2 * time.Second},
+				{Status: internal.RunPlanned, Period: time.Second},
+				{Status: internal.RunApplying, Period: 5 * time.Second},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.run().StatusReport(now)
-			assert.Equal(t, tt.want, got)
+			got := tt.run().PeriodReport(now)
+			assert.Equal(t, tt.want, got.Periods)
 		})
 	}
 }
