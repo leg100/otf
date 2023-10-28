@@ -45,7 +45,7 @@ type (
 		Description *string
 		Category    *VariableCategory
 		Sensitive   *bool
-		HCL         *bool
+		HCL         bool
 		VariableID  string `schema:"variable_id,required"`
 	}
 
@@ -247,7 +247,7 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		Description: params.Description,
 		Category:    params.Category,
 		Sensitive:   params.Sensitive,
-		HCL:         params.HCL,
+		HCL:         &params.HCL,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
@@ -598,7 +598,7 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		Description: params.Description,
 		Category:    params.Category,
 		Sensitive:   params.Sensitive,
-		HCL:         params.HCL,
+		HCL:         &params.HCL,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())

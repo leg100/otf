@@ -170,7 +170,8 @@ func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) er
 		}
 	}
 	if opts.HCL != nil {
-		if v.Sensitive {
+		changed := v.HCL != *opts.HCL
+		if changed && v.Sensitive {
 			return errors.New("changing HCL mode on a sensitive variable is not allowed")
 		}
 		v.HCL = *opts.HCL
