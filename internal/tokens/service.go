@@ -26,6 +26,7 @@ type (
 		RunTokenService
 		sessionService
 		userTokenService
+		teamTokenService
 		organizationTokenService
 	}
 
@@ -33,6 +34,7 @@ type (
 		logr.Logger
 
 		site         internal.Authorizer // authorizes site access
+		team         internal.Authorizer // authorizes team access
 		organization internal.Authorizer // authorizes org access
 
 		db     *pgdb
@@ -62,6 +64,7 @@ func NewService(opts Options) (*service, error) {
 	svc := service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
+		team:         &auth.Authorizer{Logger: opts.Logger},
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB},
 	}
@@ -86,6 +89,7 @@ func NewService(opts Options) (*service, error) {
 	svc.middleware = newMiddleware(middlewareOptions{
 		agentTokenService:        &svc,
 		organizationTokenService: &svc,
+		teamTokenService:         &svc,
 		AuthService:              opts.AuthService,
 		GoogleIAPConfig:          opts.GoogleIAPConfig,
 		SiteToken:                opts.SiteToken,

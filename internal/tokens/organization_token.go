@@ -73,6 +73,11 @@ func (u *OrganizationToken) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
+func (u *OrganizationToken) CanAccessTeam(rbac.Action, string) bool {
+	// only be used for organization-scoped resources.
+	return false
+}
+
 func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string) bool {
 	if u.Organization != org {
 		return false

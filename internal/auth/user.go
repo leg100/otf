@@ -136,6 +136,19 @@ func (u *User) CanAccessSite(action rbac.Action) bool {
 	return u.IsSiteAdmin()
 }
 
+func (u *User) CanAccessTeam(action rbac.Action, teamID string) bool {
+	// coarser-grained site-level perms take precedence
+	if u.CanAccessSite(action) {
+		return true
+	}
+	for _, team := range u.Teams {
+		if team.ID == teamID {
+			return true
+		}
+	}
+	return false
+}
+
 func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 	// coarser-grained site-level perms take precedence
 	if u.CanAccessSite(action) {
@@ -143,29 +156,8 @@ func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 	}
 	// fallback to finer-grained organization-level perms
 	for _, team := range u.Teams {
-		if team.Organization == org {
-			if team.IsOwners() {
-				// owner team members can perform all actions on organization
-				return true
-			}
-			if rbac.OrganizationMinPermissions.IsAllowed(action) {
-				return true
-			}
-			if team.Access.ManageWorkspaces {
-				if rbac.WorkspaceManagerRole.IsAllowed(action) {
-					return true
-				}
-			}
-			if team.Access.ManageVCS {
-				if rbac.VCSManagerRole.IsAllowed(action) {
-					return true
-				}
-			}
-			if team.Access.ManageModules {
-				if rbac.VCSManagerRole.IsAllowed(action) {
-					return true
-				}
-			}
+		if team.CanAccessOrganization(action, org) {
+			return true
 		}
 	}
 	return false
@@ -178,13 +170,8 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy internal.WorkspaceP
 	}
 	// fallback to checking finer-grained workspace perms
 	for _, team := range u.Teams {
-		if team.Organization != policy.Organization {
-			continue
-		}
-		for _, perm := range policy.Permissions {
-			if team.Name == perm.Team {
-				return perm.Role.IsAllowed(action)
-			}
+		if team.CanAccessWorkspace(action, policy) {
+			return true
 		}
 	}
 	return false
@@ -193,10 +180,8 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy internal.WorkspaceP
 // IsOwner determines if user is an owner of an organization
 func (u *User) IsOwner(organization string) bool {
 	for _, team := range u.Teams {
-		if team.Organization == organization {
-			if team.IsOwners() {
-				return true
-			}
+		if team.IsOwner(organization) {
+			return true
 		}
 	}
 	return false

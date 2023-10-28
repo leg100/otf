@@ -17,6 +17,7 @@ type TeamService interface {
 	CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
 	GetTeam(ctx context.Context, organization, team string) (*Team, error)
 	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
+	GetTeamByTokenID(ctx context.Context, teamTokenID string) (*Team, error)
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 	ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 	UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
@@ -199,4 +200,21 @@ func (a *service) createOwnersTeam(ctx context.Context, organization *organizati
 		}
 		return nil
 	})
+}
+
+func (a *service) GetTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
+	team, err := a.db.getTeamByTokenID(ctx, tokenID)
+	if err != nil {
+		a.Error(err, "retrieving team by team token ID", "token_id", tokenID)
+		return nil, err
+	}
+
+	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, team.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	a.V(9).Info("retrieved team", "team", team.Name, "organization", team.Organization, "subject", subject)
+
+	return team, nil
 }

@@ -19,9 +19,85 @@ type tfe struct {
 func (a *tfe) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
+	// Team token routes
+	r.HandleFunc("/teams/{team_id}/authentication-token", a.createTeamToken).Methods("POST")
+	r.HandleFunc("/teams/{team_id}/authentication-token", a.getTeamToken).Methods("GET")
+	r.HandleFunc("/teams/{team_id}/authentication-token", a.deleteTeamToken).Methods("DELETE")
+
+	// Organization token routes
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.createOrganizationToken).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.getOrganizationToken).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.deleteOrganizationToken).Methods("DELETE")
+}
+
+func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("team_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var opts types.TeamTokenCreateOptions
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	ot, token, err := a.CreateTeamToken(r.Context(), CreateTeamTokenOptions{
+		TeamID: id,
+		Expiry: opts.ExpiredAt,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	to := &types.TeamToken{
+		ID:        ot.ID,
+		CreatedAt: ot.CreatedAt,
+		Token:     string(token),
+		ExpiredAt: ot.Expiry,
+	}
+	a.Respond(w, r, to, http.StatusCreated)
+}
+
+func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("team_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ot, err := a.GetTeamToken(r.Context(), id)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	if ot == nil {
+		tfeapi.Error(w, internal.ErrResourceNotFound)
+		return
+	}
+
+	to := &types.TeamToken{
+		ID:        ot.ID,
+		CreatedAt: ot.CreatedAt,
+		ExpiredAt: ot.Expiry,
+	}
+	a.Respond(w, r, to, http.StatusOK)
+}
+
+func (a *tfe) deleteTeamToken(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("team_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	err = a.DeleteTeamToken(r.Context(), id)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {

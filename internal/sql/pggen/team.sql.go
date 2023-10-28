@@ -239,6 +239,53 @@ func (q *DBQuerier) FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow,
 	return item, nil
 }
 
+const findTeamByTokenIDSQL = `SELECT t.*
+FROM teams t
+JOIN team_tokens tt USING (team_id)
+WHERE tt.team_token_id = $1
+;`
+
+type FindTeamByTokenIDRow struct {
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+}
+
+// FindTeamByTokenID implements Querier.FindTeamByTokenID.
+func (q *DBQuerier) FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (FindTeamByTokenIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByTokenID")
+	row := q.conn.QueryRow(ctx, findTeamByTokenIDSQL, tokenID)
+	var item FindTeamByTokenIDRow
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
+		return item, fmt.Errorf("query FindTeamByTokenID: %w", err)
+	}
+	return item, nil
+}
+
+// FindTeamByTokenIDBatch implements Querier.FindTeamByTokenIDBatch.
+func (q *DBQuerier) FindTeamByTokenIDBatch(batch genericBatch, tokenID pgtype.Text) {
+	batch.Queue(findTeamByTokenIDSQL, tokenID)
+}
+
+// FindTeamByTokenIDScan implements Querier.FindTeamByTokenIDScan.
+func (q *DBQuerier) FindTeamByTokenIDScan(results pgx.BatchResults) (FindTeamByTokenIDRow, error) {
+	row := results.QueryRow()
+	var item FindTeamByTokenIDRow
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
+		return item, fmt.Errorf("scan FindTeamByTokenIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const findTeamByIDForUpdateSQL = `SELECT *
 FROM teams t
 WHERE team_id = $1

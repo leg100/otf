@@ -170,7 +170,8 @@ func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) er
 		}
 	}
 	if opts.HCL != nil {
-		if v.Sensitive {
+		changed := v.HCL != *opts.HCL
+		if changed && v.Sensitive {
 			return errors.New("changing HCL mode on a sensitive variable is not allowed")
 		}
 		v.HCL = *opts.HCL
@@ -281,6 +282,15 @@ func WriteTerraformVars(dir string, vars []*Variable) error {
 			b.WriteString(" = ")
 			if v.HCL {
 				b.WriteString(v.Value)
+			} else if strings.Contains(v.Value, "\n") {
+				delimiter := "EOT"
+				for strings.Contains(v.Value, delimiter) {
+					delimiter = delimiter + "T"
+				}
+
+				b.WriteString("<<" + delimiter + "\n")
+				b.WriteString(v.Value)
+				b.WriteString("\n" + delimiter)
 			} else {
 				b.WriteString(`"`)
 				b.WriteString(v.Value)

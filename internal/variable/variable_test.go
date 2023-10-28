@@ -126,6 +126,7 @@ func TestWriteTerraformVariables(t *testing.T) {
 		Category: VariableCategoryPtr(CategoryTerraform),
 	})
 	require.NoError(t, err)
+
 	v2, err := newVariable(nil, CreateVariableOptions{
 		Key: internal.String("images"),
 		Value: internal.String(`{
@@ -138,7 +139,21 @@ func TestWriteTerraformVariables(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = WriteTerraformVars(dir, []*Variable{v1, v2})
+	v3, err := newVariable(nil, CreateVariableOptions{
+		Key:      internal.String("multiline-foo"),
+		Value:    internal.String("foo\nbar\nbaz"),
+		Category: VariableCategoryPtr(CategoryTerraform),
+	})
+	require.NoError(t, err)
+
+	v4, err := newVariable(nil, CreateVariableOptions{
+		Key:      internal.String("multiline-foo-with-delimiter"),
+		Value:    internal.String("EOTfoo\nbar\nbaz"),
+		Category: VariableCategoryPtr(CategoryTerraform),
+	})
+	require.NoError(t, err)
+
+	err = WriteTerraformVars(dir, []*Variable{v1, v2, v3, v4})
 	require.NoError(t, err)
 
 	tfvars := path.Join(dir, "terraform.tfvars")
@@ -151,6 +166,16 @@ images = {
     us-east-1 = "image-1234"
     us-west-2 = "image-4567"
 }
+multiline-foo = <<EOT
+foo
+bar
+baz
+EOT
+multiline-foo-with-delimiter = <<EOTT
+EOTfoo
+bar
+baz
+EOTT
 `
 	assert.Equal(t, want, string(got))
 }

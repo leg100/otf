@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 type (
@@ -115,8 +116,72 @@ func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 func (t *Team) String() string                         { return t.Name }
 func (t *Team) OrganizationAccess() OrganizationAccess { return t.Access }
 
+func (t *Team) IsSiteAdmin() bool { return false }
+
 func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
+}
+
+func (t *Team) IsOwner(organization string) bool {
+	return t.Organization == organization && t.IsOwners()
+}
+
+func (t *Team) CanAccessSite(action rbac.Action) bool {
+	return false
+}
+
+func (t *Team) CanAccessTeam(action rbac.Action, id string) bool {
+	// team can access self
+	return t.ID == id
+}
+
+func (t *Team) CanAccessOrganization(action rbac.Action, org string) bool {
+	if t.Organization == org {
+		if t.IsOwners() {
+			// owner team can perform all actions on organization
+			return true
+		}
+		if rbac.OrganizationMinPermissions.IsAllowed(action) {
+			return true
+		}
+		if t.Access.ManageWorkspaces {
+			if rbac.WorkspaceManagerRole.IsAllowed(action) {
+				return true
+			}
+		}
+		if t.Access.ManageVCS {
+			if rbac.VCSManagerRole.IsAllowed(action) {
+				return true
+			}
+		}
+		if t.Access.ManageModules {
+			if rbac.VCSManagerRole.IsAllowed(action) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (t *Team) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+	// coarser-grained organization perms take precedence.
+	if t.CanAccessOrganization(action, policy.Organization) {
+		return true
+	}
+	// fallback to checking finer-grained workspace perms
+	if t.Organization != policy.Organization {
+		return false
+	}
+	for _, perm := range policy.Permissions {
+		if t.Name == perm.Team {
+			return perm.Role.IsAllowed(action)
+		}
+	}
+	return false
+}
+
+func (t *Team) Organizations() []string {
+	return []string{t.Organization}
 }
 
 func (t *Team) Update(opts UpdateTeamOptions) error {

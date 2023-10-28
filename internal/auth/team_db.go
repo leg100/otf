@@ -78,6 +78,14 @@ func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
 	return teamRow(result).toTeam(), nil
 }
 
+func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
+	result, err := db.Conn(ctx).FindTeamByTokenID(ctx, sql.String(tokenID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return teamRow(result).toTeam(), nil
+}
+
 func (db *pgdb) getTeamForUpdate(ctx context.Context, id string) (*Team, error) {
 	result, err := db.Conn(ctx).FindTeamByIDForUpdate(ctx, sql.String(id))
 	if err != nil {

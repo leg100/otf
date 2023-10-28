@@ -38,6 +38,7 @@ type (
 		agentTokenService
 		organizationTokenService
 		auth.AuthService
+		teamTokenService
 
 		GoogleIAPConfig
 		SiteToken string
@@ -157,6 +158,8 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 		return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: internal.String(parsed.Subject())})
 	case organizationTokenKind:
 		return m.getOrganizationTokenByID(ctx, parsed.Subject())
+	case teamTokenKind:
+		return m.GetTeamByTokenID(ctx, parsed.Subject())
 	case runTokenKind:
 		return NewRunTokenFromJWT(parsed)
 	default:

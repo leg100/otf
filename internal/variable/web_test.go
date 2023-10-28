@@ -44,6 +44,23 @@ func TestVariable_UpdateHandler(t *testing.T) {
 			},
 		},
 		{
+			name: "disable hcl",
+			existing: CreateVariableOptions{
+				Key:             internal.String("foo"),
+				Value:           internal.String("bar"),
+				Category:        VariableCategoryPtr(CategoryTerraform),
+				HCL:             internal.Bool(true),
+				generateVersion: func() string { return "" },
+			},
+			// If the user unchecks the HCL checkbox then no form value is sent
+			// but the handler should interpret the absence of the value as
+			// 'false'.
+			updated: url.Values{},
+			want: func(t *testing.T, got *Variable) {
+				assert.False(t, got.HCL)
+			},
+		},
+		{
 			name: "update sensitive value",
 			existing: CreateVariableOptions{
 				Key:             internal.String("foo"),
