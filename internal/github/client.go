@@ -238,9 +238,9 @@ func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 	}
 
 	// return tags with the format 'tags/<tag_value>'
-	var tags []string
-	for _, ref := range results {
-		tags = append(tags, strings.TrimPrefix(ref.GetRef(), "refs/"))
+	tags := make([]string, len(results))
+	for i, ref := range results {
+		tags[i] = strings.TrimPrefix(ref.GetRef(), "refs/")
 	}
 	return tags, nil
 }

@@ -36,9 +36,9 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	var users []*User
-	for _, r := range result {
-		users = append(users, userRow(r).toUser())
+	users := make([]*User, len(result))
+	for i, r := range result {
+		users[i] = userRow(r).toUser()
 	}
 	return users, nil
 }
@@ -48,9 +48,9 @@ func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) 
 	if err != nil {
 		return nil, err
 	}
-	var users []*User
-	for _, r := range result {
-		users = append(users, userRow(r).toUser())
+	users := make([]*User, len(result))
+	for i, r := range result {
+		users[i] = userRow(r).toUser()
 	}
 	return users, nil
 }
@@ -61,9 +61,9 @@ func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, er
 		return nil, err
 	}
 
-	var items []*User
-	for _, r := range result {
-		items = append(items, userRow(r).toUser())
+	items := make([]*User, len(result))
+	for i, r := range result {
+		items[i] = userRow(r).toUser()
 	}
 	return items, nil
 }

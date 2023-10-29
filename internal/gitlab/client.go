@@ -109,9 +109,9 @@ func (g *Client) ListRepositories(ctx context.Context, lopts vcs.ListRepositorie
 		return nil, err
 	}
 
-	var repos []string
-	for _, proj := range projects {
-		repos = append(repos, proj.PathWithNamespace)
+	repos := make([]string, len(projects))
+	for i, proj := range projects {
+		repos[i] = proj.PathWithNamespace
 	}
 	return repos, nil
 }
@@ -124,9 +124,9 @@ func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]stri
 		return nil, err
 	}
 
-	var tags []string
-	for _, ref := range results {
-		tags = append(tags, fmt.Sprintf("tags/%s", ref.Name))
+	tags := make([]string, len(results))
+	for i, ref := range results {
+		tags[i] = fmt.Sprintf("tags/%s", ref.Name)
 	}
 	return tags, nil
 }

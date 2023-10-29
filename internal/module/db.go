@@ -58,9 +58,9 @@ func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Mo
 		return nil, err
 	}
 
-	var modules []*Module
-	for _, r := range rows {
-		modules = append(modules, moduleRow(r).toModule())
+	modules := make([]*Module, len(rows))
+	for i, r := range rows {
+		modules[i] = moduleRow(r).toModule()
 	}
 	return modules, nil
 }

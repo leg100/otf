@@ -116,13 +116,13 @@ func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var providers []*VCSProvider
-	for _, r := range rows {
+	providers := make([]*VCSProvider, len(rows))
+	for i, r := range rows {
 		provider, err := db.toProvider(ctx, pgrow(r))
 		if err != nil {
 			return nil, err
 		}
-		providers = append(providers, provider)
+		providers[i] = provider
 	}
 	return providers, nil
 }
@@ -132,13 +132,13 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var providers []*VCSProvider
-	for _, r := range rows {
+	providers := make([]*VCSProvider, len(rows))
+	for i, r := range rows {
 		provider, err := db.toProvider(ctx, pgrow(r))
 		if err != nil {
 			return nil, err
 		}
-		providers = append(providers, provider)
+		providers[i] = provider
 	}
 	return providers, nil
 }
@@ -150,13 +150,13 @@ func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var providers []*VCSProvider
-	for _, r := range rows {
+	providers := make([]*VCSProvider, len(rows))
+	for i, r := range rows {
 		provider, err := db.toProvider(ctx, pgrow(r))
 		if err != nil {
 			return nil, err
 		}
-		providers = append(providers, provider)
+		providers[i] = provider
 	}
 	return providers, nil
 }

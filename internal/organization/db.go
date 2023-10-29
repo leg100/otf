@@ -108,11 +108,10 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 		return nil, err
 	}
 
-	var items []*Organization
-	for _, r := range rows {
-		items = append(items, row(r).toOrganization())
+	items := make([]*Organization, len(rows))
+	for i, r := range rows {
+		items[i] = row(r).toOrganization()
 	}
-
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 

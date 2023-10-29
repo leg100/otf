@@ -69,9 +69,9 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var tagIDs []string
-	for _, p := range params {
-		tagIDs = append(tagIDs, p.ID)
+	tagIDs := make([]string, len(params))
+	for i, p := range params {
+		tagIDs[i] = p.ID
 	}
 
 	if err := a.DeleteTags(r.Context(), org, tagIDs); err != nil {
@@ -93,9 +93,9 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var workspaceIDs []string
-	for _, p := range params {
-		workspaceIDs = append(workspaceIDs, p.ID)
+	workspaceIDs := make([]string, len(params))
+	for i, p := range params {
+		workspaceIDs[i] = p.ID
 	}
 
 	if err := a.TagWorkspaces(r.Context(), tagID, workspaceIDs); err != nil {

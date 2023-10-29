@@ -113,9 +113,9 @@ func (db *pgdb) list(ctx context.Context, workspaceID string) ([]*Config, error)
 		return nil, sql.Error(err)
 	}
 
-	var configs []*Config
-	for _, row := range results {
-		configs = append(configs, pgresult(row).toNotificationConfiguration())
+	configs := make([]*Config, len(results))
+	for i, row := range results {
+		configs[i] = pgresult(row).toNotificationConfiguration()
 	}
 	return configs, nil
 }
@@ -126,9 +126,9 @@ func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
 		return nil, sql.Error(err)
 	}
 
-	var configs []*Config
-	for _, row := range results {
-		configs = append(configs, pgresult(row).toNotificationConfiguration())
+	configs := make([]*Config, len(results))
+	for i, row := range results {
+		configs[i] = pgresult(row).toNotificationConfiguration()
 	}
 	return configs, nil
 }

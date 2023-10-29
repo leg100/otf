@@ -251,15 +251,14 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 		return nil, err
 	}
 
-	var items []*Workspace
-	for _, r := range rows {
+	items := make([]*Workspace, len(rows))
+	for i, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, ws)
+		items[i] = ws
 	}
-
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
@@ -270,15 +269,14 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath st
 		return nil, err
 	}
 
-	var items []*Workspace
-	for _, r := range rows {
+	items := make([]*Workspace, len(rows))
+	for i, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, ws)
+		items[i] = ws
 	}
-
 	return items, nil
 }
 
@@ -305,13 +303,13 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 		return nil, err
 	}
 
-	var items []*Workspace
-	for _, r := range rows {
+	items := make([]*Workspace, len(rows))
+	for i, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, ws)
+		items[i] = ws
 	}
 
 	return resource.NewPage(items, opts, internal.Int64(count.Int)), nil

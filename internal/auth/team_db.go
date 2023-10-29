@@ -100,9 +100,9 @@ func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, er
 		return nil, err
 	}
 
-	var items []*Team
-	for _, r := range result {
-		items = append(items, teamRow(r).toTeam())
+	items := make([]*Team, len(result))
+	for i, r := range result {
+		items[i] = teamRow(r).toTeam()
 	}
 	return items, nil
 }

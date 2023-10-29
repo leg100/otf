@@ -42,14 +42,14 @@ func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserTok
 	if err != nil {
 		return nil, err
 	}
-	var tokens []*UserToken
-	for _, row := range result {
-		tokens = append(tokens, &UserToken{
+	tokens := make([]*UserToken, len(result))
+	for i, row := range result {
+		tokens[i] = &UserToken{
 			ID:          row.TokenID.String,
 			CreatedAt:   row.CreatedAt.Time.UTC(),
 			Description: row.Description.String,
 			Username:    row.Username.String,
-		})
+		}
 	}
 	return tokens, nil
 }
@@ -202,11 +202,11 @@ func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*Ag
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var unmarshalled []*AgentToken
-	for _, r := range rows {
-		unmarshalled = append(unmarshalled, agentTokenRow(r).toAgentToken())
+	tokens := make([]*AgentToken, len(rows))
+	for i, r := range rows {
+		tokens[i] = agentTokenRow(r).toAgentToken()
 	}
-	return unmarshalled, nil
+	return tokens, nil
 }
 
 func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {

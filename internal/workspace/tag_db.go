@@ -53,11 +53,10 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 		return nil, sql.Error(err)
 	}
 
-	var items []*Tag
-	for _, r := range rows {
-		items = append(items, tagresult(r).toTag())
+	items := make([]*Tag, len(rows))
+	for i, r := range rows {
+		items[i] = tagresult(r).toTag()
 	}
-
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
@@ -140,10 +139,9 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 		return nil, sql.Error(err)
 	}
 
-	var items []*Tag
-	for _, r := range rows {
-		items = append(items, tagresult(r).toTag())
+	items := make([]*Tag, len(rows))
+	for i, r := range rows {
+		items[i] = tagresult(r).toTag()
 	}
-
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }

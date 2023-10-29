@@ -362,11 +362,10 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 		return nil, err
 	}
 
-	var items []*Run
-	for _, r := range rows {
-		items = append(items, pgresult(r).toRun())
+	items := make([]*Run, len(rows))
+	for i, r := range rows {
+		items[i] = pgresult(r).toRun()
 	}
-
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 

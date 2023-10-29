@@ -124,11 +124,10 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resou
 		return nil, err
 	}
 
-	var items []*Version
-	for _, r := range rows {
-		items = append(items, pgRow(r).toVersion())
+	items := make([]*Version, len(rows))
+	for i, r := range rows {
+		items[i] = pgRow(r).toVersion()
 	}
-
 	return resource.NewPage(items, opts, internal.Int64(count.Int)), nil
 }
 

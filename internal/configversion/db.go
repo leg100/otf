@@ -99,11 +99,10 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 		return nil, err
 	}
 
-	var items []*ConfigurationVersion
-	for _, r := range rows {
-		items = append(items, pgRow(r).toConfigVersion())
+	items := make([]*ConfigurationVersion, len(rows))
+	for i, r := range rows {
+		items[i] = pgRow(r).toConfigVersion()
 	}
-
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 

@@ -214,7 +214,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var filtered []string
+	filtered := make([]string, 0, len(results))
 	for _, res := range results {
 		_, _, err := Repo(res).Split()
 		if err == ErrInvalidModuleRepo {

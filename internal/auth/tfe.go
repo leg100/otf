@@ -310,9 +310,9 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 	}
 
 	// convert users into a simple slice of usernames
-	var usernames []string
-	for _, u := range users {
-		usernames = append(usernames, u.Username)
+	usernames := make([]string, len(users))
+	for i, u := range users {
+		usernames[i] = u.Username
 	}
 
 	switch action {

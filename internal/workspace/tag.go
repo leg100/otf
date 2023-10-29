@@ -37,12 +37,12 @@ func (s TagSpec) Valid() error {
 
 func (specs TagSpecs) LogValue() slog.Value {
 	var (
-		ids   []string
-		names []string
+		ids   = make([]string, len(specs))
+		names = make([]string, len(specs))
 	)
-	for _, s := range specs {
-		ids = append(ids, s.ID)
-		names = append(names, s.Name)
+	for i, s := range specs {
+		ids[i] = s.ID
+		names[i] = s.Name
 	}
 	return slog.GroupValue(
 		slog.Any("ids", ids),
