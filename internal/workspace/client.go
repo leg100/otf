@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfapi.Client
 
 	WorkspaceService
 }

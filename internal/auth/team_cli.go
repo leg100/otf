@@ -22,7 +22,7 @@ func NewTeamCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.AuthService = &Client{JSONAPIClient: api}
+			cli.AuthService = &Client{Client: api}
 			return nil
 		},
 	}

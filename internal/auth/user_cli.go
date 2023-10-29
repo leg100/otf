@@ -20,7 +20,7 @@ func NewUserCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.UserService = &Client{JSONAPIClient: api}
+			cli.UserService = &Client{Client: api}
 			return nil
 		},
 	}

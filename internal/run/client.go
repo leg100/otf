@@ -18,7 +18,7 @@ import (
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfapi.Client
 	otfapi.Config
 
 	// Client does not implement all of service yet

@@ -21,7 +21,7 @@ func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.TokensService = &Client{JSONAPIClient: api}
+			cli.TokensService = &Client{Client: api}
 			return nil
 		},
 	}

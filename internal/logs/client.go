@@ -7,10 +7,11 @@ import (
 	"strconv"
 
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfapi.Client
 }
 
 func (c *Client) PutChunk(ctx context.Context, opts internal.PutChunkOptions) error {

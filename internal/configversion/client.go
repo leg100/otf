@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfapi.Client
 
 	// Client does not implement all of service yet
 	Service

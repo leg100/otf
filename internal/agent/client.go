@@ -88,12 +88,12 @@ func newClient(config ExternalConfig) (*remoteClient, error) {
 
 	return &remoteClient{
 		Client:          api,
-		stateClient:     &stateClient{JSONAPIClient: api},
-		configClient:    &configClient{JSONAPIClient: api},
-		variableClient:  &variableClient{JSONAPIClient: api},
-		tokensClient:    &tokensClient{JSONAPIClient: api},
-		workspaceClient: &workspaceClient{JSONAPIClient: api},
-		runClient:       &runClient{JSONAPIClient: api, Config: config.APIConfig},
-		logsClient:      &logsClient{JSONAPIClient: api},
+		stateClient:     &stateClient{Client: api},
+		configClient:    &configClient{Client: api},
+		variableClient:  &variableClient{Client: api},
+		tokensClient:    &tokensClient{Client: api},
+		workspaceClient: &workspaceClient{Client: api},
+		runClient:       &runClient{Client: api, Config: config.APIConfig},
+		logsClient:      &logsClient{Client: api},
 	}, nil
 }

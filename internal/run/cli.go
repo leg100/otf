@@ -28,8 +28,8 @@ func NewCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{JSONAPIClient: api}
-			cli.ConfigurationVersionService = &configversion.Client{JSONAPIClient: api}
+			cli.Service = &Client{Client: api}
+			cli.ConfigurationVersionService = &configversion.Client{Client: api}
 			return nil
 		},
 	}

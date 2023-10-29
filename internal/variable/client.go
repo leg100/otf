@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfapi.Client
 }
 
 func (c *Client) ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error) {

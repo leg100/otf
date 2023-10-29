@@ -5,19 +5,17 @@ import (
 	"context"
 
 	otfapi "github.com/leg100/otf/internal/api"
-
-	"github.com/leg100/otf/internal"
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfapi.Client
 
 	// client doesn't implement all of service yet
 	TokensService
 }
 
 func NewClient(api *otfapi.Client) (*Client, error) {
-	return &Client{JSONAPIClient: api}, nil
+	return &Client{Client: api}, nil
 }
 
 func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
