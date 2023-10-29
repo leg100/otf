@@ -45,12 +45,12 @@ applied:
 	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
 			switch r.Status {
-			case internal.RunPlanned:
+			case run.RunPlanned:
 				err := daemon.Apply(ctx, r.ID)
 				require.NoError(t, err)
-			case internal.RunApplied:
+			case run.RunApplied:
 				break applied
-			case internal.RunErrored:
+			case run.RunErrored:
 				t.Fatalf("run unexpectedly errored")
 			}
 		}
@@ -88,12 +88,12 @@ output "remote_foo" {
 	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
 			switch r.Status {
-			case internal.RunPlanned:
+			case run.RunPlanned:
 				err := daemon.Apply(ctx, r.ID)
 				require.NoError(t, err)
-			case internal.RunApplied:
+			case run.RunApplied:
 				return
-			case internal.RunErrored:
+			case run.RunErrored:
 				t.Fatalf("run unexpectedly errored")
 			}
 		}

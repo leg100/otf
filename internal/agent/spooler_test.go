@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
@@ -16,11 +15,11 @@ func TestSpooler(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// run[1-2] are in the DB; run[3-5] are events
-	run1 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunPlanQueued}
-	run2 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunPlanQueued}
-	run3 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunPlanQueued}
-	run4 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunCanceled}
-	run5 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunForceCanceled}
+	run1 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: run.RunPlanQueued}
+	run2 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: run.RunPlanQueued}
+	run3 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: run.RunPlanQueued}
+	run4 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: run.RunCanceled}
+	run5 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: run.RunForceCanceled}
 	db := []*run.Run{run1, run2}
 	events := make(chan pubsub.Event, 3)
 	events <- pubsub.Event{Payload: run3}
@@ -61,7 +60,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        internal.RunPlanQueued,
+					Status:        run.RunPlanQueued,
 				},
 			},
 			wantRun: true,
@@ -82,7 +81,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,
-					Status:        internal.RunPlanQueued,
+					Status:        run.RunPlanQueued,
 				},
 			},
 			wantRun: true,
@@ -92,7 +91,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        internal.RunPlanned,
+					Status:        run.RunPlanned,
 				},
 			},
 			wantRun: false,
@@ -102,7 +101,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        internal.RunCanceled,
+					Status:        run.RunCanceled,
 				},
 			},
 			wantCancelation: true,
@@ -112,7 +111,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        internal.RunForceCanceled,
+					Status:        run.RunForceCanceled,
 				},
 			},
 			wantForceCancelation: true,

@@ -15,11 +15,11 @@ func TestNotifier_handleRun(t *testing.T) {
 	ctx := context.Background()
 
 	queuedRun := &run.Run{
-		Status:      internal.RunPlanQueued,
+		Status:      run.RunPlanQueued,
 		WorkspaceID: "ws-matching",
 	}
 	planningRun := &run.Run{
-		Status:      internal.RunPlanning,
+		Status:      run.RunPlanning,
 		WorkspaceID: "ws-matching",
 	}
 	disabledConfig := &Config{
@@ -85,7 +85,7 @@ func TestNotifier_handleRun(t *testing.T) {
 func TestNotifier_handleRun_multiple(t *testing.T) {
 	ctx := context.Background()
 	planningRun := &run.Run{
-		Status:      internal.RunPlanning,
+		Status:      run.RunPlanning,
 		WorkspaceID: "ws-123",
 	}
 	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "", TriggerPlanning)

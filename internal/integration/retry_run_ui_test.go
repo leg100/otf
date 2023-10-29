@@ -22,10 +22,10 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	r := daemon.createRun(t, ctx, ws, cv)
 	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
-			if r.Status == internal.RunErrored {
+			if r.Status == run.RunErrored {
 				t.Fatal("run unexpectedly errored")
 			}
-			if r.Status == internal.RunPlannedAndFinished {
+			if r.Status == run.RunPlannedAndFinished {
 				break
 			}
 		}

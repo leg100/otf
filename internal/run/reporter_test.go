@@ -25,7 +25,7 @@ func TestReporter_HandleRun(t *testing.T) {
 	}{
 		{
 			name: "pending run",
-			run:  &Run{ID: "run-123", Status: internal.RunPending},
+			run:  &Run{ID: "run-123", Status: RunPending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
 				Connection: &workspace.Connection{},

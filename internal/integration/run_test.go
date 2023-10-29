@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -24,7 +24,7 @@ func TestRun(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 
-		run, err := svc.CreateRun(ctx, cv.WorkspaceID, run.CreateOptions{})
+		run, err := svc.CreateRun(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 
 		user, err := auth.UserFromContext(ctx)
@@ -53,7 +53,7 @@ func TestRun(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = daemon.CreateRun(ctx, ws.ID, run.CreateOptions{})
+		_, err = daemon.CreateRun(ctx, ws.ID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 	})
 
@@ -64,8 +64,8 @@ func TestRun(t *testing.T) {
 		got, err := svc.EnqueuePlan(ctx, run.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, internal.RunPlanQueued, got.Status)
-		timestamp, err := got.StatusTimestamp(internal.RunPlanQueued)
+		assert.Equal(t, otfrun.RunPlanQueued, got.Status)
+		timestamp, err := got.StatusTimestamp(otfrun.RunPlanQueued)
 		assert.NoError(t, err)
 		assert.True(t, timestamp.After(got.CreatedAt))
 	})
@@ -77,8 +77,8 @@ func TestRun(t *testing.T) {
 		got, err := svc.Cancel(ctx, run.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, internal.RunCanceled, got.Status)
-		canceled, err := got.StatusTimestamp(internal.RunCanceled)
+		assert.Equal(t, otfrun.RunCanceled, got.Status)
+		canceled, err := got.StatusTimestamp(otfrun.RunCanceled)
 		assert.NoError(t, err)
 		assert.True(t, canceled.After(got.CreatedAt))
 
@@ -119,13 +119,13 @@ func TestRun(t *testing.T) {
 
 		tests := []struct {
 			name string
-			opts run.ListOptions
-			want func(*testing.T, *resource.Page[*run.Run])
+			opts otfrun.ListOptions
+			want func(*testing.T, *resource.Page[*otfrun.Run])
 		}{
 			{
 				name: "unfiltered",
-				opts: run.ListOptions{},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// may match runs in the db belonging to organizations outside
 					// of this test
 					assert.GreaterOrEqual(t, len(l.Items), 4)
@@ -137,8 +137,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by organization name",
-				opts: run.ListOptions{Organization: internal.String(ws1.Organization)},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization)},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -146,8 +146,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by workspace id",
-				opts: run.ListOptions{WorkspaceID: internal.String(ws1.ID)},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{WorkspaceID: internal.String(ws1.ID)},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -155,8 +155,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by workspace name and organization",
-				opts: run.ListOptions{WorkspaceName: internal.String(ws1.Name), Organization: internal.String(ws1.Organization)},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{WorkspaceName: internal.String(ws1.Name), Organization: internal.String(ws1.Organization)},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -164,8 +164,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by pending status",
-				opts: run.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []internal.RunStatus{internal.RunPending}},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.RunStatus{otfrun.RunPending}},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -173,15 +173,15 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by statuses - no match",
-				opts: run.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []internal.RunStatus{internal.RunPlanned}},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.RunStatus{otfrun.RunPlanned}},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter out speculative runs in org1",
-				opts: run.ListOptions{Organization: internal.String(ws1.Organization), PlanOnly: internal.Bool(false)},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), PlanOnly: internal.Bool(false)},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
 					assert.Equal(t, 2, l.TotalCount)
@@ -189,8 +189,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org2",
-				opts: run.ListOptions{Organization: internal.String(ws2.Organization), PlanOnly: internal.Bool(false)},
-				want: func(t *testing.T, l *resource.Page[*run.Run]) {
+				opts: otfrun.ListOptions{Organization: internal.String(ws2.Organization), PlanOnly: internal.Bool(false)},
+				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))
 					assert.Equal(t, 0, l.TotalCount)

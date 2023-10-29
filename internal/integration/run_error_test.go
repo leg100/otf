@@ -92,7 +92,7 @@ func TestRunError(t *testing.T) {
 						gotErrorLogs = true
 					}
 				case *run.Run:
-					if payload.Status == internal.RunErrored {
+					if payload.Status == run.RunErrored {
 						gotErrorStatus = true
 					}
 				}

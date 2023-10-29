@@ -1,16 +1,6 @@
-package internal
+package run
 
 import "time"
-
-type PhaseType string
-
-const (
-	PendingPhase PhaseType = "pending"
-	PlanPhase    PhaseType = "plan"
-	ApplyPhase   PhaseType = "apply"
-	FinalPhase   PhaseType = "final"
-	UnknownPhase PhaseType = "unknown"
-)
 
 // RunStatus represents a run state.
 type RunStatus string

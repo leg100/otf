@@ -179,15 +179,15 @@ func (c *Config) update(opts UpdateConfigOptions) error {
 // given run state
 func (c *Config) matchTrigger(r *run.Run) (Trigger, bool) {
 	switch r.Status {
-	case internal.RunPending:
+	case run.RunPending:
 		return TriggerCreated, c.hasTrigger(TriggerCreated)
-	case internal.RunPlanning:
+	case run.RunPlanning:
 		return TriggerPlanning, c.hasTrigger(TriggerPlanning)
-	case internal.RunPlanned:
+	case run.RunPlanned:
 		return TriggerNeedsAttention, c.hasTrigger(TriggerNeedsAttention)
-	case internal.RunApplying:
+	case run.RunApplying:
 		return TriggerApplying, c.hasTrigger(TriggerApplying)
-	case internal.RunErrored:
+	case run.RunErrored:
 		return TriggerErrored, c.hasTrigger(TriggerErrored)
 	}
 	if r.Done() {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -83,7 +82,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	// retrieve all incomplete runs
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
 		return s.ListRuns(ctx, run.ListOptions{
-			Statuses:    internal.IncompleteRun,
+			Statuses:    run.IncompleteRun,
 			PageOptions: opts,
 		})
 	})

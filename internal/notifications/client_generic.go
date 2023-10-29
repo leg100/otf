@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/run"
 )
 
 type (
@@ -32,7 +32,7 @@ type (
 	genericNotificationPayload struct {
 		Message      string
 		Trigger      Trigger
-		RunStatus    internal.RunStatus
+		RunStatus    run.RunStatus
 		RunUpdatedAt time.Time
 		RunUpdatedBy string
 	}

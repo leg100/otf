@@ -109,7 +109,7 @@ type (
 	// LatestRun is a summary of the latest run for a workspace
 	LatestRun struct {
 		ID     string
-		Status internal.RunStatus
+		Status string
 	}
 
 	ExecutionMode string

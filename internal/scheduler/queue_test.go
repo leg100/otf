@@ -5,9 +5,8 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,9 +18,9 @@ func TestQueue(t *testing.T) {
 
 	t.Run("handle several runs", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run1 := &run.Run{ID: "run-1", WorkspaceID: "ws-123", Status: internal.RunPending}
-		run2 := &run.Run{ID: "run-2", WorkspaceID: "ws-123", Status: internal.RunPending}
-		run3 := &run.Run{ID: "run-3", WorkspaceID: "ws-123", Status: internal.RunPending}
+		run1 := &otfrun.Run{ID: "run-1", WorkspaceID: "ws-123", Status: otfrun.RunPending}
+		run2 := &otfrun.Run{ID: "run-2", WorkspaceID: "ws-123", Status: otfrun.RunPending}
+		run3 := &otfrun.Run{ID: "run-3", WorkspaceID: "ws-123", Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run1, run2, run3)
 		q := newTestQueue(app, ws)
 
@@ -79,20 +78,20 @@ func TestQueue(t *testing.T) {
 
 	t.Run("speculative run", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{Status: internal.RunPending, WorkspaceID: "ws-123", PlanOnly: true}
+		run := &otfrun.Run{Status: otfrun.RunPending, WorkspaceID: "ws-123", PlanOnly: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
 		err := q.handleEvent(ctx, pubsub.Event{Payload: run})
 		require.NoError(t, err)
 		// should be scheduled but not enqueued onto workspace q
-		assert.Equal(t, internal.RunPlanQueued, run.Status)
+		assert.Equal(t, otfrun.RunPlanQueued, run.Status)
 		assert.Equal(t, 0, len(q.queue))
 	})
 
 	t.Run("user locked", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{ID: "run-123", WorkspaceID: "ws-123", Status: internal.RunPending}
+		run := &otfrun.Run{ID: "run-123", WorkspaceID: "ws-123", Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -117,18 +116,18 @@ func TestQueue(t *testing.T) {
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{WorkspaceID: "ws-123", Status: internal.RunPlanning}
+		run := &otfrun.Run{WorkspaceID: "ws-123", Status: otfrun.RunPlanning}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
 		err := q.handleEvent(ctx, pubsub.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, internal.RunPlanning, run.Status)
+		assert.Equal(t, otfrun.RunPlanning, run.Status)
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		run := &run.Run{WorkspaceID: "ws-123"}
+		run := &otfrun.Run{WorkspaceID: "ws-123"}
 		ws := &workspace.Workspace{ID: "ws-123", LatestRun: &workspace.LatestRun{ID: run.ID}}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
@@ -151,23 +150,23 @@ func newTestQueue(services *fakeQueueServices, ws *workspace.Workspace) *queue {
 
 type fakeQueueServices struct {
 	ws      *workspace.Workspace
-	runs    map[string]*run.Run // mock run db
-	current []string            // list of IDs of runs that have been set as the current run
+	runs    map[string]*otfrun.Run // mock run db
+	current []string               // list of IDs of runs that have been set as the current run
 
 	WorkspaceService
 	RunService
 }
 
-func newFakeQueueApp(ws *workspace.Workspace, runs ...*run.Run) *fakeQueueServices {
-	db := make(map[string]*run.Run, len(runs))
+func newFakeQueueApp(ws *workspace.Workspace, runs ...*otfrun.Run) *fakeQueueServices {
+	db := make(map[string]*otfrun.Run, len(runs))
 	for _, r := range runs {
 		db[r.ID] = r
 	}
 	return &fakeQueueServices{ws: ws, runs: db}
 }
 
-func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*run.Run, error) {
-	f.runs[runID].Status = internal.RunPlanQueued
+func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*otfrun.Run, error) {
+	f.runs[runID].Status = otfrun.RunPlanQueued
 	return f.runs[runID], nil
 }
 
