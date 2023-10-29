@@ -107,8 +107,7 @@ jobs:
           mike set-default latest -p
   charts:
     # only create otf-charts PR for new releases
-    if: needs.release-please.outputs.release_created
-    needs: [build,release-please]
+    needs: [release]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
