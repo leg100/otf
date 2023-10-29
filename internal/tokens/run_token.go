@@ -94,7 +94,7 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		return nil, err
 	}
 
-	expiry := internal.CurrentTimestamp().Add(defaultRunTokenExpiry)
+	expiry := internal.CurrentTimestamp(nil).Add(defaultRunTokenExpiry)
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}

@@ -100,8 +100,8 @@ type (
 func newModule(opts CreateOptions) *Module {
 	return &Module{
 		ID:           internal.NewID("mod"),
-		CreatedAt:    internal.CurrentTimestamp(),
-		UpdatedAt:    internal.CurrentTimestamp(),
+		CreatedAt:    internal.CurrentTimestamp(nil),
+		UpdatedAt:    internal.CurrentTimestamp(nil),
 		Name:         opts.Name,
 		Provider:     opts.Provider,
 		Status:       ModuleStatusPending,
@@ -112,8 +112,8 @@ func newModule(opts CreateOptions) *Module {
 func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
 		ID:        internal.NewID("modver"),
-		CreatedAt: internal.CurrentTimestamp(),
-		UpdatedAt: internal.CurrentTimestamp(),
+		CreatedAt: internal.CurrentTimestamp(nil),
+		UpdatedAt: internal.CurrentTimestamp(nil),
 		ModuleID:  opts.ModuleID,
 		// TODO: check version is a semver, and decide whether to keep or drop
 		// 'v' prefix

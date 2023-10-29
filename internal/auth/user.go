@@ -59,8 +59,8 @@ func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
 		ID:        internal.NewID("user"),
 		Username:  username,
-		CreatedAt: internal.CurrentTimestamp(),
-		UpdatedAt: internal.CurrentTimestamp(),
+		CreatedAt: internal.CurrentTimestamp(nil),
+		UpdatedAt: internal.CurrentTimestamp(nil),
 	}
 	for _, fn := range opts {
 		fn(user)

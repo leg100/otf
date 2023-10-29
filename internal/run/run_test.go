@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
@@ -176,6 +177,96 @@ func TestRun_States(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotZero(t, run.ForceCancelAvailableAt)
 	})
+}
+
+func TestRun_StatusReport(t *testing.T) {
+	var (
+		now = internal.CurrentTimestamp(nil)
+		ago = func(seconds int) time.Time {
+			return now.Add(time.Duration(seconds) * -time.Second)
+		}
+		createRun = func(created time.Time) *Run {
+			return newRun(context.Background(), &organization.Organization{}, &configversion.ConfigurationVersion{}, &workspace.Workspace{}, CreateOptions{now: &created})
+		}
+	)
+
+	tests := []struct {
+		name string
+		run  func() *Run
+		want []internal.StatusPeriod
+	}{
+		{
+			"fresh run",
+			func() *Run { return createRun(ago(0)) },
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Period: 0},
+			},
+		},
+		{
+			"planning",
+			func() *Run {
+				// 1 second in pending state
+				// 1 second in plan queued state
+				// 2 seconds in planning state
+				return createRun(ago(4)).
+					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
+					updateStatus(internal.RunPlanning, internal.Time(ago(2)))
+			},
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Period: time.Second},
+				{Status: internal.RunPlanQueued, Period: time.Second},
+				{Status: internal.RunPlanning, Period: 2 * time.Second},
+			},
+		},
+		{
+			"planned and finished",
+			func() *Run {
+				// 1 second in pending state
+				// 1 second in plan queued state
+				// 2 seconds in planning state
+				// finished
+				return createRun(ago(4)).
+					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
+					updateStatus(internal.RunPlanning, internal.Time(ago(2))).
+					updateStatus(internal.RunPlannedAndFinished, &now)
+			},
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Period: time.Second},
+				{Status: internal.RunPlanQueued, Period: time.Second},
+				{Status: internal.RunPlanning, Period: 2 * time.Second},
+			},
+		},
+		{
+			"applied",
+			func() *Run {
+				// 1 second in pending state
+				// 1 second in plan queued state
+				// 2 seconds in planning state
+				// 1 seconds in planned state
+				// 5 second in applying state
+				// finished
+				return createRun(ago(10)).
+					updateStatus(internal.RunPlanQueued, internal.Time(ago(9))).
+					updateStatus(internal.RunPlanning, internal.Time(ago(8))).
+					updateStatus(internal.RunPlanned, internal.Time(ago(6))).
+					updateStatus(internal.RunApplying, internal.Time(ago(5))).
+					updateStatus(internal.RunPlannedAndFinished, &now)
+			},
+			[]internal.StatusPeriod{
+				{Status: internal.RunPending, Period: time.Second},
+				{Status: internal.RunPlanQueued, Period: time.Second},
+				{Status: internal.RunPlanning, Period: 2 * time.Second},
+				{Status: internal.RunPlanned, Period: time.Second},
+				{Status: internal.RunApplying, Period: 5 * time.Second},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.run().PeriodReport(now)
+			assert.Equal(t, tt.want, got.Periods)
+		})
+	}
 }
 
 func newTestRun(ctx context.Context, opts CreateOptions) *Run {

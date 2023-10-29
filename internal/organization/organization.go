@@ -67,8 +67,8 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 	}
 	org := Organization{
 		Name:                   *opts.Name,
-		CreatedAt:              internal.CurrentTimestamp(),
-		UpdatedAt:              internal.CurrentTimestamp(),
+		CreatedAt:              internal.CurrentTimestamp(nil),
+		UpdatedAt:              internal.CurrentTimestamp(nil),
 		ID:                     internal.NewID("org"),
 		Email:                  opts.Email,
 		CollaboratorAuthPolicy: opts.CollaboratorAuthPolicy,
@@ -112,6 +112,6 @@ func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.AllowForceDeleteWorkspaces != nil {
 		org.AllowForceDeleteWorkspaces = *opts.AllowForceDeleteWorkspaces
 	}
-	org.UpdatedAt = internal.CurrentTimestamp()
+	org.UpdatedAt = internal.CurrentTimestamp(nil)
 	return nil
 }

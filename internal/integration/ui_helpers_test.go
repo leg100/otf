@@ -227,7 +227,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		chromedp.WaitVisible(`//span[@id='plan-status' and text()='finished']`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitVisible(`//*[text()='planned']`),
+		chromedp.WaitVisible(`//div[@class='widget']//a[text()='planned']`),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
@@ -247,6 +247,12 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		// because run was triggered from the UI, the UI icon should be visible.
 		chromedp.WaitVisible(`//div[@class='widget']//img[@id='run-trigger-ui']`),
+		// run should show elapsed time
+		matchRegex(t, `//div[@id='elapsed-time']/span`, `\d+(s|ms)`),
+		// plan should show running time
+		matchRegex(t, `//span[@id='running-time-plan']`, `\d+(s|ms)`),
+		// apply should show running time
+		matchRegex(t, `//span[@id='running-time-apply']`, `\d+(s|ms)`),
 		screenshot(t),
 	}
 }

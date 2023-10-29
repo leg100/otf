@@ -1,13 +1,22 @@
 package internal
 
+import "time"
+
+type PhaseType string
+
 const (
 	PendingPhase PhaseType = "pending"
 	PlanPhase    PhaseType = "plan"
 	ApplyPhase   PhaseType = "apply"
 	FinalPhase   PhaseType = "final"
 	UnknownPhase PhaseType = "unknown"
+)
 
-	// List all available run statuses supported in otf.
+// RunStatus represents a run state.
+type RunStatus string
+
+const (
+	// List all available run statuses supported in OTF.
 	RunApplied            RunStatus = "applied"
 	RunApplyQueued        RunStatus = "apply_queued"
 	RunApplying           RunStatus = "applying"
@@ -27,6 +36,25 @@ const (
 	RunCostEstimated RunStatus = "cost_estimated"
 )
 
+func (r RunStatus) String() string { return string(r) }
+
+type (
+	// StatusPeriod is the duration over which a run has had a status.
+	StatusPeriod struct {
+		Status RunStatus     `json:"status"`
+		Period time.Duration `json:"period"`
+	}
+
+	PeriodReport struct {
+		TotalTime time.Duration  `json:"total_time"`
+		Periods   []StatusPeriod `json:"periods"`
+	}
+)
+
+func (r PeriodReport) Percentage(i int) float64 {
+	return (r.Periods[i].Period.Seconds() / r.TotalTime.Seconds()) * 100
+}
+
 var (
 	ActiveRun = []RunStatus{
 		RunApplyQueued,
@@ -37,25 +65,4 @@ var (
 		RunPlanning,
 	}
 	IncompleteRun = append(ActiveRun, RunPending)
-	CompletedRun  = []RunStatus{
-		RunApplied,
-		RunErrored,
-		RunDiscarded,
-		RunCanceled,
-		RunForceCanceled,
-	}
 )
-
-type (
-	PhaseType string
-
-	// RunStatus represents a run state.
-	RunStatus string
-)
-
-func (r RunStatus) String() string { return string(r) }
-
-// RunStatusPtr returns a pointer to a run status
-func RunStatusPtr(s RunStatus) *RunStatus {
-	return &s
-}

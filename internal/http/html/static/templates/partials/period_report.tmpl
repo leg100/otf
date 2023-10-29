@@ -1,0 +1,27 @@
+{{ define "period-report" }}
+  {{ $report := .PeriodReport now }}
+  <div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
+    {{ $statusColors := dict
+      "pending" "bg-yellow-50"
+      "plan_queued" "bg-yellow-200"
+      "planning" "bg-violet-100"
+      "planned" "bg-violet-400"
+      "planned_and_finished" "bg-green-100"
+      "applying" "bg-cyan-200"
+    }}
+    {{ range $i, $period := $report.Periods -}}
+      <div style="width: {{ $report.Percentage $i }}%;" class="inline-block h-full {{ get $statusColors .Status.String }}" ></div>
+    {{- end }}
+    <div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
+      <ul class="flex gap-4 flex-wrap text-sm">
+        {{ range $report.Periods }}
+          <li class="">
+            <div class="h-3 w-3 inline-block border border-black align-middle {{ get $statusColors .Status.String }}"></div>
+            <span>{{ .Status }}</span>
+            <span>({{ .Period }})</span>
+          </li>
+        {{ end }}
+      </ul>
+    </div>
+  </div>
+{{ end }}

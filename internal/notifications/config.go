@@ -131,8 +131,8 @@ func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 
 	return &Config{
 		ID:              internal.NewID("nc"),
-		CreatedAt:       internal.CurrentTimestamp(),
-		UpdatedAt:       internal.CurrentTimestamp(),
+		CreatedAt:       internal.CurrentTimestamp(nil),
+		UpdatedAt:       internal.CurrentTimestamp(nil),
 		Name:            *opts.Name,
 		Enabled:         *opts.Enabled,
 		Triggers:        opts.Triggers,

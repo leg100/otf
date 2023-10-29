@@ -111,7 +111,7 @@ type (
 func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            internal.NewID("cv"),
-		CreatedAt:     internal.CurrentTimestamp(),
+		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,
 		WorkspaceID:   workspaceID,
@@ -167,6 +167,6 @@ func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.Status = status
 	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
 		Status:    status,
-		Timestamp: internal.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(nil),
 	})
 }

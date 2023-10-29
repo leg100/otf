@@ -116,7 +116,7 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 			if err != nil {
 				return err
 			}
-			token, err := tokens.NewSessionToken(p.key, user.Username, internal.CurrentTimestamp().Add(time.Hour))
+			token, err := tokens.NewSessionToken(p.key, user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
 			if err != nil {
 				return err
 			}

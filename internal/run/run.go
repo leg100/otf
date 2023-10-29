@@ -57,13 +57,16 @@ type (
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
 		Source                 Source                  `jsonapi:"attribute" json:"source"`
 		Status                 internal.RunStatus      `jsonapi:"attribute" json:"status"`
-		StatusTimestamps       []StatusTimestamp       `jsonapi:"attribute" json:"status_timestamps"`
 		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
 		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
 		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
+
+		// Timestamps of when a state transition occured. Ordered earliest
+		// first.
+		StatusTimestamps []StatusTimestamp `jsonapi:"attribute" json:"status_timestamps"`
 
 		Latest bool `jsonapi:"attribute" json:"latest"` // is latest run for workspace
 
@@ -86,8 +89,8 @@ type (
 	}
 
 	StatusTimestamp struct {
-		Status    internal.RunStatus
-		Timestamp time.Time
+		Status    internal.RunStatus `json:"status"`
+		Timestamp time.Time          `json:"timestamp"`
 	}
 
 	// CreateOptions represents the options for creating a new run. See
@@ -112,6 +115,9 @@ type (
 		// configuration version is marked as speculative or not.
 		PlanOnly  *bool
 		Variables []Variable
+
+		// testing purposes
+		now *time.Time
 	}
 
 	// ListOptions are options for paginating and filtering a list of runs
@@ -146,7 +152,7 @@ type (
 func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
-		CreatedAt:              internal.CurrentTimestamp(),
+		CreatedAt:              internal.CurrentTimestamp(opts.now),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,
 		ConfigurationVersionID: cv.ID,
@@ -162,9 +168,9 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		TerraformVersion:       ws.TerraformVersion,
 		Variables:              opts.Variables,
 	}
-	run.Plan = NewPhase(run.ID, internal.PlanPhase)
-	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
-	run.updateStatus(internal.RunPending)
+	run.Plan = newPhase(run.ID, internal.PlanPhase)
+	run.Apply = newPhase(run.ID, internal.ApplyPhase)
+	run.updateStatus(internal.RunPending, opts.now)
 
 	if run.Source == "" {
 		run.Source = SourceAPI
@@ -196,6 +202,8 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	return &run
 }
 
+func (r *Run) String() string { return r.ID }
+
 func (r *Run) Queued() bool {
 	return r.Status == internal.RunPlanQueued || r.Status == internal.RunApplyQueued
 }
@@ -204,10 +212,58 @@ func (r *Run) HasChanges() bool {
 	return r.Plan.HasChanges()
 }
 
-// HasApply determines whether the run has started applying yet.
-func (r *Run) HasApply() bool {
-	_, err := r.Apply.StatusTimestamp(PhaseRunning)
-	return err == nil
+// HasStarted is used by the running_time.tmpl partial template to determine
+// whether to show the "elapsed time" for a run.
+func (r *Run) HasStarted() bool { return true }
+
+// ElapsedTime returns the total time the run has taken thus far. If the run has
+// completed, then it is the time taken from entering the pending state
+// (creation) through to completion. Otherwise it is the time since entering the
+// pending state.
+func (r *Run) ElapsedTime(now time.Time) time.Duration {
+	pending := r.StatusTimestamps[0]
+	if r.Done() {
+		completed := r.StatusTimestamps[len(r.StatusTimestamps)-1]
+		return completed.Timestamp.Sub(pending.Timestamp)
+	}
+	return now.Sub(pending.Timestamp)
+}
+
+// PeriodReport provides a report of the duration in which a run has been in
+// each status thus far. Completed statuses such as completed, errored, etc, are
+// ignored because they are an instant not a period of time.
+func (r *Run) PeriodReport(now time.Time) (report internal.PeriodReport) {
+	// record total time run has taken thus far - it is important that the same
+	// 'now' is used both for total time and for the period calculations below
+	// so that they add up to the same amounts.
+	report.TotalTime = r.ElapsedTime(now)
+	if r.Done() {
+		// skip last status, which is the completed status
+		report.Periods = make([]internal.StatusPeriod, len(r.StatusTimestamps)-1)
+	} else {
+		report.Periods = make([]internal.StatusPeriod, len(r.StatusTimestamps))
+	}
+	for i := 0; i < len(r.StatusTimestamps); i++ {
+		var (
+			duration time.Duration
+			current  = r.StatusTimestamps[i]
+			isLatest = r.StatusTimestamps[i].Status == r.Status
+		)
+		if isLatest {
+			if r.Done() {
+				return
+			}
+			duration = now.Sub(current.Timestamp)
+		} else {
+			next := r.StatusTimestamps[i+1]
+			duration = next.Timestamp.Sub(current.Timestamp)
+		}
+		report.Periods[i] = internal.StatusPeriod{
+			Status: current.Status,
+			Period: duration,
+		}
+	}
+	return report
 }
 
 // Phase returns the current phase.
@@ -229,7 +285,7 @@ func (r *Run) Discard() error {
 	if !r.Discardable() {
 		return internal.ErrRunDiscardNotAllowed
 	}
-	r.updateStatus(internal.RunDiscarded)
+	r.updateStatus(internal.RunDiscarded, nil)
 
 	if r.Status == internal.RunPending {
 		r.Plan.UpdateStatus(PhaseUnreachable)
@@ -247,7 +303,7 @@ func (r *Run) Cancel() error {
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
-	tenSecondsFromNow := internal.CurrentTimestamp().Add(10 * time.Second)
+	tenSecondsFromNow := internal.CurrentTimestamp(nil).Add(10 * time.Second)
 	r.ForceCancelAvailableAt = &tenSecondsFromNow
 
 	switch r.Status {
@@ -261,7 +317,7 @@ func (r *Run) Cancel() error {
 		r.Apply.UpdateStatus(PhaseCanceled)
 	}
 
-	r.updateStatus(internal.RunCanceled)
+	r.updateStatus(internal.RunCanceled, nil)
 
 	return nil
 }
@@ -270,10 +326,15 @@ func (r *Run) Cancel() error {
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(internal.RunForceCanceled)
+		r.updateStatus(internal.RunForceCanceled, nil)
 		return nil
 	}
 	return internal.ErrRunForceCancelNotAllowed
+}
+
+// StartedAt returns the time the run was created.
+func (r *Run) StartedAt() time.Time {
+	return r.CreatedAt
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
@@ -293,7 +354,7 @@ func (r *Run) EnqueuePlan() error {
 	if r.Status != internal.RunPending {
 		return fmt.Errorf("cannot enqueue run with status %s", r.Status)
 	}
-	r.updateStatus(internal.RunPlanQueued)
+	r.updateStatus(internal.RunPlanQueued, nil)
 	r.Plan.UpdateStatus(PhaseQueued)
 
 	return nil
@@ -321,7 +382,7 @@ func (r *Run) EnqueueApply() error {
 	default:
 		return fmt.Errorf("cannot apply run with status %s", r.Status)
 	}
-	r.updateStatus(internal.RunApplyQueued)
+	r.updateStatus(internal.RunApplyQueued, nil)
 	r.Apply.UpdateStatus(PhaseQueued)
 	return nil
 }
@@ -339,10 +400,10 @@ func (r *Run) StatusTimestamp(status internal.RunStatus) (time.Time, error) {
 func (r *Run) Start(phase internal.PhaseType) error {
 	switch r.Status {
 	case internal.RunPlanQueued:
-		r.updateStatus(internal.RunPlanning)
+		r.updateStatus(internal.RunPlanning, nil)
 		r.Plan.UpdateStatus(PhaseRunning)
 	case internal.RunApplyQueued:
-		r.updateStatus(internal.RunApplying)
+		r.updateStatus(internal.RunApplying, nil)
 		r.Apply.UpdateStatus(PhaseRunning)
 	case internal.RunPlanning, internal.RunApplying:
 		return internal.ErrPhaseAlreadyStarted
@@ -364,7 +425,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			return ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(internal.RunErrored)
+			r.updateStatus(internal.RunErrored, nil)
 			r.Plan.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return nil
@@ -373,14 +434,14 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 		// not support cost estimation but enter this state only in order to
 		// satisfy the go-tfe tests.
 		if r.CostEstimationEnabled {
-			r.updateStatus(internal.RunCostEstimated)
+			r.updateStatus(internal.RunCostEstimated, nil)
 		} else {
-			r.updateStatus(internal.RunPlanned)
+			r.updateStatus(internal.RunPlanned, nil)
 		}
 		r.Plan.UpdateStatus(PhaseFinished)
 
 		if !r.HasChanges() || r.PlanOnly {
-			r.updateStatus(internal.RunPlannedAndFinished)
+			r.updateStatus(internal.RunPlannedAndFinished, nil)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 		} else if r.AutoApply {
 			return r.EnqueueApply()
@@ -391,10 +452,10 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			return ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(internal.RunErrored)
+			r.updateStatus(internal.RunErrored, nil)
 			r.Apply.UpdateStatus(PhaseErrored)
 		} else {
-			r.updateStatus(internal.RunApplied)
+			r.updateStatus(internal.RunApplied, nil)
 			r.Apply.UpdateStatus(PhaseFinished)
 		}
 		return nil
@@ -403,12 +464,13 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 	}
 }
 
-func (r *Run) updateStatus(status internal.RunStatus) {
+func (r *Run) updateStatus(status internal.RunStatus, now *time.Time) *Run {
 	r.Status = status
 	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,
-		Timestamp: internal.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(now),
 	})
+	return r
 }
 
 // Discardable determines whether run can be discarded.
