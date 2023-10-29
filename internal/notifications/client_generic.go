@@ -32,7 +32,7 @@ type (
 	genericNotificationPayload struct {
 		Message      string
 		Trigger      Trigger
-		RunStatus    run.RunStatus
+		RunStatus    run.Status
 		RunUpdatedAt time.Time
 		RunUpdatedBy string
 	}

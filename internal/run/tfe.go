@@ -128,7 +128,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert comma-separated list of statuses to []RunStatus
-	statuses := internal.FromStringCSV[RunStatus](params.Status)
+	statuses := internal.FromStringCSV[Status](params.Status)
 	// convert comma-separated list of sources to []RunSource
 	sources := internal.FromStringCSV[Source](params.Source)
 	// split operations CSV
@@ -152,7 +152,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, ListOptions{
-		Statuses: []RunStatus{RunPlanQueued, RunApplyQueued},
+		Statuses: []Status{RunPlanQueued, RunApplyQueued},
 	})
 }
 

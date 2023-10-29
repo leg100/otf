@@ -56,7 +56,7 @@ type (
 		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
 		Source                 Source                  `jsonapi:"attribute" json:"source"`
-		Status                 RunStatus               `jsonapi:"attribute" json:"status"`
+		Status                 Status                  `jsonapi:"attribute" json:"status"`
 		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
@@ -89,7 +89,7 @@ type (
 	}
 
 	StatusTimestamp struct {
-		Status    RunStatus `json:"status"`
+		Status    Status    `json:"status"`
 		Timestamp time.Time `json:"timestamp"`
 	}
 
@@ -130,7 +130,7 @@ type (
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
 		// Filter by run statuses (with an implicit OR condition)
-		Statuses []RunStatus `schema:"statuses,omitempty"`
+		Statuses []Status `schema:"statuses,omitempty"`
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
 		// Filter by sources
@@ -387,7 +387,7 @@ func (r *Run) EnqueueApply() error {
 	return nil
 }
 
-func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
+func (r *Run) StatusTimestamp(status Status) (time.Time, error) {
 	for _, rst := range r.StatusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, nil
@@ -464,7 +464,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 	}
 }
 
-func (r *Run) updateStatus(status RunStatus, now *time.Time) *Run {
+func (r *Run) updateStatus(status Status, now *time.Time) *Run {
 	r.Status = status
 	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,

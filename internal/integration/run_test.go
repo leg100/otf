@@ -164,7 +164,7 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by pending status",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.RunStatus{otfrun.RunPending}},
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.Status{otfrun.RunPending}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
@@ -173,7 +173,7 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by statuses - no match",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.RunStatus{otfrun.RunPlanned}},
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.Status{otfrun.RunPlanned}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 0, len(l.Items))
 				},

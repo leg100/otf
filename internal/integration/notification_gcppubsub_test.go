@@ -82,7 +82,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	got = append(got, <-received)
 
 	// keep a record of whether a match was found for each expected status
-	matches := map[otfrun.RunStatus]bool{
+	matches := map[otfrun.Status]bool{
 		otfrun.RunPending:  false,
 		otfrun.RunPlanning: false,
 		otfrun.RunPlanned:  false,

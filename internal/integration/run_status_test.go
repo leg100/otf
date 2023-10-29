@@ -34,7 +34,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 	steps := []struct {
 		name               string
 		config             string
-		wantStatus         run.RunStatus
+		wantStatus         run.Status
 		wantResourceReport run.Report
 		wantOutputReport   run.Report
 	}{

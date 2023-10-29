@@ -2,36 +2,36 @@ package run
 
 import "time"
 
-// RunStatus represents a run state.
-type RunStatus string
+// Status represents a run state.
+type Status string
 
 const (
 	// List all available run statuses supported in OTF.
-	RunApplied            RunStatus = "applied"
-	RunApplyQueued        RunStatus = "apply_queued"
-	RunApplying           RunStatus = "applying"
-	RunCanceled           RunStatus = "canceled"
-	RunForceCanceled      RunStatus = "force_canceled"
-	RunConfirmed          RunStatus = "confirmed"
-	RunDiscarded          RunStatus = "discarded"
-	RunErrored            RunStatus = "errored"
-	RunPending            RunStatus = "pending"
-	RunPlanQueued         RunStatus = "plan_queued"
-	RunPlanned            RunStatus = "planned"
-	RunPlannedAndFinished RunStatus = "planned_and_finished"
-	RunPlanning           RunStatus = "planning"
+	RunApplied            Status = "applied"
+	RunApplyQueued        Status = "apply_queued"
+	RunApplying           Status = "applying"
+	RunCanceled           Status = "canceled"
+	RunForceCanceled      Status = "force_canceled"
+	RunConfirmed          Status = "confirmed"
+	RunDiscarded          Status = "discarded"
+	RunErrored            Status = "errored"
+	RunPending            Status = "pending"
+	RunPlanQueued         Status = "plan_queued"
+	RunPlanned            Status = "planned"
+	RunPlannedAndFinished Status = "planned_and_finished"
+	RunPlanning           Status = "planning"
 
 	// OTF doesn't support cost estimation but go-tfe API tests expect this
 	// status so it is included expressly to pass the tests.
-	RunCostEstimated RunStatus = "cost_estimated"
+	RunCostEstimated Status = "cost_estimated"
 )
 
-func (r RunStatus) String() string { return string(r) }
+func (r Status) String() string { return string(r) }
 
 type (
 	// StatusPeriod is the duration over which a run has had a status.
 	StatusPeriod struct {
-		Status RunStatus     `json:"status"`
+		Status Status        `json:"status"`
 		Period time.Duration `json:"period"`
 	}
 
@@ -46,7 +46,7 @@ func (r PeriodReport) Percentage(i int) float64 {
 }
 
 var (
-	ActiveRun = []RunStatus{
+	ActiveRun = []Status{
 		RunApplyQueued,
 		RunApplying,
 		RunConfirmed,
