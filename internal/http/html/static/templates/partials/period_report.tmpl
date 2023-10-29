@@ -1,6 +1,6 @@
 {{ define "period-report" }}
   {{ $report := .PeriodReport now }}
-  <div class="relative h-3 w-full group">
+  <div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
     {{ $statusColors := dict
       "pending" "bg-yellow-50"
       "plan_queued" "bg-yellow-200"

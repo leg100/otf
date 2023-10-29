@@ -89,8 +89,8 @@ type (
 	}
 
 	StatusTimestamp struct {
-		Status    internal.RunStatus
-		Timestamp time.Time
+		Status    internal.RunStatus `json:"status"`
+		Timestamp time.Time          `json:"timestamp"`
 	}
 
 	// CreateOptions represents the options for creating a new run. See
@@ -202,6 +202,8 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	return &run
 }
 
+func (r *Run) String() string { return r.ID }
+
 func (r *Run) Queued() bool {
 	return r.Status == internal.RunPlanQueued || r.Status == internal.RunApplyQueued
 }
@@ -210,11 +212,9 @@ func (r *Run) HasChanges() bool {
 	return r.Plan.HasChanges()
 }
 
-// HasApply determines whether the run has started applying yet.
-func (r *Run) HasApply() bool {
-	_, err := r.Apply.StatusTimestamp(PhaseRunning)
-	return err == nil
-}
+// HasStarted is used by the running_time.tmpl partial template to determine
+// whether to show the "elapsed time" for a run.
+func (r *Run) HasStarted() bool { return true }
 
 // ElapsedTime returns the total time the run has taken thus far. If the run has
 // completed, then it is the time taken from entering the pending state
@@ -330,6 +330,11 @@ func (r *Run) ForceCancel() error {
 		return nil
 	}
 	return internal.ErrRunForceCancelNotAllowed
+}
+
+// StartedAt returns the time the run was created.
+func (r *Run) StartedAt() time.Time {
+	return r.CreatedAt
 }
 
 // Done determines whether run has reached an end state, e.g. applied,

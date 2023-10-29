@@ -52,7 +52,7 @@ type (
 func NewTeamToken(opts NewTeamTokenOptions) (*TeamToken, []byte, error) {
 	tt := TeamToken{
 		ID:        internal.NewID("tt"),
-		CreatedAt: internal.CurrentTimestamp(),
+		CreatedAt: internal.CurrentTimestamp(nil),
 		TeamID:    opts.Team,
 		Expiry:    opts.Expiry,
 	}

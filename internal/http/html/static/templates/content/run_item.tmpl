@@ -2,5 +2,7 @@
 {{ template "phase-status" .Plan }}
 {{ template "phase-status" .Apply }}
 {{ template "run-actions" . }}
-{{ template "run-elapsed-time" . }}
 {{ template "period-report" . }}
+{{ template "running-time" . }}
+{{ template "running-time" .Plan }}
+{{ template "running-time" .Apply }}

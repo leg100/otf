@@ -1,6 +1,6 @@
 {{ define "run-status" }}
   {{ $statusColors := dict "discarded" "bg-gray-200" "planned_and_finished" "bg-red-100" "applied" "bg-green-200" }}
-  <span id="{{ .ID }}-status" class="text-lg {{ get $statusColors .Status.String }}">
+  <span id="{{ .ID }}-status" class="run-status text-lg {{ get $statusColors .Status.String }}">
     <a href="{{ runPath .ID }}">{{ .Status.String | replace "_" " "}}</a>
   </span>
 {{ end }}

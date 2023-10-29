@@ -41,13 +41,13 @@ func (r RunStatus) String() string { return string(r) }
 type (
 	// StatusPeriod is the duration over which a run has had a status.
 	StatusPeriod struct {
-		Status RunStatus
-		Period time.Duration
+		Status RunStatus     `json:"status"`
+		Period time.Duration `json:"period"`
 	}
 
 	PeriodReport struct {
-		TotalTime time.Duration
-		Periods   []StatusPeriod
+		TotalTime time.Duration  `json:"total_time"`
+		Periods   []StatusPeriod `json:"periods"`
 	}
 )
 

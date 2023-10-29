@@ -85,11 +85,27 @@ func (p *Phase) UpdateStatus(status PhaseStatus) {
 	})
 }
 
-// RunningTime returns the time taken for the phase to complete its running
+func (p *Phase) HasStarted() bool {
+	_, err := p.StatusTimestamp(PhaseRunning)
+	return err == nil
+}
+
+// StartedAt returns the time the phase started running, returning zero time
+// if it is yet to start running.
+func (p *Phase) StartedAt() time.Time {
+	start, err := p.StatusTimestamp(PhaseRunning)
+	if err != nil {
+		// yet to enter running state
+		return time.Time{}
+	}
+	return start
+}
+
+// ElapsedTime returns the time taken for the phase to complete its running
 // state. If the run is yet to enter a running state then it returns 0. If the
 // running state is still in progress then it returns the time since entering
 // the running state.
-func (p *Phase) RunningTime() time.Duration {
+func (p *Phase) ElapsedTime(now time.Time) time.Duration {
 	start, err := p.StatusTimestamp(PhaseRunning)
 	if err != nil {
 		// yet to enter running state
@@ -105,7 +121,18 @@ func (p *Phase) RunningTime() time.Duration {
 		}
 	}
 	// still running
-	return time.Since(start)
+	return now.Sub(start)
 }
+
+func (p *Phase) Done() bool {
+	switch p.Status {
+	case PhaseFinished, PhaseCanceled, PhaseErrored, PhaseUnreachable:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *Phase) String() string { return string(p.PhaseType) }
 
 func (s PhaseStatus) String() string { return string(s) }
