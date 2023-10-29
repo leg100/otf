@@ -34,7 +34,7 @@ type tfe struct {
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 func (a *tfe) addHandlers(r *mux.Router) {
-	api := otfhttp.APIRouter(r)
+	api := r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	api.HandleFunc("/workspaces/{workspace_id}/state-versions", a.createVersion).Methods("POST")
 	api.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")

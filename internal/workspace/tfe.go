@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -35,7 +34,7 @@ type (
 )
 
 func (a *tfe) addHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.createWorkspace).Methods("POST")

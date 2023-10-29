@@ -33,7 +33,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	signed.Use(internal.VerifySignedURL(a.Signer))
 	signed.HandleFunc("/configuration-versions/{id}/upload", a.uploadConfigurationVersion()).Methods("PUT")
 
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", a.createConfigurationVersion).Methods("POST")
 	r.HandleFunc("/configuration-versions/{id}", a.getConfigurationVersion).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", a.listConfigurationVersions).Methods("GET")

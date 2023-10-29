@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -19,7 +18,7 @@ const (
 type tagOperation int
 
 func (a *tfe) addTagHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/tags", a.addTags).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/relationships/tags", a.removeTags).Methods("DELETE")

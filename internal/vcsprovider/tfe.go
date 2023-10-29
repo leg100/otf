@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -26,7 +25,7 @@ type tfe struct {
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	r.HandleFunc("/organizations/{organization_name}/oauth-clients", a.createOAuthClient).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/oauth-clients", a.listOAuthClients).Methods("GET")

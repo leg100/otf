@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 
@@ -23,7 +22,7 @@ type tfe struct {
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets
 func (a *tfe) addHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	r.HandleFunc("/workspaces/{workspace_id}/vars", a.createWorkspaceVariable).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", a.list).Methods("GET")

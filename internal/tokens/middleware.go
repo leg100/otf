@@ -11,9 +11,9 @@ import (
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -27,8 +27,8 @@ const (
 
 // AuthenticatedPrefixes are those URL path prefixes requiring authentication.
 var AuthenticatedPrefixes = []string{
-	otfhttp.APIPrefixV2,
-	otfhttp.ModuleV1Prefix,
+	tfeapi.APIPrefixV2,
+	tfeapi.ModuleV1Prefix,
 	otfapi.DefaultBasePath,
 	paths.UIPrefix,
 }

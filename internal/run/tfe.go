@@ -26,7 +26,7 @@ type tfe struct {
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	// Run routes
 	r.HandleFunc("/runs", a.createRun).Methods("POST")

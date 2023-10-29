@@ -7,9 +7,9 @@ import (
 	gohttp "net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/json"
 	"github.com/leg100/otf/internal/loginserver"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
 var discoveryPayload = json.MustMarshal(struct {
@@ -21,12 +21,12 @@ var discoveryPayload = json.MustMarshal(struct {
 	TfeV22    string                    `json:"tfe.v2.2"`
 	LoginV1   loginserver.DiscoverySpec `json:"login.v1"`
 }{
-	ModulesV1: http.ModuleV1Prefix,
+	ModulesV1: tfeapi.ModuleV1Prefix,
 	MotdV1:    "/api/terraform/motd",
-	StateV2:   http.APIPrefixV2,
-	TfeV2:     http.APIPrefixV2,
-	TfeV21:    http.APIPrefixV2,
-	TfeV22:    http.APIPrefixV2,
+	StateV2:   tfeapi.APIPrefixV2,
+	TfeV2:     tfeapi.APIPrefixV2,
+	TfeV21:    tfeapi.APIPrefixV2,
+	TfeV22:    tfeapi.APIPrefixV2,
 	LoginV1:   loginserver.Discovery,
 })
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -19,14 +18,9 @@ import (
 	"github.com/leg100/otf/internal/json"
 )
 
-const (
-	ModuleV1Prefix = "/v1/modules/"
-	APIPrefixV2    = "/api/v2/"
-
-	// shutdownTimeout is the time given for outstanding requests to finish
-	// before shutdown.
-	shutdownTimeout = 1 * time.Second
-)
+// shutdownTimeout is the time given for outstanding requests to finish
+// before shutdown.
+const shutdownTimeout = 1 * time.Second
 
 var (
 	healthzPayload = json.MustMarshal(struct {
@@ -105,26 +99,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 		h.AddHandlers(svcRouter)
 	}
 
-	// Middleware to alter requests/responses
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// API requests/responses
-			if strings.HasPrefix(r.URL.Path, APIPrefixV2) {
-				// Add TFP API version header to every API response.
-				//
-				// Version 2.5 is the minimum version terraform requires for the
-				// newer 'cloud' configuration block:
-				// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
-				w.Header().Set("TFP-API-Version", "2.5")
-			}
-
-			// Remove trailing slash from all requests
-			r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
-
-			next.ServeHTTP(w, r)
-		})
-	})
-
 	// Optionally log every request
 	if cfg.EnableRequestLogging {
 		r.Use(func(next http.Handler) http.Handler {
@@ -179,9 +153,4 @@ func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
 
 		return nil
 	}
-}
-
-// APIRouter wraps the given router with a router suitable for API routes.
-func APIRouter(r *mux.Router) *mux.Router {
-	return r.PathPrefix(APIPrefixV2).Subrouter()
 }

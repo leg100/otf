@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -21,7 +20,7 @@ type tfe struct {
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 func (a *tfe) addHandlers(r *mux.Router) {
-	r = otfhttp.APIRouter(r)
+	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	r.HandleFunc("/organizations", a.createOrganization).Methods("POST")
 	r.HandleFunc("/organizations", a.listOrganizations).Methods("GET")

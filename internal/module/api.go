@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/surl"
 )
 
@@ -30,7 +30,7 @@ func (h *api) addHandlers(r *mux.Router) {
 	// Implements the Module Registry Protocol:
 	//
 	// https://developer.hashicorp.com/terraform/internals/module-registry-protocol
-	r = r.PathPrefix(otfhttp.ModuleV1Prefix).Subrouter()
+	r = r.PathPrefix(tfeapi.ModuleV1Prefix).Subrouter()
 
 	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions).Methods("GET")
 	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink).Methods("GET")
