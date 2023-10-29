@@ -53,5 +53,5 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	runs, err := svc.ListRuns(ctx, run.ListOptions{Organization: &org.Name})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(runs.Items))
-	require.Equal(t, internal.RunDiscarded, runs.Items[0].Status)
+	require.Equal(t, run.RunDiscarded, runs.Items[0].Status)
 }

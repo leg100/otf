@@ -34,14 +34,14 @@ func TestIntegration_RunStatus(t *testing.T) {
 	steps := []struct {
 		name               string
 		config             string
-		wantStatus         internal.RunStatus
+		wantStatus         run.Status
 		wantResourceReport run.Report
 		wantOutputReport   run.Report
 	}{
 		{
 			name:       "add resource",
 			config:     `resource "random_pet" "cat" { prefix = "mr-" }`,
-			wantStatus: internal.RunApplied,
+			wantStatus: run.RunApplied,
 			wantResourceReport: run.Report{
 				Additions: 1,
 			},
@@ -50,7 +50,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 			name: "replace resource",
 			config: `resource "random_pet" "cat" { prefix = "sir-" }
 `,
-			wantStatus: internal.RunApplied,
+			wantStatus: run.RunApplied,
 			wantResourceReport: run.Report{
 				Additions:    1,
 				Destructions: 1,
@@ -61,14 +61,14 @@ func TestIntegration_RunStatus(t *testing.T) {
 			config: `resource "random_pet" "cat" { prefix = "sir-" }
 output "cat_name" { value = random_pet.cat.id }
 `,
-			wantStatus: internal.RunApplied,
+			wantStatus: run.RunApplied,
 			wantOutputReport: run.Report{
 				Additions: 1,
 			},
 		},
 		{
 			name:       "destroy all",
-			wantStatus: internal.RunApplied,
+			wantStatus: run.RunApplied,
 			wantResourceReport: run.Report{
 				Destructions: 1,
 			},

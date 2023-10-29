@@ -8,7 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -21,8 +21,8 @@ type (
 		RunService
 
 		ws      *workspace.Workspace
-		current *run.Run
-		queue   []*run.Run
+		current *otfrun.Run
+		queue   []*otfrun.Run
 	}
 
 	queueOptions struct {
@@ -57,9 +57,9 @@ func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
 				return err
 			}
 		}
-	case *run.Run:
+	case *otfrun.Run:
 		if payload.PlanOnly {
-			if payload.Status == internal.RunPending {
+			if payload.Status == otfrun.RunPending {
 				// immediately enqueue onto global queue
 				_, err := q.EnqueuePlan(ctx, payload.ID)
 				if err != nil {
@@ -113,7 +113,7 @@ func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
 	return nil
 }
 
-func (q *queue) setCurrentRun(ctx context.Context, run *run.Run) error {
+func (q *queue) setCurrentRun(ctx context.Context, run *otfrun.Run) error {
 	q.current = run
 
 	if q.ws.LatestRun != nil && q.ws.LatestRun.ID == run.ID {
@@ -130,8 +130,8 @@ func (q *queue) setCurrentRun(ctx context.Context, run *run.Run) error {
 	return nil
 }
 
-func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
-	if run.Status != internal.RunPending {
+func (q *queue) scheduleRun(ctx context.Context, run *otfrun.Run) error {
+	if run.Status != otfrun.RunPending {
 		// run has already been scheduled
 		return nil
 	}

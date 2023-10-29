@@ -68,7 +68,7 @@ func (result pgresult) toRun() *Run {
 		Refresh:                result.Refresh,
 		RefreshOnly:            result.RefreshOnly,
 		Source:                 Source(result.Source.String),
-		Status:                 internal.RunStatus(result.Status.String),
+		Status:                 Status(result.Status.String),
 		ReplaceAddrs:           result.ReplaceAddrs,
 		TargetAddrs:            result.TargetAddrs,
 		AutoApply:              result.AutoApply,
@@ -100,7 +100,7 @@ func (result pgresult) toRun() *Run {
 	run.StatusTimestamps = make([]StatusTimestamp, len(result.RunStatusTimestamps))
 	for i, rst := range result.RunStatusTimestamps {
 		run.StatusTimestamps[i] = StatusTimestamp{
-			Status:    internal.RunStatus(rst.Status.String),
+			Status:    Status(rst.Status.String),
 			Timestamp: rst.Timestamp.Time.UTC(),
 		}
 	}

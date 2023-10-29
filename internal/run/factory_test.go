@@ -30,7 +30,7 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, "", CreateOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, internal.RunPending, got.Status)
+		assert.Equal(t, RunPending, got.Status)
 		assert.NotZero(t, got.CreatedAt)
 		assert.False(t, got.PlanOnly)
 		assert.True(t, got.Refresh)

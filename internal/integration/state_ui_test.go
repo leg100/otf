@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
 )
@@ -24,12 +23,12 @@ applied:
 	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
 			switch r.Status {
-			case internal.RunApplied:
+			case run.RunApplied:
 				break applied
-			case internal.RunPlanned:
+			case run.RunPlanned:
 				err := daemon.Apply(ctx, r.ID)
 				require.NoError(t, err)
-			case internal.RunErrored:
+			case run.RunErrored:
 				t.Fatal("run unexpectedly finished with an error")
 			}
 		}

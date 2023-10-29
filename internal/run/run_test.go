@@ -28,7 +28,7 @@ func TestRun_States(t *testing.T) {
 	t.Run("pending", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 
-		require.Equal(t, internal.RunPending, run.Status)
+		require.Equal(t, RunPending, run.Status)
 		require.Equal(t, PhasePending, run.Plan.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
@@ -38,66 +38,66 @@ func TestRun_States(t *testing.T) {
 
 		require.NoError(t, run.EnqueuePlan())
 
-		require.Equal(t, internal.RunPlanQueued, run.Status)
+		require.Equal(t, RunPlanQueued, run.Status)
 		require.Equal(t, PhaseQueued, run.Plan.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("start plan", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunPlanQueued
+		run.Status = RunPlanQueued
 
 		require.NoError(t, run.Start(internal.PlanPhase))
 
-		require.Equal(t, internal.RunPlanning, run.Status)
+		require.Equal(t, RunPlanning, run.Status)
 		require.Equal(t, PhaseRunning, run.Plan.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("finish plan", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunPlanning
+		run.Status = RunPlanning
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 
-		require.Equal(t, internal.RunPlannedAndFinished, run.Status)
+		require.Equal(t, RunPlannedAndFinished, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
 		require.Equal(t, PhaseUnreachable, run.Apply.Status)
 	})
 
 	t.Run("finish plan with errors", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunPlanning
+		run.Status = RunPlanning
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true}))
 
-		require.Equal(t, internal.RunErrored, run.Status)
+		require.Equal(t, RunErrored, run.Status)
 		require.Equal(t, PhaseErrored, run.Plan.Status)
 		require.Equal(t, PhaseUnreachable, run.Apply.Status)
 	})
 
 	t.Run("finish plan with resource changes", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunPlanning
+		run.Status = RunPlanning
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 
-		require.Equal(t, internal.RunPlanned, run.Status)
+		require.Equal(t, RunPlanned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("finish plan with output changes", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunPlanning
+		run.Status = RunPlanning
 
 		run.Plan.OutputReport = &Report{Additions: 1}
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 
-		require.Equal(t, internal.RunPlanned, run.Status)
+		require.Equal(t, RunPlanned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
@@ -106,13 +106,13 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{
 			AutoApply: internal.Bool(true),
 		})
-		run.Status = internal.RunPlanning
+		run.Status = RunPlanning
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 
-		require.Equal(t, internal.RunApplyQueued, run.Status)
+		require.Equal(t, RunApplyQueued, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
 		require.Equal(t, PhaseQueued, run.Apply.Status)
 	})
@@ -120,54 +120,54 @@ func TestRun_States(t *testing.T) {
 	t.Run("finish plan with cost estimation enabled", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.CostEstimationEnabled = true
-		run.Status = internal.RunPlanning
+		run.Status = RunPlanning
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 
-		require.Equal(t, internal.RunCostEstimated, run.Status)
+		require.Equal(t, RunCostEstimated, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
 		require.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("enqueue apply", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunPlanned
+		run.Status = RunPlanned
 
 		require.NoError(t, run.EnqueueApply())
 
-		require.Equal(t, internal.RunApplyQueued, run.Status)
+		require.Equal(t, RunApplyQueued, run.Status)
 		require.Equal(t, PhaseQueued, run.Apply.Status)
 	})
 
 	t.Run("start apply", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunApplyQueued
+		run.Status = RunApplyQueued
 
 		require.NoError(t, run.Start(internal.ApplyPhase))
 
-		require.Equal(t, internal.RunApplying, run.Status)
+		require.Equal(t, RunApplying, run.Status)
 		require.Equal(t, PhaseRunning, run.Apply.Status)
 	})
 
 	t.Run("finish apply", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunApplying
+		run.Status = RunApplying
 
 		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{}))
 
-		require.Equal(t, internal.RunApplied, run.Status)
+		require.Equal(t, RunApplied, run.Status)
 		require.Equal(t, PhaseFinished, run.Apply.Status)
 	})
 
 	t.Run("finish apply with errors", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		run.Status = internal.RunApplying
+		run.Status = RunApplying
 
 		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true}))
 
-		require.Equal(t, internal.RunErrored, run.Status)
+		require.Equal(t, RunErrored, run.Status)
 		require.Equal(t, PhaseErrored, run.Apply.Status)
 	})
 
@@ -193,13 +193,13 @@ func TestRun_StatusReport(t *testing.T) {
 	tests := []struct {
 		name string
 		run  func() *Run
-		want []internal.StatusPeriod
+		want []StatusPeriod
 	}{
 		{
 			"fresh run",
 			func() *Run { return createRun(ago(0)) },
-			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Period: 0},
+			[]StatusPeriod{
+				{Status: RunPending, Period: 0},
 			},
 		},
 		{
@@ -209,13 +209,13 @@ func TestRun_StatusReport(t *testing.T) {
 				// 1 second in plan queued state
 				// 2 seconds in planning state
 				return createRun(ago(4)).
-					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
-					updateStatus(internal.RunPlanning, internal.Time(ago(2)))
+					updateStatus(RunPlanQueued, internal.Time(ago(3))).
+					updateStatus(RunPlanning, internal.Time(ago(2)))
 			},
-			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Period: time.Second},
-				{Status: internal.RunPlanQueued, Period: time.Second},
-				{Status: internal.RunPlanning, Period: 2 * time.Second},
+			[]StatusPeriod{
+				{Status: RunPending, Period: time.Second},
+				{Status: RunPlanQueued, Period: time.Second},
+				{Status: RunPlanning, Period: 2 * time.Second},
 			},
 		},
 		{
@@ -226,14 +226,14 @@ func TestRun_StatusReport(t *testing.T) {
 				// 2 seconds in planning state
 				// finished
 				return createRun(ago(4)).
-					updateStatus(internal.RunPlanQueued, internal.Time(ago(3))).
-					updateStatus(internal.RunPlanning, internal.Time(ago(2))).
-					updateStatus(internal.RunPlannedAndFinished, &now)
+					updateStatus(RunPlanQueued, internal.Time(ago(3))).
+					updateStatus(RunPlanning, internal.Time(ago(2))).
+					updateStatus(RunPlannedAndFinished, &now)
 			},
-			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Period: time.Second},
-				{Status: internal.RunPlanQueued, Period: time.Second},
-				{Status: internal.RunPlanning, Period: 2 * time.Second},
+			[]StatusPeriod{
+				{Status: RunPending, Period: time.Second},
+				{Status: RunPlanQueued, Period: time.Second},
+				{Status: RunPlanning, Period: 2 * time.Second},
 			},
 		},
 		{
@@ -246,18 +246,18 @@ func TestRun_StatusReport(t *testing.T) {
 				// 5 second in applying state
 				// finished
 				return createRun(ago(10)).
-					updateStatus(internal.RunPlanQueued, internal.Time(ago(9))).
-					updateStatus(internal.RunPlanning, internal.Time(ago(8))).
-					updateStatus(internal.RunPlanned, internal.Time(ago(6))).
-					updateStatus(internal.RunApplying, internal.Time(ago(5))).
-					updateStatus(internal.RunPlannedAndFinished, &now)
+					updateStatus(RunPlanQueued, internal.Time(ago(9))).
+					updateStatus(RunPlanning, internal.Time(ago(8))).
+					updateStatus(RunPlanned, internal.Time(ago(6))).
+					updateStatus(RunApplying, internal.Time(ago(5))).
+					updateStatus(RunPlannedAndFinished, &now)
 			},
-			[]internal.StatusPeriod{
-				{Status: internal.RunPending, Period: time.Second},
-				{Status: internal.RunPlanQueued, Period: time.Second},
-				{Status: internal.RunPlanning, Period: 2 * time.Second},
-				{Status: internal.RunPlanned, Period: time.Second},
-				{Status: internal.RunApplying, Period: 5 * time.Second},
+			[]StatusPeriod{
+				{Status: RunPending, Period: time.Second},
+				{Status: RunPlanQueued, Period: time.Second},
+				{Status: RunPlanning, Period: 2 * time.Second},
+				{Status: RunPlanned, Period: time.Second},
+				{Status: RunApplying, Period: 5 * time.Second},
 			},
 		},
 	}

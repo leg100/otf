@@ -61,9 +61,9 @@ func TestIntegration_RunAPI(t *testing.T) {
 		for event := range daemon.sub {
 			if r, ok := event.Payload.(*run.Run); ok {
 				switch r.Status {
-				case internal.RunErrored:
+				case run.RunErrored:
 					t.Fatal("run unexpectedly errored")
-				case internal.RunPlanned:
+				case run.RunPlanned:
 					// run should have planned two resources (defined in the config from the
 					// github repo)
 					planned, err := daemon.GetRun(ctx, created.ID)

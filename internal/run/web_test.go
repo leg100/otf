@@ -57,7 +57,7 @@ func TestListRunsHandler(t *testing.T) {
 func TestWeb_GetHandler(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withWorkspace(&workspace.Workspace{ID: "ws-123"}),
-		withRuns((&Run{ID: "run-123", WorkspaceID: "ws-1"}).updateStatus(internal.RunPending, nil)),
+		withRuns((&Run{ID: "run-123", WorkspaceID: "ws-1"}).updateStatus(RunPending, nil)),
 	)
 
 	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)

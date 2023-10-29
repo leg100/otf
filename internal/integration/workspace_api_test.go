@@ -103,7 +103,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 
 	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
-			if r.Status == internal.RunPlanned {
+			if r.Status == run.RunPlanned {
 				// status matches, now check whether reports match as well
 				assert.Equal(t, &run.Report{Additions: 2}, r.Plan.ResourceReport)
 				break

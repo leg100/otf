@@ -128,7 +128,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert comma-separated list of statuses to []RunStatus
-	statuses := internal.FromStringCSV[internal.RunStatus](params.Status)
+	statuses := internal.FromStringCSV[Status](params.Status)
 	// convert comma-separated list of sources to []RunSource
 	sources := internal.FromStringCSV[Source](params.Source)
 	// split operations CSV
@@ -152,7 +152,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, ListOptions{
-		Statuses: []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
+		Statuses: []Status{RunPlanQueued, RunApplyQueued},
 	})
 }
 
@@ -365,29 +365,29 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	var timestamps types.RunStatusTimestamps
 	for _, rst := range from.StatusTimestamps {
 		switch rst.Status {
-		case internal.RunPending:
+		case RunPending:
 			timestamps.PlanQueueableAt = &rst.Timestamp
-		case internal.RunPlanQueued:
+		case RunPlanQueued:
 			timestamps.PlanQueuedAt = &rst.Timestamp
-		case internal.RunPlanning:
+		case RunPlanning:
 			timestamps.PlanningAt = &rst.Timestamp
-		case internal.RunPlanned:
+		case RunPlanned:
 			timestamps.PlannedAt = &rst.Timestamp
-		case internal.RunPlannedAndFinished:
+		case RunPlannedAndFinished:
 			timestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case internal.RunApplyQueued:
+		case RunApplyQueued:
 			timestamps.ApplyQueuedAt = &rst.Timestamp
-		case internal.RunApplying:
+		case RunApplying:
 			timestamps.ApplyingAt = &rst.Timestamp
-		case internal.RunApplied:
+		case RunApplied:
 			timestamps.AppliedAt = &rst.Timestamp
-		case internal.RunErrored:
+		case RunErrored:
 			timestamps.ErroredAt = &rst.Timestamp
-		case internal.RunCanceled:
+		case RunCanceled:
 			timestamps.CanceledAt = &rst.Timestamp
-		case internal.RunForceCanceled:
+		case RunForceCanceled:
 			timestamps.ForceCanceledAt = &rst.Timestamp
-		case internal.RunDiscarded:
+		case RunDiscarded:
 			timestamps.DiscardedAt = &rst.Timestamp
 		}
 	}

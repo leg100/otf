@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -25,7 +24,7 @@ type (
 		// start the daemon
 		start(context.Context) error
 		// getRun receives spooled runs
-		getRun() <-chan *run.Run
+		getRun() <-chan *otfrun.Run
 		// getCancelation receives requests to cancel runs
 		getCancelation() <-chan cancelation
 	}
@@ -33,7 +32,7 @@ type (
 	// spoolerDaemon implements Spooler, receiving runs with either a queued plan or
 	// apply, and converting them into spooled jobs.
 	spoolerDaemon struct {
-		queue        chan *run.Run    // Queue of queued jobs
+		queue        chan *otfrun.Run // Queue of queued jobs
 		cancelations chan cancelation // Queue of cancelation requests
 		client                        // Application for retrieving queued runs
 		logr.Logger
@@ -41,7 +40,7 @@ type (
 	}
 
 	cancelation struct {
-		Run      *run.Run
+		Run      *otfrun.Run
 		Forceful bool
 	}
 )
@@ -49,7 +48,7 @@ type (
 // newSpooler populates a Spooler with queued runs
 func newSpooler(app client, logger logr.Logger, cfg Config) *spoolerDaemon {
 	return &spoolerDaemon{
-		queue:        make(chan *run.Run, spoolerCapacity),
+		queue:        make(chan *otfrun.Run, spoolerCapacity),
 		cancelations: make(chan cancelation, spoolerCapacity),
 		client:       app,
 		Logger:       logger,
@@ -69,7 +68,7 @@ func (s *spoolerDaemon) start(ctx context.Context) error {
 }
 
 // getRun returns a channel of queued runs
-func (s *spoolerDaemon) getRun() <-chan *run.Run {
+func (s *spoolerDaemon) getRun() <-chan *otfrun.Run {
 	return s.queue
 }
 
@@ -79,7 +78,7 @@ func (s *spoolerDaemon) getCancelation() <-chan cancelation {
 }
 
 func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
-	sub, err := s.Watch(ctx, run.WatchOptions{
+	sub, err := s.Watch(ctx, otfrun.WatchOptions{
 		Organization: s.Organization,
 	})
 	if err != nil {
@@ -87,10 +86,10 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	}
 
 	// retrieve all existing runs
-	existing, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
-		return s.ListRuns(ctx, run.ListOptions{
+	existing, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*otfrun.Run], error) {
+		return s.ListRuns(ctx, otfrun.ListOptions{
 			PageOptions:  opts,
-			Statuses:     []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
+			Statuses:     []otfrun.Status{otfrun.RunPlanQueued, otfrun.RunApplyQueued},
 			Organization: s.Organization,
 		})
 	})
@@ -119,7 +118,7 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 
 func (s *spoolerDaemon) handleEvent(ev pubsub.Event) error {
 	switch payload := ev.Payload.(type) {
-	case *run.Run:
+	case *otfrun.Run:
 		s.handleRun(ev.Type, payload)
 	case string:
 		s.Info("stream update", "info", string(payload))
@@ -130,7 +129,7 @@ func (s *spoolerDaemon) handleEvent(ev pubsub.Event) error {
 	return nil
 }
 
-func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *run.Run) {
+func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *otfrun.Run) {
 	// (a) external agents only handle runs with agent execution mode
 	// (b) internal agents only handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run
@@ -142,9 +141,9 @@ func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *run.Run) {
 
 	if run.Queued() {
 		s.queue <- run
-	} else if run.Status == internal.RunCanceled {
+	} else if run.Status == otfrun.RunCanceled {
 		s.cancelations <- cancelation{Run: run}
-	} else if run.Status == internal.RunForceCanceled {
+	} else if run.Status == otfrun.RunForceCanceled {
 		s.cancelations <- cancelation{Run: run, Forceful: true}
 	}
 }
