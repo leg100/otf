@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"context"
@@ -66,8 +66,8 @@ func TestSpooler_handleEvent(t *testing.T) {
 			wantRun: true,
 		},
 		{
-			name:   "internal agents skip agent-mode runs",
-			config: Config{External: false},
+			name:   "non-agent daemon skip agent-mode runs",
+			config: Config{isAgent: false},
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,
@@ -76,8 +76,8 @@ func TestSpooler_handleEvent(t *testing.T) {
 			wantRun: false,
 		},
 		{
-			name:   "external agents handle agent-mode runs",
-			config: Config{External: true},
+			name:   "agent daemon handle agent-mode runs",
+			config: Config{isAgent: true},
 			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,

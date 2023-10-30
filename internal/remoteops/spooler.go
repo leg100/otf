@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"context"
@@ -130,12 +130,12 @@ func (s *spoolerDaemon) handleEvent(ev pubsub.Event) error {
 }
 
 func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *otfrun.Run) {
-	// (a) external agents only handle runs with agent execution mode
-	// (b) internal agents only handle runs with remote execution mode
+	// (a) agents only handle runs with agent execution mode
+	// (b) non-agents only handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run
-	if s.External && run.ExecutionMode != workspace.AgentExecutionMode {
+	if s.isAgent && run.ExecutionMode != workspace.AgentExecutionMode {
 		return
-	} else if !s.External && run.ExecutionMode != workspace.RemoteExecutionMode {
+	} else if !s.isAgent && run.ExecutionMode != workspace.RemoteExecutionMode {
 		return
 	}
 

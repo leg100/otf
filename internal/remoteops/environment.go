@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"context"
@@ -19,9 +19,6 @@ import (
 
 // environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
-//
-// TODO: this is a pointless abstraction; refactor it out into worker's
-// handle() func.
 type environment struct {
 	client
 	logr.Logger
@@ -41,10 +38,10 @@ type environment struct {
 func newEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
-	agent *agent,
+	dmon *daemon,
 	run *run.Run,
 ) (*environment, error) {
-	ws, err := agent.GetWorkspace(ctx, run.WorkspaceID)
+	ws, err := dmon.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}
@@ -59,17 +56,17 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	token, err := agent.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
+	token, err := dmon.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
 		Organization: &ws.Organization,
 		RunID:        &run.ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating run token")
 	}
-	envs := internal.SafeAppend(agent.envs, internal.CredentialEnv(agent.Hostname(), token))
+	envs := internal.SafeAppend(dmon.envs, internal.CredentialEnv(dmon.Hostname(), token))
 
 	// retrieve variables and add them to the environment
-	variables, err := agent.ListEffectiveVariables(ctx, run.ID)
+	variables, err := dmon.ListEffectiveVariables(ctx, run.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace variables: %w", err)
 	}
@@ -83,20 +80,20 @@ func newEnvironment(
 	writer := logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
-		Writer: agent,
+		Writer: dmon,
 	})
 
 	env := &environment{
 		Logger:     logger,
-		Downloader: agent.Downloader,
-		client:     agent,
+		Downloader: dmon.Downloader,
+		client:     dmon,
 		out:        writer,
 		workdir:    wd,
 		variables:  variables,
 		ctx:        ctx,
 		runner:     &runner{out: writer},
 		executor: &executor{
-			Config:  agent.Config,
+			Config:  dmon.Config,
 			version: run.TerraformVersion,
 			out:     writer,
 			envs:    envs,
@@ -124,7 +121,7 @@ func (e *environment) execute() (err error) {
 		fmt.Fprintln(e.out, "Debug mode enabled")
 		fmt.Fprintln(e.out, "------------------")
 		fmt.Fprintf(e.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(e.out, "External agent: %t\n", e.External)
+		fmt.Fprintf(e.out, "External agent: %t\n", e.isAgent)
 		fmt.Fprintf(e.out, "Sandbox mode: %t\n", e.Sandbox)
 		fmt.Fprintln(e.out, "------------------")
 		fmt.Fprintln(e.out)

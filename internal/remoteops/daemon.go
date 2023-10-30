@@ -1,7 +1,4 @@
-/*
-Package agent provides a daemon capable of running remote operations on behalf of a user.
-*/
-package agent
+package remoteops
 
 import (
 	"context"
@@ -30,8 +27,8 @@ var (
 	}
 )
 
-// agent processes runs.
-type agent struct {
+// daemon performs remote operations
+type daemon struct {
 	Config
 	logr.Logger
 	releases.Downloader
@@ -43,13 +40,15 @@ type agent struct {
 	envs []string // terraform environment variables
 }
 
-// NewAgent is the constructor for an agent
-func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
+// NewDaemon constructs a remote operations daemon, which is either in-process,
+// part of otfd, or an external process, otf-agent, communicating with the
+// server via RPC.
+func NewDaemon(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 	if cfg.Concurrency == 0 {
 		cfg.Concurrency = DefaultConcurrency
 	}
-	if cfg.External && cfg.Organization == nil {
-		return nil, fmt.Errorf("external agent requires organization to be specified")
+	if cfg.isAgent && cfg.Organization == nil {
+		return nil, fmt.Errorf("an agent requires a specific organization to be specified")
 	}
 	if cfg.Sandbox {
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
@@ -60,8 +59,7 @@ func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
 	if cfg.Debug {
 		logger.V(0).Info("enabled debug mode")
 	}
-
-	agent := &agent{
+	dmon := &daemon{
 		client:     app,
 		Config:     cfg,
 		Logger:     logger,
@@ -70,21 +68,19 @@ func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
 		spooler:    newSpooler(app, logger, cfg),
 		terminator: newTerminator(),
 	}
-
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		agent.envs = append(agent.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
+		dmon.envs = append(dmon.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
-
-	return agent, nil
+	return dmon, nil
 }
 
-// NewExternalAgent constructs an external agent, which communicates with otfd
-// via http
-func NewExternalAgent(ctx context.Context, logger logr.Logger, cfg ExternalConfig) (*agent, error) {
+// NewAgent constructs a remote operations daemon that communicates with the
+// server via RPC. It is typically invoked as a separate process, `otf-agent`.
+func NewAgent(ctx context.Context, logger logr.Logger, cfg AgentConfig) (*daemon, error) {
 	// Sends unauthenticated ping to server
 	app, err := newClient(cfg)
 	if err != nil {
@@ -100,16 +96,15 @@ func NewExternalAgent(ctx context.Context, logger logr.Logger, cfg ExternalConfi
 
 	// Ensure agent only processes runs for this org
 	cfg.Organization = internal.String(at.Organization)
-	// Mark agent as external.
-	cfg.External = true
+	// This is an agent.
+	cfg.isAgent = true
 
-	return NewAgent(logger, app, cfg.Config)
+	return NewDaemon(logger, app, cfg.Config)
 }
 
-// Start starts the agent daemon and its workers
-func (a *agent) Start(ctx context.Context) error {
+// Start starts the daemon and its workers
+func (a *daemon) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
-
 	g.Go(func() error {
 		if err := a.spooler.start(ctx); err != nil {
 			// only report error if context has not been canceled
@@ -119,7 +114,6 @@ func (a *agent) Start(ctx context.Context) error {
 		}
 		return nil
 	})
-
 	g.Go(func() error {
 		for i := 0; i < a.Concurrency; i++ {
 			w := &worker{a}
@@ -135,6 +129,5 @@ func (a *agent) Start(ctx context.Context) error {
 			}
 		}
 	})
-
 	return g.Wait()
 }

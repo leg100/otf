@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -49,8 +49,8 @@ func TestIntegration_RunCancel(t *testing.T) {
 
 	// start an external agent (it's the only way to specify a separate bin
 	// directory currently).
-	daemon.startAgent(t, ctx, org.Name, agent.ExternalConfig{
-		Config: agent.Config{TerraformBinDir: bins},
+	daemon.startAgent(t, ctx, org.Name, remoteops.AgentConfig{
+		Config: remoteops.Config{TerraformBinDir: bins},
 	})
 
 	// create workspace specifying that it use an external agent.

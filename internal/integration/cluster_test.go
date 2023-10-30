@@ -3,8 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +30,7 @@ func TestCluster(t *testing.T) {
 
 	// start agent, instructing it to connect to otfd2,
 	// add --debug flag, which dumps info that this test relies upon
-	otfd2.startAgent(t, ctx, org.Name, agent.ExternalConfig{Config: agent.Config{Debug: true}})
+	otfd2.startAgent(t, ctx, org.Name, remoteops.AgentConfig{Config: remoteops.Config{Debug: true}})
 
 	// create root module, setting otfd1 as hostname
 	root := newRootModule(t, otfd1.Hostname(), org.Name, "dev")

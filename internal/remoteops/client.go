@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"context"
@@ -17,12 +17,12 @@ import (
 )
 
 var (
-	_ client = (*LocalClient)(nil)
-	_ client = (*remoteClient)(nil)
+	_ client = (*InProcClient)(nil)
+	_ client = (*rpcClient)(nil)
 )
 
 type (
-	// client allows the agent to communicate with the server endpoints.
+	// client allows the daemon to communicate with the server endpoints.
 	client interface {
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 		ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
@@ -43,8 +43,8 @@ type (
 		internal.PutChunkService
 	}
 
-	// LocalClient is the client for an internal agent.
-	LocalClient struct {
+	// InProcClient is a client for in-process communication with the server.
+	InProcClient struct {
 		tokens.TokensService
 		variable.VariableService
 		state.StateService
@@ -55,8 +55,8 @@ type (
 		logs.LogsService
 	}
 
-	// remoteClient is the client for an external agent.
-	remoteClient struct {
+	// rpcClient is a client for communication via RPC with the server.
+	rpcClient struct {
 		*otfapi.Client
 		otfapi.Config
 
@@ -78,15 +78,13 @@ type (
 	logsClient      = logs.Client
 )
 
-// New constructs a client that uses http to remotely invoke OTF
-// services.
-func newClient(config ExternalConfig) (*remoteClient, error) {
+// New constructs a client that uses RPC to remotely invoke OTF services.
+func newClient(config AgentConfig) (*rpcClient, error) {
 	api, err := otfapi.NewClient(config.APIConfig)
 	if err != nil {
 		return nil, err
 	}
-
-	return &remoteClient{
+	return &rpcClient{
 		Client:          api,
 		stateClient:     &stateClient{Client: api},
 		configClient:    &configClient{Client: api},

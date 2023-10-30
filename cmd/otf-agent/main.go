@@ -7,8 +7,8 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	var (
 		loggerCfg *logr.Config
-		cfg       *agent.ExternalConfig
+		cfg       *remoteops.AgentConfig
 	)
 
 	cmd := &cobra.Command{
@@ -41,7 +41,7 @@ func run(ctx context.Context, args []string) error {
 				return err
 			}
 
-			agent, err := agent.NewExternalAgent(cmd.Context(), logger, *cfg)
+			agent, err := remoteops.NewAgent(cmd.Context(), logger, *cfg)
 			if err != nil {
 				return fmt.Errorf("unable to start agent: %w", err)
 			}
@@ -54,7 +54,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.SetArgs(args)
 
 	loggerCfg = logr.NewConfigFromFlags(cmd.Flags())
-	cfg = agent.NewExternalConfigFromFlags(cmd.Flags())
+	cfg = remoteops.NewAgentConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

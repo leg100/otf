@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"bytes"

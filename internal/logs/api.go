@@ -24,7 +24,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	signed.Use(internal.VerifySignedURL(a.Verifier))
 	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 
-	// client is typically an external agent
+	// client is typically otf-agent
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")
 }

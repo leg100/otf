@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ type (
 	executionOption func(*execution)
 )
 
-// sandboxIfEnabled sandboxes the execution process *if* the agent is configured
+// sandboxIfEnabled sandboxes the execution process *if* the daemon is configured
 // with a sandbox.
 func sandboxIfEnabled() executionOption {
 	return func(e *execution) {
