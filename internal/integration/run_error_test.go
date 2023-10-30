@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ func TestRunError(t *testing.T) {
 
 	// create a daemon and start an agent
 	daemon, org, ctx := setup(t, nil)
-	daemon.startAgent(t, ctx, org.Name, agent.ExternalConfig{})
+	daemon.startAgent(t, ctx, org.Name, remoteops.AgentConfig{})
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {

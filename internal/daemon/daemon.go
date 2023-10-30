@@ -10,7 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
@@ -30,6 +29,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
@@ -71,7 +71,7 @@ type (
 
 		Handlers []internal.Handlers
 
-		agent process
+		opsDaemon process
 	}
 
 	process interface {
@@ -277,9 +277,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:          runService,
 	})
 
-	agent, err := agent.NewAgent(
-		logger.WithValues("component", "agent"),
-		agent.LocalClient{
+	remoteopsDaemon, err := remoteops.NewDaemon(
+		logger.WithValues("component", "remoteops"),
+		remoteops.InProcClient{
 			TokensService:               tokensService,
 			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
@@ -289,7 +289,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			RunService:                  runService,
 			LogsService:                 logsService,
 		},
-		*cfg.AgentConfig,
+		*cfg.RemoteOpsConfig,
 	)
 	if err != nil {
 		return nil, err
@@ -400,7 +400,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConnectionService:           connectionService,
 		Broker:                      broker,
 		DB:                          db,
-		agent:                       agent,
+		opsDaemon:                   remoteopsDaemon,
 	}, nil
 }
 
@@ -511,12 +511,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	case <-d.Broker.Started():
 	}
 
-	// Run local agent in background
+	// Run remote ops daemon in background
 	g.Go(func() error {
-		// give local agent unlimited access to services
-		agentCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "local-agent"})
-		if err := d.agent.Start(agentCtx); err != nil {
-			return fmt.Errorf("agent terminated: %w", err)
+		// give daemon unlimited access to services
+		daemonCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "remoteops-daemon"})
+		if err := d.opsDaemon.Start(daemonCtx); err != nil {
+			return fmt.Errorf("remote ops daemon terminated: %w", err)
 		}
 		return nil
 	})

@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cli"
 	"github.com/leg100/otf/internal/configversion"
@@ -23,6 +22,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -419,7 +419,7 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 
 // startAgent starts an external agent, configuring it with the given
 // organization and configuring it to connect to the daemon.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.ExternalConfig) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg remoteops.AgentConfig) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -436,7 +436,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 	cfg.APIConfig.Token = string(token)
 	cfg.APIConfig.Address = s.Hostname()
 
-	agent, err := agent.NewExternalAgent(ctx, logger, cfg)
+	agent, err := remoteops.NewAgent(ctx, logger, cfg)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)

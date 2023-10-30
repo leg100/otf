@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"github.com/leg100/otf/internal/api"
@@ -6,18 +6,20 @@ import (
 )
 
 type (
-	// Config is configuration for an agent.
+	// Config is configuration for a remote operations daemon.
 	Config struct {
-		Organization    *string // only process runs belonging to org
-		External        bool    // dedicated agent (true) or integrated into otfd (false)
+		Organization    *string // only perform operations for a particular org
 		Concurrency     int     // number of workers
 		Sandbox         bool    // isolate privileged ops within sandbox
 		Debug           bool    // toggle debug mode
 		PluginCache     bool    // toggle use of terraform's shared plugin cache
 		TerraformBinDir string  // destination directory for terraform binaries
+
+		isAgent bool // external agent process (true) or integrated into otfd (false)
 	}
-	// ExternalConfig is configuration for an external agent
-	ExternalConfig struct {
+	// AgentConfig is configuration for an agent, i.e. a remote operations
+	// daemon that communicates with the server via RPC.
+	AgentConfig struct {
 		APIConfig api.Config
 
 		Config
@@ -33,8 +35,8 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	return &cfg
 }
 
-func NewExternalConfigFromFlags(flags *pflag.FlagSet) *ExternalConfig {
-	cfg := ExternalConfig{
+func NewAgentConfigFromFlags(flags *pflag.FlagSet) *AgentConfig {
+	cfg := AgentConfig{
 		Config: *NewConfigFromFlags(flags),
 	}
 	flags.StringVar(&cfg.APIConfig.Address, "address", api.DefaultAddress, "Address of OTF server")

@@ -1,4 +1,4 @@
-package agent
+package remoteops
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 // worker sequentially executes runs.
 type worker struct {
-	*agent
+	*daemon
 }
 
 // Start starts the worker which waits for runs to execute.
@@ -42,7 +42,7 @@ func (w *worker) handle(ctx context.Context, r *run.Run) {
 	env, err := newEnvironment(
 		ctx,
 		log,
-		w.agent,
+		w.daemon,
 		r,
 	)
 	if err != nil {
