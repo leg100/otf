@@ -98,7 +98,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	if r.LatestRunID.Status == pgtype.Present && r.LatestRunStatus.Status == pgtype.Present {
 		ws.LatestRun = &LatestRun{
 			ID:     r.LatestRunID.String,
-			Status: r.LatestRunStatus.String,
+			Status: runStatus(r.LatestRunStatus.String),
 		}
 	}
 

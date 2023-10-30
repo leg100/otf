@@ -106,12 +106,6 @@ type (
 		AllowCLIApply *bool
 	}
 
-	// LatestRun is a summary of the latest run for a workspace
-	LatestRun struct {
-		ID     string
-		Status string
-	}
-
 	ExecutionMode string
 
 	// CreateOptions represents the options for creating a new workspace.

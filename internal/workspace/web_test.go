@@ -248,6 +248,18 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 }
 
+func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
+	app := fakeWebHandlers(t,
+		withWorkspaces(&Workspace{ID: "ws-foo", LatestRun: &LatestRun{Status: "applied", ID: "run-123"}}),
+	)
+
+	r := httptest.NewRequest("GET", "/?organization_name=acme", nil)
+	r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
+	w := httptest.NewRecorder()
+	app.listWorkspaces(w, r)
+	assert.Equal(t, 200, w.Code, w.Body.String())
+}
+
 func TestDeleteWorkspace(t *testing.T) {
 	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
