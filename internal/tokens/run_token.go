@@ -15,9 +15,9 @@ const (
 )
 
 type (
-	// RunToken is a short-lived token providing a terraform run with access to
-	// resources, for example, to access the registry to retrieve modules, or to
-	// retrieve the state of other workspaces when using `terraform_remote_state`.
+	// RunToken is a short-lived token providing a remote operation which
+	// permissions to perform the operation, e.g. retrieving and updating state,
+	// pulling modules, etc.
 	RunToken struct {
 		Organization string
 	}

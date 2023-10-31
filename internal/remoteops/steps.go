@@ -31,7 +31,7 @@ type (
 
 	stepsBuilder struct {
 		*run.Run
-		*environment
+		*operation
 
 		terraformPath string
 	}
@@ -43,8 +43,8 @@ type (
 	}
 )
 
-func buildSteps(env *environment, run *run.Run) (steps []step) {
-	bldr := &stepsBuilder{environment: env, Run: run}
+func buildSteps(op *operation, run *run.Run) (steps []step) {
+	bldr := &stepsBuilder{operation: op, Run: run}
 
 	// default setup steps
 	steps = append(steps, bldr.downloadTerraform)

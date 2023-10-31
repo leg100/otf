@@ -82,7 +82,7 @@ func NewDaemon(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 // server via RPC. It is typically invoked as a separate process, `otf-agent`.
 func NewAgent(ctx context.Context, logger logr.Logger, cfg AgentConfig) (*daemon, error) {
 	// Sends unauthenticated ping to server
-	app, err := newClient(cfg)
+	app, err := newClient(cfg.APIConfig)
 	if err != nil {
 		return nil, err
 	}

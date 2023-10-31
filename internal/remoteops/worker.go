@@ -5,72 +5,88 @@ import (
 	"errors"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/tokens"
 )
 
-// worker sequentially executes runs.
+// worker handles incoming runs and spawns operations from them.
 type worker struct {
 	*daemon
 }
 
-// Start starts the worker which waits for runs to execute.
+// Start starts the worker which waits for incoming runs and spawns operations
+// from them.
 func (w *worker) Start(ctx context.Context) {
 	for {
 		select {
-		case job := <-w.spooler.getRun():
-			w.handle(ctx, job)
+		case run := <-w.spooler.getRun():
+			w.handle(ctx, run)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-// handle executes the incoming run
-func (w *worker) handle(ctx context.Context, r *run.Run) {
-	log := w.Logger.WithValues("run", r.ID, "phase", r.Phase())
+// handle handles the incoming run and spawns an operation.
+func (w *worker) handle(ctx context.Context, run *otfrun.Run) {
+	logger := w.Logger.WithValues("run", run.ID, "phase", run.Phase())
 
 	// claim run phase
-	r, err := w.StartPhase(ctx, r.ID, r.Phase(), run.PhaseStartOptions{AgentID: DefaultID})
+	run, err := w.StartPhase(ctx, run.ID, run.Phase(), otfrun.PhaseStartOptions{AgentID: DefaultID})
 	if errors.Is(err, internal.ErrPhaseAlreadyStarted) {
 		// another agent has already claimed it
 		return
 	} else if err != nil {
-		log.Error(err, "starting phase")
+		logger.Error(err, "starting phase")
 		return
 	}
 
-	env, err := newEnvironment(
+	// Create token for terraform for it to authenticate with the OTF registry
+	// when retrieving modules and providers, and make it available to terraform
+	// via an environment variable.
+	//
+	// NOTE: environment variable support is only available in terraform >= 1.2.0
+	token, err := w.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
+		Organization: &run.Organization,
+		RunID:        &run.ID,
+	})
+	if err != nil {
+		logger.Error(err, "creating run token")
+	}
+
+	op, err := newOperation(
 		ctx,
-		log,
+		logger,
 		w.daemon,
-		r,
+		run,
+		internal.SafeAppend(w.envs, internal.CredentialEnv(w.Hostname(), token)),
 	)
 	if err != nil {
-		log.Error(err, "creating execution environment")
+		logger.Error(err, "creating operation for run phase")
 		return
 	}
-	defer env.close()
+	defer op.close()
 
-	// Check run in with the terminator so that it can cancel the run if a
+	// Check operation in with the terminator so that it can cancel the op if a
 	// cancelation request arrives
-	w.checkIn(r.ID, env)
-	defer w.checkOut(r.ID)
+	w.checkIn(run.ID, op)
+	defer w.checkOut(run.ID)
 
-	var finishOptions run.PhaseFinishOptions
+	var finishOptions otfrun.PhaseFinishOptions
 
-	log.Info("executing phase")
+	logger.Info("executing operation")
 
-	if err := env.execute(); err != nil {
-		log.Error(err, "executing phase")
+	if err := op.execute(); err != nil {
+		logger.Error(err, "executing operation")
 		finishOptions.Errored = true
 	}
 
-	log.Info("finishing phase")
+	logger.Info("finishing operation")
 
-	// Regardless of success, mark phase as finished
-	_, err = w.FinishPhase(ctx, r.ID, r.Phase(), finishOptions)
+	// Regardless of success, mark operation as finished
+	_, err = w.FinishPhase(ctx, run.ID, run.Phase(), finishOptions)
 	if err != nil {
-		log.Error(err, "finishing phase")
+		logger.Error(err, "finishing operation")
 		return
 	}
 }

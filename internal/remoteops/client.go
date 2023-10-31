@@ -79,8 +79,8 @@ type (
 )
 
 // New constructs a client that uses RPC to remotely invoke OTF services.
-func newClient(config AgentConfig) (*rpcClient, error) {
-	api, err := otfapi.NewClient(config.APIConfig)
+func newClient(cfg otfapi.Config) (*rpcClient, error) {
+	api, err := otfapi.NewClient(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func newClient(config AgentConfig) (*rpcClient, error) {
 		variableClient:  &variableClient{Client: api},
 		tokensClient:    &tokensClient{Client: api},
 		workspaceClient: &workspaceClient{Client: api},
-		runClient:       &runClient{Client: api, Config: config.APIConfig},
+		runClient:       &runClient{Client: api, Config: cfg},
 		logsClient:      &logsClient{Client: api},
 	}, nil
 }

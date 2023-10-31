@@ -8,18 +8,16 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/pkg/errors"
 )
 
-// environment provides an execution environment for a run, providing a working
-// directory, services, capturing logs etc.
-type environment struct {
+// operation is a piece of work corresponding to a particular run phase, e.g. a
+// plan, apply etc.
+type operation struct {
 	client
 	logr.Logger
 	releases.Downloader
@@ -35,12 +33,13 @@ type environment struct {
 	*workdir  // working directory fs for workspace
 }
 
-func newEnvironment(
+func newOperation(
 	ctx context.Context,
 	logger logr.Logger,
 	dmon *daemon,
 	run *run.Run,
-) (*environment, error) {
+	envs []string,
+) (*operation, error) {
 	ws, err := dmon.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
@@ -51,25 +50,13 @@ func newEnvironment(
 		return nil, err
 	}
 
-	// Create token for terraform for it to authenticate with the otf registry
-	// when retrieving modules and providers, and make it available to terraform
-	// via an environment variable.
-	//
-	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	token, err := dmon.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
-		Organization: &ws.Organization,
-		RunID:        &run.ID,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "creating run token")
-	}
-	envs := internal.SafeAppend(dmon.envs, internal.CredentialEnv(dmon.Hostname(), token))
-
-	// retrieve variables and add them to the environment
+	// retrieve variables that are applicable to the operation's run
 	variables, err := dmon.ListEffectiveVariables(ctx, run.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace variables: %w", err)
 	}
+	// append variables that are environment variables to the list of
+	// environment variables
 	for _, v := range variables {
 		if v.Category == variable.CategoryEnv {
 			ev := fmt.Sprintf("%s=%s", v.Key, v.Value)
@@ -83,7 +70,7 @@ func newEnvironment(
 		Writer: dmon,
 	})
 
-	env := &environment{
+	op := &operation{
 		Logger:     logger,
 		Downloader: dmon.Downloader,
 		client:     dmon,
@@ -101,14 +88,14 @@ func newEnvironment(
 		},
 	}
 
-	env.steps = buildSteps(env, run)
+	op.steps = buildSteps(op, run)
 
-	return env, nil
+	return op, nil
 }
 
 // execute executes a phase and regardless of whether it fails, it'll close its
 // logs.
-func (e *environment) execute() (err error) {
+func (e *operation) execute() (err error) {
 	var errors *multierror.Error
 
 	// Dump info if in debug mode
@@ -143,7 +130,7 @@ func (e *environment) execute() (err error) {
 // or not. Performed on a best-effort basis - the func or process may have
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
-func (e *environment) cancel(force bool) {
+func (e *operation) cancel(force bool) {
 	e.runner.cancel(force)
 	e.executor.cancel(force)
 }

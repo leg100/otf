@@ -13,7 +13,7 @@ type workdir struct {
 }
 
 func newWorkdir(workingDirectory string) (*workdir, error) {
-	// create dedicated directory for environment
+	// create dedicated directory for operation
 	rootDir, err := os.MkdirTemp("", "otf-config-")
 	if err != nil {
 		return nil, err
