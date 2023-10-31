@@ -57,7 +57,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "sh", "-c \"echo check | nc localhost 8080\""]
+      test: ["CMD", "sh", "-c", "echo check | nc localhost 8080"]
       interval: 5s
       timeout: 5s
       retries: 3
