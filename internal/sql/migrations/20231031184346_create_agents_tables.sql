@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS agent_pools (
                         PRIMARY KEY (agent_pool_id)
 );
 
+INSERT INTO agent_pools (agent_pool_id) VALUES
+	('apool-default'),
+	('idle'),
+	('exited'),
+	('errored');
+
 CREATE TABLE IF NOT EXISTS agent_pool_allowed_workspaces (
     agent_pool_id TEXT REFERENCES agent_pools ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
