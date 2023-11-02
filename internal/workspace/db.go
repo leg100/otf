@@ -48,6 +48,7 @@ type (
 		TriggerPatterns            []string               `json:"trigger_patterns"`
 		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
 		AllowCLIApply              bool                   `json:"allow_cli_apply"`
+		AgentPoolID                pgtype.Text            `json:"agent_pool_id"`
 		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
@@ -81,6 +82,9 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       r.Tags,
+	}
+	if r.AgentPoolID.Status == pgtype.Present {
+		ws.AgentPoolID = &r.AgentPoolID.String
 	}
 
 	if r.WorkspaceConnection != nil {
@@ -124,6 +128,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
 		Name:                       sql.String(ws.Name),
+		AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
 		AutoApply:                  ws.AutoApply,
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
@@ -175,6 +180,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 		params := pggen.UpdateWorkspaceByIDParams{
 			ID:                         sql.String(ws.ID),
 			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+			AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
 			AllowDestroyPlan:           ws.AllowDestroyPlan,
 			AutoApply:                  ws.AutoApply,
 			Description:                sql.String(ws.Description),

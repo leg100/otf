@@ -107,6 +107,7 @@ func NewService(opts Options) *service {
 	// Fetch workspace when API calls request workspace be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
+	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
 	return &svc
 }
 

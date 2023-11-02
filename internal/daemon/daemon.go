@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
@@ -350,6 +351,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	agentService := agent.NewService(agent.ServiceOptions{
+		Logger:    logger,
+		DB:        db,
+		Responder: responder,
+	})
+
 	handlers := []internal.Handlers{
 		authService,
 		tokensService,
@@ -367,6 +374,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		configService,
 		notificationService,
 		githubAppService,
+		agentService,
 		disco.Service{},
 		&ghapphandler.Handler{
 			Logger:             logger,

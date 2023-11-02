@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS agents (
     last_ping_at   TIMESTAMPTZ NOT NULL,
     status         TEXT REFERENCES agent_statuses ON UPDATE CASCADE NOT NULL,
     agent_token_id TEXT REFERENCES agent_tokens ON UPDATE CASCADE ON DELETE CASCADE,
-                   PRIMARY KEY (agent_id)
+                   PRIMARY KEY (agent_id),
                    CHECK (server OR agent_token_id IS NOT NULL)
 );
 

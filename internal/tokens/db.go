@@ -20,6 +20,7 @@ type (
 		CreatedAt        pgtype.Timestamptz `json:"created_at"`
 		Description      pgtype.Text        `json:"description"`
 		OrganizationName pgtype.Text        `json:"organization_name"`
+		AgentPoolID      pgtype.Text        `json:"agent_pool_id"`
 	}
 )
 

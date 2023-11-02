@@ -2,7 +2,6 @@ package agent
 
 import (
 	"github.com/leg100/otf/internal"
-	otfrun "github.com/leg100/otf/internal/run"
 )
 
 type JobStatus string
@@ -25,11 +24,11 @@ type Job struct {
 	AgentID string
 }
 
-func newJob(run *otfrun.Run, agentID string) *Job {
-	return &Job{
-		RunID:   run.ID,
-		Phase:   run.Phase(),
-		Status:  JobPending,
-		AgentID: agentID,
-	}
-}
+//func newJob(run *otfrun.Run, agentID string) *Job {
+//	return &Job{
+//		RunID:   run.ID,
+//		Phase:   run.Phase(),
+//		Status:  JobPending,
+//		AgentID: agentID,
+//	}
+//}

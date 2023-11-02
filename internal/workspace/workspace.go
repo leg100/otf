@@ -43,6 +43,7 @@ type (
 		ID                         string        `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
+		AgentPoolID                *string       `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool          `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool          `jsonapi:"attribute" json:"auto_apply"`
 		CanQueueDestroyPlan        bool          `jsonapi:"attribute" json:"can_queue_destroy_plan"`
@@ -110,6 +111,7 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
+		AgentPoolID                *string
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
@@ -137,6 +139,7 @@ type (
 	}
 
 	UpdateOptions struct {
+		AgentPoolID                *string
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string
@@ -198,6 +201,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		TerraformVersion:   releases.DefaultTerraformVersion,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
+		AgentPoolID:        opts.AgentPoolID,
 	}
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
@@ -305,6 +309,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		if err := ws.setName(*opts.Name); err != nil {
 			return nil, err
 		}
+		updated = true
+	}
+	if opts.AgentPoolID != nil {
+		ws.AgentPoolID = opts.AgentPoolID
 		updated = true
 	}
 	if opts.AllowDestroyPlan != nil {
