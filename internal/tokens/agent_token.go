@@ -18,6 +18,7 @@ type (
 		CreatedAt    time.Time
 		Description  string `jsonapi:"attribute" json:"description"`
 		Organization string `jsonapi:"attribute" json:"organization_name"`
+		AgentPoolID  string `jsonapi:"attribute" json:"agent_pool_id"`
 	}
 
 	CreateAgentTokenOptions struct {

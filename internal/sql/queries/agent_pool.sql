@@ -27,7 +27,7 @@ SELECT ap.*,
     ) AS allowed_workspace_ids
 FROM agent_pools ap
 LEFT JOIN (agent_pool_allowed_workspaces aw JOIN workspaces w USING (workspace_id)) ON ap.agent_pool_id = aw.agent_pool_id
-WHERE ap.organization_name = pggen.arg('organization_name')
+WHERE ((pggen.arg('organization_name')::text IS NULL) OR ap.organization_name = pggen.arg('organization_name'))
 AND   ((pggen.arg('name_substring')::text IS NULL) OR ap.name LIKE '%' || pggen.arg('name_substring') || '%')
 AND   ((pggen.arg('allowed_workspace_name')::text IS NULL) OR
         ap.organization_scoped OR w.name = pggen.arg('allowed_workspace_name')

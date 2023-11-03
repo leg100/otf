@@ -2,6 +2,7 @@
 package agent
 
 import (
+	"slices"
 	"time"
 
 	"log/slog"
@@ -44,6 +45,8 @@ type (
 	}
 
 	listPoolOptions struct {
+		// Filter by organization name. Optional.
+		Organization *string
 		// Filter pools by those with this substring in their name. Optional.
 		NameSubstring *string
 		// Filter pools to those accessible to the named workspace. Optional.
@@ -91,6 +94,15 @@ func (p *Pool) LogValue() slog.Value {
 		slog.String("name", p.Name),
 		slog.String("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),
+		slog.Any("workspaces", p.Workspaces),
 		slog.Any("allowed_workspaces", p.AllowedWorkspaces),
 	)
+}
+
+// isAllowed determines whether the given workspace is allowed to use this pool.
+func (p *Pool) isAllowed(workspaceID string) bool {
+	if p.OrganizationScoped {
+		return true
+	}
+	return slices.Contains(p.AllowedWorkspaces, workspaceID)
 }

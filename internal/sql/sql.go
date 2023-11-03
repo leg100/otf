@@ -4,6 +4,7 @@ Package sql implements persistent storage using the postgres database.
 package sql
 
 import (
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
@@ -79,6 +80,12 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 // JSON converts a []byte into a postgres JSON type
 func JSON(b []byte) pgtype.JSON {
 	return pgtype.JSON{Bytes: b, Status: pgtype.Present}
+}
+
+// Inet converts net.IP into the postgres type pgtype.Inet
+func Inet(ip net.IP) pgtype.Inet {
+	mask := net.CIDRMask(32, 0)
+	return pgtype.Inet{IPNet: &net.IPNet{Mask: mask, IP: ip}, Status: pgtype.Present}
 }
 
 func Error(err error) error {

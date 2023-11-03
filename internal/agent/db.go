@@ -8,22 +8,16 @@ import (
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-type (
-	db struct {
-		*sql.DB
-	}
-
-	// poolresult is the result of a database query for an agent pool
-	poolresult struct {
-		AgentPoolID         pgtype.Text        `json:"agent_pool_id"`
-		Name                pgtype.Text        `json:"name"`
-		CreatedAt           pgtype.Timestamptz `json:"created_at"`
-		OrganizationName    pgtype.Text        `json:"organization_name"`
-		OrganizationScoped  bool               `json:"organization_scoped"`
-		WorkspaceIds        []string           `json:"workspace_ids"`
-		AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
-	}
-)
+// poolresult is the result of a database query for an agent pool
+type poolresult struct {
+	AgentPoolID         pgtype.Text        `json:"agent_pool_id"`
+	Name                pgtype.Text        `json:"name"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
+	OrganizationScoped  bool               `json:"organization_scoped"`
+	WorkspaceIds        []string           `json:"workspace_ids"`
+	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
+}
 
 func (r poolresult) toPool() *Pool {
 	return &Pool{
@@ -35,6 +29,60 @@ func (r poolresult) toPool() *Pool {
 		Workspaces:         r.WorkspaceIds,
 		AllowedWorkspaces:  r.AllowedWorkspaceIds,
 	}
+}
+
+// agentresult is the result of a database query for an agent
+type agentresult struct {
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IpAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentTokenID pgtype.Text        `json:"agent_token_id"`
+}
+
+func (r agentresult) toPool() *Agent {
+	agent := &Agent{
+		ID:          r.AgentID.String,
+		Concurrency: int(r.Concurrency.Int),
+		Server:      r.Server,
+		IPAddress:   r.IpAddress.IPNet.IP,
+		LastPingAt:  r.LastPingAt.Time.UTC(),
+		Status:      Status(r.Status.String),
+	}
+	if r.Name.Status == pgtype.Present {
+		agent.Name = &r.Name.String
+	}
+	if r.AgentTokenID.Status == pgtype.Present {
+		agent.AgentPoolID = &r.AgentTokenID.String
+	}
+	return agent
+}
+
+type db struct {
+	*sql.DB
+}
+
+func (db *db) createAgent(ctx context.Context, agent *Agent) error {
+	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
+		AgentID:      sql.String(agent.ID),
+		Name:         sql.StringPtr(agent.Name),
+		Concurrency:  sql.Int4(agent.Concurrency),
+		IpAddress:    sql.Inet(agent.IPAddress),
+		Status:       sql.String(string(agent.Status)),
+		AgentTokenID: sql.StringPtr(agent.AgentPoolID),
+	})
+	return err
+}
+
+func (db *db) listAgents(ctx context.Context) ([]*Agent, error) {
+	return nil, nil
+}
+
+func (db *db) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
+	return nil, nil
 }
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
@@ -102,9 +150,9 @@ func (db *db) getPool(ctx context.Context, poolID string) (*Pool, error) {
 	return poolresult(result).toPool(), nil
 }
 
-func (db *db) listPools(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+func (db *db) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
 	params := pggen.FindAgentPoolsParams{
-		OrganizationName:     sql.String(organization),
+		OrganizationName:     sql.StringPtr(opts.Organization),
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),
 		AllowedWorkspaceName: sql.StringPtr(opts.AllowedWorkspaceName),
 	}

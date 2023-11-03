@@ -18,6 +18,7 @@ type (
 		logr.Logger
 		*db
 		tfeapi *tfe
+		*registrar
 
 		organization internal.Authorizer
 	}
@@ -39,11 +40,41 @@ func NewService(opts ServiceOptions) *service {
 		service:   svc,
 		Responder: opts.Responder,
 	}
+	svc.registrar = &registrar{
+		service: svc,
+	}
 	return svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.tfeapi.addHandlers(r)
+}
+
+func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
+	agent, err := func() (*Agent, error) {
+		agent, err := s.register(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.db.createAgent(ctx, agent); err != nil {
+			return nil, err
+		}
+		return agent, nil
+	}()
+	if err != nil {
+		s.Error(err, "registering agent")
+		return nil, err
+	}
+	s.V(0).Info("registered agent", "agent", agent)
+	return agent, nil
+}
+
+func (s *service) listAgents(ctx context.Context) ([]*Agent, error) {
+	return s.db.listAgents(ctx)
+}
+
+func (s *service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
+	return s.db.listAgentsByOrganization(ctx, organization)
 }
 
 func (s *service) createPool(ctx context.Context, opts createPoolOptions) (*Pool, error) {
@@ -109,17 +140,18 @@ func (s *service) getPool(ctx context.Context, poolID string) (*Pool, error) {
 	return pool, nil
 }
 
-func (s *service) listPools(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, organization)
+func (s *service) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
+	// TODO: handle authz with and without org
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, "")
 	if err != nil {
 		return nil, err
 	}
-	pools, err := s.db.listPools(ctx, organization, opts)
+	pools, err := s.db.listPools(ctx, opts)
 	if err != nil {
-		s.Error(err, "listing agent pools", "subject", subject, "organization", organization)
+		s.Error(err, "listing agent pools", "subject", subject)
 		return nil, err
 	}
-	s.V(9).Info("listed agent pools", "subject", subject, "organization", organization, "count", len(pools))
+	s.V(9).Info("listed agent pools", "subject", subject, "count", len(pools))
 	return pools, nil
 }
 
@@ -144,11 +176,19 @@ func (s *service) deletePool(ctx context.Context, poolID string) error {
 	return nil
 }
 
-//func (s *service) createJob(ctx context.Context, run *otfrun.Run, agentID string) (*Job, error) {
-//	//return newJob(run, agentID), nil
-//	return nil, nil
-//}
-//
-//func (s *service) ping(ctx context.Context, agentID string) error {
-//	return nil
-//}
+//	func (s *service) createJob(ctx context.Context, run *otfrun.Run, agentID string) (*Job, error) {
+//		//return newJob(run, agentID), nil
+//		return nil, nil
+//	}
+
+func (s *service) ping(ctx context.Context, agentID string) error {
+	return nil
+}
+
+func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
+	return nil, nil
+}
+
+func (s *service) allocateJob(ctx context.Context, runID, agentID string) error {
+	return nil
+}

@@ -49,14 +49,15 @@ INSERT INTO agent_statuses (status) VALUES
 	('busy'),
 	('idle'),
 	('exited'),
-	('errored');
+	('errored'),
+	('unknown');
 
 CREATE TABLE IF NOT EXISTS agents (
     agent_id       TEXT,
     name           TEXT,
     concurrency    INT NOT NULL,
     server         BOOLEAN NOT NULL,
-    ip_address     TEXT NOT NULL,
+    ip_address     INET NOT NULL,
     last_ping_at   TIMESTAMPTZ NOT NULL,
     status         TEXT REFERENCES agent_statuses ON UPDATE CASCADE NOT NULL,
     agent_token_id TEXT REFERENCES agent_tokens ON UPDATE CASCADE ON DELETE CASCADE,
