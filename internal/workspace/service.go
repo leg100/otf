@@ -135,27 +135,25 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		return nil, err
 	}
 
-	// Dispatch not only triggers any observers to the create hook, but it wraps
-	// the callback in a database tx.
-	err = s.createHook.Dispatch(ctx, ws, func(ctx context.Context) error {
+	err = s.createHook.Dispatch(ctx, ws, func(ctx context.Context) (*Workspace, error) {
 		if err := s.db.create(ctx, ws); err != nil {
-			return err
+			return nil, err
 		}
 		// Optionally connect workspace to repo.
 		if ws.Connection != nil {
 			if err := s.connect(ctx, ws.ID, ws.Connection); err != nil {
-				return err
+				return nil, err
 			}
 		}
 		// Optionally create tags.
 		if len(opts.Tags) > 0 {
 			added, err := s.addTags(ctx, ws, opts.Tags)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			ws.Tags = added
 		}
-		return nil
+		return ws, nil
 	})
 	if err != nil {
 		s.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)

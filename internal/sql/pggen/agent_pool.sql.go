@@ -70,7 +70,7 @@ const findAgentPoolsSQL = `SELECT ap.*,
     ) AS allowed_workspace_ids
 FROM agent_pools ap
 LEFT JOIN (agent_pool_allowed_workspaces aw JOIN workspaces w USING (workspace_id)) ON ap.agent_pool_id = aw.agent_pool_id
-WHERE ap.organization_name = $1
+WHERE (($1::text IS NULL) OR ap.organization_name = $1)
 AND   (($2::text IS NULL) OR ap.name LIKE '%' || $2 || '%')
 AND   (($3::text IS NULL) OR
         ap.organization_scoped OR w.name = $3

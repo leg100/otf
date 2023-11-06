@@ -133,7 +133,8 @@ sql: install-pggen
 		--acronym http \
 		--acronym tls \
 		--acronym sso \
-		--acronym hcl
+		--acronym hcl \
+		--acronym ip
 	goimports -w ./internal/sql/pggen
 	go fmt ./internal/sql/pggen
 

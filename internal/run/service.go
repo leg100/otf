@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -66,6 +67,16 @@ type (
 		// ForceCancelRun forcefully cancels a run.
 		ForceCancelRun(ctx context.Context, runID string) error
 
+		// AfterEnqueuePlan allows caller to dispatch actions following the
+		// enqueuing of a plan.
+		AfterEnqueuePlan(l hooks.Listener[*Run])
+		// AfterEnqueueApply allows caller to dispatch actions following the
+		// enqueuing of an apply.
+		AfterEnqueueApply(l hooks.Listener[*Run])
+		// AfterRunCancel allows caller to dispatch actions following the
+		// cancelation of a run.
+		AfterRunCancel(l hooks.Listener[*Run])
+
 		lockFileService
 
 		internal.Authorizer // run authorizer
@@ -84,13 +95,16 @@ type (
 		workspace    internal.Authorizer
 		*authorizer
 
-		cache  internal.Cache
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
-		*factory
+		cache      internal.Cache
+		db         *pgdb
+		tfeapi     *tfe
+		api        *api
+		web        *webHandlers
+		planHook   *hooks.Hook[*Run]
+		applyHook  *hooks.Hook[*Run]
+		cancelHook *hooks.Hook[*Run]
 
-		web *webHandlers
+		*factory
 	}
 
 	Options struct {
@@ -182,6 +196,18 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
+}
+
+func (a *service) AfterEnqueuePlan(l hooks.Listener[*Run]) {
+	a.planHook.After(l)
+}
+
+func (a *service) AfterEnqueueApply(l hooks.Listener[*Run]) {
+	a.applyHook.After(l)
+}
+
+func (a *service) AfterRunCancel(l hooks.Listener[*Run]) {
+	a.cancelHook.After(l)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
@@ -278,8 +304,11 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 		return nil, err
 	}
 
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.EnqueuePlan()
+	var run *Run
+	err = s.planHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
+		return s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+			return run.EnqueuePlan()
+		})
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
@@ -317,7 +346,7 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 	}
 
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.Start(phase)
+		return run.Start()
 	})
 	if err != nil {
 		// only log error if not an phase already started error - this occurs when
@@ -420,8 +449,10 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.EnqueueApply()
+	err = s.planHook.Dispatch(ctx, nil, func(ctx context.Context) (*Run, error) {
+		return s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+			return run.EnqueueApply()
+		})
 	})
 	if err != nil {
 		s.Error(err, "enqueuing apply", "id", runID, "subject", subject)

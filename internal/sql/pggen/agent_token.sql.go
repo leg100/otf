@@ -12,7 +12,7 @@ import (
 )
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (
-    token_id,
+    agent_token_id,
     created_at,
     description,
     organization_name
@@ -24,7 +24,7 @@ const insertAgentTokenSQL = `INSERT INTO agent_tokens (
 );`
 
 type InsertAgentTokenParams struct {
-	TokenID          pgtype.Text
+	AgentTokenID     pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
@@ -33,7 +33,7 @@ type InsertAgentTokenParams struct {
 // InsertAgentToken implements Querier.InsertAgentToken.
 func (q *DBQuerier) InsertAgentToken(ctx context.Context, params InsertAgentTokenParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertAgentToken")
-	cmdTag, err := q.conn.Exec(ctx, insertAgentTokenSQL, params.TokenID, params.CreatedAt, params.Description, params.OrganizationName)
+	cmdTag, err := q.conn.Exec(ctx, insertAgentTokenSQL, params.AgentTokenID, params.CreatedAt, params.Description, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertAgentToken: %w", err)
 	}
@@ -42,7 +42,7 @@ func (q *DBQuerier) InsertAgentToken(ctx context.Context, params InsertAgentToke
 
 // InsertAgentTokenBatch implements Querier.InsertAgentTokenBatch.
 func (q *DBQuerier) InsertAgentTokenBatch(batch genericBatch, params InsertAgentTokenParams) {
-	batch.Queue(insertAgentTokenSQL, params.TokenID, params.CreatedAt, params.Description, params.OrganizationName)
+	batch.Queue(insertAgentTokenSQL, params.AgentTokenID, params.CreatedAt, params.Description, params.OrganizationName)
 }
 
 // InsertAgentTokenScan implements Querier.InsertAgentTokenScan.
@@ -56,11 +56,11 @@ func (q *DBQuerier) InsertAgentTokenScan(results pgx.BatchResults) (pgconn.Comma
 
 const findAgentTokenByIDSQL = `SELECT *
 FROM agent_tokens
-WHERE token_id = $1
+WHERE agent_token_id = $1
 ;`
 
 type FindAgentTokenByIDRow struct {
-	TokenID          pgtype.Text        `json:"token_id"`
+	AgentTokenID     pgtype.Text        `json:"agent_token_id"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Description      pgtype.Text        `json:"description"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
@@ -68,26 +68,26 @@ type FindAgentTokenByIDRow struct {
 }
 
 // FindAgentTokenByID implements Querier.FindAgentTokenByID.
-func (q *DBQuerier) FindAgentTokenByID(ctx context.Context, tokenID pgtype.Text) (FindAgentTokenByIDRow, error) {
+func (q *DBQuerier) FindAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (FindAgentTokenByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentTokenByID")
-	row := q.conn.QueryRow(ctx, findAgentTokenByIDSQL, tokenID)
+	row := q.conn.QueryRow(ctx, findAgentTokenByIDSQL, agentTokenID)
 	var item FindAgentTokenByIDRow
-	if err := row.Scan(&item.TokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
+	if err := row.Scan(&item.AgentTokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
 		return item, fmt.Errorf("query FindAgentTokenByID: %w", err)
 	}
 	return item, nil
 }
 
 // FindAgentTokenByIDBatch implements Querier.FindAgentTokenByIDBatch.
-func (q *DBQuerier) FindAgentTokenByIDBatch(batch genericBatch, tokenID pgtype.Text) {
-	batch.Queue(findAgentTokenByIDSQL, tokenID)
+func (q *DBQuerier) FindAgentTokenByIDBatch(batch genericBatch, agentTokenID pgtype.Text) {
+	batch.Queue(findAgentTokenByIDSQL, agentTokenID)
 }
 
 // FindAgentTokenByIDScan implements Querier.FindAgentTokenByIDScan.
 func (q *DBQuerier) FindAgentTokenByIDScan(results pgx.BatchResults) (FindAgentTokenByIDRow, error) {
 	row := results.QueryRow()
 	var item FindAgentTokenByIDRow
-	if err := row.Scan(&item.TokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
+	if err := row.Scan(&item.AgentTokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
 		return item, fmt.Errorf("scan FindAgentTokenByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -100,7 +100,7 @@ ORDER BY created_at DESC
 ;`
 
 type FindAgentTokensRow struct {
-	TokenID          pgtype.Text        `json:"token_id"`
+	AgentTokenID     pgtype.Text        `json:"agent_token_id"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Description      pgtype.Text        `json:"description"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
@@ -118,7 +118,7 @@ func (q *DBQuerier) FindAgentTokens(ctx context.Context, organizationName pgtype
 	items := []FindAgentTokensRow{}
 	for rows.Next() {
 		var item FindAgentTokensRow
-		if err := rows.Scan(&item.TokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentTokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindAgentTokens row: %w", err)
 		}
 		items = append(items, item)
@@ -144,7 +144,7 @@ func (q *DBQuerier) FindAgentTokensScan(results pgx.BatchResults) ([]FindAgentTo
 	items := []FindAgentTokensRow{}
 	for rows.Next() {
 		var item FindAgentTokensRow
-		if err := rows.Scan(&item.TokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentTokenID, &item.CreatedAt, &item.Description, &item.OrganizationName, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindAgentTokensBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -157,14 +157,14 @@ func (q *DBQuerier) FindAgentTokensScan(results pgx.BatchResults) ([]FindAgentTo
 
 const deleteAgentTokenByIDSQL = `DELETE
 FROM agent_tokens
-WHERE token_id = $1
-RETURNING token_id
+WHERE agent_token_id = $1
+RETURNING agent_token_id
 ;`
 
 // DeleteAgentTokenByID implements Querier.DeleteAgentTokenByID.
-func (q *DBQuerier) DeleteAgentTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteAgentTokenByID")
-	row := q.conn.QueryRow(ctx, deleteAgentTokenByIDSQL, tokenID)
+	row := q.conn.QueryRow(ctx, deleteAgentTokenByIDSQL, agentTokenID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query DeleteAgentTokenByID: %w", err)
@@ -173,8 +173,8 @@ func (q *DBQuerier) DeleteAgentTokenByID(ctx context.Context, tokenID pgtype.Tex
 }
 
 // DeleteAgentTokenByIDBatch implements Querier.DeleteAgentTokenByIDBatch.
-func (q *DBQuerier) DeleteAgentTokenByIDBatch(batch genericBatch, tokenID pgtype.Text) {
-	batch.Queue(deleteAgentTokenByIDSQL, tokenID)
+func (q *DBQuerier) DeleteAgentTokenByIDBatch(batch genericBatch, agentTokenID pgtype.Text) {
+	batch.Queue(deleteAgentTokenByIDSQL, agentTokenID)
 }
 
 // DeleteAgentTokenByIDScan implements Querier.DeleteAgentTokenByIDScan.

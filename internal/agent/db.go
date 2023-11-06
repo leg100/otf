@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 // poolresult is the result of a database query for an agent pool
@@ -37,18 +39,18 @@ type agentresult struct {
 	Name         pgtype.Text        `json:"name"`
 	Concurrency  pgtype.Int4        `json:"concurrency"`
 	Server       bool               `json:"server"`
-	IpAddress    pgtype.Inet        `json:"ip_address"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
 	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
 	Status       pgtype.Text        `json:"status"`
 	AgentTokenID pgtype.Text        `json:"agent_token_id"`
 }
 
-func (r agentresult) toPool() *Agent {
+func (r agentresult) toAgent() *Agent {
 	agent := &Agent{
 		ID:          r.AgentID.String,
 		Concurrency: int(r.Concurrency.Int),
 		Server:      r.Server,
-		IPAddress:   r.IpAddress.IPNet.IP,
+		IPAddress:   r.IPAddress.IPNet.IP,
 		LastPingAt:  r.LastPingAt.Time.UTC(),
 		Status:      AgentStatus(r.Status.String),
 	}
@@ -61,6 +63,32 @@ func (r agentresult) toPool() *Agent {
 	return agent
 }
 
+// jobresult is the result of a database query for an job
+type jobresult struct {
+	RunID         pgtype.Text `json:"run_id"`
+	Phase         pgtype.Text `json:"phase"`
+	Status        pgtype.Text `json:"status"`
+	ExecutionMode pgtype.Text `json:"execution_mode"`
+	WorkspaceID   pgtype.Text `json:"workspace_id"`
+	AgentID       pgtype.Text `json:"agent_id"`
+}
+
+func (r jobresult) toJob() *Job {
+	job := &Job{
+		JobSpec: JobSpec{
+			RunID: r.RunID.String,
+			Phase: internal.PhaseType(r.Phase.String),
+		},
+		Status:        JobStatus(r.Status.String),
+		ExecutionMode: workspace.ExecutionMode(r.ExecutionMode.String),
+		WorkspaceID:   r.WorkspaceID.String,
+	}
+	if r.AgentID.Status == pgtype.Present {
+		job.AgentID = &r.AgentID.String
+	}
+	return job
+}
+
 type db struct {
 	*sql.DB
 }
@@ -70,7 +98,7 @@ func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 		AgentID:      sql.String(agent.ID),
 		Name:         sql.StringPtr(agent.Name),
 		Concurrency:  sql.Int4(agent.Concurrency),
-		IpAddress:    sql.Inet(agent.IPAddress),
+		IPAddress:    sql.Inet(agent.IPAddress),
 		Status:       sql.String(string(agent.Status)),
 		AgentTokenID: sql.StringPtr(agent.AgentPoolID),
 	})
@@ -78,11 +106,39 @@ func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 }
 
 func (db *db) listAgents(ctx context.Context) ([]*Agent, error) {
-	return nil, nil
+	rows, err := db.Conn(ctx).FindAgents(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
+}
+
+func (db *db) listServerAgents(ctx context.Context) ([]*Agent, error) {
+	rows, err := db.Conn(ctx).FindServerAgents(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
 }
 
 func (db *db) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
-	return nil, nil
+	rows, err := db.Conn(ctx).FindAgentsByOrganization(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
 }
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
@@ -175,10 +231,36 @@ func (db *db) deletePool(ctx context.Context, poolID string) (organization strin
 	return result.String, nil
 }
 
-func (db *db) reallocateJob(ctx context.Context, job *Job) error {
+func (db *db) createJob(ctx context.Context, job *Job) error {
 	return nil
 }
 
+func (db *db) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
+	_, err := db.Conn(ctx).AllocateJob(ctx, pggen.AllocateJobParams{
+		AgentID: sql.String(agentID),
+		RunID:   sql.String(spec.RunID),
+		Phase:   sql.String(string(spec.Phase)),
+	})
+	return sql.Error(err)
+}
+
 func (db *db) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	return nil, nil
+	rows, err := db.Conn(ctx).FindAllocatedJobs(ctx, sql.String(agentID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	jobs := make([]*Job, len(rows))
+	for i, r := range rows {
+		jobs[i] = jobresult(r).toJob()
+	}
+	return jobs, nil
+}
+
+func (db *db) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {
+	_, err := db.Conn(ctx).UpdateJobStatus(ctx, pggen.UpdateJobStatusParams{
+		RunID:  sql.String(spec.RunID),
+		Phase:  sql.String(string(spec.Phase)),
+		Status: sql.String(string(status)),
+	})
+	return sql.Error(err)
 }

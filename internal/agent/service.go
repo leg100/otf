@@ -9,27 +9,38 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
+	AgentService = Service
+
+	Service interface {
+		NewAllocator(pubsub.Subscriber) *allocator
+		NewManager() *manager
+	}
+
 	service struct {
 		logr.Logger
-		*db
-		tfeapi *tfe
-		*registrar
-		// Subscriber for receiving stream of job and agent events
 		pubsub.Subscriber
+		run.RunService
 
 		organization internal.Authorizer
+
+		*db
+		tfeapi *tfe
+		api    *api
+		*registrar
 	}
 
 	ServiceOptions struct {
 		logr.Logger
 		*sql.DB
 		*tfeapi.Responder
+		run.RunService
 	}
 )
 
@@ -43,14 +54,38 @@ func NewService(opts ServiceOptions) *service {
 		service:   svc,
 		Responder: opts.Responder,
 	}
+	svc.api = &api{
+		service:   svc,
+		Responder: opts.Responder,
+	}
 	svc.registrar = &registrar{
 		service: svc,
 	}
+	// create jobs when a plan or apply is enqueued
+	opts.AfterEnqueuePlan(svc.createJob)
+	opts.AfterEnqueueApply(svc.createJob)
+	// cancel job when its run is canceled
+	opts.AfterRunCancel(svc.cancelJob)
 	return svc
+}
+
+func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
+	return &allocator{
+		Subscriber: subscriber,
+		service:    s,
+	}
+}
+
+func (s *service) NewManager() *manager {
+	return &manager{
+		service:  s,
+		interval: defaultManagerInterval,
+	}
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.tfeapi.addHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) createPool(ctx context.Context, opts createPoolOptions) (*Pool, error) {
@@ -158,10 +193,20 @@ func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) 
 		if err != nil {
 			return nil, err
 		}
-		if err := s.db.createAgent(ctx, agent); err != nil {
+		err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+			if err := s.db.createAgent(ctx, agent); err != nil {
+				return err
+			}
+			for _, spec := range opts.CurrentJobs {
+				if err := s.db.allocateJob(ctx, spec, agent.ID); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
 			return nil, err
 		}
-		// TODO: reallocate jobs in db
 		return agent, nil
 	}()
 	if err != nil {
@@ -192,13 +237,16 @@ func (s *service) deleteAgent(ctx context.Context, agentID string) error {
 	return nil
 }
 
-//	func (s *service) createJob(ctx context.Context, run *otfrun.Run, agentID string) (*Job, error) {
-//		//return newJob(run, agentID), nil
-//		return nil, nil
-//	}
-
-func (s *service) ping(ctx context.Context, agentID string) error {
+func (s *service) createJob(ctx context.Context, run *run.Run) error {
+	job := newJob(run)
+	if err := s.db.createJob(ctx, job); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (s *service) cancelJob(ctx context.Context, run *run.Run) error {
+	return s.db.updateJobStatus(ctx, JobSpec{RunID: run.ID, Phase: run.Phase()}, JobCanceled)
 }
 
 func (s *service) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
@@ -223,6 +271,10 @@ func (s *service) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job,
 	return nil, nil
 }
 
+func (s *service) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
+	return nil, nil
+}
+
 func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
 	return nil, nil
 }
@@ -231,11 +283,25 @@ func (s *service) reallocateJob(ctx context.Context, spec JobSpec) error {
 	return nil
 }
 
-func (s *service) updateJobStatus(ctx context.Context, jobID string, status JobStatus) error {
-	return nil
+func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		if err := s.db.updateJobStatus(ctx, spec, status); err != nil {
+			return err
+		}
+		// update corresponding run phase too
+		var err error
+		switch status {
+		case JobRunning:
+			_, err = s.RunService.StartPhase(ctx, spec.RunID, spec.Phase, run.PhaseStartOptions{})
+		case JobFinished, JobErrored:
+			_, err = s.RunService.FinishPhase(ctx, spec.RunID, spec.Phase, run.PhaseFinishOptions{
+				Errored: status == JobErrored,
+			})
+		}
+		return err
+	})
 }
 
-func (s *service) allocateJob(ctx context.Context, job *Job) error {
-	// TODO: perform DB update of job
-	return nil
+func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
+	return s.db.allocateJob(ctx, spec, agentID)
 }

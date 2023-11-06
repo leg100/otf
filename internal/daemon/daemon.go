@@ -69,6 +69,7 @@ type (
 		notifications.NotificationService
 		connections.ConnectionService
 		github.GithubAppService
+		agent.AgentService
 
 		Handlers []internal.Handlers
 
@@ -406,6 +407,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		NotificationService:         notificationService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
+		AgentService:                agentService,
 		Broker:                      broker,
 		DB:                          db,
 		opsDaemon:                   remoteopsDaemon,
@@ -487,6 +489,22 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				WorkspaceService: d.WorkspaceService,
 				DB:               d.DB,
 			}),
+		},
+		{
+			Name:      "job-allocator",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(agent.AllocatorLockID),
+			System:    d.NewAllocator(d.Broker),
+		},
+		{
+			Name:      "agent-manager",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(agent.ManagerLockID),
+			System:    d.NewManager(),
 		},
 	}
 	if !d.DisableScheduler {

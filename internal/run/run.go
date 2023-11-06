@@ -397,7 +397,7 @@ func (r *Run) StatusTimestamp(status Status) (time.Time, error) {
 }
 
 // Start a run phase
-func (r *Run) Start(phase internal.PhaseType) error {
+func (r *Run) Start() error {
 	switch r.Status {
 	case RunPlanQueued:
 		r.updateStatus(RunPlanning, nil)

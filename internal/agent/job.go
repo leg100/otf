@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -15,19 +16,20 @@ const (
 	JobRunning     JobStatus = "running"
 	JobFinished    JobStatus = "finished"
 	JobErrored     JobStatus = "errored"
-	// JobCanceled?
+	JobCanceled    JobStatus = "canceled"
 )
 
 type Job struct {
 	JobSpec
 	// Current status of job.
 	Status JobStatus
-	// ID of agent that this job is allocated to.
-	AgentID string
 	// Execution mode of job's workspace.
 	ExecutionMode workspace.ExecutionMode
 	// ID of job's workspace
 	WorkspaceID string
+	// ID of agent that this job is allocated to. Only set once job enters
+	// JobAllocated state.
+	AgentID *string
 }
 
 func (j *Job) String() string { return fmt.Sprintf("%s-%s", j.RunID, j.Phase) }
@@ -40,11 +42,14 @@ type JobSpec struct {
 	Phase internal.PhaseType `json:"phase"`
 }
 
-//func newJob(run *otfrun.Run, agentID string) *Job {
-//	return &Job{
-//		RunID:   run.ID,
-//		Phase:   run.Phase(),
-//		Status:  JobPending,
-//		AgentID: agentID,
-//	}
-//}
+func newJob(run *otfrun.Run) *Job {
+	return &Job{
+		JobSpec: JobSpec{
+			RunID: run.ID,
+			Phase: run.Phase(),
+		},
+		Status:        JobUnallocated,
+		ExecutionMode: run.ExecutionMode,
+		WorkspaceID:   run.WorkspaceID,
+	}
+}

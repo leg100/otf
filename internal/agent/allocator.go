@@ -9,6 +9,10 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+// AllocatorLockID guarantees only one allocator on a cluster is running at any
+// time.
+const AllocatorLockID int64 = 5577006791947779412
+
 // allocator allocates jobs to agents. Only one allocator must be active on
 // an OTF cluster at any one time.
 type allocator struct {
@@ -16,7 +20,7 @@ type allocator struct {
 	pubsub.Subscriber
 	// service for seeding allocator with pools, agents, and jobs, and for
 	// allocating jobs to agents.
-	service
+	*service
 	// cache for looking up an agent's pool efficiently, keyed by pool ID
 	pools map[string]*Pool
 	// agents to allocate jobs to, keyed by agent ID
@@ -105,9 +109,9 @@ func (a *allocator) Start(ctx context.Context) error {
 func (a *allocator) allocate(ctx context.Context) error {
 	allocatefn := func(agent *Agent, job *Job) error {
 		job.Status = JobAllocated
-		job.AgentID = agent.ID
+		job.AgentID = &agent.ID
 		a.capacities[agent.ID]--
-		return a.allocateJob(ctx, job)
+		return a.allocateJob(ctx, job.JobSpec, *job.AgentID)
 	}
 	for _, job := range a.jobs {
 		if job.Status != JobUnallocated {

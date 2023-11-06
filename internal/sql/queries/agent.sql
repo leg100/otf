@@ -25,13 +25,20 @@ SET status = pggen.arg('status'), last_ping_at = current_timestamp
 WHERE agent_id = pggen.arg('agent_id')
 RETURNING *;
 
--- name: FindAllAgents :many
+-- name: FindAgents :many
 SELECT *
 FROM agents;
 
--- name: FindAgents :many
+-- name: FindAgentsByOrganization :many
+SELECT a.*
+FROM agents a
+JOIN (agent_tokens at JOIN agent_pools ap USING (agent_pool_id)) USING (agent_token_id)
+WHERE ap.organization_name = pggen.arg('organization_name');
+
+-- name: FindServerAgents :many
 SELECT *
 FROM agents
+WHERE server;
 
 -- name: DeleteAgent :one
 DELETE

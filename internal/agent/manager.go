@@ -5,12 +5,21 @@ import (
 	"time"
 )
 
-var pingTimeout = 60 * time.Second
+var (
+	pingTimeout            = 60 * time.Second
+	defaultManagerInterval = 10 * time.Second
+)
 
-// manager updates the state of agents.
+// ManagerLockID guarantees only one manager on a cluster is running at any
+// time.
+const ManagerLockID int64 = 5577006791947779413
+
+// manager manages the state of agents.
+//
+// Only one manager should be running on an OTF cluster at any one time.
 type manager struct {
 	// service for retrieving agents and updating their state.
-	service
+	*service
 	// frequency with which the manager will check agents.
 	interval time.Duration
 }

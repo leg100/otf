@@ -267,8 +267,8 @@ func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvide
 		return nil, err
 	}
 
-	err = a.deleteHook.Dispatch(ctx, provider, func(ctx context.Context) error {
-		return a.db.delete(ctx, id)
+	err = a.deleteHook.Dispatch(ctx, provider, func(ctx context.Context) (*VCSProvider, error) {
+		return provider, a.db.delete(ctx, id)
 	})
 	if err != nil {
 		a.Error(err, "deleting vcs provider", "provider", provider, "subject", subject)

@@ -23,8 +23,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 	r.HandleFunc("/agent/register", a.registerAgent).Methods("POST")
 	r.HandleFunc("/agent/{agent_id}/jobs", a.getJobs).Methods("GET")
-	r.HandleFunc("/agent/{agent_id}/job-status", a.updateJobStatus).Methods("POST")
-	r.HandleFunc("/agent/{agent_id}/status", a.updateAgentStatus).Methods("POST")
+	r.HandleFunc("/agent/{agent_id}/status", a.updateStatus).Methods("POST")
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +78,9 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, jobs, http.StatusOK)
 }
 
-func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
+// updateStatus receives a status update from an agent, and optionally a job
+// status update as well.
+func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 	agentID, err := decode.Param("agent_id", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -90,45 +91,30 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var params struct {
-		Status AgentStatus
-	}
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	err = a.service.updateAgentStatus(r.Context(), agentID, params.Status)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (a *api) updateJobStatus(w http.ResponseWriter, r *http.Request) {
-	agentID, err := decode.Param("agent_id", r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	if err := a.spoofCheck(r.Context(), agentID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
-	var params struct {
-		JobID  string `json:"job_id"`
+	type jobParams struct {
+		JobSpec
 		Status JobStatus
 	}
+	var params struct {
+		Status AgentStatus
+		Job    *jobParams
+	}
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	err = a.service.updateJobStatus(r.Context(), params.JobID, params.Status)
-	if err != nil {
+	if err := a.service.updateAgentStatus(r.Context(), agentID, params.Status); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	if params.Job != nil {
+		err = a.service.updateJobStatus(r.Context(), params.Job.JobSpec, params.Job.Status)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

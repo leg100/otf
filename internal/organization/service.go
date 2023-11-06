@@ -129,7 +129,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) error {
+	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) (*Organization, error) {
 		_, err = s.db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
 			ID:                     sql.String(org.ID),
 			CreatedAt:              sql.Timestamptz(org.CreatedAt),
@@ -141,7 +141,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
 			CostEstimationEnabled:  org.CostEstimationEnabled,
 		})
-		return sql.Error(err)
+		return org, sql.Error(err)
 	})
 	if err != nil {
 		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
@@ -212,8 +212,9 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.deleteHook.Dispatch(ctx, &Organization{Name: name}, func(ctx context.Context) error {
-		return s.db.delete(ctx, name)
+	org := &Organization{Name: name}
+	err = s.deleteHook.Dispatch(ctx, org, func(ctx context.Context) (*Organization, error) {
+		return org, s.db.delete(ctx, name)
 	})
 	if err != nil {
 		s.Error(err, "deleting organization", "name", name, "subject", subject)

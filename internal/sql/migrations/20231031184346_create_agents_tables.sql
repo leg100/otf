@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS agent_pool_allowed_workspaces (
     workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
 );
 
+-- not necessary, but rename primary key to bring it into line with our standard approach of naming private keys according to the format <table_name>_id
+ALTER TABLE agent_tokens
+    RENAME COLUMN token_id TO agent_token_id;
+
 -- alter agent tokens table, adding a fk to agent pools; for each organization
 -- that has at least one agent token, add a default agent pool and update token
 -- to reference that pool.
@@ -102,6 +106,9 @@ ALTER TABLE workspaces
 
 ALTER TABLE agent_tokens
     DROP COLUMN agent_pool_id;
+
+ALTER TABLE agent_tokens
+    RENAME COLUMN agent_token_id TO token_id;
 
 DROP TABLE IF EXISTS agent_pool_allowed_workspaces;
 DROP TABLE IF EXISTS agent_pools;

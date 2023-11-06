@@ -2,7 +2,6 @@
 package agent
 
 import (
-	"slices"
 	"time"
 
 	"log/slog"
@@ -97,12 +96,4 @@ func (p *Pool) LogValue() slog.Value {
 		slog.Any("workspaces", p.Workspaces),
 		slog.Any("allowed_workspaces", p.AllowedWorkspaces),
 	)
-}
-
-// isAllowed determines whether the given workspace is allowed to use this pool.
-func (p *Pool) isAllowed(workspaceID string) bool {
-	if p.OrganizationScoped {
-		return true
-	}
-	return slices.Contains(p.AllowedWorkspaces, workspaceID)
 }

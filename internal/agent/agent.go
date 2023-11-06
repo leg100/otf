@@ -56,15 +56,6 @@ func (a *Agent) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (a *Agent) isActive() bool {
-	switch a.Status {
-	case AgentIdle, AgentBusy:
-		return true
-	default:
-		return false
-	}
-}
-
 type registerAgentOptions struct {
 	Name        *string
 	Concurrency int

@@ -16,7 +16,7 @@ type (
 	}
 
 	agentTokenRow struct {
-		TokenID          pgtype.Text        `json:"token_id"`
+		AgentTokenID     pgtype.Text        `json:"agent_token_id"`
 		CreatedAt        pgtype.Timestamptz `json:"created_at"`
 		Description      pgtype.Text        `json:"description"`
 		OrganizationName pgtype.Text        `json:"organization_name"`
@@ -182,7 +182,7 @@ func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string
 
 func (db *pgdb) createAgentToken(ctx context.Context, token *AgentToken) error {
 	_, err := db.Conn(ctx).InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
-		TokenID:          sql.String(token.ID),
+		AgentTokenID:     sql.String(token.ID),
 		Description:      sql.String(token.Description),
 		OrganizationName: sql.String(token.Organization),
 		CreatedAt:        sql.Timestamptz(token.CreatedAt.UTC()),
@@ -220,7 +220,7 @@ func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {
 
 func (row agentTokenRow) toAgentToken() *AgentToken {
 	return &AgentToken{
-		ID:           row.TokenID.String,
+		ID:           row.AgentTokenID.String,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Description:  row.Description.String,
 		Organization: row.OrganizationName.String,
