@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -19,6 +20,8 @@ type (
 		*db
 		tfeapi *tfe
 		*registrar
+		// Subscriber for receiving stream of job and agent events
+		pubsub.Subscriber
 
 		organization internal.Authorizer
 	}
@@ -48,33 +51,6 @@ func NewService(opts ServiceOptions) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.tfeapi.addHandlers(r)
-}
-
-func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
-	agent, err := func() (*Agent, error) {
-		agent, err := s.register(ctx, opts)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.db.createAgent(ctx, agent); err != nil {
-			return nil, err
-		}
-		return agent, nil
-	}()
-	if err != nil {
-		s.Error(err, "registering agent")
-		return nil, err
-	}
-	s.V(0).Info("registered agent", "agent", agent)
-	return agent, nil
-}
-
-func (s *service) listAgents(ctx context.Context) ([]*Agent, error) {
-	return s.db.listAgents(ctx)
-}
-
-func (s *service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
-	return s.db.listAgentsByOrganization(ctx, organization)
 }
 
 func (s *service) createPool(ctx context.Context, opts createPoolOptions) (*Pool, error) {
@@ -176,6 +152,46 @@ func (s *service) deletePool(ctx context.Context, poolID string) error {
 	return nil
 }
 
+func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
+	agent, err := func() (*Agent, error) {
+		agent, err := s.register(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.db.createAgent(ctx, agent); err != nil {
+			return nil, err
+		}
+		// TODO: reallocate jobs in db
+		return agent, nil
+	}()
+	if err != nil {
+		s.Error(err, "registering agent")
+		return nil, err
+	}
+	s.V(0).Info("registered agent", "agent", agent)
+	return agent, nil
+}
+
+func (s *service) getAgent(ctx context.Context, agentID string) (*Agent, error) {
+	return nil, nil
+}
+
+func (s *service) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+	return nil
+}
+
+func (s *service) listAgents(ctx context.Context) ([]*Agent, error) {
+	return s.db.listAgents(ctx)
+}
+
+func (s *service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
+	return s.db.listAgentsByOrganization(ctx, organization)
+}
+
+func (s *service) deleteAgent(ctx context.Context, agentID string) error {
+	return nil
+}
+
 //	func (s *service) createJob(ctx context.Context, run *otfrun.Run, agentID string) (*Job, error) {
 //		//return newJob(run, agentID), nil
 //		return nil, nil
@@ -185,10 +201,41 @@ func (s *service) ping(ctx context.Context, agentID string) error {
 	return nil
 }
 
+func (s *service) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
+	// 1. subscribe to pubsub for jobs newly allocated to agent
+	// 2. get jobs from db allocated to agent
+	sub, err := s.Subscribe(ctx, "get-allocated-jobs-"+agentID)
+	if err != nil {
+		return nil, err
+	}
+	allocated, err := s.db.getAllocatedJobs(ctx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	if len(allocated) > 0 {
+		return allocated, nil
+	}
+	for event := range sub {
+		if job, ok := event.Payload.(*Job); ok {
+			return []*Job{job}, nil
+		}
+	}
+	return nil, nil
+}
+
 func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
 	return nil, nil
 }
 
-func (s *service) allocateJob(ctx context.Context, runID, agentID string) error {
+func (s *service) reallocateJob(ctx context.Context, spec JobSpec) error {
+	return nil
+}
+
+func (s *service) updateJobStatus(ctx context.Context, jobID string, status JobStatus) error {
+	return nil
+}
+
+func (s *service) allocateJob(ctx context.Context, job *Job) error {
+	// TODO: perform DB update of job
 	return nil
 }

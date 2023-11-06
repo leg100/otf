@@ -7,15 +7,11 @@ import (
 	"github.com/leg100/otf/internal/run"
 )
 
-// The jobMapper is responsible for mapping jobs to runs. When a run
-// enters certain states, the jobMapper creates corresponding jobs, e.g.
-// when the run enters the plan_queued state, the jobMapper creates a
-// plan job. Inversely, when a job enters certain states, the jobMapper
-// updates the corresponding run state, e.g. when a plan job enters the running
-// state, the jobMapper updates the run state to planning.
+// The mapper maps the state of runs to jobs and vice-versa, and creates jobs when
+// runs enter certain states.
 //
-// Only one jobMapper should be active on an OTF cluster.
-type jobMapper struct {
+// Only one mapper should be active on an OTF cluster.
+type mapper struct {
 	// RunService for retrieving list of runs at startup
 	run.RunService
 	// Subscriber for receiving stream of run events
@@ -23,7 +19,7 @@ type jobMapper struct {
 }
 
 // Start the mapper. Should be invoked in a go routine.
-func (m *jobMapper) Start(ctx context.Context) error {
+func (m *mapper) Start(ctx context.Context) error {
 	// Subscribe to run events and unsubscribe before returning.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -48,6 +44,6 @@ func (m *jobMapper) Start(ctx context.Context) error {
 	return pubsub.ErrSubscriptionTerminated
 }
 
-func (m *jobMapper) handleRun(ctx context.Context, run *run.Run) error {
+func (m *mapper) handleRun(ctx context.Context, run *run.Run) error {
 	return nil
 }

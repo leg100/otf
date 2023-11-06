@@ -10,19 +10,22 @@ import (
 )
 
 // allocator allocates jobs to agents. Only one allocator must be active on
-// an OTF cluster.
+// an OTF cluster at any one time.
 type allocator struct {
 	// Subscriber for receiving stream of job and agent events
 	pubsub.Subscriber
-	// service for seeding allocator with jobs and agents, and for
+	// service for seeding allocator with pools, agents, and jobs, and for
 	// allocating jobs to agents.
 	service
-	// agents agents to allocate jobs to, keyed by agent ID
-	agents map[string]*Agent
-	// jobs jobs awaiting allocation to an agent, keyed by job ID
-	jobs map[string]*Job
 	// cache for looking up an agent's pool efficiently, keyed by pool ID
 	pools map[string]*Pool
+	// agents to allocate jobs to, keyed by agent ID
+	agents map[string]*Agent
+	// jobs awaiting allocation to an agent, keyed by job ID
+	jobs map[JobSpec]*Job
+	// capacities keeps track of the number of available workers each agent has,
+	// keyed by agentID
+	capacities map[string]int
 }
 
 // Start the allocator. Should be invoked in a go routine.
@@ -30,11 +33,11 @@ func (a *allocator) Start(ctx context.Context) error {
 	// Subscribe to job and agent events and unsubscribe before returning.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	sub, err := a.Subscribe(ctx, "allocator-")
+	sub, err := a.Subscribe(ctx, "job-allocator-")
 	if err != nil {
 		return err
 	}
-	// seed allocator with pools, agents and jobs
+	// seed allocator with pools, agents, capacities, and jobs
 	pools, err := a.listPools(ctx, listPoolOptions{})
 	if err != nil {
 		return err
@@ -52,12 +55,14 @@ func (a *allocator) Start(ctx context.Context) error {
 		a.pools[pool.ID] = pool
 	}
 	a.agents = make(map[string]*Agent, len(agents))
+	a.capacities = make(map[string]int, len(agents))
 	for _, agent := range agents {
 		a.agents[agent.ID] = agent
+		a.capacities[agent.ID] = agent.Concurrency
 	}
-	a.jobs = make(map[string]*Job, len(jobs))
+	a.jobs = make(map[JobSpec]*Job, len(jobs))
 	for _, job := range jobs {
-		a.jobs[job.String()] = job
+		a.jobs[job.JobSpec] = job
 	}
 	// now seeding has finished, allocate jobs
 	a.allocate(ctx)
@@ -75,15 +80,20 @@ func (a *allocator) Start(ctx context.Context) error {
 			switch event.Type {
 			case pubsub.DeletedEvent:
 				delete(a.agents, payload.ID)
+				delete(a.capacities, payload.ID)
 			default:
+				if _, ok := a.agents[payload.ID]; !ok {
+					// new agent, initialize its capacity
+					a.capacities[payload.ID] = payload.Concurrency
+				}
 				a.agents[payload.ID] = payload
 			}
 		case *Job:
 			switch event.Type {
 			case pubsub.DeletedEvent:
-				delete(a.jobs, payload.String())
+				delete(a.jobs, payload.JobSpec)
 			default:
-				a.jobs[payload.String()] = payload
+				a.jobs[payload.JobSpec] = payload
 			}
 		}
 		a.allocate(ctx)
@@ -91,8 +101,14 @@ func (a *allocator) Start(ctx context.Context) error {
 	return pubsub.ErrSubscriptionTerminated
 }
 
-// allocate unallocated jobs to agents.
+// allocate jobs to agents.
 func (a *allocator) allocate(ctx context.Context) error {
+	allocatefn := func(agent *Agent, job *Job) error {
+		job.Status = JobAllocated
+		job.AgentID = agent.ID
+		a.capacities[agent.ID]--
+		return a.allocateJob(ctx, job)
+	}
 	for _, job := range a.jobs {
 		if job.Status != JobUnallocated {
 			continue
@@ -106,12 +122,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			case workspace.RemoteExecutionMode:
 				// only server agents handle jobs with remote execution mode.
 				if agent.Server {
-					job.Status = JobAllocated
-					agent.Concurrency--
-					if err := a.allocateJob(ctx, job.RunID, agent.ID); err != nil {
-						return err
-					}
-					return nil
+					return allocatefn(agent, job)
 				}
 				continue
 			case workspace.AgentExecutionMode:
@@ -128,12 +139,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 					// job's workspace is configured to use a different pool
 					continue
 				}
-				job.Status = JobAllocated
-				agent.Concurrency--
-				if err := a.allocateJob(ctx, job.RunID, agent.ID); err != nil {
-					return err
-				}
-				return nil
+				return allocatefn(agent, job)
 			}
 		}
 	}

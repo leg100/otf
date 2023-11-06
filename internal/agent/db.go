@@ -50,7 +50,7 @@ func (r agentresult) toPool() *Agent {
 		Server:      r.Server,
 		IPAddress:   r.IpAddress.IPNet.IP,
 		LastPingAt:  r.LastPingAt.Time.UTC(),
-		Status:      Status(r.Status.String),
+		Status:      AgentStatus(r.Status.String),
 	}
 	if r.Name.Status == pgtype.Present {
 		agent.Name = &r.Name.String
@@ -173,4 +173,12 @@ func (db *db) deletePool(ctx context.Context, poolID string) (organization strin
 		return "", sql.Error(err)
 	}
 	return result.String, nil
+}
+
+func (db *db) reallocateJob(ctx context.Context, job *Job) error {
+	return nil
+}
+
+func (db *db) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
+	return nil, nil
 }

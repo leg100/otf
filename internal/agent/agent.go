@@ -10,13 +10,14 @@ import (
 	"github.com/leg100/otf/internal"
 )
 
-type Status string
+type AgentStatus string
 
 const (
-	AgentIdle    Status = "idle"
-	AgentBusy    Status = "busy"
-	AgentExited  Status = "exited"
-	AgentErrored Status = "errored"
+	AgentIdle    AgentStatus = "idle"
+	AgentBusy    AgentStatus = "busy"
+	AgentExited  AgentStatus = "exited"
+	AgentErrored AgentStatus = "errored"
+	AgentUnknown AgentStatus = "unknown"
 )
 
 type Agent struct {
@@ -25,7 +26,7 @@ type Agent struct {
 	// Optional name
 	Name *string
 	// Current status of agent
-	Status Status
+	Status AgentStatus
 	// Number of jobs it can handle at once
 	Concurrency int
 	// Whether it is built into otfd (true) or is a separate otf-agent process
@@ -69,6 +70,7 @@ type registerAgentOptions struct {
 	Concurrency int
 	IPAddress   net.IP
 	AgentPoolID *string
+	CurrentJobs []JobSpec
 }
 
 // registrar registers new agents.

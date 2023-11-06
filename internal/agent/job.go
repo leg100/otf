@@ -19,10 +19,7 @@ const (
 )
 
 type Job struct {
-	// ID of the run that this job is for.
-	RunID string
-	// Phase of run that this job is for.
-	Phase internal.PhaseType
+	JobSpec
 	// Current status of job.
 	Status JobStatus
 	// ID of agent that this job is allocated to.
@@ -34,6 +31,14 @@ type Job struct {
 }
 
 func (j *Job) String() string { return fmt.Sprintf("%s-%s", j.RunID, j.Phase) }
+
+// JobSpec uniquely identifies a job.
+type JobSpec struct {
+	// ID of the run that this job is for.
+	RunID string `json:"run_id"`
+	// Phase of run that this job is for.
+	Phase internal.PhaseType `json:"phase"`
+}
 
 //func newJob(run *otfrun.Run, agentID string) *Job {
 //	return &Job{
