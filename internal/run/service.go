@@ -133,6 +133,9 @@ func NewService(opts Options) *service {
 		Logger:           opts.Logger,
 		PubSubService:    opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
+		planHook:         hooks.NewHook[*Run](opts.DB),
+		applyHook:        hooks.NewHook[*Run](opts.DB),
+		cancelHook:       hooks.NewHook[*Run](opts.DB),
 	}
 
 	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
@@ -198,16 +201,16 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (a *service) AfterEnqueuePlan(l hooks.Listener[*Run]) {
-	a.planHook.After(l)
+func (s *service) AfterEnqueuePlan(l hooks.Listener[*Run]) {
+	s.planHook.After(l)
 }
 
-func (a *service) AfterEnqueueApply(l hooks.Listener[*Run]) {
-	a.applyHook.After(l)
+func (s *service) AfterEnqueueApply(l hooks.Listener[*Run]) {
+	s.applyHook.After(l)
 }
 
-func (a *service) AfterRunCancel(l hooks.Listener[*Run]) {
-	a.cancelHook.After(l)
+func (s *service) AfterRunCancel(l hooks.Listener[*Run]) {
+	s.cancelHook.After(l)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {

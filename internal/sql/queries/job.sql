@@ -1,3 +1,14 @@
+-- name: InsertJob :exec
+INSERT INTO jobs (
+    run_id,
+    phase,
+    status
+) VALUES (
+    pggen.arg('run_id'),
+    pggen.arg('phase'),
+    pggen.arg('status')
+);
+
 -- name: AllocateJob :one
 UPDATE jobs
 SET agent_id = pggen.arg('agent_id')
@@ -25,4 +36,17 @@ JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.agent_id = pggen.arg('agent_id')
 AND   j.status = 'allocated'
+;
+
+-- name: FindJobs :many
+SELECT
+    j.run_id,
+    j.phase,
+    j.status,
+    w.execution_mode,
+    r.workspace_id,
+    j.agent_id
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
 ;

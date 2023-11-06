@@ -6,9 +6,50 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
+
+const insertJobSQL = `INSERT INTO jobs (
+    run_id,
+    phase,
+    status
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertJobParams struct {
+	RunID  pgtype.Text
+	Phase  pgtype.Text
+	Status pgtype.Text
+}
+
+// InsertJob implements Querier.InsertJob.
+func (q *DBQuerier) InsertJob(ctx context.Context, params InsertJobParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertJob")
+	cmdTag, err := q.conn.Exec(ctx, insertJobSQL, params.RunID, params.Phase, params.Status)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertJob: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertJobBatch implements Querier.InsertJobBatch.
+func (q *DBQuerier) InsertJobBatch(batch genericBatch, params InsertJobParams) {
+	batch.Queue(insertJobSQL, params.RunID, params.Phase, params.Status)
+}
+
+// InsertJobScan implements Querier.InsertJobScan.
+func (q *DBQuerier) InsertJobScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertJobBatch: %w", err)
+	}
+	return cmdTag, err
+}
 
 const allocateJobSQL = `UPDATE jobs
 SET agent_id = $1
@@ -167,6 +208,75 @@ func (q *DBQuerier) FindAllocatedJobsScan(results pgx.BatchResults) ([]FindAlloc
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("close FindAllocatedJobsBatch rows: %w", err)
+	}
+	return items, err
+}
+
+const findJobsSQL = `SELECT
+    j.run_id,
+    j.phase,
+    j.status,
+    w.execution_mode,
+    r.workspace_id,
+    j.agent_id
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+;`
+
+type FindJobsRow struct {
+	RunID         pgtype.Text `json:"run_id"`
+	Phase         pgtype.Text `json:"phase"`
+	Status        pgtype.Text `json:"status"`
+	ExecutionMode pgtype.Text `json:"execution_mode"`
+	WorkspaceID   pgtype.Text `json:"workspace_id"`
+	AgentID       pgtype.Text `json:"agent_id"`
+}
+
+// FindJobs implements Querier.FindJobs.
+func (q *DBQuerier) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindJobs")
+	rows, err := q.conn.Query(ctx, findJobsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("query FindJobs: %w", err)
+	}
+	defer rows.Close()
+	items := []FindJobsRow{}
+	for rows.Next() {
+		var item FindJobsRow
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.ExecutionMode, &item.WorkspaceID, &item.AgentID); err != nil {
+			return nil, fmt.Errorf("scan FindJobs row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindJobs rows: %w", err)
+	}
+	return items, err
+}
+
+// FindJobsBatch implements Querier.FindJobsBatch.
+func (q *DBQuerier) FindJobsBatch(batch genericBatch) {
+	batch.Queue(findJobsSQL)
+}
+
+// FindJobsScan implements Querier.FindJobsScan.
+func (q *DBQuerier) FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindJobsBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindJobsRow{}
+	for rows.Next() {
+		var item FindJobsRow
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.ExecutionMode, &item.WorkspaceID, &item.AgentID); err != nil {
+			return nil, fmt.Errorf("scan FindJobsBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindJobsBatch rows: %w", err)
 	}
 	return items, err
 }

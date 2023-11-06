@@ -277,6 +277,13 @@ type Querier interface {
 	// InsertIngressAttributesScan scans the result of an executed InsertIngressAttributesBatch query.
 	InsertIngressAttributesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertJob(ctx context.Context, params InsertJobParams) (pgconn.CommandTag, error)
+	// InsertJobBatch enqueues a InsertJob query into batch to be executed
+	// later by the batch.
+	InsertJobBatch(batch genericBatch, params InsertJobParams)
+	// InsertJobScan scans the result of an executed InsertJobBatch query.
+	InsertJobScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	AllocateJob(ctx context.Context, params AllocateJobParams) (AllocateJobRow, error)
 	// AllocateJobBatch enqueues a AllocateJob query into batch to be executed
 	// later by the batch.
@@ -297,6 +304,13 @@ type Querier interface {
 	FindAllocatedJobsBatch(batch genericBatch, agentID pgtype.Text)
 	// FindAllocatedJobsScan scans the result of an executed FindAllocatedJobsBatch query.
 	FindAllocatedJobsScan(results pgx.BatchResults) ([]FindAllocatedJobsRow, error)
+
+	FindJobs(ctx context.Context) ([]FindJobsRow, error)
+	// FindJobsBatch enqueues a FindJobs query into batch to be executed
+	// later by the batch.
+	FindJobsBatch(batch genericBatch)
+	// FindJobsScan scans the result of an executed FindJobsBatch query.
+	FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error)
 
 	InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error)
 	// InsertModuleBatch enqueues a InsertModule query into batch to be executed
@@ -1646,6 +1660,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertJobSQL, insertJobSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertJob': %w", err)
+	}
 	if _, err := p.Prepare(ctx, allocateJobSQL, allocateJobSQL); err != nil {
 		return fmt.Errorf("prepare query 'AllocateJob': %w", err)
 	}
@@ -1654,6 +1671,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findAllocatedJobsSQL, findAllocatedJobsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAllocatedJobs': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findJobsSQL, findJobsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindJobs': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModule': %w", err)

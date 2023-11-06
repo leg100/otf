@@ -232,7 +232,12 @@ func (db *db) deletePool(ctx context.Context, poolID string) (organization strin
 }
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
-	return nil
+	_, err := db.Conn(ctx).InsertJob(ctx, pggen.InsertJobParams{
+		RunID:  sql.String(job.RunID),
+		Phase:  sql.String(string(job.Phase)),
+		Status: sql.String(string(job.Status)),
+	})
+	return sql.Error(err)
 }
 
 func (db *db) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
@@ -246,6 +251,18 @@ func (db *db) allocateJob(ctx context.Context, spec JobSpec, agentID string) err
 
 func (db *db) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
 	rows, err := db.Conn(ctx).FindAllocatedJobs(ctx, sql.String(agentID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	jobs := make([]*Job, len(rows))
+	for i, r := range rows {
+		jobs[i] = jobresult(r).toJob()
+	}
+	return jobs, nil
+}
+
+func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
+	rows, err := db.Conn(ctx).FindJobs(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}

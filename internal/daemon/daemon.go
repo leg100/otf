@@ -353,9 +353,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	agentService := agent.NewService(agent.ServiceOptions{
-		Logger:    logger,
-		DB:        db,
-		Responder: responder,
+		Logger:     logger,
+		DB:         db,
+		Responder:  responder,
+		RunService: runService,
 	})
 
 	handlers := []internal.Handlers{

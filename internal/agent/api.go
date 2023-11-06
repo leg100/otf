@@ -108,7 +108,6 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	if params.Job != nil {
 		err = a.service.updateJobStatus(r.Context(), params.Job.JobSpec, params.Job.Status)
 		if err != nil {

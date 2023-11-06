@@ -271,16 +271,8 @@ func (s *service) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job,
 	return nil, nil
 }
 
-func (s *service) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
-	return nil, nil
-}
-
 func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
-	return nil, nil
-}
-
-func (s *service) reallocateJob(ctx context.Context, spec JobSpec) error {
-	return nil
+	return s.db.listJobs(ctx)
 }
 
 func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {

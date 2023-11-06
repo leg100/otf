@@ -19,6 +19,14 @@ const (
 	JobCanceled    JobStatus = "canceled"
 )
 
+// JobSpec uniquely identifies a job.
+type JobSpec struct {
+	// ID of the run that this job is for.
+	RunID string `json:"run_id"`
+	// Phase of run that this job is for.
+	Phase internal.PhaseType `json:"phase"`
+}
+
 type Job struct {
 	JobSpec
 	// Current status of job.
@@ -32,16 +40,6 @@ type Job struct {
 	AgentID *string
 }
 
-func (j *Job) String() string { return fmt.Sprintf("%s-%s", j.RunID, j.Phase) }
-
-// JobSpec uniquely identifies a job.
-type JobSpec struct {
-	// ID of the run that this job is for.
-	RunID string `json:"run_id"`
-	// Phase of run that this job is for.
-	Phase internal.PhaseType `json:"phase"`
-}
-
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
 		JobSpec: JobSpec{
@@ -53,3 +51,5 @@ func newJob(run *otfrun.Run) *Job {
 		WorkspaceID:   run.WorkspaceID,
 	}
 }
+
+func (j *Job) String() string { return fmt.Sprintf("%s-%s", j.RunID, j.Phase) }

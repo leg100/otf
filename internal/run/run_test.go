@@ -47,7 +47,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanQueued
 
-		require.NoError(t, run.Start(internal.PlanPhase))
+		require.NoError(t, run.Start())
 
 		require.Equal(t, RunPlanning, run.Status)
 		require.Equal(t, PhaseRunning, run.Plan.Status)
@@ -145,7 +145,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunApplyQueued
 
-		require.NoError(t, run.Start(internal.ApplyPhase))
+		require.NoError(t, run.Start())
 
 		require.Equal(t, RunApplying, run.Status)
 		require.Equal(t, PhaseRunning, run.Apply.Status)

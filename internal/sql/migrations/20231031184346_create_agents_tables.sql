@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS agent_pools (
                         PRIMARY KEY (agent_pool_id)
 );
 
-CREATE TABLE IF NOT EXISTS agent_pool_allowed_workspaces (
+CREATE TABLE IF NOT EXISTS agent_pool_allowed_works,paces (
     agent_pool_id TEXT REFERENCES agent_pools ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
 );
