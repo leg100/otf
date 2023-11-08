@@ -20,6 +20,7 @@ const (
 	AgentUnknown AgentStatus = "unknown"
 )
 
+// Agent represents the state of an agent.
 type Agent struct {
 	// Unique system-wide ID
 	ID string

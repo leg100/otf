@@ -295,41 +295,66 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// Cancel run. Returns a boolean indicating whether a cancel request should be
-// enqueued (for an agent to kill an in progress process)
-func (r *Run) Cancel() error {
+// Cancel run.
+func (r *Run) Cancel(immediate bool) (bool, error) {
 	if !r.Cancelable() {
-		return internal.ErrRunCancelNotAllowed
+		return false, internal.ErrRunCancelNotAllowed
 	}
-	// permit run to be force canceled after a cool off period of 10 seconds has
+	// permit run to be force canceled once a cool off period of 10 seconds has
 	// elapsed.
-	tenSecondsFromNow := internal.CurrentTimestamp(nil).Add(10 * time.Second)
-	r.ForceCancelAvailableAt = &tenSecondsFromNow
-
-	switch r.Status {
-	case RunPending:
-		r.Plan.UpdateStatus(PhaseUnreachable)
-		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunPlanQueued, RunPlanning:
-		r.Plan.UpdateStatus(PhaseCanceled)
-		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunApplyQueued, RunApplying:
-		r.Apply.UpdateStatus(PhaseCanceled)
+	if r.ForceCancelAvailableAt == nil {
+		tenSecondsHence := internal.CurrentTimestamp(nil).Add(10 * time.Second)
+		r.ForceCancelAvailableAt = &tenSecondsHence
 	}
-
-	r.updateStatus(RunCanceled, nil)
-
-	return nil
+	signal := r.cancel(false, immediate)
+	return signal, nil
 }
 
 // ForceCancel force cancels a run. A cool-off period of 10 seconds must have
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
-	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(RunForceCanceled, nil)
-		return nil
+	if !r.Cancelable() {
+		return internal.ErrRunForceCancelNotAllowed
 	}
-	return internal.ErrRunForceCancelNotAllowed
+	if r.ForceCancelAvailableAt == nil || time.Now().Before(*r.ForceCancelAvailableAt) {
+		return internal.ErrRunForceCancelNotAllowed
+	}
+	_ = r.cancel(true, true)
+	return nil
+}
+
+func (r *Run) cancel(force, immediate bool) (signal bool) {
+	switch r.Status {
+	case RunPending:
+		r.Plan.UpdateStatus(PhaseUnreachable)
+		r.Apply.UpdateStatus(PhaseUnreachable)
+	case RunPlanQueued:
+		r.Plan.UpdateStatus(PhaseCanceled)
+		r.Apply.UpdateStatus(PhaseUnreachable)
+	case RunApplyQueued:
+		r.Apply.UpdateStatus(PhaseCanceled)
+	case RunPlanning:
+		if immediate {
+			r.Plan.UpdateStatus(PhaseCanceled)
+			r.Apply.UpdateStatus(PhaseUnreachable)
+		} else {
+			// send signal
+			return true
+		}
+	case RunApplying:
+		if immediate {
+			r.Apply.UpdateStatus(PhaseCanceled)
+		} else {
+			// send signal
+			return true
+		}
+	}
+	if force {
+		r.updateStatus(RunForceCanceled, nil)
+	} else {
+		r.updateStatus(RunCanceled, nil)
+	}
+	return false
 }
 
 // StartedAt returns the time the run was created.

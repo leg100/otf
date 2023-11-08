@@ -284,26 +284,16 @@ type Querier interface {
 	// InsertJobScan scans the result of an executed InsertJobBatch query.
 	InsertJobScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	AllocateJob(ctx context.Context, params AllocateJobParams) (AllocateJobRow, error)
-	// AllocateJobBatch enqueues a AllocateJob query into batch to be executed
+	// FindAllocatedAndSignaledJobs finds jobs allocated to an agent that either:
+	// (a) have JobAllocated status
+	// (b) have JobRunning status and a non-null signal
+	//
+	FindAllocatedAndSignaledJobs(ctx context.Context, agentID pgtype.Text) ([]FindAllocatedAndSignaledJobsRow, error)
+	// FindAllocatedAndSignaledJobsBatch enqueues a FindAllocatedAndSignaledJobs query into batch to be executed
 	// later by the batch.
-	AllocateJobBatch(batch genericBatch, params AllocateJobParams)
-	// AllocateJobScan scans the result of an executed AllocateJobBatch query.
-	AllocateJobScan(results pgx.BatchResults) (AllocateJobRow, error)
-
-	UpdateJobStatus(ctx context.Context, params UpdateJobStatusParams) (UpdateJobStatusRow, error)
-	// UpdateJobStatusBatch enqueues a UpdateJobStatus query into batch to be executed
-	// later by the batch.
-	UpdateJobStatusBatch(batch genericBatch, params UpdateJobStatusParams)
-	// UpdateJobStatusScan scans the result of an executed UpdateJobStatusBatch query.
-	UpdateJobStatusScan(results pgx.BatchResults) (UpdateJobStatusRow, error)
-
-	FindAllocatedJobs(ctx context.Context, agentID pgtype.Text) ([]FindAllocatedJobsRow, error)
-	// FindAllocatedJobsBatch enqueues a FindAllocatedJobs query into batch to be executed
-	// later by the batch.
-	FindAllocatedJobsBatch(batch genericBatch, agentID pgtype.Text)
-	// FindAllocatedJobsScan scans the result of an executed FindAllocatedJobsBatch query.
-	FindAllocatedJobsScan(results pgx.BatchResults) ([]FindAllocatedJobsRow, error)
+	FindAllocatedAndSignaledJobsBatch(batch genericBatch, agentID pgtype.Text)
+	// FindAllocatedAndSignaledJobsScan scans the result of an executed FindAllocatedAndSignaledJobsBatch query.
+	FindAllocatedAndSignaledJobsScan(results pgx.BatchResults) ([]FindAllocatedAndSignaledJobsRow, error)
 
 	FindJobs(ctx context.Context) ([]FindJobsRow, error)
 	// FindJobsBatch enqueues a FindJobs query into batch to be executed
@@ -311,6 +301,20 @@ type Querier interface {
 	FindJobsBatch(batch genericBatch)
 	// FindJobsScan scans the result of an executed FindJobsBatch query.
 	FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error)
+
+	FindJobForUpdate(ctx context.Context, runID pgtype.Text, phase pgtype.Text) (FindJobForUpdateRow, error)
+	// FindJobForUpdateBatch enqueues a FindJobForUpdate query into batch to be executed
+	// later by the batch.
+	FindJobForUpdateBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text)
+	// FindJobForUpdateScan scans the result of an executed FindJobForUpdateBatch query.
+	FindJobForUpdateScan(results pgx.BatchResults) (FindJobForUpdateRow, error)
+
+	UpdateJob(ctx context.Context, params UpdateJobParams) (UpdateJobRow, error)
+	// UpdateJobBatch enqueues a UpdateJob query into batch to be executed
+	// later by the batch.
+	UpdateJobBatch(batch genericBatch, params UpdateJobParams)
+	// UpdateJobScan scans the result of an executed UpdateJobBatch query.
+	UpdateJobScan(results pgx.BatchResults) (UpdateJobRow, error)
 
 	InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error)
 	// InsertModuleBatch enqueues a InsertModule query into batch to be executed
@@ -1663,17 +1667,17 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertJobSQL, insertJobSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertJob': %w", err)
 	}
-	if _, err := p.Prepare(ctx, allocateJobSQL, allocateJobSQL); err != nil {
-		return fmt.Errorf("prepare query 'AllocateJob': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateJobStatusSQL, updateJobStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateJobStatus': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findAllocatedJobsSQL, findAllocatedJobsSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindAllocatedJobs': %w", err)
+	if _, err := p.Prepare(ctx, findAllocatedAndSignaledJobsSQL, findAllocatedAndSignaledJobsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAllocatedAndSignaledJobs': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findJobsSQL, findJobsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindJobs': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findJobForUpdateSQL, findJobForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindJobForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateJobSQL, updateJobSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateJob': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModule': %w", err)

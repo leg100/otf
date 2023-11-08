@@ -50,9 +50,12 @@ func (h *Hook[T]) Dispatch(ctx context.Context, event T, fn func(context.Context
 			}
 		}
 
-		event, err := fn(ctx)
-		if err != nil {
-			return err
+		if fn != nil {
+			var err error
+			event, err = fn(ctx)
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, callback := range h.after {

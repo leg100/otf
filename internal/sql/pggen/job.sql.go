@@ -51,163 +51,75 @@ func (q *DBQuerier) InsertJobScan(results pgx.BatchResults) (pgconn.CommandTag, 
 	return cmdTag, err
 }
 
-const allocateJobSQL = `UPDATE jobs
-SET agent_id = $1
-WHERE run_id = $2
-AND   phase = $3
-RETURNING *;`
-
-type AllocateJobParams struct {
-	AgentID pgtype.Text
-	RunID   pgtype.Text
-	Phase   pgtype.Text
-}
-
-type AllocateJobRow struct {
-	RunID   pgtype.Text `json:"run_id"`
-	Phase   pgtype.Text `json:"phase"`
-	Status  pgtype.Text `json:"status"`
-	AgentID pgtype.Text `json:"agent_id"`
-}
-
-// AllocateJob implements Querier.AllocateJob.
-func (q *DBQuerier) AllocateJob(ctx context.Context, params AllocateJobParams) (AllocateJobRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "AllocateJob")
-	row := q.conn.QueryRow(ctx, allocateJobSQL, params.AgentID, params.RunID, params.Phase)
-	var item AllocateJobRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID); err != nil {
-		return item, fmt.Errorf("query AllocateJob: %w", err)
-	}
-	return item, nil
-}
-
-// AllocateJobBatch implements Querier.AllocateJobBatch.
-func (q *DBQuerier) AllocateJobBatch(batch genericBatch, params AllocateJobParams) {
-	batch.Queue(allocateJobSQL, params.AgentID, params.RunID, params.Phase)
-}
-
-// AllocateJobScan implements Querier.AllocateJobScan.
-func (q *DBQuerier) AllocateJobScan(results pgx.BatchResults) (AllocateJobRow, error) {
-	row := results.QueryRow()
-	var item AllocateJobRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID); err != nil {
-		return item, fmt.Errorf("scan AllocateJobBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateJobStatusSQL = `UPDATE jobs
-SET status = $1
-WHERE run_id = $2
-AND   phase = $3
-RETURNING *;`
-
-type UpdateJobStatusParams struct {
-	Status pgtype.Text
-	RunID  pgtype.Text
-	Phase  pgtype.Text
-}
-
-type UpdateJobStatusRow struct {
-	RunID   pgtype.Text `json:"run_id"`
-	Phase   pgtype.Text `json:"phase"`
-	Status  pgtype.Text `json:"status"`
-	AgentID pgtype.Text `json:"agent_id"`
-}
-
-// UpdateJobStatus implements Querier.UpdateJobStatus.
-func (q *DBQuerier) UpdateJobStatus(ctx context.Context, params UpdateJobStatusParams) (UpdateJobStatusRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJobStatus")
-	row := q.conn.QueryRow(ctx, updateJobStatusSQL, params.Status, params.RunID, params.Phase)
-	var item UpdateJobStatusRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID); err != nil {
-		return item, fmt.Errorf("query UpdateJobStatus: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateJobStatusBatch implements Querier.UpdateJobStatusBatch.
-func (q *DBQuerier) UpdateJobStatusBatch(batch genericBatch, params UpdateJobStatusParams) {
-	batch.Queue(updateJobStatusSQL, params.Status, params.RunID, params.Phase)
-}
-
-// UpdateJobStatusScan implements Querier.UpdateJobStatusScan.
-func (q *DBQuerier) UpdateJobStatusScan(results pgx.BatchResults) (UpdateJobStatusRow, error) {
-	row := results.QueryRow()
-	var item UpdateJobStatusRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID); err != nil {
-		return item, fmt.Errorf("scan UpdateJobStatusBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const findAllocatedJobsSQL = `SELECT
+const findAllocatedAndSignaledJobsSQL = `SELECT
     j.run_id,
     j.phase,
     j.status,
+    j.signal,
+    j.agent_id,
     w.execution_mode,
-    r.workspace_id,
-    j.agent_id
+    r.workspace_id
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.agent_id = $1
-AND   j.status = 'allocated'
+AND   j.status = 'allocated' OR (j.status = 'running' AND j.signal IS NOT NULL)
 ;`
 
-type FindAllocatedJobsRow struct {
+type FindAllocatedAndSignaledJobsRow struct {
 	RunID         pgtype.Text `json:"run_id"`
 	Phase         pgtype.Text `json:"phase"`
 	Status        pgtype.Text `json:"status"`
+	Signal        pgtype.Text `json:"signal"`
+	AgentID       pgtype.Text `json:"agent_id"`
 	ExecutionMode pgtype.Text `json:"execution_mode"`
 	WorkspaceID   pgtype.Text `json:"workspace_id"`
-	AgentID       pgtype.Text `json:"agent_id"`
 }
 
-// FindAllocatedJobs implements Querier.FindAllocatedJobs.
-func (q *DBQuerier) FindAllocatedJobs(ctx context.Context, agentID pgtype.Text) ([]FindAllocatedJobsRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindAllocatedJobs")
-	rows, err := q.conn.Query(ctx, findAllocatedJobsSQL, agentID)
+// FindAllocatedAndSignaledJobs implements Querier.FindAllocatedAndSignaledJobs.
+func (q *DBQuerier) FindAllocatedAndSignaledJobs(ctx context.Context, agentID pgtype.Text) ([]FindAllocatedAndSignaledJobsRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAllocatedAndSignaledJobs")
+	rows, err := q.conn.Query(ctx, findAllocatedAndSignaledJobsSQL, agentID)
 	if err != nil {
-		return nil, fmt.Errorf("query FindAllocatedJobs: %w", err)
+		return nil, fmt.Errorf("query FindAllocatedAndSignaledJobs: %w", err)
 	}
 	defer rows.Close()
-	items := []FindAllocatedJobsRow{}
+	items := []FindAllocatedAndSignaledJobsRow{}
 	for rows.Next() {
-		var item FindAllocatedJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.ExecutionMode, &item.WorkspaceID, &item.AgentID); err != nil {
-			return nil, fmt.Errorf("scan FindAllocatedJobs row: %w", err)
+		var item FindAllocatedAndSignaledJobsRow
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID); err != nil {
+			return nil, fmt.Errorf("scan FindAllocatedAndSignaledJobs row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindAllocatedJobs rows: %w", err)
+		return nil, fmt.Errorf("close FindAllocatedAndSignaledJobs rows: %w", err)
 	}
 	return items, err
 }
 
-// FindAllocatedJobsBatch implements Querier.FindAllocatedJobsBatch.
-func (q *DBQuerier) FindAllocatedJobsBatch(batch genericBatch, agentID pgtype.Text) {
-	batch.Queue(findAllocatedJobsSQL, agentID)
+// FindAllocatedAndSignaledJobsBatch implements Querier.FindAllocatedAndSignaledJobsBatch.
+func (q *DBQuerier) FindAllocatedAndSignaledJobsBatch(batch genericBatch, agentID pgtype.Text) {
+	batch.Queue(findAllocatedAndSignaledJobsSQL, agentID)
 }
 
-// FindAllocatedJobsScan implements Querier.FindAllocatedJobsScan.
-func (q *DBQuerier) FindAllocatedJobsScan(results pgx.BatchResults) ([]FindAllocatedJobsRow, error) {
+// FindAllocatedAndSignaledJobsScan implements Querier.FindAllocatedAndSignaledJobsScan.
+func (q *DBQuerier) FindAllocatedAndSignaledJobsScan(results pgx.BatchResults) ([]FindAllocatedAndSignaledJobsRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindAllocatedJobsBatch: %w", err)
+		return nil, fmt.Errorf("query FindAllocatedAndSignaledJobsBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindAllocatedJobsRow{}
+	items := []FindAllocatedAndSignaledJobsRow{}
 	for rows.Next() {
-		var item FindAllocatedJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.ExecutionMode, &item.WorkspaceID, &item.AgentID); err != nil {
-			return nil, fmt.Errorf("scan FindAllocatedJobsBatch row: %w", err)
+		var item FindAllocatedAndSignaledJobsRow
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID); err != nil {
+			return nil, fmt.Errorf("scan FindAllocatedAndSignaledJobsBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindAllocatedJobsBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindAllocatedAndSignaledJobsBatch rows: %w", err)
 	}
 	return items, err
 }
@@ -216,9 +128,10 @@ const findJobsSQL = `SELECT
     j.run_id,
     j.phase,
     j.status,
+    j.signal,
+    j.agent_id,
     w.execution_mode,
-    r.workspace_id,
-    j.agent_id
+    r.workspace_id
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
@@ -228,9 +141,10 @@ type FindJobsRow struct {
 	RunID         pgtype.Text `json:"run_id"`
 	Phase         pgtype.Text `json:"phase"`
 	Status        pgtype.Text `json:"status"`
+	Signal        pgtype.Text `json:"signal"`
+	AgentID       pgtype.Text `json:"agent_id"`
 	ExecutionMode pgtype.Text `json:"execution_mode"`
 	WorkspaceID   pgtype.Text `json:"workspace_id"`
-	AgentID       pgtype.Text `json:"agent_id"`
 }
 
 // FindJobs implements Querier.FindJobs.
@@ -244,7 +158,7 @@ func (q *DBQuerier) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 	items := []FindJobsRow{}
 	for rows.Next() {
 		var item FindJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.ExecutionMode, &item.WorkspaceID, &item.AgentID); err != nil {
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID); err != nil {
 			return nil, fmt.Errorf("scan FindJobs row: %w", err)
 		}
 		items = append(items, item)
@@ -270,7 +184,7 @@ func (q *DBQuerier) FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error
 	items := []FindJobsRow{}
 	for rows.Next() {
 		var item FindJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.ExecutionMode, &item.WorkspaceID, &item.AgentID); err != nil {
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID); err != nil {
 			return nil, fmt.Errorf("scan FindJobsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -279,4 +193,106 @@ func (q *DBQuerier) FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error
 		return nil, fmt.Errorf("close FindJobsBatch rows: %w", err)
 	}
 	return items, err
+}
+
+const findJobForUpdateSQL = `SELECT
+    j.run_id,
+    j.phase,
+    j.status,
+    j.signal,
+    j.agent_id,
+    w.execution_mode,
+    r.workspace_id
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+WHERE run_id = $1
+AND   phase = $2
+FOR UPDATE OF j
+;`
+
+type FindJobForUpdateRow struct {
+	RunID         pgtype.Text `json:"run_id"`
+	Phase         pgtype.Text `json:"phase"`
+	Status        pgtype.Text `json:"status"`
+	Signal        pgtype.Text `json:"signal"`
+	AgentID       pgtype.Text `json:"agent_id"`
+	ExecutionMode pgtype.Text `json:"execution_mode"`
+	WorkspaceID   pgtype.Text `json:"workspace_id"`
+}
+
+// FindJobForUpdate implements Querier.FindJobForUpdate.
+func (q *DBQuerier) FindJobForUpdate(ctx context.Context, runID pgtype.Text, phase pgtype.Text) (FindJobForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindJobForUpdate")
+	row := q.conn.QueryRow(ctx, findJobForUpdateSQL, runID, phase)
+	var item FindJobForUpdateRow
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID); err != nil {
+		return item, fmt.Errorf("query FindJobForUpdate: %w", err)
+	}
+	return item, nil
+}
+
+// FindJobForUpdateBatch implements Querier.FindJobForUpdateBatch.
+func (q *DBQuerier) FindJobForUpdateBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text) {
+	batch.Queue(findJobForUpdateSQL, runID, phase)
+}
+
+// FindJobForUpdateScan implements Querier.FindJobForUpdateScan.
+func (q *DBQuerier) FindJobForUpdateScan(results pgx.BatchResults) (FindJobForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindJobForUpdateRow
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID); err != nil {
+		return item, fmt.Errorf("scan FindJobForUpdateBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateJobSQL = `UPDATE jobs
+SET status   = $1,
+    signal   = $2,
+    agent_id = $3
+WHERE run_id = $4
+AND   phase = $5
+RETURNING *;`
+
+type UpdateJobParams struct {
+	Status  pgtype.Text
+	Signal  pgtype.Text
+	AgentID pgtype.Text
+	RunID   pgtype.Text
+	Phase   pgtype.Text
+}
+
+type UpdateJobRow struct {
+	RunID   pgtype.Text `json:"run_id"`
+	Phase   pgtype.Text `json:"phase"`
+	Status  pgtype.Text `json:"status"`
+	AgentID pgtype.Text `json:"agent_id"`
+	Signal  pgtype.Text `json:"signal"`
+}
+
+// UpdateJob implements Querier.UpdateJob.
+func (q *DBQuerier) UpdateJob(ctx context.Context, params UpdateJobParams) (UpdateJobRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJob")
+	row := q.conn.QueryRow(ctx, updateJobSQL, params.Status, params.Signal, params.AgentID, params.RunID, params.Phase)
+	var item UpdateJobRow
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID, &item.Signal); err != nil {
+		return item, fmt.Errorf("query UpdateJob: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateJobBatch implements Querier.UpdateJobBatch.
+func (q *DBQuerier) UpdateJobBatch(batch genericBatch, params UpdateJobParams) {
+	batch.Queue(updateJobSQL, params.Status, params.Signal, params.AgentID, params.RunID, params.Phase)
+}
+
+// UpdateJobScan implements Querier.UpdateJobScan.
+func (q *DBQuerier) UpdateJobScan(results pgx.BatchResults) (UpdateJobRow, error) {
+	row := results.QueryRow()
+	var item UpdateJobRow
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID, &item.Signal); err != nil {
+		return item, fmt.Errorf("scan UpdateJobBatch row: %w", err)
+	}
+	return item, nil
 }

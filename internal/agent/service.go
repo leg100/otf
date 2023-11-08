@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -64,8 +65,10 @@ func NewService(opts ServiceOptions) *service {
 	// create jobs when a plan or apply is enqueued
 	opts.AfterEnqueuePlan(svc.createJob)
 	opts.AfterEnqueueApply(svc.createJob)
-	// cancel job when its run is canceled
-	opts.AfterRunCancel(svc.cancelJob)
+	// relay cancel signal from run service to agent.
+	opts.AfterCancelSignal(svc.relaySignal(cancelSignal))
+	// relay force-cancel signal from run service to agent.
+	opts.AfterForceCancelSignal(svc.relaySignal(forceCancelSignal))
 	return svc
 }
 
@@ -197,10 +200,19 @@ func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) 
 			if err := s.db.createAgent(ctx, agent); err != nil {
 				return err
 			}
+			// an agent when registering can optionally send a list of current
+			// jobs, which are jobs that were created by a previous agent before
+			// it terminated.
+			//
+			// This has no purpose currently because jobs are part of the agent
+			// process and when an agent terminates it terminates the jobs too.
+			// But the project intends to introduce further methods of creating
+			// jobs, via docker and kubernetes etc, and this behaviour will come
+			// in useful then.
 			for _, spec := range opts.CurrentJobs {
-				if err := s.db.allocateJob(ctx, spec, agent.ID); err != nil {
-					return err
-				}
+				return s.db.updateJob(ctx, spec, func(job *Job) error {
+					return job.reallocate(agent.ID)
+				})
 			}
 			return nil
 		})
@@ -245,27 +257,49 @@ func (s *service) createJob(ctx context.Context, run *run.Run) error {
 	return nil
 }
 
-func (s *service) cancelJob(ctx context.Context, run *run.Run) error {
-	return s.db.updateJobStatus(ctx, JobSpec{RunID: run.ID, Phase: run.Phase()}, JobCanceled)
+func (s *service) relaySignal(sig signal) hooks.Listener[*run.Run] {
+	return func(ctx context.Context, run *run.Run) error {
+		spec := JobSpec{RunID: run.ID, Phase: run.Phase()}
+		return s.db.updateJob(ctx, spec, func(job *Job) error {
+			return job.setSignal(sig)
+		})
+	}
 }
 
-func (s *service) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	// 1. subscribe to pubsub for jobs newly allocated to agent
-	// 2. get jobs from db allocated to agent
-	sub, err := s.Subscribe(ctx, "get-allocated-jobs-"+agentID)
+// getAgentJobs returns jobs that either:
+// (a) have JobAllocated status
+// (b) have JobRunning status and a non-null signal
+//
+// getAgentJobs is intended to be called by an agent in order to receive jobs to
+// run and jobs to cancel.
+func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
+	sub, err := s.Subscribe(ctx, "get-agent-jobs-"+agentID)
 	if err != nil {
 		return nil, err
 	}
-	allocated, err := s.db.getAllocatedJobs(ctx, agentID)
+	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, agentID)
 	if err != nil {
 		return nil, err
 	}
-	if len(allocated) > 0 {
-		return allocated, nil
+	if len(jobs) > 0 {
+		// return existing jobs
+		return jobs, nil
 	}
+	// wait for a job matching criteria to arrive:
 	for event := range sub {
-		if job, ok := event.Payload.(*Job); ok {
-			return []*Job{job}, nil
+		job, ok := event.Payload.(*Job)
+		if !ok {
+			continue
+		}
+		switch job.Status {
+		case JobAllocated:
+			if *job.AgentID == agentID {
+				return []*Job{job}, nil
+			}
+		case JobRunning:
+			if *job.AgentID == agentID && job.signal != nil {
+				return []*Job{job}, nil
+			}
 		}
 	}
 	return nil, nil
@@ -275,9 +309,21 @@ func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
+func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
+	return s.db.updateJob(ctx, spec, func(job *Job) error {
+		return job.allocate(agentID)
+	})
+}
+
+func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) error {
+	return s.db.updateJob(ctx, spec, func(job *Job) error {
+		return job.reallocate(agentID)
+	})
+}
+
 func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {
-	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		if err := s.db.updateJobStatus(ctx, spec, status); err != nil {
+	return s.db.updateJob(ctx, spec, func(job *Job) error {
+		if err := job.updateStatus(status); err != nil {
 			return err
 		}
 		// update corresponding run phase too
@@ -289,11 +335,11 @@ func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobS
 			_, err = s.RunService.FinishPhase(ctx, spec.RunID, spec.Phase, run.PhaseFinishOptions{
 				Errored: status == JobErrored,
 			})
+		case JobCanceled:
+			// set immediate=true to skip sending a signal and looping back
+			// round again
+			_, err = s.RunService.Cancel(ctx, spec.RunID, true)
 		}
 		return err
 	})
-}
-
-func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
-	return s.db.allocateJob(ctx, spec, agentID)
 }

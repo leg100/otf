@@ -131,3 +131,7 @@ func (a *daemon) Start(ctx context.Context) error {
 	})
 	return g.Wait()
 }
+
+func (a *daemon) startSupervisor(ctx context.Context) error {
+	a.client.getJobs(ctx)
+}

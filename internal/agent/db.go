@@ -68,9 +68,10 @@ type jobresult struct {
 	RunID         pgtype.Text `json:"run_id"`
 	Phase         pgtype.Text `json:"phase"`
 	Status        pgtype.Text `json:"status"`
+	Signal        pgtype.Text `json:"signal"`
+	AgentID       pgtype.Text `json:"agent_id"`
 	ExecutionMode pgtype.Text `json:"execution_mode"`
 	WorkspaceID   pgtype.Text `json:"workspace_id"`
-	AgentID       pgtype.Text `json:"agent_id"`
 }
 
 func (r jobresult) toJob() *Job {
@@ -240,17 +241,8 @@ func (db *db) createJob(ctx context.Context, job *Job) error {
 	return sql.Error(err)
 }
 
-func (db *db) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
-	_, err := db.Conn(ctx).AllocateJob(ctx, pggen.AllocateJobParams{
-		AgentID: sql.String(agentID),
-		RunID:   sql.String(spec.RunID),
-		Phase:   sql.String(string(spec.Phase)),
-	})
-	return sql.Error(err)
-}
-
-func (db *db) getAllocatedJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	rows, err := db.Conn(ctx).FindAllocatedJobs(ctx, sql.String(agentID))
+func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID string) ([]*Job, error) {
+	rows, err := db.Conn(ctx).FindAllocatedAndSignaledJobs(ctx, sql.String(agentID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -273,11 +265,25 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	return jobs, nil
 }
 
-func (db *db) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {
-	_, err := db.Conn(ctx).UpdateJobStatus(ctx, pggen.UpdateJobStatusParams{
-		RunID:  sql.String(spec.RunID),
-		Phase:  sql.String(string(spec.Phase)),
-		Status: sql.String(string(status)),
+func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) error {
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		result, err := q.FindJobForUpdate(ctx, sql.String(spec.RunID), sql.String(string(spec.Phase)))
+		if err != nil {
+			return err
+		}
+		job := jobresult(result).toJob()
+		if err := fn(job); err != nil {
+			return err
+		}
+		_, err = q.UpdateJob(ctx, pggen.UpdateJobParams{
+			Status:  sql.String(string(job.Status)),
+			AgentID: sql.StringPtr(job.AgentID),
+			Signal:  sql.StringPtr((*string)(job.signal)),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	return sql.Error(err)
 }

@@ -24,7 +24,10 @@ type manager struct {
 	interval time.Duration
 }
 
-// Start the manager. Should be invoked in a go routine.
+// Start the manager. Every interval the status of agents is checked,
+// updating their status as necessary.
+//
+// Should be invoked in a go routine.
 func (a *manager) Start(ctx context.Context) error {
 	ticker := time.NewTicker(a.interval)
 	defer ticker.Stop()
@@ -36,15 +39,8 @@ func (a *manager) Start(ctx context.Context) error {
 				return err
 			}
 			for _, agent := range agents {
-				newStatus, remove := a.check(agent)
-				if remove {
-					if err := a.deleteAgent(ctx, agent.ID); err != nil {
-						return err
-					}
-				} else if newStatus != "" {
-					if err := a.updateAgentStatus(ctx, agent.ID, newStatus); err != nil {
-						return err
-					}
+				if err := a.update(ctx, agent); err != nil {
+					return err
 				}
 			}
 		case <-ctx.Done():
@@ -53,25 +49,28 @@ func (a *manager) Start(ctx context.Context) error {
 	}
 }
 
-func (a *manager) check(agent *Agent) (updateTo AgentStatus, remove bool) {
+func (a *manager) update(ctx context.Context, agent *Agent) error {
 	switch agent.Status {
 	case AgentIdle, AgentBusy:
+		// update agent status to unknown if the agent has failed to ping within
+		// the timeout.
 		if time.Since(agent.LastPingAt) > pingTimeout {
-			// update agent status to unknown.
-			return AgentUnknown, false
+			return a.updateAgentStatus(ctx, agent.ID, AgentUnknown)
 		}
 	case AgentUnknown:
-		// if pingTimeout + 2 hours has elapsed
-		if time.Since(agent.LastPingAt) > pingTimeout+2*time.Hour {
+		// update agent status from unknown to errored if it has still failed to
+		// ping within a further 2 hours.
+		if time.Since(agent.LastPingAt) > pingTimeout+(2*time.Hour) {
 			// update agent status to errored.
-			return AgentErrored, false
+			return a.updateAgentStatus(ctx, agent.ID, AgentErrored)
 		}
 	case AgentErrored, AgentExited:
-		// if pingTimeout + 3 hours has elapsed
-		if time.Since(agent.LastPingAt.Add(3*time.Hour)) > pingTimeout {
-			// remove agent
-			return "", true
+		// purge agent from database once a further 3 hours has passed for
+		// agents in a terminal state.
+		if time.Since(agent.LastPingAt) > pingTimeout+(3*time.Hour) {
+			// remove agent from db
+			return a.deleteAgent(ctx, agent.ID)
 		}
 	}
-	return "", false
+	return nil
 }

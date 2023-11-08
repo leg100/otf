@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS agent_pools (
                         PRIMARY KEY (agent_pool_id)
 );
 
-CREATE TABLE IF NOT EXISTS agent_pool_allowed_works,paces (
+CREATE TABLE IF NOT EXISTS agent_pool_allowed_workspaces (
     agent_pool_id TEXT REFERENCES agent_pools ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
 );
@@ -86,16 +86,26 @@ INSERT INTO job_statuses (status) VALUES
 	('running'),
 	('errored');
 
+CREATE TABLE IF NOT EXISTS signals (
+    signal TEXT PRIMARY KEY
+);
+
+INSERT INTO signals (signal) VALUES
+	('cancel'),
+	('force_cancel');
+
 CREATE TABLE IF NOT EXISTS jobs (
     run_id TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     phase TEXT REFERENCES job_phases ON UPDATE CASCADE NOT NULL,
     status TEXT REFERENCES job_statuses ON UPDATE CASCADE NOT NULL,
-    agent_id TEXT REFERENCES agents ON UPDATE CASCADE
+    agent_id TEXT REFERENCES agents ON UPDATE CASCADE,
+    signal TEXT REFERENCES signals ON UPDATE CASCADE
 );
 
 -- +goose Down
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS job_statuses;
+DROP TABLE IF EXISTS signals;
 DROP TABLE IF EXISTS job_phases;
 
 DROP TABLE IF EXISTS agents;

@@ -9,33 +9,24 @@ INSERT INTO jobs (
     pggen.arg('status')
 );
 
--- name: AllocateJob :one
-UPDATE jobs
-SET agent_id = pggen.arg('agent_id')
-WHERE run_id = pggen.arg('run_id')
-AND   phase = pggen.arg('phase')
-RETURNING *;
-
--- name: UpdateJobStatus :one
-UPDATE jobs
-SET status = pggen.arg('status')
-WHERE run_id = pggen.arg('run_id')
-AND   phase = pggen.arg('phase')
-RETURNING *;
-
--- name: FindAllocatedJobs :many
+-- FindAllocatedAndSignaledJobs finds jobs allocated to an agent that either:
+-- (a) have JobAllocated status
+-- (b) have JobRunning status and a non-null signal
+--
+-- name: FindAllocatedAndSignaledJobs :many
 SELECT
     j.run_id,
     j.phase,
     j.status,
+    j.signal,
+    j.agent_id,
     w.execution_mode,
-    r.workspace_id,
-    j.agent_id
+    r.workspace_id
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.agent_id = pggen.arg('agent_id')
-AND   j.status = 'allocated'
+AND   j.status = 'allocated' OR (j.status = 'running' AND j.signal IS NOT NULL)
 ;
 
 -- name: FindJobs :many
@@ -43,10 +34,37 @@ SELECT
     j.run_id,
     j.phase,
     j.status,
+    j.signal,
+    j.agent_id,
     w.execution_mode,
-    r.workspace_id,
-    j.agent_id
+    r.workspace_id
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 ;
+
+-- name: FindJobForUpdate :one
+SELECT
+    j.run_id,
+    j.phase,
+    j.status,
+    j.signal,
+    j.agent_id,
+    w.execution_mode,
+    r.workspace_id
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+WHERE run_id = pggen.arg('run_id')
+AND   phase = pggen.arg('phase')
+FOR UPDATE OF j
+;
+
+-- name: UpdateJob :one
+UPDATE jobs
+SET status   = pggen.arg('status'),
+    signal   = pggen.arg('signal'),
+    agent_id = pggen.arg('agent_id')
+WHERE run_id = pggen.arg('run_id')
+AND   phase = pggen.arg('phase')
+RETURNING *;

@@ -87,7 +87,7 @@ func (f *fakeWebServices) getLogs(context.Context, string, internal.PhaseType) (
 	return nil, nil
 }
 
-func (f *fakeWebServices) Cancel(ctx context.Context, runID string) (*Run, error) { return nil, nil }
+func (f *fakeWebServices) Cancel(context.Context, string, bool) (*Run, error) { return nil, nil }
 
 func (f *fakeWebServices) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil

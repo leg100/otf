@@ -69,7 +69,7 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs, err := a.service.getAllocatedJobs(r.Context(), agentID)
+	jobs, err := a.service.getAgentJobs(r.Context(), agentID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,8 +78,8 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, jobs, http.StatusOK)
 }
 
-// updateStatus receives a status update from an agent, and optionally a job
-// status update as well.
+// updateStatus receives a status update from an agent, including both the
+// status of the agent itself and the status of its jobs.
 func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 	agentID, err := decode.Param("agent_id", r)
 	if err != nil {
@@ -97,7 +97,7 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	var params struct {
 		Status AgentStatus
-		Job    *jobParams
+		Jobs   []jobParams
 	}
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -108,8 +108,8 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if params.Job != nil {
-		err = a.service.updateJobStatus(r.Context(), params.Job.JobSpec, params.Job.Status)
+	for _, job := range params.Jobs {
+		err = a.service.updateJobStatus(r.Context(), job.JobSpec, job.Status)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

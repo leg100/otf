@@ -171,11 +171,34 @@ func TestRun_States(t *testing.T) {
 		require.Equal(t, PhaseErrored, run.Apply.Status)
 	})
 
-	t.Run("cancel run", func(t *testing.T) {
+	t.Run("cancel pending run", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		err := run.Cancel()
+		_, err := run.Cancel(false)
 		require.NoError(t, err)
 		assert.NotZero(t, run.ForceCancelAvailableAt)
+		assert.Equal(t, PhaseUnreachable, run.Plan.Status)
+		assert.Equal(t, PhaseUnreachable, run.Apply.Status)
+	})
+
+	t.Run("cancel planning run should indicate signal be sent", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		signal, err := run.Cancel(false)
+		require.NoError(t, err)
+		assert.True(t, signal)
+		assert.NotZero(t, run.ForceCancelAvailableAt)
+	})
+
+	t.Run("cancel planning run with immediate argument should indicate signal is not sent", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		// immediate=true
+		signal, err := run.Cancel(true)
+		require.NoError(t, err)
+		assert.False(t, signal)
+		assert.NotZero(t, run.ForceCancelAvailableAt)
+		assert.Equal(t, PhaseCanceled, run.Plan.Status)
+		assert.Equal(t, PhaseUnreachable, run.Apply.Status)
 	})
 }
 

@@ -213,7 +213,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = a.Cancel(r.Context(), id); err != nil {
+	if _, err = a.Cancel(r.Context(), id, false); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
