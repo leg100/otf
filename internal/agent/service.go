@@ -22,6 +22,8 @@ type (
 	Service interface {
 		NewAllocator(pubsub.Subscriber) *allocator
 		NewManager() *manager
+
+		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 	}
 
 	service struct {
@@ -270,7 +272,7 @@ func (s *service) relaySignal(sig signal) hooks.Listener[*run.Run] {
 // (a) have JobAllocated status
 // (b) have JobRunning status and a non-null signal
 //
-// getAgentJobs is intended to be called by an agent in order to receive jobs to
+// getAgentJobs is intended to be called by an agent in order to retrieve jobs to
 // run and jobs to cancel.
 func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
 	sub, err := s.Subscribe(ctx, "get-agent-jobs-"+agentID)
@@ -291,13 +293,14 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		if !ok {
 			continue
 		}
+		if job.AgentID == nil || *job.AgentID != agentID {
+			continue
+		}
 		switch job.Status {
 		case JobAllocated:
-			if *job.AgentID == agentID {
-				return []*Job{job}, nil
-			}
+			return []*Job{job}, nil
 		case JobRunning:
-			if *job.AgentID == agentID && job.signal != nil {
+			if job.signal != nil {
 				return []*Job{job}, nil
 			}
 		}

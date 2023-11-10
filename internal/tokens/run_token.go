@@ -15,17 +15,16 @@ const (
 )
 
 type (
-	// RunToken is a short-lived token providing a remote operation which
-	// permissions to perform the operation, e.g. retrieving and updating state,
-	// pulling modules, etc.
+	// RunToken is a short-lived token providing an agent worker with
+	// permissions to do a job, e.g. downloading and uploading state, reading
+	// config, updating status of job on server, etc.
 	RunToken struct {
 		Organization string
 	}
 
 	CreateRunTokenOptions struct {
-		Organization *string    `json:"organization"` // Organization of run. Required.
-		RunID        *string    `json:"run_id"`       // ID of run. Required.
-		Expiry       *time.Time // Override expiry. Optional.
+		RunID  *string    `json:"run_id"` // ID of run. Required.
+		Expiry *time.Time // Override expiry. Optional.
 	}
 
 	RunTokenService interface {
@@ -81,17 +80,18 @@ func (t *RunToken) CanAccessWorkspace(action rbac.Action, policy internal.Worksp
 	return false
 }
 
-func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
-	if opts.Organization == nil {
-		return nil, fmt.Errorf("missing organization")
-	}
+func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) (*RunToken, []byte, error) {
 	if opts.RunID == nil {
-		return nil, fmt.Errorf("missing run ID")
+		return nil, nil, fmt.Errorf("missing run ID")
+	}
+	run, err := a.GetRun(ctx, *opts.RunID)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateRunTokenAction, *opts.Organization)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	expiry := internal.CurrentTimestamp(nil).Add(defaultRunTokenExpiry)
@@ -109,10 +109,10 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	a.V(2).Info("created run token", "subject", subject, "run")
 
-	return token, nil
+	return nil, token, nil
 }

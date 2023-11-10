@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/variable"
-	"github.com/pkg/errors"
 )
 
 // operation is a piece of work corresponding to a particular run phase, e.g. a
@@ -40,12 +39,7 @@ func newOperation(
 	run *run.Run,
 	envs []string,
 ) (*operation, error) {
-	ws, err := dmon.GetWorkspace(ctx, run.WorkspaceID)
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving workspace")
-	}
-
-	wd, err := newWorkdir(ws.WorkingDirectory)
+	wd, err := newWorkdir("")
 	if err != nil {
 		return nil, err
 	}

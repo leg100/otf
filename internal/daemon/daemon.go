@@ -283,7 +283,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logger.WithValues("component", "remoteops"),
 		remoteops.InProcClient{
 			TokensService:               tokensService,
-			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
 			HostnameService:             hostnameService,

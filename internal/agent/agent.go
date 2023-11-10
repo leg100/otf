@@ -58,10 +58,18 @@ func (a *Agent) LogValue() slog.Value {
 }
 
 type registerAgentOptions struct {
-	Name        *string
+	// Descriptive name. Optional.
+	Name *string
+	// Number of jobs the agent can handle at any one time.
 	Concurrency int
-	IPAddress   net.IP
+	// IPAddress of agent. Optional.
+	IPAddress net.IP `json:"-"`
+	// ID of agent's pool. If unset then the agent is assumed to be a server
+	// agent (which does not belong to a pool).
 	AgentPoolID *string
+	// CurrentJobs are those jobs the agent has discovered leftover from a
+	// previous agent. Not currently used but may be made use of in later
+	// versions.
 	CurrentJobs []JobSpec
 }
 
@@ -71,14 +79,26 @@ type registrar struct {
 }
 
 func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
-	return &Agent{
+	agent := &Agent{
 		ID:          internal.NewID("agent"),
 		Name:        opts.Name,
-		IPAddress:   opts.IPAddress,
 		Concurrency: opts.Concurrency,
 		AgentPoolID: opts.AgentPoolID,
 		Server:      opts.AgentPoolID == nil,
 		Status:      AgentIdle,
 		LastPingAt:  internal.CurrentTimestamp(nil),
-	}, nil
+	}
+	if opts.IPAddress != nil {
+		agent.IPAddress = opts.IPAddress
+	} else {
+		// IP address not provided: try to get local IP address used for
+		// outbound comms, and if that fails, use 127.0.0.1
+		ip, err := internal.GetOutboundIP()
+		if err != nil {
+			ip = net.IPv4(127, 0, 0, 1)
+		}
+		agent.IPAddress = ip
+	}
+
+	return agent, nil
 }
