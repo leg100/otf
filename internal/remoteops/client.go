@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -39,14 +38,13 @@ type (
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 		Hostname() string
+		CreateRunToken(ctx context.Context, opts run.CreateRunTokenOptions) ([]byte, error)
 
-		tokens.RunTokenService
 		internal.PutChunkService
 	}
 
 	// InProcClient is a client for in-process communication with the server.
 	InProcClient struct {
-		tokens.TokensService
 		variable.VariableService
 		state.StateService
 		workspace.WorkspaceService
@@ -64,7 +62,6 @@ type (
 		*stateClient
 		*configClient
 		*variableClient
-		*tokensClient
 		*workspaceClient
 		*runClient
 		*logsClient
@@ -73,7 +70,7 @@ type (
 	stateClient     = state.Client
 	configClient    = configversion.Client
 	variableClient  = variable.Client
-	tokensClient    = tokens.Client
+	tokensClient    = run.Client
 	workspaceClient = workspace.Client
 	runClient       = run.Client
 	logsClient      = logs.Client
@@ -90,7 +87,6 @@ func newClient(config AgentConfig) (*rpcClient, error) {
 		stateClient:     &stateClient{Client: api},
 		configClient:    &configClient{Client: api},
 		variableClient:  &variableClient{Client: api},
-		tokensClient:    &tokensClient{Client: api},
 		workspaceClient: &workspaceClient{Client: api},
 		runClient:       &runClient{Client: api, Config: config.APIConfig},
 		logsClient:      &logsClient{Client: api},

@@ -83,18 +83,6 @@ func newTestJWK(t *testing.T, secret []byte) jwk.Key {
 	return key
 }
 
-func NewTestAgentToken(t *testing.T, org string) *AgentToken {
-	token, _, err := NewAgentToken(NewAgentTokenOptions{
-		CreateAgentTokenOptions: CreateAgentTokenOptions{
-			Organization: org,
-			Description:  "lorem ipsum...",
-		},
-		key: newTestJWK(t, testutils.NewSecret(t)),
-	})
-	require.NoError(t, err)
-	return token
-}
-
 func NewTestToken(t *testing.T, org string) *UserToken {
 	token, _, err := NewUserToken(NewUserTokenOptions{
 		CreateUserTokenOptions: CreateUserTokenOptions{

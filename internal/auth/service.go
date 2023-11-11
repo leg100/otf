@@ -34,6 +34,9 @@ type (
 		web    *webHandlers
 		tfeapi *tfe
 		api    *api
+
+		*userTokenFactory
+		*teamTokenFactory
 	}
 
 	Options struct {
@@ -56,6 +59,12 @@ func NewService(opts Options) *service {
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		team:         &TeamAuthorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.Logger),
+		userTokenFactory: &userTokenFactory{
+			TokensService: opts.TokensService,
+		},
+		teamTokenFactory: &teamTokenFactory{
+			TokensService: opts.TokensService,
+		},
 	}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,

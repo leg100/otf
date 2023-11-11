@@ -25,6 +25,7 @@ type (
 		logr.Logger
 		*factory
 		*registry
+		*sessionFactory
 
 		site internal.Authorizer // authorizes site access
 
@@ -50,6 +51,7 @@ func NewService(opts Options) (*service, error) {
 		return nil, err
 	}
 	svc.factory = &factory{key: key}
+	svc.sessionFactory = &sessionFactory{factory: svc.factory}
 	svc.registry = &registry{
 		kinds: make(map[Kind]SubjectGetter),
 	}

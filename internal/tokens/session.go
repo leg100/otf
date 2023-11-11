@@ -24,10 +24,15 @@ type (
 	sessionService interface {
 		StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error
 	}
+
+	// sessionFactory constructs new sessions.
+	sessionFactory struct {
+		*factory
+	}
 )
 
-func NewSessionToken(key jwk.Key, username string, expiry time.Time) (string, error) {
-	token, err := NewToken(NewTokenOptions{
+func (f *sessionFactory) NewSessionToken(key jwk.Key, username string, expiry time.Time) (string, error) {
+	token, err := f.NewToken(NewTokenOptions{
 		Subject: username,
 		Kind:    userSessionKind,
 		Expiry:  &expiry,
@@ -46,7 +51,7 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}
-	token, err := NewSessionToken(a.key, *opts.Username, expiry)
+	token, err := a.NewSessionToken(a.key, *opts.Username, expiry)
 	if err != nil {
 		return err
 	}

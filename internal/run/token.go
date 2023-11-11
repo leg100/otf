@@ -30,7 +30,7 @@ type (
 		Expiry       *time.Time // Override expiry. Optional.
 	}
 
-	RunTokenService interface {
+	tokenService interface {
 		CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error)
 	}
 
@@ -105,7 +105,7 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		expiry = *opts.Expiry
 	}
 
-	token, err := NewToken(tokens.NewTokenOptions{
+	token, err := a.NewToken(tokens.NewTokenOptions{
 		Subject: *opts.RunID,
 		Kind:    runTokenKind,
 		Expiry:  &expiry,

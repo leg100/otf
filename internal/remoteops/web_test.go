@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,4 +78,16 @@ func newTestAgentTokenHandlers(t *testing.T, org string) *webHandlers {
 	return newFakeWeb(t, &fakeService{
 		agentToken: NewTestAgentToken(t, org),
 	})
+}
+
+func NewTestAgentToken(t *testing.T, org string) *AgentToken {
+	token, _, err := NewAgentToken(NewAgentTokenOptions{
+		CreateAgentTokenOptions: CreateAgentTokenOptions{
+			Organization: org,
+			Description:  "lorem ipsum...",
+		},
+		key: newTestJWK(t, testutils.NewSecret(t)),
+	})
+	require.NoError(t, err)
+	return token
 }

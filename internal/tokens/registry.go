@@ -42,6 +42,9 @@ func (r *registry) RegisterKind(k Kind, fn SubjectGetter) {
 }
 
 func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (internal.Subject, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	subjectGetter, ok := r.kinds[k]
 	if !ok {
 		return nil, fmt.Errorf("unknown authentication token kind")
