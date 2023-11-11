@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 type (
@@ -17,6 +18,9 @@ type (
 	AuthService interface {
 		TeamService
 		UserService
+
+		userTokenService
+		teamTokenService
 	}
 
 	service struct {
@@ -24,6 +28,7 @@ type (
 
 		site         internal.Authorizer // authorizes site access
 		organization internal.Authorizer // authorizes org access
+		team         internal.Authorizer // authorizes team access
 
 		db     *pgdb
 		web    *webHandlers
@@ -32,11 +37,14 @@ type (
 	}
 
 	Options struct {
+		SiteToken string
+
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		internal.HostnameService
 		organization.OrganizationService
+		tokens.TokensService
 		logr.Logger
 	}
 )
@@ -46,6 +54,7 @@ func NewService(opts Options) *service {
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
+		team:         &TeamAuthorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.Logger),
 	}
 	svc.web = &webHandlers{
@@ -66,6 +75,9 @@ func NewService(opts Options) *service {
 	// Fetch users when API calls request users be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeUsers, svc.tfeapi.includeUsers)
+	// Register site token and site admin with the auth middleware, to permit
+	// the latter to authenticate using the former.
+	opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
 
 	return &svc
 }

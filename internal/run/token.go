@@ -1,4 +1,4 @@
-package tokens
+package run
 
 import (
 	"context"
@@ -7,11 +7,13 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 const (
-	defaultRunTokenExpiry = 10 * time.Minute
+	defaultRunTokenExpiry             = 10 * time.Minute
+	runTokenKind          tokens.Kind = "run_token"
 )
 
 type (
@@ -30,6 +32,10 @@ type (
 
 	RunTokenService interface {
 		CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error)
+	}
+
+	tokenFactory struct {
+		tokens.TokensService
 	}
 )
 
@@ -99,8 +105,7 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		expiry = *opts.Expiry
 	}
 
-	token, err := NewToken(NewTokenOptions{
-		key:     a.key,
+	token, err := NewToken(tokens.NewTokenOptions{
 		Subject: *opts.RunID,
 		Kind:    runTokenKind,
 		Expiry:  &expiry,

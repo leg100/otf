@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 
+	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -109,6 +111,48 @@ func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, er
 
 func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
 	_, err := db.Conn(ctx).DeleteTeamByID(ctx, sql.String(teamID))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+//
+// Team tokens
+//
+
+func (db *pgdb) createTeamToken(ctx context.Context, token *TeamToken) error {
+	_, err := db.Conn(ctx).InsertTeamToken(ctx, pggen.InsertTeamTokenParams{
+		TeamTokenID: sql.String(token.ID),
+		TeamID:      sql.String(token.TeamID),
+		CreatedAt:   sql.Timestamptz(token.CreatedAt),
+		Expiry:      sql.TimestamptzPtr(token.Expiry),
+	})
+	return err
+}
+
+func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID string) (*TeamToken, error) {
+	// query only returns 0 or 1 tokens
+	result, err := db.Conn(ctx).FindTeamTokensByID(ctx, sql.String(teamID))
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	ot := &TeamToken{
+		ID:        result[0].TeamTokenID.String,
+		CreatedAt: result[0].CreatedAt.Time.UTC(),
+		TeamID:    result[0].TeamID.String,
+	}
+	if result[0].Expiry.Status == pgtype.Present {
+		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
+	}
+	return ot, nil
+}
+
+func (db *pgdb) deleteTeamToken(ctx context.Context, team string) error {
+	_, err := db.Conn(ctx).DeleteTeamTokenByID(ctx, sql.String(team))
 	if err != nil {
 		return sql.Error(err)
 	}

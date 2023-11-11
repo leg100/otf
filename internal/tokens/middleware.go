@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -35,15 +34,11 @@ var AuthenticatedPrefixes = []string{
 
 type (
 	middlewareOptions struct {
-		agentTokenService
-		organizationTokenService
-		auth.AuthService
-		teamTokenService
-
 		GoogleIAPConfig
-		SiteToken string
 
 		key jwk.Key
+
+		*registry
 	}
 
 	GoogleIAPConfig struct {
@@ -128,7 +123,7 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (intern
 	if !ok {
 		return nil, fmt.Errorf("IAP token is missing email claim")
 	}
-	return m.getOrCreateUser(ctx, email.(string))
+	return m.GetOrCreateUISubject(ctx, email.(string))
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (internal.Subject, error) {
@@ -139,7 +134,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 	token := splitToken[1]
 
 	if m.SiteToken != "" && m.SiteToken == token {
-		return &auth.SiteAdmin, nil
+		return m.SiteAdmin, nil
 	}
 	//
 	// parse jwt and verify signature
@@ -151,20 +146,21 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 	if !ok {
 		return nil, fmt.Errorf("missing claim: kind")
 	}
-	switch Kind(kindClaim.(string)) {
-	case agentTokenKind:
-		return m.GetAgentToken(ctx, parsed.Subject())
-	case userTokenKind:
-		return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: internal.String(parsed.Subject())})
-	case organizationTokenKind:
-		return m.getOrganizationTokenByID(ctx, parsed.Subject())
-	case teamTokenKind:
-		return m.GetTeamByTokenID(ctx, parsed.Subject())
-	case runTokenKind:
-		return NewRunTokenFromJWT(parsed)
-	default:
-		return nil, fmt.Errorf("unknown authentication kind")
-	}
+	kind := Kind(kindClaim.(string))
+	return m.GetSubject(ctx, kind, parsed.Subject())
+	//case agentTokenKind:
+	//	return m.GetAgentToken(ctx, parsed.Subject())
+	//case userTokenKind:
+	//	return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: internal.String(parsed.Subject())})
+	//case organizationTokenKind:
+	//	return m.getOrganizationTokenByID(ctx, parsed.Subject())
+	//case teamTokenKind:
+	//	return m.GetTeamByTokenID(ctx, parsed.Subject())
+	//case runTokenKind:
+	//	return NewRunTokenFromJWT(parsed)
+	//default:
+	//	return nil, fmt.Errorf("unknown authentication kind")
+	//}
 }
 
 func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {
@@ -183,20 +179,12 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 		}
 		return nil, false
 	}
-	user, err := m.getOrCreateUser(ctx, token.Subject())
+	user, err := m.GetOrCreateUISubject(ctx, token.Subject())
 	if err != nil {
 		html.FlashError(w, "unable to find user: "+err.Error())
 		return nil, false
 	}
 	return user, true
-}
-
-func (m *middleware) getOrCreateUser(ctx context.Context, username string) (internal.Subject, error) {
-	user, err := m.GetUser(ctx, auth.UserSpec{Username: &username})
-	if err == internal.ErrResourceNotFound {
-		user, err = m.CreateUser(ctx, username)
-	}
-	return user, err
 }
 
 func isProtectedPath(path string) bool {

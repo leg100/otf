@@ -1,4 +1,4 @@
-package tokens
+package auth
 
 import (
 	"context"
@@ -9,15 +9,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTokenWeb(t *testing.T) {
-	user := &auth.User{Username: uuid.NewString()}
+func TestWeb_UserTokens(t *testing.T) {
+	user := &User{Username: uuid.NewString()}
 
 	t.Run("new", func(t *testing.T) {
 		web := newTestTokenHandlers(t, "acme-org")
@@ -77,69 +76,6 @@ func TestTokenWeb(t *testing.T) {
 	})
 }
 
-func TestAgentToken_NewHandler(t *testing.T) {
-	web := newTestAgentTokenHandlers(t, "acme-org")
-	q := "/?organization_name=acme-org"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-
-	web.newAgentToken(w, r)
-
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
-	}
-}
-
-func TestAgentToken_CreateHandler(t *testing.T) {
-	web := newTestAgentTokenHandlers(t, "acme-org")
-	q := "/?organization_name=acme-org&description=lorem-ipsum-etc"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-
-	web.createAgentToken(w, r)
-
-	if assert.Equal(t, 302, w.Code) {
-		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.AgentTokens("acme-org"), redirect.Path)
-	}
-}
-
-func TestAgentToken_ListHandler(t *testing.T) {
-	web := newTestAgentTokenHandlers(t, "acme-org")
-	q := "/?organization_name=acme-org"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-
-	web.listAgentTokens(w, r)
-
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
-	}
-}
-
-func TestAgentToken_DeleteHandler(t *testing.T) {
-	web := newTestAgentTokenHandlers(t, "acme-org")
-	q := "/?agent_token_id=at-123"
-	r := httptest.NewRequest("POST", q, nil)
-	w := httptest.NewRecorder()
-
-	web.deleteAgentToken(w, r)
-
-	if assert.Equal(t, 302, w.Code) {
-		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.AgentTokens("acme-org"), redirect.Path)
-	}
-}
-
-func newFakeWeb(t *testing.T, svc TokensService) *webHandlers {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-	return &webHandlers{
-		svc:      svc,
-		Renderer: renderer,
-	}
-}
-
 func TestAdminLoginHandler(t *testing.T) {
 	app := newFakeWeb(t, &fakeService{})
 	app.siteToken = "secrettoken"
@@ -180,14 +116,8 @@ func TestAdminLoginHandler(t *testing.T) {
 	}
 }
 
-func newTestAgentTokenHandlers(t *testing.T, org string) *webHandlers {
-	return newFakeWeb(t, &fakeService{
-		agentToken: NewTestAgentToken(t, org),
-	})
-}
-
 func newTestTokenHandlers(t *testing.T, org string) *webHandlers {
 	return newFakeWeb(t, &fakeService{
-		userToken: NewTestToken(t, org),
+		userToken: tokens.NewTestToken(t, org),
 	})
 }

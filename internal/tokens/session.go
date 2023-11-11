@@ -10,6 +10,11 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
+const (
+	userSessionKind      Kind = "user_session"
+	defaultSessionExpiry      = 24 * time.Hour
+)
+
 type (
 	StartSessionOptions struct {
 		Username *string
@@ -23,7 +28,6 @@ type (
 
 func NewSessionToken(key jwk.Key, username string, expiry time.Time) (string, error) {
 	token, err := NewToken(NewTokenOptions{
-		key:     key,
 		Subject: username,
 		Kind:    userSessionKind,
 		Expiry:  &expiry,

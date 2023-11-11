@@ -1,15 +1,16 @@
-package tokens
+package remoteops
 
 import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/tokens"
 
 	"github.com/spf13/cobra"
 )
 
 type CLI struct {
-	TokensService
+	tokens.TokensService
 }
 
 func NewAgentsCommand(api *otfapi.Client) *cobra.Command {

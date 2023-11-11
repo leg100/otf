@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -28,6 +29,11 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{name}", a.updateOrganization).Methods("PATCH")
 	r.HandleFunc("/organizations/{name}", a.deleteOrganization).Methods("DELETE")
 	r.HandleFunc("/organizations/{name}/entitlement-set", a.getEntitlements).Methods("GET")
+
+	// Organization token routes
+	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.createOrganizationToken).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.getOrganizationToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.deleteOrganizationToken).Methods("DELETE")
 }
 
 func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +154,77 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Respond(w, r, (*types.Entitlements)(&entitlements), http.StatusOK)
+}
+
+func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var opts types.OrganizationTokenCreateOptions
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ot, token, err := a.CreateOrganizationToken(r.Context(), CreateOrganizationTokenOptions{
+		Organization: org,
+		Expiry:       opts.ExpiredAt,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	to := &types.OrganizationToken{
+		ID:        ot.ID,
+		CreatedAt: ot.CreatedAt,
+		Token:     string(token),
+		ExpiredAt: ot.Expiry,
+	}
+	a.Respond(w, r, to, http.StatusCreated)
+}
+
+func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ot, err := a.GetOrganizationToken(r.Context(), org)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	if ot == nil {
+		tfeapi.Error(w, internal.ErrResourceNotFound)
+		return
+	}
+
+	to := &types.OrganizationToken{
+		ID:        ot.ID,
+		CreatedAt: ot.CreatedAt,
+		ExpiredAt: ot.Expiry,
+	}
+	a.Respond(w, r, to, http.StatusCreated)
+}
+
+func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	err = a.DeleteOrganizationToken(r.Context(), org)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
