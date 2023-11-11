@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,12 +21,14 @@ func TestWeb_UserTokens(t *testing.T) {
 	user := &User{Username: uuid.NewString()}
 
 	t.Run("new", func(t *testing.T) {
-		web := newTestTokenHandlers(t, "acme-org")
+		h := &webHandlers{
+			Renderer: testutils.NewRenderer(t),
+		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 
-		web.newUserToken(w, r)
+		h.newUserToken(w, r)
 
 		if !assert.Equal(t, 200, w.Code) {
 			t.Log(t, w.Body.String())
@@ -32,13 +36,16 @@ func TestWeb_UserTokens(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		web := newTestTokenHandlers(t, "acme-org")
+		h := &webHandlers{
+			Renderer: testutils.NewRenderer(t),
+			svc:      &fakeService{},
+		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
-		web.createUserToken(w, r)
+		h.createUserToken(w, r)
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, _ := w.Result().Location()
@@ -47,13 +54,16 @@ func TestWeb_UserTokens(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		web := newTestTokenHandlers(t, "acme-org")
+		h := &webHandlers{
+			Renderer: testutils.NewRenderer(t),
+			svc:      &fakeService{},
+		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
-		web.userTokens(w, r)
+		h.userTokens(w, r)
 
 		if !assert.Equal(t, 200, w.Code) {
 			t.Log(t, w.Body.String())
@@ -61,13 +71,16 @@ func TestWeb_UserTokens(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		web := newTestTokenHandlers(t, "acme-org")
+		h := &webHandlers{
+			Renderer: testutils.NewRenderer(t),
+			svc:      &fakeService{},
+		}
 		q := "/?id=token-123"
 		r := httptest.NewRequest("POST", q, nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
-		web.deleteUserToken(w, r)
+		h.deleteUserToken(w, r)
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, _ := w.Result().Location()
@@ -77,8 +90,10 @@ func TestWeb_UserTokens(t *testing.T) {
 }
 
 func TestAdminLoginHandler(t *testing.T) {
-	app := newFakeWeb(t, &fakeService{})
-	app.siteToken = "secrettoken"
+	h := &webHandlers{
+		Renderer:  testutils.NewRenderer(t),
+		siteToken: "secrettoken",
+	}
 
 	tests := []struct {
 		name         string
@@ -105,7 +120,7 @@ func TestAdminLoginHandler(t *testing.T) {
 			r := httptest.NewRequest("POST", "/admin/login", form)
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
-			app.adminLogin(w, r)
+			h.adminLogin(w, r)
 
 			if assert.Equal(t, 302, w.Code) {
 				redirect, err := w.Result().Location()
@@ -116,8 +131,9 @@ func TestAdminLoginHandler(t *testing.T) {
 	}
 }
 
-func newTestTokenHandlers(t *testing.T, org string) *webHandlers {
-	return newFakeWeb(t, &fakeService{
-		userToken: tokens.NewTestToken(t, org),
-	})
+type fakeTokensService struct{}
+
+func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
+	http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	return nil
 }

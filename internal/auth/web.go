@@ -18,7 +18,9 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc AuthService
+	svc           AuthService
+	tokensService tokens.TokensService
+	siteToken     string
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -49,7 +51,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
-	html.SetCookie(w, sessionCookie, "", &time.Time{})
+	html.SetCookie(w, tokens.SessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
@@ -109,7 +111,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.StartSession(w, r, StartSessionOptions{
+	err = h.tokensService.StartSession(w, r, tokens.StartSessionOptions{
 		Username: internal.String(SiteAdminUsername),
 	})
 	if err != nil {

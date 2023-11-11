@@ -8,9 +8,6 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
-// session cookie stores the session token
-const sessionCookie = "session"
-
 type (
 	TokensService interface {
 		Middleware() mux.MiddlewareFunc

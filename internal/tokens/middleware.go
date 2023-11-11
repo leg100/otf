@@ -164,7 +164,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 }
 
 func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {
-	cookie, err := r.Cookie(sessionCookie)
+	cookie, err := r.Cookie(SessionCookie)
 	if err == http.ErrNoCookie {
 		html.FlashSuccess(w, "you need to login to access the requested page")
 		return nil, false

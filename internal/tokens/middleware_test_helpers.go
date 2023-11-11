@@ -16,10 +16,6 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
-type fakeMiddlewareService struct {
-	TokensService
-}
-
 // getGoogleCredentialsPath is a test helper to retrieve the path to a google
 // cloud service account key. If the necessary environment variable is not
 // present then the test is skipped.

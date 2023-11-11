@@ -67,8 +67,9 @@ func NewService(opts Options) *service {
 		},
 	}
 	svc.web = &webHandlers{
-		Renderer: opts.Renderer,
-		svc:      &svc,
+		Renderer:  opts.Renderer,
+		siteToken: opts.SiteToken,
+		svc:       &svc,
 	}
 	svc.tfeapi = &tfe{
 		AuthService: &svc,

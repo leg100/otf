@@ -46,7 +46,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid API token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := NewTestJWT(t, secret, Kind("test-kind"), time.Hour)
+		token := newTestJWT(t, secret, Kind("test-kind"), time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
@@ -55,7 +55,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("invalid jwt", func(t *testing.T) {
 		differentSecret := testutils.NewSecret(t)
-		token := NewTestJWT(t, differentSecret, Kind("test-kind"), time.Hour)
+		token := newTestJWT(t, differentSecret, Kind("test-kind"), time.Hour)
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
@@ -65,8 +65,8 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := NewTestJWT(t, secret, Kind("test-kind"), time.Hour)
-		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		token := newTestJWT(t, secret, Kind("test-kind"), time.Hour)
+		r.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -74,8 +74,8 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("expired user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := NewTestJWT(t, secret, Kind("test-kind"), -time.Hour)
-		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		token := newTestJWT(t, secret, Kind("test-kind"), -time.Hour)
+		r.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 302, w.Code)
