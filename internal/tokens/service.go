@@ -1,10 +1,11 @@
 package tokens
 
 import (
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/sql"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
@@ -14,6 +15,8 @@ type (
 		NewToken(NewTokenOptions) ([]byte, error)
 		RegisterKind(Kind, SubjectGetter)
 		RegisterSiteToken(token string, siteAdmin internal.Subject)
+		RegisterUISubjectGetterOrCreator(fn UISubjectGetterOrCreator)
+		NewSessionToken(username string, expiry time.Time) (string, error)
 
 		sessionService
 	}
@@ -31,7 +34,6 @@ type (
 
 	Options struct {
 		logr.Logger
-		*sql.DB
 		GoogleIAPConfig
 
 		Secret []byte
@@ -55,8 +57,8 @@ func NewService(opts Options) (*service, error) {
 	svc.middleware = newMiddleware(middlewareOptions{
 		GoogleIAPConfig: opts.GoogleIAPConfig,
 		key:             key,
+		registry:        svc.registry,
 	})
-
 	return &svc, nil
 }
 

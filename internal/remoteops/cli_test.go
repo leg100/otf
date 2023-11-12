@@ -21,11 +21,11 @@ func TestAgentTokenNewCommand(t *testing.T) {
 type fakeCLIService struct {
 	at []byte
 
-	agentTokenService
+	AgentTokenService
 }
 
 func newFakeCLI(at []byte) *CLI {
-	return &CLI{agentTokenService: &fakeCLIService{at: at}}
+	return &CLI{AgentTokenService: &fakeCLIService{at: at}}
 }
 
 func (f *fakeCLIService) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {

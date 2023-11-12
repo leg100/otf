@@ -16,7 +16,7 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc agentTokenService
+	svc AgentTokenService
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {

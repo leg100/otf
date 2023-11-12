@@ -66,9 +66,9 @@ type (
 		*runClient
 		*logsClient
 
-		// rpcClient doesn't implement all of agentTokenService so stub it out
+		// rpcClient doesn't implement all of AgentTokenService so stub it out
 		// here to ensure it satisfies interface implementation.
-		agentTokenService
+		AgentTokenService
 	}
 
 	stateClient     = state.Client

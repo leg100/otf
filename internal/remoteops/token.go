@@ -10,9 +10,11 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -33,7 +35,7 @@ type (
 		Description  string `json:"description" schema:"description,required"`
 	}
 
-	agentTokenService interface {
+	AgentTokenService interface {
 		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error)
 		GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
 		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
@@ -120,6 +122,7 @@ type (
 
 		db           *pgdb
 		organization internal.Authorizer
+		api          *api
 		web          *webHandlers
 
 		*tokenFactory
@@ -129,6 +132,7 @@ type (
 		logr.Logger
 		*sql.DB
 		html.Renderer
+		*tfeapi.Responder
 		tokens.TokensService
 	}
 )
@@ -140,6 +144,11 @@ func NewService(opts ServiceOptions) *tokensService {
 		tokenFactory: &tokenFactory{
 			TokensService: opts.TokensService,
 		},
+		organization: &organization.Authorizer{Logger: opts.Logger},
+	}
+	svc.api = &api{
+		Responder: opts.Responder,
+		svc:       svc,
 	}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
@@ -154,6 +163,7 @@ func NewService(opts ServiceOptions) *tokensService {
 }
 
 func (a *tokensService) AddHandlers(r *mux.Router) {
+	a.api.addHandlers(r)
 	a.web.addHandlers(r)
 }
 

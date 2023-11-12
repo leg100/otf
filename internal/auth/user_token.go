@@ -22,7 +22,6 @@ type (
 	// CreateUserTokenOptions are options for creating a user token via the service
 	// endpoint
 	CreateUserTokenOptions struct {
-		Username    string
 		Description string
 	}
 
@@ -40,12 +39,12 @@ type (
 	}
 )
 
-func (f *userTokenFactory) NewUserToken(opts CreateUserTokenOptions) (*UserToken, []byte, error) {
+func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
 		ID:          internal.NewID("ut"),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
-		Username:    opts.Username,
+		Username:    username,
 	}
 	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: ut.ID,
@@ -65,7 +64,7 @@ func (a *service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptio
 		return nil, nil, err
 	}
 
-	ut, token, err := a.NewUserToken(opts)
+	ut, token, err := a.NewUserToken(user.Username, opts)
 	if err != nil {
 		a.Error(err, "constructing user token", "user", user)
 		return nil, nil, err

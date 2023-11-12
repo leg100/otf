@@ -83,7 +83,7 @@ type fakeAgentTokenService struct {
 	agentToken *AgentToken
 	token      []byte
 
-	agentTokenService
+	AgentTokenService
 }
 
 func (f *fakeAgentTokenService) CreateAgentToken(context.Context, CreateAgentTokenOptions) ([]byte, error) {

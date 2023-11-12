@@ -68,6 +68,7 @@ type (
 		notifications.NotificationService
 		connections.ConnectionService
 		github.GithubAppService
+		remoteops.AgentTokenService
 
 		Handlers []internal.Handlers
 
@@ -119,7 +120,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	tokensService, err := tokens.NewService(tokens.Options{
 		Logger:          logger,
-		DB:              db,
 		GoogleIAPConfig: cfg.GoogleIAPConfig,
 		Secret:          cfg.Secret,
 	})
@@ -134,6 +134,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:                    responder,
 		Broker:                       broker,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
+		TokensService:                tokensService,
 	})
 
 	authService := auth.NewService(auth.Options{
@@ -144,6 +145,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService:     hostnameService,
 		OrganizationService: orgService,
 		TokensService:       tokensService,
+		SiteToken:           cfg.SiteToken,
 	})
 	// promote nominated users to site admin
 	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
@@ -274,6 +276,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:    workspaceService,
 		RunService:          runService,
 	})
+	agentTokenService := remoteops.NewService(remoteops.ServiceOptions{
+		Logger:        logger,
+		DB:            db,
+		Renderer:      renderer,
+		Responder:     responder,
+		TokensService: tokensService,
+	})
 
 	remoteopsDaemon, err := remoteops.NewDaemon(
 		logger.WithValues("component", "remoteops"),
@@ -339,9 +348,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{
-		Secret:        cfg.Secret,
-		Renderer:      renderer,
-		TokensService: tokensService,
+		Secret:      cfg.Secret,
+		Renderer:    renderer,
+		AuthService: authService,
 	})
 	if err != nil {
 		return nil, err
@@ -363,6 +372,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		configService,
 		notificationService,
 		githubAppService,
+		agentTokenService,
 		disco.Service{},
 		&ghapphandler.Handler{
 			Logger:             logger,
@@ -394,6 +404,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		NotificationService:         notificationService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
+		AgentTokenService:           agentTokenService,
 		Broker:                      broker,
 		DB:                          db,
 		opsDaemon:                   remoteopsDaemon,

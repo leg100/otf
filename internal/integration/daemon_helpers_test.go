@@ -26,7 +26,6 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -373,7 +372,7 @@ func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID str
 	return sv
 }
 
-func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*tokens.UserToken, []byte) {
+func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*auth.UserToken, []byte) {
 	t.Helper()
 
 	// If user is provided then add them to context. Otherwise the context is
@@ -382,7 +381,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 		ctx = internal.AddSubjectToContext(ctx, user)
 	}
 
-	ut, token, err := s.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
+	ut, token, err := s.CreateUserToken(ctx, auth.CreateUserTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)
@@ -409,7 +408,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organization string) []byte {
 	t.Helper()
 
-	token, err := s.CreateAgentToken(ctx, tokens.CreateAgentTokenOptions{
+	token, err := s.CreateAgentToken(ctx, remoteops.CreateAgentTokenOptions{
 		Organization: organization,
 		Description:  "lorem ipsum...",
 	})
