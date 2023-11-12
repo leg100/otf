@@ -1,4 +1,4 @@
-package tokens
+package run
 
 import (
 	"context"
@@ -7,11 +7,13 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 const (
-	defaultRunTokenExpiry = 10 * time.Minute
+	RunTokenKind          tokens.Kind = "run_token"
+	defaultRunTokenExpiry             = 10 * time.Minute
 )
 
 type (
@@ -24,12 +26,15 @@ type (
 
 	CreateRunTokenOptions struct {
 		Organization *string    `json:"organization"` // Organization of run. Required.
-		RunID        *string    `json:"run_id"`       // ID of run. Required.
 		Expiry       *time.Time // Override expiry. Optional.
 	}
 
-	RunTokenService interface {
+	tokenService interface {
 		CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error)
+	}
+
+	tokenFactory struct {
+		tokens.TokensService
 	}
 )
 
@@ -81,15 +86,12 @@ func (t *RunToken) CanAccessWorkspace(action rbac.Action, policy internal.Worksp
 	return false
 }
 
-func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
+func (s *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
 	if opts.Organization == nil {
 		return nil, fmt.Errorf("missing organization")
 	}
-	if opts.RunID == nil {
-		return nil, fmt.Errorf("missing run ID")
-	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateRunTokenAction, *opts.Organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunTokenAction, *opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -99,20 +101,16 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		expiry = *opts.Expiry
 	}
 
-	token, err := NewToken(NewTokenOptions{
-		key:     a.key,
-		Subject: *opts.RunID,
-		Kind:    runTokenKind,
+	token, err := s.NewToken(tokens.NewTokenOptions{
+		Subject: *opts.Organization,
+		Kind:    RunTokenKind,
 		Expiry:  &expiry,
-		Claims: map[string]string{
-			"organization": *opts.Organization,
-		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	a.V(2).Info("created run token", "subject", subject, "run")
+	s.V(2).Info("created run token", "subject", subject, "run")
 
 	return token, nil
 }

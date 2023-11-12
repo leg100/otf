@@ -11,9 +11,9 @@ import (
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -59,7 +59,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.AddCommand(workspace.NewCommand(a.api))
 	cmd.AddCommand(run.NewCommand(a.api))
 	cmd.AddCommand(state.NewCommand(a.api))
-	cmd.AddCommand(tokens.NewAgentsCommand(a.api))
+	cmd.AddCommand(remoteops.NewAgentsCommand(a.api))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

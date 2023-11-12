@@ -9,8 +9,10 @@ import (
 )
 
 type fakeService struct {
-	team    *Team
-	members []*User
+	team      *Team
+	members   []*User
+	token     []byte
+	userToken *UserToken
 
 	AuthService
 }
@@ -37,6 +39,18 @@ func (f *fakeService) ListTeamMembers(ctx context.Context, teamID string) ([]*Us
 }
 
 func (f *fakeService) DeleteTeam(ctx context.Context, teamID string) error {
+	return nil
+}
+
+func (f *fakeService) CreateUserToken(context.Context, CreateUserTokenOptions) (*UserToken, []byte, error) {
+	return nil, f.token, nil
+}
+
+func (f *fakeService) ListUserTokens(context.Context) ([]*UserToken, error) {
+	return []*UserToken{f.userToken}, nil
+}
+
+func (f *fakeService) DeleteUserToken(context.Context, string) error {
 	return nil
 }
 

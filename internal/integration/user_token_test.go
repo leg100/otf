@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +21,7 @@ func TestUserToken(t *testing.T) {
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := internal.AddSubjectToContext(ctx, svc.createUser(t))
-		_, _, err := svc.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
+		_, _, err := svc.CreateUserToken(ctx, auth.CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

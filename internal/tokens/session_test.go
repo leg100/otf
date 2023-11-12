@@ -17,7 +17,12 @@ import (
 func TestService_StartSession(t *testing.T) {
 	key, err := jwk.FromRaw([]byte("abcdef123"))
 	require.NoError(t, err)
-	svc := service{Logger: logr.Discard(), key: key}
+	svc := service{
+		Logger: logr.Discard(),
+		sessionFactory: &sessionFactory{
+			factory: &factory{key: key},
+		},
+	}
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)

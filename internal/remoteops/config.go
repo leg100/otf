@@ -1,7 +1,7 @@
 package remoteops
 
 import (
-	"github.com/leg100/otf/internal/api"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/spf13/pflag"
 )
 
@@ -20,7 +20,7 @@ type (
 	// AgentConfig is configuration for an agent, i.e. a remote operations
 	// daemon that communicates with the server via RPC.
 	AgentConfig struct {
-		APIConfig api.Config
+		APIConfig otfapi.Config
 
 		Config
 	}
@@ -39,7 +39,7 @@ func NewAgentConfigFromFlags(flags *pflag.FlagSet) *AgentConfig {
 	cfg := AgentConfig{
 		Config: *NewConfigFromFlags(flags),
 	}
-	flags.StringVar(&cfg.APIConfig.Address, "address", api.DefaultAddress, "Address of OTF server")
+	flags.StringVar(&cfg.APIConfig.Address, "address", otfapi.DefaultAddress, "Address of OTF server")
 	flags.StringVar(&cfg.APIConfig.Token, "token", "", "Agent token for authentication")
 	return &cfg
 }

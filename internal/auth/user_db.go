@@ -167,3 +167,55 @@ func pgtextSliceDiff(a, b []pgtype.Text) []string {
 	}
 	return diff
 }
+
+//
+// User tokens
+//
+
+func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
+	_, err := db.Conn(ctx).InsertToken(ctx, pggen.InsertTokenParams{
+		TokenID:     sql.String(token.ID),
+		Description: sql.String(token.Description),
+		Username:    sql.String(token.Username),
+		CreatedAt:   sql.Timestamptz(token.CreatedAt),
+	})
+	return err
+}
+
+func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserToken, error) {
+	result, err := db.Conn(ctx).FindTokensByUsername(ctx, sql.String(username))
+	if err != nil {
+		return nil, err
+	}
+	tokens := make([]*UserToken, len(result))
+	for i, row := range result {
+		tokens[i] = &UserToken{
+			ID:          row.TokenID.String,
+			CreatedAt:   row.CreatedAt.Time.UTC(),
+			Description: row.Description.String,
+			Username:    row.Username.String,
+		}
+	}
+	return tokens, nil
+}
+
+func (db *pgdb) getUserToken(ctx context.Context, id string) (*UserToken, error) {
+	row, err := db.Conn(ctx).FindTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return &UserToken{
+		ID:          row.TokenID.String,
+		CreatedAt:   row.CreatedAt.Time.UTC(),
+		Description: row.Description.String,
+		Username:    row.Username.String,
+	}, nil
+}
+
+func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
+	_, err := db.Conn(ctx).DeleteTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}

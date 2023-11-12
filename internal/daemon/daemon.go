@@ -68,6 +68,7 @@ type (
 		notifications.NotificationService
 		connections.ConnectionService
 		github.GithubAppService
+		remoteops.AgentTokenService
 
 		Handlers []internal.Handlers
 
@@ -117,6 +118,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	// Setup url signer
 	signer := internal.NewSigner(cfg.Secret)
 
+	tokensService, err := tokens.NewService(tokens.Options{
+		Logger:          logger,
+		GoogleIAPConfig: cfg.GoogleIAPConfig,
+		Secret:          cfg.Secret,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
+	}
+
 	orgService := organization.NewService(organization.Options{
 		Logger:                       logger,
 		DB:                           db,
@@ -124,6 +134,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:                    responder,
 		Broker:                       broker,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
+		TokensService:                tokensService,
 	})
 
 	authService := auth.NewService(auth.Options{
@@ -133,24 +144,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:           responder,
 		HostnameService:     hostnameService,
 		OrganizationService: orgService,
+		TokensService:       tokensService,
+		SiteToken:           cfg.SiteToken,
 	})
 	// promote nominated users to site admin
 	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
 		return nil, err
-	}
-
-	tokensService, err := tokens.NewService(tokens.Options{
-		Logger:          logger,
-		DB:              db,
-		Renderer:        renderer,
-		Responder:       responder,
-		AuthService:     authService,
-		GoogleIAPConfig: cfg.GoogleIAPConfig,
-		SiteToken:       cfg.SiteToken,
-		Secret:          cfg.Secret,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
 
 	githubAppService := github.NewService(github.Options{
@@ -237,6 +236,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
 		ReleasesService:             releasesService,
+		TokensService:               tokensService,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -276,11 +276,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:    workspaceService,
 		RunService:          runService,
 	})
+	agentTokenService := remoteops.NewService(remoteops.ServiceOptions{
+		Logger:        logger,
+		DB:            db,
+		Renderer:      renderer,
+		Responder:     responder,
+		TokensService: tokensService,
+	})
 
 	remoteopsDaemon, err := remoteops.NewDaemon(
 		logger.WithValues("component", "remoteops"),
 		remoteops.InProcClient{
-			TokensService:               tokensService,
 			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
@@ -342,9 +348,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{
-		Secret:        cfg.Secret,
-		Renderer:      renderer,
-		TokensService: tokensService,
+		Secret:      cfg.Secret,
+		Renderer:    renderer,
+		AuthService: authService,
 	})
 	if err != nil {
 		return nil, err
@@ -352,7 +358,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	handlers := []internal.Handlers{
 		authService,
-		tokensService,
 		workspaceService,
 		stateService,
 		orgService,
@@ -367,6 +372,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		configService,
 		notificationService,
 		githubAppService,
+		agentTokenService,
 		disco.Service{},
 		&ghapphandler.Handler{
 			Logger:             logger,
@@ -398,6 +404,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		NotificationService:         notificationService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
+		AgentTokenService:           agentTokenService,
 		Broker:                      broker,
 		DB:                          db,
 		opsDaemon:                   remoteopsDaemon,

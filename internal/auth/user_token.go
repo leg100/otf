@@ -1,13 +1,14 @@
-package tokens
+package auth
 
 import (
 	"context"
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/leg100/otf/internal/tokens"
 )
+
+const UserTokenKind tokens.Kind = "user_token"
 
 type (
 	// UserToken provides information about an API token for a user.
@@ -24,14 +25,6 @@ type (
 		Description string
 	}
 
-	// NewUserTokenOptions are options for constructing a user token via the
-	// constructor.
-	NewUserTokenOptions struct {
-		CreateUserTokenOptions
-		Username string
-		key      jwk.Key
-	}
-
 	userTokenService interface {
 		// CreateUserToken creates a user token.
 		CreateUserToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
@@ -40,19 +33,22 @@ type (
 		// DeleteUserToken deletes a user token.
 		DeleteUserToken(ctx context.Context, tokenID string) error
 	}
+
+	userTokenFactory struct {
+		tokens.TokensService
+	}
 )
 
-func NewUserToken(opts NewUserTokenOptions) (*UserToken, []byte, error) {
+func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
 		ID:          internal.NewID("ut"),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
-		Username:    opts.Username,
+		Username:    username,
 	}
-	token, err := NewToken(NewTokenOptions{
-		key:     opts.key,
+	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: ut.ID,
-		Kind:    userTokenKind,
+		Kind:    UserTokenKind,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -63,16 +59,12 @@ func NewUserToken(opts NewUserTokenOptions) (*UserToken, []byte, error) {
 // CreateUserToken creates a user token. Only users can create a user token, and
 // they can only create a token for themselves.
 func (a *service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
-	user, err := auth.UserFromContext(ctx)
+	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ut, token, err := NewUserToken(NewUserTokenOptions{
-		CreateUserTokenOptions: opts,
-		Username:               user.Username,
-		key:                    a.key,
-	})
+	ut, token, err := a.NewUserToken(user.Username, opts)
 	if err != nil {
 		a.Error(err, "constructing user token", "user", user)
 		return nil, nil, err
@@ -89,7 +81,7 @@ func (a *service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptio
 }
 
 func (a *service) ListUserTokens(ctx context.Context) ([]*UserToken, error) {
-	user, err := auth.UserFromContext(ctx)
+	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +90,7 @@ func (a *service) ListUserTokens(ctx context.Context) ([]*UserToken, error) {
 }
 
 func (a *service) DeleteUserToken(ctx context.Context, tokenID string) error {
-	user, err := auth.UserFromContext(ctx)
+	user, err := UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

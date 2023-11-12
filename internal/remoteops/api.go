@@ -1,4 +1,4 @@
-package tokens
+package remoteops
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 )
 
 type api struct {
-	TokensService
+	svc AgentTokenService
 	*tfeapi.Responder
 }
 
@@ -19,24 +19,6 @@ func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 	r.HandleFunc("/agent/create", a.createAgentToken).Methods("POST")
 	r.HandleFunc("/agent/details", a.getCurrentAgent).Methods("GET")
-	r.HandleFunc("/tokens/run/create", a.createRunToken).Methods("POST")
-}
-
-func (a *api) createRunToken(w http.ResponseWriter, r *http.Request) {
-	var opts CreateRunTokenOptions
-	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	token, err := a.CreateRunToken(r.Context(), CreateRunTokenOptions{
-		Organization: opts.Organization,
-		RunID:        opts.RunID,
-	})
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-	w.Write(token)
 }
 
 func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +27,7 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.CreateAgentToken(r.Context(), opts)
+	token, err := a.svc.CreateAgentToken(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

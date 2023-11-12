@@ -1,14 +1,24 @@
-package tokens
+package remoteops
 
 import (
 	"context"
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tokens"
 )
+
+const AgentTokenKind tokens.Kind = "agent_token"
 
 type (
 	// AgentToken represents the authentication token for an external agent.
@@ -25,16 +35,16 @@ type (
 		Description  string `json:"description" schema:"description,required"`
 	}
 
-	NewAgentTokenOptions struct {
-		CreateAgentTokenOptions
-		key jwk.Key // key for signing new token
-	}
-
-	agentTokenService interface {
+	AgentTokenService interface {
 		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error)
 		GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
 		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
 		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	}
+
+	// tokenFactory constructs agent tokens
+	tokenFactory struct {
+		tokens.TokensService
 	}
 )
 
@@ -42,7 +52,7 @@ type (
 // representation of the token, and the cryptographic token itself.
 //
 // TODO(@leg100): Unit test this.
-func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
+func (f *tokenFactory) NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Organization == "" {
 		return nil, nil, fmt.Errorf("organization name cannot be an empty string")
 	}
@@ -55,10 +65,9 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	}
-	token, err := NewToken(NewTokenOptions{
-		key:     opts.key,
+	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: at.ID,
-		Kind:    agentTokenKind,
+		Kind:    AgentTokenKind,
 		Claims: map[string]string{
 			"organization": opts.Organization,
 		},
@@ -107,7 +116,58 @@ func AgentFromContext(ctx context.Context) (*AgentToken, error) {
 	return agent, nil
 }
 
-func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
+type (
+	tokensService struct {
+		logr.Logger
+
+		db           *pgdb
+		organization internal.Authorizer
+		api          *api
+		web          *webHandlers
+
+		*tokenFactory
+	}
+
+	ServiceOptions struct {
+		logr.Logger
+		*sql.DB
+		html.Renderer
+		*tfeapi.Responder
+		tokens.TokensService
+	}
+)
+
+func NewService(opts ServiceOptions) *tokensService {
+	svc := &tokensService{
+		Logger: opts.Logger,
+		db:     &pgdb{DB: opts.DB},
+		tokenFactory: &tokenFactory{
+			TokensService: opts.TokensService,
+		},
+		organization: &organization.Authorizer{Logger: opts.Logger},
+	}
+	svc.api = &api{
+		Responder: opts.Responder,
+		svc:       svc,
+	}
+	svc.web = &webHandlers{
+		Renderer: opts.Renderer,
+		svc:      svc,
+	}
+	// Register with auth middleware the agent token kind and a means of
+	// retrieving an AgentToken corresponding to token's subject.
+	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+		return svc.GetAgentToken(ctx, tokenID)
+	})
+	return svc
+}
+
+func (a *tokensService) AddHandlers(r *mux.Router) {
+	a.api.addHandlers(r)
+	a.web.addHandlers(r)
+}
+
+func (a *tokensService) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
 	at, err := a.db.getAgentTokenByID(ctx, tokenID)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
@@ -117,16 +177,13 @@ func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToke
 	return at, nil
 }
 
-func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
+func (a *tokensService) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	at, token, err := NewAgentToken(NewAgentTokenOptions{
-		CreateAgentTokenOptions: opts,
-		key:                     a.key,
-	})
+	at, token, err := a.NewAgentToken(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +195,7 @@ func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOpt
 	return token, nil
 }
 
-func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+func (a *tokensService) ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -153,7 +210,7 @@ func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*
 	return tokens, nil
 }
 
-func (a *service) DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
+func (a *tokensService) DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
 	// retrieve agent token first in order to get organization for authorization
 	at, err := a.db.getAgentTokenByID(ctx, id)
 	if err != nil {
@@ -174,4 +231,63 @@ func (a *service) DeleteAgentToken(ctx context.Context, id string) (*AgentToken,
 	}
 	a.V(0).Info("deleted agent token", "agent token", at, "subject", subject)
 	return at, nil
+}
+
+type agentTokenRow struct {
+	TokenID          pgtype.Text        `json:"token_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Description      pgtype.Text        `json:"description"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+func (row agentTokenRow) toAgentToken() *AgentToken {
+	return &AgentToken{
+		ID:           row.TokenID.String,
+		CreatedAt:    row.CreatedAt.Time.UTC(),
+		Description:  row.Description.String,
+		Organization: row.OrganizationName.String,
+	}
+}
+
+// pgdb stores agent tokens in a postgres database
+type pgdb struct {
+	*sql.DB // provides access to generated SQL queries
+}
+
+func (db *pgdb) createAgentToken(ctx context.Context, token *AgentToken) error {
+	_, err := db.Conn(ctx).InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
+		TokenID:          sql.String(token.ID),
+		Description:      sql.String(token.Description),
+		OrganizationName: sql.String(token.Organization),
+		CreatedAt:        sql.Timestamptz(token.CreatedAt.UTC()),
+	})
+	return err
+}
+
+func (db *pgdb) getAgentTokenByID(ctx context.Context, id string) (*AgentToken, error) {
+	r, err := db.Conn(ctx).FindAgentTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return agentTokenRow(r).toAgentToken(), nil
+}
+
+func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+	rows, err := db.Conn(ctx).FindAgentTokens(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	tokens := make([]*AgentToken, len(rows))
+	for i, r := range rows {
+		tokens[i] = agentTokenRow(r).toAgentToken()
+	}
+	return tokens, nil
+}
+
+func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {
+	_, err := db.Conn(ctx).DeleteAgentTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
 }

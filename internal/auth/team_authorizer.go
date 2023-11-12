@@ -8,12 +8,12 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 )
 
-// Authorizer authorizes access to a team
-type Authorizer struct {
+// TeamAuthorizer authorizes access to a team
+type TeamAuthorizer struct {
 	logr.Logger
 }
 
-func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, teamID string) (internal.Subject, error) {
+func (a *TeamAuthorizer) CanAccess(ctx context.Context, action rbac.Action, teamID string) (internal.Subject, error) {
 	subj, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

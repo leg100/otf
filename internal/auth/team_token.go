@@ -1,4 +1,4 @@
-package tokens
+package auth
 
 import (
 	"context"
@@ -8,8 +8,10 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/leg100/otf/internal/tokens"
 )
+
+const TeamTokenKind tokens.Kind = "team_token"
 
 type (
 	// TeamToken provides information about an API token for a team.
@@ -30,14 +32,6 @@ type (
 		Expiry *time.Time
 	}
 
-	// NewTeamTokenOptions are options for constructing a team token via the
-	// constructor.
-	NewTeamTokenOptions struct {
-		CreateTeamTokenOptions
-		Team string
-		key  jwk.Key
-	}
-
 	teamTokenService interface {
 		// CreateTeamToken creates a team token.
 		CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error)
@@ -47,19 +41,22 @@ type (
 		// DeleteTeamToken deletes a team token.
 		DeleteTeamToken(ctx context.Context, tokenID string) error
 	}
+
+	teamTokenFactory struct {
+		tokens.TokensService
+	}
 )
 
-func NewTeamToken(opts NewTeamTokenOptions) (*TeamToken, []byte, error) {
+func (f *teamTokenFactory) NewTeamToken(opts CreateTeamTokenOptions) (*TeamToken, []byte, error) {
 	tt := TeamToken{
 		ID:        internal.NewID("tt"),
 		CreatedAt: internal.CurrentTimestamp(nil),
-		TeamID:    opts.Team,
+		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
 	}
-	token, err := NewToken(NewTokenOptions{
-		key:     opts.key,
+	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: tt.ID,
-		Kind:    teamTokenKind,
+		Kind:    TeamTokenKind,
 		Expiry:  opts.Expiry,
 	})
 	if err != nil {
@@ -85,11 +82,7 @@ func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptio
 		return nil, nil, err
 	}
 
-	tt, token, err := NewTeamToken(NewTeamTokenOptions{
-		CreateTeamTokenOptions: opts,
-		Team:                   opts.TeamID,
-		key:                    a.key,
-	})
+	tt, token, err := a.NewTeamToken(opts)
 	if err != nil {
 		a.Error(err, "constructing team token", "team_id", opts.TeamID)
 		return nil, nil, err

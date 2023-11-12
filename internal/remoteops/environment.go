@@ -11,8 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/tokens"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/pkg/errors"
 )
@@ -39,7 +38,7 @@ func newEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
 	dmon *daemon,
-	run *run.Run,
+	run *otfrun.Run,
 ) (*environment, error) {
 	ws, err := dmon.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
@@ -56,9 +55,8 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	token, err := dmon.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
+	token, err := dmon.CreateRunToken(ctx, otfrun.CreateRunTokenOptions{
 		Organization: &ws.Organization,
-		RunID:        &run.ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating run token")

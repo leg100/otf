@@ -9,31 +9,24 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
-const (
-	defaultSessionExpiry = 24 * time.Hour
-
-	userSessionKind       Kind = "user_session"
-	runTokenKind          Kind = "run_token"
-	agentTokenKind        Kind = "agent_token"
-	userTokenKind         Kind = "user_token"
-	organizationTokenKind Kind = "organization_token"
-	teamTokenKind         Kind = "team_token"
-)
-
 type (
 	// the Kind of authentication token: user session, user token, agent token, etc
 	Kind string
 
 	NewTokenOptions struct {
-		key     jwk.Key
 		Kind    Kind
 		Subject string
 		Expiry  *time.Time
 		Claims  map[string]string
 	}
+
+	// factory constructs new tokens using a jwk
+	factory struct {
+		key jwk.Key
+	}
 )
 
-func NewToken(opts NewTokenOptions) ([]byte, error) {
+func (f *factory) NewToken(opts NewTokenOptions) ([]byte, error) {
 	builder := jwt.NewBuilder().
 		Subject(opts.Subject).
 		Claim("kind", opts.Kind).
@@ -48,5 +41,5 @@ func NewToken(opts NewTokenOptions) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return jwt.Sign(token, jwt.WithKey(jwa.HS256, opts.key))
+	return jwt.Sign(token, jwt.WithKey(jwa.HS256, f.key))
 }
