@@ -1,4 +1,4 @@
-package auth
+package user
 
 import (
 	"net/http"
@@ -10,7 +10,10 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -18,7 +21,8 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc           AuthService
+	svc           UserService
+	teamService   otfteam.TeamService
 	tokensService tokens.TokensService
 	siteToken     string
 }
@@ -43,11 +47,15 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens/new", h.newUserToken).Methods("GET")
 	r.HandleFunc("/profile/tokens/create", h.createUserToken).Methods("POST")
 
+	// team membership
+	r.HandleFunc("/teams/{team_id}/add-member", h.addTeamMember).Methods("POST")
+	r.HandleFunc("/teams/{team_id}/remove-member", h.removeTeamMember).Methods("POST")
+	// NOTE: to avoid an import cycle the getTeam handler is located here rather
+	// than in the team package where it ought to belong.the
+	r.HandleFunc("/teams/{team_id}", h.getTeam).Methods("GET")
+
 	// terraform login opens a browser to this hardcoded URL
 	r.HandleFunc("/settings/tokens", h.userTokens).Methods("GET")
-
-	// team pages
-	h.addTeamHandlers(r)
 }
 
 func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
@@ -135,6 +143,128 @@ func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// team membership handlers
+
+func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		TeamID   string  `schema:"team_id,required"`
+		Username *string `schema:"username,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	err := h.svc.AddTeamMembership(r.Context(), params.TeamID, []string{*params.Username})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "added team member: "+*params.Username)
+	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+}
+
+func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		TeamID   string `schema:"team_id,required"`
+		Username string `schema:"username,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	err := h.svc.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "removed team member: "+params.Username)
+	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+}
+
+func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
+	teamID, err := decode.Param("team_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	team, err := h.teamService.GetTeamByID(r.Context(), teamID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// get usernames of team members
+	members, err := h.svc.ListTeamUsers(r.Context(), teamID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	usernames := make([]string, len(members))
+	for i, m := range members {
+		usernames[i] = m.Username
+	}
+
+	// Retrieve full list of users for populating a select form from which new
+	// team members can be chosen. Only do this if the subject has perms to
+	// retrieve the list.
+	user, err := internal.SubjectFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// get usernames of non-members
+	var nonMemberUsernames []string
+	if user.CanAccessSite(rbac.ListUsersAction) {
+		users, err := h.svc.ListUsers(r.Context())
+		if err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		nonMembers := diffUsers(members, users)
+		nonMemberUsernames = make([]string, len(nonMembers))
+		for i, m := range nonMembers {
+			nonMemberUsernames[i] = m.Username
+		}
+	}
+
+	h.Render("team_get.tmpl", w, struct {
+		organization.OrganizationPage
+		Team              *otfteam.Team
+		Members           []*User
+		AddMemberDropdown html.DropdownUI
+		CanUpdateTeam     bool
+		CanDeleteTeam     bool
+		CanAddMember      bool
+		CanRemoveMember   bool
+		CanDelete         bool
+		IsOwner           bool
+	}{
+		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
+		Team:             team,
+		Members:          members,
+		CanUpdateTeam:    user.CanAccessOrganization(rbac.UpdateTeamAction, team.Organization),
+		CanDeleteTeam:    user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
+		CanAddMember:     user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
+		CanRemoveMember:  user.CanAccessOrganization(rbac.RemoveTeamMembershipAction, team.Organization),
+		CanDelete:        user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
+		IsOwner:          user.IsOwner(team.Organization),
+		AddMemberDropdown: html.DropdownUI{
+			Name:        "username",
+			Available:   nonMemberUsernames,
+			Existing:    usernames,
+			Action:      paths.AddMemberTeam(team.ID),
+			Placeholder: "Add user",
+			Width:       html.WideDropDown,
+		},
+	})
+}
+
 //
 // User tokens
 //
@@ -198,4 +328,18 @@ func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	}
 	html.FlashSuccess(w, "Deleted token")
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
+}
+
+// diffUsers returns the users from b that are not in a.
+func diffUsers(a, b []*User) (c []*User) {
+	m := make(map[string]struct{}, len(a))
+	for _, user := range a {
+		m[user.Username] = struct{}{}
+	}
+	for _, user := range b {
+		if _, ok := m[user.Username]; !ok {
+			c = append(c, user)
+		}
+	}
+	return
 }

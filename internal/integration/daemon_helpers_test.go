@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cli"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
@@ -26,6 +25,8 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/team"
+	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -232,7 +233,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 
 // createUser is always invoked with the site admin context because only they
 // are authorized to create users.
-func (s *testDaemon) createUser(t *testing.T, opts ...auth.NewUserOption) *auth.User {
+func (s *testDaemon) createUser(t *testing.T, opts ...otfuser.NewUserOption) *otfuser.User {
 	t.Helper()
 
 	user, err := s.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
@@ -242,44 +243,44 @@ func (s *testDaemon) createUser(t *testing.T, opts ...auth.NewUserOption) *auth.
 
 // createUserCtx is always invoked with the site admin context because only they
 // are authorized to create users.
-func (s *testDaemon) createUserCtx(t *testing.T, opts ...auth.NewUserOption) (*auth.User, context.Context) {
+func (s *testDaemon) createUserCtx(t *testing.T, opts ...otfuser.NewUserOption) (*otfuser.User, context.Context) {
 	t.Helper()
 
 	user := s.createUser(t, opts...)
 	return user, internal.AddSubjectToContext(context.Background(), user)
 }
 
-func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *auth.User {
+func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *otfuser.User {
 	t.Helper()
 
-	user, err := s.GetUser(ctx, auth.UserSpec{Username: &username})
+	user, err := s.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
 	return user
 }
 
-func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*auth.User, context.Context) {
+func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*otfuser.User, context.Context) {
 	t.Helper()
 
-	user, err := s.GetUser(ctx, auth.UserSpec{Username: &username})
+	user, err := s.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
 	return user, internal.AddSubjectToContext(ctx, user)
 }
 
-func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
+func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *team.Team {
 	t.Helper()
 
 	if org == nil {
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+	team, err := s.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
 	return team
 }
 
-func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *auth.Team {
+func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *team.Team {
 	t.Helper()
 
 	team, err := s.GetTeam(ctx, org, name)
@@ -372,7 +373,7 @@ func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID str
 	return sv
 }
 
-func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*auth.UserToken, []byte) {
+func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *otfuser.User) (*otfuser.UserToken, []byte) {
 	t.Helper()
 
 	// If user is provided then add them to context. Otherwise the context is
@@ -381,7 +382,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 		ctx = internal.AddSubjectToContext(ctx, user)
 	}
 
-	ut, token, err := s.CreateUserToken(ctx, auth.CreateUserTokenOptions{
+	ut, token, err := s.CreateUserToken(ctx, otfuser.CreateUserTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)

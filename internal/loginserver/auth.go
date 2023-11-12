@@ -6,9 +6,9 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/user"
 )
 
 func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := auth.UserFromContext(r.Context())
+	user, err := user.UserFromContext(r.Context())
 	if err != nil {
 		re.error(w, r, ErrServerError, err.Error())
 		return

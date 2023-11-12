@@ -1,95 +1,99 @@
-package auth
+package user
 
 import (
 	"fmt"
 
-	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
-
+	"github.com/leg100/otf/internal/team"
 	"github.com/spf13/cobra"
 )
 
-type TeamCLI struct {
-	AuthService
+type userCLI struct {
+	UserService
 }
 
-func NewTeamCommand(api *otfapi.Client) *cobra.Command {
-	cli := &TeamCLI{}
+func NewUserCommand(api *otfapi.Client) *cobra.Command {
+	cli := &userCLI{}
 	cmd := &cobra.Command{
-		Use:   "teams",
-		Short: "Team management",
+		Use:   "users",
+		Short: "User account management",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.AuthService = &Client{Client: api}
+			cli.UserService = &client{Client: api}
 			return nil
 		},
 	}
-	cmd.AddCommand(cli.teamNewCommand())
-	cmd.AddCommand(cli.teamDeleteCommand())
+
+	cmd.AddCommand(cli.userNewCommand())
+	cmd.AddCommand(cli.userDeleteCommand())
+
+	return cmd
+}
+
+func (a *userCLI) userNewCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:           "new [username]",
+		Short:         "Create a new user account",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			user, err := a.CreateUser(cmd.Context(), args[0])
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created user %s\n", user.Username)
+			return nil
+		},
+	}
+}
+
+func (a *userCLI) userDeleteCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:           "delete [username]",
+		Short:         "Delete a user account",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := a.DeleteUser(cmd.Context(), args[0]); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted user %s\n", args[0])
+			return nil
+		},
+	}
+}
+
+type membershipCLI struct {
+	UserService
+	team.TeamService
+}
+
+func NewTeamMembershipCommand(api *otfapi.Client) *cobra.Command {
+	cli := &membershipCLI{}
+	cmd := &cobra.Command{
+		Use:   "team-membership",
+		Short: "Team membership management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.UserService = &client{Client: api}
+			cli.TeamService = &team.Client{Client: api}
+			return nil
+		},
+	}
+
 	cmd.AddCommand(cli.addTeamMembershipCommand())
 	cmd.AddCommand(cli.deleteTeamMembershipCommand())
 
 	return cmd
 }
 
-func (a *TeamCLI) teamNewCommand() *cobra.Command {
-	var organization string
-
-	cmd := &cobra.Command{
-		Use:           "new [name]",
-		Short:         "Create a new team",
-		Args:          cobra.ExactArgs(1),
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.CreateTeam(cmd.Context(), organization, CreateTeamOptions{
-				Name: internal.String(args[0]),
-			})
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created team %s\n", team.Name)
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVar(&organization, "organization", "", "OTF organization in which to perform action")
-	cmd.MarkFlagRequired("organization")
-
-	return cmd
-}
-
-func (a *TeamCLI) teamDeleteCommand() *cobra.Command {
-	var organization string
-
-	cmd := &cobra.Command{
-		Use:           "delete [name]",
-		Short:         "Delete a team",
-		Args:          cobra.ExactArgs(1),
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.GetTeam(cmd.Context(), organization, args[0])
-			if err != nil {
-				return err
-			}
-			if err := a.DeleteTeam(cmd.Context(), team.ID); err != nil {
-				return err
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted team %s\n", args[0])
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVar(&organization, "organization", "", "OTF organization in which to perform action")
-	cmd.MarkFlagRequired("organization")
-
-	return cmd
-}
-
-func (a *TeamCLI) addTeamMembershipCommand() *cobra.Command {
+func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 	var (
 		organization string
 		name         string // team name
@@ -122,7 +126,7 @@ func (a *TeamCLI) addTeamMembershipCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *TeamCLI) deleteTeamMembershipCommand() *cobra.Command {
+func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 	var (
 		organization string
 		name         string // team name

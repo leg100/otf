@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,14 +14,14 @@ func TestUserToken(t *testing.T) {
 	integrationTest(t)
 
 	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc, _, _ := setup(t, nil)
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := internal.AddSubjectToContext(ctx, svc.createUser(t))
-		_, _, err := svc.CreateUserToken(ctx, auth.CreateUserTokenOptions{
+		_, _, err := svc.CreateUserToken(ctx, user.CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

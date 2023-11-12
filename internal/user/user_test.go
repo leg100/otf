@@ -1,9 +1,10 @@
-package auth
+package user
 
 import (
 	"testing"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +17,7 @@ func TestSiteAdminCanAccessOrganization(t *testing.T) {
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
 	u := User{
-		Teams: []*Team{
+		Teams: []*team.Team{
 			{
 				Name:         "owners",
 				Organization: "acme-corp",
@@ -28,7 +29,7 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 
 func TestUser_Organizations(t *testing.T) {
 	u := User{
-		Teams: []*Team{
+		Teams: []*team.Team{
 			{
 				Name:         "owners",
 				Organization: "acme-corp",

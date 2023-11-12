@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-github/v55/github"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func TestWebHandlers_get(t *testing.T) {
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
-	r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
+	r = r.WithContext(internal.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 	w := httptest.NewRecorder()
 	h.get(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())

@@ -18,6 +18,9 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name str
 	if err != nil {
 		return nil, err
 	}
+	if internal.SkipAuthz(ctx) {
+		return subj, nil
+	}
 	if subj.CanAccessOrganization(action, name) {
 		return subj, nil
 	}

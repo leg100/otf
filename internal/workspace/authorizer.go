@@ -20,6 +20,9 @@ func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspac
 	if err != nil {
 		return nil, err
 	}
+	if internal.SkipAuthz(ctx) {
+		return subj, nil
+	}
 	policy, err := a.db.GetWorkspacePolicy(ctx, workspaceID)
 	if err != nil {
 		return nil, internal.ErrResourceNotFound

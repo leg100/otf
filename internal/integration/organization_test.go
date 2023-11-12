@@ -35,7 +35,7 @@ func TestOrganization(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("creator should be a member", func(t *testing.T) {
-				members, err := svc.ListTeamMembers(ctx, owners.ID)
+				members, err := svc.ListTeamUsers(ctx, owners.ID)
 				require.NoError(t, err)
 				if assert.Equal(t, 1, len(members)) {
 					assert.Equal(t, user.Username, members[0].Username)

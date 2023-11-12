@@ -5,7 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
+	otfteam "github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,13 +17,13 @@ func TestIntegation_TeamService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 
-		team, err := svc.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+		team, err := svc.CreateTeam(ctx, org.Name, otfteam.CreateTeamOptions{
 			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := svc.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+			_, err := svc.CreateTeam(ctx, org.Name, otfteam.CreateTeamOptions{
 				Name: internal.String(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
@@ -33,8 +34,8 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
-		_, err := svc.UpdateTeam(ctx, team.ID, auth.UpdateTeamOptions{
-			OrganizationAccessOptions: auth.OrganizationAccessOptions{
+		_, err := svc.UpdateTeam(ctx, team.ID, otfteam.UpdateTeamOptions{
+			OrganizationAccessOptions: otfteam.OrganizationAccessOptions{
 				ManageWorkspaces: internal.Bool(true),
 				ManageVCS:        internal.Bool(true),
 				ManageModules:    internal.Bool(true),
@@ -92,10 +93,10 @@ func TestIntegation_TeamService(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		otherteam := svc.createTeam(t, ctx, org)
 		user1 := svc.createUser(t)
-		user2 := svc.createUser(t, auth.WithTeams(team))
-		user3 := svc.createUser(t, auth.WithTeams(team, otherteam))
+		user2 := svc.createUser(t, user.WithTeams(team))
+		user3 := svc.createUser(t, user.WithTeams(team, otherteam))
 
-		got, err := svc.ListTeamMembers(ctx, team.ID)
+		got, err := svc.ListTeamUsers(ctx, team.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(got), got)
@@ -120,6 +121,6 @@ func TestIntegation_TeamService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = svc.DeleteTeam(ctx, owners.ID)
-		assert.Equal(t, auth.ErrRemovingOwnersTeamNotPermitted, err)
+		assert.Equal(t, otfteam.ErrRemovingOwnersTeamNotPermitted, err)
 	})
 }

@@ -1,4 +1,4 @@
-package auth
+package team
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 const TeamTokenKind tokens.Kind = "team_token"
 
 type (
-	// TeamToken provides information about an API token for a team.
-	TeamToken struct {
+	// Token provides information about an API token for a team.
+	Token struct {
 		ID        string
 		CreatedAt time.Time
 
@@ -25,19 +25,19 @@ type (
 		Expiry *time.Time
 	}
 
-	// CreateTeamTokenOptions are options for creating an team token via the service
+	// CreateTokenOptions are options for creating an team token via the service
 	// endpoint
-	CreateTeamTokenOptions struct {
+	CreateTokenOptions struct {
 		TeamID string
 		Expiry *time.Time
 	}
 
 	teamTokenService interface {
 		// CreateTeamToken creates a team token.
-		CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error)
+		CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error)
 		// GetTeamToken gets the team token. If a token does not
 		// exist, then nil is returned without an error.
-		GetTeamToken(ctx context.Context, teamID string) (*TeamToken, error)
+		GetTeamToken(ctx context.Context, teamID string) (*Token, error)
 		// DeleteTeamToken deletes a team token.
 		DeleteTeamToken(ctx context.Context, tokenID string) error
 	}
@@ -47,8 +47,8 @@ type (
 	}
 )
 
-func (f *teamTokenFactory) NewTeamToken(opts CreateTeamTokenOptions) (*TeamToken, []byte, error) {
-	tt := TeamToken{
+func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte, error) {
+	tt := Token{
 		ID:        internal.NewID("tt"),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		TeamID:    opts.TeamID,
@@ -65,7 +65,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTeamTokenOptions) (*TeamToken
 	return &tt, token, nil
 }
 
-func (t *TeamToken) LogValue() slog.Value {
+func (t *Token) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", t.ID),
 		slog.String("team_id", t.TeamID),
@@ -76,7 +76,7 @@ func (t *TeamToken) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptions) (*TeamToken, []byte, error) {
+func (a *service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error) {
 	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, opts.TeamID)
 	if err != nil {
 		return nil, nil, err
@@ -98,7 +98,7 @@ func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptio
 	return tt, token, nil
 }
 
-func (a *service) GetTeamToken(ctx context.Context, teamID string) (*TeamToken, error) {
+func (a *service) GetTeamToken(ctx context.Context, teamID string) (*Token, error) {
 	_, err := a.team.CanAccess(ctx, rbac.GetTeamTokenAction, teamID)
 	if err != nil {
 		return nil, err

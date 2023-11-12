@@ -1,4 +1,4 @@
-package auth
+package team
 
 import (
 	"context"
@@ -8,15 +8,18 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 )
 
-// TeamAuthorizer authorizes access to a team
-type TeamAuthorizer struct {
+// authorizer authorizes access to a team
+type authorizer struct {
 	logr.Logger
 }
 
-func (a *TeamAuthorizer) CanAccess(ctx context.Context, action rbac.Action, teamID string) (internal.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, teamID string) (internal.Subject, error) {
 	subj, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if internal.SkipAuthz(ctx) {
+		return subj, nil
 	}
 	if subj.CanAccessTeam(action, teamID) {
 		return subj, nil

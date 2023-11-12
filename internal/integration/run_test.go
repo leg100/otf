@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +27,7 @@ func TestRun(t *testing.T) {
 		run, err := svc.CreateRun(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 
-		user, err := auth.UserFromContext(ctx)
+		user, err := user.UserFromContext(ctx)
 		require.NoError(t, err)
 		assert.NotNil(t, run.CreatedBy)
 		assert.Equal(t, user.Username, *run.CreatedBy)
@@ -95,7 +95,7 @@ func TestRun(t *testing.T) {
 
 		assert.Equal(t, want, got)
 
-		user, err := auth.UserFromContext(ctx)
+		user, err := user.UserFromContext(ctx)
 		require.NoError(t, err)
 		assert.NotNil(t, got.CreatedBy)
 		assert.Equal(t, user.Username, *got.CreatedBy)

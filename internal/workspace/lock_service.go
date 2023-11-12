@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/user"
 )
 
 type LockService interface {
@@ -29,7 +29,7 @@ func (s *service) LockWorkspace(ctx context.Context, workspaceID string, runID *
 		if err != nil {
 			return nil, err
 		}
-		user, ok := subject.(*auth.User)
+		user, ok := subject.(*user.User)
 		if !ok {
 			return nil, fmt.Errorf("only a run or a user can lock a workspace")
 		}
@@ -71,7 +71,7 @@ func (s *service) UnlockWorkspace(ctx context.Context, workspaceID string, runID
 		if err != nil {
 			return nil, err
 		}
-		user, ok := subject.(*auth.User)
+		user, ok := subject.(*user.User)
 		if !ok {
 			return nil, fmt.Errorf("only a run or a user can unlock a workspace")
 		}

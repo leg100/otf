@@ -6,13 +6,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -41,7 +41,7 @@ const (
 type (
 	webHandlers struct {
 		html.Renderer
-		auth.TeamService
+		team.TeamService
 		VCSProviderService
 
 		svc Service
@@ -136,7 +136,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
-	user, err := auth.UserFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -224,7 +224,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := auth.UserFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -327,7 +327,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := auth.UserFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -368,7 +368,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
 		Policy             internal.WorkspacePolicy
-		Unassigned         []*auth.Team
+		Unassigned         []*team.Team
 		Roles              []rbac.Role
 		VCSProvider        *vcsprovider.VCSProvider
 		UnassignedTags     []string
@@ -705,7 +705,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 //
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
-func filterUnassigned(policy internal.WorkspacePolicy, teams []*auth.Team) (unassigned []*auth.Team) {
+func filterUnassigned(policy internal.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
 	assigned := make(map[string]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.Team] = struct{}{}

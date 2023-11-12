@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
@@ -19,11 +19,11 @@ type (
 		providers  []*vcsprovider.VCSProvider
 		repos      []string
 		policy     internal.WorkspacePolicy
-		teams      []*auth.Team
+		teams      []*team.Team
 
 		Service
 
-		auth.TeamService
+		team.TeamService
 		VCSProviderService
 	}
 
@@ -54,7 +54,7 @@ func withPolicy(policy internal.WorkspacePolicy) fakeWebServiceOption {
 	}
 }
 
-func withTeams(teams ...*auth.Team) fakeWebServiceOption {
+func withTeams(teams ...*team.Team) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.teams = teams
 	}
@@ -93,7 +93,7 @@ func (f *fakeWebService) GetPolicy(context.Context, string) (internal.WorkspaceP
 	return f.policy, nil
 }
 
-func (f *fakeWebService) ListTeams(context.Context, string) ([]*auth.Team, error) {
+func (f *fakeWebService) ListTeams(context.Context, string) ([]*team.Team, error) {
 	return f.teams, nil
 }
 
