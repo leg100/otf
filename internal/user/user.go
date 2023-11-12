@@ -1,4 +1,5 @@
-package auth
+// Package user manages user accounts and their team membership.
+package user
 
 import (
 	"context"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/team"
 )
 
 const (
@@ -33,7 +35,7 @@ type (
 		Username string `jsonapi:"attribute" json:"username"`
 
 		// user belongs to many teams
-		Teams []*Team
+		Teams []*team.Team
 	}
 
 	// UserListOptions are options for the ListUsers endpoint.
@@ -68,7 +70,7 @@ func NewUser(username string, opts ...NewUserOption) *User {
 	return user
 }
 
-func WithTeams(memberships ...*Team) NewUserOption {
+func WithTeams(memberships ...*team.Team) NewUserOption {
 	return func(user *User) {
 		user.Teams = memberships
 	}

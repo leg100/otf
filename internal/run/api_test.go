@@ -10,9 +10,9 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func TestAPI_Watch(t *testing.T) {
 	}
 
 	r := httptest.NewRequest("", "/", nil)
-	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
+	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 	w := httptest.NewRecorder()
 
 	// send one event and then close

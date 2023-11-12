@@ -7,10 +7,16 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 )
 
-// unexported key type prevents collisions
-type subjectCtxKeyType string
+// unexported key types prevents collisions
+type (
+	subjectCtxKeyType   string
+	skipAuthzCtxKeyType string
+)
 
-const subjectCtxKey subjectCtxKeyType = "subject"
+const (
+	subjectCtxKey   subjectCtxKeyType   = "subject"
+	skipAuthzCtxKey skipAuthzCtxKeyType = "skip_authz"
+)
 
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
@@ -58,6 +64,21 @@ func SubjectFromContext(ctx context.Context) (Subject, error) {
 		return nil, fmt.Errorf("no subject in context")
 	}
 	return subj, nil
+}
+
+// AddSkipAuthz adds to the context an instruction to skip authorization.
+// Authorizers should obey this instruction using SkipAuthz
+func AddSkipAuthz(ctx context.Context) context.Context {
+	return context.WithValue(ctx, skipAuthzCtxKey, "")
+}
+
+// SkipAuthz determines whether the context contains an instruction to skip
+// authorization.
+func SkipAuthz(ctx context.Context) bool {
+	if v := ctx.Value(skipAuthzCtxKey); v != nil {
+		return true
+	}
+	return false
 }
 
 // Superuser is a subject with unlimited privileges.

@@ -13,8 +13,8 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/tokens"
+	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -111,7 +111,7 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 			return err
 		}
 		if user != nil {
-			user, err := auth.UserFromContext(user)
+			user, err := otfuser.UserFromContext(user)
 			if err != nil {
 				return err
 			}

@@ -1,4 +1,5 @@
-package auth
+// Package team manages teams, which are groups of users with shared privileges.
+package team
 
 import (
 	"time"

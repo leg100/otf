@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
@@ -35,8 +34,10 @@ import (
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -53,7 +54,8 @@ type (
 		*pubsub.Broker
 
 		organization.OrganizationService
-		auth.AuthService
+		team.TeamService
+		user.UserService
 		tokens.TokensService
 		variable.VariableService
 		vcsprovider.VCSProviderService
@@ -137,7 +139,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:                tokensService,
 	})
 
-	authService := auth.NewService(auth.Options{
+	teamService := team.NewService(team.Options{
 		Logger:              logger,
 		DB:                  db,
 		Renderer:            renderer,
@@ -145,10 +147,19 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService:     hostnameService,
 		OrganizationService: orgService,
 		TokensService:       tokensService,
-		SiteToken:           cfg.SiteToken,
+	})
+	userService := user.NewService(user.Options{
+		Logger:          logger,
+		DB:              db,
+		Renderer:        renderer,
+		Responder:       responder,
+		HostnameService: hostnameService,
+		TokensService:   tokensService,
+		SiteToken:       cfg.SiteToken,
+		TeamService:     teamService,
 	})
 	// promote nominated users to site admin
-	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
+	if err := userService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
 		return nil, err
 	}
 
@@ -207,7 +218,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Renderer:            renderer,
 		Responder:           responder,
 		ConnectionService:   connectionService,
-		TeamService:         authService,
+		TeamService:         teamService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 	})
@@ -350,14 +361,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	loginServer, err := loginserver.NewServer(loginserver.Options{
 		Secret:      cfg.Secret,
 		Renderer:    renderer,
-		AuthService: authService,
+		UserService: userService,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	handlers := []internal.Handlers{
-		authService,
+		teamService,
+		userService,
 		workspaceService,
 		stateService,
 		orgService,
@@ -388,7 +400,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Config:                      cfg,
 		Logger:                      logger,
 		Handlers:                    handlers,
-		AuthService:                 authService,
+		TeamService:                 teamService,
+		UserService:                 userService,
 		TokensService:               tokensService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,

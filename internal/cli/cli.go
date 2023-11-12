@@ -9,11 +9,12 @@ import (
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -54,8 +55,9 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.SetOut(out)
 
 	cmd.AddCommand(organization.NewCommand(a.api))
-	cmd.AddCommand(auth.NewUserCommand(a.api))
-	cmd.AddCommand(auth.NewTeamCommand(a.api))
+	cmd.AddCommand(user.NewUserCommand(a.api))
+	cmd.AddCommand(user.NewTeamMembershipCommand(a.api))
+	cmd.AddCommand(team.NewTeamCommand(a.api))
 	cmd.AddCommand(workspace.NewCommand(a.api))
 	cmd.AddCommand(run.NewCommand(a.api))
 	cmd.AddCommand(state.NewCommand(a.api))

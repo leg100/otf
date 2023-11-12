@@ -7,7 +7,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -161,7 +160,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := auth.UserFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -289,7 +288,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := auth.UserFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -412,7 +411,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := auth.UserFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

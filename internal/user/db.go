@@ -1,13 +1,45 @@
-package auth
+package user
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/team"
 )
+
+// dbresult represents the result of a database query for a user.
+type dbresult struct {
+	UserID    pgtype.Text        `json:"user_id"`
+	Username  pgtype.Text        `json:"username"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
+	Teams     []pggen.Teams      `json:"teams"`
+}
+
+func (result dbresult) toUser() *User {
+	user := User{
+		ID:        result.UserID.String,
+		CreatedAt: result.CreatedAt.Time.UTC(),
+		UpdatedAt: result.UpdatedAt.Time.UTC(),
+		Username:  result.Username.String,
+		SiteAdmin: result.SiteAdmin,
+	}
+	for _, tr := range result.Teams {
+		user.Teams = append(user.Teams, team.TeamRow(tr).ToTeam())
+	}
+	return &user
+}
+
+// pgdb stores user resources in a postgres database
+type pgdb struct {
+	*sql.DB // provides access to generated SQL queries
+	logr.Logger
+}
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
@@ -38,7 +70,7 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 	}
 	users := make([]*User, len(result))
 	for i, r := range result {
-		users[i] = userRow(r).toUser()
+		users[i] = dbresult(r).toUser()
 	}
 	return users, nil
 }
@@ -50,12 +82,12 @@ func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) 
 	}
 	users := make([]*User, len(result))
 	for i, r := range result {
-		users[i] = userRow(r).toUser()
+		users[i] = dbresult(r).toUser()
 	}
 	return users, nil
 }
 
-func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+func (db *pgdb) listTeamUsers(ctx context.Context, teamID string) ([]*User, error) {
 	result, err := db.Conn(ctx).FindUsersByTeamID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
@@ -63,7 +95,7 @@ func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, er
 
 	items := make([]*User, len(result))
 	for i, r := range result {
-		items[i] = userRow(r).toUser()
+		items[i] = dbresult(r).toUser()
 	}
 	return items, nil
 }
@@ -75,19 +107,19 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 		if err != nil {
 			return nil, err
 		}
-		return userRow(result).toUser(), nil
+		return dbresult(result).toUser(), nil
 	} else if spec.Username != nil {
 		result, err := db.Conn(ctx).FindUserByUsername(ctx, sql.String(*spec.Username))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
-		return userRow(result).toUser(), nil
+		return dbresult(result).toUser(), nil
 	} else if spec.AuthenticationTokenID != nil {
 		result, err := db.Conn(ctx).FindUserByAuthenticationTokenID(ctx, sql.String(*spec.AuthenticationTokenID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
-		return userRow(result).toUser(), nil
+		return dbresult(result).toUser(), nil
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}

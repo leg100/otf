@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ func TestListModules(t *testing.T) {
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
+	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 	w := httptest.NewRecorder()
 	h.list(w, r)
 	if !assert.Equal(t, 200, w.Code) {

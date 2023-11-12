@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,16 +16,16 @@ func fakeServer(t *testing.T, secret []byte) *server {
 	srv, err := NewServer(Options{
 		Secret:      secret,
 		Renderer:    renderer,
-		AuthService: &fakeTokenService{},
+		UserService: &fakeUserService{},
 	})
 	require.NoError(t, err)
 	return srv
 }
 
-type fakeTokenService struct {
-	auth.AuthService
+type fakeUserService struct {
+	user.UserService
 }
 
-func (a *fakeTokenService) CreateUserToken(ctx context.Context, opts auth.CreateUserTokenOptions) (*auth.UserToken, []byte, error) {
+func (a *fakeUserService) CreateUserToken(context.Context, user.CreateUserTokenOptions) (*user.UserToken, []byte, error) {
 	return nil, nil, nil
 }

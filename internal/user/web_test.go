@@ -1,4 +1,4 @@
-package auth
+package user
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
@@ -57,7 +58,7 @@ func TestWeb_UserTokens(t *testing.T) {
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
 			svc: &fakeService{
-				userToken: &UserToken{},
+				ut: &UserToken{},
 			},
 		}
 		q := "/?"
@@ -87,6 +88,28 @@ func TestWeb_UserTokens(t *testing.T) {
 			assert.Equal(t, paths.Tokens(), redirect.Path)
 		}
 	})
+}
+
+// TestWeb_TeamGetHandler tests the getTeam handler. The getTeam page renders
+// permissions only if the authenticated user is an owner, so the test sets that
+// up first.
+func TestWeb_TeamGetHandler(t *testing.T) {
+	owners := &team.Team{Name: "owners", Organization: "acme-org"}
+	owner := NewUser(uuid.NewString(), WithTeams(owners))
+	h := &webHandlers{
+		Renderer:    testutils.NewRenderer(t),
+		teamService: &fakeTeamService{team: owners},
+		svc:         &fakeService{user: owner},
+	}
+
+	q := "/?team_id=team-123"
+	r := httptest.NewRequest("GET", q, nil)
+	r = r.WithContext(internal.AddSubjectToContext(r.Context(), owner))
+	w := httptest.NewRecorder()
+	h.getTeam(w, r)
+	if !assert.Equal(t, 200, w.Code) {
+		t.Log(t, w.Body.String())
+	}
 }
 
 func TestAdminLoginHandler(t *testing.T) {
@@ -130,6 +153,12 @@ func TestAdminLoginHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUserDiff(t *testing.T) {
+	a := []*User{{Username: "bob"}}
+	b := []*User{{Username: "bob"}, {Username: "alice"}}
+	assert.Equal(t, []*User{{Username: "alice"}}, diffUsers(a, b))
 }
 
 type fakeTokensService struct {

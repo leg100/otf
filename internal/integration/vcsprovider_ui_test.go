@@ -12,10 +12,10 @@ import (
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -114,7 +114,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	daemon, org, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
 
 	// creating a github app requires site-admin role
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// create app
 	_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{
