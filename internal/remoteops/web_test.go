@@ -26,6 +26,7 @@ func TestAgentToken_NewHandler(t *testing.T) {
 func TestAgentToken_CreateHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
+		svc:      &fakeAgentTokenService{},
 	}
 	q := "/?organization_name=acme-org&description=lorem-ipsum-etc"
 	r := httptest.NewRequest("GET", q, nil)
@@ -42,6 +43,9 @@ func TestAgentToken_CreateHandler(t *testing.T) {
 func TestAgentToken_ListHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
+		svc: &fakeAgentTokenService{
+			agentToken: &AgentToken{},
+		},
 	}
 	q := "/?organization_name=acme-org"
 	r := httptest.NewRequest("GET", q, nil)
@@ -57,6 +61,11 @@ func TestAgentToken_ListHandler(t *testing.T) {
 func TestAgentToken_DeleteHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
+		svc: &fakeAgentTokenService{
+			agentToken: &AgentToken{
+				Organization: "acme-org",
+			},
+		},
 	}
 	q := "/?agent_token_id=at-123"
 	r := httptest.NewRequest("POST", q, nil)
@@ -73,6 +82,8 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 type fakeAgentTokenService struct {
 	agentToken *AgentToken
 	token      []byte
+
+	agentTokenService
 }
 
 func (f *fakeAgentTokenService) CreateAgentToken(context.Context, CreateAgentTokenOptions) ([]byte, error) {

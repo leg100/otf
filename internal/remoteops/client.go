@@ -65,12 +65,15 @@ type (
 		*workspaceClient
 		*runClient
 		*logsClient
+
+		// rpcClient doesn't implement all of agentTokenService so stub it out
+		// here to ensure it satisfies interface implementation.
+		agentTokenService
 	}
 
 	stateClient     = state.Client
 	configClient    = configversion.Client
 	variableClient  = variable.Client
-	tokensClient    = run.Client
 	workspaceClient = workspace.Client
 	runClient       = run.Client
 	logsClient      = logs.Client

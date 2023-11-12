@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/tokens"
 
 	"github.com/spf13/cobra"
 )
 
 type CLI struct {
-	tokens.TokensService
+	agentTokenService
 }
 
 func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
@@ -22,7 +21,7 @@ func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.TokensService = &Client{Client: api}
+			cli.agentTokenService = &rpcClient{Client: api}
 			return nil
 		},
 	}

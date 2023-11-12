@@ -56,7 +56,9 @@ func TestWeb_UserTokens(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc:      &fakeService{},
+			svc: &fakeService{
+				userToken: &UserToken{},
+			},
 		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
@@ -65,9 +67,7 @@ func TestWeb_UserTokens(t *testing.T) {
 
 		h.userTokens(w, r)
 
-		if !assert.Equal(t, 200, w.Code) {
-			t.Log(t, w.Body.String())
-		}
+		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -91,8 +91,9 @@ func TestWeb_UserTokens(t *testing.T) {
 
 func TestAdminLoginHandler(t *testing.T) {
 	h := &webHandlers{
-		Renderer:  testutils.NewRenderer(t),
-		siteToken: "secrettoken",
+		Renderer:      testutils.NewRenderer(t),
+		siteToken:     "secrettoken",
+		tokensService: &fakeTokensService{},
 	}
 
 	tests := []struct {
@@ -131,7 +132,9 @@ func TestAdminLoginHandler(t *testing.T) {
 	}
 }
 
-type fakeTokensService struct{}
+type fakeTokensService struct {
+	tokens.TokensService
+}
 
 func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)

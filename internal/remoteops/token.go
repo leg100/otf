@@ -6,16 +6,17 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tokens"
-	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
-const agentTokenKind tokens.Kind = "agent_token"
+const AgentTokenKind tokens.Kind = "agent_token"
 
 type (
 	// AgentToken represents the authentication token for an external agent.
@@ -30,11 +31,6 @@ type (
 	CreateAgentTokenOptions struct {
 		Organization string `json:"organization_name" schema:"organization_name,required"`
 		Description  string `json:"description" schema:"description,required"`
-	}
-
-	NewAgentTokenOptions struct {
-		CreateAgentTokenOptions
-		key jwk.Key // key for signing new token
 	}
 
 	agentTokenService interface {
@@ -54,7 +50,7 @@ type (
 // representation of the token, and the cryptographic token itself.
 //
 // TODO(@leg100): Unit test this.
-func (f *tokenFactory) NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
+func (f *tokenFactory) NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Organization == "" {
 		return nil, nil, fmt.Errorf("organization name cannot be an empty string")
 	}
@@ -69,7 +65,7 @@ func (f *tokenFactory) NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []
 	}
 	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: at.ID,
-		Kind:    agentTokenKind,
+		Kind:    AgentTokenKind,
 		Claims: map[string]string{
 			"organization": opts.Organization,
 		},
@@ -118,8 +114,47 @@ func AgentFromContext(ctx context.Context) (*AgentToken, error) {
 	return agent, nil
 }
 
-type tokensService struct {
-	logr.Logger
+type (
+	tokensService struct {
+		logr.Logger
+
+		db           *pgdb
+		organization internal.Authorizer
+		web          *webHandlers
+
+		*tokenFactory
+	}
+
+	ServiceOptions struct {
+		logr.Logger
+		*sql.DB
+		html.Renderer
+		tokens.TokensService
+	}
+)
+
+func NewService(opts ServiceOptions) *tokensService {
+	svc := &tokensService{
+		Logger: opts.Logger,
+		db:     &pgdb{DB: opts.DB},
+		tokenFactory: &tokenFactory{
+			TokensService: opts.TokensService,
+		},
+	}
+	svc.web = &webHandlers{
+		Renderer: opts.Renderer,
+		svc:      svc,
+	}
+	// Register with auth middleware the agent token kind and a means of
+	// retrieving an AgentToken corresponding to token's subject.
+	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+		return svc.GetAgentToken(ctx, tokenID)
+	})
+	return svc
+}
+
+func (a *tokensService) AddHandlers(r *mux.Router) {
+	a.web.addHandlers(r)
 }
 
 func (a *tokensService) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
@@ -138,10 +173,7 @@ func (a *tokensService) CreateAgentToken(ctx context.Context, opts CreateAgentTo
 		return nil, err
 	}
 
-	at, token, err := NewAgentToken(NewAgentTokenOptions{
-		CreateAgentTokenOptions: opts,
-		key:                     a.key,
-	})
+	at, token, err := a.NewAgentToken(opts)
 	if err != nil {
 		return nil, err
 	}

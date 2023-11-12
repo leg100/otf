@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-const userTokenKind tokens.Kind = "user_token"
+const UserTokenKind tokens.Kind = "user_token"
 
 type (
 	// UserToken provides information about an API token for a user.
@@ -49,7 +49,7 @@ func (f *userTokenFactory) NewUserToken(opts CreateUserTokenOptions) (*UserToken
 	}
 	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: ut.ID,
-		Kind:    userTokenKind,
+		Kind:    UserTokenKind,
 	})
 	if err != nil {
 		return nil, nil, err

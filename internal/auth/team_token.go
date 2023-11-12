@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-const teamTokenKind tokens.Kind = "team_token"
+const TeamTokenKind tokens.Kind = "team_token"
 
 type (
 	// TeamToken provides information about an API token for a team.
@@ -56,7 +56,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTeamTokenOptions) (*TeamToken
 	}
 	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: tt.ID,
-		Kind:    teamTokenKind,
+		Kind:    TeamTokenKind,
 		Expiry:  opts.Expiry,
 	})
 	if err != nil {
@@ -82,11 +82,7 @@ func (a *service) CreateTeamToken(ctx context.Context, opts CreateTeamTokenOptio
 		return nil, nil, err
 	}
 
-	tt, token, err := NewTeamToken(NewTeamTokenOptions{
-		CreateTeamTokenOptions: opts,
-		Team:                   opts.TeamID,
-		key:                    a.key,
-	})
+	tt, token, err := a.NewTeamToken(opts)
 	if err != nil {
 		a.Error(err, "constructing team token", "team_id", opts.TeamID)
 		return nil, nil, err

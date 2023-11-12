@@ -241,7 +241,6 @@ func (a *api) createRunToken(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := a.CreateRunToken(r.Context(), CreateRunTokenOptions{
 		Organization: opts.Organization,
-		RunID:        opts.RunID,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

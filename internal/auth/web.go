@@ -176,8 +176,7 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("user_token_list.tmpl", w, struct {
 		html.SitePage
-		// list template expects pagination object but we don't paginate token
-		// listing
+		// list template expects pagination object
 		*resource.Pagination
 		Items []*UserToken
 	}{

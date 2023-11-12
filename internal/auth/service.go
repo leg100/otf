@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -88,6 +90,18 @@ func NewService(opts Options) *service {
 	// Register site token and site admin with the auth middleware, to permit
 	// the latter to authenticate using the former.
 	opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
+	// Register with auth middleware the user token and a means of
+	// retrieving user corresponding to token.
+	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: internal.String(tokenID)})
+
+	})
+	// Register with auth middleware the user token and a means of
+	// retrieving user corresponding to token.
+	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+		return svc.GetTeamByTokenID(ctx, tokenID)
+
+	})
 
 	return &svc
 }

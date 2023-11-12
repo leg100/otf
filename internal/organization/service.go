@@ -110,7 +110,9 @@ func NewService(opts Options) *service {
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
 	// Register with auth middleware the organization token and a means of
 	// retrieving organization corresponding to token.
-	opts.TokensService.RegisterKind(tokens.OrganizationTokenKind, svc.GetOrganizationTokenSubject)
+	opts.TokensService.RegisterKind(OrganizationTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
+		return svc.GetOrganizationToken(ctx, organization)
+	})
 
 	return &svc
 }
@@ -266,52 +268,48 @@ func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Su
 
 // CreateOrganizationToken creates an organization token. If an organization
 // token already exists it is replaced.
-func (a *service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
-	_, err := a.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
+func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ot, token, err := a.tokenFactory.NewOrganizationToken(opts)
+	ot, token, err := s.tokenFactory.NewOrganizationToken(opts)
 	if err != nil {
-		a.Error(err, "constructing organization token", "organization", opts.Organization)
+		s.Error(err, "constructing organization token", "organization", opts.Organization)
 		return nil, nil, err
 	}
 
-	if err := a.db.upsertOrganizationToken(ctx, ot); err != nil {
-		a.Error(err, "creating organization token", "organization", opts.Organization)
+	if err := s.db.upsertOrganizationToken(ctx, ot); err != nil {
+		s.Error(err, "creating organization token", "organization", opts.Organization)
 		return nil, nil, err
 	}
 
-	a.V(0).Info("created organization token", "organization", opts.Organization)
+	s.V(0).Info("created organization token", "organization", opts.Organization)
 
 	return ot, token, nil
 }
 
-func (a *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
-	return a.db.getOrganizationTokenByName(ctx, organization)
+func (s *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
+	return s.db.getOrganizationTokenByName(ctx, organization)
 }
 
-func (a *service) GetOrganizationTokenSubject(ctx context.Context, organization string) (internal.Subject, error) {
-	return a.db.getOrganizationTokenByName(ctx, organization)
-}
-
-func (a *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
-	_, err := a.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
+func (s *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
 	if err != nil {
 		return err
 	}
 
-	if err := a.db.deleteOrganizationToken(ctx, organization); err != nil {
-		a.Error(err, "deleting organization token", "organization", organization)
+	if err := s.db.deleteOrganizationToken(ctx, organization); err != nil {
+		s.Error(err, "deleting organization token", "organization", organization)
 		return err
 	}
 
-	a.V(0).Info("deleted organization token", "organization", organization)
+	s.V(0).Info("deleted organization token", "organization", organization)
 
 	return nil
 }
 
-func (a *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
-	return a.db.getOrganizationTokenByID(ctx, tokenID)
+func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+	return s.db.getOrganizationTokenByID(ctx, tokenID)
 }

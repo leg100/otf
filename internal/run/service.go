@@ -182,6 +182,13 @@ func NewService(opts Options) *service {
 	// run as well.
 	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
 
+	// Register with auth middleware the run token and a means of
+	// retrieving RunToken corresponding to token.
+	opts.TokensService.RegisterKind(RunTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
+		return &RunToken{Organization: organization}, nil
+
+	})
+
 	return &svc
 }
 
