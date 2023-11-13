@@ -3,8 +3,11 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -37,12 +40,26 @@ type JobSpec struct {
 	Phase internal.PhaseType `json:"phase"`
 }
 
+func NewJobSpecFromString(spec string) (JobSpec, error) {
+	parts := strings.Split(spec, "-")
+	if len(parts) != 2 {
+		return JobSpec{}, fmt.Errorf("malformed stringified job spec: %s", spec)
+	}
+	return JobSpec{RunID: parts[0], Phase: internal.PhaseType(parts[1])}, nil
+}
+
+func (j JobSpec) String() string {
+	return fmt.Sprintf("%s-%s", j.RunID, j.Phase)
+}
+
 type Job struct {
 	JobSpec
 	// Current status of job.
 	Status JobStatus
 	// Execution mode of job's workspace.
 	ExecutionMode workspace.ExecutionMode
+	// Name of job's organization
+	Organization string
 	// ID of job's workspace
 	WorkspaceID string
 	// ID of agent that this job is allocated to. Only set once job enters
@@ -51,6 +68,7 @@ type Job struct {
 	// This indicates whether the run for the job has been signaled, i.e. user
 	// has sent a cancelation request.
 	signal *signal
+	// JWT token. This is only set when a job is newly allocated to an agent.
 }
 
 func newJob(run *otfrun.Run) *Job {
@@ -61,11 +79,59 @@ func newJob(run *otfrun.Run) *Job {
 		},
 		Status:        JobUnallocated,
 		ExecutionMode: run.ExecutionMode,
+		Organization:  run.Organization,
 		WorkspaceID:   run.WorkspaceID,
 	}
 }
 
-func (j *Job) String() string { return fmt.Sprintf("%s-%s", j.RunID, j.Phase) }
+func (j *Job) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("run_id", j.RunID),
+		slog.String("phase", string(j.Phase)),
+		slog.String("status", string(j.Status)),
+	}
+	if j.signal != nil {
+		attrs = append(attrs, slog.String("signal", string(*j.signal)))
+	}
+	return slog.GroupValue(attrs...)
+}
+
+func (t *Job) Organizations() []string { return nil }
+
+func (t *Job) IsSiteAdmin() bool   { return true }
+func (t *Job) IsOwner(string) bool { return true }
+
+func (t *Job) CanAccessSite(action rbac.Action) bool {
+	return false
+}
+
+func (t *Job) CanAccessOrganization(action rbac.Action, name string) bool {
+	switch action {
+	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
+		return t.Organization == name
+	default:
+		return false
+	}
+}
+
+func (t *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+	// job token is allowed the retrieve the state of the workspace only if:
+	// (a) workspace is in the same organization as job token
+	// (b) workspace has enabled global remote state (permitting organization-wide
+	// state sharing).
+	switch action {
+	case rbac.GetWorkspaceAction, rbac.GetStateVersionAction, rbac.DownloadStateAction:
+		if t.Organization == policy.Organization && policy.GlobalRemoteState {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Job) CanAccessTeam(rbac.Action, string) bool {
+	// Can't access team level actions
+	return false
+}
 
 func (j *Job) setSignal(s signal) error {
 	if j.Status != JobRunning {

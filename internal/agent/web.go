@@ -1,4 +1,4 @@
-package remoteops
+package agent
 
 import (
 	"net/http"
@@ -15,8 +15,7 @@ import (
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
 	html.Renderer
-
-	svc AgentTokenService
+	Service
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -54,7 +53,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.CreateAgentToken(r.Context(), opts)
+	token, err := h.CreateAgentToken(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -74,7 +73,7 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := h.svc.ListAgentTokens(r.Context(), org)
+	tokens, err := h.ListAgentTokens(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -100,7 +99,7 @@ func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, err := h.svc.DeleteAgentToken(r.Context(), id)
+	at, err := h.DeleteAgentToken(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

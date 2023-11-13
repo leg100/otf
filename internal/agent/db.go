@@ -65,13 +65,14 @@ func (r agentresult) toAgent() *Agent {
 
 // jobresult is the result of a database query for an job
 type jobresult struct {
-	RunID         pgtype.Text `json:"run_id"`
-	Phase         pgtype.Text `json:"phase"`
-	Status        pgtype.Text `json:"status"`
-	Signal        pgtype.Text `json:"signal"`
-	AgentID       pgtype.Text `json:"agent_id"`
-	ExecutionMode pgtype.Text `json:"execution_mode"`
-	WorkspaceID   pgtype.Text `json:"workspace_id"`
+	RunID            pgtype.Text `json:"run_id"`
+	Phase            pgtype.Text `json:"phase"`
+	Status           pgtype.Text `json:"status"`
+	Signal           pgtype.Text `json:"signal"`
+	AgentID          pgtype.Text `json:"agent_id"`
+	ExecutionMode    pgtype.Text `json:"execution_mode"`
+	WorkspaceID      pgtype.Text `json:"workspace_id"`
+	OrganizationName pgtype.Text `json:"organization_name"`
 }
 
 func (r jobresult) toJob() *Job {
@@ -83,6 +84,7 @@ func (r jobresult) toJob() *Job {
 		Status:        JobStatus(r.Status.String),
 		ExecutionMode: workspace.ExecutionMode(r.ExecutionMode.String),
 		WorkspaceID:   r.WorkspaceID.String,
+		Organization:  r.OrganizationName.String,
 	}
 	if r.AgentID.Status == pgtype.Present {
 		job.AgentID = &r.AgentID.String
@@ -253,6 +255,14 @@ func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID string) (
 	return jobs, nil
 }
 
+func (db *db) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
+	result, err := db.Conn(ctx).FindJob(ctx, sql.String(spec.RunID), sql.String(string(spec.Phase)))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return jobresult(result).toJob(), nil
+}
+
 func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	rows, err := db.Conn(ctx).FindJobs(ctx)
 	if err != nil {
@@ -286,4 +296,44 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 		return nil
 	})
 	return sql.Error(err)
+}
+
+// agent tokens
+
+func (db *db) createAgentToken(ctx context.Context, token *AgentToken) error {
+	_, err := db.Conn(ctx).InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
+		AgentTokenID:     sql.String(token.ID),
+		Description:      sql.String(token.Description),
+		OrganizationName: sql.String(token.Organization),
+		CreatedAt:        sql.Timestamptz(token.CreatedAt.UTC()),
+	})
+	return err
+}
+
+func (db *db) getAgentTokenByID(ctx context.Context, id string) (*AgentToken, error) {
+	r, err := db.Conn(ctx).FindAgentTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return agentTokenRow(r).toAgentToken(), nil
+}
+
+func (db *db) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+	rows, err := db.Conn(ctx).FindAgentTokens(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	tokens := make([]*AgentToken, len(rows))
+	for i, r := range rows {
+		tokens[i] = agentTokenRow(r).toAgentToken()
+	}
+	return tokens, nil
+}
+
+func (db *db) deleteAgentToken(ctx context.Context, id string) error {
+	_, err := db.Conn(ctx).DeleteAgentTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
 }

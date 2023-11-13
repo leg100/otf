@@ -93,7 +93,6 @@ type (
 		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 
 		lockFileService
-		tokenService
 	}
 
 	service struct {
@@ -118,7 +117,6 @@ type (
 		forceCancelSignalHook *hooks.Hook[*Run]
 
 		*factory
-		*tokenFactory
 	}
 
 	Options struct {
@@ -168,10 +166,6 @@ func NewService(opts Options) *service {
 		opts.VCSProviderService,
 		opts.ReleasesService,
 	}
-	svc.tokenFactory = &tokenFactory{
-		TokensService: opts.TokensService,
-	}
-
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
 		WorkspaceService: opts.WorkspaceService,
@@ -209,14 +203,7 @@ func NewService(opts Options) *service {
 
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.
-	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
-
-	// Register with auth middleware the run token and a means of
-	// retrieving RunToken corresponding to token.
-	opts.TokensService.RegisterKind(RunTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
-		return &RunToken{Organization: organization}, nil
-
-	})
+	opts.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
 }

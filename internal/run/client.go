@@ -170,18 +170,6 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Ev
 	return notifications, nil
 }
 
-func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "tokens/run/create", &opts)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	if err := c.Do(ctx, req, &buf); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
 func newSSEClient(config otfapi.Config, notifications chan pubsub.Event, opts WatchOptions) (*sse.Client, error) {
 	// construct watch URL endpoint
 	addr, err := http.SanitizeAddress(config.Address)

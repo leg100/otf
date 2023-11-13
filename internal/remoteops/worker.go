@@ -2,7 +2,6 @@ package remoteops
 
 import (
 	"context"
-	"errors"
 
 	"github.com/leg100/otf/internal"
 	otfrun "github.com/leg100/otf/internal/run"
@@ -30,16 +29,6 @@ func (w *worker) Start(ctx context.Context) {
 // handle handles the incoming run and spawns an operation.
 func (w *worker) handle(ctx context.Context, run *otfrun.Run) {
 	logger := w.Logger.WithValues("run", run.ID, "phase", run.Phase())
-
-	// claim run phase
-	run, err := w.StartPhase(ctx, run.ID, run.Phase(), otfrun.PhaseStartOptions{AgentID: DefaultID})
-	if errors.Is(err, internal.ErrPhaseAlreadyStarted) {
-		// another agent has already claimed it
-		return
-	} else if err != nil {
-		logger.Error(err, "starting phase")
-		return
-	}
 
 	// Create token for terraform for it to authenticate with the OTF registry
 	// when retrieving modules and providers, and make it available to terraform
@@ -82,11 +71,4 @@ func (w *worker) handle(ctx context.Context, run *otfrun.Run) {
 	}
 
 	logger.Info("finishing operation")
-
-	// Regardless of success, mark operation as finished
-	_, err = w.FinishPhase(ctx, run.ID, run.Phase(), finishOptions)
-	if err != nil {
-		logger.Error(err, "finishing operation")
-		return
-	}
 }

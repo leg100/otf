@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/hooks"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -14,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 type (
@@ -24,6 +26,14 @@ type (
 		NewManager() *manager
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
+		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
+
+		CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error)
+		GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error)
+		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
+
+		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
 	}
 
 	service struct {
@@ -33,17 +43,27 @@ type (
 
 		organization internal.Authorizer
 
-		*db
 		tfeapi *tfe
 		api    *api
+		web    *webHandlers
+
+		*db
 		*registrar
+		*tokenFactory
 	}
 
 	ServiceOptions struct {
 		logr.Logger
 		*sql.DB
+		*pubsub.Broker
+		html.Renderer
 		*tfeapi.Responder
 		run.RunService
+		tokens.TokensService
+	}
+
+	tokenFactory struct {
+		tokens.TokensService
 	}
 )
 
@@ -52,6 +72,9 @@ func NewService(opts ServiceOptions) *service {
 		Logger:       opts.Logger,
 		db:           &db{DB: opts.DB},
 		organization: &organization.Authorizer{Logger: opts.Logger},
+		tokenFactory: &tokenFactory{
+			TokensService: opts.TokensService,
+		},
 	}
 	svc.tfeapi = &tfe{
 		service:   svc,
@@ -61,9 +84,37 @@ func NewService(opts ServiceOptions) *service {
 		service:   svc,
 		Responder: opts.Responder,
 	}
+	svc.web = &webHandlers{
+		Renderer: opts.Renderer,
+		svc:      svc,
+	}
 	svc.registrar = &registrar{
 		service: svc,
 	}
+	// permit broker to transform database trigger events into agent events
+	// permit broker to transform database trigger events into agent pool events
+	opts.Broker.Register("agent_pools", func(ctx context.Context, poolID string, action pubsub.DBAction) (any, error) {
+		if action == pubsub.DeleteDBAction {
+			return &Agent{ID: poolID}, nil
+		}
+		return svc.getPool(ctx, poolID)
+	})
+	opts.Broker.Register("agents", func(ctx context.Context, agentID string, action pubsub.DBAction) (any, error) {
+		if action == pubsub.DeleteDBAction {
+			return &Agent{ID: agentID}, nil
+		}
+		return svc.getAgent(ctx, agentID)
+	})
+	opts.Broker.Register("jobs", func(ctx context.Context, jobspecString string, action pubsub.DBAction) (any, error) {
+		spec, err := NewJobSpecFromString(jobspecString)
+		if err != nil {
+			return nil, err
+		}
+		if action == pubsub.DeleteDBAction {
+			return &Job{JobSpec: spec}, nil
+		}
+		return svc.getJob(ctx, spec)
+	})
 	// create jobs when a plan or apply is enqueued
 	opts.AfterEnqueuePlan(svc.createJob)
 	opts.AfterEnqueueApply(svc.createJob)
@@ -71,7 +122,27 @@ func NewService(opts ServiceOptions) *service {
 	opts.AfterCancelSignal(svc.relaySignal(cancelSignal))
 	// relay force-cancel signal from run service to agent.
 	opts.AfterForceCancelSignal(svc.relaySignal(forceCancelSignal))
+	// Register with auth middleware the agent token kind and a means of
+	// retrieving an AgentToken corresponding to token's subject.
+	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+		return svc.GetAgentToken(ctx, tokenID)
+	})
+	// Register with auth middleware the job token and a means of
+	// retrieving Job corresponding to token.
+	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString string) (internal.Subject, error) {
+		spec, err := NewJobSpecFromString(jobspecString)
+		if err != nil {
+			return nil, err
+		}
+		return svc.getJob(ctx, spec)
+	})
 	return svc
+}
+
+func (s *service) AddHandlers(r *mux.Router) {
+	s.tfeapi.addHandlers(r)
+	s.api.addHandlers(r)
+	s.web.addHandlers(r)
 }
 
 func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
@@ -86,11 +157,6 @@ func (s *service) NewManager() *manager {
 		service:  s,
 		interval: defaultManagerInterval,
 	}
-}
-
-func (s *service) AddHandlers(r *mux.Router) {
-	s.tfeapi.addHandlers(r)
-	s.api.addHandlers(r)
 }
 
 func (s *service) createPool(ctx context.Context, opts createPoolOptions) (*Pool, error) {
@@ -308,6 +374,10 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 	return nil, nil
 }
 
+func (s *service) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
+	return s.db.getJob(ctx, spec)
+}
+
 func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
@@ -345,4 +415,72 @@ func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobS
 		}
 		return err
 	})
+}
+
+// agent tokens
+
+func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	at, token, err := a.NewAgentToken(opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := a.db.createAgentToken(ctx, at); err != nil {
+		a.Error(err, "creating agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("created agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
+	return token, nil
+}
+
+func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
+	at, err := a.db.getAgentTokenByID(ctx, tokenID)
+	if err != nil {
+		a.Error(err, "retrieving agent token", "token", "******")
+		return nil, err
+	}
+	a.V(9).Info("retrieved agent token", "organization", at.Organization, "id", at.ID)
+	return at, nil
+}
+
+func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, err := a.db.listAgentTokens(ctx, organization)
+	if err != nil {
+		a.Error(err, "listing agent tokens", "organization", organization, "subject", subject)
+		return nil, err
+	}
+	a.V(9).Info("listed agent tokens", "organization", organization, "subject", subject)
+	return tokens, nil
+}
+
+func (a *service) DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
+	// retrieve agent token first in order to get organization for authorization
+	at, err := a.db.getAgentTokenByID(ctx, id)
+	if err != nil {
+		// we can't reveal any info because all we have is the
+		// authentication token which is sensitive.
+		a.Error(err, "retrieving agent token", "token", "******")
+		return nil, err
+	}
+
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, at.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := a.db.deleteAgentToken(ctx, id); err != nil {
+		a.Error(err, "deleting agent token", "agent token", at, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("deleted agent token", "agent token", at, "subject", subject)
+	return at, nil
 }

@@ -132,8 +132,9 @@ func (a *service) CreateTeam(ctx context.Context, organization string, opts Crea
 		return nil, err
 	}
 
-	err = a.createHook.Dispatch(ctx, team, func(ctx context.Context) error {
-		return a.db.createTeam(ctx, team)
+	err = a.createHook.Dispatch(ctx, team, func(ctx context.Context) (*Team, error) {
+		err := a.db.createTeam(ctx, team)
+		return team, err
 	})
 	if err != nil {
 		a.Error(err, "creating team", "name", team.Name, "organization", organization, "subject", subject)

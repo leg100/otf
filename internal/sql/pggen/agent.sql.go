@@ -302,6 +302,13 @@ type Querier interface {
 	// FindJobsScan scans the result of an executed FindJobsBatch query.
 	FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error)
 
+	FindJob(ctx context.Context, runID pgtype.Text, phase pgtype.Text) (FindJobRow, error)
+	// FindJobBatch enqueues a FindJob query into batch to be executed
+	// later by the batch.
+	FindJobBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text)
+	// FindJobScan scans the result of an executed FindJobBatch query.
+	FindJobScan(results pgx.BatchResults) (FindJobRow, error)
+
 	FindJobForUpdate(ctx context.Context, runID pgtype.Text, phase pgtype.Text) (FindJobForUpdateRow, error)
 	// FindJobForUpdateBatch enqueues a FindJobForUpdate query into batch to be executed
 	// later by the batch.
@@ -1672,6 +1679,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findJobsSQL, findJobsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindJobs': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findJobSQL, findJobSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindJob': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findJobForUpdateSQL, findJobForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindJobForUpdate': %w", err)

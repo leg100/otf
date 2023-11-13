@@ -1,4 +1,4 @@
-package remoteops
+package agent
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 type CLI struct {
-	AgentTokenService
+	Service
 }
 
 func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
@@ -21,7 +21,7 @@ func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.AgentTokenService = &rpcClient{Client: api}
+			cli.Service = &rpcClient{Client: api}
 			return nil
 		},
 	}

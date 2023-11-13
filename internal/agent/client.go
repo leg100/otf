@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -35,13 +36,12 @@ type (
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 		Hostname() string
-		GetAgentToken(context.Context, string) (*tokens.AgentToken, error)
 
-		tokens.RunTokenService
 		internal.PutChunkService
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
+		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
 	}
 
 	// InProcClient is a client for in-process communication with the server.
@@ -64,22 +64,23 @@ type (
 		*stateClient
 		*configClient
 		*variableClient
-		*tokensClient
 		*runClient
 		*logsClient
+
+		// rpcClient only implements some of agent service
+		Service
 	}
 
 	stateClient     = state.Client
 	configClient    = configversion.Client
 	variableClient  = variable.Client
-	tokensClient    = tokens.Client
 	workspaceClient = workspace.Client
 	runClient       = run.Client
 	logsClient      = logs.Client
 )
 
-// NewClient constructs a client that uses RPC to call OTF services.
-func NewClient(cfg otfapi.Config) (*rpcClient, error) {
+// NewRPCClient constructs a client that uses RPC to call OTF services.
+func NewRPCClient(cfg otfapi.Config) (*rpcClient, error) {
 	api, err := otfapi.NewClient(cfg)
 	if err != nil {
 		return nil, err
@@ -89,7 +90,6 @@ func NewClient(cfg otfapi.Config) (*rpcClient, error) {
 		stateClient:    &stateClient{Client: api},
 		configClient:   &configClient{Client: api},
 		variableClient: &variableClient{Client: api},
-		tokensClient:   &tokensClient{Client: api},
 		runClient:      &runClient{Client: api, Config: cfg},
 		logsClient:     &logsClient{Client: api},
 	}, nil
@@ -125,4 +125,32 @@ func (c *rpcClient) getAgentJobs(ctx context.Context, agentID string) ([]*Job, e
 		return nil, err
 	}
 	return jobs, nil
+}
+
+// agent tokens
+
+func (c *rpcClient) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
+	req, err := c.NewRequest("POST", "agent/create", &opts)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := c.Do(ctx, req, &buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// job tokens
+
+func (c *rpcClient) createJobToken(ctx context.Context, spec JobSpec) ([]byte, error) {
+	req, err := c.NewRequest("POST", "tokens/job", &spec)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := c.Do(ctx, req, &buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

@@ -44,7 +44,7 @@ func run(ctx context.Context, args []string) error {
 			}
 
 			// Sends unauthenticated ping to server
-			app, err := agent.NewClient(clientConfig)
+			app, err := agent.NewRPCClient(clientConfig)
 			if err != nil {
 				return err
 			}

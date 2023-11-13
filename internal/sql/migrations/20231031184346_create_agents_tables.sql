@@ -1,4 +1,6 @@
 -- +goose Up
+-- +goose StatementBegin
+
 -- create agent pools and agent_pool_allowed_workspaces tables
 CREATE TABLE IF NOT EXISTS agent_pools (
     agent_pool_id       TEXT,
@@ -102,7 +104,85 @@ CREATE TABLE IF NOT EXISTS jobs (
     signal TEXT REFERENCES signals ON UPDATE CASCADE
 );
 
+-- create triggers for pools, agents, and jobs
+CREATE OR REPLACE FUNCTION agent_pools_notify_event() RETURNS TRIGGER AS $$
+DECLARE
+    record RECORD;
+    notification JSON;
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        record = OLD;
+    ELSE
+        record = NEW;
+    END IF;
+    notification = json_build_object(
+                      'table',TG_TABLE_NAME,
+                      'action', TG_OP,
+                      'id', record.agent_pool_id);
+    PERFORM pg_notify('events', notification::text);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION agents_notify_event() RETURNS TRIGGER AS $$
+DECLARE
+    record RECORD;
+    notification JSON;
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        record = OLD;
+    ELSE
+        record = NEW;
+    END IF;
+    notification = json_build_object(
+                      'table',TG_TABLE_NAME,
+                      'action', TG_OP,
+                      'id', record.agent_id);
+    PERFORM pg_notify('events', notification::text);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION jobs_notify_event() RETURNS TRIGGER AS $$
+DECLARE
+    record RECORD;
+    notification JSON;
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        record = OLD;
+    ELSE
+        record = NEW;
+    END IF;
+    notification = json_build_object(
+                      'table',TG_TABLE_NAME,
+                      'action', TG_OP,
+                      'id', record.run_id || '-' || record.phase);
+    PERFORM pg_notify('events', notification::text);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER notify_event
+AFTER INSERT OR UPDATE OR DELETE ON agent_pools
+    FOR EACH ROW EXECUTE PROCEDURE agent_pools_notify_event();
+
+CREATE TRIGGER notify_event
+AFTER INSERT OR UPDATE OR DELETE ON agents
+    FOR EACH ROW EXECUTE PROCEDURE agents_notify_event();
+
+CREATE TRIGGER notify_event
+AFTER INSERT OR UPDATE OR DELETE ON jobs
+    FOR EACH ROW EXECUTE PROCEDURE jobs_notify_event();
+-- +goose StatementEnd
+
 -- +goose Down
+DROP TRIGGER IF EXISTS notify_event ON jobs;
+DROP TRIGGER IF EXISTS notify_event ON agents;
+DROP TRIGGER IF EXISTS notify_event ON agent_pools;
+DROP FUNCTION IF EXISTS jobs_notify_event;
+DROP FUNCTION IF EXISTS agents_notify_event;
+DROP FUNCTION IF EXISTS agent_pools_notify_event;
+
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS job_statuses;
 DROP TABLE IF EXISTS signals;

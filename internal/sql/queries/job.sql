@@ -21,7 +21,8 @@ SELECT
     j.signal,
     j.agent_id,
     w.execution_mode,
-    r.workspace_id
+    r.workspace_id,
+    w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
@@ -37,10 +38,28 @@ SELECT
     j.signal,
     j.agent_id,
     w.execution_mode,
-    r.workspace_id
+    r.workspace_id,
+    w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
+;
+
+-- name: FindJob :one
+SELECT
+    j.run_id,
+    j.phase,
+    j.status,
+    j.signal,
+    j.agent_id,
+    w.execution_mode,
+    r.workspace_id,
+    w.organization_name
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+WHERE run_id = pggen.arg('run_id')
+AND   phase = pggen.arg('phase')
 ;
 
 -- name: FindJobForUpdate :one
@@ -51,7 +70,8 @@ SELECT
     j.signal,
     j.agent_id,
     w.execution_mode,
-    r.workspace_id
+    r.workspace_id,
+    w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)

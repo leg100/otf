@@ -10,7 +10,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/spf13/pflag"
 )
 
@@ -82,21 +81,12 @@ func New(ctx context.Context, logger logr.Logger, app client, cfg Config) (*daem
 		envs = internal.SafeAppend(envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
-	// handle otf-agent specific behaviour
-	if !cfg.server {
-		// confirm token validity, and get pool ID from token
-		at, err := app.GetAgentToken(ctx, "")
-		if err != nil {
-			return nil, fmt.Errorf("attempted authentication: %w", err)
-		}
-		opts.AgentPoolID = &at.AgentPoolID
-		logger.Info("successfully authenticated", "organization", at.Organization, "token_id", at.ID)
-	}
 	// register agent with server
 	agent, err := app.registerAgent(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
+	logger = logger.WithValues("agent_id", agent.ID, "component", "agent")
 	// create daemon along with unique ID assigned by server
 	return &daemon{
 		client:  app,
@@ -107,16 +97,40 @@ func New(ctx context.Context, logger logr.Logger, app client, cfg Config) (*daem
 }
 
 func (d *daemon) Start(ctx context.Context) error {
+	workers := make(map[JobSpec]*worker)
 	for {
 		// block on waiting for jobs
 		jobs, err := d.getAgentJobs(ctx, d.agentID)
 		if err != nil {
 			return err
 		}
-		token, err := d.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
-			Organization: &run.Organization,
-			RunID:        &run.ID,
-		})
+		for _, j := range jobs {
+			if j.Status == JobAllocated {
+				d.Info("received allocated job", "job", j)
+				token, err := d.createJobToken(ctx, j.JobSpec)
+				if err != nil {
+					return err
+				}
+				w := &worker{
+					client: d.client,
+					Logger: d.Logger,
+					job:    j,
+					token:  token,
+				}
+				workers[j.JobSpec] = w
+			}
+			if j.signal != nil {
+				d.Info("received signal", "signal", *j.signal, "job", j)
+				w, ok := workers[j.JobSpec]
+				if !ok {
+					d.Error(nil, "no job found for signal", "job", j, "signal", *j.signal)
+					continue
+				}
+				w.handleSignal(*j.signal)
+			}
+		}
+		// now I've got a token use it in all calls, and terraform itself needs to use
+		// it too
 	}
 }
 
@@ -125,7 +139,8 @@ type worker struct {
 	client
 	logr.Logger
 
-	job *Job
+	job   *Job
+	token []byte
 }
 
 // do the Job
@@ -135,4 +150,7 @@ func (w *worker) do(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (w *worker) handleSignal(sig signal) {
 }
