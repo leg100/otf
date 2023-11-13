@@ -1,6 +1,7 @@
 package remoteops
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/leg100/otf/internal"
@@ -11,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -38,14 +38,13 @@ type (
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 		Hostname() string
+		CreateRunToken(ctx context.Context, opts run.CreateRunTokenOptions) ([]byte, error)
 
-		tokens.RunTokenService
 		internal.PutChunkService
 	}
 
 	// InProcClient is a client for in-process communication with the server.
 	InProcClient struct {
-		tokens.TokensService
 		variable.VariableService
 		state.StateService
 		workspace.WorkspaceService
@@ -63,16 +62,18 @@ type (
 		*stateClient
 		*configClient
 		*variableClient
-		*tokensClient
 		*workspaceClient
 		*runClient
 		*logsClient
+
+		// rpcClient doesn't implement all of AgentTokenService so stub it out
+		// here to ensure it satisfies interface implementation.
+		AgentTokenService
 	}
 
 	stateClient     = state.Client
 	configClient    = configversion.Client
 	variableClient  = variable.Client
-	tokensClient    = tokens.Client
 	workspaceClient = workspace.Client
 	runClient       = run.Client
 	logsClient      = logs.Client
@@ -89,9 +90,32 @@ func newClient(cfg otfapi.Config) (*rpcClient, error) {
 		stateClient:     &stateClient{Client: api},
 		configClient:    &configClient{Client: api},
 		variableClient:  &variableClient{Client: api},
-		tokensClient:    &tokensClient{Client: api},
 		workspaceClient: &workspaceClient{Client: api},
 		runClient:       &runClient{Client: api, Config: cfg},
 		logsClient:      &logsClient{Client: api},
 	}, nil
+}
+
+func (c *rpcClient) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
+	req, err := c.NewRequest("POST", "agent/create", &opts)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := c.Do(ctx, req, &buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (c *rpcClient) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
+	req, err := c.NewRequest("GET", "agent/details", nil)
+	if err != nil {
+		return nil, err
+	}
+	var at AgentToken
+	if err := c.Do(ctx, req, &at); err != nil {
+		return nil, err
+	}
+	return &at, nil
 }

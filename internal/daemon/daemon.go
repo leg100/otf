@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
@@ -36,8 +35,10 @@ import (
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -54,7 +55,8 @@ type (
 		*pubsub.Broker
 
 		organization.OrganizationService
-		auth.AuthService
+		team.TeamService
+		user.UserService
 		tokens.TokensService
 		variable.VariableService
 		vcsprovider.VCSProviderService
@@ -119,6 +121,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	// Setup url signer
 	signer := internal.NewSigner(cfg.Secret)
 
+	tokensService, err := tokens.NewService(tokens.Options{
+		Logger:          logger,
+		GoogleIAPConfig: cfg.GoogleIAPConfig,
+		Secret:          cfg.Secret,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
+	}
+
 	orgService := organization.NewService(organization.Options{
 		Logger:                       logger,
 		DB:                           db,
@@ -126,33 +137,31 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:                    responder,
 		Broker:                       broker,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
+		TokensService:                tokensService,
 	})
 
-	authService := auth.NewService(auth.Options{
+	teamService := team.NewService(team.Options{
 		Logger:              logger,
 		DB:                  db,
 		Renderer:            renderer,
 		Responder:           responder,
 		HostnameService:     hostnameService,
 		OrganizationService: orgService,
+		TokensService:       tokensService,
 	})
-	// promote nominated users to site admin
-	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
-		return nil, err
-	}
-
-	tokensService, err := tokens.NewService(tokens.Options{
+	userService := user.NewService(user.Options{
 		Logger:          logger,
 		DB:              db,
 		Renderer:        renderer,
 		Responder:       responder,
-		AuthService:     authService,
-		GoogleIAPConfig: cfg.GoogleIAPConfig,
+		HostnameService: hostnameService,
+		TokensService:   tokensService,
 		SiteToken:       cfg.SiteToken,
-		Secret:          cfg.Secret,
+		TeamService:     teamService,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
+	// promote nominated users to site admin
+	if err := userService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
+		return nil, err
 	}
 
 	githubAppService := github.NewService(github.Options{
@@ -210,7 +219,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Renderer:            renderer,
 		Responder:           responder,
 		ConnectionService:   connectionService,
-		TeamService:         authService,
+		TeamService:         teamService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 	})
@@ -239,6 +248,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
 		ReleasesService:             releasesService,
+		TokensService:               tokensService,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -282,7 +292,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	remoteopsDaemon, err := remoteops.NewDaemon(
 		logger.WithValues("component", "remoteops"),
 		remoteops.InProcClient{
-			TokensService:               tokensService,
+			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
 			HostnameService:             hostnameService,
@@ -343,9 +353,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{
-		Secret:        cfg.Secret,
-		Renderer:      renderer,
-		TokensService: tokensService,
+		Secret:      cfg.Secret,
+		Renderer:    renderer,
+		UserService: userService,
 	})
 	if err != nil {
 		return nil, err
@@ -359,8 +369,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	handlers := []internal.Handlers{
-		authService,
-		tokensService,
+		teamService,
+		userService,
 		workspaceService,
 		stateService,
 		orgService,
@@ -391,7 +401,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Config:                      cfg,
 		Logger:                      logger,
 		Handlers:                    handlers,
-		AuthService:                 authService,
+		TeamService:                 teamService,
+		UserService:                 userService,
 		TokensService:               tokensService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,

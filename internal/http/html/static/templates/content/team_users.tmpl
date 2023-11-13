@@ -1,0 +1,25 @@
+{{ if .CanAddMember }}
+  {{ template "search-dropdown" .AddMemberDropdown }}
+{{ end }}
+<div id="content-list">
+  {{ range .Members }}
+    <div id="item-user-{{ .Username }}" class="widget">
+      <div>
+        <span id="username">{{ .Username }}</span>
+      </div>
+      <div>
+        {{ template "identifier" . }}
+        {{ if $.CanRemoveMember }}
+          <form action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
+            <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
+            <button id="remove-member-button" class="btn-danger">
+              Remove member
+            </button>
+          </form>
+        {{ end }}
+      </div>
+    </div>
+  {{ else }}
+    The team currently has no members.
+  {{ end }}
+</div>

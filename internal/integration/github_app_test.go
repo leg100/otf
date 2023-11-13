@@ -12,12 +12,12 @@ import (
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	integrationTest(t)
 
 	// creating a github app requires site-admin role
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// these tests submit the create github app form using different
 	// combinations of form fields, and then checking that a (stub) github server
@@ -217,7 +217,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 		}),
 	)
 	// creating a github app requires site-admin role
-	ctx = internal.AddSubjectToContext(ctx, &auth.SiteAdmin)
+	ctx = internal.AddSubjectToContext(ctx, &user.SiteAdmin)
 	// create an OTF daemon with a fake github backend, and serve up a repo and
 	// its contents via tarball.
 	_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{

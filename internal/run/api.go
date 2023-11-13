@@ -35,6 +35,9 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{id}/lockfile", a.getLockFile).Methods("GET")
 	r.HandleFunc("/runs/{id}/lockfile", a.uploadLockFile).Methods("PUT")
 	r.HandleFunc("/watch", a.watch).Methods("GET")
+
+	// run tokens
+	r.HandleFunc("/tokens/run/create", a.createRunToken).Methods("POST")
 }
 
 func (a *api) list(w http.ResponseWriter, r *http.Request) {
@@ -228,4 +231,20 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 		pubsub.WriteSSEEvent(w, b, event.Type, true)
 		flusher.Flush()
 	}
+}
+
+func (a *api) createRunToken(w http.ResponseWriter, r *http.Request) {
+	var opts CreateRunTokenOptions
+	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	token, err := a.CreateRunToken(r.Context(), CreateRunTokenOptions{
+		Organization: opts.Organization,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	w.Write(token)
 }

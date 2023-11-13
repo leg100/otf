@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 type (
@@ -29,6 +30,14 @@ type (
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
 		AfterCreateOrganization(l hooks.Listener[*Organization])
 		BeforeDeleteOrganization(l hooks.Listener[*Organization])
+
+		// organization tokens
+		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
+		// GetOrganizationToken gets the organization token. If a token does not
+		// exist, then nil is returned without an error.
+		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
+		DeleteOrganizationToken(ctx context.Context, organization string) error
+		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}
 
 	service struct {
@@ -38,11 +47,12 @@ type (
 		logr.Logger
 		*pubsub.Broker
 
-		db     *pgdb
-		site   internal.Authorizer // authorize access to site
-		web    *web
-		tfeapi *tfe
-		api    *api
+		db           *pgdb
+		site         internal.Authorizer // authorize access to site
+		web          *web
+		tfeapi       *tfe
+		api          *api
+		tokenFactory *tokenFactory
 
 		createHook *hooks.Hook[*Organization]
 		deleteHook *hooks.Hook[*Organization]
@@ -56,6 +66,7 @@ type (
 		*pubsub.Broker
 		html.Renderer
 		logr.Logger
+		tokens.TokensService
 	}
 
 	// ListOptions represents the options for listing organizations.
@@ -74,6 +85,7 @@ func NewService(opts Options) *service {
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
 		createHook:                   hooks.NewHook[*Organization](opts.DB),
 		deleteHook:                   hooks.NewHook[*Organization](opts.DB),
+		tokenFactory:                 &tokenFactory{TokensService: opts.TokensService},
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,
@@ -96,6 +108,11 @@ func NewService(opts Options) *service {
 	// Fetch organization when API calls request organization be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
+	// Register with auth middleware the organization token and a means of
+	// retrieving organization corresponding to token.
+	opts.TokensService.RegisterKind(OrganizationTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
+		return svc.GetOrganizationToken(ctx, organization)
+	})
 
 	return &svc
 }
@@ -248,4 +265,52 @@ func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Su
 		return subject, internal.ErrAccessNotPermitted
 	}
 	return subject, nil
+}
+
+// CreateOrganizationToken creates an organization token. If an organization
+// token already exists it is replaced.
+func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ot, token, err := s.tokenFactory.NewOrganizationToken(opts)
+	if err != nil {
+		s.Error(err, "constructing organization token", "organization", opts.Organization)
+		return nil, nil, err
+	}
+
+	if err := s.db.upsertOrganizationToken(ctx, ot); err != nil {
+		s.Error(err, "creating organization token", "organization", opts.Organization)
+		return nil, nil, err
+	}
+
+	s.V(0).Info("created organization token", "organization", opts.Organization)
+
+	return ot, token, nil
+}
+
+func (s *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
+	return s.db.getOrganizationTokenByName(ctx, organization)
+}
+
+func (s *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.deleteOrganizationToken(ctx, organization); err != nil {
+		s.Error(err, "deleting organization token", "organization", organization)
+		return err
+	}
+
+	s.V(0).Info("deleted organization token", "organization", organization)
+
+	return nil
+}
+
+func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+	return s.db.getOrganizationTokenByID(ctx, tokenID)
 }

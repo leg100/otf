@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
@@ -90,6 +91,9 @@ type (
 		internal.Authorizer // run authorizer
 
 		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
+
+		lockFileService
+		tokenService
 	}
 
 	service struct {
@@ -114,6 +118,7 @@ type (
 		forceCancelSignalHook *hooks.Hook[*Run]
 
 		*factory
+		*tokenFactory
 	}
 
 	Options struct {
@@ -125,6 +130,7 @@ type (
 		ConfigurationVersionService
 		VCSProviderService
 		releases.ReleasesService
+		tokens.TokensService
 
 		logr.Logger
 		internal.Cache
@@ -161,6 +167,9 @@ func NewService(opts Options) *service {
 		opts.ConfigurationVersionService,
 		opts.VCSProviderService,
 		opts.ReleasesService,
+	}
+	svc.tokenFactory = &tokenFactory{
+		TokensService: opts.TokensService,
 	}
 
 	svc.web = &webHandlers{
@@ -201,6 +210,13 @@ func NewService(opts Options) *service {
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.
 	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
+
+	// Register with auth middleware the run token and a means of
+	// retrieving RunToken corresponding to token.
+	opts.TokensService.RegisterKind(RunTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
+		return &RunToken{Organization: organization}, nil
+
+	})
 
 	return &svc
 }

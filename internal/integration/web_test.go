@@ -6,7 +6,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +17,7 @@ func TestWeb(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 	user := userFromContext(t, ctx)
 
-	team, err := daemon.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+	team, err := daemon.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("devops"),
 	})
 	require.NoError(t, err)

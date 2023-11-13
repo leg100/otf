@@ -5,12 +5,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -322,12 +322,12 @@ func TestWorkspace(t *testing.T) {
 		team2 := svc.createTeam(t, ctx, org)
 		_ = svc.SetPermission(ctx, ws1.ID, team1.Name, rbac.WorkspacePlanRole)
 		_ = svc.SetPermission(ctx, ws2.ID, team2.Name, rbac.WorkspacePlanRole)
-		user1 := svc.createUser(t, auth.WithTeams(team1, team2))
+		user1 := svc.createUser(t, user.WithTeams(team1, team2))
 		user2 := svc.createUser(t)
 
 		tests := []struct {
 			name string
-			user *auth.User
+			user *user.User
 			opts workspace.ListOptions
 			want func(*testing.T, *resource.Page[*workspace.Workspace])
 		}{

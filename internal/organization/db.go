@@ -13,24 +13,6 @@ import (
 )
 
 type (
-	// pgdb is a database of organizations on postgres
-	pgdb struct {
-		*sql.DB // provides access to generated SQL queries
-	}
-
-	row struct {
-		OrganizationID             pgtype.Text        `json:"organization_id"`
-		CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-		UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-		Name                       pgtype.Text        `json:"name"`
-		SessionRemember            pgtype.Int4        `json:"session_remember"`
-		SessionTimeout             pgtype.Int4        `json:"session_timeout"`
-		Email                      pgtype.Text        `json:"email"`
-		CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
-		AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
-		CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
-	}
-
 	// dbListOptions represents the options for listing organizations via the
 	// database.
 	dbListOptions struct {
@@ -38,6 +20,53 @@ type (
 		resource.PageOptions
 	}
 )
+
+// row is the row result of a database query for organizations
+type row struct {
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	Name                       pgtype.Text        `json:"name"`
+	SessionRemember            pgtype.Int4        `json:"session_remember"`
+	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
+	Email                      pgtype.Text        `json:"email"`
+	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
+	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
+}
+
+// row converts an organization database row into an
+// organization.
+func (r row) toOrganization() *Organization {
+	org := &Organization{
+		ID:                         r.OrganizationID.String,
+		CreatedAt:                  r.CreatedAt.Time.UTC(),
+		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
+		Name:                       r.Name.String,
+		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces,
+		CostEstimationEnabled:      r.CostEstimationEnabled,
+	}
+	if r.SessionRemember.Status == pgtype.Present {
+		sessionRememberInt := int(r.SessionRemember.Int)
+		org.SessionRemember = &sessionRememberInt
+	}
+	if r.SessionTimeout.Status == pgtype.Present {
+		sessionTimeoutInt := int(r.SessionTimeout.Int)
+		org.SessionTimeout = &sessionTimeoutInt
+	}
+	if r.Email.Status == pgtype.Present {
+		org.Email = &r.Email.String
+	}
+	if r.CollaboratorAuthPolicy.Status == pgtype.Present {
+		org.CollaboratorAuthPolicy = &r.CollaboratorAuthPolicy.String
+	}
+	return org
+}
+
+// pgdb is a database of organizations on postgres
+type pgdb struct {
+	*sql.DB // provides access to generated SQL queries
+}
 
 // GetByID implements pubsub.Getter
 func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) (any, error) {
@@ -131,30 +160,60 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 	return nil
 }
 
-// row converts an organization database row into an
-// organization.
-func (r row) toOrganization() *Organization {
-	org := &Organization{
-		ID:                         r.OrganizationID.String,
-		CreatedAt:                  r.CreatedAt.Time.UTC(),
-		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
-		Name:                       r.Name.String,
-		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces,
-		CostEstimationEnabled:      r.CostEstimationEnabled,
+//
+// Organization tokens
+//
+
+func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
+	_, err := db.Conn(ctx).UpsertOrganizationToken(ctx, pggen.UpsertOrganizationTokenParams{
+		OrganizationTokenID: sql.String(token.ID),
+		OrganizationName:    sql.String(token.Organization),
+		CreatedAt:           sql.Timestamptz(token.CreatedAt),
+		Expiry:              sql.TimestamptzPtr(token.Expiry),
+	})
+	return err
+}
+
+func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization string) (*OrganizationToken, error) {
+	// query only returns 0 or 1 tokens
+	result, err := db.Conn(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
+	if err != nil {
+		return nil, err
 	}
-	if r.SessionRemember.Status == pgtype.Present {
-		sessionRememberInt := int(r.SessionRemember.Int)
-		org.SessionRemember = &sessionRememberInt
+	if len(result) == 0 {
+		return nil, nil
 	}
-	if r.SessionTimeout.Status == pgtype.Present {
-		sessionTimeoutInt := int(r.SessionTimeout.Int)
-		org.SessionTimeout = &sessionTimeoutInt
+	ot := &OrganizationToken{
+		ID:           result[0].OrganizationTokenID.String,
+		CreatedAt:    result[0].CreatedAt.Time.UTC(),
+		Organization: result[0].OrganizationName.String,
 	}
-	if r.Email.Status == pgtype.Present {
-		org.Email = &r.Email.String
+	if result[0].Expiry.Status == pgtype.Present {
+		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
 	}
-	if r.CollaboratorAuthPolicy.Status == pgtype.Present {
-		org.CollaboratorAuthPolicy = &r.CollaboratorAuthPolicy.String
+	return ot, nil
+}
+
+func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+	result, err := db.Conn(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID))
+	if err != nil {
+		return nil, sql.Error(err)
 	}
-	return org
+	ot := &OrganizationToken{
+		ID:           result.OrganizationTokenID.String,
+		CreatedAt:    result.CreatedAt.Time.UTC(),
+		Organization: result.OrganizationName.String,
+	}
+	if result.Expiry.Status == pgtype.Present {
+		ot.Expiry = internal.Time(result.Expiry.Time.UTC())
+	}
+	return ot, nil
+}
+
+func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {
+	_, err := db.Conn(ctx).DeleteOrganiationTokenByName(ctx, sql.String(organization))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
 }

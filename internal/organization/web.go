@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 type (
@@ -48,6 +49,12 @@ func (a *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{name}/edit", a.edit).Methods("GET")
 	r.HandleFunc("/organizations/{name}/update", a.update).Methods("POST")
 	r.HandleFunc("/organizations/{name}/delete", a.delete).Methods("POST")
+
+	// organization tokens
+	r.HandleFunc("/organizations/{organization_name}/tokens/show", a.organizationToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/tokens/delete", a.deleteOrganizationToken).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/tokens/create", a.createOrganizationToken).Methods("POST")
+
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {
@@ -201,4 +208,62 @@ func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "deleted organization: "+organization)
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
+}
+
+//
+// Organization tokens
+//
+
+func (a *web) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	var opts CreateOrganizationTokenOptions
+	if err := decode.Route(&opts, r); err != nil {
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	_, token, err := a.svc.CreateOrganizationToken(r.Context(), opts)
+	if err != nil {
+		a.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tokens.TokenFlashMessage(a, w, token); err != nil {
+		a.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, paths.OrganizationToken(opts.Organization), http.StatusFound)
+}
+
+func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	token, err := a.svc.GetOrganizationToken(r.Context(), org)
+	if err != nil {
+		a.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	a.Render("organization_token.tmpl", w, struct {
+		OrganizationPage
+		Token *OrganizationToken
+	}{
+		OrganizationPage: NewPage(r, org, org),
+		Token:            token,
+	})
+}
+
+func (a *web) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	if err := a.svc.DeleteOrganizationToken(r.Context(), organization); err != nil {
+		a.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "Deleted organization token")
+	http.Redirect(w, r, paths.OrganizationToken(organization), http.StatusFound)
 }

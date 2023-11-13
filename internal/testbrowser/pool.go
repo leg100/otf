@@ -13,9 +13,8 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/tokens"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,14 +25,14 @@ var poolSize = runtime.GOMAXPROCS(0)
 // Pool of browsers
 type Pool struct {
 	pool chan *browser
-	// Key for generating session tokens
-	key jwk.Key
+	// service for creating new session in browser
+	tokensService tokens.TokensService
 	// allocator of browsers
 	allocator context.Context
 }
 
 func NewPool(secret []byte) (*Pool, func(), error) {
-	key, err := jwk.FromRaw(secret)
+	tokensService, err := tokens.NewService(tokens.Options{Secret: secret})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,9 +58,9 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		)...)
 
 	p := Pool{
-		pool:      make(chan *browser, poolSize),
-		key:       key,
-		allocator: allocator,
+		pool:          make(chan *browser, poolSize),
+		tokensService: tokensService,
+		allocator:     allocator,
 	}
 	for i := 0; i < poolSize; i++ {
 		p.pool <- nil
@@ -112,11 +111,11 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 			return err
 		}
 		if user != nil {
-			user, err := auth.UserFromContext(user)
+			user, err := otfuser.UserFromContext(user)
 			if err != nil {
 				return err
 			}
-			token, err := tokens.NewSessionToken(p.key, user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
+			token, err := p.tokensService.NewSessionToken(user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
 			if err != nil {
 				return err
 			}

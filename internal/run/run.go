@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -181,7 +181,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	if opts.AllowEmptyApply != nil {
 		run.AllowEmptyApply = *opts.AllowEmptyApply
 	}
-	if user, _ := auth.UserFromContext(ctx); user != nil {
+	if user, _ := user.UserFromContext(ctx); user != nil {
 		run.CreatedBy = &user.Username
 	}
 	if opts.IsDestroy != nil {

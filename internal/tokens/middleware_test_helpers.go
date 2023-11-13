@@ -10,33 +10,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/idtoken"
 )
-
-type fakeMiddlewareService struct {
-	auth.AuthService
-	TokensService
-}
-
-func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
-	return &AgentToken{}, nil
-}
-
-func (f *fakeMiddlewareService) GetUser(ctx context.Context, spec auth.UserSpec) (*auth.User, error) {
-	return &auth.User{}, nil
-}
-
-func (f *fakeMiddlewareService) getOrganizationTokenByID(context.Context, string) (*OrganizationToken, error) {
-	return &OrganizationToken{}, nil
-}
-
-func (f *fakeMiddlewareService) GetTeamByTokenID(context.Context, string) (*auth.Team, error) {
-	return &auth.Team{}, nil
-}
 
 // getGoogleCredentialsPath is a test helper to retrieve the path to a google
 // cloud service account key. If the necessary environment variable is not
@@ -71,11 +49,17 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, secret)
 	return newMiddleware(middlewareOptions{
-		AuthService:              &fakeMiddlewareService{},
-		agentTokenService:        &fakeMiddlewareService{},
-		organizationTokenService: &fakeMiddlewareService{},
-		teamTokenService:         &fakeMiddlewareService{},
-		key:                      key,
+		key: key,
+		registry: &registry{
+			kinds: map[Kind]SubjectGetter{
+				"test-kind": func(context.Context, string) (internal.Subject, error) {
+					return &internal.Superuser{}, nil
+				},
+			},
+			uiSubjectGetterOrCreator: func(context.Context, string) (internal.Subject, error) {
+				return &internal.Superuser{}, nil
+			},
+		},
 	})
 }
 
@@ -84,10 +68,8 @@ func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
-		AuthService:       &fakeMiddlewareService{},
-		agentTokenService: &fakeMiddlewareService{},
-		SiteToken:         token,
-		key:               key,
+		registry: &registry{SiteToken: token, SiteAdmin: &internal.Superuser{}},
+		key:      key,
 	})
 }
 
@@ -96,8 +78,11 @@ func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
-		AuthService:       &fakeMiddlewareService{},
-		agentTokenService: &fakeMiddlewareService{},
+		registry: &registry{
+			uiSubjectGetterOrCreator: func(context.Context, string) (internal.Subject, error) {
+				return &internal.Superuser{}, nil
+			},
+		},
 		GoogleIAPConfig: GoogleIAPConfig{
 			Audience: aud,
 		},

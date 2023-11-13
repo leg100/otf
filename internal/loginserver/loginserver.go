@@ -6,7 +6,7 @@ package loginserver
 import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/user"
 )
 
 const (
@@ -30,8 +30,8 @@ type (
 	server struct {
 		secret []byte // for encrypting auth code
 
-		html.Renderer        // render consent UI
-		tokens.TokensService // for creating user API token
+		html.Renderer    // render consent UI
+		user.UserService // for creating user API token
 	}
 
 	// Options for server constructor
@@ -39,7 +39,7 @@ type (
 		Secret []byte // for encrypting auth code
 
 		html.Renderer
-		tokens.TokensService
+		user.UserService
 	}
 
 	authcode struct {
@@ -59,9 +59,9 @@ type (
 
 func NewServer(opts Options) (*server, error) {
 	return &server{
-		secret:        opts.Secret,
-		Renderer:      opts.Renderer,
-		TokensService: opts.TokensService,
+		UserService: opts.UserService,
+		Renderer:    opts.Renderer,
+		secret:      opts.Secret,
 	}, nil
 }
 

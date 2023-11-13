@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -75,8 +75,8 @@ func createRootModule(t *testing.T, tfconfig string) string {
 	return root
 }
 
-func userFromContext(t *testing.T, ctx context.Context) *auth.User {
-	user, err := auth.UserFromContext(ctx)
+func userFromContext(t *testing.T, ctx context.Context) *user.User {
+	user, err := user.UserFromContext(ctx)
 	require.NoError(t, err)
 	return user
 }

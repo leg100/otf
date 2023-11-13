@@ -7,7 +7,13 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+)
+
+const (
+	// session cookie stores the session token
+	SessionCookie             = "session"
+	userSessionKind      Kind = "user_session"
+	defaultSessionExpiry      = 24 * time.Hour
 )
 
 type (
@@ -19,11 +25,15 @@ type (
 	sessionService interface {
 		StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error
 	}
+
+	// sessionFactory constructs new sessions.
+	sessionFactory struct {
+		*factory
+	}
 )
 
-func NewSessionToken(key jwk.Key, username string, expiry time.Time) (string, error) {
-	token, err := NewToken(NewTokenOptions{
-		key:     key,
+func (f *sessionFactory) NewSessionToken(username string, expiry time.Time) (string, error) {
+	token, err := f.NewToken(NewTokenOptions{
 		Subject: username,
 		Kind:    userSessionKind,
 		Expiry:  &expiry,
@@ -42,12 +52,12 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}
-	token, err := NewSessionToken(a.key, *opts.Username, expiry)
+	token, err := a.NewSessionToken(*opts.Username, expiry)
 	if err != nil {
 		return err
 	}
 	// Set cookie to expire at same time as token
-	html.SetCookie(w, sessionCookie, string(token), internal.Time(expiry))
+	html.SetCookie(w, SessionCookie, string(token), internal.Time(expiry))
 	html.ReturnUserOriginalPage(w, r)
 
 	a.V(2).Info("started session", "username", *opts.Username)

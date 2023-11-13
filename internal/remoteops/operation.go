@@ -8,10 +8,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/pkg/errors"
 )
 
 // operation is a piece of work corresponding to a particular run phase, e.g. a
@@ -36,7 +38,7 @@ func newOperation(
 	ctx context.Context,
 	logger logr.Logger,
 	dmon *daemon,
-	run *run.Run,
+	run *otfrun.Run,
 	envs []string,
 ) (*operation, error) {
 	wd, err := newWorkdir("")
@@ -45,6 +47,20 @@ func newOperation(
 	}
 
 	// retrieve variables that are applicable to the operation's run
+	// Create token for terraform for it to authenticate with the otf registry
+	// when retrieving modules and providers, and make it available to terraform
+	// via an environment variable.
+	//
+	// NOTE: environment variable support is only available in terraform >= 1.2.0
+	token, err := dmon.CreateRunToken(ctx, otfrun.CreateRunTokenOptions{
+		Organization: &run.Organization,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "creating run token")
+	}
+	envs := internal.SafeAppend(dmon.envs, internal.CredentialEnv(dmon.Hostname(), token))
+
+	// retrieve variables and add them to the environment
 	variables, err := dmon.ListEffectiveVariables(ctx, run.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace variables: %w", err)

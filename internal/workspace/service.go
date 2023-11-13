@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
@@ -16,7 +15,9 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -68,7 +69,7 @@ type (
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
 		connections.ConnectionService
-		auth.TeamService
+		team.TeamService
 		logr.Logger
 	}
 )
@@ -224,7 +225,7 @@ func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resour
 			if err != nil {
 				return nil, err
 			}
-			if user, ok := subject.(*auth.User); ok {
+			if user, ok := subject.(*user.User); ok {
 				return s.db.listByUsername(ctx, user.Username, *opts.Organization, opts.PageOptions)
 			}
 		} else if err != nil {
