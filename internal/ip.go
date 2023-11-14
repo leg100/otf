@@ -4,7 +4,7 @@ import (
 	"net"
 )
 
-// Get preferred outbound ip of this machine.
+// GetOutboundIP gets the preferred outbound IP address of this machine.
 //
 // Credit to: https://stackoverflow.com/a/37382208
 func GetOutboundIP() (net.IP, error) {

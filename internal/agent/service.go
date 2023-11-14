@@ -27,6 +27,7 @@ type (
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
+		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 
 		CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error)
@@ -34,6 +35,7 @@ type (
 		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 
 		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
+		updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error
 	}
 
 	service struct {
@@ -86,26 +88,27 @@ func NewService(opts ServiceOptions) *service {
 	}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
-		svc:      svc,
+		Service:  svc,
 	}
 	svc.registrar = &registrar{
 		service: svc,
 	}
-	// permit broker to transform database trigger events into agent events
 	// permit broker to transform database trigger events into agent pool events
-	opts.Broker.Register("agent_pools", func(ctx context.Context, poolID string, action pubsub.DBAction) (any, error) {
+	opts.Broker.Register("agent_pools", pubsub.GetterFunc(func(ctx context.Context, poolID string, action pubsub.DBAction) (any, error) {
 		if action == pubsub.DeleteDBAction {
 			return &Agent{ID: poolID}, nil
 		}
 		return svc.getPool(ctx, poolID)
-	})
-	opts.Broker.Register("agents", func(ctx context.Context, agentID string, action pubsub.DBAction) (any, error) {
+	}))
+	// permit broker to transform database trigger events into agent events
+	opts.Broker.Register("agents", pubsub.GetterFunc(func(ctx context.Context, agentID string, action pubsub.DBAction) (any, error) {
 		if action == pubsub.DeleteDBAction {
 			return &Agent{ID: agentID}, nil
 		}
 		return svc.getAgent(ctx, agentID)
-	})
-	opts.Broker.Register("jobs", func(ctx context.Context, jobspecString string, action pubsub.DBAction) (any, error) {
+	}))
+	// permit broker to transform database trigger events into job events
+	opts.Broker.Register("jobs", pubsub.GetterFunc(func(ctx context.Context, jobspecString string, action pubsub.DBAction) (any, error) {
 		spec, err := NewJobSpecFromString(jobspecString)
 		if err != nil {
 			return nil, err
@@ -114,7 +117,7 @@ func NewService(opts ServiceOptions) *service {
 			return &Job{JobSpec: spec}, nil
 		}
 		return svc.getJob(ctx, spec)
-	})
+	}))
 	// create jobs when a plan or apply is enqueued
 	opts.AfterEnqueuePlan(svc.createJob)
 	opts.AfterEnqueueApply(svc.createJob)

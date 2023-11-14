@@ -117,6 +117,20 @@ func NewClient(config Config) (*Client, error) {
 	return client, nil
 }
 
+// CloneWithToken makes a copy of the client but using a different token.
+// NOTE: this actually makes a partial copy, e.g. it still re-uses the same
+// underlying http client.
+func (c *Client) CloneWithToken(token string) *Client {
+	return &Client{
+		baseURL:           c.baseURL,
+		token:             c.token,
+		headers:           c.headers,
+		http:              c.http,
+		retryLogHook:      c.retryLogHook,
+		retryServerErrors: c.retryServerErrors,
+	}
+}
+
 // Hostname returns the server host:port.
 func (c *Client) Hostname() string {
 	return c.baseURL.Host

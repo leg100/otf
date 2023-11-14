@@ -144,7 +144,7 @@ func (a *api) createJobToken(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.service.createJobToken(spec)
+	token, err := a.service.createJobToken(r.Context(), spec)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

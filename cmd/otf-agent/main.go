@@ -49,12 +49,12 @@ func run(ctx context.Context, args []string) error {
 				return err
 			}
 
-			agent, err := agent.New(cmd.Context(), logger, app, *agentConfig)
+			agent, err := agent.New(logger, app, *agentConfig)
 			if err != nil {
 				return fmt.Errorf("unable to start agent: %w", err)
 			}
 			// blocks
-			return agent.Start(ctx)
+			return agent.Start(cmd.Context())
 		},
 	}
 

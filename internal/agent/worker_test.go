@@ -1,4 +1,4 @@
-package remoteops
+package agent
 
 import (
 	"bytes"
@@ -16,23 +16,23 @@ import (
 func TestExecutor_execute(t *testing.T) {
 	t.Run("no options", func(t *testing.T) {
 		var got bytes.Buffer
-		exe := &executor{
+		w := &worker{
 			out:     &got,
 			workdir: &workdir{root: ""},
 		}
-		err := exe.execute([]string{"./testdata/exe"})
+		err := w.execute([]string{"./testdata/exe"})
 		require.NoError(t, err)
 		assert.Equal(t, "some output\n", got.String())
 	})
 
 	t.Run("redirect stdout", func(t *testing.T) {
-		exe := &executor{
+		w := &worker{
 			out:     io.Discard,
 			workdir: &workdir{root: ""},
 		}
 
 		dst := path.Join(t.TempDir(), "dst")
-		err := exe.execute([]string{"./testdata/exe"}, redirectStdout(dst))
+		err := w.execute([]string{"./testdata/exe"}, redirectStdout(dst))
 		require.NoError(t, err)
 
 		got, err := os.ReadFile(dst)
@@ -41,28 +41,27 @@ func TestExecutor_execute(t *testing.T) {
 	})
 
 	t.Run("sandbox", func(t *testing.T) {
-		_, err := exec.LookPath("bwrap")
-		if err != nil {
+		if _, err := exec.LookPath("bwrap"); err != nil {
 			t.Skip("Skipping test that requires bwrap")
 		}
 
-		exe := &executor{
-			Config:  Config{Sandbox: true},
+		w := &worker{
+			config:  Config{Sandbox: true},
 			out:     io.Discard,
 			workdir: &workdir{root: "."},
 		}
 
-		err = exe.execute([]string{"./testdata/staticbin"}, sandboxIfEnabled())
+		err := w.execute([]string{"./testdata/staticbin"}, sandboxIfEnabled())
 		require.NoError(t, err)
 	})
 
 	t.Run("stderr", func(t *testing.T) {
 		var got bytes.Buffer
-		exe := &executor{
+		w := &worker{
 			out:     &got,
 			workdir: &workdir{root: ""},
 		}
-		err := exe.execute([]string{"./testdata/badexe"})
+		err := w.execute([]string{"./testdata/badexe"})
 		if assert.Error(t, err) {
 			assert.Equal(t, "exit status 1: an error", err.Error())
 		}
@@ -70,24 +69,24 @@ func TestExecutor_execute(t *testing.T) {
 
 	t.Run("cancel", func(t *testing.T) {
 		r, w := io.Pipe()
-		exe := &executor{
+		wkr := &worker{
 			out:     w,
 			workdir: &workdir{root: ""},
 		}
 		done := make(chan error)
 		go func() {
-			done <- exe.execute([]string{"./testdata/killme"})
+			done <- wkr.execute([]string{"./testdata/killme"})
 		}()
 
 		assert.Equal(t, "ok, you can kill me now\n", <-iochan.DelimReader(r, '\n'))
-		exe.cancel(false)
+		wkr.cancel(false)
 		assert.NoError(t, <-done)
 	})
 }
 
 func TestExecutor_addSandboxWrapper(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
-		env := execution{
+		w := worker{
 			workdir: &workdir{root: "/root"},
 		}
 		want := []string{
@@ -102,12 +101,12 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
-		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
+		assert.Equal(t, want, w.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 
 	t.Run("with plugin cache", func(t *testing.T) {
-		env := execution{
-			Config: Config{
+		w := worker{
+			config: Config{
 				PluginCache: true,
 			},
 			workdir: &workdir{root: "/root"},
@@ -125,12 +124,12 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
-		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
+		assert.Equal(t, want, w.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 
 	t.Run("with relative working directory", func(t *testing.T) {
-		env := execution{
-			Config: Config{
+		w := worker{
+			config: Config{
 				PluginCache: true,
 			},
 			workdir: &workdir{root: "/root", relative: "/relative"},
@@ -148,6 +147,6 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
-		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
+		assert.Equal(t, want, w.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 }

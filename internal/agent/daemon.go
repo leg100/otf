@@ -7,13 +7,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
+	"time"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/spf13/pflag"
 )
 
-const defaultConcurrency = 5
+const DefaultConcurrency = 5
 
 var (
 	PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
@@ -39,7 +40,7 @@ type (
 
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
-	flags.IntVar(&cfg.Concurrency, "concurrency", defaultConcurrency, "Number of runs that can be processed concurrently")
+	flags.IntVar(&cfg.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
 	flags.BoolVar(&cfg.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&cfg.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
@@ -50,19 +51,17 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 type daemon struct {
 	logr.Logger
 	client
+	*terminator
 
 	agentID string   // unique ID assigned by server
 	envs    []string // terraform environment variables
+	config  Config
 }
 
 // New constructs a new agent daemon.
-func New(ctx context.Context, logger logr.Logger, app client, cfg Config) (*daemon, error) {
-	opts := registerAgentOptions{
-		Name:        cfg.Name,
-		Concurrency: cfg.Concurrency,
-	}
+func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 	if cfg.Concurrency == 0 {
-		opts.Concurrency = defaultConcurrency
+		cfg.Concurrency = DefaultConcurrency
 	}
 	if cfg.Debug {
 		logger.V(0).Info("enabled debug mode")
@@ -73,36 +72,65 @@ func New(ctx context.Context, logger logr.Logger, app client, cfg Config) (*daem
 		}
 		logger.V(0).Info("enabled sandbox mode")
 	}
-	envs := DefaultEnvs
+	d := &daemon{
+		client:     app,
+		envs:       DefaultEnvs,
+		terminator: &terminator{mapping: make(map[JobSpec]cancelable)},
+	}
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		envs = internal.SafeAppend(envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
+		d.envs = append(d.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
-	// register agent with server
-	agent, err := app.registerAgent(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	logger = logger.WithValues("agent_id", agent.ID, "component", "agent")
-	// create daemon along with unique ID assigned by server
-	return &daemon{
-		client:  app,
-		Logger:  logger,
-		envs:    DefaultEnvs,
-		agentID: agent.ID,
-	}, nil
+	return d, nil
 }
 
 func (d *daemon) Start(ctx context.Context) error {
-	workers := make(map[JobSpec]*worker)
+	// register agent with server
+	agent, err := d.registerAgent(ctx, registerAgentOptions{
+		Name:        d.config.Name,
+		Concurrency: d.config.Concurrency,
+	})
+	if err != nil {
+		return err
+	}
+	d.agentID = agent.ID
+	d.Logger = d.WithValues("agent_id", agent.ID)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				// send agent status update
+				status := AgentIdle
+				if d.totalJobs() > 0 {
+					status = AgentBusy
+				}
+				if err := d.updateAgentStatus(ctx, d.agentID, status); err != nil {
+					d.Error(err, "sending agent status update", "status", status)
+				}
+			case <-ctx.Done():
+				// send exited status update
+				if err := d.updateAgentStatus(ctx, d.agentID, AgentExited); err != nil {
+					d.Error(err, "sending agent status update", "status", "exited")
+				}
+				return
+			}
+		}
+	}()
 	for {
 		// block on waiting for jobs
 		jobs, err := d.getAgentJobs(ctx, d.agentID)
 		if err != nil {
 			return err
+		}
+		if ctx.Err() != nil {
+			break
 		}
 		for _, j := range jobs {
 			if j.Status == JobAllocated {
@@ -111,46 +139,54 @@ func (d *daemon) Start(ctx context.Context) error {
 				if err != nil {
 					return err
 				}
-				w := &worker{
-					client: d.client,
-					Logger: d.Logger,
-					job:    j,
-					token:  token,
-				}
-				workers[j.JobSpec] = w
-			}
-			if j.signal != nil {
-				d.Info("received signal", "signal", *j.signal, "job", j)
-				w, ok := workers[j.JobSpec]
-				if !ok {
-					d.Error(nil, "no job found for signal", "job", j, "signal", *j.signal)
+				if err := d.updateJobStatus(ctx, j.JobSpec, JobRunning); err != nil {
+					d.Error(err, "sending job status", "status", JobRunning, "job", j)
 					continue
 				}
-				w.handleSignal(*j.signal)
+				w := &worker{
+					Logger: d.Logger,
+					client: d.client,
+					job:    j,
+					token:  token,
+					envs:   d.envs,
+				}
+				// check worker in with the terminator so that it can receive a
+				// cancelation signal should one arrive.
+				d.checkIn(j.JobSpec, w)
+				wg.Add(1)
+				go func(j *Job) {
+					defer wg.Done()
+					defer d.checkOut(j.JobSpec)
+
+					if err := w.do(ctx); err != nil {
+						d.Error(err, "job returned an error", "job", j)
+					}
+					var status JobStatus
+					switch {
+					case w.canceled:
+						status = JobCanceled
+					case err != nil:
+						status = JobErrored
+					default:
+						status = JobFinished
+					}
+					if err := d.updateJobStatus(ctx, j.JobSpec, status); err != nil {
+						d.Error(err, "sending job status", "status", status, "job", j)
+					}
+				}(j)
+			} else if j.signal != nil {
+				d.Info("received signal", "signal", *j.signal, "job", j)
+				switch *j.signal {
+				case cancelSignal:
+					d.cancel(j.JobSpec, false)
+				case forceCancelSignal:
+					d.cancel(j.JobSpec, true)
+				default:
+					d.Error(nil, "invalid signal received", "job", j, "signal", *j.signal)
+				}
 			}
 		}
-		// now I've got a token use it in all calls, and terraform itself needs to use
-		// it too
 	}
-}
-
-// worker does a Job
-type worker struct {
-	client
-	logr.Logger
-
-	job   *Job
-	token []byte
-}
-
-// do the Job
-func (w *worker) do(ctx context.Context) error {
-	run, err := w.GetRun(ctx, w.job.RunID)
-	if err != nil {
-		return err
-	}
+	wg.Wait()
 	return nil
-}
-
-func (w *worker) handleSignal(sig signal) {
 }

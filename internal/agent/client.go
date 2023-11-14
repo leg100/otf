@@ -35,13 +35,16 @@ type (
 		Watch(context.Context, run.WatchOptions) (<-chan pubsub.Event, error)
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
+		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 		Hostname() string
 
 		internal.PutChunkService
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
+		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
+		updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error
 	}
 
 	// InProcClient is a client for in-process communication with the server.
@@ -52,6 +55,7 @@ type (
 		internal.HostnameService
 		configversion.ConfigurationVersionService
 		run.RunService
+		workspace.WorkspaceService
 		logs.LogsService
 		Service
 	}
@@ -66,6 +70,7 @@ type (
 		*variableClient
 		*runClient
 		*logsClient
+		*workspaceClient
 
 		// rpcClient only implements some of agent service
 		Service
@@ -86,13 +91,20 @@ func NewRPCClient(cfg otfapi.Config) (*rpcClient, error) {
 		return nil, err
 	}
 	return &rpcClient{
-		Client:         api,
-		stateClient:    &stateClient{Client: api},
-		configClient:   &configClient{Client: api},
-		variableClient: &variableClient{Client: api},
-		runClient:      &runClient{Client: api, Config: cfg},
-		logsClient:     &logsClient{Client: api},
+		Client:          api,
+		stateClient:     &stateClient{Client: api},
+		configClient:    &configClient{Client: api},
+		variableClient:  &variableClient{Client: api},
+		runClient:       &runClient{Client: api, Config: cfg},
+		workspaceClient: &workspaceClient{Client: api},
+		logsClient:      &logsClient{Client: api},
 	}, nil
+}
+
+func (c *rpcClient) newClientWithToken(token []byte) *rpcClient {
+	newClient := *c
+	newClient.CloneWithToken(string(token))
+	return &newClient
 }
 
 func (c *rpcClient) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {

@@ -1,4 +1,4 @@
-package remoteops
+package agent
 
 import (
 	"os"

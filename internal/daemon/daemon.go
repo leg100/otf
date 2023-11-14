@@ -29,7 +29,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
@@ -75,7 +74,7 @@ type (
 
 		Handlers []internal.Handlers
 
-		opsDaemon process
+		agent process
 	}
 
 	process interface {
@@ -289,9 +288,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:          runService,
 	})
 
-	remoteopsDaemon, err := remoteops.NewDaemon(
-		logger.WithValues("component", "remoteops"),
-		remoteops.InProcClient{
+	agentDaemon, err := agent.New(
+		logger.WithValues("component", "agent"),
+		agent.InProcClient{
 			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
@@ -300,7 +299,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			RunService:                  runService,
 			LogsService:                 logsService,
 		},
-		*cfg.RemoteOpsConfig,
+		*cfg.AgentConfig,
 	)
 	if err != nil {
 		return nil, err
@@ -421,7 +420,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AgentService:                agentService,
 		Broker:                      broker,
 		DB:                          db,
-		opsDaemon:                   remoteopsDaemon,
+		agent:                       agentDaemon,
 	}, nil
 }
 
@@ -548,12 +547,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	case <-d.Broker.Started():
 	}
 
-	// Run remote ops daemon in background
+	// Run agent daemon in background
 	g.Go(func() error {
 		// give daemon unlimited access to services
-		daemonCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "remoteops-daemon"})
-		if err := d.opsDaemon.Start(daemonCtx); err != nil {
-			return fmt.Errorf("remote ops daemon terminated: %w", err)
+		daemonCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "agent"})
+		if err := d.agent.Start(daemonCtx); err != nil {
+			return fmt.Errorf("agent daemon terminated: %w", err)
 		}
 		return nil
 	})

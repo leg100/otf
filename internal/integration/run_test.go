@@ -70,11 +70,11 @@ func TestRun(t *testing.T) {
 		assert.True(t, timestamp.After(got.CreatedAt))
 	})
 
-	t.Run("cancel run", func(t *testing.T) {
+	t.Run("cancel run immediately", func(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		run := svc.createRun(t, ctx, nil, nil)
 
-		got, err := svc.Cancel(ctx, run.ID)
+		got, err := svc.Cancel(ctx, run.ID, true)
 		require.NoError(t, err)
 
 		assert.Equal(t, otfrun.RunCanceled, got.Status)

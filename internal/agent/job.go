@@ -96,39 +96,39 @@ func (j *Job) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (t *Job) Organizations() []string { return nil }
+func (j *Job) Organizations() []string { return nil }
 
-func (t *Job) IsSiteAdmin() bool   { return true }
-func (t *Job) IsOwner(string) bool { return true }
+func (j *Job) IsSiteAdmin() bool   { return true }
+func (j *Job) IsOwner(string) bool { return true }
 
-func (t *Job) CanAccessSite(action rbac.Action) bool {
+func (j *Job) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (t *Job) CanAccessOrganization(action rbac.Action, name string) bool {
+func (j *Job) CanAccessOrganization(action rbac.Action, name string) bool {
 	switch action {
 	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
-		return t.Organization == name
+		return j.Organization == name
 	default:
 		return false
 	}
 }
 
-func (t *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (j *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
 	// job token is allowed the retrieve the state of the workspace only if:
 	// (a) workspace is in the same organization as job token
 	// (b) workspace has enabled global remote state (permitting organization-wide
 	// state sharing).
 	switch action {
 	case rbac.GetWorkspaceAction, rbac.GetStateVersionAction, rbac.DownloadStateAction:
-		if t.Organization == policy.Organization && policy.GlobalRemoteState {
+		if j.Organization == policy.Organization && policy.GlobalRemoteState {
 			return true
 		}
 	}
 	return false
 }
 
-func (t *Job) CanAccessTeam(rbac.Action, string) bool {
+func (j *Job) CanAccessTeam(rbac.Action, string) bool {
 	// Can't access team level actions
 	return false
 }

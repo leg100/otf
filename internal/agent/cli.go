@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type CLI struct {
+type agentCLI struct {
 	Service
 }
 
 func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
-	cli := &CLI{}
+	cli := &agentCLI{}
 	cmd := &cobra.Command{
 		Use:   "agents",
 		Short: "Agent management",
@@ -31,7 +31,7 @@ func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
 	return cmd
 }
 
-func (a *CLI) agentTokenCommand() *cobra.Command {
+func (a *agentCLI) agentTokenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tokens",
 		Short: "Agent token management",
@@ -42,7 +42,7 @@ func (a *CLI) agentTokenCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *CLI) agentTokenNewCommand() *cobra.Command {
+func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 	opts := CreateAgentTokenOptions{}
 
 	cmd := &cobra.Command{

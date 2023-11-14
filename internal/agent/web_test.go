@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"net/http/httptest"
 	"testing"
 
@@ -26,7 +25,7 @@ func TestAgentToken_NewHandler(t *testing.T) {
 func TestAgentToken_CreateHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		svc:      &fakeAgentTokenService{},
+		Service:  &fakeService{},
 	}
 	q := "/?organization_name=acme-org&description=lorem-ipsum-etc"
 	r := httptest.NewRequest("GET", q, nil)
@@ -43,8 +42,8 @@ func TestAgentToken_CreateHandler(t *testing.T) {
 func TestAgentToken_ListHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		svc: &fakeAgentTokenService{
-			agentToken: &AgentToken{},
+		Service: &fakeService{
+			at: &AgentToken{},
 		},
 	}
 	q := "/?organization_name=acme-org"
@@ -61,8 +60,8 @@ func TestAgentToken_ListHandler(t *testing.T) {
 func TestAgentToken_DeleteHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		svc: &fakeAgentTokenService{
-			agentToken: &AgentToken{
+		Service: &fakeService{
+			at: &AgentToken{
 				Organization: "acme-org",
 			},
 		},
@@ -77,23 +76,4 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 		redirect, _ := w.Result().Location()
 		assert.Equal(t, paths.AgentTokens("acme-org"), redirect.Path)
 	}
-}
-
-type fakeAgentTokenService struct {
-	agentToken *AgentToken
-	token      []byte
-
-	AgentTokenService
-}
-
-func (f *fakeAgentTokenService) CreateAgentToken(context.Context, CreateAgentTokenOptions) ([]byte, error) {
-	return f.token, nil
-}
-
-func (f *fakeAgentTokenService) ListAgentTokens(context.Context, string) ([]*AgentToken, error) {
-	return []*AgentToken{f.agentToken}, nil
-}
-
-func (f *fakeAgentTokenService) DeleteAgentToken(context.Context, string) (*AgentToken, error) {
-	return f.agentToken, nil
 }
