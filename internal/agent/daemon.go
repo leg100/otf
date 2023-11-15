@@ -87,6 +87,7 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 	return d, nil
 }
 
+// Start the agent daemon.
 func (d *daemon) Start(ctx context.Context) error {
 	// register agent with server
 	agent, err := d.registerAgent(ctx, registerAgentOptions{
@@ -100,8 +101,10 @@ func (d *daemon) Start(ctx context.Context) error {
 	d.Logger = d.WithValues("agent_id", agent.ID)
 
 	var wg sync.WaitGroup
+	// every 10 seconds update the agent status
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		ticker := time.NewTicker(10 * time.Second)
 		for {
 			select {
@@ -115,7 +118,7 @@ func (d *daemon) Start(ctx context.Context) error {
 					d.Error(err, "sending agent status update", "status", status)
 				}
 			case <-ctx.Done():
-				// send exited status update
+				// send final status update
 				if err := d.updateAgentStatus(ctx, d.agentID, AgentExited); err != nil {
 					d.Error(err, "sending agent status update", "status", "exited")
 				}
@@ -123,6 +126,8 @@ func (d *daemon) Start(ctx context.Context) error {
 			}
 		}
 	}()
+	// fetch jobs allocated to this agent and launch workers to do jobs; also
+	// handle cancelation signals for jobs
 	for {
 		// block on waiting for jobs
 		jobs, err := d.getAgentJobs(ctx, d.agentID)

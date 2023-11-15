@@ -64,7 +64,7 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&opts.Organization, "organization", "", "Organization in which to create agent token.")
+	cmd.Flags().StringVar(&opts.AgentPoolID, "organization", "", "Organization in which to create agent token.")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

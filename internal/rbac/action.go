@@ -20,6 +20,7 @@ const (
 
 	CreateAgentTokenAction
 	ListAgentTokensAction
+	GetAgentTokenAction
 	DeleteAgentTokenAction
 
 	CreateOrganizationTokenAction

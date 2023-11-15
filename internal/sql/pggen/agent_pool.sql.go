@@ -194,6 +194,59 @@ func (q *DBQuerier) FindAgentPoolScan(results pgx.BatchResults) (FindAgentPoolRo
 	return item, nil
 }
 
+const findAgentPoolByAgentTokenIDSQL = `SELECT ap.*,
+    (
+        SELECT array_agg(w.workspace_id)
+        FROM workspaces w
+        WHERE w.agent_pool_id = ap.agent_pool_id
+    ) AS workspace_ids,
+    (
+        SELECT array_agg(aw.workspace_id)
+        FROM agent_pool_allowed_workspaces aw
+        WHERE aw.agent_pool_id = ap.agent_pool_id
+    ) AS allowed_workspace_ids
+FROM agent_pools ap
+JOIN agent_tokens at USING (agent_pool_id)
+WHERE at.agent_token_id = $1
+GROUP BY ap.agent_pool_id
+;`
+
+type FindAgentPoolByAgentTokenIDRow struct {
+	AgentPoolID         pgtype.Text        `json:"agent_pool_id"`
+	Name                pgtype.Text        `json:"name"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
+	OrganizationScoped  bool               `json:"organization_scoped"`
+	WorkspaceIds        []string           `json:"workspace_ids"`
+	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
+}
+
+// FindAgentPoolByAgentTokenID implements Querier.FindAgentPoolByAgentTokenID.
+func (q *DBQuerier) FindAgentPoolByAgentTokenID(ctx context.Context, agentTokenID pgtype.Text) (FindAgentPoolByAgentTokenIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentPoolByAgentTokenID")
+	row := q.conn.QueryRow(ctx, findAgentPoolByAgentTokenIDSQL, agentTokenID)
+	var item FindAgentPoolByAgentTokenIDRow
+	if err := row.Scan(&item.AgentPoolID, &item.Name, &item.CreatedAt, &item.OrganizationName, &item.OrganizationScoped, &item.WorkspaceIds, &item.AllowedWorkspaceIds); err != nil {
+		return item, fmt.Errorf("query FindAgentPoolByAgentTokenID: %w", err)
+	}
+	return item, nil
+}
+
+// FindAgentPoolByAgentTokenIDBatch implements Querier.FindAgentPoolByAgentTokenIDBatch.
+func (q *DBQuerier) FindAgentPoolByAgentTokenIDBatch(batch genericBatch, agentTokenID pgtype.Text) {
+	batch.Queue(findAgentPoolByAgentTokenIDSQL, agentTokenID)
+}
+
+// FindAgentPoolByAgentTokenIDScan implements Querier.FindAgentPoolByAgentTokenIDScan.
+func (q *DBQuerier) FindAgentPoolByAgentTokenIDScan(results pgx.BatchResults) (FindAgentPoolByAgentTokenIDRow, error) {
+	row := results.QueryRow()
+	var item FindAgentPoolByAgentTokenIDRow
+	if err := row.Scan(&item.AgentPoolID, &item.Name, &item.CreatedAt, &item.OrganizationName, &item.OrganizationScoped, &item.WorkspaceIds, &item.AllowedWorkspaceIds); err != nil {
+		return item, fmt.Errorf("scan FindAgentPoolByAgentTokenIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const updateAgentPoolSQL = `UPDATE agent_pools
 SET name = $1,
     organization_scoped = $2

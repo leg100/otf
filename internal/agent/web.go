@@ -63,7 +63,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(opts.AgentPoolID), http.StatusFound)
 }
 
 func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*resource.Pagination
-		Items []*AgentToken
+		Items []*agentToken
 	}{
 		OrganizationPage: organization.NewPage(r, "agent tokens", org),
 		Pagination:       &resource.Pagination{},

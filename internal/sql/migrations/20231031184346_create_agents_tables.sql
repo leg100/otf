@@ -22,7 +22,7 @@ ALTER TABLE agent_tokens
 
 -- alter agent tokens table, adding a fk to agent pools; for each organization
 -- that has at least one agent token, add a default agent pool and update token
--- to reference that pool.
+-- to reference that pool. Then drop the organization_name column.
 ALTER TABLE agent_tokens
     ADD COLUMN agent_pool_id TEXT,
     ADD CONSTRAINT agent_pool_id_fk FOREIGN KEY (agent_pool_id)
@@ -40,7 +40,8 @@ FROM agent_pools ap
 WHERE ap.organization_name = at.organization_name;
 
 ALTER TABLE agent_tokens
-    ALTER COLUMN agent_pool_id SET NOT NULL;
+    ALTER COLUMN agent_pool_id SET NOT NULL,
+    DROP COLUMN organization_name;
 
 ALTER TABLE workspaces
     ADD COLUMN agent_pool_id TEXT,
@@ -194,7 +195,19 @@ DROP TABLE IF EXISTS agent_statuses;
 ALTER TABLE workspaces
     DROP COLUMN agent_pool_id;
 
+-- for each agent token, lookup its organization via its agent pool and set
+-- that as its organization. Then making the organization_name column not
+-- null and drop the agent_pool_id column.
 ALTER TABLE agent_tokens
+    ADD COLUMN organization_name TEXT;
+
+UPDATE agent_tokens at
+SET organization_name = ap.organization_name
+FROM agent_pools ap
+WHERE at.agent_pool_id = ap.agent_pool_id;
+
+ALTER TABLE agent_tokens
+    ALTER COLUMN organization_name SET NOT NULL,
     DROP COLUMN agent_pool_id;
 
 ALTER TABLE agent_tokens

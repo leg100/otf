@@ -21,7 +21,6 @@ type allocator struct {
 	// service for seeding allocator with pools, agents, and jobs, and for
 	// allocating jobs to agents.
 	*service
-	// cache for looking up an agent's pool efficiently, keyed by pool ID
 	pools map[string]*Pool
 	// agents to allocate jobs to, keyed by agent ID
 	agents map[string]*Agent

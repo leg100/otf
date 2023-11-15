@@ -35,7 +35,7 @@ func (a *api) addHandlers(r *mux.Router) {
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	// middleware should have put agent token into context.
-	token, err := AgentTokenFromContext(r.Context())
+	token, err := AgentFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
@@ -55,7 +55,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 		Concurrency: params.Concurrency,
 		CurrentJobs: params.CurrentJobs,
 		IPAddress:   net.ParseIP(r.RemoteAddr),
-		AgentPoolID: &token.AgentPoolID,
+		AgentPoolID: token.AgentPoolID,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -155,7 +155,7 @@ func (a *api) createJobToken(w http.ResponseWriter, r *http.Request) {
 // check agent_id has not been spoofed by checking it belongs to the pool of
 // the token it has authenticated with.
 func (a *api) spoofCheck(ctx context.Context, agentID string) error {
-	token, err := AgentTokenFromContext(ctx)
+	pool, err := PoolFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (a *api) spoofCheck(ctx context.Context, agentID string) error {
 	if err != nil {
 		return err
 	}
-	if agent.AgentPoolID == nil || *agent.AgentPoolID != token.AgentPoolID {
+	if agent.AgentPoolID == nil || *agent.AgentPoolID != pool.ID {
 		return errors.New("authentication token does not belong to specified agent_id")
 	}
 	return nil

@@ -80,6 +80,13 @@ type Querier interface {
 	// FindAgentPoolScan scans the result of an executed FindAgentPoolBatch query.
 	FindAgentPoolScan(results pgx.BatchResults) (FindAgentPoolRow, error)
 
+	FindAgentPoolByAgentTokenID(ctx context.Context, agentTokenID pgtype.Text) (FindAgentPoolByAgentTokenIDRow, error)
+	// FindAgentPoolByAgentTokenIDBatch enqueues a FindAgentPoolByAgentTokenID query into batch to be executed
+	// later by the batch.
+	FindAgentPoolByAgentTokenIDBatch(batch genericBatch, agentTokenID pgtype.Text)
+	// FindAgentPoolByAgentTokenIDScan scans the result of an executed FindAgentPoolByAgentTokenIDBatch query.
+	FindAgentPoolByAgentTokenIDScan(results pgx.BatchResults) (FindAgentPoolByAgentTokenIDRow, error)
+
 	UpdateAgentPool(ctx context.Context, params UpdateAgentPoolParams) (UpdateAgentPoolRow, error)
 	// UpdateAgentPoolBatch enqueues a UpdateAgentPool query into batch to be executed
 	// later by the batch.
@@ -122,12 +129,12 @@ type Querier interface {
 	// FindAgentTokenByIDScan scans the result of an executed FindAgentTokenByIDBatch query.
 	FindAgentTokenByIDScan(results pgx.BatchResults) (FindAgentTokenByIDRow, error)
 
-	FindAgentTokens(ctx context.Context, organizationName pgtype.Text) ([]FindAgentTokensRow, error)
-	// FindAgentTokensBatch enqueues a FindAgentTokens query into batch to be executed
+	FindAgentTokensByAgentPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]FindAgentTokensByAgentPoolIDRow, error)
+	// FindAgentTokensByAgentPoolIDBatch enqueues a FindAgentTokensByAgentPoolID query into batch to be executed
 	// later by the batch.
-	FindAgentTokensBatch(batch genericBatch, organizationName pgtype.Text)
-	// FindAgentTokensScan scans the result of an executed FindAgentTokensBatch query.
-	FindAgentTokensScan(results pgx.BatchResults) ([]FindAgentTokensRow, error)
+	FindAgentTokensByAgentPoolIDBatch(batch genericBatch, agentPoolID pgtype.Text)
+	// FindAgentTokensByAgentPoolIDScan scans the result of an executed FindAgentTokensByAgentPoolIDBatch query.
+	FindAgentTokensByAgentPoolIDScan(results pgx.BatchResults) ([]FindAgentTokensByAgentPoolIDRow, error)
 
 	DeleteAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (pgtype.Text, error)
 	// DeleteAgentTokenByIDBatch enqueues a DeleteAgentTokenByID query into batch to be executed
@@ -1590,6 +1597,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findAgentPoolSQL, findAgentPoolSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentPool': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findAgentPoolByAgentTokenIDSQL, findAgentPoolByAgentTokenIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentPoolByAgentTokenID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateAgentPoolSQL, updateAgentPoolSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateAgentPool': %w", err)
 	}
@@ -1608,8 +1618,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findAgentTokenByIDSQL, findAgentTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentTokenByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findAgentTokensSQL, findAgentTokensSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindAgentTokens': %w", err)
+	if _, err := p.Prepare(ctx, findAgentTokensByAgentPoolIDSQL, findAgentTokensByAgentPoolIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentTokensByAgentPoolID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteAgentTokenByIDSQL, deleteAgentTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteAgentTokenByID': %w", err)

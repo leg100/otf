@@ -43,7 +43,7 @@ func TestAgentToken_ListHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		Service: &fakeService{
-			at: &AgentToken{},
+			at: &agentToken{},
 		},
 	}
 	q := "/?organization_name=acme-org"
@@ -61,7 +61,7 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		Service: &fakeService{
-			at: &AgentToken{
+			at: &agentToken{
 				Organization: "acme-org",
 			},
 		},

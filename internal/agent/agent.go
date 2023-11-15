@@ -3,12 +3,19 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net"
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 )
+
+// An agent implements Subject (the server-based agent that is part of the otfd
+// process authenticates as an agent, whereas the otf-agent process
+// authenticates as an agent pool).
+var _ internal.Subject = (*Agent)(nil)
 
 type AgentStatus string
 
@@ -20,7 +27,7 @@ const (
 	AgentUnknown AgentStatus = "unknown"
 )
 
-// Agent represents the state of an agent.
+// Agent represents an agent. (The agent process itself is the Daemon).
 type Agent struct {
 	// Unique system-wide ID
 	ID string
@@ -57,6 +64,56 @@ func (a *Agent) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
+func (a *Agent) String() string      { return a.ID }
+func (a *Agent) IsSiteAdmin() bool   { return true }
+func (a *Agent) IsOwner(string) bool { return true }
+
+func (a *Agent) Organizations() []string {
+	// an agent is not a member of organizations (although its agent pool is).
+	return nil
+}
+
+func (*Agent) CanAccessSite(action rbac.Action) bool {
+	// agent cannot carry out site-level actions
+	return false
+}
+
+func (*Agent) CanAccessTeam(rbac.Action, string) bool {
+	// agent cannot carry out team-level actions
+	return false
+}
+
+func (a *Agent) CanAccessOrganization(action rbac.Action, name string) bool {
+	// only a server-based agent can authenticate as an Agent, and if that is
+	// so, then it can carry out all organization-based actions.
+	//
+	// TODO: permit only those actions that an agent needs to carry out (get
+	// agent jobs, etc).
+	return a.Server
+}
+
+func (a *Agent) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+	// only a server-based agent can authenticate as an Agent, and if that is
+	// so, then it can carry out all workspace-based actions.
+	//
+	// TODO: permit only those actions that an agent needs to carry out (get
+	// agent jobs, etc).
+	return a.Server
+}
+
+// AgentFromContext retrieves an agent subject from a context
+func AgentFromContext(ctx context.Context) (*Agent, error) {
+	subj, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	agent, ok := subj.(*Agent)
+	if !ok {
+		return nil, fmt.Errorf("subject found in context but it is not an agent")
+	}
+	return agent, nil
+}
+
 type registerAgentOptions struct {
 	// Descriptive name. Optional.
 	Name *string
@@ -83,7 +140,6 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 		ID:          internal.NewID("agent"),
 		Name:        opts.Name,
 		Concurrency: opts.Concurrency,
-		AgentPoolID: opts.AgentPoolID,
 		Server:      opts.AgentPoolID == nil,
 		Status:      AgentIdle,
 		LastPingAt:  internal.CurrentTimestamp(nil),

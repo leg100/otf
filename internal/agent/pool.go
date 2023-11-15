@@ -2,13 +2,20 @@
 package agent
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
+
+// An agent pool implements Subject (otf-agent authenticates as an agent pool using one
+// of its tokens).
+var _ internal.Subject = (*Pool)(nil)
 
 type (
 	// Pool is a group of non-server agents sharing one or more tokens, assigned to
@@ -85,6 +92,51 @@ func (p *Pool) update(opts updatePoolOptions) error {
 		p.AllowedWorkspaces = opts.AllowedWorkspaces
 	}
 	return nil
+}
+
+func (a *Pool) String() string      { return a.ID }
+func (a *Pool) IsSiteAdmin() bool   { return true }
+func (a *Pool) IsOwner(string) bool { return true }
+
+func (a *Pool) Organizations() []string { return []string{a.Organization} }
+
+func (*Pool) CanAccessSite(action rbac.Action) bool {
+	// agent pool cannot carry out site-level actions
+	return false
+}
+
+func (*Pool) CanAccessTeam(rbac.Action, string) bool {
+	// agent pool cannot carry out team-level actions
+	return false
+}
+
+func (a *Pool) CanAccessOrganization(action rbac.Action, name string) bool {
+	// agent pool can access anything within its organization
+	//
+	// TODO: permit only those actions that an agent pool needs to carry out
+	// (get agent jobs, etc).
+	return a.Organization == name
+}
+
+func (a *Pool) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+	// agent pool can access anything within its organization
+	//
+	// TODO: permit only those actions that an agent pool needs to carry out
+	// (get agent jobs, etc).
+	return a.Organization == policy.Organization
+}
+
+// PoolFromContext retrieves an agent pool subject from a context
+func PoolFromContext(ctx context.Context) (*Pool, error) {
+	subj, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pool, ok := subj.(*Pool)
+	if !ok {
+		return nil, fmt.Errorf("subject found in context but it is not an agent pool")
+	}
+	return pool, nil
 }
 
 func (p *Pool) LogValue() slog.Value {

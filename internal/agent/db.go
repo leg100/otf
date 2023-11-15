@@ -96,53 +96,7 @@ type db struct {
 	*sql.DB
 }
 
-func (db *db) createAgent(ctx context.Context, agent *Agent) error {
-	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
-		AgentID:      sql.String(agent.ID),
-		Name:         sql.StringPtr(agent.Name),
-		Concurrency:  sql.Int4(agent.Concurrency),
-		IPAddress:    sql.Inet(agent.IPAddress),
-		Status:       sql.String(string(agent.Status)),
-		AgentTokenID: sql.StringPtr(agent.AgentPoolID),
-	})
-	return err
-}
-
-func (db *db) listAgents(ctx context.Context) ([]*Agent, error) {
-	rows, err := db.Conn(ctx).FindAgents(ctx)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	agents := make([]*Agent, len(rows))
-	for i, r := range rows {
-		agents[i] = agentresult(r).toAgent()
-	}
-	return agents, nil
-}
-
-func (db *db) listServerAgents(ctx context.Context) ([]*Agent, error) {
-	rows, err := db.Conn(ctx).FindServerAgents(ctx)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	agents := make([]*Agent, len(rows))
-	for i, r := range rows {
-		agents[i] = agentresult(r).toAgent()
-	}
-	return agents, nil
-}
-
-func (db *db) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
-	rows, err := db.Conn(ctx).FindAgentsByOrganization(ctx, sql.String(organization))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	agents := make([]*Agent, len(rows))
-	for i, r := range rows {
-		agents[i] = agentresult(r).toAgent()
-	}
-	return agents, nil
-}
+// pools
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
 	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
@@ -209,6 +163,14 @@ func (db *db) getPool(ctx context.Context, poolID string) (*Pool, error) {
 	return poolresult(result).toPool(), nil
 }
 
+func (db *db) getPoolByTokenID(ctx context.Context, tokenID string) (*Pool, error) {
+	result, err := db.Conn(ctx).FindAgentPoolByAgentTokenID(ctx, sql.String(tokenID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return poolresult(result).toPool(), nil
+}
+
 func (db *db) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
 	params := pggen.FindAgentPoolsParams{
 		OrganizationName:     sql.StringPtr(opts.Organization),
@@ -232,6 +194,56 @@ func (db *db) deletePool(ctx context.Context, poolID string) (organization strin
 		return "", sql.Error(err)
 	}
 	return result.String, nil
+}
+
+// agents
+
+func (db *db) createAgent(ctx context.Context, agent *Agent) error {
+	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
+		AgentID:      sql.String(agent.ID),
+		Name:         sql.StringPtr(agent.Name),
+		Concurrency:  sql.Int4(agent.Concurrency),
+		IPAddress:    sql.Inet(agent.IPAddress),
+		Status:       sql.String(string(agent.Status)),
+		AgentTokenID: sql.StringPtr(agent.AgentPoolID),
+	})
+	return err
+}
+
+func (db *db) listAgents(ctx context.Context) ([]*Agent, error) {
+	rows, err := db.Conn(ctx).FindAgents(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
+}
+
+func (db *db) listServerAgents(ctx context.Context) ([]*Agent, error) {
+	rows, err := db.Conn(ctx).FindServerAgents(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
+}
+
+func (db *db) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
+	rows, err := db.Conn(ctx).FindAgentsByOrganization(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
 }
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
@@ -300,17 +312,17 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 
 // agent tokens
 
-func (db *db) createAgentToken(ctx context.Context, token *AgentToken) error {
+func (db *db) createAgentToken(ctx context.Context, token *agentToken) error {
 	_, err := db.Conn(ctx).InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
-		AgentTokenID:     sql.String(token.ID),
-		Description:      sql.String(token.Description),
-		OrganizationName: sql.String(token.Organization),
-		CreatedAt:        sql.Timestamptz(token.CreatedAt.UTC()),
+		AgentTokenID: sql.String(token.ID),
+		Description:  sql.String(token.Description),
+		AgentPoolID:  sql.String(token.AgentPoolID),
+		CreatedAt:    sql.Timestamptz(token.CreatedAt.UTC()),
 	})
 	return err
 }
 
-func (db *db) getAgentTokenByID(ctx context.Context, id string) (*AgentToken, error) {
+func (db *db) getAgentTokenByID(ctx context.Context, id string) (*agentToken, error) {
 	r, err := db.Conn(ctx).FindAgentTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -318,12 +330,12 @@ func (db *db) getAgentTokenByID(ctx context.Context, id string) (*AgentToken, er
 	return agentTokenRow(r).toAgentToken(), nil
 }
 
-func (db *db) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
-	rows, err := db.Conn(ctx).FindAgentTokens(ctx, sql.String(organization))
+func (db *db) listAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
+	rows, err := db.Conn(ctx).FindAgentTokensByAgentPoolID(ctx, sql.String(poolID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	tokens := make([]*AgentToken, len(rows))
+	tokens := make([]*agentToken, len(rows))
 	for i, r := range rows {
 		tokens[i] = agentTokenRow(r).toAgentToken()
 	}

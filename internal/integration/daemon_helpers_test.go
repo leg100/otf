@@ -411,8 +411,8 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 	t.Helper()
 
 	token, err := s.CreateAgentToken(ctx, agent.CreateAgentTokenOptions{
-		Organization: organization,
-		Description:  "lorem ipsum...",
+		AgentPoolID: organization,
+		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)
 	return token

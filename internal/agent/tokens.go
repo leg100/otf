@@ -1,0 +1,98 @@
+package agent
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"time"
+
+	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/tokens"
+)
+
+const (
+	AgentTokenKind tokens.Kind = "agent_token"
+	JobTokenKind   tokens.Kind = "job_token"
+
+	defaultJobTokenExpiry = 60 * time.Minute
+)
+
+type (
+	// agentToken represents the authentication token for an agent.
+	// NOTE: the cryptographic token itself is not retained.
+	agentToken struct {
+		ID          string `jsonapi:"primary,agent_tokens"`
+		CreatedAt   time.Time
+		AgentPoolID string `jsonapi:"attribute" json:"agent_pool_id"`
+		Description string `jsonapi:"attribute" json:"description"`
+	}
+
+	CreateAgentTokenOptions struct {
+		AgentPoolID string `json:"agent_pool_id" schema:"agent_pool_id,required"`
+		Description string `json:"description" schema:"description,required"`
+	}
+)
+
+func (a *agentToken) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", a.ID),
+		slog.String("agent_pool_id", string(a.AgentPoolID)),
+		slog.String("description", a.Description),
+	}
+	return slog.GroupValue(attrs...)
+}
+
+// createJobToken constructs a job token
+func (f *tokenFactory) createJobToken(_ context.Context, spec JobSpec) ([]byte, error) {
+	expiry := internal.CurrentTimestamp(nil).Add(defaultJobTokenExpiry)
+	return f.NewToken(tokens.NewTokenOptions{
+		Subject: spec.String(),
+		Kind:    JobTokenKind,
+		Expiry:  &expiry,
+	})
+}
+
+// NewAgentToken constructs a token for an agent, returning both the
+// representation of the token, and the cryptographic token itself.
+func (f *tokenFactory) NewAgentToken(opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+	if opts.AgentPoolID == "" {
+		return nil, nil, fmt.Errorf("agent pool ID cannot be an empty string")
+	}
+	if opts.Description == "" {
+		return nil, nil, fmt.Errorf("description cannot be an empty string")
+	}
+	at := agentToken{
+		ID:          internal.NewID("at"),
+		CreatedAt:   internal.CurrentTimestamp(nil),
+		Description: opts.Description,
+		AgentPoolID: opts.AgentPoolID,
+	}
+	token, err := f.NewToken(tokens.NewTokenOptions{
+		Subject: at.ID,
+		Kind:    AgentTokenKind,
+		Claims: map[string]string{
+			"agent_pool_id": opts.AgentPoolID,
+		},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return &at, token, nil
+}
+
+type agentTokenRow struct {
+	AgentTokenID pgtype.Text        `json:"agent_token_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Description  pgtype.Text        `json:"description"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
+}
+
+func (row agentTokenRow) toAgentToken() *agentToken {
+	return &agentToken{
+		ID:          row.AgentTokenID.String,
+		CreatedAt:   row.CreatedAt.Time.UTC(),
+		Description: row.Description.String,
+		AgentPoolID: row.AgentPoolID.String,
+	}
+}

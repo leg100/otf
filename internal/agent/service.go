@@ -30,9 +30,9 @@ type (
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 
 		CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error)
-		GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error)
-		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
-		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
+		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
+		ListAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
+		DeleteAgentToken(ctx context.Context, id string) (*agentToken, error)
 
 		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
 		updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error
@@ -126,9 +126,9 @@ func NewService(opts ServiceOptions) *service {
 	// relay force-cancel signal from run service to agent.
 	opts.AfterForceCancelSignal(svc.relaySignal(forceCancelSignal))
 	// Register with auth middleware the agent token kind and a means of
-	// retrieving an AgentToken corresponding to token's subject.
+	// retrieving the agent pool corresponding to token's subject.
 	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
-		return svc.GetAgentToken(ctx, tokenID)
+		return svc.db.getPoolByTokenID(ctx, tokenID)
 	})
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
@@ -423,7 +423,7 @@ func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobS
 // agent tokens
 
 func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.AgentPoolID)
 	if err != nil {
 		return nil, err
 	}
@@ -433,57 +433,81 @@ func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOpt
 		return nil, err
 	}
 	if err := a.db.createAgentToken(ctx, at); err != nil {
-		a.Error(err, "creating agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
+		a.Error(err, "creating agent token", "organization", opts.AgentPoolID, "id", at.ID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
+	a.V(0).Info("created agent token", "organization", opts.AgentPoolID, "id", at.ID, "subject", subject)
 	return token, nil
 }
 
-func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
-	at, err := a.db.getAgentTokenByID(ctx, tokenID)
+func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+	at, subject, err := func() (*agentToken, internal.Subject, error) {
+		at, err := a.db.getAgentTokenByID(ctx, tokenID)
+		if err != nil {
+			return nil, nil, err
+		}
+		pool, err := a.db.getPool(ctx, at.AgentPoolID)
+		if err != nil {
+			return nil, nil, err
+		}
+		subject, err := a.organization.CanAccess(ctx, rbac.GetAgentTokenAction, pool.Organization)
+		if err != nil {
+			return nil, nil, err
+		}
+		return at, subject, nil
+	}()
 	if err != nil {
-		a.Error(err, "retrieving agent token", "token", "******")
+		a.Error(err, "retrieving agent token", "id", tokenID)
 		return nil, err
 	}
-	a.V(9).Info("retrieved agent token", "organization", at.Organization, "id", at.ID)
+	a.V(9).Info("retrieved agent token", "token", at, "subject", subject)
 	return at, nil
 }
 
-func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
+func (a *service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
+	pool, err := a.db.getPool(ctx, poolID)
+	if err != nil {
+		return nil, err
+	}
+	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, pool.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, err := a.db.listAgentTokens(ctx, organization)
+	tokens, err := a.db.listAgentTokens(ctx, poolID)
 	if err != nil {
-		a.Error(err, "listing agent tokens", "organization", organization, "subject", subject)
+		a.Error(err, "listing agent tokens", "organization", poolID, "subject", subject)
 		return nil, err
 	}
-	a.V(9).Info("listed agent tokens", "organization", organization, "subject", subject)
+	a.V(9).Info("listed agent tokens", "organization", poolID, "subject", subject)
 	return tokens, nil
 }
 
-func (a *service) DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
-	// retrieve agent token first in order to get organization for authorization
-	at, err := a.db.getAgentTokenByID(ctx, id)
+func (a *service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+	at, subject, err := func() (*agentToken, internal.Subject, error) {
+		// retrieve agent token and pool in order to get organization for authorization
+		at, err := a.db.getAgentTokenByID(ctx, tokenID)
+		if err != nil {
+			return nil, nil, err
+		}
+		pool, err := a.db.getPool(ctx, at.AgentPoolID)
+		if err != nil {
+			return nil, nil, err
+		}
+		subject, err := a.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, pool.Organization)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := a.db.deleteAgentToken(ctx, tokenID); err != nil {
+			return nil, subject, err
+		}
+		return at, subject, nil
+	}()
 	if err != nil {
-		// we can't reveal any info because all we have is the
-		// authentication token which is sensitive.
-		a.Error(err, "retrieving agent token", "token", "******")
+		a.Error(err, "deleting agent token", "id", tokenID)
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, at.Organization)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := a.db.deleteAgentToken(ctx, id); err != nil {
-		a.Error(err, "deleting agent token", "agent token", at, "subject", subject)
-		return nil, err
-	}
-	a.V(0).Info("deleted agent token", "agent token", at, "subject", subject)
+	a.V(0).Info("deleted agent token", "token", at, "subject", subject)
 	return at, nil
 }
