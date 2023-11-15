@@ -141,16 +141,17 @@ func (c *rpcClient) getAgentJobs(ctx context.Context, agentID string) ([]*Job, e
 
 // agent tokens
 
-func (c *rpcClient) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "agent/create", &opts)
+func (c *rpcClient) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
+	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var buf bytes.Buffer
 	if err := c.Do(ctx, req, &buf); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return buf.Bytes(), nil
+	return nil, buf.Bytes(), nil
 }
 
 // job tokens

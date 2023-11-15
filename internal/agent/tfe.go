@@ -19,11 +19,21 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(tfeapi.APIPrefixV2).Subrouter()
 
 	// Agent Pools And Agents API
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/agents
 	r.HandleFunc("/organizations/{organization_name}/agent-pools", a.listAgentPools).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/agent-pools", a.createAgentPool).Methods("POST")
 	r.HandleFunc("/agent-pools/{pool_id}", a.getAgentPool).Methods("GET")
 	r.HandleFunc("/agent-pools/{pool_id}", a.updateAgentPool).Methods("PATCH")
 	r.HandleFunc("/agent-pools/{pool_id}", a.deleteAgentPool).Methods("DELETE")
+
+	// Agent Tokens API
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/agent-tokens#create-an-agent-token
+	r.HandleFunc("/agent-pools/{pool_id}/authentication-tokens", a.listAgentTokens).Methods("GET")
+	r.HandleFunc("/agent-pools/{pool_id}/authentication-tokens", a.createAgentToken).Methods("POST")
+	r.HandleFunc("/authentication-tokens/{token_id}", a.getAgentToken).Methods("GET")
+	r.HandleFunc("/authentication-tokens/{token_id}", a.deleteAgentToken).Methods("DELETE")
 
 	// Feature sets API:
 	//
@@ -47,6 +57,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/admin/organizations/{organization_name}/subscription", func(w http.ResponseWriter, r *http.Request) {})
 }
 
+// Agent pool handlers
+
 func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
@@ -60,7 +72,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert tfe params to otf opts
-	opts := createPoolOptions{
+	opts := createAgentPoolOptions{
 		Name:               params.Name,
 		Organization:       organization,
 		OrganizationScoped: params.OrganizationScoped,
@@ -70,7 +82,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 		opts.AllowedWorkspaces[i] = aw.ID
 	}
 
-	pool, err := a.service.createPool(r.Context(), opts)
+	pool, err := a.service.createAgentPool(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -102,7 +114,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pool, err := a.service.updatePool(r.Context(), poolID, opts)
+	pool, err := a.service.updateAgentPool(r.Context(), poolID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -117,7 +129,7 @@ func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool, err := a.service.getPool(r.Context(), poolID)
+	pool, err := a.service.getAgentPool(r.Context(), poolID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -138,7 +150,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := a.service.listPools(r.Context(), listPoolOptions{
+	pools, err := a.service.listAgentPools(r.Context(), listPoolOptions{
 		Organization:         &organization,
 		NameSubstring:        params.Query,
 		AllowedWorkspaceName: params.AllowedWorkspacesName,
@@ -171,7 +183,8 @@ func (a *tfe) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.service.deletePool(r.Context(), poolID); err != nil {
+	_, err = a.service.deleteAgentPool(r.Context(), poolID)
+	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -195,6 +208,107 @@ func (a *tfe) toPool(from *Pool) *types.AgentPool {
 	to.AllowedWorkspaces = make([]*types.Workspace, len(from.AllowedWorkspaces))
 	for i, workspaceID := range from.AllowedWorkspaces {
 		to.AllowedWorkspaces[i] = &types.Workspace{ID: workspaceID}
+	}
+	return to
+}
+
+// Agent token handlers
+func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
+	poolID, err := decode.Param("pool_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var params types.AgentTokenCreateOptions
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	at, token, err := a.service.CreateAgentToken(r.Context(), poolID, CreateAgentTokenOptions{
+		Description: params.Description,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, a.toAgentToken(at, token), http.StatusCreated)
+}
+
+func (a *tfe) getAgentToken(w http.ResponseWriter, r *http.Request) {
+	tokenID, err := decode.Param("token_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	at, err := a.service.GetAgentToken(r.Context(), tokenID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, a.toAgentToken(at, nil), http.StatusOK)
+}
+
+func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
+	poolID, err := decode.Param("pool_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var params types.ListOptions
+	if err := decode.All(&params, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	pools, err := a.service.ListAgentTokens(r.Context(), poolID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	// client expects a page, whereas service.listAgentTokens returns full result set, so
+	// convert to page first
+	page := resource.NewPage(pools, resource.PageOptions(params), nil)
+
+	// convert items
+	items := make([]*types.AgentToken, len(page.Items))
+	for i, from := range page.Items {
+		if err != nil {
+			tfeapi.Error(w, err)
+			return
+		}
+		items[i] = a.toAgentToken(from, nil)
+	}
+	a.RespondWithPage(w, r, items, page.Pagination)
+}
+
+func (a *tfe) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
+	tokenID, err := decode.Param("token_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	_, err = a.service.DeleteAgentToken(r.Context(), tokenID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *tfe) toAgentToken(from *agentToken, token []byte) *types.AgentToken {
+	to := &types.AgentToken{
+		ID:          from.ID,
+		CreatedAt:   from.CreatedAt,
+		Description: from.Description,
+	}
+	if token != nil {
+		to.Token = string(token)
 	}
 	return to
 }

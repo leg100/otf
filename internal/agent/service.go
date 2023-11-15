@@ -25,14 +25,20 @@ type (
 		NewAllocator(pubsub.Subscriber) *allocator
 		NewManager() *manager
 
+		createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error)
+		updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
+		getAgentPool(ctx context.Context, poolID string) (*Pool, error)
+		listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error)
+		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
+
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 
-		CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error)
+		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
-		ListAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
-		DeleteAgentToken(ctx context.Context, id string) (*agentToken, error)
+		ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error)
+		DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
 
 		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
 		updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error
@@ -49,7 +55,7 @@ type (
 		api    *api
 		web    *webHandlers
 
-		*db
+		db *db
 		*registrar
 		*tokenFactory
 	}
@@ -63,15 +69,12 @@ type (
 		run.RunService
 		tokens.TokensService
 	}
-
-	tokenFactory struct {
-		tokens.TokensService
-	}
 )
 
 func NewService(opts ServiceOptions) *service {
 	svc := &service{
 		Logger:       opts.Logger,
+		Subscriber:   opts.Broker,
 		db:           &db{DB: opts.DB},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		tokenFactory: &tokenFactory{
@@ -88,7 +91,7 @@ func NewService(opts ServiceOptions) *service {
 	}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
-		Service:  svc,
+		svc:      svc,
 	}
 	svc.registrar = &registrar{
 		service: svc,
@@ -98,7 +101,7 @@ func NewService(opts ServiceOptions) *service {
 		if action == pubsub.DeleteDBAction {
 			return &Agent{ID: poolID}, nil
 		}
-		return svc.getPool(ctx, poolID)
+		return svc.getAgentPool(ctx, poolID)
 	}))
 	// permit broker to transform database trigger events into agent events
 	opts.Broker.Register("agents", pubsub.GetterFunc(func(ctx context.Context, agentID string, action pubsub.DBAction) (any, error) {
@@ -162,7 +165,7 @@ func (s *service) NewManager() *manager {
 	}
 }
 
-func (s *service) createPool(ctx context.Context, opts createPoolOptions) (*Pool, error) {
+func (s *service) createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -179,7 +182,7 @@ func (s *service) createPool(ctx context.Context, opts createPoolOptions) (*Pool
 	return pool, nil
 }
 
-func (s *service) updatePool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
+func (s *service) updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
 	var (
 		subject       internal.Subject
 		before, after Pool
@@ -211,7 +214,7 @@ func (s *service) updatePool(ctx context.Context, poolID string, opts updatePool
 	return &after, nil
 }
 
-func (s *service) getPool(ctx context.Context, poolID string) (*Pool, error) {
+func (s *service) getAgentPool(ctx context.Context, poolID string) (*Pool, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
@@ -225,7 +228,7 @@ func (s *service) getPool(ctx context.Context, poolID string) (*Pool, error) {
 	return pool, nil
 }
 
-func (s *service) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
+func (s *service) listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
 	// TODO: handle authz with and without org
 	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, "")
 	if err != nil {
@@ -240,25 +243,28 @@ func (s *service) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool,
 	return pools, nil
 }
 
-func (s *service) deletePool(ctx context.Context, poolID string) error {
-	var subject internal.Subject
-	err := s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		organization, err := s.db.deletePool(ctx, poolID)
+func (s *service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+	pool, subject, err := func() (*Pool, internal.Subject, error) {
+		// retrieve pool in order to get organization for authorization
+		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
-		subject, err = s.organization.CanAccess(ctx, rbac.CreateRunAction, organization)
+		subject, err := s.organization.CanAccess(ctx, rbac.DeleteAgentPoolAction, pool.Organization)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
-		return nil
-	})
+		if err := s.db.deleteAgentToken(ctx, pool.ID); err != nil {
+			return nil, subject, err
+		}
+		return pool, subject, nil
+	}()
 	if err != nil {
 		s.Error(err, "deleting agent pool", "agent_pool_id", poolID, "subject", subject)
-		return err
+		return nil, err
 	}
-	s.V(9).Info("deleted agent pool", "subject", subject)
-	return nil
+	s.V(9).Info("deleted agent pool", "pool", pool, "subject", subject)
+	return pool, nil
 }
 
 func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
@@ -301,11 +307,11 @@ func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) 
 }
 
 func (s *service) getAgent(ctx context.Context, agentID string) (*Agent, error) {
-	return nil, nil
+	return s.db.getAgent(ctx, agentID)
 }
 
 func (s *service) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
-	return nil
+	return s.db.updateAgentStatus(ctx, agentID, status)
 }
 
 func (s *service) listAgents(ctx context.Context) ([]*Agent, error) {
@@ -317,7 +323,7 @@ func (s *service) listAgentsByOrganization(ctx context.Context, organization str
 }
 
 func (s *service) deleteAgent(ctx context.Context, agentID string) error {
-	return nil
+	return s.db.deleteAgent(ctx, agentID)
 }
 
 func (s *service) createJob(ctx context.Context, run *run.Run) error {
@@ -422,22 +428,32 @@ func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobS
 
 // agent tokens
 
-func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.AgentPoolID)
+func (a *service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+	at, token, subject, err := func() (*agentToken, []byte, internal.Subject, error) {
+		pool, err := a.db.getPool(ctx, poolID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, pool.Organization)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		at, token, err := a.NewAgentToken(poolID, opts)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if err := a.db.createAgentToken(ctx, at); err != nil {
+			a.Error(err, "creating agent token", "organization", poolID, "id", at.ID, "subject", subject)
+			return nil, nil, nil, err
+		}
+		return at, token, subject, nil
+	}()
 	if err != nil {
-		return nil, err
+		a.Error(err, "creating agent token", "agent_pool_id", poolID, "subject", subject)
+		return nil, nil, err
 	}
-
-	at, token, err := a.NewAgentToken(opts)
-	if err != nil {
-		return nil, err
-	}
-	if err := a.db.createAgentToken(ctx, at); err != nil {
-		a.Error(err, "creating agent token", "organization", opts.AgentPoolID, "id", at.ID, "subject", subject)
-		return nil, err
-	}
-	a.V(0).Info("created agent token", "organization", opts.AgentPoolID, "id", at.ID, "subject", subject)
-	return token, nil
+	a.V(0).Info("created agent token", "token", at, "subject", subject)
+	return at, token, nil
 }
 
 func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {

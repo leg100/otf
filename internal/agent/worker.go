@@ -394,7 +394,7 @@ func (b *worker) terraformApply(ctx context.Context) (err error) {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return b.execute(append([]string{b.terraformPath}, args...))
+	return b.execute(append([]string{b.terraformPath}, args...), sandboxIfEnabled())
 }
 
 func (b *worker) convertPlanToJSON(ctx context.Context) error {

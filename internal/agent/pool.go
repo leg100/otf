@@ -37,7 +37,7 @@ type (
 		AllowedWorkspaces []string
 	}
 
-	createPoolOptions struct {
+	createAgentPoolOptions struct {
 		Name               *string
 		Organization       string   // name of org
 		OrganizationScoped *bool    // defaults to true
@@ -60,7 +60,7 @@ type (
 	}
 )
 
-func newPool(opts createPoolOptions) (*Pool, error) {
+func newPool(opts createAgentPoolOptions) (*Pool, error) {
 	if err := resource.ValidateName(opts.Name); err != nil {
 		return nil, err
 	}

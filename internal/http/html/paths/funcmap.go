@@ -90,6 +90,14 @@ func init() {
 	funcmap["updateVariablePath"] = UpdateVariable
 	funcmap["deleteVariablePath"] = DeleteVariable
 
+	funcmap["agentPoolsPath"] = AgentPools
+	funcmap["createAgentPoolPath"] = CreateAgentPool
+	funcmap["newAgentPoolPath"] = NewAgentPool
+	funcmap["agentPoolPath"] = AgentPool
+	funcmap["editAgentPoolPath"] = EditAgentPool
+	funcmap["updateAgentPoolPath"] = UpdateAgentPool
+	funcmap["deleteAgentPoolPath"] = DeleteAgentPool
+
 	funcmap["agentTokensPath"] = AgentTokens
 	funcmap["createAgentTokenPath"] = CreateAgentToken
 	funcmap["newAgentTokenPath"] = NewAgentToken

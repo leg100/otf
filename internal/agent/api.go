@@ -27,7 +27,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agent/{agent_id}/status", a.updateStatus).Methods("POST")
 
 	// agent tokens
-	r.HandleFunc("/agent-tokens/create", a.createAgentToken).Methods("POST")
+	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
 
 	// job tokens
 	r.HandleFunc("/tokens/job", a.createJobToken).Methods("POST")
@@ -125,12 +125,17 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
+	poolID, err := decode.Param("pool_id", r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 	var opts CreateAgentTokenOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.CreateAgentToken(r.Context(), opts)
+	_, token, err := a.CreateAgentToken(r.Context(), poolID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

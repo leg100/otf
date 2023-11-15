@@ -9,8 +9,8 @@ type fakeService struct {
 	Service
 }
 
-func (f *fakeService) CreateAgentToken(context.Context, CreateAgentTokenOptions) ([]byte, error) {
-	return f.token, nil
+func (f *fakeService) CreateAgentToken(context.Context, string, CreateAgentTokenOptions) (*agentToken, []byte, error) {
+	return f.at, f.token, nil
 }
 
 func (f *fakeService) ListAgentTokens(context.Context, string) ([]*agentToken, error) {

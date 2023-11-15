@@ -73,6 +73,7 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &daemon{
+		Logger:     logger,
 		client:     app,
 		envs:       DefaultEnvs,
 		terminator: &terminator{mapping: make(map[JobSpec]cancelable)},

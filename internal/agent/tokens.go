@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -29,7 +28,6 @@ type (
 	}
 
 	CreateAgentTokenOptions struct {
-		AgentPoolID string `json:"agent_pool_id" schema:"agent_pool_id,required"`
 		Description string `json:"description" schema:"description,required"`
 	}
 )
@@ -41,6 +39,10 @@ func (a *agentToken) LogValue() slog.Value {
 		slog.String("description", a.Description),
 	}
 	return slog.GroupValue(attrs...)
+}
+
+type tokenFactory struct {
+	tokens.TokensService
 }
 
 // createJobToken constructs a job token
@@ -55,8 +57,8 @@ func (f *tokenFactory) createJobToken(_ context.Context, spec JobSpec) ([]byte, 
 
 // NewAgentToken constructs a token for an agent, returning both the
 // representation of the token, and the cryptographic token itself.
-func (f *tokenFactory) NewAgentToken(opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
-	if opts.AgentPoolID == "" {
+func (f *tokenFactory) NewAgentToken(poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+	if poolID == "" {
 		return nil, nil, fmt.Errorf("agent pool ID cannot be an empty string")
 	}
 	if opts.Description == "" {
@@ -66,33 +68,17 @@ func (f *tokenFactory) NewAgentToken(opts CreateAgentTokenOptions) (*agentToken,
 		ID:          internal.NewID("at"),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
-		AgentPoolID: opts.AgentPoolID,
+		AgentPoolID: poolID,
 	}
 	token, err := f.NewToken(tokens.NewTokenOptions{
 		Subject: at.ID,
 		Kind:    AgentTokenKind,
 		Claims: map[string]string{
-			"agent_pool_id": opts.AgentPoolID,
+			"agent_pool_id": poolID,
 		},
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 	return &at, token, nil
-}
-
-type agentTokenRow struct {
-	AgentTokenID pgtype.Text        `json:"agent_token_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	Description  pgtype.Text        `json:"description"`
-	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
-}
-
-func (row agentTokenRow) toAgentToken() *agentToken {
-	return &agentToken{
-		ID:          row.AgentTokenID.String,
-		CreatedAt:   row.CreatedAt.Time.UTC(),
-		Description: row.Description.String,
-		AgentPoolID: row.AgentPoolID.String,
-	}
 }

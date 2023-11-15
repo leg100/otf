@@ -18,6 +18,12 @@ const (
 	ListVCSProvidersAction
 	DeleteVCSProviderAction
 
+	CreateAgentPoolAction
+	UpdateAgentPoolAction
+	ListAgentPoolsAction
+	GetAgentPoolAction
+	DeleteAgentPoolAction
+
 	CreateAgentTokenAction
 	ListAgentTokensAction
 	GetAgentTokenAction

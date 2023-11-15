@@ -43,18 +43,17 @@ func (a *agentCLI) agentTokenCommand() *cobra.Command {
 }
 
 func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
-	opts := CreateAgentTokenOptions{}
-
+	var (
+		poolID string
+		opts   = CreateAgentTokenOptions{}
+	)
 	cmd := &cobra.Command{
-		Use:           "new [description]",
+		Use:           "new",
 		Short:         "Create a new agent token",
-		Args:          cobra.ExactArgs(1),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Description = args[0]
-
-			token, err := a.CreateAgentToken(cmd.Context(), opts)
+			_, token, err := a.CreateAgentToken(cmd.Context(), poolID, opts)
 			if err != nil {
 				return err
 			}
@@ -64,8 +63,11 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&opts.AgentPoolID, "organization", "", "Organization in which to create agent token.")
-	cmd.MarkFlagRequired("organization")
+	cmd.Flags().StringVar(&poolID, "agent-pool-id", "", "ID of the agent pool in which the token is to be created.")
+	cmd.MarkFlagRequired("agent-pool-id")
+
+	cmd.Flags().StringVar(&opts.Description, "description", "", "Provide a description for the token.")
+	cmd.MarkFlagRequired("description")
 
 	return cmd
 }

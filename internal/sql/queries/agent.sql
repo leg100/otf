@@ -7,7 +7,7 @@ INSERT INTO agents (
     ip_address,
     last_ping_at,
     status,
-    agent_token_id
+    agent_pool_id
 ) VALUES (
     pggen.arg('agent_id'),
     pggen.arg('name'),
@@ -16,7 +16,7 @@ INSERT INTO agents (
     pggen.arg('ip_address'),
     current_timestamp,
     pggen.arg('status'),
-    pggen.arg('agent_token_id')
+    pggen.arg('agent_pool_id')
 );
 
 -- name: UpdateAgentStatus :one
@@ -32,13 +32,18 @@ FROM agents;
 -- name: FindAgentsByOrganization :many
 SELECT a.*
 FROM agents a
-JOIN (agent_tokens at JOIN agent_pools ap USING (agent_pool_id)) USING (agent_token_id)
+JOIN  agent_pools ap USING (agent_pool_id)
 WHERE ap.organization_name = pggen.arg('organization_name');
 
 -- name: FindServerAgents :many
 SELECT *
 FROM agents
 WHERE server;
+
+-- name: FindAgentByID :one
+SELECT *
+FROM agents
+WHERE agent_id = pggen.arg('agent_id');
 
 -- name: DeleteAgent :one
 DELETE

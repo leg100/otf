@@ -1,9 +1,17 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package types
 
-// AgentToken represents an otf agent token.
+import "time"
+
+// AgentToken represents a TFE agent token.
 type AgentToken struct {
-	ID           string `jsonapi:"primary,agent_tokens"`
-	Organization string `jsonapi:"attribute" json:"organization_name"`
+	ID          string    `jsonapi:"primary,agent_tokens"`
+	CreatedAt   time.Time `jsonapi:"attribute" json:"created-at"`
+	Description string    `jsonapi:"attribute" json:"description"`
+	LastUsedAt  time.Time `jsonapi:"attribute" json:"last-used-at"`
+	Token       string    `jsonapi:"attribute" json:"token"`
 }
 
 // AgentTokenCreateOptions represents the options for creating a new otf agent token.
@@ -16,8 +24,4 @@ type AgentTokenCreateOptions struct {
 	// Description is a meaningful description of the purpose of the agent
 	// token.
 	Description string `jsonapi:"attribute" json:"description"`
-
-	// Organization is the name of the organization in which to create the
-	// token.
-	Organization string `jsonapi:"attribute" json:"organization_name"`
 }

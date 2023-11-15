@@ -25,7 +25,7 @@ func TestAgentToken_NewHandler(t *testing.T) {
 func TestAgentToken_CreateHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		Service:  &fakeService{},
+		svc:      &fakeService{},
 	}
 	q := "/?organization_name=acme-org&description=lorem-ipsum-etc"
 	r := httptest.NewRequest("GET", q, nil)
@@ -42,7 +42,7 @@ func TestAgentToken_CreateHandler(t *testing.T) {
 func TestAgentToken_ListHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		Service: &fakeService{
+		svc: &fakeService{
 			at: &agentToken{},
 		},
 	}
@@ -60,9 +60,9 @@ func TestAgentToken_ListHandler(t *testing.T) {
 func TestAgentToken_DeleteHandler(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		Service: &fakeService{
+		svc: &fakeService{
 			at: &agentToken{
-				Organization: "acme-org",
+				AgentPoolID: "pool-123",
 			},
 		},
 	}
@@ -74,6 +74,6 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.AgentTokens("acme-org"), redirect.Path)
+		assert.Equal(t, paths.AgentTokens("pool-123"), redirect.Path)
 	}
 }

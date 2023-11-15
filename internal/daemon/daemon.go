@@ -288,6 +288,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:          runService,
 	})
 
+	agentService := agent.NewService(agent.ServiceOptions{
+		Logger:        logger,
+		DB:            db,
+		Responder:     responder,
+		RunService:    runService,
+		TokensService: tokensService,
+		Broker:        broker,
+	})
+
 	agentDaemon, err := agent.New(
 		logger.WithValues("component", "agent"),
 		agent.InProcClient{
@@ -298,6 +307,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
+			Service:                     agentService,
 		},
 		*cfg.AgentConfig,
 	)
@@ -359,13 +369,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	agentService := agent.NewService(agent.ServiceOptions{
-		Logger:     logger,
-		DB:         db,
-		Responder:  responder,
-		RunService: runService,
-	})
 
 	handlers := []internal.Handlers{
 		teamService,

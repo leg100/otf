@@ -35,14 +35,14 @@ func (r poolresult) toPool() *Pool {
 
 // agentresult is the result of a database query for an agent
 type agentresult struct {
-	AgentID      pgtype.Text        `json:"agent_id"`
-	Name         pgtype.Text        `json:"name"`
-	Concurrency  pgtype.Int4        `json:"concurrency"`
-	Server       bool               `json:"server"`
-	IPAddress    pgtype.Inet        `json:"ip_address"`
-	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
-	Status       pgtype.Text        `json:"status"`
-	AgentTokenID pgtype.Text        `json:"agent_token_id"`
+	AgentID     pgtype.Text        `json:"agent_id"`
+	Name        pgtype.Text        `json:"name"`
+	Concurrency pgtype.Int4        `json:"concurrency"`
+	Server      bool               `json:"server"`
+	IPAddress   pgtype.Inet        `json:"ip_address"`
+	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
+	Status      pgtype.Text        `json:"status"`
+	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
 }
 
 func (r agentresult) toAgent() *Agent {
@@ -57,8 +57,8 @@ func (r agentresult) toAgent() *Agent {
 	if r.Name.Status == pgtype.Present {
 		agent.Name = &r.Name.String
 	}
-	if r.AgentTokenID.Status == pgtype.Present {
-		agent.AgentPoolID = &r.AgentTokenID.String
+	if r.AgentPoolID.Status == pgtype.Present {
+		agent.AgentPoolID = &r.AgentPoolID.String
 	}
 	return agent
 }
@@ -90,6 +90,22 @@ func (r jobresult) toJob() *Job {
 		job.AgentID = &r.AgentID.String
 	}
 	return job
+}
+
+type agentTokenRow struct {
+	AgentTokenID pgtype.Text        `json:"agent_token_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Description  pgtype.Text        `json:"description"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
+}
+
+func (row agentTokenRow) toAgentToken() *agentToken {
+	return &agentToken{
+		ID:          row.AgentTokenID.String,
+		CreatedAt:   row.CreatedAt.Time.UTC(),
+		Description: row.Description.String,
+		AgentPoolID: row.AgentPoolID.String,
+	}
 }
 
 type db struct {
@@ -200,14 +216,28 @@ func (db *db) deletePool(ctx context.Context, poolID string) (organization strin
 
 func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
-		AgentID:      sql.String(agent.ID),
-		Name:         sql.StringPtr(agent.Name),
-		Concurrency:  sql.Int4(agent.Concurrency),
-		IPAddress:    sql.Inet(agent.IPAddress),
-		Status:       sql.String(string(agent.Status)),
-		AgentTokenID: sql.StringPtr(agent.AgentPoolID),
+		AgentID:     sql.String(agent.ID),
+		Name:        sql.StringPtr(agent.Name),
+		Concurrency: sql.Int4(agent.Concurrency),
+		IPAddress:   sql.Inet(agent.IPAddress),
+		Status:      sql.String(string(agent.Status)),
+		Server:      agent.Server,
+		AgentPoolID: sql.StringPtr(agent.AgentPoolID),
 	})
 	return err
+}
+
+func (db *db) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+	_, err := db.Conn(ctx).UpdateAgentStatus(ctx, sql.String(string(status)), sql.String(agentID))
+	return sql.Error(err)
+}
+
+func (db *db) getAgent(ctx context.Context, agentID string) (*Agent, error) {
+	result, err := db.Conn(ctx).FindAgentByID(ctx, sql.String(agentID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return agentresult(result).toAgent(), nil
 }
 
 func (db *db) listAgents(ctx context.Context) ([]*Agent, error) {
@@ -244,6 +274,11 @@ func (db *db) listAgentsByOrganization(ctx context.Context, organization string)
 		agents[i] = agentresult(r).toAgent()
 	}
 	return agents, nil
+}
+
+func (db *db) deleteAgent(ctx context.Context, agentID string) error {
+	_, err := db.Conn(ctx).DeleteAgent(ctx, sql.String(agentID))
+	return sql.Error(err)
 }
 
 func (db *db) createJob(ctx context.Context, job *Job) error {

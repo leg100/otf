@@ -242,6 +242,10 @@ var specs = []controllerSpec{
 				},
 			},
 			{
+				Name:           "agent_pool",
+				controllerType: resourcePath,
+			},
+			{
 				Name:           "agent_token",
 				controllerType: resourcePath,
 			},
