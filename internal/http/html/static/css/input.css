@@ -30,8 +30,8 @@
   .form-checkbox label {
     @apply font-semibold;
   }
-  .form-checkbox span:last-child {
-    @apply col-start-2 text-gray-600 text-sm;
+  .form-checkbox .description {
+    @apply col-start-2;
   }
   input.error {
     @apply border-2 border-red-400 shadow-sm shadow-red-200;

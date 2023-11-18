@@ -9,20 +9,45 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAgentToken_NewHandler(t *testing.T) {
+func TestWebHandlers_createAgentPool(t *testing.T) {
+	svc := &fakeService{
+		pool: &Pool{ID: "pool-123"},
+	}
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
+		svc:      svc,
+	}
+	q := "/?organization_name=acme-org&name=my-pool"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+
+	h.createAgentPool(w, r)
+
+	want := createAgentPoolOptions{
+		Name:         "my-pool",
+		Organization: "acme-org",
+	}
+	assert.Equal(t, want, svc.createAgentPoolOptions)
+	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
+}
+
+func TestWebHandlers_listAgentPools(t *testing.T) {
+	h := &webHandlers{
+		Renderer: testutils.NewRenderer(t),
+		svc: &fakeService{
+			pool: &Pool{ID: "pool-123"},
+		},
 	}
 	q := "/?organization_name=acme-org"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 
-	h.newAgentToken(w, r)
+	h.listAgentPools(w, r)
 
 	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
-func TestAgentToken_CreateHandler(t *testing.T) {
+func TestWebHandlers_createAgentToken(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		svc:      &fakeService{},
@@ -33,28 +58,7 @@ func TestAgentToken_CreateHandler(t *testing.T) {
 
 	h.createAgentToken(w, r)
 
-	if assert.Equal(t, 302, w.Code) {
-		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.AgentTokens("acme-org"), redirect.Path)
-	}
-}
-
-func TestAgentToken_ListHandler(t *testing.T) {
-	h := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		svc: &fakeService{
-			at: &agentToken{},
-		},
-	}
-	q := "/?organization_name=acme-org"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-
-	h.listAgentTokens(w, r)
-
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
-	}
+	testutils.AssertRedirect(t, w, paths.AgentTokens("acme-org"))
 }
 
 func TestAgentToken_DeleteHandler(t *testing.T) {

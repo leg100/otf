@@ -3,7 +3,9 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"log/slog"
@@ -13,9 +15,15 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-// An agent pool implements Subject (otf-agent authenticates as an agent pool using one
-// of its tokens).
-var _ internal.Subject = (*Pool)(nil)
+var (
+	// An agent pool implements Subject (otf-agent authenticates as an agent pool using one
+	// of its tokens).
+	_ internal.Subject = (*Pool)(nil)
+
+	ErrCannotDeletePoolReferencedByWorkspaces = errors.New("agent pool is still being used by workspaces in your organization. You must switch your workspaces to a different agent pool or execution mode before you can delete this agent pool")
+	ErrWorkspaceNotAllowedToUsePool           = errors.New("access to this agent pool is not allowed - you must explictly grant access to the workspace first")
+	ErrPoolAssignedWorkspacesNotAllowed       = errors.New("workspaces assigned to the pool have not been granted access to the pool")
+)
 
 type (
 	// Pool is a group of non-server agents sharing one or more tokens, assigned to
@@ -30,24 +38,32 @@ type (
 		// Whether pool of agents is accessible to all workspaces in organization
 		// (true) or only those specified in AllowedWorkspaces (false).
 		OrganizationScoped bool
-		// IDs of workspaces currently configured to use this pool
-		Workspaces []string
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
 		AllowedWorkspaces []string
+		// IDs of workspaces assigned to the pool. Note: this is a subset of
+		// AllowedWorkspaces.
+		AssignedWorkspaces []string
 	}
 
 	createAgentPoolOptions struct {
-		Name               *string
-		Organization       string   // name of org
-		OrganizationScoped *bool    // defaults to true
-		AllowedWorkspaces  []string // IDs of workspaces
+		Name string `schema:"name,required"`
+		// name of org
+		Organization string `schema:"organization_name,required"`
+		// defaults to true
+		OrganizationScoped *bool
+		// IDs of workspaces allowed to access the pool.
+		AllowedWorkspaces []string
 	}
 
 	updatePoolOptions struct {
 		Name               *string
-		OrganizationScoped *bool
-		AllowedWorkspaces  []string
+		OrganizationScoped *bool `schema:"organization_scoped"`
+		// IDs of workspaces allowed to access the pool.
+		AllowedWorkspaces []string `schema:"allowed_workspaces"`
+		// IDs of workspaces assigned to the pool. Note: this is a subset of
+		// AssignedWorkspaces.
+		AssignedWorkspaces []string `schema:"assigned_workspaces"`
 	}
 
 	listPoolOptions struct {
@@ -57,17 +73,24 @@ type (
 		NameSubstring *string
 		// Filter pools to those accessible to the named workspace. Optional.
 		AllowedWorkspaceName *string
+		// Filter pools to those accessible to the workspace with the given ID. Optional.
+		AllowedWorkspaceID *string
 	}
 )
 
+// newPool constructs a new agent pool. Note: a new pool has a list of allowed
+// workspaces but not yet a list of assigned workspaces.
 func newPool(opts createAgentPoolOptions) (*Pool, error) {
-	if err := resource.ValidateName(opts.Name); err != nil {
-		return nil, err
+	if opts.Name == "" {
+		return nil, errors.New("name must not be empty")
+	}
+	if opts.Organization == "" {
+		return nil, errors.New("organization must not be empty")
 	}
 	pool := &Pool{
 		ID:                 internal.NewID("apool"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
-		Name:               *opts.Name,
+		Name:               opts.Name,
 		Organization:       opts.Organization,
 		OrganizationScoped: true,
 		AllowedWorkspaces:  opts.AllowedWorkspaces,
@@ -90,6 +113,12 @@ func (p *Pool) update(opts updatePoolOptions) error {
 	}
 	if opts.AllowedWorkspaces != nil {
 		p.AllowedWorkspaces = opts.AllowedWorkspaces
+	}
+	// each assigned workspace must also be allowed.
+	for _, assigned := range p.AssignedWorkspaces {
+		if !slices.Contains(p.AllowedWorkspaces, assigned) {
+			return ErrPoolAssignedWorkspacesNotAllowed
+		}
 	}
 	return nil
 }
@@ -145,7 +174,7 @@ func (p *Pool) LogValue() slog.Value {
 		slog.String("name", p.Name),
 		slog.String("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),
-		slog.Any("workspaces", p.Workspaces),
+		slog.Any("workspaces", p.AssignedWorkspaces),
 		slog.Any("allowed_workspaces", p.AllowedWorkspaces),
 	)
 }

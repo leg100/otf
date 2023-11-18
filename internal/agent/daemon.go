@@ -7,11 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/leg100/otf/internal/logr"
 	"github.com/spf13/pflag"
+	"golang.org/x/sync/errgroup"
 )
 
 const DefaultConcurrency = 5
@@ -72,6 +72,12 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		}
 		logger.V(0).Info("enabled sandbox mode")
 	}
+	if cfg.server {
+		// disable logging for server agents otherwise the server logs are
+		// likely to contain duplicate logs from both the agent daemon and the
+		// agent service.
+		logger = logr.NewNoopLogger()
+	}
 	d := &daemon{
 		Logger:     logger,
 		client:     app,
@@ -101,11 +107,9 @@ func (d *daemon) Start(ctx context.Context) error {
 	d.agentID = agent.ID
 	d.Logger = d.WithValues("agent_id", agent.ID)
 
-	var wg sync.WaitGroup
-	// every 10 seconds update the agent status
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		// every 10 seconds update the agent status
 		ticker := time.NewTicker(10 * time.Second)
 		for {
 			select {
@@ -119,14 +123,21 @@ func (d *daemon) Start(ctx context.Context) error {
 					d.Error(err, "sending agent status update", "status", status)
 				}
 			case <-ctx.Done():
-				// send final status update
-				if err := d.updateAgentStatus(ctx, d.agentID, AgentExited); err != nil {
-					d.Error(err, "sending agent status update", "status", "exited")
+				// send final status update with a context that is still valid
+				// for a further 10 seconds.
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+
+				if !d.config.server {
+					d.Info("sending final status update", "status", "exited")
 				}
-				return
+				if err := d.updateAgentStatus(ctx, d.agentID, AgentExited); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
-	}()
+	})
 	// fetch jobs allocated to this agent and launch workers to do jobs; also
 	// handle cancelation signals for jobs
 	for {
@@ -150,7 +161,6 @@ func (d *daemon) Start(ctx context.Context) error {
 					continue
 				}
 				w := &worker{
-					Logger: d.Logger,
 					client: d.client,
 					job:    j,
 					token:  token,
@@ -159,9 +169,7 @@ func (d *daemon) Start(ctx context.Context) error {
 				// check worker in with the terminator so that it can receive a
 				// cancelation signal should one arrive.
 				d.checkIn(j.JobSpec, w)
-				wg.Add(1)
-				go func(j *Job) {
-					defer wg.Done()
+				g.Go(func() error {
 					defer d.checkOut(j.JobSpec)
 
 					if err := w.do(ctx); err != nil {
@@ -179,7 +187,8 @@ func (d *daemon) Start(ctx context.Context) error {
 					if err := d.updateJobStatus(ctx, j.JobSpec, status); err != nil {
 						d.Error(err, "sending job status", "status", status, "job", j)
 					}
-				}(j)
+					return nil
+				})
 			} else if j.signal != nil {
 				d.Info("received signal", "signal", *j.signal, "job", j)
 				switch *j.signal {
@@ -193,6 +202,5 @@ func (d *daemon) Start(ctx context.Context) error {
 			}
 		}
 	}
-	wg.Wait()
-	return nil
+	return g.Wait()
 }

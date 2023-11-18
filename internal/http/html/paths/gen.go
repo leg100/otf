@@ -209,6 +209,9 @@ var specs = []controllerSpec{
 					{
 						name: "state",
 					},
+					{
+						name: "pools",
+					},
 				},
 				nested: []controllerSpec{
 					{
@@ -242,12 +245,18 @@ var specs = []controllerSpec{
 				},
 			},
 			{
-				Name:           "agent_pool",
+				Name:           "agent",
 				controllerType: resourcePath,
 			},
 			{
-				Name:           "agent_token",
+				Name:           "agent_pool",
 				controllerType: resourcePath,
+				nested: []controllerSpec{
+					{
+						Name:           "agent_token",
+						controllerType: resourcePath,
+					},
+				},
 			},
 			{
 				Name:           "variable_set",

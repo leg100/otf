@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -70,10 +71,14 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+	if params.Name == nil {
+		tfeapi.Error(w, internal.ErrRequiredName)
+		return
+	}
 
 	// convert tfe params to otf opts
 	opts := createAgentPoolOptions{
-		Name:               params.Name,
+		Name:               *params.Name,
 		Organization:       organization,
 		OrganizationScoped: params.OrganizationScoped,
 	}
@@ -201,8 +206,8 @@ func (a *tfe) toPool(from *Pool) *types.AgentPool {
 		},
 		OrganizationScoped: from.OrganizationScoped,
 	}
-	to.Workspaces = make([]*types.Workspace, len(from.Workspaces))
-	for i, workspaceID := range from.Workspaces {
+	to.Workspaces = make([]*types.Workspace, len(from.AssignedWorkspaces))
+	for i, workspaceID := range from.AssignedWorkspaces {
 		to.Workspaces[i] = &types.Workspace{ID: workspaceID}
 	}
 	to.AllowedWorkspaces = make([]*types.Workspace, len(from.AllowedWorkspaces))

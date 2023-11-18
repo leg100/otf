@@ -32,7 +32,11 @@ AND   ((pggen.arg('name_substring')::text IS NULL) OR ap.name LIKE '%' || pggen.
 AND   ((pggen.arg('allowed_workspace_name')::text IS NULL) OR
         ap.organization_scoped OR w.name = pggen.arg('allowed_workspace_name')
       )
+AND   ((pggen.arg('allowed_workspace_id')::text IS NULL) OR
+        ap.organization_scoped OR w.workspace_id = pggen.arg('allowed_workspace_id')
+      )
 GROUP BY ap.agent_pool_id
+ORDER BY ap.created_at DESC
 ;
 
 -- name: FindAgentPool :one
@@ -81,10 +85,10 @@ RETURNING *;
 DELETE
 FROM agent_pools
 WHERE agent_pool_id = pggen.arg('pool_id')
-RETURNING organization_name
+RETURNING *
 ;
 
--- name: InsertAgentPoolAllowedWorkspaces :exec
+-- name: InsertAgentPoolAllowedWorkspace :exec
 INSERT INTO agent_pool_allowed_workspaces (
     agent_pool_id,
     workspace_id
@@ -93,8 +97,9 @@ INSERT INTO agent_pool_allowed_workspaces (
     pggen.arg('workspace_id')
 );
 
--- name: DeleteAgentPoolAllowedWorkspaces :exec
+-- name: DeleteAgentPoolAllowedWorkspace :exec
 DELETE
 FROM agent_pool_allowed_workspaces
 WHERE agent_pool_id = pggen.arg('pool_id')
+AND workspace_id = pggen.arg('workspace_id')
 ;

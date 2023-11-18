@@ -21,6 +21,10 @@ func init() {
 	decoder.IgnoreUnknownKeys(true)
 }
 
+func RegisterConverter(v any, fn schema.Converter) {
+	decoder.RegisterConverter(v, fn)
+}
+
 // Form decodes an HTTP request's POST form contents into dst.
 func Form(dst interface{}, r *http.Request) error {
 	if err := r.ParseForm(); err != nil {

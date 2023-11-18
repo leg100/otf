@@ -24,12 +24,12 @@ type Querier interface {
 	// InsertAgentScan scans the result of an executed InsertAgentBatch query.
 	InsertAgentScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateAgentStatus(ctx context.Context, status pgtype.Text, agentID pgtype.Text) (UpdateAgentStatusRow, error)
-	// UpdateAgentStatusBatch enqueues a UpdateAgentStatus query into batch to be executed
+	UpdateAgent(ctx context.Context, params UpdateAgentParams) (UpdateAgentRow, error)
+	// UpdateAgentBatch enqueues a UpdateAgent query into batch to be executed
 	// later by the batch.
-	UpdateAgentStatusBatch(batch genericBatch, status pgtype.Text, agentID pgtype.Text)
-	// UpdateAgentStatusScan scans the result of an executed UpdateAgentStatusBatch query.
-	UpdateAgentStatusScan(results pgx.BatchResults) (UpdateAgentStatusRow, error)
+	UpdateAgentBatch(batch genericBatch, params UpdateAgentParams)
+	// UpdateAgentScan scans the result of an executed UpdateAgentBatch query.
+	UpdateAgentScan(results pgx.BatchResults) (UpdateAgentRow, error)
 
 	FindAgents(ctx context.Context) ([]FindAgentsRow, error)
 	// FindAgentsBatch enqueues a FindAgents query into batch to be executed
@@ -45,6 +45,13 @@ type Querier interface {
 	// FindAgentsByOrganizationScan scans the result of an executed FindAgentsByOrganizationBatch query.
 	FindAgentsByOrganizationScan(results pgx.BatchResults) ([]FindAgentsByOrganizationRow, error)
 
+	FindAgentsByPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]FindAgentsByPoolIDRow, error)
+	// FindAgentsByPoolIDBatch enqueues a FindAgentsByPoolID query into batch to be executed
+	// later by the batch.
+	FindAgentsByPoolIDBatch(batch genericBatch, agentPoolID pgtype.Text)
+	// FindAgentsByPoolIDScan scans the result of an executed FindAgentsByPoolIDBatch query.
+	FindAgentsByPoolIDScan(results pgx.BatchResults) ([]FindAgentsByPoolIDRow, error)
+
 	FindServerAgents(ctx context.Context) ([]FindServerAgentsRow, error)
 	// FindServerAgentsBatch enqueues a FindServerAgents query into batch to be executed
 	// later by the batch.
@@ -58,6 +65,13 @@ type Querier interface {
 	FindAgentByIDBatch(batch genericBatch, agentID pgtype.Text)
 	// FindAgentByIDScan scans the result of an executed FindAgentByIDBatch query.
 	FindAgentByIDScan(results pgx.BatchResults) (FindAgentByIDRow, error)
+
+	FindAgentByIDForUpdate(ctx context.Context, agentID pgtype.Text) (FindAgentByIDForUpdateRow, error)
+	// FindAgentByIDForUpdateBatch enqueues a FindAgentByIDForUpdate query into batch to be executed
+	// later by the batch.
+	FindAgentByIDForUpdateBatch(batch genericBatch, agentID pgtype.Text)
+	// FindAgentByIDForUpdateScan scans the result of an executed FindAgentByIDForUpdateBatch query.
+	FindAgentByIDForUpdateScan(results pgx.BatchResults) (FindAgentByIDForUpdateRow, error)
 
 	DeleteAgent(ctx context.Context, agentID pgtype.Text) (DeleteAgentRow, error)
 	// DeleteAgentBatch enqueues a DeleteAgent query into batch to be executed
@@ -101,26 +115,26 @@ type Querier interface {
 	// UpdateAgentPoolScan scans the result of an executed UpdateAgentPoolBatch query.
 	UpdateAgentPoolScan(results pgx.BatchResults) (UpdateAgentPoolRow, error)
 
-	DeleteAgentPool(ctx context.Context, poolID pgtype.Text) (pgtype.Text, error)
+	DeleteAgentPool(ctx context.Context, poolID pgtype.Text) (DeleteAgentPoolRow, error)
 	// DeleteAgentPoolBatch enqueues a DeleteAgentPool query into batch to be executed
 	// later by the batch.
 	DeleteAgentPoolBatch(batch genericBatch, poolID pgtype.Text)
 	// DeleteAgentPoolScan scans the result of an executed DeleteAgentPoolBatch query.
-	DeleteAgentPoolScan(results pgx.BatchResults) (pgtype.Text, error)
+	DeleteAgentPoolScan(results pgx.BatchResults) (DeleteAgentPoolRow, error)
 
-	InsertAgentPoolAllowedWorkspaces(ctx context.Context, poolID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error)
-	// InsertAgentPoolAllowedWorkspacesBatch enqueues a InsertAgentPoolAllowedWorkspaces query into batch to be executed
+	InsertAgentPoolAllowedWorkspace(ctx context.Context, poolID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	// InsertAgentPoolAllowedWorkspaceBatch enqueues a InsertAgentPoolAllowedWorkspace query into batch to be executed
 	// later by the batch.
-	InsertAgentPoolAllowedWorkspacesBatch(batch genericBatch, poolID pgtype.Text, workspaceID pgtype.Text)
-	// InsertAgentPoolAllowedWorkspacesScan scans the result of an executed InsertAgentPoolAllowedWorkspacesBatch query.
-	InsertAgentPoolAllowedWorkspacesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertAgentPoolAllowedWorkspaceBatch(batch genericBatch, poolID pgtype.Text, workspaceID pgtype.Text)
+	// InsertAgentPoolAllowedWorkspaceScan scans the result of an executed InsertAgentPoolAllowedWorkspaceBatch query.
+	InsertAgentPoolAllowedWorkspaceScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteAgentPoolAllowedWorkspaces(ctx context.Context, poolID pgtype.Text) (pgconn.CommandTag, error)
-	// DeleteAgentPoolAllowedWorkspacesBatch enqueues a DeleteAgentPoolAllowedWorkspaces query into batch to be executed
+	DeleteAgentPoolAllowedWorkspace(ctx context.Context, poolID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	// DeleteAgentPoolAllowedWorkspaceBatch enqueues a DeleteAgentPoolAllowedWorkspace query into batch to be executed
 	// later by the batch.
-	DeleteAgentPoolAllowedWorkspacesBatch(batch genericBatch, poolID pgtype.Text)
-	// DeleteAgentPoolAllowedWorkspacesScan scans the result of an executed DeleteAgentPoolAllowedWorkspacesBatch query.
-	DeleteAgentPoolAllowedWorkspacesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteAgentPoolAllowedWorkspaceBatch(batch genericBatch, poolID pgtype.Text, workspaceID pgtype.Text)
+	// DeleteAgentPoolAllowedWorkspaceScan scans the result of an executed DeleteAgentPoolAllowedWorkspaceBatch query.
+	DeleteAgentPoolAllowedWorkspaceScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertAgentToken(ctx context.Context, params InsertAgentTokenParams) (pgconn.CommandTag, error)
 	// InsertAgentTokenBatch enqueues a InsertAgentToken query into batch to be executed
@@ -1580,8 +1594,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertAgentSQL, insertAgentSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertAgent': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateAgentStatusSQL, updateAgentStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateAgentStatus': %w", err)
+	if _, err := p.Prepare(ctx, updateAgentSQL, updateAgentSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateAgent': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findAgentsSQL, findAgentsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgents': %w", err)
@@ -1589,11 +1603,17 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findAgentsByOrganizationSQL, findAgentsByOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentsByOrganization': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findAgentsByPoolIDSQL, findAgentsByPoolIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentsByPoolID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findServerAgentsSQL, findServerAgentsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindServerAgents': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findAgentByIDSQL, findAgentByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findAgentByIDForUpdateSQL, findAgentByIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentByIDForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteAgentSQL, deleteAgentSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteAgent': %w", err)
@@ -1616,11 +1636,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteAgentPoolSQL, deleteAgentPoolSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteAgentPool': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertAgentPoolAllowedWorkspacesSQL, insertAgentPoolAllowedWorkspacesSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertAgentPoolAllowedWorkspaces': %w", err)
+	if _, err := p.Prepare(ctx, insertAgentPoolAllowedWorkspaceSQL, insertAgentPoolAllowedWorkspaceSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertAgentPoolAllowedWorkspace': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteAgentPoolAllowedWorkspacesSQL, deleteAgentPoolAllowedWorkspacesSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteAgentPoolAllowedWorkspaces': %w", err)
+	if _, err := p.Prepare(ctx, deleteAgentPoolAllowedWorkspaceSQL, deleteAgentPoolAllowedWorkspaceSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteAgentPoolAllowedWorkspace': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertAgentTokenSQL, insertAgentTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertAgentToken': %w", err)
@@ -2733,6 +2753,7 @@ const insertAgentSQL = `INSERT INTO agents (
     server,
     ip_address,
     last_ping_at,
+    last_status_at,
     status,
     agent_pool_id
 ) VALUES (
@@ -2741,25 +2762,28 @@ const insertAgentSQL = `INSERT INTO agents (
     $3,
     $4,
     $5,
-    current_timestamp,
     $6,
-    $7
+    $7,
+    $8,
+    $9
 );`
 
 type InsertAgentParams struct {
-	AgentID     pgtype.Text
-	Name        pgtype.Text
-	Concurrency pgtype.Int4
-	Server      bool
-	IPAddress   pgtype.Inet
-	Status      pgtype.Text
-	AgentPoolID pgtype.Text
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Concurrency  pgtype.Int4
+	Server       bool
+	IPAddress    pgtype.Inet
+	LastPingAt   pgtype.Timestamptz
+	LastStatusAt pgtype.Timestamptz
+	Status       pgtype.Text
+	AgentPoolID  pgtype.Text
 }
 
 // InsertAgent implements Querier.InsertAgent.
 func (q *DBQuerier) InsertAgent(ctx context.Context, params InsertAgentParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertAgent")
-	cmdTag, err := q.conn.Exec(ctx, insertAgentSQL, params.AgentID, params.Name, params.Concurrency, params.Server, params.IPAddress, params.Status, params.AgentPoolID)
+	cmdTag, err := q.conn.Exec(ctx, insertAgentSQL, params.AgentID, params.Name, params.Concurrency, params.Server, params.IPAddress, params.LastPingAt, params.LastStatusAt, params.Status, params.AgentPoolID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertAgent: %w", err)
 	}
@@ -2768,7 +2792,7 @@ func (q *DBQuerier) InsertAgent(ctx context.Context, params InsertAgentParams) (
 
 // InsertAgentBatch implements Querier.InsertAgentBatch.
 func (q *DBQuerier) InsertAgentBatch(batch genericBatch, params InsertAgentParams) {
-	batch.Queue(insertAgentSQL, params.AgentID, params.Name, params.Concurrency, params.Server, params.IPAddress, params.Status, params.AgentPoolID)
+	batch.Queue(insertAgentSQL, params.AgentID, params.Name, params.Concurrency, params.Server, params.IPAddress, params.LastPingAt, params.LastStatusAt, params.Status, params.AgentPoolID)
 }
 
 // InsertAgentScan implements Querier.InsertAgentScan.
@@ -2780,44 +2804,54 @@ func (q *DBQuerier) InsertAgentScan(results pgx.BatchResults) (pgconn.CommandTag
 	return cmdTag, err
 }
 
-const updateAgentStatusSQL = `UPDATE agents
-SET status = $1, last_ping_at = current_timestamp
-WHERE agent_id = $2
+const updateAgentSQL = `UPDATE agents
+SET status = $1,
+    last_ping_at = $2,
+    last_status_at = $3
+WHERE agent_id = $4
 RETURNING *;`
 
-type UpdateAgentStatusRow struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+type UpdateAgentParams struct {
+	Status       pgtype.Text
+	LastPingAt   pgtype.Timestamptz
+	LastStatusAt pgtype.Timestamptz
+	AgentID      pgtype.Text
 }
 
-// UpdateAgentStatus implements Querier.UpdateAgentStatus.
-func (q *DBQuerier) UpdateAgentStatus(ctx context.Context, status pgtype.Text, agentID pgtype.Text) (UpdateAgentStatusRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateAgentStatus")
-	row := q.conn.QueryRow(ctx, updateAgentStatusSQL, status, agentID)
-	var item UpdateAgentStatusRow
-	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
-		return item, fmt.Errorf("query UpdateAgentStatus: %w", err)
+type UpdateAgentRow struct {
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
+}
+
+// UpdateAgent implements Querier.UpdateAgent.
+func (q *DBQuerier) UpdateAgent(ctx context.Context, params UpdateAgentParams) (UpdateAgentRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateAgent")
+	row := q.conn.QueryRow(ctx, updateAgentSQL, params.Status, params.LastPingAt, params.LastStatusAt, params.AgentID)
+	var item UpdateAgentRow
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
+		return item, fmt.Errorf("query UpdateAgent: %w", err)
 	}
 	return item, nil
 }
 
-// UpdateAgentStatusBatch implements Querier.UpdateAgentStatusBatch.
-func (q *DBQuerier) UpdateAgentStatusBatch(batch genericBatch, status pgtype.Text, agentID pgtype.Text) {
-	batch.Queue(updateAgentStatusSQL, status, agentID)
+// UpdateAgentBatch implements Querier.UpdateAgentBatch.
+func (q *DBQuerier) UpdateAgentBatch(batch genericBatch, params UpdateAgentParams) {
+	batch.Queue(updateAgentSQL, params.Status, params.LastPingAt, params.LastStatusAt, params.AgentID)
 }
 
-// UpdateAgentStatusScan implements Querier.UpdateAgentStatusScan.
-func (q *DBQuerier) UpdateAgentStatusScan(results pgx.BatchResults) (UpdateAgentStatusRow, error) {
+// UpdateAgentScan implements Querier.UpdateAgentScan.
+func (q *DBQuerier) UpdateAgentScan(results pgx.BatchResults) (UpdateAgentRow, error) {
 	row := results.QueryRow()
-	var item UpdateAgentStatusRow
-	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
-		return item, fmt.Errorf("scan UpdateAgentStatusBatch row: %w", err)
+	var item UpdateAgentRow
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
+		return item, fmt.Errorf("scan UpdateAgentBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -2826,14 +2860,15 @@ const findAgentsSQL = `SELECT *
 FROM agents;`
 
 type FindAgentsRow struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // FindAgents implements Querier.FindAgents.
@@ -2847,7 +2882,7 @@ func (q *DBQuerier) FindAgents(ctx context.Context) ([]FindAgentsRow, error) {
 	items := []FindAgentsRow{}
 	for rows.Next() {
 		var item FindAgentsRow
-		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindAgents row: %w", err)
 		}
 		items = append(items, item)
@@ -2873,7 +2908,7 @@ func (q *DBQuerier) FindAgentsScan(results pgx.BatchResults) ([]FindAgentsRow, e
 	items := []FindAgentsRow{}
 	for rows.Next() {
 		var item FindAgentsRow
-		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindAgentsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -2886,18 +2921,19 @@ func (q *DBQuerier) FindAgentsScan(results pgx.BatchResults) ([]FindAgentsRow, e
 
 const findAgentsByOrganizationSQL = `SELECT a.*
 FROM agents a
-JOIN  agent_pools ap USING (agent_pool_id)
+JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.organization_name = $1;`
 
 type FindAgentsByOrganizationRow struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // FindAgentsByOrganization implements Querier.FindAgentsByOrganization.
@@ -2911,7 +2947,7 @@ func (q *DBQuerier) FindAgentsByOrganization(ctx context.Context, organizationNa
 	items := []FindAgentsByOrganizationRow{}
 	for rows.Next() {
 		var item FindAgentsByOrganizationRow
-		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindAgentsByOrganization row: %w", err)
 		}
 		items = append(items, item)
@@ -2937,7 +2973,7 @@ func (q *DBQuerier) FindAgentsByOrganizationScan(results pgx.BatchResults) ([]Fi
 	items := []FindAgentsByOrganizationRow{}
 	for rows.Next() {
 		var item FindAgentsByOrganizationRow
-		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindAgentsByOrganizationBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -2948,19 +2984,86 @@ func (q *DBQuerier) FindAgentsByOrganizationScan(results pgx.BatchResults) ([]Fi
 	return items, err
 }
 
+const findAgentsByPoolIDSQL = `SELECT a.*
+FROM agents a
+JOIN agent_pools ap USING (agent_pool_id)
+WHERE ap.agent_pool_id = $1;`
+
+type FindAgentsByPoolIDRow struct {
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
+}
+
+// FindAgentsByPoolID implements Querier.FindAgentsByPoolID.
+func (q *DBQuerier) FindAgentsByPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]FindAgentsByPoolIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentsByPoolID")
+	rows, err := q.conn.Query(ctx, findAgentsByPoolIDSQL, agentPoolID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindAgentsByPoolID: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAgentsByPoolIDRow{}
+	for rows.Next() {
+		var item FindAgentsByPoolIDRow
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
+			return nil, fmt.Errorf("scan FindAgentsByPoolID row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAgentsByPoolID rows: %w", err)
+	}
+	return items, err
+}
+
+// FindAgentsByPoolIDBatch implements Querier.FindAgentsByPoolIDBatch.
+func (q *DBQuerier) FindAgentsByPoolIDBatch(batch genericBatch, agentPoolID pgtype.Text) {
+	batch.Queue(findAgentsByPoolIDSQL, agentPoolID)
+}
+
+// FindAgentsByPoolIDScan implements Querier.FindAgentsByPoolIDScan.
+func (q *DBQuerier) FindAgentsByPoolIDScan(results pgx.BatchResults) ([]FindAgentsByPoolIDRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindAgentsByPoolIDBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAgentsByPoolIDRow{}
+	for rows.Next() {
+		var item FindAgentsByPoolIDRow
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
+			return nil, fmt.Errorf("scan FindAgentsByPoolIDBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAgentsByPoolIDBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findServerAgentsSQL = `SELECT *
 FROM agents
-WHERE server;`
+WHERE server
+ORDER BY last_ping_at DESC;`
 
 type FindServerAgentsRow struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // FindServerAgents implements Querier.FindServerAgents.
@@ -2974,7 +3077,7 @@ func (q *DBQuerier) FindServerAgents(ctx context.Context) ([]FindServerAgentsRow
 	items := []FindServerAgentsRow{}
 	for rows.Next() {
 		var item FindServerAgentsRow
-		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindServerAgents row: %w", err)
 		}
 		items = append(items, item)
@@ -3000,7 +3103,7 @@ func (q *DBQuerier) FindServerAgentsScan(results pgx.BatchResults) ([]FindServer
 	items := []FindServerAgentsRow{}
 	for rows.Next() {
 		var item FindServerAgentsRow
-		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+		if err := rows.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 			return nil, fmt.Errorf("scan FindServerAgentsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -3016,14 +3119,15 @@ FROM agents
 WHERE agent_id = $1;`
 
 type FindAgentByIDRow struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // FindAgentByID implements Querier.FindAgentByID.
@@ -3031,7 +3135,7 @@ func (q *DBQuerier) FindAgentByID(ctx context.Context, agentID pgtype.Text) (Fin
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentByID")
 	row := q.conn.QueryRow(ctx, findAgentByIDSQL, agentID)
 	var item FindAgentByIDRow
-	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 		return item, fmt.Errorf("query FindAgentByID: %w", err)
 	}
 	return item, nil
@@ -3046,8 +3150,51 @@ func (q *DBQuerier) FindAgentByIDBatch(batch genericBatch, agentID pgtype.Text) 
 func (q *DBQuerier) FindAgentByIDScan(results pgx.BatchResults) (FindAgentByIDRow, error) {
 	row := results.QueryRow()
 	var item FindAgentByIDRow
-	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 		return item, fmt.Errorf("scan FindAgentByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findAgentByIDForUpdateSQL = `SELECT *
+FROM agents
+WHERE agent_id = $1
+FOR UPDATE;`
+
+type FindAgentByIDForUpdateRow struct {
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
+}
+
+// FindAgentByIDForUpdate implements Querier.FindAgentByIDForUpdate.
+func (q *DBQuerier) FindAgentByIDForUpdate(ctx context.Context, agentID pgtype.Text) (FindAgentByIDForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentByIDForUpdate")
+	row := q.conn.QueryRow(ctx, findAgentByIDForUpdateSQL, agentID)
+	var item FindAgentByIDForUpdateRow
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
+		return item, fmt.Errorf("query FindAgentByIDForUpdate: %w", err)
+	}
+	return item, nil
+}
+
+// FindAgentByIDForUpdateBatch implements Querier.FindAgentByIDForUpdateBatch.
+func (q *DBQuerier) FindAgentByIDForUpdateBatch(batch genericBatch, agentID pgtype.Text) {
+	batch.Queue(findAgentByIDForUpdateSQL, agentID)
+}
+
+// FindAgentByIDForUpdateScan implements Querier.FindAgentByIDForUpdateScan.
+func (q *DBQuerier) FindAgentByIDForUpdateScan(results pgx.BatchResults) (FindAgentByIDForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindAgentByIDForUpdateRow
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
+		return item, fmt.Errorf("scan FindAgentByIDForUpdateBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -3058,14 +3205,15 @@ WHERE agent_id = $1
 RETURNING *;`
 
 type DeleteAgentRow struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // DeleteAgent implements Querier.DeleteAgent.
@@ -3073,7 +3221,7 @@ func (q *DBQuerier) DeleteAgent(ctx context.Context, agentID pgtype.Text) (Delet
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteAgent")
 	row := q.conn.QueryRow(ctx, deleteAgentSQL, agentID)
 	var item DeleteAgentRow
-	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 		return item, fmt.Errorf("query DeleteAgent: %w", err)
 	}
 	return item, nil
@@ -3088,7 +3236,7 @@ func (q *DBQuerier) DeleteAgentBatch(batch genericBatch, agentID pgtype.Text) {
 func (q *DBQuerier) DeleteAgentScan(results pgx.BatchResults) (DeleteAgentRow, error) {
 	row := results.QueryRow()
 	var item DeleteAgentRow
-	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.Status, &item.AgentPoolID); err != nil {
+	if err := row.Scan(&item.AgentID, &item.Name, &item.Concurrency, &item.Server, &item.IPAddress, &item.LastPingAt, &item.LastStatusAt, &item.Status, &item.AgentPoolID); err != nil {
 		return item, fmt.Errorf("scan DeleteAgentBatch row: %w", err)
 	}
 	return item, nil

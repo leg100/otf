@@ -67,6 +67,7 @@ func init() {
 	funcmap["createTagWorkspacePath"] = CreateTagWorkspace
 	funcmap["deleteTagWorkspacePath"] = DeleteTagWorkspace
 	funcmap["stateWorkspacePath"] = StateWorkspace
+	funcmap["poolsWorkspacePath"] = PoolsWorkspace
 
 	funcmap["runsPath"] = Runs
 	funcmap["createRunPath"] = CreateRun
@@ -89,6 +90,14 @@ func init() {
 	funcmap["editVariablePath"] = EditVariable
 	funcmap["updateVariablePath"] = UpdateVariable
 	funcmap["deleteVariablePath"] = DeleteVariable
+
+	funcmap["agentsPath"] = Agents
+	funcmap["createAgentPath"] = CreateAgent
+	funcmap["newAgentPath"] = NewAgent
+	funcmap["agentPath"] = Agent
+	funcmap["editAgentPath"] = EditAgent
+	funcmap["updateAgentPath"] = UpdateAgent
+	funcmap["deleteAgentPath"] = DeleteAgent
 
 	funcmap["agentPoolsPath"] = AgentPools
 	funcmap["createAgentPoolPath"] = CreateAgentPool

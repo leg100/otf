@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS agent_pools (
 
 CREATE TABLE IF NOT EXISTS agent_pool_allowed_workspaces (
     agent_pool_id TEXT REFERENCES agent_pools ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+    workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    UNIQUE (agent_pool_id, workspace_id)
 );
 
 -- not necessary, but rename primary key to bring it into line with our standard approach of naming private keys according to the format <table_name>_id
@@ -45,8 +46,9 @@ ALTER TABLE agent_tokens
 
 ALTER TABLE workspaces
     ADD COLUMN agent_pool_id TEXT,
-    ADD CONSTRAINT agent_pool_id_fk FOREIGN KEY (agent_pool_id)
-        REFERENCES agent_pools ON UPDATE CASCADE;
+    ADD CONSTRAINT ap_allowed_ws_fk FOREIGN KEY (agent_pool_id, workspace_id)
+        REFERENCES agent_pool_allowed_workspaces (agent_pool_id, workspace_id) ON UPDATE CASCADE;
+    --ADD CONSTRAINT agent_pool_chk CHECK (execution_mode <> 'agent' OR agent_pool_id IS NOT NULL);
 
 CREATE TABLE IF NOT EXISTS agent_statuses (
     status TEXT PRIMARY KEY
@@ -66,6 +68,7 @@ CREATE TABLE IF NOT EXISTS agents (
     server         BOOLEAN NOT NULL,
     ip_address     INET NOT NULL,
     last_ping_at   TIMESTAMPTZ NOT NULL,
+    last_status_at TIMESTAMPTZ NOT NULL,
     status         TEXT REFERENCES agent_statuses ON UPDATE CASCADE NOT NULL,
     agent_pool_id  TEXT REFERENCES agent_pools ON UPDATE CASCADE ON DELETE CASCADE,
                    PRIMARY KEY (agent_id),

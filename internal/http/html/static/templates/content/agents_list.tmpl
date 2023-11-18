@@ -1,0 +1,26 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}agents{{ end }}
+
+{{ define "content" }}
+  <div class="description w-3/4">
+    An agent can be used to communicate with isolated, private, or on-premises infrastructure.
+  </div>
+  {{ range .ServerAgents }}
+    <div class="widget">
+      <div>
+        <div>
+          {{ with .Name }}
+            <span>{{ . }}</span>
+          {{ end }}
+          <span>{{ .Status }}</span>
+        </div>
+        <span>last seen {{ durationRound .LastPingAt }} ago</span>
+      </div>
+      <div>
+        {{ template "identifier" . }}
+        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .IPAddress }}</span>
+      </div>
+    </div>
+  {{ end }}
+{{ end }}

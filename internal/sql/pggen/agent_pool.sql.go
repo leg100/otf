@@ -75,13 +75,18 @@ AND   (($2::text IS NULL) OR ap.name LIKE '%' || $2 || '%')
 AND   (($3::text IS NULL) OR
         ap.organization_scoped OR w.name = $3
       )
+AND   (($4::text IS NULL) OR
+        ap.organization_scoped OR w.workspace_id = $4
+      )
 GROUP BY ap.agent_pool_id
+ORDER BY ap.created_at DESC
 ;`
 
 type FindAgentPoolsParams struct {
 	OrganizationName     pgtype.Text
 	NameSubstring        pgtype.Text
 	AllowedWorkspaceName pgtype.Text
+	AllowedWorkspaceID   pgtype.Text
 }
 
 type FindAgentPoolsRow struct {
@@ -97,7 +102,7 @@ type FindAgentPoolsRow struct {
 // FindAgentPools implements Querier.FindAgentPools.
 func (q *DBQuerier) FindAgentPools(ctx context.Context, params FindAgentPoolsParams) ([]FindAgentPoolsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentPools")
-	rows, err := q.conn.Query(ctx, findAgentPoolsSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName)
+	rows, err := q.conn.Query(ctx, findAgentPoolsSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName, params.AllowedWorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("query FindAgentPools: %w", err)
 	}
@@ -118,7 +123,7 @@ func (q *DBQuerier) FindAgentPools(ctx context.Context, params FindAgentPoolsPar
 
 // FindAgentPoolsBatch implements Querier.FindAgentPoolsBatch.
 func (q *DBQuerier) FindAgentPoolsBatch(batch genericBatch, params FindAgentPoolsParams) {
-	batch.Queue(findAgentPoolsSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName)
+	batch.Queue(findAgentPoolsSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName, params.AllowedWorkspaceID)
 }
 
 // FindAgentPoolsScan implements Querier.FindAgentPoolsScan.
@@ -296,15 +301,23 @@ func (q *DBQuerier) UpdateAgentPoolScan(results pgx.BatchResults) (UpdateAgentPo
 const deleteAgentPoolSQL = `DELETE
 FROM agent_pools
 WHERE agent_pool_id = $1
-RETURNING organization_name
+RETURNING *
 ;`
 
+type DeleteAgentPoolRow struct {
+	AgentPoolID        pgtype.Text        `json:"agent_pool_id"`
+	Name               pgtype.Text        `json:"name"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	OrganizationName   pgtype.Text        `json:"organization_name"`
+	OrganizationScoped bool               `json:"organization_scoped"`
+}
+
 // DeleteAgentPool implements Querier.DeleteAgentPool.
-func (q *DBQuerier) DeleteAgentPool(ctx context.Context, poolID pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteAgentPool(ctx context.Context, poolID pgtype.Text) (DeleteAgentPoolRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteAgentPool")
 	row := q.conn.QueryRow(ctx, deleteAgentPoolSQL, poolID)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
+	var item DeleteAgentPoolRow
+	if err := row.Scan(&item.AgentPoolID, &item.Name, &item.CreatedAt, &item.OrganizationName, &item.OrganizationScoped); err != nil {
 		return item, fmt.Errorf("query DeleteAgentPool: %w", err)
 	}
 	return item, nil
@@ -316,16 +329,16 @@ func (q *DBQuerier) DeleteAgentPoolBatch(batch genericBatch, poolID pgtype.Text)
 }
 
 // DeleteAgentPoolScan implements Querier.DeleteAgentPoolScan.
-func (q *DBQuerier) DeleteAgentPoolScan(results pgx.BatchResults) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteAgentPoolScan(results pgx.BatchResults) (DeleteAgentPoolRow, error) {
 	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
+	var item DeleteAgentPoolRow
+	if err := row.Scan(&item.AgentPoolID, &item.Name, &item.CreatedAt, &item.OrganizationName, &item.OrganizationScoped); err != nil {
 		return item, fmt.Errorf("scan DeleteAgentPoolBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const insertAgentPoolAllowedWorkspacesSQL = `INSERT INTO agent_pool_allowed_workspaces (
+const insertAgentPoolAllowedWorkspaceSQL = `INSERT INTO agent_pool_allowed_workspaces (
     agent_pool_id,
     workspace_id
 ) VALUES (
@@ -333,55 +346,56 @@ const insertAgentPoolAllowedWorkspacesSQL = `INSERT INTO agent_pool_allowed_work
     $2
 );`
 
-// InsertAgentPoolAllowedWorkspaces implements Querier.InsertAgentPoolAllowedWorkspaces.
-func (q *DBQuerier) InsertAgentPoolAllowedWorkspaces(ctx context.Context, poolID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertAgentPoolAllowedWorkspaces")
-	cmdTag, err := q.conn.Exec(ctx, insertAgentPoolAllowedWorkspacesSQL, poolID, workspaceID)
+// InsertAgentPoolAllowedWorkspace implements Querier.InsertAgentPoolAllowedWorkspace.
+func (q *DBQuerier) InsertAgentPoolAllowedWorkspace(ctx context.Context, poolID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertAgentPoolAllowedWorkspace")
+	cmdTag, err := q.conn.Exec(ctx, insertAgentPoolAllowedWorkspaceSQL, poolID, workspaceID)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertAgentPoolAllowedWorkspaces: %w", err)
+		return cmdTag, fmt.Errorf("exec query InsertAgentPoolAllowedWorkspace: %w", err)
 	}
 	return cmdTag, err
 }
 
-// InsertAgentPoolAllowedWorkspacesBatch implements Querier.InsertAgentPoolAllowedWorkspacesBatch.
-func (q *DBQuerier) InsertAgentPoolAllowedWorkspacesBatch(batch genericBatch, poolID pgtype.Text, workspaceID pgtype.Text) {
-	batch.Queue(insertAgentPoolAllowedWorkspacesSQL, poolID, workspaceID)
+// InsertAgentPoolAllowedWorkspaceBatch implements Querier.InsertAgentPoolAllowedWorkspaceBatch.
+func (q *DBQuerier) InsertAgentPoolAllowedWorkspaceBatch(batch genericBatch, poolID pgtype.Text, workspaceID pgtype.Text) {
+	batch.Queue(insertAgentPoolAllowedWorkspaceSQL, poolID, workspaceID)
 }
 
-// InsertAgentPoolAllowedWorkspacesScan implements Querier.InsertAgentPoolAllowedWorkspacesScan.
-func (q *DBQuerier) InsertAgentPoolAllowedWorkspacesScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// InsertAgentPoolAllowedWorkspaceScan implements Querier.InsertAgentPoolAllowedWorkspaceScan.
+func (q *DBQuerier) InsertAgentPoolAllowedWorkspaceScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertAgentPoolAllowedWorkspacesBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec InsertAgentPoolAllowedWorkspaceBatch: %w", err)
 	}
 	return cmdTag, err
 }
 
-const deleteAgentPoolAllowedWorkspacesSQL = `DELETE
+const deleteAgentPoolAllowedWorkspaceSQL = `DELETE
 FROM agent_pool_allowed_workspaces
 WHERE agent_pool_id = $1
+AND workspace_id = $2
 ;`
 
-// DeleteAgentPoolAllowedWorkspaces implements Querier.DeleteAgentPoolAllowedWorkspaces.
-func (q *DBQuerier) DeleteAgentPoolAllowedWorkspaces(ctx context.Context, poolID pgtype.Text) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteAgentPoolAllowedWorkspaces")
-	cmdTag, err := q.conn.Exec(ctx, deleteAgentPoolAllowedWorkspacesSQL, poolID)
+// DeleteAgentPoolAllowedWorkspace implements Querier.DeleteAgentPoolAllowedWorkspace.
+func (q *DBQuerier) DeleteAgentPoolAllowedWorkspace(ctx context.Context, poolID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteAgentPoolAllowedWorkspace")
+	cmdTag, err := q.conn.Exec(ctx, deleteAgentPoolAllowedWorkspaceSQL, poolID, workspaceID)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteAgentPoolAllowedWorkspaces: %w", err)
+		return cmdTag, fmt.Errorf("exec query DeleteAgentPoolAllowedWorkspace: %w", err)
 	}
 	return cmdTag, err
 }
 
-// DeleteAgentPoolAllowedWorkspacesBatch implements Querier.DeleteAgentPoolAllowedWorkspacesBatch.
-func (q *DBQuerier) DeleteAgentPoolAllowedWorkspacesBatch(batch genericBatch, poolID pgtype.Text) {
-	batch.Queue(deleteAgentPoolAllowedWorkspacesSQL, poolID)
+// DeleteAgentPoolAllowedWorkspaceBatch implements Querier.DeleteAgentPoolAllowedWorkspaceBatch.
+func (q *DBQuerier) DeleteAgentPoolAllowedWorkspaceBatch(batch genericBatch, poolID pgtype.Text, workspaceID pgtype.Text) {
+	batch.Queue(deleteAgentPoolAllowedWorkspaceSQL, poolID, workspaceID)
 }
 
-// DeleteAgentPoolAllowedWorkspacesScan implements Querier.DeleteAgentPoolAllowedWorkspacesScan.
-func (q *DBQuerier) DeleteAgentPoolAllowedWorkspacesScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// DeleteAgentPoolAllowedWorkspaceScan implements Querier.DeleteAgentPoolAllowedWorkspaceScan.
+func (q *DBQuerier) DeleteAgentPoolAllowedWorkspaceScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteAgentPoolAllowedWorkspacesBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec DeleteAgentPoolAllowedWorkspaceBatch: %w", err)
 	}
 	return cmdTag, err
 }

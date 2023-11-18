@@ -3,6 +3,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -16,6 +17,8 @@ import (
 // process authenticates as an agent, whereas the otf-agent process
 // authenticates as an agent pool).
 var _ internal.Subject = (*Agent)(nil)
+
+var ErrInvalidAgentStateTransition = errors.New("invalid agent state transition")
 
 type AgentStatus string
 
@@ -42,10 +45,38 @@ type Agent struct {
 	Server bool
 	// Last time a ping was received from the agent
 	LastPingAt time.Time
+	// Last time the status was updated
+	LastStatusAt time.Time
 	// IP address of agent
 	IPAddress net.IP
 	// ID of agent' pool. Only set if Server is false.
 	AgentPoolID *string
+}
+
+func (a *Agent) setStatus(status AgentStatus) error {
+	// the agent fsm is as follows:
+	//
+	// idle -> any
+	// busy -> any
+	// unknown -> any
+	// errored -> exited
+	// exited (final state)
+	switch a.Status {
+	case AgentErrored:
+		if status != AgentExited {
+			return ErrInvalidAgentStateTransition
+		}
+	case AgentExited:
+		return ErrInvalidAgentStateTransition
+	}
+	a.Status = status
+	a.LastStatusAt = internal.CurrentTimestamp(nil)
+	return nil
+}
+
+func (a *Agent) ping(status AgentStatus) error {
+	a.LastPingAt = internal.CurrentTimestamp(nil)
+	return a.setStatus(status)
 }
 
 func (a *Agent) LogValue() slog.Value {
@@ -141,8 +172,9 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 		Name:        opts.Name,
 		Concurrency: opts.Concurrency,
 		Server:      opts.AgentPoolID == nil,
-		Status:      AgentIdle,
-		LastPingAt:  internal.CurrentTimestamp(nil),
+	}
+	if err := agent.ping(AgentIdle); err != nil {
+		return nil, err
 	}
 	if opts.IPAddress != nil {
 		agent.IPAddress = opts.IPAddress

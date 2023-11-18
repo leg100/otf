@@ -3,10 +3,17 @@ package agent
 import "context"
 
 type fakeService struct {
-	at    *agentToken
-	token []byte
+	pool                   *Pool
+	createAgentPoolOptions createAgentPoolOptions
+	at                     *agentToken
+	token                  []byte
 
 	Service
+}
+
+func (f *fakeService) createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error) {
+	f.createAgentPoolOptions = opts
+	return f.pool, nil
 }
 
 func (f *fakeService) CreateAgentToken(context.Context, string, CreateAgentTokenOptions) (*agentToken, []byte, error) {

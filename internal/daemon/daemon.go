@@ -289,12 +289,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	agentService := agent.NewService(agent.ServiceOptions{
-		Logger:        logger,
-		DB:            db,
-		Responder:     responder,
-		RunService:    runService,
-		TokensService: tokensService,
-		Broker:        broker,
+		Logger:           logger,
+		DB:               db,
+		Renderer:         renderer,
+		Responder:        responder,
+		RunService:       runService,
+		WorkspaceService: workspaceService,
+		TokensService:    tokensService,
+		Broker:           broker,
 	})
 
 	agentDaemon, err := agent.New(

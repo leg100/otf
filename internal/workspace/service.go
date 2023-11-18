@@ -37,7 +37,9 @@ type (
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
+		BeforeCreateWorkspace(l hooks.Listener[*Workspace])
 		AfterCreateWorkspace(l hooks.Listener[*Workspace])
+		BeforeUpdateWorkspace(l hooks.Listener[*Workspace])
 
 		LockService
 		PermissionsService
@@ -59,6 +61,7 @@ type (
 		api    *api
 
 		createHook *hooks.Hook[*Workspace]
+		updateHook *hooks.Hook[*Workspace]
 	}
 
 	Options struct {
@@ -88,6 +91,7 @@ func NewService(opts Options) *service {
 		organization:      &organization.Authorizer{Logger: opts.Logger},
 		site:              &internal.SiteAuthorizer{Logger: opts.Logger},
 		createHook:        hooks.NewHook[*Workspace](opts.DB),
+		updateHook:        hooks.NewHook[*Workspace](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
@@ -120,8 +124,16 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
+func (s *service) BeforeCreateWorkspace(l hooks.Listener[*Workspace]) {
+	s.createHook.Before(l)
+}
+
 func (s *service) AfterCreateWorkspace(l hooks.Listener[*Workspace]) {
 	s.createHook.After(l)
+}
+
+func (s *service) BeforeUpdateWorkspace(l hooks.Listener[*Workspace]) {
+	s.updateHook.Before(l)
 }
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {

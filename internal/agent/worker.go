@@ -17,7 +17,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
@@ -37,7 +36,6 @@ var ascii = regexp.MustCompile("[[:^ascii:]]")
 // worker does a Job
 type worker struct {
 	client
-	logr.Logger
 	*run.Run
 	releases.Downloader
 

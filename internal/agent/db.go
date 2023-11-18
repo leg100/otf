@@ -28,31 +28,33 @@ func (r poolresult) toPool() *Pool {
 		CreatedAt:          r.CreatedAt.Time.UTC(),
 		Organization:       r.OrganizationName.String,
 		OrganizationScoped: r.OrganizationScoped,
-		Workspaces:         r.WorkspaceIds,
+		AssignedWorkspaces: r.WorkspaceIds,
 		AllowedWorkspaces:  r.AllowedWorkspaceIds,
 	}
 }
 
 // agentresult is the result of a database query for an agent
 type agentresult struct {
-	AgentID     pgtype.Text        `json:"agent_id"`
-	Name        pgtype.Text        `json:"name"`
-	Concurrency pgtype.Int4        `json:"concurrency"`
-	Server      bool               `json:"server"`
-	IPAddress   pgtype.Inet        `json:"ip_address"`
-	LastPingAt  pgtype.Timestamptz `json:"last_ping_at"`
-	Status      pgtype.Text        `json:"status"`
-	AgentPoolID pgtype.Text        `json:"agent_pool_id"`
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Concurrency  pgtype.Int4        `json:"concurrency"`
+	Server       bool               `json:"server"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 func (r agentresult) toAgent() *Agent {
 	agent := &Agent{
-		ID:          r.AgentID.String,
-		Concurrency: int(r.Concurrency.Int),
-		Server:      r.Server,
-		IPAddress:   r.IPAddress.IPNet.IP,
-		LastPingAt:  r.LastPingAt.Time.UTC(),
-		Status:      AgentStatus(r.Status.String),
+		ID:           r.AgentID.String,
+		Concurrency:  int(r.Concurrency.Int),
+		Server:       r.Server,
+		IPAddress:    r.IPAddress.IPNet.IP,
+		LastPingAt:   r.LastPingAt.Time.UTC(),
+		LastStatusAt: r.LastStatusAt.Time.UTC(),
+		Status:       AgentStatus(r.Status.String),
 	}
 	if r.Name.Status == pgtype.Present {
 		agent.Name = &r.Name.String
@@ -127,7 +129,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 			return err
 		}
 		for _, workspaceID := range pool.AllowedWorkspaces {
-			_, err := q.InsertAgentPoolAllowedWorkspaces(ctx, sql.String(pool.ID), sql.String(workspaceID))
+			_, err := q.InsertAgentPoolAllowedWorkspace(ctx, sql.String(pool.ID), sql.String(workspaceID))
 			if err != nil {
 				return err
 			}
@@ -141,32 +143,29 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 }
 
 func (db *db) updatePool(ctx context.Context, pool *Pool) error {
-	// TODO: remove tx or lock table
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := q.UpdateAgentPool(ctx, pggen.UpdateAgentPoolParams{
-			PoolID:             sql.String(pool.ID),
-			Name:               sql.String(pool.Name),
-			OrganizationScoped: pool.OrganizationScoped,
-		})
-		if err != nil {
-			return err
-		}
-		// Rather than work out which allowed workspaces have been added/removed,
-		// instead simply delete all and re-insert.
-		_, err = q.DeleteAgentPoolAllowedWorkspaces(ctx, sql.String(pool.ID))
-		if err != nil {
-			return err
-		}
-		for _, workspaceID := range pool.AllowedWorkspaces {
-			_, err := q.InsertAgentPoolAllowedWorkspaces(ctx, sql.String(pool.ID), sql.String(workspaceID))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+	_, err := db.Conn(ctx).UpdateAgentPool(ctx, pggen.UpdateAgentPoolParams{
+		PoolID:             sql.String(pool.ID),
+		Name:               sql.String(pool.Name),
+		OrganizationScoped: pool.OrganizationScoped,
 	})
 	if err != nil {
 		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID string) error {
+	_, err := db.Conn(ctx).InsertAgentPoolAllowedWorkspace(ctx, sql.String(poolID), sql.String(workspaceID))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID string) error {
+	_, err := db.Conn(ctx).DeleteAgentPoolAllowedWorkspace(ctx, sql.String(poolID), sql.String(workspaceID))
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -192,6 +191,7 @@ func (db *db) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, err
 		OrganizationName:     sql.StringPtr(opts.Organization),
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),
 		AllowedWorkspaceName: sql.StringPtr(opts.AllowedWorkspaceName),
+		AllowedWorkspaceID:   sql.StringPtr(opts.AllowedWorkspaceID),
 	}
 	rows, err := db.Conn(ctx).FindAgentPools(ctx, params)
 	if err != nil {
@@ -204,32 +204,53 @@ func (db *db) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, err
 	return pools, nil
 }
 
-func (db *db) deletePool(ctx context.Context, poolID string) (organization string, err error) {
-	result, err := db.Conn(ctx).DeleteAgentPool(ctx, sql.String(poolID))
+func (db *db) deleteAgentPool(ctx context.Context, poolID string) error {
+	_, err := db.Conn(ctx).DeleteAgentPool(ctx, sql.String(poolID))
 	if err != nil {
-		return "", sql.Error(err)
+		return sql.Error(err)
 	}
-	return result.String, nil
+	return nil
 }
 
 // agents
 
 func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
-		AgentID:     sql.String(agent.ID),
-		Name:        sql.StringPtr(agent.Name),
-		Concurrency: sql.Int4(agent.Concurrency),
-		IPAddress:   sql.Inet(agent.IPAddress),
-		Status:      sql.String(string(agent.Status)),
-		Server:      agent.Server,
-		AgentPoolID: sql.StringPtr(agent.AgentPoolID),
+		AgentID:      sql.String(agent.ID),
+		Name:         sql.StringPtr(agent.Name),
+		Concurrency:  sql.Int4(agent.Concurrency),
+		IPAddress:    sql.Inet(agent.IPAddress),
+		Status:       sql.String(string(agent.Status)),
+		Server:       agent.Server,
+		LastPingAt:   sql.Timestamptz(agent.LastPingAt),
+		LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
+		AgentPoolID:  sql.StringPtr(agent.AgentPoolID),
 	})
 	return err
 }
 
-func (db *db) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
-	_, err := db.Conn(ctx).UpdateAgentStatus(ctx, sql.String(string(status)), sql.String(agentID))
-	return sql.Error(err)
+func (db *db) updateAgent(ctx context.Context, agentID string, fn func(*Agent) error) error {
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		result, err := q.FindAgentByIDForUpdate(ctx, sql.String(agentID))
+		if err != nil {
+			return err
+		}
+		agent := agentresult(result).toAgent()
+		if err := fn(agent); err != nil {
+			return err
+		}
+		_, err = q.UpdateAgent(ctx, pggen.UpdateAgentParams{
+			AgentID:      sql.String(agent.ID),
+			Status:       sql.String(string(agent.Status)),
+			LastPingAt:   sql.Timestamptz(agent.LastPingAt),
+			LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
+		})
+		return err
+	})
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
 }
 
 func (db *db) getAgent(ctx context.Context, agentID string) (*Agent, error) {
@@ -266,6 +287,18 @@ func (db *db) listServerAgents(ctx context.Context) ([]*Agent, error) {
 
 func (db *db) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
 	rows, err := db.Conn(ctx).FindAgentsByOrganization(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	agents := make([]*Agent, len(rows))
+	for i, r := range rows {
+		agents[i] = agentresult(r).toAgent()
+	}
+	return agents, nil
+}
+
+func (db *db) listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error) {
+	rows, err := db.Conn(ctx).FindAgentsByPoolID(ctx, sql.String(poolID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

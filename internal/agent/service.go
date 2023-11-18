@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"slices"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -16,6 +17,7 @@ import (
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
@@ -30,8 +32,13 @@ type (
 		getAgentPool(ctx context.Context, poolID string) (*Pool, error)
 		listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error)
 		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
+		listAllowedPools(ctx context.Context, workspaceID string) ([]*Pool, error)
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
+		listAgents(ctx context.Context) ([]*Agent, error)
+		listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
+		listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
+		listServerAgents(ctx context.Context) ([]*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 
@@ -68,6 +75,7 @@ type (
 		*tfeapi.Responder
 		run.RunService
 		tokens.TokensService
+		workspace.WorkspaceService
 	}
 )
 
@@ -90,8 +98,9 @@ func NewService(opts ServiceOptions) *service {
 		Responder: opts.Responder,
 	}
 	svc.web = &webHandlers{
-		Renderer: opts.Renderer,
-		svc:      svc,
+		Renderer:         opts.Renderer,
+		svc:              svc,
+		workspaceService: opts.WorkspaceService,
 	}
 	svc.registrar = &registrar{
 		service: svc,
@@ -128,6 +137,10 @@ func NewService(opts ServiceOptions) *service {
 	opts.AfterCancelSignal(svc.relaySignal(cancelSignal))
 	// relay force-cancel signal from run service to agent.
 	opts.AfterForceCancelSignal(svc.relaySignal(forceCancelSignal))
+	// check whether a workspace is being created or updated and configured to
+	// use an agent pool, and if so, check that it is allowed to use the pool.
+	opts.BeforeCreateWorkspace(svc.allowPool)
+	opts.BeforeUpdateWorkspace(svc.allowPool)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the agent pool corresponding to token's subject.
 	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
@@ -192,7 +205,7 @@ func (s *service) updateAgentPool(ctx context.Context, poolID string, opts updat
 		if err != nil {
 			return err
 		}
-		subject, err = s.organization.CanAccess(ctx, rbac.CreateRunAction, pool.Organization)
+		subject, err = s.organization.CanAccess(ctx, rbac.UpdateAgentPoolAction, pool.Organization)
 		if err != nil {
 			return err
 		}
@@ -203,6 +216,19 @@ func (s *service) updateAgentPool(ctx context.Context, poolID string, opts updat
 		}
 		if err := s.db.updatePool(ctx, &after); err != nil {
 			return err
+		}
+		// Add/remove allowed workspaces
+		add := internal.DiffStrings(after.AllowedWorkspaces, before.AllowedWorkspaces)
+		remove := internal.DiffStrings(before.AllowedWorkspaces, after.AllowedWorkspaces)
+		for _, workspaceID := range add {
+			if err := s.db.addAgentPoolAllowedWorkspace(ctx, poolID, workspaceID); err != nil {
+				return err
+			}
+		}
+		for _, workspaceID := range remove {
+			if err := s.db.deleteAgentPoolAllowedWorkspace(ctx, poolID, workspaceID); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -254,7 +280,13 @@ func (s *service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, er
 		if err != nil {
 			return nil, nil, err
 		}
-		if err := s.db.deleteAgentToken(ctx, pool.ID); err != nil {
+		// only permit pool to be deleted if it is not referenced by any
+		// workspaces (it would raise a foreign key error anyway but friendlier
+		// to return an informative error message).
+		if len(pool.AssignedWorkspaces) > 0 {
+			return nil, nil, ErrCannotDeletePoolReferencedByWorkspaces
+		}
+		if err := s.db.deleteAgentPool(ctx, pool.ID); err != nil {
 			return nil, subject, err
 		}
 		return pool, subject, nil
@@ -265,6 +297,43 @@ func (s *service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, er
 	}
 	s.V(9).Info("deleted agent pool", "pool", pool, "subject", subject)
 	return pool, nil
+}
+
+func (s *service) listAllowedPools(ctx context.Context, workspaceID string) ([]*Pool, error) {
+	pools, err := s.db.listPools(ctx, listPoolOptions{
+		AllowedWorkspaceID: &workspaceID,
+	})
+	if err != nil {
+		s.Error(err, "listing allowed agent pools", "workspace_id", workspaceID)
+		return nil, err
+	}
+	s.V(9).Info("listed allowed agent pools", "workspace_id", workspaceID, "count", len(pools))
+	return pools, nil
+}
+
+// allowPool grants a workspace access to a pool. If the pool is organization-scoped then
+// access is granted automatically; otherwise access must already have been
+// granted explicity. If access has already been granted then no action is taken.
+func (s *service) allowPool(ctx context.Context, ws *workspace.Workspace) error {
+	if ws.AgentPoolID == nil {
+		// workspace is not using any pool
+		return nil
+	}
+	pool, err := s.getAgentPool(ctx, *ws.AgentPoolID)
+	if err != nil {
+		return err
+	}
+	if slices.Contains(pool.AllowedWorkspaces, ws.ID) {
+		// is already allowed
+		return nil
+	}
+	if pool.OrganizationScoped {
+		if err := s.db.addAgentPoolAllowedWorkspace(ctx, pool.ID, ws.ID); err != nil {
+			return err
+		}
+		return nil
+	}
+	return ErrWorkspaceNotAllowedToUsePool
 }
 
 func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
@@ -310,16 +379,44 @@ func (s *service) getAgent(ctx context.Context, agentID string) (*Agent, error) 
 	return s.db.getAgent(ctx, agentID)
 }
 
+func (s *service) receivePing(ctx context.Context, agentID string, status AgentStatus) error {
+	err := s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
+		return agent.ping(status)
+	})
+	if err != nil {
+		s.Error(err, "receiving ping from agent", "agent_id", agentID, "status", status)
+		return err
+	}
+	s.V(9).Info("received ping from agent", "agent_id", agentID, "status", status)
+	return nil
+}
+
 func (s *service) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
-	return s.db.updateAgentStatus(ctx, agentID, status)
+	err := s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
+		return agent.setStatus(status)
+	})
+	if err != nil {
+		s.Error(err, "updating agent status", "agent_id", agentID, "status", status)
+		return err
+	}
+	s.V(9).Info("updated agent status", "agent_id", agentID, "status", status)
+	return nil
 }
 
 func (s *service) listAgents(ctx context.Context) ([]*Agent, error) {
 	return s.db.listAgents(ctx)
 }
 
+func (s *service) listServerAgents(ctx context.Context) ([]*Agent, error) {
+	return s.db.listServerAgents(ctx)
+}
+
 func (s *service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
 	return s.db.listAgentsByOrganization(ctx, organization)
+}
+
+func (s *service) listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error) {
+	return s.db.listAgentsByPool(ctx, poolID)
 }
 
 func (s *service) deleteAgent(ctx context.Context, agentID string) error {

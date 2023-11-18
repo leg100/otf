@@ -138,7 +138,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 				if !ok {
 					return fmt.Errorf("missing cache entry for agent pool: %s", *agent.AgentPoolID)
 				}
-				if !slices.Contains(pool.Workspaces, job.WorkspaceID) {
+				if !slices.Contains(pool.AssignedWorkspaces, job.WorkspaceID) {
 					// job's workspace is configured to use a different pool
 					continue
 				}

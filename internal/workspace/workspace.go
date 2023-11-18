@@ -33,6 +33,8 @@ var (
 	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
 	ErrInvalidTriggerPattern           = errors.New("invalid trigger glob pattern")
 	ErrInvalidTagsRegex                = errors.New("invalid vcs tags regular expression")
+	ErrAgentExecutionModeWithoutPool   = errors.New("agent execution mode requires agent pool ID")
+	ErrNonAgentExecutionModeWithPool   = errors.New("agent pool ID can only be specified with agent execution mode")
 
 	apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 )
@@ -201,16 +203,12 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		TerraformVersion:   releases.DefaultTerraformVersion,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
-		AgentPoolID:        opts.AgentPoolID,
 	}
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
 	}
-
-	if opts.ExecutionMode != nil {
-		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
-			return nil, err
-		}
+	if err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
+		return nil, err
 	}
 	if opts.AllowDestroyPlan != nil {
 		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
@@ -311,10 +309,6 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		}
 		updated = true
 	}
-	if opts.AgentPoolID != nil {
-		ws.AgentPoolID = opts.AgentPoolID
-		updated = true
-	}
 	if opts.AllowDestroyPlan != nil {
 		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
 		updated = true
@@ -327,11 +321,8 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Description = *opts.Description
 		updated = true
 	}
-	if opts.ExecutionMode != nil {
-		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
-			return nil, err
-		}
-		updated = true
+	if err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
+		return nil, err
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
@@ -482,11 +473,59 @@ func (ws *Workspace) setName(name string) error {
 	return nil
 }
 
-func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
-	if m != RemoteExecutionMode && m != LocalExecutionMode && m != AgentExecutionMode {
-		return errors.New("invalid execution mode")
+func (ws *Workspace) setAgentPoolID(agentPoolID *string, m *ExecutionMode) error {
+	if agentPoolID == nil {
+		// no agent pool ID being set, nothing more to be done.
+		return nil
 	}
-	ws.ExecutionMode = m
+	if *m == AgentExecutionMode {
+		if agentPoolID == nil {
+			return ErrAgentExecutionModeWithoutPool
+		}
+	} else {
+		// mode is either remote or local; in either case no pool ID should be
+		// provided
+		if agentPoolID != nil {
+			return ErrNonAgentExecutionModeWithPool
+		}
+	}
+	ws.ExecutionMode = *m
+	ws.AgentPoolID = agentPoolID
+	return nil
+}
+
+// setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
+// ID. The two parameters are intimately related, hence the validation and
+// setting of the parameters is handled in tandem.
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *string) error {
+	if m == nil {
+		if agentPoolID == nil {
+			// neither specified; nothing more to be done
+			return nil
+		} else {
+			// agent pool ID can be set without specifying execution mode as long as
+			// existing execution mode is AgentExecutionMode
+			if ws.ExecutionMode != AgentExecutionMode {
+				return ErrNonAgentExecutionModeWithPool
+			}
+		}
+	} else {
+		if *m == AgentExecutionMode {
+			if agentPoolID == nil {
+				return ErrAgentExecutionModeWithoutPool
+			}
+		} else {
+			// mode is either remote or local; in either case no pool ID should be
+			// provided
+			if agentPoolID != nil {
+				return ErrNonAgentExecutionModeWithPool
+			}
+		}
+	}
+	ws.AgentPoolID = agentPoolID
+	if m != nil {
+		ws.ExecutionMode = *m
+	}
 	return nil
 }
 

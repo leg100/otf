@@ -6,6 +6,7 @@ INSERT INTO agents (
     server,
     ip_address,
     last_ping_at,
+    last_status_at,
     status,
     agent_pool_id
 ) VALUES (
@@ -14,14 +15,17 @@ INSERT INTO agents (
     pggen.arg('concurrency'),
     pggen.arg('server'),
     pggen.arg('ip_address'),
-    current_timestamp,
+    pggen.arg('last_ping_at'),
+    pggen.arg('last_status_at'),
     pggen.arg('status'),
     pggen.arg('agent_pool_id')
 );
 
--- name: UpdateAgentStatus :one
+-- name: UpdateAgent :one
 UPDATE agents
-SET status = pggen.arg('status'), last_ping_at = current_timestamp
+SET status = pggen.arg('status'),
+    last_ping_at = pggen.arg('last_ping_at'),
+    last_status_at = pggen.arg('last_status_at')
 WHERE agent_id = pggen.arg('agent_id')
 RETURNING *;
 
@@ -32,18 +36,31 @@ FROM agents;
 -- name: FindAgentsByOrganization :many
 SELECT a.*
 FROM agents a
-JOIN  agent_pools ap USING (agent_pool_id)
+JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.organization_name = pggen.arg('organization_name');
+
+-- name: FindAgentsByPoolID :many
+SELECT a.*
+FROM agents a
+JOIN agent_pools ap USING (agent_pool_id)
+WHERE ap.agent_pool_id = pggen.arg('agent_pool_id');
 
 -- name: FindServerAgents :many
 SELECT *
 FROM agents
-WHERE server;
+WHERE server
+ORDER BY last_ping_at DESC;
 
 -- name: FindAgentByID :one
 SELECT *
 FROM agents
 WHERE agent_id = pggen.arg('agent_id');
+
+-- name: FindAgentByIDForUpdate :one
+SELECT *
+FROM agents
+WHERE agent_id = pggen.arg('agent_id')
+FOR UPDATE;
 
 -- name: DeleteAgent :one
 DELETE
