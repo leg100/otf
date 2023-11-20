@@ -66,6 +66,7 @@ var (
 		name: "write",
 		permissions: map[Action]bool{
 			ApplyRunAction:                        true,
+			CancelRunAction:                       true,
 			LockWorkspaceAction:                   true,
 			UnlockWorkspaceAction:                 true,
 			CreateWorkspaceVariableAction:         true,
