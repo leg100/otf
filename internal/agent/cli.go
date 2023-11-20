@@ -12,7 +12,7 @@ type agentCLI struct {
 	Service
 }
 
-func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
+func NewAgentsCommand(client *otfapi.Client) *cobra.Command {
 	cli := &agentCLI{}
 	cmd := &cobra.Command{
 		Use:   "agents",
@@ -21,7 +21,7 @@ func NewAgentsCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &rpcClient{Client: api}
+			cli.Service = &rpcClient{Client: client}
 			return nil
 		},
 	}

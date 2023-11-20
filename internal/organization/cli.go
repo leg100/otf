@@ -12,7 +12,7 @@ type CLI struct {
 	Service
 }
 
-func NewCommand(api *otfapi.Client) *cobra.Command {
+func NewCommand(client *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "organizations",
@@ -21,7 +21,7 @@ func NewCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{Client: api}
+			cli.Service = &Client{Client: client}
 			return nil
 		},
 	}

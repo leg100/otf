@@ -42,16 +42,9 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-
-			// Sends unauthenticated ping to server
-			app, err := agent.NewRPCClient(clientConfig)
+			agent, err := agent.NewRPC(logger, *agentConfig, clientConfig)
 			if err != nil {
-				return err
-			}
-
-			agent, err := agent.New(logger, app, *agentConfig)
-			if err != nil {
-				return fmt.Errorf("unable to start agent: %w", err)
+				return fmt.Errorf("initializing agent: %w", err)
 			}
 			// blocks
 			return agent.Start(cmd.Context())

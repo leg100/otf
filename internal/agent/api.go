@@ -1,9 +1,7 @@
 package agent
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"net"
 	"net/http"
 
@@ -18,13 +16,23 @@ type api struct {
 	*tfeapi.Responder
 }
 
+type updateAgentStatusParams struct {
+	Status AgentStatus       `json:"status"`
+	Jobs   []updateJobParams `json:"jobs,omitempty"`
+}
+
+type updateJobParams struct {
+	JobSpec
+	Status JobStatus
+}
+
 func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 
 	// agents
-	r.HandleFunc("/agent/register", a.registerAgent).Methods("POST")
-	r.HandleFunc("/agent/{agent_id}/jobs", a.getJobs).Methods("GET")
-	r.HandleFunc("/agent/{agent_id}/status", a.updateStatus).Methods("POST")
+	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
+	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
+	r.HandleFunc("/agents/status", a.updateStatus).Methods("POST")
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
@@ -34,12 +42,6 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
-	// middleware should have put agent token into context.
-	token, err := AgentFromContext(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-	}
-
 	var params struct {
 		Name        *string // optional name
 		Concurrency int
@@ -55,7 +57,6 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 		Concurrency: params.Concurrency,
 		CurrentJobs: params.CurrentJobs,
 		IPAddress:   net.ParseIP(r.RemoteAddr),
-		AgentPoolID: token.AgentPoolID,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -66,17 +67,14 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
-	agentID, err := decode.Param("agent_id", r)
+	// retrieve subject, which contains ID of calling agent
+	subject, err := poolAgentFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := a.spoofCheck(r.Context(), agentID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
 
-	jobs, err := a.service.getAgentJobs(r.Context(), agentID)
+	jobs, err := a.service.getAgentJobs(r.Context(), subject.agent.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -88,30 +86,20 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 // updateStatus receives a status update from an agent, including both the
 // status of the agent itself and the status of its jobs.
 func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
-	agentID, err := decode.Param("agent_id", r)
+	// retrieve subject, which contains ID of calling agent
+	subject, err := poolAgentFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := a.spoofCheck(r.Context(), agentID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
 
-	type jobParams struct {
-		JobSpec
-		Status JobStatus
-	}
-	var params struct {
-		Status AgentStatus
-		Jobs   []jobParams
-	}
+	var params updateAgentStatusParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := a.service.updateAgentStatus(r.Context(), agentID, params.Status); err != nil {
+	if err := a.service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -155,21 +143,4 @@ func (a *api) createJobToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(token)
-}
-
-// check agent_id has not been spoofed by checking it belongs to the pool of
-// the token it has authenticated with.
-func (a *api) spoofCheck(ctx context.Context, agentID string) error {
-	pool, err := PoolFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	agent, err := a.service.getAgent(ctx, agentID)
-	if err != nil {
-		return err
-	}
-	if agent.AgentPoolID == nil || *agent.AgentPoolID != pool.ID {
-		return errors.New("authentication token does not belong to specified agent_id")
-	}
-	return nil
 }

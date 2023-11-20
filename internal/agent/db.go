@@ -38,7 +38,6 @@ type agentresult struct {
 	AgentID      pgtype.Text        `json:"agent_id"`
 	Name         pgtype.Text        `json:"name"`
 	Concurrency  pgtype.Int4        `json:"concurrency"`
-	Server       bool               `json:"server"`
 	IPAddress    pgtype.Inet        `json:"ip_address"`
 	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
 	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
@@ -50,7 +49,6 @@ func (r agentresult) toAgent() *Agent {
 	agent := &Agent{
 		ID:           r.AgentID.String,
 		Concurrency:  int(r.Concurrency.Int),
-		Server:       r.Server,
 		IPAddress:    r.IPAddress.IPNet.IP,
 		LastPingAt:   r.LastPingAt.Time.UTC(),
 		LastStatusAt: r.LastStatusAt.Time.UTC(),
@@ -221,7 +219,6 @@ func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 		Concurrency:  sql.Int4(agent.Concurrency),
 		IPAddress:    sql.Inet(agent.IPAddress),
 		Status:       sql.String(string(agent.Status)),
-		Server:       agent.Server,
 		LastPingAt:   sql.Timestamptz(agent.LastPingAt),
 		LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
 		AgentPoolID:  sql.StringPtr(agent.AgentPoolID),

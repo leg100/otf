@@ -554,9 +554,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	// Run agent daemon in background
 	g.Go(func() error {
-		// give daemon unlimited access to services
-		daemonCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "agent"})
-		if err := d.agent.Start(daemonCtx); err != nil {
+		if err := d.agent.Start(ctx); err != nil {
 			return fmt.Errorf("agent daemon terminated: %w", err)
 		}
 		return nil

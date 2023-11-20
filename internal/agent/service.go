@@ -2,11 +2,13 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/hooks"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -41,6 +43,7 @@ type (
 		listServerAgents(ctx context.Context) ([]*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
+		deleteAgent(ctx context.Context, agentID string) error
 
 		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -142,9 +145,33 @@ func NewService(opts ServiceOptions) *service {
 	opts.BeforeCreateWorkspace(svc.allowPool)
 	opts.BeforeUpdateWorkspace(svc.allowPool)
 	// Register with auth middleware the agent token kind and a means of
-	// retrieving the agent pool corresponding to token's subject.
+	// retrieving the appropriate agent corresponding to the agent token ID
 	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
-		return svc.db.getPoolByTokenID(ctx, tokenID)
+		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
+		if err != nil {
+			return nil, err
+		}
+		unregistered := &unregisteredPoolAgent{
+			pool:         pool,
+			agentTokenID: tokenID,
+		}
+		// if the agent has registered then it should be sending its ID in an
+		// http header
+		headers, err := otfhttp.HeadersFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if agentID := headers.Get(agentIDHeader); agentID != "" {
+			agent, err := svc.getAgent(ctx, agentID)
+			if err != nil {
+				return nil, fmt.Errorf("retrieving agent corresponding to ID found in http header: %w", err)
+			}
+			return &poolAgent{
+				agent:                 agent,
+				unregisteredPoolAgent: unregistered,
+			}, nil
+		}
+		return unregistered, nil
 	})
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
@@ -171,12 +198,7 @@ func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
 	}
 }
 
-func (s *service) NewManager() *manager {
-	return &manager{
-		service:  s,
-		interval: defaultManagerInterval,
-	}
-}
+func (s *service) NewManager() *manager { return newManager(s) }
 
 func (s *service) createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, opts.Organization)
@@ -338,6 +360,20 @@ func (s *service) allowPool(ctx context.Context, ws *workspace.Workspace) error 
 
 func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
 	agent, err := func() (*Agent, error) {
+		// subject must be an unregistered agent
+		subject, err := internal.SubjectFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		switch agent := subject.(type) {
+		case *unregisteredServerAgent:
+		case *unregisteredPoolAgent:
+			// extract pool ID and use for registration.
+			opts.AgentPoolID = &agent.pool.ID
+		default:
+			return nil, ErrUnauthorizedAgentRegistration
+		}
+
 		agent, err := s.register(ctx, opts)
 		if err != nil {
 			return nil, err
@@ -379,27 +415,37 @@ func (s *service) getAgent(ctx context.Context, agentID string) (*Agent, error) 
 	return s.db.getAgent(ctx, agentID)
 }
 
-func (s *service) receivePing(ctx context.Context, agentID string, status AgentStatus) error {
-	err := s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
-		return agent.ping(status)
-	})
-	if err != nil {
-		s.Error(err, "receiving ping from agent", "agent_id", agentID, "status", status)
-		return err
-	}
-	s.V(9).Info("received ping from agent", "agent_id", agentID, "status", status)
-	return nil
-}
-
 func (s *service) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
-	err := s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
-		return agent.setStatus(status)
-	})
+	// only these subjects may call this endpoint:
+	// (a) the manager, or
+	// (b) an agent with an ID matching agentID
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
-		s.Error(err, "updating agent status", "agent_id", agentID, "status", status)
 		return err
 	}
-	s.V(9).Info("updated agent status", "agent_id", agentID, "status", status)
+	switch s := subject.(type) {
+	case *manager:
+		// ok
+	case *serverAgent, *poolAgent:
+		if s.String() != agentID {
+			return internal.ErrAccessNotPermitted
+		}
+	default:
+		return internal.ErrAccessNotPermitted
+	}
+
+	// keep a record of what the status was before the update for logging
+	// purposes
+	var from AgentStatus
+	err = s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
+		from = agent.Status
+		return agent.setStatus(subject, status)
+	})
+	if err != nil {
+		s.Error(err, "updating agent status", "agent_id", agentID, "status", status, "subject", subject)
+		return err
+	}
+	s.V(9).Info("updated agent status", "agent_id", agentID, "from", from, "to", status, "subject", subject)
 	return nil
 }
 
@@ -447,6 +493,21 @@ func (s *service) relaySignal(sig signal) hooks.Listener[*run.Run] {
 // getAgentJobs is intended to be called by an agent in order to retrieve jobs to
 // run and jobs to cancel.
 func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
+	// only these subjects may call this endpoint:
+	// (a) an agent with an ID matching agentID
+	subject, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	switch s := subject.(type) {
+	case *serverAgent, *poolAgent:
+		if s.String() != agentID {
+			return nil, internal.ErrAccessNotPermitted
+		}
+	default:
+		return nil, internal.ErrAccessNotPermitted
+	}
+
 	sub, err := s.Subscribe(ctx, "get-agent-jobs-"+agentID)
 	if err != nil {
 		return nil, err
@@ -501,6 +562,20 @@ func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID strin
 }
 
 func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {
+	// only a job may call this endpoint and it must match the spec
+	subject, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	switch s := subject.(type) {
+	case *Job:
+		if s.JobSpec != spec {
+			return internal.ErrAccessNotPermitted
+		}
+	default:
+		return internal.ErrAccessNotPermitted
+	}
+
 	return s.db.updateJob(ctx, spec, func(job *Job) error {
 		if err := job.updateStatus(status); err != nil {
 			return err
@@ -623,4 +698,41 @@ func (a *service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentT
 
 	a.V(0).Info("deleted agent token", "token", at, "subject", subject)
 	return at, nil
+}
+
+// job tokens
+
+func (a *service) createJobToken(ctx context.Context, spec JobSpec) ([]byte, error) {
+	token, subject, err := func() ([]byte, internal.Subject, error) {
+		// only an agent may call this endpoint, and it must have been allocated
+		// the job matching the spec
+		subject, err := internal.SubjectFromContext(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		job, err := a.getJob(ctx, spec)
+		if err != nil {
+			return nil, subject, err
+		}
+		switch s := subject.(type) {
+		case *serverAgent, *poolAgent:
+			if s.String() != *job.AgentID {
+				return nil, subject, internal.ErrAccessNotPermitted
+			}
+		default:
+			return nil, subject, internal.ErrAccessNotPermitted
+		}
+		token, err := a.tokenFactory.createJobToken(spec)
+		if err != nil {
+			return nil, subject, err
+		}
+		return token, subject, nil
+	}()
+	if err != nil {
+		a.Error(err, "creating job token", "job", spec, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("creating job token", "job", spec, "subject", subject)
+	return token, nil
+
 }

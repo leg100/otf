@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -16,7 +17,10 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
@@ -38,11 +42,10 @@ type worker struct {
 	client
 	*run.Run
 	releases.Downloader
+	logr.Logger
 
 	config        Config
-	agent         *Agent
 	job           *Job
-	token         []byte
 	debug         bool
 	canceled      bool
 	cancelfn      context.CancelFunc
@@ -51,30 +54,85 @@ type worker struct {
 	envs          []string
 	variables     []*variable.Variable // terraform variables
 	proc          *os.Process          // current or last process
+	terminator    *terminator
 
 	*workdir
 }
 
 type step func(context.Context) error
 
+func (w *worker) doAndHandleError(ctx context.Context) {
+	// do the job, and then handle any error and send appropriate job status
+	// update
+	err := w.do(ctx)
+
+	var status JobStatus
+	switch {
+	case w.canceled:
+		status = JobCanceled
+		if err != nil {
+			w.Error(err, "job canceled")
+		} else {
+			w.V(0).Info("job canceled")
+		}
+	case err != nil:
+		status = JobErrored
+		w.Error(err, "finished job with error")
+	default:
+		status = JobFinished
+		w.V(0).Info("finished job successfully")
+	}
+	if err := w.updateJobStatus(ctx, w.job.JobSpec, status); err != nil {
+		w.Error(err, "sending job status", "status", status)
+	}
+}
+
 // do the Job
 func (w *worker) do(ctx context.Context) error {
-	// allow parent to cancel op
+	// check worker in with the terminator, so that if a cancelation signal
+	// arrives it can be handled accordingly for the duration of the worker.
 	ctx, cancel := context.WithCancel(ctx)
 	w.cancelfn = cancel
+	w.terminator.checkIn(w.job.JobSpec, w)
+	defer w.terminator.checkOut(w.job.JobSpec)
 
-	// setup appropriate auth depending on whether agent is part of the server
-	// or talking to server via RPC
-	if w.config.server {
-		// directly authenticate as job with services
-		ctx = internal.AddSubjectToContext(ctx, w.job)
-	} else {
-		// set jwt token as bearer in RPC requests
-		w.client = w.client.(*rpcClient).newClientWithToken(w.token)
+	w.V(1).Info("creating job token")
+	token, err := w.createJobToken(ctx, w.job.JobSpec)
+	if err != nil {
+		return fmt.Errorf("creating job token: %w", err)
 	}
 
-	// make token available to terraform cli
-	w.envs = append(w.envs, internal.CredentialEnv(w.Hostname(), w.token))
+	// if this is a non-server agent using RPC to communicate with the server
+	// then use a new client for this job, configured to authenticate with the
+	// job token and to retry requests upon encountering transient errors.
+	if _, ok := w.client.(*rpcClient); ok {
+		client, err := NewRPCClient(otfapi.Config{
+			Token:         string(token),
+			RetryRequests: true,
+			RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {
+				// ignore first un-retried requests
+				if n == 0 {
+					return
+				}
+				w.Error(nil, "retrying request", "url", r.URL, "attempt", n)
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("initializing job client: %w", err)
+		}
+		w.client = client
+	} else {
+		// this is a server agent: directly authenticate as job with services
+		ctx = internal.AddSubjectToContext(ctx, w.job)
+	}
+
+	// make token available to terraform CLI
+	w.envs = append(w.envs, internal.CredentialEnv(w.Hostname(), token))
+
+	if err := w.updateJobStatus(ctx, w.job.JobSpec, JobRunning); err != nil {
+		return fmt.Errorf("sending job status update: %w", err)
+	}
+	w.V(0).Info("started job")
 
 	run, err := w.GetRun(ctx, w.job.RunID)
 	if err != nil {
@@ -124,7 +182,7 @@ func (w *worker) do(ctx context.Context) error {
 		fmt.Fprintln(w.out, "Debug mode enabled")
 		fmt.Fprintln(w.out, "------------------")
 		fmt.Fprintf(w.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(w.out, "External agent: %t\n", !w.agent.Server)
+		fmt.Fprintf(w.out, "External agent: %t\n", !w.config.server)
 		fmt.Fprintf(w.out, "Sandbox mode: %t\n", !w.config.Sandbox)
 		fmt.Fprintln(w.out, "------------------")
 		fmt.Fprintln(w.out)

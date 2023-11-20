@@ -124,13 +124,13 @@ func (a *allocator) allocate(ctx context.Context) error {
 			switch job.ExecutionMode {
 			case workspace.RemoteExecutionMode:
 				// only server agents handle jobs with remote execution mode.
-				if agent.Server {
+				if agent.IsServer() {
 					return allocatefn(agent, job)
 				}
 				continue
 			case workspace.AgentExecutionMode:
 				// only non-server agents handle jobs with agent execution mode.
-				if agent.Server {
+				if agent.IsServer() {
 					continue
 				}
 				// non-server agents belong to a pool.

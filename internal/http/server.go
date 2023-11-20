@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -18,9 +19,12 @@ import (
 	"github.com/leg100/otf/internal/json"
 )
 
-// shutdownTimeout is the time given for outstanding requests to finish
-// before shutdown.
-const shutdownTimeout = 1 * time.Second
+const (
+	// shutdownTimeout is the time given for outstanding requests to finish
+	// before shutdown.
+	shutdownTimeout     = 1 * time.Second
+	headersKey      key = "headers"
+)
 
 var (
 	healthzPayload = json.MustMarshal(struct {
@@ -42,7 +46,8 @@ type (
 		EnableRequestLogging bool
 		DevMode              bool
 
-		Handlers   []internal.Handlers
+		Handlers []internal.Handlers
+		// middleware to intercept requests, executed in the order given.
 		Middleware []mux.MiddlewareFunc
 	}
 
@@ -53,6 +58,9 @@ type (
 
 		server *http.Server
 	}
+
+	// unexported type for use with embedding values in contexts
+	key string
 )
 
 // NewServer constructs the http server for OTF
@@ -89,6 +97,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 
 	// Subrouter for service routes
 	svcRouter := r.NewRoute().Subrouter()
+
+	// this middleware adds http headers from the request to the context
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), headersKey, r.Header)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
 
 	// Subject service routes to provided middleware, verifying tokens,
 	// sessions.
@@ -153,4 +169,12 @@ func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
 
 		return nil
 	}
+}
+
+func HeadersFromContext(ctx context.Context) (http.Header, error) {
+	headers, ok := ctx.Value(headersKey).(http.Header)
+	if !ok {
+		return nil, errors.New("no http headers found in context")
+	}
+	return headers, nil
 }

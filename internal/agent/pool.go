@@ -2,24 +2,17 @@
 package agent
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"time"
 
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
 
 var (
-	// An agent pool implements Subject (otf-agent authenticates as an agent pool using one
-	// of its tokens).
-	_ internal.Subject = (*Pool)(nil)
-
 	ErrCannotDeletePoolReferencedByWorkspaces = errors.New("agent pool is still being used by workspaces in your organization. You must switch your workspaces to a different agent pool or execution mode before you can delete this agent pool")
 	ErrWorkspaceNotAllowedToUsePool           = errors.New("access to this agent pool is not allowed - you must explictly grant access to the workspace first")
 	ErrPoolAssignedWorkspacesNotAllowed       = errors.New("workspaces assigned to the pool have not been granted access to the pool")
@@ -121,51 +114,6 @@ func (p *Pool) update(opts updatePoolOptions) error {
 		}
 	}
 	return nil
-}
-
-func (a *Pool) String() string      { return a.ID }
-func (a *Pool) IsSiteAdmin() bool   { return true }
-func (a *Pool) IsOwner(string) bool { return true }
-
-func (a *Pool) Organizations() []string { return []string{a.Organization} }
-
-func (*Pool) CanAccessSite(action rbac.Action) bool {
-	// agent pool cannot carry out site-level actions
-	return false
-}
-
-func (*Pool) CanAccessTeam(rbac.Action, string) bool {
-	// agent pool cannot carry out team-level actions
-	return false
-}
-
-func (a *Pool) CanAccessOrganization(action rbac.Action, name string) bool {
-	// agent pool can access anything within its organization
-	//
-	// TODO: permit only those actions that an agent pool needs to carry out
-	// (get agent jobs, etc).
-	return a.Organization == name
-}
-
-func (a *Pool) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
-	// agent pool can access anything within its organization
-	//
-	// TODO: permit only those actions that an agent pool needs to carry out
-	// (get agent jobs, etc).
-	return a.Organization == policy.Organization
-}
-
-// PoolFromContext retrieves an agent pool subject from a context
-func PoolFromContext(ctx context.Context) (*Pool, error) {
-	subj, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	pool, ok := subj.(*Pool)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not an agent pool")
-	}
-	return pool, nil
 }
 
 func (p *Pool) LogValue() slog.Value {

@@ -7,6 +7,8 @@ type fakeService struct {
 	createAgentPoolOptions createAgentPoolOptions
 	at                     *agentToken
 	token                  []byte
+	status                 AgentStatus
+	deletedAgentID         string
 
 	Service
 }
@@ -26,4 +28,14 @@ func (f *fakeService) ListAgentTokens(context.Context, string) ([]*agentToken, e
 
 func (f *fakeService) DeleteAgentToken(context.Context, string) (*agentToken, error) {
 	return f.at, nil
+}
+
+func (f *fakeService) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+	f.status = status
+	return nil
+}
+
+func (f *fakeService) deleteAgent(ctx context.Context, agentID string) error {
+	f.deletedAgentID = agentID
+	return nil
 }

@@ -3,10 +3,12 @@ package agent
 import (
 	"context"
 	"time"
+
+	"github.com/leg100/otf/internal"
 )
 
 var (
-	pingTimeout            = 60 * time.Second
+	pingTimeout            = 30 * time.Second
 	defaultManagerInterval = 10 * time.Second
 )
 
@@ -19,9 +21,18 @@ const ManagerLockID int64 = 5577006791947779413
 // Only one manager should be running on an OTF cluster at any one time.
 type manager struct {
 	// service for retrieving agents and updating their state.
-	*service
+	Service
 	// frequency with which the manager will check agents.
 	interval time.Duration
+	// manager identifies itself as a subject when making service calls
+	internal.Subject
+}
+
+func newManager(s Service) *manager {
+	return &manager{
+		Service:  s,
+		interval: defaultManagerInterval,
+	}
 }
 
 // Start the manager. Every interval the status of agents is checked,
@@ -29,6 +40,8 @@ type manager struct {
 //
 // Should be invoked in a go routine.
 func (a *manager) Start(ctx context.Context) error {
+	ctx = internal.AddSubjectToContext(ctx, a)
+
 	ticker := time.NewTicker(a.interval)
 	defer ticker.Stop()
 	for {
@@ -58,16 +71,16 @@ func (a *manager) update(ctx context.Context, agent *Agent) error {
 			return a.updateAgentStatus(ctx, agent.ID, AgentUnknown)
 		}
 	case AgentUnknown:
-		// update agent status from unknown to errored if it has still failed to
-		// ping within a further 2 hours.
-		if time.Since(agent.LastPingAt) > pingTimeout+(2*time.Hour) {
+		// update agent status from unknown to errored if a further period of 5
+		// minutes has elapsed.
+		if time.Since(agent.LastStatusAt) > 5*time.Minute {
 			// update agent status to errored.
 			return a.updateAgentStatus(ctx, agent.ID, AgentErrored)
 		}
 	case AgentErrored, AgentExited:
-		// purge agent from database once a further 3 hours has passed for
+		// purge agent from database once a further 1 hour has elapsed for
 		// agents in a terminal state.
-		if time.Since(agent.LastPingAt) > pingTimeout+(3*time.Hour) {
+		if time.Since(agent.LastStatusAt) > time.Hour {
 			// remove agent from db
 			return a.deleteAgent(ctx, agent.ID)
 		}

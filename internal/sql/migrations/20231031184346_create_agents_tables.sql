@@ -65,14 +65,12 @@ CREATE TABLE IF NOT EXISTS agents (
     agent_id       TEXT,
     name           TEXT,
     concurrency    INT NOT NULL,
-    server         BOOLEAN NOT NULL,
     ip_address     INET NOT NULL,
     last_ping_at   TIMESTAMPTZ NOT NULL,
     last_status_at TIMESTAMPTZ NOT NULL,
     status         TEXT REFERENCES agent_statuses ON UPDATE CASCADE NOT NULL,
     agent_pool_id  TEXT REFERENCES agent_pools ON UPDATE CASCADE ON DELETE CASCADE,
-                   PRIMARY KEY (agent_id),
-                   CHECK (server OR agent_pool_id IS NOT NULL)
+                   PRIMARY KEY (agent_id)
 );
 
 CREATE TABLE IF NOT EXISTS job_phases (
@@ -88,9 +86,12 @@ CREATE TABLE IF NOT EXISTS job_statuses (
 );
 
 INSERT INTO job_statuses (status) VALUES
-	('pending'),
+	('unallocated'),
+	('allocated'),
 	('running'),
-	('errored');
+	('finished'),
+	('errored'),
+	('canceled');
 
 CREATE TABLE IF NOT EXISTS signals (
     signal TEXT PRIMARY KEY

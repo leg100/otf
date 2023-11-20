@@ -4,21 +4,17 @@ package agent
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/rbac"
 )
 
-// An agent implements Subject (the server-based agent that is part of the otfd
-// process authenticates as an agent, whereas the otf-agent process
-// authenticates as an agent pool).
-var _ internal.Subject = (*Agent)(nil)
-
-var ErrInvalidAgentStateTransition = errors.New("invalid agent state transition")
+var (
+	ErrInvalidAgentStateTransition   = errors.New("invalid agent state transition")
+	ErrUnauthorizedAgentRegistration = errors.New("unauthorization agent registration")
+)
 
 type AgentStatus string
 
@@ -30,135 +26,42 @@ const (
 	AgentUnknown AgentStatus = "unknown"
 )
 
-// Agent represents an agent. (The agent process itself is the Daemon).
+// Agent describes an agent. (The agent *process* is Daemon).
 type Agent struct {
 	// Unique system-wide ID
-	ID string
+	ID string `jsonapi:"primary,agents"`
 	// Optional name
-	Name *string
+	Name *string `jsonapi:"attribute" json:"name"`
 	// Current status of agent
-	Status AgentStatus
+	Status AgentStatus `jsonapi:"attribute" json:"status"`
 	// Number of jobs it can handle at once
-	Concurrency int
-	// Whether it is built into otfd (true) or is a separate otf-agent process
-	// (false)
-	Server bool
+	Concurrency int `jsonapi:"attribute" json:"concurrency"`
 	// Last time a ping was received from the agent
-	LastPingAt time.Time
+	LastPingAt time.Time `jsonapi:"attribute" json:"last-ping-at"`
 	// Last time the status was updated
-	LastStatusAt time.Time
+	LastStatusAt time.Time `jsonapi:"attribute" json:"last-status-at"`
 	// IP address of agent
-	IPAddress net.IP
-	// ID of agent' pool. Only set if Server is false.
-	AgentPoolID *string
-}
-
-func (a *Agent) setStatus(status AgentStatus) error {
-	// the agent fsm is as follows:
-	//
-	// idle -> any
-	// busy -> any
-	// unknown -> any
-	// errored -> exited
-	// exited (final state)
-	switch a.Status {
-	case AgentErrored:
-		if status != AgentExited {
-			return ErrInvalidAgentStateTransition
-		}
-	case AgentExited:
-		return ErrInvalidAgentStateTransition
-	}
-	a.Status = status
-	a.LastStatusAt = internal.CurrentTimestamp(nil)
-	return nil
-}
-
-func (a *Agent) ping(status AgentStatus) error {
-	a.LastPingAt = internal.CurrentTimestamp(nil)
-	return a.setStatus(status)
-}
-
-func (a *Agent) LogValue() slog.Value {
-	attrs := []slog.Attr{
-		slog.String("id", a.ID),
-		slog.Bool("server", a.Server),
-		slog.String("status", string(a.Status)),
-		slog.String("ip_address", a.IPAddress.String()),
-	}
-	if a.AgentPoolID != nil {
-		attrs = append(attrs, slog.String("pool_id", *a.AgentPoolID))
-	}
-	if a.Name != nil {
-		attrs = append(attrs, slog.String("name", *a.Name))
-	}
-	return slog.GroupValue(attrs...)
-}
-
-func (a *Agent) String() string      { return a.ID }
-func (a *Agent) IsSiteAdmin() bool   { return true }
-func (a *Agent) IsOwner(string) bool { return true }
-
-func (a *Agent) Organizations() []string {
-	// an agent is not a member of organizations (although its agent pool is).
-	return nil
-}
-
-func (*Agent) CanAccessSite(action rbac.Action) bool {
-	// agent cannot carry out site-level actions
-	return false
-}
-
-func (*Agent) CanAccessTeam(rbac.Action, string) bool {
-	// agent cannot carry out team-level actions
-	return false
-}
-
-func (a *Agent) CanAccessOrganization(action rbac.Action, name string) bool {
-	// only a server-based agent can authenticate as an Agent, and if that is
-	// so, then it can carry out all organization-based actions.
-	//
-	// TODO: permit only those actions that an agent needs to carry out (get
-	// agent jobs, etc).
-	return a.Server
-}
-
-func (a *Agent) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
-	// only a server-based agent can authenticate as an Agent, and if that is
-	// so, then it can carry out all workspace-based actions.
-	//
-	// TODO: permit only those actions that an agent needs to carry out (get
-	// agent jobs, etc).
-	return a.Server
-}
-
-// AgentFromContext retrieves an agent subject from a context
-func AgentFromContext(ctx context.Context) (*Agent, error) {
-	subj, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	agent, ok := subj.(*Agent)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not an agent")
-	}
-	return agent, nil
+	IPAddress net.IP `jsonapi:"attribute" json:"ip-address"`
+	// ID of agent' pool. If nil then the agent is assumed to be a server agent
+	// (otfd).
+	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id"`
 }
 
 type registerAgentOptions struct {
 	// Descriptive name. Optional.
-	Name *string
+	Name *string `json:"name"`
 	// Number of jobs the agent can handle at any one time.
-	Concurrency int
-	// IPAddress of agent. Optional.
+	Concurrency int `json:"concurrency"`
+	// IPAddress of agent. Optional. Not sent over the wire; instead the server
+	// handler is responsible for determing client's IP address.
 	IPAddress net.IP `json:"-"`
 	// ID of agent's pool. If unset then the agent is assumed to be a server
 	// agent (which does not belong to a pool).
-	AgentPoolID *string
+	AgentPoolID *string `json:"agent-pool-id"`
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
 	// versions.
-	CurrentJobs []JobSpec
+	CurrentJobs []JobSpec `json:"current-jobs,omitempty"`
 }
 
 // registrar registers new agents.
@@ -167,13 +70,30 @@ type registrar struct {
 }
 
 func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
+	// subject must either be:
+	// (a) a *serverSubject, or
+	// (b) a *poolSubject whose pool ID matches that given in the options.
+	subject, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	switch agent := subject.(type) {
+	case *unregisteredServerAgent:
+	case *unregisteredPoolAgent:
+		if agent.pool.ID != *opts.AgentPoolID {
+			return nil, ErrUnauthorizedAgentRegistration
+		}
+	default:
+		return nil, ErrUnauthorizedAgentRegistration
+
+	}
 	agent := &Agent{
 		ID:          internal.NewID("agent"),
 		Name:        opts.Name,
 		Concurrency: opts.Concurrency,
-		Server:      opts.AgentPoolID == nil,
+		AgentPoolID: opts.AgentPoolID,
 	}
-	if err := agent.ping(AgentIdle); err != nil {
+	if err := agent.setStatus(subject, AgentIdle); err != nil {
 		return nil, err
 	}
 	if opts.IPAddress != nil {
@@ -189,4 +109,47 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 	}
 
 	return agent, nil
+}
+
+func (a *Agent) setStatus(subject internal.Subject, status AgentStatus) error {
+	// the agent fsm is as follows:
+	//
+	// idle -> any
+	// busy -> any
+	// unknown -> any
+	// errored (final state)
+	// exited (final state)
+	switch a.Status {
+	case AgentErrored, AgentExited:
+		return ErrInvalidAgentStateTransition
+	}
+	a.Status = status
+	a.LastStatusAt = internal.CurrentTimestamp(nil)
+
+	// if an agent is the caller then this update is considered a 'ping'
+	switch subject.(type) {
+	case *serverAgent, *poolAgent:
+		a.LastPingAt = internal.CurrentTimestamp(nil)
+	}
+	return nil
+}
+
+// IsServer determines whether the agent is part of the server process (otfd) or
+// a separate process (otf-agent).
+func (a *Agent) IsServer() bool { return a.AgentPoolID == nil }
+
+func (a *Agent) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", a.ID),
+		slog.Bool("server", a.IsServer()),
+		slog.String("status", string(a.Status)),
+		slog.String("ip_address", a.IPAddress.String()),
+	}
+	if a.AgentPoolID != nil {
+		attrs = append(attrs, slog.String("pool_id", *a.AgentPoolID))
+	}
+	if a.Name != nil {
+		attrs = append(attrs, slog.String("name", *a.Name))
+	}
+	return slog.GroupValue(attrs...)
 }

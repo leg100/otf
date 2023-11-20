@@ -3,7 +3,6 @@ INSERT INTO agents (
     agent_id,
     name,
     concurrency,
-    server,
     ip_address,
     last_ping_at,
     last_status_at,
@@ -13,7 +12,6 @@ INSERT INTO agents (
     pggen.arg('agent_id'),
     pggen.arg('name'),
     pggen.arg('concurrency'),
-    pggen.arg('server'),
     pggen.arg('ip_address'),
     pggen.arg('last_ping_at'),
     pggen.arg('last_status_at'),
@@ -31,24 +29,27 @@ RETURNING *;
 
 -- name: FindAgents :many
 SELECT *
-FROM agents;
+FROM agents
+ORDER BY last_ping_at DESC;
 
 -- name: FindAgentsByOrganization :many
 SELECT a.*
 FROM agents a
 JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.organization_name = pggen.arg('organization_name');
+WHERE ap.organization_name = pggen.arg('organization_name')
+ORDER BY last_ping_at DESC;
 
 -- name: FindAgentsByPoolID :many
 SELECT a.*
 FROM agents a
 JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.agent_pool_id = pggen.arg('agent_pool_id');
+WHERE ap.agent_pool_id = pggen.arg('agent_pool_id')
+ORDER BY last_ping_at DESC;
 
 -- name: FindServerAgents :many
 SELECT *
 FROM agents
-WHERE server
+WHERE agent_pool_id IS NULL
 ORDER BY last_ping_at DESC;
 
 -- name: FindAgentByID :one

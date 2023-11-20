@@ -18,26 +18,13 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 )
 
-const (
-	DefaultBasePath = "/otfapi"
-	PingEndpoint    = "ping"
-	DefaultAddress  = "localhost:8080"
-
-	userAgent = "go-otf"
-)
-
 type (
 	Client struct {
-		baseURL           *url.URL
-		token             string
-		headers           http.Header
-		http              *retryablehttp.Client
-		retryLogHook      RetryLogHook
-		retryServerErrors bool
+		baseURL *url.URL
+		token   string
+		headers http.Header
+		http    *retryablehttp.Client
 	}
-
-	// RetryLogHook allows a function to run before each retry.
-	RetryLogHook func(attemptNum int, resp *http.Response)
 
 	// Config provides configuration details to the API client.
 	Config struct {
@@ -49,8 +36,10 @@ type (
 		Token string
 		// Headers that will be added to every request.
 		Headers http.Header
+		// Toggle retrying requests upon encountering transient errors.
+		RetryRequests bool
 		// RetryLogHook is invoked each time a request is retried.
-		RetryLogHook RetryLogHook
+		RetryLogHook retryablehttp.RequestLogHook
 		// Override default http transport
 		Transport http.RoundTripper
 	}
@@ -70,7 +59,7 @@ func NewClient(config Config) (*Client, error) {
 	if config.Transport == nil {
 		config.Transport = http.DefaultTransport
 	}
-	config.Headers.Set("User-Agent", userAgent)
+	config.Headers.Set("User-Agent", "otf-agent")
 
 	addr, err := otfhttp.SanitizeAddress(config.Address)
 	if err != nil {
@@ -92,48 +81,39 @@ func NewClient(config Config) (*Client, error) {
 
 	// Create the client.
 	client := &Client{
-		baseURL:      baseURL,
-		token:        config.Token,
-		headers:      config.Headers,
-		retryLogHook: config.RetryLogHook,
+		baseURL: baseURL,
+		token:   config.Token,
+		headers: config.Headers,
 	}
 	client.http = &retryablehttp.Client{
-		CheckRetry:   client.retryHTTPCheck,
-		ErrorHandler: retryablehttp.PassthroughErrorHandler,
-		HTTPClient:   &http.Client{Transport: config.Transport},
-		RetryWaitMin: 100 * time.Millisecond,
-		RetryWaitMax: 400 * time.Millisecond,
-		RetryMax:     30,
+		Backoff:        retryablehttp.DefaultBackoff,
+		ErrorHandler:   retryablehttp.PassthroughErrorHandler,
+		RequestLogHook: config.RetryLogHook,
+		HTTPClient:     &http.Client{Transport: config.Transport},
+		RetryWaitMin:   100 * time.Millisecond,
+		RetryWaitMax:   400 * time.Millisecond,
+		RetryMax:       30,
 	}
-	// send ping
-	req, err := client.NewRequest("GET", PingEndpoint, nil)
-	if err != nil {
-		return nil, err
+	if config.RetryRequests {
+		// enable retries
+		client.http.CheckRetry = retryablehttp.DefaultRetryPolicy
+	} else {
+		// disable retries
+		client.http.CheckRetry = func(_ context.Context, _ *http.Response, err error) (bool, error) {
+			return false, err
+		}
 	}
-	if err := client.Do(context.Background(), req, nil); err != nil {
-		return nil, err
-	}
-
 	return client, nil
-}
-
-// CloneWithToken makes a copy of the client but using a different token.
-// NOTE: this actually makes a partial copy, e.g. it still re-uses the same
-// underlying http client.
-func (c *Client) CloneWithToken(token string) *Client {
-	return &Client{
-		baseURL:           c.baseURL,
-		token:             c.token,
-		headers:           c.headers,
-		http:              c.http,
-		retryLogHook:      c.retryLogHook,
-		retryServerErrors: c.retryServerErrors,
-	}
 }
 
 // Hostname returns the server host:port.
 func (c *Client) Hostname() string {
 	return c.baseURL.Host
+}
+
+// SetHeader sets a http header to be used on all requests. Not concurrent-safe.
+func (c *Client) SetHeader(k, v string) {
+	c.headers[k] = []string{v}
 }
 
 // NewRequest creates an API request with proper headers and serialization.
@@ -292,27 +272,6 @@ func (c *Client) Do(ctx context.Context, req *retryablehttp.Request, v interface
 	return unmarshalResponse(resp.Body, v)
 }
 
-// RetryServerErrors configures the retry HTTP check to also retry unexpected
-// errors or requests that failed with a server error.
-func (c *Client) RetryServerErrors(retry bool) {
-	c.retryServerErrors = retry
-}
-
-// retryHTTPCheck provides a callback for Client.CheckRetry which
-// will retry both rate limit (429) and server (>= 500) errors.
-func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err error) (bool, error) {
-	if ctx.Err() != nil {
-		return false, ctx.Err()
-	}
-	if err != nil {
-		return c.retryServerErrors, err
-	}
-	if resp.StatusCode == 429 || (c.retryServerErrors && resp.StatusCode >= 500) {
-		return true, nil
-	}
-	return false, nil
-}
-
 func unmarshalResponse(r io.Reader, v any) error {
 	b, err := io.ReadAll(r)
 	if err != nil {
@@ -364,8 +323,6 @@ func checkResponseCode(r *http.Response) error {
 		return internal.ErrUnauthorized
 	case 404:
 		return internal.ErrResourceNotFound
-	case 418:
-		return internal.ErrPhaseAlreadyStarted
 	}
 	// Decode the error payload.
 	var payload struct {

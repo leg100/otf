@@ -6,6 +6,26 @@
   <div class="description w-3/4">
     An agent can be used to communicate with isolated, private, or on-premises infrastructure.
   </div>
+  {{ range .NonServerAgents }}
+    <div class="widget">
+      <div>
+        <div>
+          {{ with .Name }}
+            <span>{{ . }}</span>
+          {{ end }}
+          <span>{{ .Status }}</span>
+        </div>
+        <span>last seen {{ durationRound .LastPingAt }} ago</span>
+      </div>
+      <div>
+        {{ template "identifier" . }}
+        <div>
+          <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ if .IsServer }}otfd{{ else }}otf-agent{{ end }}</span>
+          <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .IPAddress }}</span>
+        </div>
+      </div>
+    </div>
+  {{ end }}
   {{ range .ServerAgents }}
     <div class="widget">
       <div>
@@ -19,7 +39,10 @@
       </div>
       <div>
         {{ template "identifier" . }}
-        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .IPAddress }}</span>
+        <div>
+          <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ if .IsServer }}otfd{{ else }}otf-agent{{ end }}</span>
+          <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .IPAddress }}</span>
+        </div>
       </div>
     </div>
   {{ end }}

@@ -68,7 +68,6 @@ type Job struct {
 	// This indicates whether the run for the job has been signaled, i.e. user
 	// has sent a cancelation request.
 	signal *signal
-	// JWT token. This is only set when a job is newly allocated to an agent.
 }
 
 func newJob(run *otfrun.Run) *Job {

@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"time"
@@ -46,7 +45,7 @@ type tokenFactory struct {
 }
 
 // createJobToken constructs a job token
-func (f *tokenFactory) createJobToken(_ context.Context, spec JobSpec) ([]byte, error) {
+func (f *tokenFactory) createJobToken(spec JobSpec) ([]byte, error) {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultJobTokenExpiry)
 	return f.NewToken(tokens.NewTokenOptions{
 		Subject: spec.String(),

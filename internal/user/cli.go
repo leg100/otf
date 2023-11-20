@@ -72,7 +72,7 @@ type membershipCLI struct {
 	team.TeamService
 }
 
-func NewTeamMembershipCommand(api *otfapi.Client) *cobra.Command {
+func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
 	cli := &membershipCLI{}
 	cmd := &cobra.Command{
 		Use:   "team-membership",
@@ -81,8 +81,8 @@ func NewTeamMembershipCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.UserService = &client{Client: api}
-			cli.TeamService = &team.Client{Client: api}
+			cli.UserService = &client{Client: apiclient}
+			cli.TeamService = &team.Client{Client: apiclient}
 			return nil
 		},
 	}

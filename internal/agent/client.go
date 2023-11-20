@@ -17,6 +17,8 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+const agentIDHeader = "otf-agent-id"
+
 var (
 	_ client = (*InProcClient)(nil)
 	_ client = (*rpcClient)(nil)
@@ -86,25 +88,19 @@ type (
 
 // NewRPCClient constructs a client that uses RPC to call OTF services.
 func NewRPCClient(cfg otfapi.Config) (*rpcClient, error) {
-	api, err := otfapi.NewClient(cfg)
+	client, err := otfapi.NewClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &rpcClient{
-		Client:          api,
-		stateClient:     &stateClient{Client: api},
-		configClient:    &configClient{Client: api},
-		variableClient:  &variableClient{Client: api},
-		runClient:       &runClient{Client: api, Config: cfg},
-		workspaceClient: &workspaceClient{Client: api},
-		logsClient:      &logsClient{Client: api},
+		Client:          client,
+		stateClient:     &stateClient{Client: client},
+		configClient:    &configClient{Client: client},
+		variableClient:  &variableClient{Client: client},
+		runClient:       &runClient{Client: client, Config: cfg},
+		workspaceClient: &workspaceClient{Client: client},
+		logsClient:      &logsClient{Client: client},
 	}, nil
-}
-
-func (c *rpcClient) newClientWithToken(token []byte) *rpcClient {
-	newClient := *c
-	newClient.CloneWithToken(string(token))
-	return &newClient
 }
 
 func (c *rpcClient) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
@@ -118,12 +114,14 @@ func (c *rpcClient) registerAgent(ctx context.Context, opts registerAgentOptions
 	}
 	return &agent, nil
 }
+
 func (c *rpcClient) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	u := fmt.Sprintf("agent/%s/jobs", agentID)
-	req, err := c.NewRequest("GET", u, nil)
+	req, err := c.NewRequest("GET", "agents/jobs", nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Add(agentIDHeader, agentID)
+
 	var jobs []*Job
 	// GET request blocks until:
 	//
@@ -137,6 +135,20 @@ func (c *rpcClient) getAgentJobs(ctx context.Context, agentID string) ([]*Job, e
 		return nil, err
 	}
 	return jobs, nil
+}
+
+func (c *rpcClient) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+	req, err := c.NewRequest("POST", "agents/status", &updateAgentStatusParams{
+		Status: status,
+	})
+	if err != nil {
+		return err
+	}
+	req.Header.Add(agentIDHeader, agentID)
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 // agent tokens

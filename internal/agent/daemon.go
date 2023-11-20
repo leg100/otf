@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -53,13 +56,16 @@ type daemon struct {
 	client
 	*terminator
 
-	agentID string   // unique ID assigned by server
-	envs    []string // terraform environment variables
-	config  Config
+	envs   []string // terraform environment variables
+	config Config
 }
 
-// New constructs a new agent daemon.
+// New constructs an agent daemon.
 func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
+	if _, ok := app.(*rpcClient); !ok {
+		// agent is deemed a server agent if it is not using an RPC client.
+		cfg.server = true
+	}
 	if cfg.Concurrency == 0 {
 		cfg.Concurrency = DefaultConcurrency
 	}
@@ -83,6 +89,7 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		client:     app,
 		envs:       DefaultEnvs,
 		terminator: &terminator{mapping: make(map[JobSpec]cancelable)},
+		config:     cfg,
 	}
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
@@ -94,8 +101,27 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 	return d, nil
 }
 
+// NewRPC constructs a agent daemon that communicates with the server via RPC.
+func NewRPC(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, error) {
+	app, err := NewRPCClient(apiConfig)
+	if err != nil {
+		return nil, err
+	}
+	return New(logger, app, cfg)
+}
+
 // Start the agent daemon.
 func (d *daemon) Start(ctx context.Context) error {
+	d.Info("starting agent", "version", internal.Version)
+
+	if d.config.server {
+		// prior to registration, the server agent identifies itself as an
+		// unregisteredServerAgent (the non-server agent identifies itself as an
+		// unregisteredPoolAgent but the server-side token middleware handles
+		// that).
+		ctx = internal.AddSubjectToContext(ctx, &unregisteredServerAgent{})
+	}
+
 	// register agent with server
 	agent, err := d.registerAgent(ctx, registerAgentOptions{
 		Name:        d.config.Name,
@@ -104,8 +130,18 @@ func (d *daemon) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	d.agentID = agent.ID
-	d.Logger = d.WithValues("agent_id", agent.ID)
+	registeredKeyValues := []any{"agent_id", agent.ID}
+	if agent.AgentPoolID != nil {
+		registeredKeyValues = append(registeredKeyValues, "agent_pool_id", *agent.AgentPoolID)
+	}
+	d.Info("registered successfully", registeredKeyValues...)
+
+	if d.config.server {
+		// server agents should identify themselves as a serverAgent
+		// (non-server agents identify themselves as a poolAgent, but the
+		// bearer token middleware takes care of that server-side).
+		ctx = internal.AddSubjectToContext(ctx, &serverAgent{Agent: agent})
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
@@ -119,74 +155,60 @@ func (d *daemon) Start(ctx context.Context) error {
 				if d.totalJobs() > 0 {
 					status = AgentBusy
 				}
-				if err := d.updateAgentStatus(ctx, d.agentID, status); err != nil {
+				if err := d.updateAgentStatus(ctx, agent.ID, status); err != nil {
+					if ctx.Err() != nil {
+						goto finalupdate
+					}
 					d.Error(err, "sending agent status update", "status", status)
 				}
+				d.V(9).Info("sent agent status update", "status", status)
 			case <-ctx.Done():
-				// send final status update with a context that is still valid
-				// for a further 10 seconds.
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
-
-				if !d.config.server {
-					d.Info("sending final status update", "status", "exited")
-				}
-				if err := d.updateAgentStatus(ctx, d.agentID, AgentExited); err != nil {
-					return err
-				}
-				return nil
+				goto finalupdate
 			}
 		}
+	finalupdate:
+		// send final status update using a context that is still valid
+		// for a further 10 seconds.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		d.Info("sending final status update", "status", "exited")
+		if err := d.updateAgentStatus(ctx, agent.ID, AgentExited); err != nil {
+			return fmt.Errorf("sending final status update: %w", err)
+		}
+		return nil
 	})
+
 	// fetch jobs allocated to this agent and launch workers to do jobs; also
 	// handle cancelation signals for jobs
 	for {
 		// block on waiting for jobs
-		jobs, err := d.getAgentJobs(ctx, d.agentID)
-		if err != nil {
+		var jobs []*Job
+		getJobs := func() (err error) {
+			d.Info("waiting for next job")
+			jobs, err = d.getAgentJobs(ctx, agent.ID)
 			return err
 		}
-		if ctx.Err() != nil {
+		policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
+		err := backoff.RetryNotify(getJobs, policy, func(err error, next time.Duration) {
+			d.Error(err, "waiting for next job", "backoff", next)
+		})
+		if err != nil {
+			// ctx canceled
 			break
 		}
 		for _, j := range jobs {
 			if j.Status == JobAllocated {
-				d.Info("received allocated job", "job", j)
-				token, err := d.createJobToken(ctx, j.JobSpec)
-				if err != nil {
-					return err
-				}
-				if err := d.updateJobStatus(ctx, j.JobSpec, JobRunning); err != nil {
-					d.Error(err, "sending job status", "status", JobRunning, "job", j)
-					continue
-				}
+				d.Info("received job", "job", j)
 				w := &worker{
-					client: d.client,
-					job:    j,
-					token:  token,
-					envs:   d.envs,
+					Logger:     d.WithValues("job", j),
+					client:     d.client,
+					job:        j,
+					envs:       d.envs,
+					terminator: d.terminator,
 				}
-				// check worker in with the terminator so that it can receive a
-				// cancelation signal should one arrive.
-				d.checkIn(j.JobSpec, w)
 				g.Go(func() error {
-					defer d.checkOut(j.JobSpec)
-
-					if err := w.do(ctx); err != nil {
-						d.Error(err, "job returned an error", "job", j)
-					}
-					var status JobStatus
-					switch {
-					case w.canceled:
-						status = JobCanceled
-					case err != nil:
-						status = JobErrored
-					default:
-						status = JobFinished
-					}
-					if err := d.updateJobStatus(ctx, j.JobSpec, status); err != nil {
-						d.Error(err, "sending job status", "status", status, "job", j)
-					}
+					w.doAndHandleError(ctx)
 					return nil
 				})
 			} else if j.signal != nil {
@@ -202,5 +224,6 @@ func (d *daemon) Start(ctx context.Context) error {
 			}
 		}
 	}
+	// TODO: exit cleanly when ctrl-c'd
 	return g.Wait()
 }
