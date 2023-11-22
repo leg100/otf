@@ -166,14 +166,14 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 	}
 	dir := contents[0].Name()
 	parts := strings.Split(dir, "-")
-	if len(parts) != 2 {
+	if (len(parts) < 2) || (len(parts) > 3) {
 		return nil, "", fmt.Errorf("malformed directory name found in tarball: %s", dir)
 	}
 	tarball, err = internal.Pack(path.Join(untarpath, dir))
 	if err != nil {
 		return nil, "", err
 	}
-	return tarball, parts[1], nil
+	return tarball, parts[len(parts)-1], nil
 }
 
 func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
