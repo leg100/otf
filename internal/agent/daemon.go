@@ -125,6 +125,7 @@ func (d *daemon) Start(ctx context.Context) error {
 	// register agent with server
 	agent, err := d.registerAgent(ctx, registerAgentOptions{
 		Name:        d.config.Name,
+		Version:     internal.Version,
 		Concurrency: d.config.Concurrency,
 	})
 	if err != nil {
@@ -144,7 +145,20 @@ func (d *daemon) Start(ctx context.Context) error {
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
+	g.Go(func() (err error) {
+		defer func() {
+			// send final status update using a context that is still valid
+			// for a further 10 seconds.
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			if updateErr := d.updateAgentStatus(ctx, agent.ID, AgentExited); updateErr != nil {
+				err = fmt.Errorf("sending final status update: %w", updateErr)
+			} else {
+				d.Info("sent final status update", "status", "exited")
+			}
+		}()
+
 		// every 10 seconds update the agent status
 		ticker := time.NewTicker(10 * time.Second)
 		for {
@@ -157,26 +171,18 @@ func (d *daemon) Start(ctx context.Context) error {
 				}
 				if err := d.updateAgentStatus(ctx, agent.ID, status); err != nil {
 					if ctx.Err() != nil {
-						goto finalupdate
+						// context canceled
+						return nil
 					}
 					d.Error(err, "sending agent status update", "status", status)
+				} else {
+					d.V(9).Info("sent agent status update", "status", status)
 				}
-				d.V(9).Info("sent agent status update", "status", status)
 			case <-ctx.Done():
-				goto finalupdate
+				// context canceled
+				return nil
 			}
 		}
-	finalupdate:
-		// send final status update using a context that is still valid
-		// for a further 10 seconds.
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		d.Info("sending final status update", "status", "exited")
-		if err := d.updateAgentStatus(ctx, agent.ID, AgentExited); err != nil {
-			return fmt.Errorf("sending final status update: %w", err)
-		}
-		return nil
 	})
 
 	// fetch jobs allocated to this agent and launch workers to do jobs; also

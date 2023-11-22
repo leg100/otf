@@ -98,6 +98,7 @@ func init() {
 	funcmap["editAgentPath"] = EditAgent
 	funcmap["updateAgentPath"] = UpdateAgent
 	funcmap["deleteAgentPath"] = DeleteAgent
+	funcmap["watchAgentPath"] = WatchAgent
 
 	funcmap["agentPoolsPath"] = AgentPools
 	funcmap["createAgentPoolPath"] = CreateAgentPool

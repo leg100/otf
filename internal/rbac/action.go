@@ -29,6 +29,9 @@ const (
 	GetAgentTokenAction
 	DeleteAgentTokenAction
 
+	ListAgentsAction
+	WatchAgentsAction
+
 	CreateOrganizationTokenAction
 	DeleteOrganizationTokenAction
 

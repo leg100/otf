@@ -32,6 +32,8 @@ type Agent struct {
 	ID string `jsonapi:"primary,agents"`
 	// Optional name
 	Name *string `jsonapi:"attribute" json:"name"`
+	// Version of agent
+	Version string `jsonapi:"attribute" json:"version"`
 	// Current status of agent
 	Status AgentStatus `jsonapi:"attribute" json:"status"`
 	// Number of jobs it can handle at once
@@ -50,6 +52,8 @@ type Agent struct {
 type registerAgentOptions struct {
 	// Descriptive name. Optional.
 	Name *string `json:"name"`
+	// Version of agent.
+	Version string `json:"version"`
 	// Number of jobs the agent can handle at any one time.
 	Concurrency int `json:"concurrency"`
 	// IPAddress of agent. Optional. Not sent over the wire; instead the server
@@ -57,7 +61,7 @@ type registerAgentOptions struct {
 	IPAddress net.IP `json:"-"`
 	// ID of agent's pool. If unset then the agent is assumed to be a server
 	// agent (which does not belong to a pool).
-	AgentPoolID *string `json:"agent-pool-id"`
+	AgentPoolID *string `json:"-"`
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
 	// versions.
@@ -70,30 +74,15 @@ type registrar struct {
 }
 
 func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
-	// subject must either be:
-	// (a) a *serverSubject, or
-	// (b) a *poolSubject whose pool ID matches that given in the options.
-	subject, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	switch agent := subject.(type) {
-	case *unregisteredServerAgent:
-	case *unregisteredPoolAgent:
-		if agent.pool.ID != *opts.AgentPoolID {
-			return nil, ErrUnauthorizedAgentRegistration
-		}
-	default:
-		return nil, ErrUnauthorizedAgentRegistration
-
-	}
 	agent := &Agent{
 		ID:          internal.NewID("agent"),
 		Name:        opts.Name,
+		Version:     opts.Version,
 		Concurrency: opts.Concurrency,
 		AgentPoolID: opts.AgentPoolID,
+		LastPingAt:  internal.CurrentTimestamp(nil),
 	}
-	if err := agent.setStatus(subject, AgentIdle); err != nil {
+	if err := agent.setStatus(AgentIdle, true); err != nil {
 		return nil, err
 	}
 	if opts.IPAddress != nil {
@@ -111,7 +100,7 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 	return agent, nil
 }
 
-func (a *Agent) setStatus(subject internal.Subject, status AgentStatus) error {
+func (a *Agent) setStatus(status AgentStatus, ping bool) error {
 	// the agent fsm is as follows:
 	//
 	// idle -> any
@@ -124,12 +113,11 @@ func (a *Agent) setStatus(subject internal.Subject, status AgentStatus) error {
 		return ErrInvalidAgentStateTransition
 	}
 	a.Status = status
-	a.LastStatusAt = internal.CurrentTimestamp(nil)
-
-	// if an agent is the caller then this update is considered a 'ping'
-	switch subject.(type) {
-	case *serverAgent, *poolAgent:
-		a.LastPingAt = internal.CurrentTimestamp(nil)
+	now := internal.CurrentTimestamp(nil)
+	a.LastStatusAt = now
+	// also update ping time if requested
+	if ping {
+		a.LastPingAt = now
 	}
 	return nil
 }

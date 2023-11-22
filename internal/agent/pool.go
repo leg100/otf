@@ -39,7 +39,7 @@ type (
 		AssignedWorkspaces []string
 	}
 
-	createAgentPoolOptions struct {
+	CreateAgentPoolOptions struct {
 		Name string `schema:"name,required"`
 		// name of org
 		Organization string `schema:"organization_name,required"`
@@ -73,7 +73,7 @@ type (
 
 // newPool constructs a new agent pool. Note: a new pool has a list of allowed
 // workspaces but not yet a list of assigned workspaces.
-func newPool(opts createAgentPoolOptions) (*Pool, error) {
+func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 	if opts.Name == "" {
 		return nil, errors.New("name must not be empty")
 	}
@@ -107,10 +107,13 @@ func (p *Pool) update(opts updatePoolOptions) error {
 	if opts.AllowedWorkspaces != nil {
 		p.AllowedWorkspaces = opts.AllowedWorkspaces
 	}
-	// each assigned workspace must also be allowed.
-	for _, assigned := range p.AssignedWorkspaces {
-		if !slices.Contains(p.AllowedWorkspaces, assigned) {
-			return ErrPoolAssignedWorkspacesNotAllowed
+	// if not organization scoped then each assigned workspace must also be
+	// allowed.
+	if !p.OrganizationScoped {
+		for _, assigned := range p.AssignedWorkspaces {
+			if !slices.Contains(p.AllowedWorkspaces, assigned) {
+				return ErrPoolAssignedWorkspacesNotAllowed
+			}
 		}
 	}
 	return nil

@@ -46,9 +46,9 @@ ALTER TABLE agent_tokens
 
 ALTER TABLE workspaces
     ADD COLUMN agent_pool_id TEXT,
-    ADD CONSTRAINT ap_allowed_ws_fk FOREIGN KEY (agent_pool_id, workspace_id)
-        REFERENCES agent_pool_allowed_workspaces (agent_pool_id, workspace_id) ON UPDATE CASCADE;
-    --ADD CONSTRAINT agent_pool_chk CHECK (execution_mode <> 'agent' OR agent_pool_id IS NOT NULL);
+    ADD CONSTRAINT agent_pool_fk FOREIGN KEY (agent_pool_id)
+        REFERENCES agent_pools ON UPDATE CASCADE,
+    ADD CONSTRAINT agent_pool_chk CHECK (execution_mode <> 'agent' OR agent_pool_id IS NOT NULL);
 
 CREATE TABLE IF NOT EXISTS agent_statuses (
     status TEXT PRIMARY KEY
@@ -64,6 +64,7 @@ INSERT INTO agent_statuses (status) VALUES
 CREATE TABLE IF NOT EXISTS agents (
     agent_id       TEXT,
     name           TEXT,
+    version        TEXT NOT NULL,
     concurrency    INT NOT NULL,
     ip_address     INET NOT NULL,
     last_ping_at   TIMESTAMPTZ NOT NULL,

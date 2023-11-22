@@ -34,6 +34,9 @@ var (
 	// ErrUploadTooLarge is returned when a user attempts to upload data that
 	// is too large.
 	ErrUploadTooLarge = errors.New("upload is too large")
+
+	// ErrTimeout is returned when a request exceeds a timeout.
+	ErrTimeout = errors.New("request timed out")
 )
 
 // Resource Errors

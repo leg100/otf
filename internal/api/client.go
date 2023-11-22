@@ -323,13 +323,22 @@ func checkResponseCode(r *http.Response) error {
 		return internal.ErrUnauthorized
 	case 404:
 		return internal.ErrResourceNotFound
+	case 408, 502:
+		// 408 Request Timeout, 504 Gateway Timeout
+		return internal.ErrTimeout
+	}
+	// get contents of body and log that in the error message so we know
+	// what it is choking on.
+	contents, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
 	}
 	// Decode the error payload.
 	var payload struct {
 		Errors []*jsonapi.Error `json:"errors"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		return fmt.Errorf("unable to decode errors payload: %w", err)
+	if err := json.Unmarshal(contents, &payload); err != nil {
+		return fmt.Errorf("unable to decode errors payload: %s: %w", string(contents), err)
 	}
 	if len(payload.Errors) == 0 {
 		return fmt.Errorf(r.Status)

@@ -28,7 +28,7 @@
         <script src="{{ addHash "/static/js/agent_pool_workspaces.js" }}"></script>
         <div
           class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
-          x-data="agent_pool_workspaces({{ toJson .AllowedWorkspaces }}, {{ toJson .AvailableWorkspaces }})"
+          x-data="agent_pool_workspaces({{ toJson .AllowedButUnassignedWorkspaces }}, {{ toJson .AvailableWorkspaces }})"
           x-ref="workspace_select"
           @keydown.escape.prevent.stop="close($refs.workspace_input)"
           @focusin.window="! $refs.workspace_select.contains($event.target) && close()"
@@ -116,6 +116,12 @@
         </form>
       </div>
     </div>
+  {{ end }}
+
+  <hr class="my-4">
+  <h3 class="font-semibold text-lg mb-2">Agents</h3>
+  {{ range .Agents }}
+    {{ template "agent_item" . }}
   {{ end }}
 
   {{ if .CanDeleteAgentPool }}

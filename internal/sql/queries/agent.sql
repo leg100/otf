@@ -2,6 +2,7 @@
 INSERT INTO agents (
     agent_id,
     name,
+    version,
     concurrency,
     ip_address,
     last_ping_at,
@@ -11,6 +12,7 @@ INSERT INTO agents (
 ) VALUES (
     pggen.arg('agent_id'),
     pggen.arg('name'),
+    pggen.arg('version'),
     pggen.arg('concurrency'),
     pggen.arg('ip_address'),
     pggen.arg('last_ping_at'),

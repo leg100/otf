@@ -24,7 +24,7 @@ func TestRunError(t *testing.T) {
 
 	// create a daemon and start an agent
 	daemon, org, ctx := setup(t, nil)
-	daemon.startAgent(t, ctx, org.Name, agent.Config{})
+	daemon.startAgent(t, ctx, org.Name, "", agent.Config{})
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {

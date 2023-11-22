@@ -42,22 +42,16 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Name        *string // optional name
-		Concurrency int
-		CurrentJobs []JobSpec `json:"current_jobs"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+	var opts registerAgentOptions
+	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	agent, err := a.service.registerAgent(r.Context(), registerAgentOptions{
-		Name:        params.Name,
-		Concurrency: params.Concurrency,
-		CurrentJobs: params.CurrentJobs,
-		IPAddress:   net.ParseIP(r.RemoteAddr),
-	})
+	// determine ip address from connection source address
+	opts.IPAddress = net.ParseIP(r.RemoteAddr)
+
+	agent, err := a.service.registerAgent(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

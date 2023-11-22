@@ -37,19 +37,6 @@ type (
 	}
 )
 
-// serverAgentFromContext retrieves a local agent subject from a context
-func serverAgentFromContext(ctx context.Context) (*serverAgent, error) {
-	subj, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	agent, ok := subj.(*serverAgent)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not an agent")
-	}
-	return agent, nil
-}
-
 // poolAgentFromContext retrieves an pool agent subject from a context
 func poolAgentFromContext(ctx context.Context) (*poolAgent, error) {
 	subj, err := internal.SubjectFromContext(ctx)

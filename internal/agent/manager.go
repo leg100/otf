@@ -35,24 +35,26 @@ func newManager(s Service) *manager {
 	}
 }
 
+func (m *manager) String() string { return "agent-manager" }
+
 // Start the manager. Every interval the status of agents is checked,
 // updating their status as necessary.
 //
 // Should be invoked in a go routine.
-func (a *manager) Start(ctx context.Context) error {
-	ctx = internal.AddSubjectToContext(ctx, a)
+func (m *manager) Start(ctx context.Context) error {
+	ctx = internal.AddSubjectToContext(ctx, m)
 
-	ticker := time.NewTicker(a.interval)
+	ticker := time.NewTicker(m.interval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			agents, err := a.listAgents(ctx)
+			agents, err := m.listAgents(ctx)
 			if err != nil {
 				return err
 			}
 			for _, agent := range agents {
-				if err := a.update(ctx, agent); err != nil {
+				if err := m.update(ctx, agent); err != nil {
 					return err
 				}
 			}
@@ -62,27 +64,27 @@ func (a *manager) Start(ctx context.Context) error {
 	}
 }
 
-func (a *manager) update(ctx context.Context, agent *Agent) error {
+func (m *manager) update(ctx context.Context, agent *Agent) error {
 	switch agent.Status {
 	case AgentIdle, AgentBusy:
 		// update agent status to unknown if the agent has failed to ping within
 		// the timeout.
 		if time.Since(agent.LastPingAt) > pingTimeout {
-			return a.updateAgentStatus(ctx, agent.ID, AgentUnknown)
+			return m.updateAgentStatus(ctx, agent.ID, AgentUnknown)
 		}
 	case AgentUnknown:
 		// update agent status from unknown to errored if a further period of 5
 		// minutes has elapsed.
 		if time.Since(agent.LastStatusAt) > 5*time.Minute {
 			// update agent status to errored.
-			return a.updateAgentStatus(ctx, agent.ID, AgentErrored)
+			return m.updateAgentStatus(ctx, agent.ID, AgentErrored)
 		}
 	case AgentErrored, AgentExited:
 		// purge agent from database once a further 1 hour has elapsed for
 		// agents in a terminal state.
 		if time.Since(agent.LastStatusAt) > time.Hour {
 			// remove agent from db
-			return a.deleteAgent(ctx, agent.ID)
+			return m.deleteAgent(ctx, agent.ID)
 		}
 	}
 	return nil

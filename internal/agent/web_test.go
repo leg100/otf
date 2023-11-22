@@ -23,7 +23,7 @@ func TestWebHandlers_createAgentPool(t *testing.T) {
 
 	h.createAgentPool(w, r)
 
-	want := createAgentPoolOptions{
+	want := CreateAgentPoolOptions{
 		Name:         "my-pool",
 		Organization: "acme-org",
 	}

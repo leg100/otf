@@ -407,20 +407,9 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 	return nc
 }
 
-func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organization string) []byte {
-	t.Helper()
-
-	token, err := s.CreateAgentToken(ctx, agent.CreateAgentTokenOptions{
-		AgentPoolID: organization,
-		Description: "lorem ipsum...",
-	})
-	require.NoError(t, err)
-	return token
-}
-
-// startAgent starts an external agent, configuring it with the given
-// organization and configuring it to connect to the daemon.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.Config) {
+// startAgent starts a pool agent, configuring it with the given organization
+// and configuring it to connect to the daemon.
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, poolID string, cfg agent.Config) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -433,7 +422,19 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 		logger = logr.Discard()
 	}
 
-	token := s.createAgentToken(t, ctx, organization)
+	if poolID == "" {
+		pool, err := s.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+			Name:         uuid.NewString(),
+			Organization: org,
+		})
+		require.NoError(t, err)
+		poolID = pool.ID
+	}
+
+	_, token, err := s.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+		Description: "lorem ipsum...",
+	})
+	require.NoError(t, err)
 
 	app, err := agent.NewRPCClient(api.Config{
 		Token:   string(token),

@@ -77,7 +77,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert tfe params to otf opts
-	opts := createAgentPoolOptions{
+	opts := CreateAgentPoolOptions{
 		Name:               *params.Name,
 		Organization:       organization,
 		OrganizationScoped: params.OrganizationScoped,
@@ -87,7 +87,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 		opts.AllowedWorkspaces[i] = aw.ID
 	}
 
-	pool, err := a.service.createAgentPool(r.Context(), opts)
+	pool, err := a.service.CreateAgentPool(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

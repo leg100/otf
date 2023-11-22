@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"slices"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -22,6 +24,7 @@ type webHandlers struct {
 	html.Renderer
 	svc              Service
 	workspaceService workspacepkg.WorkspaceService
+	logger           logr.Logger
 }
 
 type (
@@ -79,33 +82,39 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	nonServerAgents, err := h.svc.listAgentsByOrganization(r.Context(), org)
+	poolAgents, err := h.svc.listAgentsByOrganization(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	agents := append(serverAgents, poolAgents...)
+	slices.SortFunc(agents, func(a, b *Agent) int {
+		if a.LastPingAt.Before(b.LastPingAt) {
+			return 1
+		} else {
+			return -1
+		}
+	})
 
 	h.Render("agents_list.tmpl", w, struct {
 		organization.OrganizationPage
-		NonServerAgents []*Agent
-		ServerAgents    []*Agent
+		Agents []*Agent
 	}{
 		OrganizationPage: organization.NewPage(r, "agents", org),
-		NonServerAgents:  nonServerAgents,
-		ServerAgents:     serverAgents,
+		Agents:           agents,
 	})
 }
 
 // agent pool handlers
 
 func (h *webHandlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
-	var opts createAgentPoolOptions
+	var opts CreateAgentPoolOptions
 	if err := decode.All(&opts, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	pool, err := h.svc.createAgentPool(r.Context(), opts)
+	pool, err := h.svc.CreateAgentPool(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -222,9 +231,9 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		assignedWorkspaces  = make([]poolWorkspace, 0, len(pool.AssignedWorkspaces))
-		allowedWorkspaces   = make([]poolWorkspace, 0, len(pool.AllowedWorkspaces)-len(pool.AssignedWorkspaces))
-		availableWorkspaces = make([]poolWorkspace, 0, len(allWorkspaces)-len(allowedWorkspaces))
+		assignedWorkspaces             = make([]poolWorkspace, 0, len(pool.AssignedWorkspaces))
+		allowedButUnassignedWorkspaces = make([]poolWorkspace, 0, int(math.Abs(float64(len(pool.AllowedWorkspaces)-len(pool.AssignedWorkspaces)))))
+		availableWorkspaces            = make([]poolWorkspace, 0, len(allWorkspaces)-len(allowedButUnassignedWorkspaces))
 	)
 	for _, ws := range allWorkspaces {
 		isAssigned := slices.Contains(pool.AssignedWorkspaces, ws.ID)
@@ -233,7 +242,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 			assignedWorkspaces = append(assignedWorkspaces, poolWorkspace{ID: ws.ID, Name: ws.Name})
 		} else {
 			if isAllowed {
-				allowedWorkspaces = append(allowedWorkspaces, poolWorkspace{ID: ws.ID, Name: ws.Name})
+				allowedButUnassignedWorkspaces = append(allowedButUnassignedWorkspaces, poolWorkspace{ID: ws.ID, Name: ws.Name})
 			} else {
 				availableWorkspaces = append(availableWorkspaces, poolWorkspace{ID: ws.ID, Name: ws.Name})
 			}
@@ -254,22 +263,22 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("agent_pool_get.tmpl", w, struct {
 		organization.OrganizationPage
-		Pool                *Pool
-		CanDeleteAgentPool  bool
-		AllowedWorkspaces   []poolWorkspace
-		AssignedWorkspaces  []poolWorkspace
-		AvailableWorkspaces []poolWorkspace
-		Tokens              []*agentToken
-		Agents              []*Agent
+		Pool                           *Pool
+		CanDeleteAgentPool             bool
+		AllowedButUnassignedWorkspaces []poolWorkspace
+		AssignedWorkspaces             []poolWorkspace
+		AvailableWorkspaces            []poolWorkspace
+		Tokens                         []*agentToken
+		Agents                         []*Agent
 	}{
-		OrganizationPage:    organization.NewPage(r, pool.Name, pool.Organization),
-		Pool:                pool,
-		CanDeleteAgentPool:  subject.CanAccessOrganization(rbac.DeleteAgentPoolAction, pool.Organization),
-		AllowedWorkspaces:   allowedWorkspaces,
-		AssignedWorkspaces:  assignedWorkspaces,
-		AvailableWorkspaces: availableWorkspaces,
-		Tokens:              tokens,
-		Agents:              agents,
+		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
+		Pool:                           pool,
+		CanDeleteAgentPool:             subject.CanAccessOrganization(rbac.DeleteAgentPoolAction, pool.Organization),
+		AllowedButUnassignedWorkspaces: allowedButUnassignedWorkspaces,
+		AssignedWorkspaces:             assignedWorkspaces,
+		AvailableWorkspaces:            availableWorkspaces,
+		Tokens:                         tokens,
+		Agents:                         agents,
 	})
 }
 

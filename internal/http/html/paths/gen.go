@@ -247,6 +247,12 @@ var specs = []controllerSpec{
 			{
 				Name:           "agent",
 				controllerType: resourcePath,
+				actions: []action{
+					{
+						name:       "watch",
+						collection: true,
+					},
+				},
 			},
 			{
 				Name:           "agent_pool",

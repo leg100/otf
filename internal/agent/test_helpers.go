@@ -4,7 +4,7 @@ import "context"
 
 type fakeService struct {
 	pool                   *Pool
-	createAgentPoolOptions createAgentPoolOptions
+	createAgentPoolOptions CreateAgentPoolOptions
 	at                     *agentToken
 	token                  []byte
 	status                 AgentStatus
@@ -13,7 +13,7 @@ type fakeService struct {
 	Service
 }
 
-func (f *fakeService) createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error) {
+func (f *fakeService) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
 	f.createAgentPoolOptions = opts
 	return f.pool, nil
 }

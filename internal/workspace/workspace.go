@@ -207,7 +207,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
 	}
-	if err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
+	if _, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
 		return nil, err
 	}
 	if opts.AllowDestroyPlan != nil {
@@ -321,8 +321,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Description = *opts.Description
 		updated = true
 	}
-	if err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
+	if changed, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
 		return nil, err
+	} else if changed {
+		updated = true
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
@@ -473,52 +475,31 @@ func (ws *Workspace) setName(name string) error {
 	return nil
 }
 
-func (ws *Workspace) setAgentPoolID(agentPoolID *string, m *ExecutionMode) error {
-	if agentPoolID == nil {
-		// no agent pool ID being set, nothing more to be done.
-		return nil
-	}
-	if *m == AgentExecutionMode {
-		if agentPoolID == nil {
-			return ErrAgentExecutionModeWithoutPool
-		}
-	} else {
-		// mode is either remote or local; in either case no pool ID should be
-		// provided
-		if agentPoolID != nil {
-			return ErrNonAgentExecutionModeWithPool
-		}
-	}
-	ws.ExecutionMode = *m
-	ws.AgentPoolID = agentPoolID
-	return nil
-}
-
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *string) error {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *string) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done
-			return nil
+			return false, nil
 		} else {
 			// agent pool ID can be set without specifying execution mode as long as
 			// existing execution mode is AgentExecutionMode
 			if ws.ExecutionMode != AgentExecutionMode {
-				return ErrNonAgentExecutionModeWithPool
+				return false, ErrNonAgentExecutionModeWithPool
 			}
 		}
 	} else {
 		if *m == AgentExecutionMode {
 			if agentPoolID == nil {
-				return ErrAgentExecutionModeWithoutPool
+				return false, ErrAgentExecutionModeWithoutPool
 			}
 		} else {
 			// mode is either remote or local; in either case no pool ID should be
 			// provided
 			if agentPoolID != nil {
-				return ErrNonAgentExecutionModeWithPool
+				return false, ErrNonAgentExecutionModeWithPool
 			}
 		}
 	}
@@ -526,7 +507,7 @@ func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolI
 	if m != nil {
 		ws.ExecutionMode = *m
 	}
-	return nil
+	return true, nil
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {

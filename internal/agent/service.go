@@ -29,7 +29,7 @@ type (
 		NewAllocator(pubsub.Subscriber) *allocator
 		NewManager() *manager
 
-		createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error)
+		CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
 		updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
 		getAgentPool(ctx context.Context, poolID string) (*Pool, error)
 		listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error)
@@ -41,6 +41,7 @@ type (
 		listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
 		listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
 		listServerAgents(ctx context.Context) ([]*Agent, error)
+		watchAgentsByOrganization(ctx context.Context, organization string) (<-chan *Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 		deleteAgent(ctx context.Context, agentID string) error
@@ -102,6 +103,7 @@ func NewService(opts ServiceOptions) *service {
 	}
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
+		logger:           opts.Logger,
 		svc:              svc,
 		workspaceService: opts.WorkspaceService,
 	}
@@ -142,8 +144,8 @@ func NewService(opts ServiceOptions) *service {
 	opts.AfterForceCancelSignal(svc.relaySignal(forceCancelSignal))
 	// check whether a workspace is being created or updated and configured to
 	// use an agent pool, and if so, check that it is allowed to use the pool.
-	opts.BeforeCreateWorkspace(svc.allowPool)
-	opts.BeforeUpdateWorkspace(svc.allowPool)
+	opts.BeforeCreateWorkspace(svc.checkWorkspacePoolAccess)
+	opts.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate agent corresponding to the agent token ID
 	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
@@ -200,7 +202,7 @@ func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
 
 func (s *service) NewManager() *manager { return newManager(s) }
 
-func (s *service) createAgentPool(ctx context.Context, opts createAgentPoolOptions) (*Pool, error) {
+func (s *service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -333,10 +335,10 @@ func (s *service) listAllowedPools(ctx context.Context, workspaceID string) ([]*
 	return pools, nil
 }
 
-// allowPool grants a workspace access to a pool. If the pool is organization-scoped then
-// access is granted automatically; otherwise access must already have been
-// granted explicity. If access has already been granted then no action is taken.
-func (s *service) allowPool(ctx context.Context, ws *workspace.Workspace) error {
+// checkWorkspacePoolAccess checks if a workspace has been granted access to a pool. If the
+// pool is organization-scoped then the workspace automatically has access;
+// otherwise access must already have been granted explicity.
+func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Workspace) error {
 	if ws.AgentPoolID == nil {
 		// workspace is not using any pool
 		return nil
@@ -345,14 +347,10 @@ func (s *service) allowPool(ctx context.Context, ws *workspace.Workspace) error 
 	if err != nil {
 		return err
 	}
-	if slices.Contains(pool.AllowedWorkspaces, ws.ID) {
-		// is already allowed
-		return nil
-	}
 	if pool.OrganizationScoped {
-		if err := s.db.addAgentPoolAllowedWorkspace(ctx, pool.ID, ws.ID); err != nil {
-			return err
-		}
+		return nil
+	} else if slices.Contains(pool.AllowedWorkspaces, ws.ID) {
+		// is explicitly granted
 		return nil
 	}
 	return ErrWorkspaceNotAllowedToUsePool
@@ -423,6 +421,7 @@ func (s *service) updateAgentStatus(ctx context.Context, agentID string, status 
 	if err != nil {
 		return err
 	}
+	var isAgent bool
 	switch s := subject.(type) {
 	case *manager:
 		// ok
@@ -430,6 +429,7 @@ func (s *service) updateAgentStatus(ctx context.Context, agentID string, status 
 		if s.String() != agentID {
 			return internal.ErrAccessNotPermitted
 		}
+		isAgent = true
 	default:
 		return internal.ErrAccessNotPermitted
 	}
@@ -439,7 +439,7 @@ func (s *service) updateAgentStatus(ctx context.Context, agentID string, status 
 	var from AgentStatus
 	err = s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
 		from = agent.Status
-		return agent.setStatus(subject, status)
+		return agent.setStatus(status, isAgent)
 	})
 	if err != nil {
 		s.Error(err, "updating agent status", "agent_id", agentID, "status", status, "subject", subject)
@@ -458,11 +458,36 @@ func (s *service) listServerAgents(ctx context.Context) ([]*Agent, error) {
 }
 
 func (s *service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
+	_, err := s.organization.CanAccess(ctx, rbac.ListAgentsAction, organization)
+	if err != nil {
+		return nil, err
+	}
 	return s.db.listAgentsByOrganization(ctx, organization)
 }
 
 func (s *service) listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error) {
 	return s.db.listAgentsByPool(ctx, poolID)
+}
+
+func (s *service) watchAgentsByOrganization(ctx context.Context, organization string) (<-chan *Agent, error) {
+	_, err := s.organization.CanAccess(ctx, rbac.WatchAgentsAction, organization)
+	if err != nil {
+		return nil, err
+	}
+	sub, err := s.Subscribe(ctx, "watch-agents-")
+	if err != nil {
+		return nil, err
+	}
+	agents := make(chan *Agent)
+	go func() {
+		for event := range sub {
+			if agent, ok := event.Payload.(*Agent); ok {
+				agents <- agent
+			}
+		}
+		close(agents)
+	}()
+	return agents, nil
 }
 
 func (s *service) deleteAgent(ctx context.Context, agentID string) error {
@@ -600,109 +625,109 @@ func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobS
 
 // agent tokens
 
-func (a *service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (s *service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	at, token, subject, err := func() (*agentToken, []byte, internal.Subject, error) {
-		pool, err := a.db.getPool(ctx, poolID)
+		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, pool.Organization)
+		subject, err := s.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, pool.Organization)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		at, token, err := a.NewAgentToken(poolID, opts)
+		at, token, err := s.NewAgentToken(poolID, opts)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		if err := a.db.createAgentToken(ctx, at); err != nil {
-			a.Error(err, "creating agent token", "organization", poolID, "id", at.ID, "subject", subject)
+		if err := s.db.createAgentToken(ctx, at); err != nil {
+			s.Error(err, "creating agent token", "organization", poolID, "id", at.ID, "subject", subject)
 			return nil, nil, nil, err
 		}
 		return at, token, subject, nil
 	}()
 	if err != nil {
-		a.Error(err, "creating agent token", "agent_pool_id", poolID, "subject", subject)
+		s.Error(err, "creating agent token", "agent_pool_id", poolID, "subject", subject)
 		return nil, nil, err
 	}
-	a.V(0).Info("created agent token", "token", at, "subject", subject)
+	s.V(0).Info("created agent token", "token", at, "subject", subject)
 	return at, token, nil
 }
 
-func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+func (s *service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, internal.Subject, error) {
-		at, err := a.db.getAgentTokenByID(ctx, tokenID)
+		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
 			return nil, nil, err
 		}
-		pool, err := a.db.getPool(ctx, at.AgentPoolID)
+		pool, err := s.db.getPool(ctx, at.AgentPoolID)
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := a.organization.CanAccess(ctx, rbac.GetAgentTokenAction, pool.Organization)
+		subject, err := s.organization.CanAccess(ctx, rbac.GetAgentTokenAction, pool.Organization)
 		if err != nil {
 			return nil, nil, err
 		}
 		return at, subject, nil
 	}()
 	if err != nil {
-		a.Error(err, "retrieving agent token", "id", tokenID)
+		s.Error(err, "retrieving agent token", "id", tokenID)
 		return nil, err
 	}
-	a.V(9).Info("retrieved agent token", "token", at, "subject", subject)
+	s.V(9).Info("retrieved agent token", "token", at, "subject", subject)
 	return at, nil
 }
 
-func (a *service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
-	pool, err := a.db.getPool(ctx, poolID)
+func (s *service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
+	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		return nil, err
 	}
-	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, pool.Organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentTokensAction, pool.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, err := a.db.listAgentTokens(ctx, poolID)
+	tokens, err := s.db.listAgentTokens(ctx, poolID)
 	if err != nil {
-		a.Error(err, "listing agent tokens", "organization", poolID, "subject", subject)
+		s.Error(err, "listing agent tokens", "organization", poolID, "subject", subject)
 		return nil, err
 	}
-	a.V(9).Info("listed agent tokens", "organization", poolID, "subject", subject)
+	s.V(9).Info("listed agent tokens", "organization", poolID, "subject", subject)
 	return tokens, nil
 }
 
-func (a *service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+func (s *service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, internal.Subject, error) {
 		// retrieve agent token and pool in order to get organization for authorization
-		at, err := a.db.getAgentTokenByID(ctx, tokenID)
+		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
 			return nil, nil, err
 		}
-		pool, err := a.db.getPool(ctx, at.AgentPoolID)
+		pool, err := s.db.getPool(ctx, at.AgentPoolID)
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := a.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, pool.Organization)
+		subject, err := s.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, pool.Organization)
 		if err != nil {
 			return nil, nil, err
 		}
-		if err := a.db.deleteAgentToken(ctx, tokenID); err != nil {
+		if err := s.db.deleteAgentToken(ctx, tokenID); err != nil {
 			return nil, subject, err
 		}
 		return at, subject, nil
 	}()
 	if err != nil {
-		a.Error(err, "deleting agent token", "id", tokenID)
+		s.Error(err, "deleting agent token", "id", tokenID)
 		return nil, err
 	}
 
-	a.V(0).Info("deleted agent token", "token", at, "subject", subject)
+	s.V(0).Info("deleted agent token", "token", at, "subject", subject)
 	return at, nil
 }
 
 // job tokens
 
-func (a *service) createJobToken(ctx context.Context, spec JobSpec) ([]byte, error) {
+func (s *service) createJobToken(ctx context.Context, spec JobSpec) ([]byte, error) {
 	token, subject, err := func() ([]byte, internal.Subject, error) {
 		// only an agent may call this endpoint, and it must have been allocated
 		// the job matching the spec
@@ -710,7 +735,7 @@ func (a *service) createJobToken(ctx context.Context, spec JobSpec) ([]byte, err
 		if err != nil {
 			return nil, nil, err
 		}
-		job, err := a.getJob(ctx, spec)
+		job, err := s.getJob(ctx, spec)
 		if err != nil {
 			return nil, subject, err
 		}
@@ -722,17 +747,17 @@ func (a *service) createJobToken(ctx context.Context, spec JobSpec) ([]byte, err
 		default:
 			return nil, subject, internal.ErrAccessNotPermitted
 		}
-		token, err := a.tokenFactory.createJobToken(spec)
+		token, err := s.tokenFactory.createJobToken(spec)
 		if err != nil {
 			return nil, subject, err
 		}
 		return token, subject, nil
 	}()
 	if err != nil {
-		a.Error(err, "creating job token", "job", spec, "subject", subject)
+		s.Error(err, "creating job token", "job", spec, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("creating job token", "job", spec, "subject", subject)
+	s.V(0).Info("creating job token", "job", spec, "subject", subject)
 	return token, nil
 
 }

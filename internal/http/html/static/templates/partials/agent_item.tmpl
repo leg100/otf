@@ -1,0 +1,28 @@
+{{ define "agent_item" }}
+  {{ $statusColors := dict
+    "idle" "bg-green-100"
+    "busy" "bg-blue-200"
+    "unknown" "bg-gray-100"
+    "errored" "bg-red-100"
+    "exited" "bg-purple-100"
+  }}
+  <div class="widget">
+    <div>
+      <div>
+        {{ with .Name }}
+          <span>{{ . }}</span>
+        {{ end }}
+        <span class="{{ get $statusColors (toString .Status) }}">{{ .Status }}</span>
+      </div>
+      <span title="{{ .LastPingAt }}">last seen {{ durationRound .LastPingAt }} ago</span>
+    </div>
+    <div>
+      {{ template "identifier" . }}
+      <div>
+        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .Version }}</span>
+        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ if .IsServer }}otfd{{ else }}otf-agent{{ end }}</span>
+        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .IPAddress }}</span>
+      </div>
+    </div>
+  </div>
+{{ end }}

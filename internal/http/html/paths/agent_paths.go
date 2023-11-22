@@ -31,3 +31,7 @@ func UpdateAgent(agent string) string {
 func DeleteAgent(agent string) string {
 	return fmt.Sprintf("/app/agents/%s/delete", agent)
 }
+
+func WatchAgent(organization string) string {
+	return fmt.Sprintf("/app/organizations/%s/agents/watch", organization)
+}
