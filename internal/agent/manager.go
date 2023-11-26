@@ -44,19 +44,29 @@ func (m *manager) String() string { return "agent-manager" }
 func (m *manager) Start(ctx context.Context) error {
 	ctx = internal.AddSubjectToContext(ctx, m)
 
+	updateAll := func() error {
+		agents, err := m.listAgents(ctx)
+		if err != nil {
+			return err
+		}
+		for _, agent := range agents {
+			if err := m.update(ctx, agent); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	// run at startup and then every x seconds
+	if err := updateAll(); err != nil {
+		return err
+	}
 	ticker := time.NewTicker(m.interval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			agents, err := m.listAgents(ctx)
-			if err != nil {
+			if err := updateAll(); err != nil {
 				return err
-			}
-			for _, agent := range agents {
-				if err := m.update(ctx, agent); err != nil {
-					return err
-				}
 			}
 		case <-ctx.Done():
 			return nil
@@ -83,8 +93,7 @@ func (m *manager) update(ctx context.Context, agent *Agent) error {
 		// purge agent from database once a further 1 hour has elapsed for
 		// agents in a terminal state.
 		if time.Since(agent.LastStatusAt) > time.Hour {
-			// remove agent from db
-			return m.deleteAgent(ctx, agent.ID)
+			return m.unregisterAgent(ctx, agent.ID)
 		}
 	}
 	return nil

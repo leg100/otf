@@ -12,7 +12,10 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-var ErrInvalidJobStateTransition = errors.New("invalid job state transition")
+var (
+	ErrInvalidJobStateTransition = errors.New("invalid job state transition")
+	ErrMalformedJobSpecString    = errors.New("malformed stringified job spec")
+)
 
 type JobStatus string
 
@@ -40,16 +43,18 @@ type JobSpec struct {
 	Phase internal.PhaseType `json:"phase"`
 }
 
-func NewJobSpecFromString(spec string) (JobSpec, error) {
-	parts := strings.Split(spec, "-")
-	if len(parts) != 2 {
-		return JobSpec{}, fmt.Errorf("malformed stringified job spec: %s", spec)
+// jobSpecFromString constructs a job spec from a string. The string is
+// expected to be in the format run-<id>/<phase>
+func jobSpecFromString(spec string) (JobSpec, error) {
+	parts := strings.Split(spec, "/")
+	if len(parts) != 2 || !strings.HasPrefix(parts[0], "run-") {
+		return JobSpec{}, ErrMalformedJobSpecString
 	}
 	return JobSpec{RunID: parts[0], Phase: internal.PhaseType(parts[1])}, nil
 }
 
 func (j JobSpec) String() string {
-	return fmt.Sprintf("%s-%s", j.RunID, j.Phase)
+	return fmt.Sprintf("%s/%s", j.RunID, j.Phase)
 }
 
 type Job struct {
@@ -114,13 +119,32 @@ func (j *Job) CanAccessOrganization(action rbac.Action, name string) bool {
 }
 
 func (j *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
-	// job token is allowed the retrieve the state of the workspace only if:
-	// (a) workspace is in the same organization as job token
-	// (b) workspace has enabled global remote state (permitting organization-wide
-	// state sharing).
+	if policy.WorkspaceID != j.WorkspaceID {
+		// job is allowed the retrieve the state of *another* workspace only if:
+		// (a) workspace is in the same organization as job, or
+		// (b) workspace has enabled global remote state (permitting organization-wide
+		// state sharing).
+		switch action {
+		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
+			if j.Organization == policy.Organization && policy.GlobalRemoteState {
+				return true
+			}
+		}
+		return false
+	}
+	// allow actions on same workspace as job depending on run phase
 	switch action {
-	case rbac.GetWorkspaceAction, rbac.GetStateVersionAction, rbac.DownloadStateAction:
-		if j.Organization == policy.Organization && policy.GlobalRemoteState {
+	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction:
+		// any phase
+		return true
+	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction:
+		// plan phase
+		if j.Phase == internal.PlanPhase {
+			return true
+		}
+	case rbac.GetLockFileAction, rbac.GetPlanFileAction, rbac.CreateStateVersionAction:
+		// apply phase
+		if j.Phase == internal.ApplyPhase {
 			return true
 		}
 	}

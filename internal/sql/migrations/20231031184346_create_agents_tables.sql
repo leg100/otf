@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     run_id TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     phase TEXT REFERENCES job_phases ON UPDATE CASCADE NOT NULL,
     status TEXT REFERENCES job_statuses ON UPDATE CASCADE NOT NULL,
-    agent_id TEXT REFERENCES agents ON UPDATE CASCADE,
+    agent_id TEXT REFERENCES agents ON UPDATE CASCADE ON DELETE CASCADE,
     signal TEXT REFERENCES signals ON UPDATE CASCADE
 );
 
@@ -162,7 +162,7 @@ BEGIN
     notification = json_build_object(
                       'table',TG_TABLE_NAME,
                       'action', TG_OP,
-                      'id', record.run_id || '-' || record.phase);
+                      'id', record.run_id || '/' || record.phase);
     PERFORM pg_notify('events', notification::text);
     RETURN NULL;
 END;

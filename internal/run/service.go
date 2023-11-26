@@ -79,6 +79,8 @@ type (
 		// AfterEnqueueApply allows caller to dispatch actions following the
 		// enqueuing of an apply.
 		AfterEnqueueApply(l hooks.Listener[*Run])
+		// AfterRunTerminated allows caller to dispatch actions following the termination of a run.
+		// AfterRunTerminated(l hooks.Listener[*Run])
 		// AfterCancelSignal allows caller to dispatch actions following the
 		// sending of a cancel signal.
 		AfterCancelSignal(l hooks.Listener[*Run])
@@ -113,6 +115,7 @@ type (
 		web                   *webHandlers
 		planHook              *hooks.Hook[*Run]
 		applyHook             *hooks.Hook[*Run]
+		cancelHook            *hooks.Hook[*Run]
 		cancelSignalHook      *hooks.Hook[*Run]
 		forceCancelSignalHook *hooks.Hook[*Run]
 
@@ -360,11 +363,6 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 
 // StartPhase starts a run phase.
 func (s *service) StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.StartPhaseAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Start()
 	})
@@ -375,28 +373,23 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		// error condition and not something that should be reported to the
 		// user.
 		if !errors.Is(err, internal.ErrPhaseAlreadyStarted) {
-			s.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
+			s.Error(err, "starting "+string(phase), "id", runID)
 		}
 		return nil, err
 	}
-	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
+	s.V(0).Info("started "+string(phase), "id", runID)
 	return run, nil
 }
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
 func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.FinishPhaseAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
 		resourceReport, outputReport, err = s.createReports(ctx, runID, phase)
 		if err != nil {
-			s.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
+			s.Error(err, "creating report", "id", runID, "phase", phase)
 			opts.Errored = true
 		}
 	}
@@ -404,10 +397,10 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		return run.Finish(phase, opts)
 	})
 	if err != nil {
-		s.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
+		s.Error(err, "finishing "+string(phase), "id", runID, "subject")
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject, "run_status", run.Status)
+	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "run_status", run.Status)
 	return run, nil
 }
 
@@ -515,7 +508,9 @@ func (s *service) Cancel(ctx context.Context, runID string, immediate bool) (*Ru
 		if err != nil {
 			return err
 		}
-		if signal {
+		if run.Done() {
+			//return s.cancelHook.Dispatch(ctx, run, nil)
+		} else if signal {
 			return s.cancelSignalHook.Dispatch(ctx, run, nil)
 		}
 		return nil

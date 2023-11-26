@@ -80,8 +80,6 @@ const (
 	DeleteRunAction
 	CancelRunAction
 	EnqueuePlanAction
-	StartPhaseAction
-	FinishPhaseAction
 	PutChunkAction
 	TailLogsAction
 

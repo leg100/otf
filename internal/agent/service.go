@@ -44,15 +44,15 @@ type (
 		watchAgentsByOrganization(ctx context.Context, organization string) (<-chan *Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
-		deleteAgent(ctx context.Context, agentID string) error
+		unregisterAgent(ctx context.Context, agentID string) error
 
 		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
 		ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error)
 		DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
 
-		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
-		updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error
+		startJob(ctx context.Context, spec JobSpec) ([]byte, error)
+		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 	}
 
 	service struct {
@@ -87,6 +87,7 @@ func NewService(opts ServiceOptions) *service {
 	svc := &service{
 		Logger:       opts.Logger,
 		Subscriber:   opts.Broker,
+		RunService:   opts.RunService,
 		db:           &db{DB: opts.DB},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		tokenFactory: &tokenFactory{
@@ -126,7 +127,7 @@ func NewService(opts ServiceOptions) *service {
 	}))
 	// permit broker to transform database trigger events into job events
 	opts.Broker.Register("jobs", pubsub.GetterFunc(func(ctx context.Context, jobspecString string, action pubsub.DBAction) (any, error) {
-		spec, err := NewJobSpecFromString(jobspecString)
+		spec, err := jobSpecFromString(jobspecString)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +179,7 @@ func NewService(opts ServiceOptions) *service {
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
 	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString string) (internal.Subject, error) {
-		spec, err := NewJobSpecFromString(jobspecString)
+		spec, err := jobSpecFromString(jobspecString)
 		if err != nil {
 			return nil, err
 		}
@@ -380,20 +381,6 @@ func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) 
 			if err := s.db.createAgent(ctx, agent); err != nil {
 				return err
 			}
-			// an agent when registering can optionally send a list of current
-			// jobs, which are jobs that were created by a previous agent before
-			// it terminated.
-			//
-			// This has no purpose currently because jobs are part of the agent
-			// process and when an agent terminates it terminates the jobs too.
-			// But the project intends to introduce further methods of creating
-			// jobs, via docker and kubernetes etc, and this behaviour will come
-			// in useful then.
-			for _, spec := range opts.CurrentJobs {
-				return s.db.updateJob(ctx, spec, func(job *Job) error {
-					return job.reallocate(agent.ID)
-				})
-			}
 			return nil
 		})
 		if err != nil {
@@ -490,8 +477,13 @@ func (s *service) watchAgentsByOrganization(ctx context.Context, organization st
 	return agents, nil
 }
 
-func (s *service) deleteAgent(ctx context.Context, agentID string) error {
-	return s.db.deleteAgent(ctx, agentID)
+func (s *service) unregisterAgent(ctx context.Context, agentID string) error {
+	if err := s.db.deleteAgent(ctx, agentID); err != nil {
+		s.Error(err, "unregistering agent", "agent_id", agentID)
+		return err
+	}
+	s.V(2).Info("unregistered agent", "agent_id", agentID)
+	return nil
 }
 
 func (s *service) createJob(ctx context.Context, run *run.Run) error {
@@ -574,53 +566,112 @@ func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) error {
-	return s.db.updateJob(ctx, spec, func(job *Job) error {
+func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+	var allocated *Job
+	err := s.db.updateJob(ctx, spec, func(job *Job) error {
+		allocated = job
 		return job.allocate(agentID)
 	})
+	if err != nil {
+		s.Error(err, "allocating job", "spec", spec, "agent_id", agentID)
+		return nil, err
+	}
+	s.V(0).Info("allocated job", "job", allocated, "agent_id", agentID)
+	return allocated, nil
 }
 
-func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) error {
-	return s.db.updateJob(ctx, spec, func(job *Job) error {
+func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+	var (
+		from        string // ID of agent that job was allocated to
+		reallocated *Job
+	)
+	err := s.db.updateJob(ctx, spec, func(job *Job) error {
+		from = *job.AgentID
+		reallocated = job
 		return job.reallocate(agentID)
 	})
+	if err != nil {
+		s.Error(err, "re-allocating job", "spec", spec, "from", from, "to", agentID)
+		return nil, err
+	}
+	s.V(0).Info("re-allocated job", "spec", spec, "from", from, "to", agentID)
+	return reallocated, nil
 }
 
-func (s *service) updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error {
-	// only a job may call this endpoint and it must match the spec
-	subject, err := internal.SubjectFromContext(ctx)
+// startJob starts a job and returns a job token with permissions to
+// carry out the job. Only an agent that has been allocated the job can
+// call this method.
+func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
+	subject, err := registeredAgentFromContext(ctx)
 	if err != nil {
-		return err
+		return nil, internal.ErrAccessNotPermitted
 	}
-	switch s := subject.(type) {
-	case *Job:
-		if s.JobSpec != spec {
+
+	var token []byte
+	err = s.db.updateJob(ctx, spec, func(job *Job) error {
+		if job.AgentID == nil || *job.AgentID != subject.String() {
 			return internal.ErrAccessNotPermitted
 		}
-	default:
+		if err := job.updateStatus(JobRunning); err != nil {
+			return err
+		}
+		// start corresponding run phase too
+		if _, err = s.RunService.StartPhase(ctx, spec.RunID, spec.Phase, run.PhaseStartOptions{}); err != nil {
+			return err
+		}
+		token, err = s.tokenFactory.createJobToken(spec)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		s.Error(err, "starting job", "spec", spec, "agent", subject)
+		return nil, err
+	}
+	s.V(0).Info("started job", "spec", spec, "agent", subject)
+	return token, nil
+}
+
+type finishJobOptions struct {
+	Status JobStatus `json:"status"`
+	Error  string    `json:"error,omitempty"`
+}
+
+// finishJob finishes a job. Only an agent that has been allocated the job can
+// call this method.
+func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
+	subject, err := registeredAgentFromContext(ctx)
+	if err != nil {
 		return internal.ErrAccessNotPermitted
 	}
 
-	return s.db.updateJob(ctx, spec, func(job *Job) error {
-		if err := job.updateStatus(status); err != nil {
-			return err
+	err = s.db.updateJob(ctx, spec, func(job *Job) error {
+		if job.AgentID == nil || *job.AgentID != subject.String() {
+			return internal.ErrAccessNotPermitted
 		}
 		// update corresponding run phase too
 		var err error
-		switch status {
-		case JobRunning:
-			_, err = s.RunService.StartPhase(ctx, spec.RunID, spec.Phase, run.PhaseStartOptions{})
+		switch opts.Status {
 		case JobFinished, JobErrored:
 			_, err = s.RunService.FinishPhase(ctx, spec.RunID, spec.Phase, run.PhaseFinishOptions{
-				Errored: status == JobErrored,
+				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			// set immediate=true to skip sending a signal and looping back
-			// round again
 			_, err = s.RunService.Cancel(ctx, spec.RunID, true)
 		}
 		return err
 	})
+	if err != nil {
+		s.Error(err, "finishing job", "spec", spec, "agent", subject)
+		return err
+	}
+	if opts.Error != "" {
+		s.V(0).Info("finished job with error", "spec", spec, "agent", subject, "status", opts.Status, "job_error", opts.Error)
+	} else {
+		s.V(0).Info("finished job", "spec", spec, "agent", subject, "status", opts.Status)
+	}
+	return nil
 }
 
 // agent tokens
@@ -723,41 +774,4 @@ func (s *service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentT
 
 	s.V(0).Info("deleted agent token", "token", at, "subject", subject)
 	return at, nil
-}
-
-// job tokens
-
-func (s *service) createJobToken(ctx context.Context, spec JobSpec) ([]byte, error) {
-	token, subject, err := func() ([]byte, internal.Subject, error) {
-		// only an agent may call this endpoint, and it must have been allocated
-		// the job matching the spec
-		subject, err := internal.SubjectFromContext(ctx)
-		if err != nil {
-			return nil, nil, err
-		}
-		job, err := s.getJob(ctx, spec)
-		if err != nil {
-			return nil, subject, err
-		}
-		switch s := subject.(type) {
-		case *serverAgent, *poolAgent:
-			if s.String() != *job.AgentID {
-				return nil, subject, internal.ErrAccessNotPermitted
-			}
-		default:
-			return nil, subject, internal.ErrAccessNotPermitted
-		}
-		token, err := s.tokenFactory.createJobToken(spec)
-		if err != nil {
-			return nil, subject, err
-		}
-		return token, subject, nil
-	}()
-	if err != nil {
-		s.Error(err, "creating job token", "job", spec, "subject", subject)
-		return nil, err
-	}
-	s.V(0).Info("creating job token", "job", spec, "subject", subject)
-	return token, nil
-
 }

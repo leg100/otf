@@ -367,8 +367,10 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 		}
 		_, err = q.UpdateJob(ctx, pggen.UpdateJobParams{
 			Status:  sql.String(string(job.Status)),
-			AgentID: sql.StringPtr(job.AgentID),
 			Signal:  sql.StringPtr((*string)(job.signal)),
+			AgentID: sql.StringPtr(job.AgentID),
+			RunID:   result.RunID,
+			Phase:   result.Phase,
 		})
 		if err != nil {
 			return err

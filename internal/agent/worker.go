@@ -41,7 +41,6 @@ var ascii = regexp.MustCompile("[[:^ascii:]]")
 type worker struct {
 	client
 	*run.Run
-	releases.Downloader
 	logr.Logger
 
 	config        Config
@@ -55,6 +54,8 @@ type worker struct {
 	variables     []*variable.Variable // terraform variables
 	proc          *os.Process          // current or last process
 	terminator    *terminator
+	downloader    releases.Downloader
+	token         []byte
 
 	*workdir
 }
@@ -66,24 +67,26 @@ func (w *worker) doAndHandleError(ctx context.Context) {
 	// update
 	err := w.do(ctx)
 
-	var status JobStatus
+	var opts finishJobOptions
 	switch {
 	case w.canceled:
-		status = JobCanceled
+		opts.Status = JobCanceled
 		if err != nil {
 			w.Error(err, "job canceled")
 		} else {
 			w.V(0).Info("job canceled")
 		}
 	case err != nil:
-		status = JobErrored
+		opts.Status = JobErrored
+		opts.Error = err.Error()
 		w.Error(err, "finished job with error")
 	default:
-		status = JobFinished
+		opts.Status = JobFinished
 		w.V(0).Info("finished job successfully")
 	}
-	if err := w.updateJobStatus(ctx, w.job.JobSpec, status); err != nil {
-		w.Error(err, "sending job status", "status", status)
+
+	if err := w.finishJob(ctx, w.job.JobSpec, opts); err != nil {
+		w.Error(err, "sending job status", "status", opts.Status)
 	}
 }
 
@@ -96,18 +99,12 @@ func (w *worker) do(ctx context.Context) error {
 	w.terminator.checkIn(w.job.JobSpec, w)
 	defer w.terminator.checkOut(w.job.JobSpec)
 
-	w.V(1).Info("creating job token")
-	token, err := w.createJobToken(ctx, w.job.JobSpec)
-	if err != nil {
-		return fmt.Errorf("creating job token: %w", err)
-	}
-
-	// if this is a non-server agent using RPC to communicate with the server
+	// if this is a pool agent using RPC to communicate with the server
 	// then use a new client for this job, configured to authenticate with the
 	// job token and to retry requests upon encountering transient errors.
 	if _, ok := w.client.(*rpcClient); ok {
 		client, err := NewRPCClient(otfapi.Config{
-			Token:         string(token),
+			Token:         string(w.token),
 			RetryRequests: true,
 			RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {
 				// ignore first un-retried requests
@@ -127,27 +124,24 @@ func (w *worker) do(ctx context.Context) error {
 	}
 
 	// make token available to terraform CLI
-	w.envs = append(w.envs, internal.CredentialEnv(w.Hostname(), token))
-
-	if err := w.updateJobStatus(ctx, w.job.JobSpec, JobRunning); err != nil {
-		return fmt.Errorf("sending job status update: %w", err)
-	}
-	w.V(0).Info("started job")
+	w.envs = append(w.envs, internal.CredentialEnv(w.Hostname(), w.token))
 
 	run, err := w.GetRun(ctx, w.job.RunID)
 	if err != nil {
 		return err
 	}
+	w.Run = run
+
 	// Get workspace in order to get working directory path
 	//
 	// TODO: add working directory to run.Run
-	ws, err := w.GetWorkspace(ctx, w.job.RunID)
+	ws, err := w.GetWorkspace(ctx, w.job.WorkspaceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retreiving workspace: %w", err)
 	}
 	wd, err := newWorkdir(ws.WorkingDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("constructing working directory: %w", err)
 	}
 	defer wd.close()
 	w.workdir = wd
@@ -348,7 +342,7 @@ func (w *worker) addSandboxWrapper(args []string) []string {
 
 func (b *worker) downloadTerraform(ctx context.Context) error {
 	var err error
-	b.terraformPath, err = b.Download(ctx, b.TerraformVersion, b.out)
+	b.terraformPath, err = b.downloader.Download(ctx, b.TerraformVersion, b.out)
 	return err
 }
 

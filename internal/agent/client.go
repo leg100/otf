@@ -45,8 +45,8 @@ type (
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
-		createJobToken(ctx context.Context, spec JobSpec) ([]byte, error)
-		updateJobStatus(ctx context.Context, spec JobSpec, status JobStatus) error
+		startJob(ctx context.Context, spec JobSpec) ([]byte, error)
+		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 	}
 
 	// InProcClient is a client for in-process communication with the server.
@@ -166,9 +166,9 @@ func (c *rpcClient) CreateAgentToken(ctx context.Context, poolID string, opts Cr
 	return nil, buf.Bytes(), nil
 }
 
-// job tokens
+// jobs
 
-func (c *rpcClient) createJobToken(ctx context.Context, spec JobSpec) ([]byte, error) {
+func (c *rpcClient) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 	req, err := c.NewRequest("POST", "tokens/job", &spec)
 	if err != nil {
 		return nil, err

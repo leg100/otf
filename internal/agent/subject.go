@@ -37,6 +37,20 @@ type (
 	}
 )
 
+// registeredAgentFromContext retrieves a registered agent as subject
+func registeredAgentFromContext(ctx context.Context) (internal.Subject, error) {
+	subj, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	switch subj.(type) {
+	case *poolAgent, *serverAgent:
+		return subj, nil
+	default:
+		return nil, fmt.Errorf("subject found in context but it is not a registered agent")
+	}
+}
+
 // poolAgentFromContext retrieves an pool agent subject from a context
 func poolAgentFromContext(ctx context.Context) (*poolAgent, error) {
 	subj, err := internal.SubjectFromContext(ctx)

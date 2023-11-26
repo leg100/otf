@@ -17,8 +17,7 @@ type api struct {
 }
 
 type updateAgentStatusParams struct {
-	Status AgentStatus       `json:"status"`
-	Jobs   []updateJobParams `json:"jobs,omitempty"`
+	Status AgentStatus `json:"status"`
 }
 
 type updateJobParams struct {
@@ -33,12 +32,10 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
 	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
 	r.HandleFunc("/agents/status", a.updateStatus).Methods("POST")
+	r.HandleFunc("/agents/start", a.startJob).Methods("POST")
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
-
-	// job tokens
-	r.HandleFunc("/tokens/job", a.createJobToken).Methods("POST")
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
@@ -77,8 +74,7 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, jobs, http.StatusOK)
 }
 
-// updateStatus receives a status update from an agent, including both the
-// status of the agent itself and the status of its jobs.
+// updateStatus receives a status update from an agent
 func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 	// retrieve subject, which contains ID of calling agent
 	subject, err := poolAgentFromContext(r.Context())
@@ -96,13 +92,6 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 	if err := a.service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	for _, job := range params.Jobs {
-		err = a.service.updateJobStatus(r.Context(), job.JobSpec, job.Status)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 	}
 }
 
@@ -125,13 +114,13 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	w.Write(token)
 }
 
-func (a *api) createJobToken(w http.ResponseWriter, r *http.Request) {
+func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
 	var spec JobSpec
 	if err := json.NewDecoder(r.Body).Decode(&spec); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.service.createJobToken(r.Context(), spec)
+	token, err := a.service.startJob(r.Context(), spec)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

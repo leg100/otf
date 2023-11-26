@@ -35,7 +35,7 @@ func (f *fakeService) updateAgentStatus(ctx context.Context, agentID string, sta
 	return nil
 }
 
-func (f *fakeService) deleteAgent(ctx context.Context, agentID string) error {
+func (f *fakeService) unregisterAgent(ctx context.Context, agentID string) error {
 	f.deletedAgentID = agentID
 	return nil
 }

@@ -134,18 +134,18 @@
               <div class="form-checkbox">
                 <input type="radio" id="tags-regex-default" name="tags_regex" value="{{ $.VCSTagRegexDefault }}" {{ checked (or (eq .TagsRegex $.VCSTagRegexDefault) (eq .TagsRegex "")) }}/>
                 <label for="tags-regex-default">Default</label>
-                <span>e.g. <span class="bg-gray-200">12.33.4456</span></span>
+                <span class="description">e.g. <span class="bg-gray-200">12.33.4456</span></span>
               </div>
               <div class="form-checkbox">
                 <input type="radio" id="tags-regex-prefix" name="tags_regex" value="{{ $.VCSTagRegexPrefix }}" {{ checked (eq .TagsRegex $.VCSTagRegexPrefix) }}/>
                 <label for="tags-regex-prefix">Version contains a prefix</label>
-                <span>e.g. <span class="bg-gray-200">v12.33.4456</span></span>
+                <span class="description">e.g. <span class="bg-gray-200">v12.33.4456</span></span>
               </div>
               <div class="form-checkbox">
                 <input type="radio" id="tags-regex-suffix" name="tags_regex" value="{{ $.VCSTagRegexSuffix }}" {{ checked (eq .TagsRegex $.VCSTagRegexSuffix) }}/>
 
                 <label for="tags-regex-suffix">Version contains a suffix</label>
-                <span>e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
+                <span class="description">e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
               </div>
               <div class="form-checkbox">
                 {{ $isCustom := (and (ne .TagsRegex "") (ne .TagsRegex $.VCSTagRegexDefault) (ne .TagsRegex $.VCSTagRegexPrefix) (ne .TagsRegex $.VCSTagRegexSuffix)) }}

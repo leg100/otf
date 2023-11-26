@@ -25,10 +25,10 @@
       <div class="mt-4 form-checkbox">
         <input class="peer" type="radio" id="workspaces-specific" name="organization_scoped" value="false" {{ checked (not .Pool.OrganizationScoped) }}>
         <label for="workspaces-specific">Grant access to specific workspaces</label>
-        <script src="{{ addHash "/static/js/agent_pool_workspaces.js" }}"></script>
+        <script src="{{ addHash "/static/js/dropdown.js" }}"></script>
         <div
           class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
-          x-data="agent_pool_workspaces({{ toJson .AllowedButUnassignedWorkspaces }}, {{ toJson .AvailableWorkspaces }})"
+          x-data="dropdown({{ toJson .AllowedButUnassignedWorkspaces }}, {{ toJson .AvailableWorkspaces }})"
           x-ref="workspace_select"
           @keydown.escape.prevent.stop="close($refs.workspace_input)"
           @focusin.window="! $refs.workspace_select.contains($event.target) && close()"
@@ -36,7 +36,7 @@
           <div
             @click.outside="close()"
             >
-            <input type="hidden" id="workspaces" name="allowed_workspaces" :value="JSON.stringify(allowed)">
+            <input type="hidden" id="workspaces" name="allowed_workspaces" :value="JSON.stringify(existing)">
             <input
               class="text-input grow w-80"
               type="text")
@@ -53,7 +53,7 @@
               x-cloak
               class="absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black">
               <template x-for="item in filterAvailable" :key="item.id">
-                <button @click="addWorkspace(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.name"></button>
+                <button @click="addItem(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.name"></button>
               </template>
             </div>
           </div>
@@ -61,9 +61,9 @@
             <div class="description">A workspace must be granted access before it can be assigned. To revoke access from an assigned workspace, first unassign the workspace and then revoke.</div>
             <h4 class="font-bold text-sm">Granted</h4>
             <div class="flex flex-row gap-2">
-              <template x-for="item in allowed">
+              <template x-for="item in existing">
                 <div class="text-sm flex">
-                  <a class="bg-green-300 py-1 px-2" x-text="item.name" :href="'/app/workspaces/' + item.id + '/edit'"></a><button @click="deleteWorkspace(item)" type="button" class="text-white bg-black py-1 px-2 hover:bg-red-500" id="button-remove-tag-{{ . }}" class="delete cross">revoke</button>
+                  <a class="bg-green-300 py-1 px-2" x-text="item.name" :href="'/app/workspaces/' + item.id + '/edit'"></a><button @click="deleteItem(item)" type="button" class="text-white bg-black py-1 px-2 hover:bg-red-500" id="button-remove-tag-{{ . }}" class="delete cross">revoke</button>
                 </div>
               </template>
             </div>

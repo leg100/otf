@@ -1,5 +1,5 @@
 document.addEventListener('alpine:init', () => {
-  Alpine.data('agent_pool_workspaces', (allowed = [], available = []) => ({
+  Alpine.data('dropdown', (existing = [], available = []) => ({
     open: false,
     close(focusAfter) {
       if (! this.open) return
@@ -7,7 +7,7 @@ document.addEventListener('alpine:init', () => {
       focusAfter && focusAfter.focus()
     },
     search: '',
-    allowed: allowed,
+    existing: existing,
     available: available,
     get filterAvailable() {
       return this.available?.filter(
@@ -17,21 +17,21 @@ document.addEventListener('alpine:init', () => {
     get showPanel() {
       return (this.open && this.filterAvailable?.length > 0)
     },
-    addWorkspace(workspace) {
-      // move workspace from available to allowed
+    addItem(item) {
+      // move item from available to existing
       this.available = this.available.filter(
-        i => i !== workspace
+        i => i !== item
       )
-      this.allowed.push(workspace)
+      this.existing.push(item)
       // hide dropdown box
       this.close()
     },
-    deleteWorkspace(workspace) {
-      // move workspace from allowed to available
-      this.allowed = this.allowed.filter(
-        i => i !== workspace
+    deleteItem(item) {
+      // move item from existing to available
+      this.existing = this.existing.filter(
+        i => i !== item
       )
-      this.available.push(workspace)
+      this.available.push(item)
     },
   }))
 })

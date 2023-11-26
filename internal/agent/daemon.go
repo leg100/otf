@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
@@ -56,8 +57,9 @@ type daemon struct {
 	client
 	*terminator
 
-	envs   []string // terraform environment variables
-	config Config
+	envs       []string // terraform environment variables
+	config     Config
+	downloader releases.Downloader
 }
 
 // New constructs an agent daemon.
@@ -82,13 +84,14 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		// disable logging for server agents otherwise the server logs are
 		// likely to contain duplicate logs from both the agent daemon and the
 		// agent service.
-		logger = logr.NewNoopLogger()
+		//logger = logr.NewNoopLogger()
 	}
 	d := &daemon{
 		Logger:     logger,
 		client:     app,
 		envs:       DefaultEnvs,
 		terminator: &terminator{mapping: make(map[JobSpec]cancelable)},
+		downloader: releases.NewDownloader(cfg.TerraformBinDir),
 		config:     cfg,
 	}
 	if cfg.PluginCache {
@@ -139,7 +142,7 @@ func (d *daemon) Start(ctx context.Context) error {
 
 	if d.config.server {
 		// server agents should identify themselves as a serverAgent
-		// (non-server agents identify themselves as a poolAgent, but the
+		// (pool agents identify themselves as a poolAgent, but the
 		// bearer token middleware takes care of that server-side).
 		ctx = internal.AddSubjectToContext(ctx, &serverAgent{Agent: agent})
 	}
@@ -206,13 +209,22 @@ func (d *daemon) Start(ctx context.Context) error {
 		for _, j := range jobs {
 			if j.Status == JobAllocated {
 				d.Info("received job", "job", j)
+				// start job and receive job token in return
+				token, err := d.startJob(ctx, j.JobSpec)
+				if err != nil {
+					return fmt.Errorf("starting job: %w", err)
+				}
+				d.V(0).Info("started job")
 				w := &worker{
 					Logger:     d.WithValues("job", j),
 					client:     d.client,
 					job:        j,
 					envs:       d.envs,
 					terminator: d.terminator,
+					downloader: d.downloader,
+					token:      token,
 				}
+				w.V(0).Info("started job")
 				g.Go(func() error {
 					w.doAndHandleError(ctx)
 					return nil
