@@ -131,7 +131,7 @@ func (j *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePo
 	}
 	// allow actions on same workspace as job depending on run phase
 	switch action {
-	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction:
+	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction, rbac.ForceCancelRunAction:
 		// any phase
 		return true
 	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction:
@@ -139,7 +139,7 @@ func (j *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePo
 		if j.Phase == internal.PlanPhase {
 			return true
 		}
-	case rbac.GetLockFileAction, rbac.GetPlanFileAction, rbac.CreateStateVersionAction:
+	case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
 		// apply phase
 		if j.Phase == internal.ApplyPhase {
 			return true
@@ -172,7 +172,7 @@ func (j *Job) reallocate(agentID string) error {
 
 // cancel job based on current state of its parent run - depending on its state,
 // the job is signaled and/or its state is updated too.
-func (j *Job) cancel(run *otfrun.Run) error {
+func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
 	var (
 		// whether job be signaled
 		signal *bool
@@ -200,12 +200,12 @@ func (j *Job) cancel(run *otfrun.Run) error {
 	}
 	if signal != nil {
 		if j.Status != JobRunning {
-			return errors.New("job can only be signaled when in the JobRunning state")
+			return nil, errors.New("job can only be signaled when in the JobRunning state")
 		}
 		j.signaled = signal
-		return nil
+		return signal, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (j *Job) updateStatus(to JobStatus) error {

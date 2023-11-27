@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -500,18 +501,36 @@ func (s *service) createJob(ctx context.Context, run *otfrun.Run) error {
 // the corresponding job is signaled and what type of signal, and/or whether the job
 // should be canceled.
 func (s *service) cancelJob(ctx context.Context, run *otfrun.Run) error {
-	spec := JobSpec{RunID: run.ID, Phase: run.Phase()}
-	return s.db.updateJob(ctx, spec, func(job *Job) error {
-		return job.cancel(run)
+	var (
+		spec   = JobSpec{RunID: run.ID, Phase: run.Phase()}
+		signal *bool
+	)
+	job, err := s.db.updateJob(ctx, spec, func(job *Job) (err error) {
+		signal, err = job.cancel(run)
+		return err
 	})
+	if err != nil {
+		if errors.Is(err, internal.ErrResourceNotFound) {
+			// ignore when there is no job corresponding to a run phase yet.
+			return nil
+		}
+		s.Error(err, "canceling job", "spec", spec)
+		return err
+	}
+	if signal != nil {
+		s.V(4).Info("sending cancelation signal to job", "force-cancel", *signal, "job", job)
+	} else {
+		s.V(4).Info("canceled job", "job", job)
+	}
+	return nil
 }
 
 // getAgentJobs returns jobs that either:
 // (a) have JobAllocated status
-// (b) have JobRunning status and a non-null signal
+// (b) have JobRunning status and a non-nil signal
 //
 // getAgentJobs is intended to be called by an agent in order to retrieve jobs to
-// run and jobs to cancel.
+// execute and jobs to cancel.
 func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) an agent with an ID matching agentID
@@ -528,7 +547,10 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		return nil, internal.ErrAccessNotPermitted
 	}
 
-	sub, err := s.Subscribe(ctx, "get-agent-jobs-"+agentID)
+	ctx, cancel := context.WithCancel(ctx)
+	// close subscription before returning
+	defer cancel()
+	sub, err := s.Subscribe(ctx, "get-agent-jobs-"+agentID+"-")
 	if err != nil {
 		return nil, err
 	}
@@ -570,9 +592,7 @@ func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
 }
 
 func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
-	var allocated *Job
-	err := s.db.updateJob(ctx, spec, func(job *Job) error {
-		allocated = job
+	allocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
 		return job.allocate(agentID)
 	})
 	if err != nil {
@@ -585,12 +605,11 @@ func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string)
 
 func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
 	var (
-		from        string // ID of agent that job was allocated to
+		from        string // ID of agent that job *was* allocated to
 		reallocated *Job
 	)
-	err := s.db.updateJob(ctx, spec, func(job *Job) error {
+	reallocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
 		from = *job.AgentID
-		reallocated = job
 		return job.reallocate(agentID)
 	})
 	if err != nil {
@@ -611,7 +630,7 @@ func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 	}
 
 	var token []byte
-	err = s.db.updateJob(ctx, spec, func(job *Job) error {
+	_, err = s.db.updateJob(ctx, spec, func(job *Job) error {
 		if job.AgentID == nil || *job.AgentID != subject.String() {
 			return internal.ErrAccessNotPermitted
 		}
@@ -641,18 +660,19 @@ type finishJobOptions struct {
 	Error  string    `json:"error,omitempty"`
 }
 
-// finishJob finishes a job. Only an agent that has been allocated the job can
-// call this method.
+// finishJob finishes a job. Only the job itself may call this endpoint.
 func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
-	subject, err := registeredAgentFromContext(ctx)
-	if err != nil {
-		return internal.ErrAccessNotPermitted
-	}
-
-	err = s.db.updateJob(ctx, spec, func(job *Job) error {
-		if job.AgentID == nil || *job.AgentID != subject.String() {
+	{
+		subject, err := internal.SubjectFromContext(ctx)
+		if err != nil {
 			return internal.ErrAccessNotPermitted
 		}
+		_, ok := subject.(*Job)
+		if !ok {
+			return internal.ErrAccessNotPermitted
+		}
+	}
+	job, err := s.db.updateJob(ctx, spec, func(job *Job) error {
 		// update corresponding run phase too
 		var err error
 		switch opts.Status {
@@ -663,16 +683,19 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		case JobCanceled:
 			err = s.RunService.Cancel(ctx, spec.RunID, true)
 		}
-		return err
+		if err != nil {
+			return err
+		}
+		return job.updateStatus(opts.Status)
 	})
 	if err != nil {
-		s.Error(err, "finishing job", "spec", spec, "agent", subject)
+		s.Error(err, "finishing job", "spec", spec)
 		return err
 	}
 	if opts.Error != "" {
-		s.V(0).Info("finished job with error", "spec", spec, "agent", subject, "status", opts.Status, "job_error", opts.Error)
+		s.V(0).Info("finished job with error", "job", job, "status", opts.Status, "job_error", opts.Error)
 	} else {
-		s.V(0).Info("finished job", "spec", spec, "agent", subject, "status", opts.Status)
+		s.V(0).Info("finished job", "job", job, "status", opts.Status)
 	}
 	return nil
 }

@@ -305,38 +305,31 @@ func (r *Run) InProgress() bool {
 }
 
 // Cancel run.
-func (r *Run) Cancel(immediate bool) error {
+func (r *Run) Cancel(immediate bool) (bool, error) {
 	if !r.Cancelable() {
-		return internal.ErrRunCancelNotAllowed
+		return false, internal.ErrRunCancelNotAllowed
 	}
-	now := internal.CurrentTimestamp(nil)
-	r.CanceledAt = &now
-	r.setCancelStatus(false, immediate)
-	return nil
-}
-
-// SendCancelationSignal indicates whether a cancelation signal should be sent.
-func (r *Run) SendCancelationSignal() bool {
-	return r.CanceledAt != nil && r.InProgress()
+	if r.CanceledAt == nil {
+		// only set CanceledAt time once
+		now := internal.CurrentTimestamp(nil)
+		r.CanceledAt = &now
+	} else if !immediate {
+		// cannot cancel run that has already been canceled without setting
+		// immediate argument
+		return false, internal.ErrRunCancelNotAllowed
+	}
+	signal := r.setCancelStatus(false, immediate)
+	return signal, nil
 }
 
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
-	// cannot cancel a run twice.
-	if r.Canceled() {
-		return false
-	}
 	switch r.Status {
 	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true
 	default:
 		return false
 	}
-}
-
-// Canceled determines whether run has been canceled.
-func (r *Run) Canceled() bool {
-	return r.CanceledAt != nil
 }
 
 // ForceCancel force cancels a run. A cool-off period of 10 seconds must have
@@ -372,7 +365,7 @@ func (r *Run) ForceCancelAvailableAt() *time.Time {
 	return &cooledOff
 }
 
-func (r *Run) setCancelStatus(force, immediate bool) {
+func (r *Run) setCancelStatus(force, immediate bool) bool {
 	switch r.Status {
 	case RunPending:
 		r.Plan.UpdateStatus(PhaseUnreachable)
@@ -389,7 +382,7 @@ func (r *Run) setCancelStatus(force, immediate bool) {
 		} else {
 			// don't set cancel statuses but send a cancelation signal to the
 			// corresponding job instead
-			return
+			return true
 		}
 	case RunPlanned:
 		r.Apply.UpdateStatus(PhaseUnreachable)
@@ -399,7 +392,7 @@ func (r *Run) setCancelStatus(force, immediate bool) {
 		} else {
 			// don't set cancel statuses but send a cancelation signal to the
 			// corresponding job instead
-			return
+			return true
 		}
 	}
 	if force {
@@ -407,6 +400,8 @@ func (r *Run) setCancelStatus(force, immediate bool) {
 	} else {
 		r.updateStatus(RunCanceled, nil)
 	}
+	// don't send a cancelation signal
+	return false
 }
 
 // StartedAt returns the time the run was created.
@@ -418,7 +413,7 @@ func (r *Run) StartedAt() time.Time {
 // discarded, etc.
 func (r *Run) Done() bool {
 	switch r.Status {
-	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
+	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunForceCanceled, RunErrored:
 		return true
 	default:
 		return false

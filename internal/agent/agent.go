@@ -80,7 +80,6 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 		Version:     opts.Version,
 		Concurrency: opts.Concurrency,
 		AgentPoolID: opts.AgentPoolID,
-		LastPingAt:  internal.CurrentTimestamp(nil),
 	}
 	if err := agent.setStatus(AgentIdle, true); err != nil {
 		return nil, err

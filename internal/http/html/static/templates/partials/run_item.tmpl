@@ -39,6 +39,7 @@
                 <a id="commit-sha-abbrev" href="{{ .CommitURL }}">{{ substr 0 7 .CommitSHA }}</a>
               </span>
             </div>
+
           {{ end }}
         </div>
         <div class="flex gap-4 items-center justify-between">
@@ -54,25 +55,21 @@
               <button class="btn">apply</button>
             </form>
           {{ end }}
-          {{ if not .Done }}
-            {{ if .Cancelable }}
-              <form action="{{ cancelRunPath .ID }}" method="POST">
-                <button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
-              </form>
-            {{ else if .ForceCancelable }}
-              <form action="{{ forceCancelRunPath .ID }}" method="POST">
-                <button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
-              </form>
-            {{ else if .Discardable }}
-              <form action="{{ discardRunPath .ID }}" method="POST">
-                <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
-              </form>
-            {{ else if .Canceled }}
-              <form action="{{ discardRunPath .ID }}" method="POST">
-                <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">canceled</button>
-              </form>
-            {{ end }}
-          {{ end }}
+					{{ if .Cancelable }}
+						<form action="{{ cancelRunPath .ID }}" method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+						</form>
+					{{ else if .ForceCancelable }}
+						<form action="{{ forceCancelRunPath .ID }}" method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
+						</form>
+					{{ else if .Discardable }}
+						<form action="{{ discardRunPath .ID }}" method="POST">
+							<button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+						</form>
+					{{ else if and .Canceled (not .Done)}}
+						cancelling...
+					{{ end }}
         </div>
       </div>
     </div>

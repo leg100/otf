@@ -68,7 +68,7 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		// agent is deemed a server agent if it is not using an RPC client.
 		cfg.server = true
 	}
-	var poolLogger logr.Logger
+	poolLogger := logger
 	if cfg.server {
 		// disable logging for server agents otherwise the server logs are
 		// likely to contain duplicate logs from both the agent daemon and the

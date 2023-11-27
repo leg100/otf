@@ -92,7 +92,7 @@ func (r jobresult) toJob() *Job {
 		job.AgentID = &r.AgentID.String
 	}
 	if r.Signaled.Status == pgtype.Present {
-		job.AgentID = &r.AgentID.String
+		job.signaled = &r.Signaled.Bool
 	}
 	return job
 }
@@ -358,13 +358,14 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	return jobs, nil
 }
 
-func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) error {
+func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) (*Job, error) {
+	var job *Job
 	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		result, err := q.FindJobForUpdate(ctx, sql.String(spec.RunID), sql.String(string(spec.Phase)))
 		if err != nil {
 			return err
 		}
-		job := jobresult(result).toJob()
+		job = jobresult(result).toJob()
 		if err := fn(job); err != nil {
 			return err
 		}
@@ -380,7 +381,10 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 		}
 		return nil
 	})
-	return sql.Error(err)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return job, nil
 }
 
 // agent tokens

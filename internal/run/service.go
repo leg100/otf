@@ -57,7 +57,7 @@ type (
 		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error)
 		// Cancel a run. A run can only be canceled when in certain states. If
 		// the run is in-progress, i.e. planning or applying, then a cancelation
-		// signal is sent to the agent to stop the job. If the run is other
+		// signal is sent to the agent to stop the job. If the run is in other
 		// states, e.g. pending or queued, then the run is canceled immediately,
 		// and its status is changed to canceled. Set the immediate argument
 		// to true to override the above default behaviour, and skip sending a
@@ -499,21 +499,25 @@ func (s *service) Cancel(ctx context.Context, runID string, immediate bool) erro
 	if err != nil {
 		return err
 	}
-
+	var signal bool
 	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		err = s.cancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-			if err := run.Cancel(immediate); err != nil {
+		return s.cancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
+			signal, err = run.Cancel(immediate)
+			if err != nil {
 				return nil, err
 			}
 			return run, nil
 		})
-		return err
 	})
 	if err != nil {
 		s.Error(err, "canceling run", "id", runID, "subject", subject)
 		return err
 	}
-	s.V(0).Info("canceled run", "id", runID, "subject", subject)
+	if signal {
+		s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
+	} else {
+		s.V(0).Info("canceled run", "id", runID, "subject", subject)
+	}
 	return nil
 }
 
@@ -524,13 +528,12 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 		return err
 	}
 	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		err = s.forceCancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
+		return s.forceCancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
 			if err := run.ForceCancel(); err != nil {
 				return nil, err
 			}
 			return run, nil
 		})
-		return err
 	})
 	if err != nil {
 		s.Error(err, "force canceling run", "id", runID, "subject", subject)

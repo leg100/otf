@@ -19,6 +19,10 @@ func (f *fakeService) CreateAgentPool(ctx context.Context, opts CreateAgentPoolO
 	return f.pool, nil
 }
 
+func (f *fakeService) listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
+	return []*Pool{f.pool}, nil
+}
+
 func (f *fakeService) CreateAgentToken(context.Context, string, CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	return f.at, f.token, nil
 }

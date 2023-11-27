@@ -52,13 +52,13 @@ func TestWebHandlers_createAgentToken(t *testing.T) {
 		Renderer: testutils.NewRenderer(t),
 		svc:      &fakeService{},
 	}
-	q := "/?organization_name=acme-org&description=lorem-ipsum-etc"
+	q := "/?pool_id=pool-123&description=lorem-ipsum-etc"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 
 	h.createAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentTokens("acme-org"))
+	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
 }
 
 func TestAgentToken_DeleteHandler(t *testing.T) {
@@ -70,14 +70,11 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 			},
 		},
 	}
-	q := "/?agent_token_id=at-123"
+	q := "/?token_id=at-123"
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 
 	h.deleteAgentToken(w, r)
 
-	if assert.Equal(t, 302, w.Code) {
-		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.AgentTokens("pool-123"), redirect.Path)
-	}
+	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
 }
