@@ -11,7 +11,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAllocator(t *testing.T) {
+func TestAllocator_seed(t *testing.T) {
+	pool1 := &Pool{ID: "pool-1"}
+	pool2 := &Pool{ID: "pool-2"}
+
+	agent1 := &Agent{ID: "agent-1", Status: AgentIdle, Concurrency: 5}
+	agent2 := &Agent{ID: "agent-2", Status: AgentIdle, Concurrency: 5}
+
+	job1 := &Job{
+		JobSpec: JobSpec{RunID: "run-1", Phase: internal.PlanPhase},
+		Status:  JobUnallocated,
+	}
+	job2 := &Job{
+		JobSpec: JobSpec{RunID: "run-2", Phase: internal.PlanPhase},
+		Status:  JobAllocated,
+		AgentID: internal.String("agent-2"),
+	}
+
+	a := &allocator{}
+	a.seed([]*Pool{pool1, pool2}, []*Agent{agent1, agent2}, []*Job{job1, job2})
+
+	if assert.Len(t, a.pools, 2) {
+		assert.Contains(t, a.pools, "pool-1")
+		assert.Contains(t, a.pools, "pool-2")
+	}
+	if assert.Len(t, a.agents, 2) {
+		assert.Contains(t, a.agents, "agent-1")
+		assert.Contains(t, a.agents, "agent-2")
+	}
+	if assert.Len(t, a.capacities, 2) {
+		if assert.Contains(t, a.capacities, "agent-1") {
+			assert.Equal(t, a.capacities["agent-1"], 5)
+		}
+		if assert.Contains(t, a.capacities, "agent-2") {
+			assert.Equal(t, a.capacities["agent-2"], 4)
+		}
+	}
+}
+
+func TestAllocator_allocate(t *testing.T) {
 	tests := []struct {
 		name string
 		// seed allocator with pools

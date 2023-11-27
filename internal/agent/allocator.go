@@ -108,6 +108,12 @@ func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
 	a.jobs = make(map[JobSpec]*Job, len(jobs))
 	for _, job := range jobs {
 		a.jobs[job.JobSpec] = job
+		// adjust capacities to take account of jobs already allocated or
+		// running on an agent.
+		switch job.Status {
+		case JobAllocated, JobRunning:
+			a.capacities[*job.AgentID]--
+		}
 	}
 }
 
