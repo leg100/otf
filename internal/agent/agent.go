@@ -110,7 +110,7 @@ func (a *Agent) setStatus(status AgentStatus, ping bool) error {
 	// exited (final state)
 	switch a.Status {
 	case AgentErrored, AgentExited:
-		return ErrInvalidAgentStateTransition
+		return internal.ErrConflict
 	}
 	a.Status = status
 	now := internal.CurrentTimestamp(nil)

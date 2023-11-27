@@ -54,14 +54,24 @@
               <button class="btn">apply</button>
             </form>
           {{ end }}
-          {{ if .Cancelable }}
-            <form action="{{ cancelRunPath .ID }}" method="POST">
-              <button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
-            </form>
-          {{ else if .Discardable }}
-            <form action="{{ discardRunPath .ID }}" method="POST">
-              <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
-            </form>
+          {{ if not .Done }}
+            {{ if .Cancelable }}
+              <form action="{{ cancelRunPath .ID }}" method="POST">
+                <button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+              </form>
+            {{ else if .ForceCancelable }}
+              <form action="{{ forceCancelRunPath .ID }}" method="POST">
+                <button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
+              </form>
+            {{ else if .Discardable }}
+              <form action="{{ discardRunPath .ID }}" method="POST">
+                <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+              </form>
+            {{ else if .Canceled }}
+              <form action="{{ discardRunPath .ID }}" method="POST">
+                <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">canceled</button>
+              </form>
+            {{ end }}
           {{ end }}
         </div>
       </div>

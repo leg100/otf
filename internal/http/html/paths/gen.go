@@ -228,6 +228,9 @@ var specs = []controllerSpec{
 								name: "cancel",
 							},
 							{
+								name: "force-cancel",
+							},
+							{
 								name: "retry",
 							},
 							{

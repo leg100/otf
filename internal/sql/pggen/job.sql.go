@@ -55,7 +55,7 @@ const findAllocatedAndSignaledJobsSQL = `SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -64,14 +64,14 @@ FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.agent_id = $1
-AND   j.status = 'allocated' OR (j.status = 'running' AND j.signal IS NOT NULL)
+AND   j.status = 'allocated' OR (j.status = 'running' AND j.signaled IS NOT NULL)
 ;`
 
 type FindAllocatedAndSignaledJobsRow struct {
 	RunID            pgtype.Text `json:"run_id"`
 	Phase            pgtype.Text `json:"phase"`
 	Status           pgtype.Text `json:"status"`
-	Signal           pgtype.Text `json:"signal"`
+	Signaled         pgtype.Bool `json:"signaled"`
 	AgentID          pgtype.Text `json:"agent_id"`
 	ExecutionMode    pgtype.Text `json:"execution_mode"`
 	WorkspaceID      pgtype.Text `json:"workspace_id"`
@@ -89,7 +89,7 @@ func (q *DBQuerier) FindAllocatedAndSignaledJobs(ctx context.Context, agentID pg
 	items := []FindAllocatedAndSignaledJobsRow{}
 	for rows.Next() {
 		var item FindAllocatedAndSignaledJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindAllocatedAndSignaledJobs row: %w", err)
 		}
 		items = append(items, item)
@@ -115,7 +115,7 @@ func (q *DBQuerier) FindAllocatedAndSignaledJobsScan(results pgx.BatchResults) (
 	items := []FindAllocatedAndSignaledJobsRow{}
 	for rows.Next() {
 		var item FindAllocatedAndSignaledJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindAllocatedAndSignaledJobsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -130,7 +130,7 @@ const findJobsSQL = `SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -144,7 +144,7 @@ type FindJobsRow struct {
 	RunID            pgtype.Text `json:"run_id"`
 	Phase            pgtype.Text `json:"phase"`
 	Status           pgtype.Text `json:"status"`
-	Signal           pgtype.Text `json:"signal"`
+	Signaled         pgtype.Bool `json:"signaled"`
 	AgentID          pgtype.Text `json:"agent_id"`
 	ExecutionMode    pgtype.Text `json:"execution_mode"`
 	WorkspaceID      pgtype.Text `json:"workspace_id"`
@@ -162,7 +162,7 @@ func (q *DBQuerier) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 	items := []FindJobsRow{}
 	for rows.Next() {
 		var item FindJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindJobs row: %w", err)
 		}
 		items = append(items, item)
@@ -188,7 +188,7 @@ func (q *DBQuerier) FindJobsScan(results pgx.BatchResults) ([]FindJobsRow, error
 	items := []FindJobsRow{}
 	for rows.Next() {
 		var item FindJobsRow
-		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindJobsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -203,7 +203,7 @@ const findJobSQL = `SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -219,7 +219,7 @@ type FindJobRow struct {
 	RunID            pgtype.Text `json:"run_id"`
 	Phase            pgtype.Text `json:"phase"`
 	Status           pgtype.Text `json:"status"`
-	Signal           pgtype.Text `json:"signal"`
+	Signaled         pgtype.Bool `json:"signaled"`
 	AgentID          pgtype.Text `json:"agent_id"`
 	ExecutionMode    pgtype.Text `json:"execution_mode"`
 	WorkspaceID      pgtype.Text `json:"workspace_id"`
@@ -231,7 +231,7 @@ func (q *DBQuerier) FindJob(ctx context.Context, runID pgtype.Text, phase pgtype
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindJob")
 	row := q.conn.QueryRow(ctx, findJobSQL, runID, phase)
 	var item FindJobRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindJob: %w", err)
 	}
 	return item, nil
@@ -246,7 +246,7 @@ func (q *DBQuerier) FindJobBatch(batch genericBatch, runID pgtype.Text, phase pg
 func (q *DBQuerier) FindJobScan(results pgx.BatchResults) (FindJobRow, error) {
 	row := results.QueryRow()
 	var item FindJobRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindJobBatch row: %w", err)
 	}
 	return item, nil
@@ -256,7 +256,7 @@ const findJobForUpdateSQL = `SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -273,7 +273,7 @@ type FindJobForUpdateRow struct {
 	RunID            pgtype.Text `json:"run_id"`
 	Phase            pgtype.Text `json:"phase"`
 	Status           pgtype.Text `json:"status"`
-	Signal           pgtype.Text `json:"signal"`
+	Signaled         pgtype.Bool `json:"signaled"`
 	AgentID          pgtype.Text `json:"agent_id"`
 	ExecutionMode    pgtype.Text `json:"execution_mode"`
 	WorkspaceID      pgtype.Text `json:"workspace_id"`
@@ -285,7 +285,7 @@ func (q *DBQuerier) FindJobForUpdate(ctx context.Context, runID pgtype.Text, pha
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindJobForUpdate")
 	row := q.conn.QueryRow(ctx, findJobForUpdateSQL, runID, phase)
 	var item FindJobForUpdateRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindJobForUpdate: %w", err)
 	}
 	return item, nil
@@ -300,7 +300,7 @@ func (q *DBQuerier) FindJobForUpdateBatch(batch genericBatch, runID pgtype.Text,
 func (q *DBQuerier) FindJobForUpdateScan(results pgx.BatchResults) (FindJobForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindJobForUpdateRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signal, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.Signaled, &item.AgentID, &item.ExecutionMode, &item.WorkspaceID, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindJobForUpdateBatch row: %w", err)
 	}
 	return item, nil
@@ -308,34 +308,34 @@ func (q *DBQuerier) FindJobForUpdateScan(results pgx.BatchResults) (FindJobForUp
 
 const updateJobSQL = `UPDATE jobs
 SET status   = $1,
-    signal   = $2,
+    signaled = $2,
     agent_id = $3
 WHERE run_id = $4
 AND   phase = $5
 RETURNING *;`
 
 type UpdateJobParams struct {
-	Status  pgtype.Text
-	Signal  pgtype.Text
-	AgentID pgtype.Text
-	RunID   pgtype.Text
-	Phase   pgtype.Text
+	Status   pgtype.Text
+	Signaled pgtype.Bool
+	AgentID  pgtype.Text
+	RunID    pgtype.Text
+	Phase    pgtype.Text
 }
 
 type UpdateJobRow struct {
-	RunID   pgtype.Text `json:"run_id"`
-	Phase   pgtype.Text `json:"phase"`
-	Status  pgtype.Text `json:"status"`
-	AgentID pgtype.Text `json:"agent_id"`
-	Signal  pgtype.Text `json:"signal"`
+	RunID    pgtype.Text `json:"run_id"`
+	Phase    pgtype.Text `json:"phase"`
+	Status   pgtype.Text `json:"status"`
+	AgentID  pgtype.Text `json:"agent_id"`
+	Signaled pgtype.Bool `json:"signaled"`
 }
 
 // UpdateJob implements Querier.UpdateJob.
 func (q *DBQuerier) UpdateJob(ctx context.Context, params UpdateJobParams) (UpdateJobRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJob")
-	row := q.conn.QueryRow(ctx, updateJobSQL, params.Status, params.Signal, params.AgentID, params.RunID, params.Phase)
+	row := q.conn.QueryRow(ctx, updateJobSQL, params.Status, params.Signaled, params.AgentID, params.RunID, params.Phase)
 	var item UpdateJobRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID, &item.Signal); err != nil {
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID, &item.Signaled); err != nil {
 		return item, fmt.Errorf("query UpdateJob: %w", err)
 	}
 	return item, nil
@@ -343,14 +343,14 @@ func (q *DBQuerier) UpdateJob(ctx context.Context, params UpdateJobParams) (Upda
 
 // UpdateJobBatch implements Querier.UpdateJobBatch.
 func (q *DBQuerier) UpdateJobBatch(batch genericBatch, params UpdateJobParams) {
-	batch.Queue(updateJobSQL, params.Status, params.Signal, params.AgentID, params.RunID, params.Phase)
+	batch.Queue(updateJobSQL, params.Status, params.Signaled, params.AgentID, params.RunID, params.Phase)
 }
 
 // UpdateJobScan implements Querier.UpdateJobScan.
 func (q *DBQuerier) UpdateJobScan(results pgx.BatchResults) (UpdateJobRow, error) {
 	row := results.QueryRow()
 	var item UpdateJobRow
-	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID, &item.Signal); err != nil {
+	if err := row.Scan(&item.RunID, &item.Phase, &item.Status, &item.AgentID, &item.Signaled); err != nil {
 		return item, fmt.Errorf("scan UpdateJobBatch row: %w", err)
 	}
 	return item, nil

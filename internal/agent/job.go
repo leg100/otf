@@ -28,13 +28,6 @@ const (
 	JobCanceled    JobStatus = "canceled"
 )
 
-type signal string
-
-const (
-	cancelSignal      signal = "cancel"
-	forceCancelSignal signal = "force_cancel"
-)
-
 // JobSpec uniquely identifies a job.
 type JobSpec struct {
 	// ID of the run that this job is for.
@@ -70,9 +63,9 @@ type Job struct {
 	// ID of agent that this job is allocated to. Only set once job enters
 	// JobAllocated state.
 	AgentID *string
-	// This indicates whether the run for the job has been signaled, i.e. user
-	// has sent a cancelation request.
-	signal *signal
+	// signaled is non-nil when a cancelation signal has been sent to the job
+	// and it is true when it has been forceably canceled.
+	signaled *bool
 }
 
 func newJob(run *otfrun.Run) *Job {
@@ -94,8 +87,12 @@ func (j *Job) LogValue() slog.Value {
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
-	if j.signal != nil {
-		attrs = append(attrs, slog.String("signal", string(*j.signal)))
+	if j.signaled != nil {
+		if *j.signaled {
+			attrs = append(attrs, slog.Bool("force_cancel_signal_sent", true))
+		} else {
+			attrs = append(attrs, slog.Bool("cancel_signal_sent", true))
+		}
 	}
 	return slog.GroupValue(attrs...)
 }
@@ -156,14 +153,6 @@ func (j *Job) CanAccessTeam(rbac.Action, string) bool {
 	return false
 }
 
-func (j *Job) setSignal(s signal) error {
-	if j.Status != JobRunning {
-		return errors.New("job can only be signaled when in the JobRunning state")
-	}
-	j.signal = &s
-	return nil
-}
-
 func (j *Job) allocate(agentID string) error {
 	if j.Status != JobUnallocated {
 		return errors.New("job can only be allocated when it is in the unallocated state")
@@ -178,6 +167,44 @@ func (j *Job) reallocate(agentID string) error {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}
 	j.AgentID = &agentID
+	return nil
+}
+
+// cancel job based on current state of its parent run - depending on its state,
+// the job is signaled and/or its state is updated too.
+func (j *Job) cancel(run *otfrun.Run) error {
+	var (
+		// whether job be signaled
+		signal *bool
+	)
+	switch run.Status {
+	case otfrun.RunPlanning, otfrun.RunApplying:
+		if run.CanceledAt != nil {
+			// run is still in progress but the user has requested it be
+			// canceled, so signal job to gracefully cancel current operation
+			signal = internal.Bool(false)
+		}
+	case otfrun.RunCanceled:
+		// run has been canceled so immediately cancel job too unless already
+		// canceled
+		if j.Status != JobCanceled {
+			j.Status = JobCanceled
+		}
+	case otfrun.RunForceCanceled:
+		// run has been forceably canceled, so both signal job to forcefully
+		// cancel current operation, and immediately cancel job.
+		signal = internal.Bool(true)
+		if j.Status != JobCanceled {
+			j.Status = JobCanceled
+		}
+	}
+	if signal != nil {
+		if j.Status != JobRunning {
+			return errors.New("job can only be signaled when in the JobRunning state")
+		}
+		j.signaled = signal
+		return nil
+	}
 	return nil
 }
 

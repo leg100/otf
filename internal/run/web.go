@@ -41,6 +41,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/force-cancel", h.forceCancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
@@ -221,18 +222,27 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.GetRun(r.Context(), runID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = h.svc.Cancel(r.Context(), runID, false)
-	if err != nil {
+	if err := h.svc.Cancel(r.Context(), runID, false); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, paths.Runs(run.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+}
+
+func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	if err := h.svc.ForceCancelRun(r.Context(), runID); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {

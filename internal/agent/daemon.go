@@ -32,7 +32,7 @@ type (
 	// Config is configuration for an agent daemon
 	Config struct {
 		Name            *string // descriptive name for agent
-		Concurrency     int     // number of workers
+		Concurrency     int     // number of jobs the agent can execute at any one time
 		Sandbox         bool    // isolate privileged ops within sandbox
 		Debug           bool    // toggle debug mode
 		PluginCache     bool    // toggle use of terraform's shared plugin cache
@@ -53,13 +53,13 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 
 // daemon implements the agent itself.
 type daemon struct {
-	logr.Logger
 	client
-	*terminator
 
 	envs       []string // terraform environment variables
 	config     Config
 	downloader releases.Downloader
+	logger     logr.Logger // logger that logs messages regardless of whether agent is a pool agent or not.
+	poolLogger logr.Logger // logger that only logs messages if the agent is a pool agent.
 }
 
 // New constructs an agent daemon.
@@ -67,6 +67,14 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 	if _, ok := app.(*rpcClient); !ok {
 		// agent is deemed a server agent if it is not using an RPC client.
 		cfg.server = true
+	}
+	var poolLogger logr.Logger
+	if cfg.server {
+		// disable logging for server agents otherwise the server logs are
+		// likely to contain duplicate logs from both the agent daemon and the
+		// agent service, but still make logger available to server agent when
+		// it does need to log something.
+		poolLogger = logr.NewNoopLogger()
 	}
 	if cfg.Concurrency == 0 {
 		cfg.Concurrency = DefaultConcurrency
@@ -80,19 +88,13 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		}
 		logger.V(0).Info("enabled sandbox mode")
 	}
-	if cfg.server {
-		// disable logging for server agents otherwise the server logs are
-		// likely to contain duplicate logs from both the agent daemon and the
-		// agent service.
-		//logger = logr.NewNoopLogger()
-	}
 	d := &daemon{
-		Logger:     logger,
 		client:     app,
 		envs:       DefaultEnvs,
-		terminator: &terminator{mapping: make(map[JobSpec]cancelable)},
 		downloader: releases.NewDownloader(cfg.TerraformBinDir),
 		config:     cfg,
+		poolLogger: poolLogger,
+		logger:     logger,
 	}
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
@@ -115,7 +117,14 @@ func NewRPC(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, e
 
 // Start the agent daemon.
 func (d *daemon) Start(ctx context.Context) error {
-	d.Info("starting agent", "version", internal.Version)
+	d.poolLogger.Info("starting agent", "version", internal.Version)
+
+	// initialize terminator
+	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
+
+	go func() {
+		<-ctx.Done()
+	}()
 
 	if d.config.server {
 		// prior to registration, the server agent identifies itself as an
@@ -138,7 +147,7 @@ func (d *daemon) Start(ctx context.Context) error {
 	if agent.AgentPoolID != nil {
 		registeredKeyValues = append(registeredKeyValues, "agent_pool_id", *agent.AgentPoolID)
 	}
-	d.Info("registered successfully", registeredKeyValues...)
+	d.logger.Info("registered successfully", registeredKeyValues...)
 
 	if d.config.server {
 		// server agents should identify themselves as a serverAgent
@@ -151,14 +160,14 @@ func (d *daemon) Start(ctx context.Context) error {
 	g.Go(func() (err error) {
 		defer func() {
 			// send final status update using a context that is still valid
-			// for a further 10 seconds.
+			// for a further 10 seconds unless daemon is forcefully shutdown.
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
 			if updateErr := d.updateAgentStatus(ctx, agent.ID, AgentExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			} else {
-				d.Info("sent final status update", "status", "exited")
+				d.logger.Info("sent final status update", "status", "exited")
 			}
 		}()
 
@@ -169,7 +178,7 @@ func (d *daemon) Start(ctx context.Context) error {
 			case <-ticker.C:
 				// send agent status update
 				status := AgentIdle
-				if d.totalJobs() > 0 {
+				if terminator.totalJobs() > 0 {
 					status = AgentBusy
 				}
 				if err := d.updateAgentStatus(ctx, agent.ID, status); err != nil {
@@ -177,9 +186,18 @@ func (d *daemon) Start(ctx context.Context) error {
 						// context canceled
 						return nil
 					}
-					d.Error(err, "sending agent status update", "status", status)
+					if errors.Is(err, internal.ErrConflict) {
+						// exit, compelling agent to re-register - this may
+						// happen when the server has de-registered the agent,
+						// which it may do when it hasn't heard from the agent
+						// in a while and the agent only belatedly succeeds in
+						// sending an update.
+						return errors.New("agent status update failed due to conflict; agent needs to re-register")
+					} else {
+						d.poolLogger.Error(err, "sending agent status update", "status", status)
+					}
 				} else {
-					d.V(9).Info("sent agent status update", "status", status)
+					d.poolLogger.V(9).Info("sent agent status update", "status", status)
 				}
 			case <-ctx.Done():
 				// context canceled
@@ -188,60 +206,68 @@ func (d *daemon) Start(ctx context.Context) error {
 		}
 	})
 
-	// fetch jobs allocated to this agent and launch workers to do jobs; also
-	// handle cancelation signals for jobs
-	for {
-		// block on waiting for jobs
-		var jobs []*Job
-		getJobs := func() (err error) {
-			d.Info("waiting for next job")
-			jobs, err = d.getAgentJobs(ctx, agent.ID)
-			return err
-		}
-		policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-		err := backoff.RetryNotify(getJobs, policy, func(err error, next time.Duration) {
-			d.Error(err, "waiting for next job", "backoff", next)
-		})
-		if err != nil {
-			// ctx canceled
-			break
-		}
-		for _, j := range jobs {
-			if j.Status == JobAllocated {
-				d.Info("received job", "job", j)
-				// start job and receive job token in return
-				token, err := d.startJob(ctx, j.JobSpec)
-				if err != nil {
-					return fmt.Errorf("starting job: %w", err)
-				}
-				d.V(0).Info("started job")
-				w := &worker{
-					Logger:     d.WithValues("job", j),
-					client:     d.client,
-					job:        j,
-					envs:       d.envs,
-					terminator: d.terminator,
-					downloader: d.downloader,
-					token:      token,
-				}
-				w.V(0).Info("started job")
-				g.Go(func() error {
-					w.doAndHandleError(ctx)
-					return nil
-				})
-			} else if j.signal != nil {
-				d.Info("received signal", "signal", *j.signal, "job", j)
-				switch *j.signal {
-				case cancelSignal:
-					d.cancel(j.JobSpec, false)
-				case forceCancelSignal:
-					d.cancel(j.JobSpec, true)
-				default:
-					d.Error(nil, "invalid signal received", "job", j, "signal", *j.signal)
+	g.Go(func() (err error) {
+		defer func() {
+			if terminator.totalJobs() > 0 {
+				d.logger.Info("gracefully canceling in-progress jobs", "total", terminator.totalJobs())
+				terminator.cancelAll(false)
+			}
+		}()
+
+		// fetch jobs allocated to this agent and launch workers to do jobs; also
+		// handle cancelation signals for jobs
+		for {
+			// block on waiting for jobs
+			var jobs []*Job
+			getJobs := func() (err error) {
+				d.poolLogger.Info("waiting for next job")
+				jobs, err = d.getAgentJobs(ctx, agent.ID)
+				return err
+			}
+			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
+			err := backoff.RetryNotify(getJobs, policy, func(err error, next time.Duration) {
+				d.poolLogger.Error(err, "waiting for next job", "backoff", next)
+			})
+			if err != nil {
+				// ctx canceled
+				return nil
+			}
+			for _, j := range jobs {
+				if j.Status == JobAllocated {
+					d.poolLogger.Info("received job", "job", j)
+					// start job and receive job token in return
+					token, err := d.startJob(ctx, j.JobSpec)
+					if err != nil {
+						if ctx.Err() != nil {
+							return nil
+						}
+						d.poolLogger.Error(err, "starting job")
+						continue
+					}
+					d.poolLogger.V(0).Info("started job")
+					op := newOperation(newOperationOptions{
+						logger:     d.poolLogger.WithValues("job", j),
+						client:     d.client,
+						job:        j,
+						downloader: d.downloader,
+						envs:       d.envs,
+						token:      token,
+					})
+					// check operation in with the terminator, so that if a cancelation signal
+					// arrives it can be handled accordingly for the duration of the operation.
+					terminator.checkIn(j.JobSpec, op)
+					op.V(0).Info("started job")
+					g.Go(func() error {
+						op.doAndFinish()
+						terminator.checkOut(op.job.JobSpec)
+						return nil
+					})
+				} else if j.signaled != nil {
+					d.poolLogger.Info("received cancelation signal", "force", *j.signaled, "job", j)
+					terminator.cancel(j.JobSpec, *j.signaled)
 				}
 			}
 		}
-	}
-	// TODO: exit cleanly when ctrl-c'd
+	})
 	return g.Wait()
 }

@@ -26,31 +26,31 @@ type (
 	pgresult struct {
 		RunID                  pgtype.Text                   `json:"run_id"`
 		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
-		ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
-		IsDestroy              bool                          `json:"is_destroy"`
+		CanceledAt             pgtype.Timestamptz            `json:"canceled_at"`
+		IsDestroy              pgtype.Bool                   `json:"is_destroy"`
 		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
-		Refresh                bool                          `json:"refresh"`
-		RefreshOnly            bool                          `json:"refresh_only"`
+		Refresh                pgtype.Bool                   `json:"refresh"`
+		RefreshOnly            pgtype.Bool                   `json:"refresh_only"`
 		Source                 pgtype.Text                   `json:"source"`
 		Status                 pgtype.Text                   `json:"status"`
 		PlanStatus             pgtype.Text                   `json:"plan_status"`
 		ApplyStatus            pgtype.Text                   `json:"apply_status"`
 		ReplaceAddrs           []string                      `json:"replace_addrs"`
 		TargetAddrs            []string                      `json:"target_addrs"`
-		AutoApply              bool                          `json:"auto_apply"`
+		AutoApply              pgtype.Bool                   `json:"auto_apply"`
 		PlanResourceReport     *pggen.Report                 `json:"plan_resource_report"`
 		PlanOutputReport       *pggen.Report                 `json:"plan_output_report"`
 		ApplyResourceReport    *pggen.Report                 `json:"apply_resource_report"`
 		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
-		PlanOnly               bool                          `json:"plan_only"`
+		PlanOnly               pgtype.Bool                   `json:"plan_only"`
 		CreatedBy              pgtype.Text                   `json:"created_by"`
 		TerraformVersion       pgtype.Text                   `json:"terraform_version"`
-		AllowEmptyApply        bool                          `json:"allow_empty_apply"`
+		AllowEmptyApply        pgtype.Bool                   `json:"allow_empty_apply"`
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
-		Latest                 bool                          `json:"latest"`
+		Latest                 pgtype.Bool                   `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
-		CostEstimationEnabled  bool                          `json:"cost_estimation_enabled"`
+		CostEstimationEnabled  pgtype.Bool                   `json:"cost_estimation_enabled"`
 		IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
 		RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 		PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
@@ -63,24 +63,24 @@ func (result pgresult) toRun() *Run {
 	run := Run{
 		ID:                     result.RunID.String,
 		CreatedAt:              result.CreatedAt.Time.UTC(),
-		IsDestroy:              result.IsDestroy,
+		IsDestroy:              result.IsDestroy.Bool,
 		PositionInQueue:        int(result.PositionInQueue.Int),
-		Refresh:                result.Refresh,
-		RefreshOnly:            result.RefreshOnly,
+		Refresh:                result.Refresh.Bool,
+		RefreshOnly:            result.RefreshOnly.Bool,
 		Source:                 Source(result.Source.String),
 		Status:                 Status(result.Status.String),
 		ReplaceAddrs:           result.ReplaceAddrs,
 		TargetAddrs:            result.TargetAddrs,
-		AutoApply:              result.AutoApply,
-		PlanOnly:               result.PlanOnly,
-		AllowEmptyApply:        result.AllowEmptyApply,
+		AutoApply:              result.AutoApply.Bool,
+		PlanOnly:               result.PlanOnly.Bool,
+		AllowEmptyApply:        result.AllowEmptyApply.Bool,
 		TerraformVersion:       result.TerraformVersion.String,
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
-		Latest:                 result.Latest,
+		Latest:                 result.Latest.Bool,
 		Organization:           result.OrganizationName.String,
 		WorkspaceID:            result.WorkspaceID.String,
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
-		CostEstimationEnabled:  result.CostEstimationEnabled,
+		CostEstimationEnabled:  result.CostEstimationEnabled.Bool,
 		Plan: Phase{
 			RunID:          result.RunID.String,
 			PhaseType:      internal.PlanPhase,
@@ -140,8 +140,8 @@ func (result pgresult) toRun() *Run {
 	if result.CreatedBy.Status == pgtype.Present {
 		run.CreatedBy = &result.CreatedBy.String
 	}
-	if result.ForceCancelAvailableAt.Status == pgtype.Present {
-		run.ForceCancelAvailableAt = internal.Time(result.ForceCancelAvailableAt.Time.UTC())
+	if result.CanceledAt.Status == pgtype.Present {
+		run.CanceledAt = internal.Time(result.CanceledAt.Time.UTC())
 	}
 	if result.IngressAttributes != nil {
 		run.IngressAttributes = configversion.NewIngressFromRow(result.IngressAttributes)
@@ -155,17 +155,17 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 		_, err := q.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     sql.String(run.ID),
 			CreatedAt:              sql.Timestamptz(run.CreatedAt),
-			IsDestroy:              run.IsDestroy,
+			IsDestroy:              sql.Bool(run.IsDestroy),
 			PositionInQueue:        sql.Int4(0),
-			Refresh:                run.Refresh,
-			RefreshOnly:            run.RefreshOnly,
+			Refresh:                sql.Bool(run.Refresh),
+			RefreshOnly:            sql.Bool(run.RefreshOnly),
 			Source:                 sql.String(string(run.Source)),
 			Status:                 sql.String(string(run.Status)),
 			ReplaceAddrs:           run.ReplaceAddrs,
 			TargetAddrs:            run.TargetAddrs,
-			AutoApply:              run.AutoApply,
-			PlanOnly:               run.PlanOnly,
-			AllowEmptyApply:        run.AllowEmptyApply,
+			AutoApply:              sql.Bool(run.AutoApply),
+			PlanOnly:               sql.Bool(run.PlanOnly),
+			AllowEmptyApply:        sql.Bool(run.AllowEmptyApply),
 			TerraformVersion:       sql.String(run.TerraformVersion),
 			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
 			WorkspaceID:            sql.String(run.WorkspaceID),
@@ -220,7 +220,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 		runStatus := run.Status
 		planStatus := run.Plan.Status
 		applyStatus := run.Apply.Status
-		forceCancelAvailableAt := run.ForceCancelAvailableAt
+		forceCancelAvailableAt := run.CanceledAt
 
 		if err := fn(run); err != nil {
 			return err
@@ -259,8 +259,8 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 			}
 		}
 
-		if run.ForceCancelAvailableAt != forceCancelAvailableAt && run.ForceCancelAvailableAt != nil {
-			_, err := q.UpdateRunForceCancelAvailableAt(ctx, sql.Timestamptz(*run.ForceCancelAvailableAt), sql.String(run.ID))
+		if run.CanceledAt != forceCancelAvailableAt && run.CanceledAt != nil {
+			_, err := q.UpdateCanceledAt(ctx, sql.Timestamptz(*run.CanceledAt), sql.String(run.ID))
 			if err != nil {
 				return err
 			}

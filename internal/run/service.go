@@ -62,7 +62,7 @@ type (
 		// and its status is changed to canceled. Set the immediate argument
 		// to true to override the above default behaviour, and skip sending a
 		// signal, and instead cancel the run immediately.
-		Cancel(ctx context.Context, runID string, immediate bool) (*Run, error)
+		Cancel(ctx context.Context, runID string, immediate bool) error
 		// Apply enqueues an Apply for the run.
 		Apply(ctx context.Context, runID string) error
 		// Delete a run.
@@ -79,14 +79,12 @@ type (
 		// AfterEnqueueApply allows caller to dispatch actions following the
 		// enqueuing of an apply.
 		AfterEnqueueApply(l hooks.Listener[*Run])
-		// AfterRunTerminated allows caller to dispatch actions following the termination of a run.
-		// AfterRunTerminated(l hooks.Listener[*Run])
-		// AfterCancelSignal allows caller to dispatch actions following the
-		// sending of a cancel signal.
-		AfterCancelSignal(l hooks.Listener[*Run])
-		// AfterForceCancelSignal allows caller to dispatch actions following the
-		// sending of a force-cancel signal.
-		AfterForceCancelSignal(l hooks.Listener[*Run])
+		// AfterCancel allows caller to dispatch actions following the
+		// cancelation of a run.
+		AfterCancel(l hooks.Listener[*Run])
+		// AfterForceCancel allows caller to dispatch actions following the
+		// forced cancelation of a run.
+		AfterForceCancel(l hooks.Listener[*Run])
 
 		lockFileService
 
@@ -108,16 +106,15 @@ type (
 		workspace    internal.Authorizer
 		*authorizer
 
-		cache                 internal.Cache
-		db                    *pgdb
-		tfeapi                *tfe
-		api                   *api
-		web                   *webHandlers
-		planHook              *hooks.Hook[*Run]
-		applyHook             *hooks.Hook[*Run]
-		cancelHook            *hooks.Hook[*Run]
-		cancelSignalHook      *hooks.Hook[*Run]
-		forceCancelSignalHook *hooks.Hook[*Run]
+		cache           internal.Cache
+		db              *pgdb
+		tfeapi          *tfe
+		api             *api
+		web             *webHandlers
+		planHook        *hooks.Hook[*Run]
+		applyHook       *hooks.Hook[*Run]
+		cancelHook      *hooks.Hook[*Run]
+		forceCancelHook *hooks.Hook[*Run]
 
 		*factory
 	}
@@ -146,13 +143,13 @@ type (
 func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:                opts.Logger,
-		PubSubService:         opts.Broker,
-		WorkspaceService:      opts.WorkspaceService,
-		planHook:              hooks.NewHook[*Run](opts.DB),
-		applyHook:             hooks.NewHook[*Run](opts.DB),
-		cancelSignalHook:      hooks.NewHook[*Run](opts.DB),
-		forceCancelSignalHook: hooks.NewHook[*Run](opts.DB),
+		Logger:           opts.Logger,
+		PubSubService:    opts.Broker,
+		WorkspaceService: opts.WorkspaceService,
+		planHook:         hooks.NewHook[*Run](opts.DB),
+		applyHook:        hooks.NewHook[*Run](opts.DB),
+		cancelHook:       hooks.NewHook[*Run](opts.DB),
+		forceCancelHook:  hooks.NewHook[*Run](opts.DB),
 	}
 
 	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
@@ -225,12 +222,12 @@ func (s *service) AfterEnqueueApply(l hooks.Listener[*Run]) {
 	s.applyHook.After(l)
 }
 
-func (s *service) AfterCancelSignal(l hooks.Listener[*Run]) {
-	s.cancelSignalHook.After(l)
+func (s *service) AfterCancel(l hooks.Listener[*Run]) {
+	s.cancelHook.After(l)
 }
 
-func (s *service) AfterForceCancelSignal(l hooks.Listener[*Run]) {
-	s.forceCancelSignalHook.After(l)
+func (s *service) AfterForceCancel(l hooks.Listener[*Run]) {
+	s.forceCancelHook.After(l)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
@@ -497,43 +494,43 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 	return err
 }
 
-func (s *service) Cancel(ctx context.Context, runID string, immediate bool) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		signal, err := run.Cancel(immediate)
-		if err != nil {
-			return err
-		}
-		if run.Done() {
-			//return s.cancelHook.Dispatch(ctx, run, nil)
-		} else if signal {
-			return s.cancelSignalHook.Dispatch(ctx, run, nil)
-		}
-		return nil
-	})
-	if err != nil {
-		s.Error(err, "canceling run", "id", runID, "subject", subject)
-		return nil, err
-	}
-	s.V(0).Info("canceled run", "id", runID, "subject", subject)
-	return run, nil
-}
-
-// ForceCancelRun forcefully cancels a run.
-func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
+func (s *service) Cancel(ctx context.Context, runID string, immediate bool) error {
 	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		if err := run.ForceCancel(); err != nil {
-			return err
-		}
-		return s.forceCancelSignalHook.Dispatch(ctx, run, nil)
+
+	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+		err = s.cancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
+			if err := run.Cancel(immediate); err != nil {
+				return nil, err
+			}
+			return run, nil
+		})
+		return err
+	})
+	if err != nil {
+		s.Error(err, "canceling run", "id", runID, "subject", subject)
+		return err
+	}
+	s.V(0).Info("canceled run", "id", runID, "subject", subject)
+	return nil
+}
+
+// ForceCancelRun forcefully cancels a run.
+func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
+	subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+		err = s.forceCancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
+			if err := run.ForceCancel(); err != nil {
+				return nil, err
+			}
+			return run, nil
+		})
+		return err
 	})
 	if err != nil {
 		s.Error(err, "force canceling run", "id", runID, "subject", subject)

@@ -16,7 +16,7 @@ type poolresult struct {
 	Name                pgtype.Text        `json:"name"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
-	OrganizationScoped  bool               `json:"organization_scoped"`
+	OrganizationScoped  pgtype.Bool        `json:"organization_scoped"`
 	WorkspaceIds        []string           `json:"workspace_ids"`
 	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
 }
@@ -27,7 +27,7 @@ func (r poolresult) toPool() *Pool {
 		Name:               r.Name.String,
 		CreatedAt:          r.CreatedAt.Time.UTC(),
 		Organization:       r.OrganizationName.String,
-		OrganizationScoped: r.OrganizationScoped,
+		OrganizationScoped: r.OrganizationScoped.Bool,
 		AssignedWorkspaces: r.WorkspaceIds,
 		AllowedWorkspaces:  r.AllowedWorkspaceIds,
 	}
@@ -70,7 +70,7 @@ type jobresult struct {
 	RunID            pgtype.Text `json:"run_id"`
 	Phase            pgtype.Text `json:"phase"`
 	Status           pgtype.Text `json:"status"`
-	Signal           pgtype.Text `json:"signal"`
+	Signaled         pgtype.Bool `json:"signaled"`
 	AgentID          pgtype.Text `json:"agent_id"`
 	ExecutionMode    pgtype.Text `json:"execution_mode"`
 	WorkspaceID      pgtype.Text `json:"workspace_id"`
@@ -89,6 +89,9 @@ func (r jobresult) toJob() *Job {
 		Organization:  r.OrganizationName.String,
 	}
 	if r.AgentID.Status == pgtype.Present {
+		job.AgentID = &r.AgentID.String
+	}
+	if r.Signaled.Status == pgtype.Present {
 		job.AgentID = &r.AgentID.String
 	}
 	return job
@@ -123,7 +126,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
 			OrganizationName:   sql.String(pool.Organization),
-			OrganizationScoped: pool.OrganizationScoped,
+			OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 		})
 		if err != nil {
 			return err
@@ -146,7 +149,7 @@ func (db *db) updatePool(ctx context.Context, pool *Pool) error {
 	_, err := db.Conn(ctx).UpdateAgentPool(ctx, pggen.UpdateAgentPoolParams{
 		PoolID:             sql.String(pool.ID),
 		Name:               sql.String(pool.Name),
-		OrganizationScoped: pool.OrganizationScoped,
+		OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -366,11 +369,11 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 			return err
 		}
 		_, err = q.UpdateJob(ctx, pggen.UpdateJobParams{
-			Status:  sql.String(string(job.Status)),
-			Signal:  sql.StringPtr((*string)(job.signal)),
-			AgentID: sql.StringPtr(job.AgentID),
-			RunID:   result.RunID,
-			Phase:   result.Phase,
+			Status:   sql.String(string(job.Status)),
+			Signaled: sql.BoolPtr(job.signaled),
+			AgentID:  sql.StringPtr(job.AgentID),
+			RunID:    result.RunID,
+			Phase:    result.Phase,
 		})
 		if err != nil {
 			return err

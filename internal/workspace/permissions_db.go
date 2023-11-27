@@ -46,7 +46,7 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (int
 	policy := internal.WorkspacePolicy{
 		Organization:      ws.OrganizationName.String,
 		WorkspaceID:       workspaceID,
-		GlobalRemoteState: ws.GlobalRemoteState,
+		GlobalRemoteState: ws.GlobalRemoteState.Bool,
 	}
 	for _, perm := range perms {
 		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)

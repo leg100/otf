@@ -213,7 +213,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = a.Cancel(r.Context(), id, false); err != nil {
+	if err = a.Cancel(r.Context(), id, false); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -357,7 +357,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	perms := &types.RunPermissions{
 		CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
 		CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
+		CanForceCancel:  subject.CanAccessWorkspace(rbac.ForceCancelRunAction, policy),
 		CanCancel:       subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
 		CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 	}
@@ -397,14 +397,14 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		Actions: &types.RunActions{
 			IsCancelable:      from.Cancelable(),
 			IsConfirmable:     from.Confirmable(),
-			IsForceCancelable: from.ForceCancelAvailableAt != nil,
+			IsForceCancelable: from.CanceledAt != nil,
 			IsDiscardable:     from.Discardable(),
 		},
 		AllowEmptyApply:        from.AllowEmptyApply,
 		AutoApply:              from.AutoApply,
 		CreatedAt:              from.CreatedAt,
 		ExecutionMode:          string(from.ExecutionMode),
-		ForceCancelAvailableAt: from.ForceCancelAvailableAt,
+		ForceCancelAvailableAt: from.ForceCancelAvailableAt(),
 		HasChanges:             from.Plan.HasChanges(),
 		IsDestroy:              from.IsDestroy,
 		Message:                from.Message,

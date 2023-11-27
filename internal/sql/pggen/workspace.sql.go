@@ -72,22 +72,22 @@ type InsertWorkspaceParams struct {
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AgentPoolID                pgtype.Text
-	AllowCLIApply              bool
-	AllowDestroyPlan           bool
-	AutoApply                  bool
+	AllowCLIApply              pgtype.Bool
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
 	Branch                     pgtype.Text
-	CanQueueDestroyPlan        bool
+	CanQueueDestroyPlan        pgtype.Bool
 	Description                pgtype.Text
 	Environment                pgtype.Text
 	ExecutionMode              pgtype.Text
-	GlobalRemoteState          bool
+	GlobalRemoteState          pgtype.Bool
 	MigrationEnvironment       pgtype.Text
 	Name                       pgtype.Text
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
 	SourceName                 pgtype.Text
 	SourceURL                  pgtype.Text
-	StructuredRunOutputEnabled bool
+	StructuredRunOutputEnabled pgtype.Bool
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []string
 	TriggerPatterns            []string
@@ -168,20 +168,20 @@ type FindWorkspacesRow struct {
 	WorkspaceID                pgtype.Text        `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
-	AutoApply                  bool               `json:"auto_apply"`
-	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
 	Description                pgtype.Text        `json:"description"`
 	Environment                pgtype.Text        `json:"environment"`
 	ExecutionMode              pgtype.Text        `json:"execution_mode"`
-	GlobalRemoteState          bool               `json:"global_remote_state"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
 	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
 	Name                       pgtype.Text        `json:"name"`
-	QueueAllRuns               bool               `json:"queue_all_runs"`
-	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
 	SourceName                 pgtype.Text        `json:"source_name"`
 	SourceURL                  pgtype.Text        `json:"source_url"`
-	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text        `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text        `json:"working_directory"`
@@ -193,7 +193,7 @@ type FindWorkspacesRow struct {
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
-	AllowCLIApply              bool               `json:"allow_cli_apply"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
@@ -345,20 +345,20 @@ type FindWorkspacesByConnectionRow struct {
 	WorkspaceID                pgtype.Text        `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
-	AutoApply                  bool               `json:"auto_apply"`
-	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
 	Description                pgtype.Text        `json:"description"`
 	Environment                pgtype.Text        `json:"environment"`
 	ExecutionMode              pgtype.Text        `json:"execution_mode"`
-	GlobalRemoteState          bool               `json:"global_remote_state"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
 	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
 	Name                       pgtype.Text        `json:"name"`
-	QueueAllRuns               bool               `json:"queue_all_runs"`
-	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
 	SourceName                 pgtype.Text        `json:"source_name"`
 	SourceURL                  pgtype.Text        `json:"source_url"`
-	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text        `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text        `json:"working_directory"`
@@ -370,7 +370,7 @@ type FindWorkspacesByConnectionRow struct {
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
-	AllowCLIApply              bool               `json:"allow_cli_apply"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
@@ -490,20 +490,20 @@ type FindWorkspacesByUsernameRow struct {
 	WorkspaceID                pgtype.Text        `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
-	AutoApply                  bool               `json:"auto_apply"`
-	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
 	Description                pgtype.Text        `json:"description"`
 	Environment                pgtype.Text        `json:"environment"`
 	ExecutionMode              pgtype.Text        `json:"execution_mode"`
-	GlobalRemoteState          bool               `json:"global_remote_state"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
 	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
 	Name                       pgtype.Text        `json:"name"`
-	QueueAllRuns               bool               `json:"queue_all_runs"`
-	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
 	SourceName                 pgtype.Text        `json:"source_name"`
 	SourceURL                  pgtype.Text        `json:"source_url"`
-	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text        `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text        `json:"working_directory"`
@@ -515,7 +515,7 @@ type FindWorkspacesByUsernameRow struct {
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
-	AllowCLIApply              bool               `json:"allow_cli_apply"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
@@ -656,20 +656,20 @@ type FindWorkspaceByNameRow struct {
 	WorkspaceID                pgtype.Text        `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
-	AutoApply                  bool               `json:"auto_apply"`
-	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
 	Description                pgtype.Text        `json:"description"`
 	Environment                pgtype.Text        `json:"environment"`
 	ExecutionMode              pgtype.Text        `json:"execution_mode"`
-	GlobalRemoteState          bool               `json:"global_remote_state"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
 	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
 	Name                       pgtype.Text        `json:"name"`
-	QueueAllRuns               bool               `json:"queue_all_runs"`
-	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
 	SourceName                 pgtype.Text        `json:"source_name"`
 	SourceURL                  pgtype.Text        `json:"source_url"`
-	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text        `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text        `json:"working_directory"`
@@ -681,7 +681,7 @@ type FindWorkspaceByNameRow struct {
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
-	AllowCLIApply              bool               `json:"allow_cli_apply"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
@@ -763,20 +763,20 @@ type FindWorkspaceByIDRow struct {
 	WorkspaceID                pgtype.Text        `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
-	AutoApply                  bool               `json:"auto_apply"`
-	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
 	Description                pgtype.Text        `json:"description"`
 	Environment                pgtype.Text        `json:"environment"`
 	ExecutionMode              pgtype.Text        `json:"execution_mode"`
-	GlobalRemoteState          bool               `json:"global_remote_state"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
 	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
 	Name                       pgtype.Text        `json:"name"`
-	QueueAllRuns               bool               `json:"queue_all_runs"`
-	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
 	SourceName                 pgtype.Text        `json:"source_name"`
 	SourceURL                  pgtype.Text        `json:"source_url"`
-	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text        `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text        `json:"working_directory"`
@@ -788,7 +788,7 @@ type FindWorkspaceByIDRow struct {
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
-	AllowCLIApply              bool               `json:"allow_cli_apply"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
@@ -870,20 +870,20 @@ type FindWorkspaceByIDForUpdateRow struct {
 	WorkspaceID                pgtype.Text        `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
-	AutoApply                  bool               `json:"auto_apply"`
-	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
 	Description                pgtype.Text        `json:"description"`
 	Environment                pgtype.Text        `json:"environment"`
 	ExecutionMode              pgtype.Text        `json:"execution_mode"`
-	GlobalRemoteState          bool               `json:"global_remote_state"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
 	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
 	Name                       pgtype.Text        `json:"name"`
-	QueueAllRuns               bool               `json:"queue_all_runs"`
-	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
 	SourceName                 pgtype.Text        `json:"source_name"`
 	SourceURL                  pgtype.Text        `json:"source_url"`
-	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text        `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text        `json:"working_directory"`
@@ -895,7 +895,7 @@ type FindWorkspaceByIDForUpdateRow struct {
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
-	AllowCLIApply              bool               `json:"allow_cli_apply"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
@@ -979,17 +979,17 @@ RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
 	AgentPoolID                pgtype.Text
-	AllowDestroyPlan           bool
-	AllowCLIApply              bool
-	AutoApply                  bool
+	AllowDestroyPlan           pgtype.Bool
+	AllowCLIApply              pgtype.Bool
+	AutoApply                  pgtype.Bool
 	Branch                     pgtype.Text
 	Description                pgtype.Text
 	ExecutionMode              pgtype.Text
-	GlobalRemoteState          bool
+	GlobalRemoteState          pgtype.Bool
 	Name                       pgtype.Text
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	StructuredRunOutputEnabled bool
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	StructuredRunOutputEnabled pgtype.Bool
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []string
 	TriggerPatterns            []string

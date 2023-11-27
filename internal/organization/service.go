@@ -156,7 +156,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
 			Email:                  sql.StringPtr(org.Email),
 			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:  org.CostEstimationEnabled,
+			CostEstimationEnabled:  sql.Bool(org.CostEstimationEnabled),
 		})
 		return org, sql.Error(err)
 	})

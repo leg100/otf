@@ -9,6 +9,7 @@ type fakeService struct {
 	token                  []byte
 	status                 AgentStatus
 	deletedAgentID         string
+	job                    *Job
 
 	Service
 }
@@ -35,7 +36,21 @@ func (f *fakeService) updateAgentStatus(ctx context.Context, agentID string, sta
 	return nil
 }
 
-func (f *fakeService) unregisterAgent(ctx context.Context, agentID string) error {
+func (f *fakeService) deleteAgent(ctx context.Context, agentID string) error {
 	f.deletedAgentID = agentID
 	return nil
+}
+
+func (f *fakeService) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+	if err := f.job.allocate(agentID); err != nil {
+		return nil, err
+	}
+	return f.job, nil
+}
+
+func (f *fakeService) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+	if err := f.job.reallocate(agentID); err != nil {
+		return nil, err
+	}
+	return f.job, nil
 }

@@ -63,7 +63,7 @@ INSERT INTO run_variables (
 SELECT
     runs.run_id,
     runs.created_at,
-    runs.force_cancel_available_at,
+    runs.canceled_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -156,7 +156,7 @@ AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg
 SELECT
     runs.run_id,
     runs.created_at,
-    runs.force_cancel_available_at,
+    runs.canceled_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -223,7 +223,7 @@ WHERE runs.run_id = pggen.arg('run_id')
 SELECT
     runs.run_id,
     runs.created_at,
-    runs.force_cancel_available_at,
+    runs.canceled_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -308,10 +308,10 @@ WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;
 
--- name: UpdateRunForceCancelAvailableAt :one
+-- name: UpdateCanceledAt :one
 UPDATE runs
 SET
-    force_cancel_available_at = pggen.arg('force_cancel_available_at')
+    canceled_at = pggen.arg('canceled_at')
 WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;

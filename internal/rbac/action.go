@@ -79,6 +79,7 @@ const (
 	DiscardRunAction
 	DeleteRunAction
 	CancelRunAction
+	ForceCancelRunAction
 	EnqueuePlanAction
 	PutChunkAction
 	TailLogsAction

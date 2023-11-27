@@ -20,15 +20,15 @@ type allocator struct {
 	pubsub.Subscriber
 	// service for seeding allocator with pools, agents, and jobs, and for
 	// allocating jobs to agents.
-	*service
+	Service
 	// cache of agent pools
 	pools map[string]*Pool
 	// agents to allocate jobs to, keyed by agent ID
 	agents map[string]*Agent
 	// jobs awaiting allocation to an agent, keyed by job ID
 	jobs map[JobSpec]*Job
-	// capacities keeps track of the number of available workers each agent has,
-	// keyed by agentID
+	// capacities keeps track of each agent's available capacity to execute
+	// jobs, keyed by agent ID.
 	capacities map[string]int
 }
 
@@ -54,23 +54,10 @@ func (a *allocator) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	a.pools = make(map[string]*Pool, len(pools))
-	for _, pool := range pools {
-		a.pools[pool.ID] = pool
-	}
-	a.agents = make(map[string]*Agent, len(agents))
-	a.capacities = make(map[string]int, len(agents))
-	for _, agent := range agents {
-		a.agents[agent.ID] = agent
-		a.capacities[agent.ID] = agent.Concurrency
-	}
-	a.jobs = make(map[JobSpec]*Job, len(jobs))
-	for _, job := range jobs {
-		a.jobs[job.JobSpec] = job
-	}
-	// now seeding has finished, allocate jobs
+	a.seed(pools, agents, jobs)
+	// allocate jobs to agents
 	a.allocate(ctx)
-	// consume events until subscriber channel is closed.
+	// consume events until subscriber channel is closed, and allocate jobs.
 	for event := range sub {
 		switch payload := event.Payload.(type) {
 		case *Pool:
@@ -105,6 +92,23 @@ func (a *allocator) Start(ctx context.Context) error {
 		}
 	}
 	return pubsub.ErrSubscriptionTerminated
+}
+
+func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
+	a.pools = make(map[string]*Pool, len(pools))
+	for _, pool := range pools {
+		a.pools[pool.ID] = pool
+	}
+	a.agents = make(map[string]*Agent, len(agents))
+	a.capacities = make(map[string]int, len(agents))
+	for _, agent := range agents {
+		a.agents[agent.ID] = agent
+		a.capacities[agent.ID] = agent.Concurrency
+	}
+	a.jobs = make(map[JobSpec]*Job, len(jobs))
+	for _, job := range jobs {
+		a.jobs[job.JobSpec] = job
+	}
 }
 
 // allocate jobs to agents.
@@ -198,7 +202,7 @@ func (a *allocator) findCandidateAgent(job *Job) (*Agent, error) {
 }
 
 func (a *allocator) allocateJob(ctx context.Context, agent *Agent, job *Job) error {
-	allocated, err := a.service.allocateJob(ctx, job.JobSpec, agent.ID)
+	allocated, err := a.Service.allocateJob(ctx, job.JobSpec, agent.ID)
 	if err != nil {
 		return err
 	}
@@ -208,7 +212,7 @@ func (a *allocator) allocateJob(ctx context.Context, agent *Agent, job *Job) err
 }
 
 func (a *allocator) reallocateJob(ctx context.Context, agent *Agent, job *Job) error {
-	reallocated, err := a.service.reallocateJob(ctx, job.JobSpec, agent.ID)
+	reallocated, err := a.Service.reallocateJob(ctx, job.JobSpec, agent.ID)
 	if err != nil {
 		return err
 	}

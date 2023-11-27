@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
@@ -16,8 +18,12 @@ import (
 
 func main() {
 	// Configure ^C to terminate program
-	ctx, cancel := context.WithCancel(context.Background())
-	cmdutil.CatchCtrlC(cancel)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-ctx.Done()
+		// Stop handling ^C; another ^C will exit the program.
+		cancel()
+	}()
 
 	if err := run(ctx, os.Args[1:]); err != nil {
 		cmdutil.PrintError(err)

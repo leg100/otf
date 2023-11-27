@@ -9,7 +9,7 @@ type cancelable interface {
 
 // terminator handles canceling jobs
 type terminator struct {
-	// mapping maps job to a cancelable worker carrying out the job.
+	// mapping maps job to a cancelable operation executing the job.
 	mapping map[JobSpec]cancelable
 	mu      sync.RWMutex
 }
@@ -33,6 +33,15 @@ func (t *terminator) cancel(spec JobSpec, force bool) {
 	defer t.mu.RUnlock()
 
 	if job, ok := t.mapping[spec]; ok {
+		job.cancel(force)
+	}
+}
+
+func (t *terminator) cancelAll(force bool) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	for _, job := range t.mapping {
 		job.cancel(force)
 	}
 }

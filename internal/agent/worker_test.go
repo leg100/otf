@@ -16,7 +16,7 @@ import (
 func TestExecutor_execute(t *testing.T) {
 	t.Run("no options", func(t *testing.T) {
 		var got bytes.Buffer
-		w := &worker{
+		w := &operation{
 			out:     &got,
 			workdir: &workdir{root: ""},
 		}
@@ -26,7 +26,7 @@ func TestExecutor_execute(t *testing.T) {
 	})
 
 	t.Run("redirect stdout", func(t *testing.T) {
-		w := &worker{
+		w := &operation{
 			out:     io.Discard,
 			workdir: &workdir{root: ""},
 		}
@@ -45,7 +45,7 @@ func TestExecutor_execute(t *testing.T) {
 			t.Skip("Skipping test that requires bwrap")
 		}
 
-		w := &worker{
+		w := &operation{
 			config:  Config{Sandbox: true},
 			out:     io.Discard,
 			workdir: &workdir{root: "."},
@@ -57,7 +57,7 @@ func TestExecutor_execute(t *testing.T) {
 
 	t.Run("stderr", func(t *testing.T) {
 		var got bytes.Buffer
-		w := &worker{
+		w := &operation{
 			out:     &got,
 			workdir: &workdir{root: ""},
 		}
@@ -69,7 +69,7 @@ func TestExecutor_execute(t *testing.T) {
 
 	t.Run("cancel", func(t *testing.T) {
 		r, w := io.Pipe()
-		wkr := &worker{
+		wkr := &operation{
 			out:     w,
 			workdir: &workdir{root: ""},
 		}
@@ -86,7 +86,7 @@ func TestExecutor_execute(t *testing.T) {
 
 func TestExecutor_addSandboxWrapper(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
-		w := worker{
+		w := operation{
 			workdir: &workdir{root: "/root"},
 		}
 		want := []string{
@@ -105,7 +105,7 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 	})
 
 	t.Run("with plugin cache", func(t *testing.T) {
-		w := worker{
+		w := operation{
 			config: Config{
 				PluginCache: true,
 			},
@@ -128,7 +128,7 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 	})
 
 	t.Run("with relative working directory", func(t *testing.T) {
-		w := worker{
+		w := operation{
 			config: Config{
 				PluginCache: true,
 			},

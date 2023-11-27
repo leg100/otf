@@ -7,14 +7,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/hooks"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/run"
+	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -44,7 +43,7 @@ type (
 		watchAgentsByOrganization(ctx context.Context, organization string) (<-chan *Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
-		unregisterAgent(ctx context.Context, agentID string) error
+		deleteAgent(ctx context.Context, agentID string) error
 
 		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -52,13 +51,16 @@ type (
 		DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
 
 		startJob(ctx context.Context, spec JobSpec) ([]byte, error)
+		allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
+		reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
 		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
+		listJobs(ctx context.Context) ([]*Job, error)
 	}
 
 	service struct {
 		logr.Logger
 		pubsub.Subscriber
-		run.RunService
+		otfrun.RunService
 
 		organization internal.Authorizer
 
@@ -77,7 +79,7 @@ type (
 		*pubsub.Broker
 		html.Renderer
 		*tfeapi.Responder
-		run.RunService
+		otfrun.RunService
 		tokens.TokensService
 		workspace.WorkspaceService
 	}
@@ -139,10 +141,10 @@ func NewService(opts ServiceOptions) *service {
 	// create jobs when a plan or apply is enqueued
 	opts.AfterEnqueuePlan(svc.createJob)
 	opts.AfterEnqueueApply(svc.createJob)
-	// relay cancel signal from run service to agent.
-	opts.AfterCancelSignal(svc.relaySignal(cancelSignal))
-	// relay force-cancel signal from run service to agent.
-	opts.AfterForceCancelSignal(svc.relaySignal(forceCancelSignal))
+	// cancel job when a run is canceled
+	opts.AfterCancel(svc.cancelJob)
+	// cancel job when a run is forceably canceled
+	opts.AfterForceCancel(svc.cancelJob)
 	// check whether a workspace is being created or updated and configured to
 	// use an agent pool, and if so, check that it is allowed to use the pool.
 	opts.BeforeCreateWorkspace(svc.checkWorkspacePoolAccess)
@@ -197,7 +199,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
 	return &allocator{
 		Subscriber: subscriber,
-		service:    s,
+		Service:    s,
 	}
 }
 
@@ -477,16 +479,16 @@ func (s *service) watchAgentsByOrganization(ctx context.Context, organization st
 	return agents, nil
 }
 
-func (s *service) unregisterAgent(ctx context.Context, agentID string) error {
+func (s *service) deleteAgent(ctx context.Context, agentID string) error {
 	if err := s.db.deleteAgent(ctx, agentID); err != nil {
-		s.Error(err, "unregistering agent", "agent_id", agentID)
+		s.Error(err, "deleting agent", "agent_id", agentID)
 		return err
 	}
-	s.V(2).Info("unregistered agent", "agent_id", agentID)
+	s.V(2).Info("deleted agent", "agent_id", agentID)
 	return nil
 }
 
-func (s *service) createJob(ctx context.Context, run *run.Run) error {
+func (s *service) createJob(ctx context.Context, run *otfrun.Run) error {
 	job := newJob(run)
 	if err := s.db.createJob(ctx, job); err != nil {
 		return err
@@ -494,13 +496,14 @@ func (s *service) createJob(ctx context.Context, run *run.Run) error {
 	return nil
 }
 
-func (s *service) relaySignal(sig signal) hooks.Listener[*run.Run] {
-	return func(ctx context.Context, run *run.Run) error {
-		spec := JobSpec{RunID: run.ID, Phase: run.Phase()}
-		return s.db.updateJob(ctx, spec, func(job *Job) error {
-			return job.setSignal(sig)
-		})
-	}
+// cancelJob is called when a user cancels a run - cancelJob determines whether
+// the corresponding job is signaled and what type of signal, and/or whether the job
+// should be canceled.
+func (s *service) cancelJob(ctx context.Context, run *otfrun.Run) error {
+	spec := JobSpec{RunID: run.ID, Phase: run.Phase()}
+	return s.db.updateJob(ctx, spec, func(job *Job) error {
+		return job.cancel(run)
+	})
 }
 
 // getAgentJobs returns jobs that either:
@@ -550,7 +553,7 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		case JobAllocated:
 			return []*Job{job}, nil
 		case JobRunning:
-			if job.signal != nil {
+			if job.signaled != nil {
 				return []*Job{job}, nil
 			}
 		}
@@ -616,7 +619,7 @@ func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 			return err
 		}
 		// start corresponding run phase too
-		if _, err = s.RunService.StartPhase(ctx, spec.RunID, spec.Phase, run.PhaseStartOptions{}); err != nil {
+		if _, err = s.RunService.StartPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseStartOptions{}); err != nil {
 			return err
 		}
 		token, err = s.tokenFactory.createJobToken(spec)
@@ -654,11 +657,11 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		var err error
 		switch opts.Status {
 		case JobFinished, JobErrored:
-			_, err = s.RunService.FinishPhase(ctx, spec.RunID, spec.Phase, run.PhaseFinishOptions{
+			_, err = s.RunService.FinishPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseFinishOptions{
 				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			_, err = s.RunService.Cancel(ctx, spec.RunID, true)
+			err = s.RunService.Cancel(ctx, spec.RunID, true)
 		}
 		return err
 	})

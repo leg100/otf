@@ -93,7 +93,7 @@ func (m *manager) update(ctx context.Context, agent *Agent) error {
 		// purge agent from database once a further 1 hour has elapsed for
 		// agents in a terminal state.
 		if time.Since(agent.LastStatusAt) > time.Hour {
-			return m.unregisterAgent(ctx, agent.ID)
+			return m.deleteAgent(ctx, agent.ID)
 		}
 	}
 	return nil

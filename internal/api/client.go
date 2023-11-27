@@ -326,6 +326,8 @@ func checkResponseCode(r *http.Response) error {
 	case 408, 502:
 		// 408 Request Timeout, 504 Gateway Timeout
 		return internal.ErrTimeout
+	case 409:
+		return internal.ErrConflict
 	}
 	// get contents of body and log that in the error message so we know
 	// what it is choking on.

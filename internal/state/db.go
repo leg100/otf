@@ -64,7 +64,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 			_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
 				ID:             sql.String(svo.ID),
 				Name:           sql.String(svo.Name),
-				Sensitive:      svo.Sensitive,
+				Sensitive:      sql.Bool(svo.Sensitive),
 				Type:           sql.String(svo.Type),
 				Value:          svo.Value,
 				StateVersionID: sql.String(v.ID),
@@ -83,7 +83,7 @@ func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
 			_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
 				ID:             sql.String(svo.ID),
 				Name:           sql.String(svo.Name),
-				Sensitive:      svo.Sensitive,
+				Sensitive:      sql.Bool(svo.Sensitive),
 				Type:           sql.String(svo.Type),
 				Value:          svo.Value,
 				StateVersionID: sql.String(svo.StateVersionID),

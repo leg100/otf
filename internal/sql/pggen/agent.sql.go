@@ -822,12 +822,12 @@ type Querier interface {
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt pgtype.Timestamptz, id pgtype.Text) (pgtype.Text, error)
-	// UpdateRunForceCancelAvailableAtBatch enqueues a UpdateRunForceCancelAvailableAt query into batch to be executed
+	UpdateCanceledAt(ctx context.Context, canceledAt pgtype.Timestamptz, id pgtype.Text) (pgtype.Text, error)
+	// UpdateCanceledAtBatch enqueues a UpdateCanceledAt query into batch to be executed
 	// later by the batch.
-	UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt pgtype.Timestamptz, id pgtype.Text)
-	// UpdateRunForceCancelAvailableAtScan scans the result of an executed UpdateRunForceCancelAvailableAtBatch query.
-	UpdateRunForceCancelAvailableAtScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateCanceledAtBatch(batch genericBatch, canceledAt pgtype.Timestamptz, id pgtype.Text)
+	// UpdateCanceledAtScan scans the result of an executed UpdateCanceledAtBatch query.
+	UpdateCanceledAtScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
@@ -1930,8 +1930,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateRunForceCancelAvailableAtSQL, updateRunForceCancelAvailableAtSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateRunForceCancelAvailableAt': %w", err)
+	if _, err := p.Prepare(ctx, updateCanceledAtSQL, updateCanceledAtSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateCanceledAt': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
@@ -2260,8 +2260,8 @@ type IngressAttributes struct {
 	Branch                 pgtype.Text `json:"branch"`
 	CommitSHA              pgtype.Text `json:"commit_sha"`
 	Identifier             pgtype.Text `json:"identifier"`
-	IsPullRequest          bool        `json:"is_pull_request"`
-	OnDefaultBranch        bool        `json:"on_default_branch"`
+	IsPullRequest          pgtype.Bool `json:"is_pull_request"`
+	OnDefaultBranch        pgtype.Bool `json:"on_default_branch"`
 	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
 	CommitURL              pgtype.Text `json:"commit_url"`
 	PullRequestNumber      pgtype.Int4 `json:"pull_request_number"`
@@ -2325,30 +2325,30 @@ type RunVariables struct {
 type Runs struct {
 	RunID                  pgtype.Text        `json:"run_id"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	ForceCancelAvailableAt pgtype.Timestamptz `json:"force_cancel_available_at"`
-	IsDestroy              bool               `json:"is_destroy"`
+	CanceledAt             pgtype.Timestamptz `json:"canceled_at"`
+	IsDestroy              pgtype.Bool        `json:"is_destroy"`
 	PositionInQueue        pgtype.Int4        `json:"position_in_queue"`
-	Refresh                bool               `json:"refresh"`
-	RefreshOnly            bool               `json:"refresh_only"`
+	Refresh                pgtype.Bool        `json:"refresh"`
+	RefreshOnly            pgtype.Bool        `json:"refresh_only"`
 	ReplaceAddrs           []string           `json:"replace_addrs"`
 	TargetAddrs            []string           `json:"target_addrs"`
 	LockFile               []byte             `json:"lock_file"`
 	Status                 pgtype.Text        `json:"status"`
 	WorkspaceID            pgtype.Text        `json:"workspace_id"`
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
-	AutoApply              bool               `json:"auto_apply"`
-	PlanOnly               bool               `json:"plan_only"`
+	AutoApply              pgtype.Bool        `json:"auto_apply"`
+	PlanOnly               pgtype.Bool        `json:"plan_only"`
 	CreatedBy              pgtype.Text        `json:"created_by"`
 	Source                 pgtype.Text        `json:"source"`
 	TerraformVersion       pgtype.Text        `json:"terraform_version"`
-	AllowEmptyApply        bool               `json:"allow_empty_apply"`
+	AllowEmptyApply        pgtype.Bool        `json:"allow_empty_apply"`
 }
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
 type StateVersionOutputs struct {
 	StateVersionOutputID pgtype.Text `json:"state_version_output_id"`
 	Name                 pgtype.Text `json:"name"`
-	Sensitive            bool        `json:"sensitive"`
+	Sensitive            pgtype.Bool `json:"sensitive"`
 	Type                 pgtype.Text `json:"type"`
 	Value                []byte      `json:"value"`
 	StateVersionID       pgtype.Text `json:"state_version_id"`
@@ -2359,15 +2359,15 @@ type Teams struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 // Users represents the Postgres composite type "users".
@@ -2376,7 +2376,7 @@ type Users struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 }
 
 // Variables represents the Postgres composite type "variables".
@@ -2386,8 +2386,8 @@ type Variables struct {
 	Value       pgtype.Text `json:"value"`
 	Description pgtype.Text `json:"description"`
 	Category    pgtype.Text `json:"category"`
-	Sensitive   bool        `json:"sensitive"`
-	HCL         bool        `json:"hcl"`
+	Sensitive   pgtype.Bool `json:"sensitive"`
+	HCL         pgtype.Bool `json:"hcl"`
 	VersionID   pgtype.Text `json:"version_id"`
 }
 
@@ -2615,7 +2615,7 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		"runs",
 		compositeField{"run_id", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"force_cancel_available_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"canceled_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"is_destroy", "bool", &pgtype.Bool{}},
 		compositeField{"position_in_queue", "int4", &pgtype.Int4{}},
 		compositeField{"refresh", "bool", &pgtype.Bool{}},

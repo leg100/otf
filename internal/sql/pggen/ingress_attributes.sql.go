@@ -55,8 +55,8 @@ type InsertIngressAttributesParams struct {
 	SenderHTMLURL          pgtype.Text
 	Identifier             pgtype.Text
 	Tag                    pgtype.Text
-	IsPullRequest          bool
-	OnDefaultBranch        bool
+	IsPullRequest          pgtype.Bool
+	OnDefaultBranch        pgtype.Bool
 	ConfigurationVersionID pgtype.Text
 }
 

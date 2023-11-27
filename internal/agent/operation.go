@@ -37,8 +37,8 @@ const (
 
 var ascii = regexp.MustCompile("[[:^ascii:]]")
 
-// worker does a Job
-type worker struct {
+// operation performs the execution of a job
+type operation struct {
 	client
 	*run.Run
 	logr.Logger
@@ -47,95 +47,116 @@ type worker struct {
 	job           *Job
 	debug         bool
 	canceled      bool
+	ctx           context.Context
 	cancelfn      context.CancelFunc
 	out           io.Writer
 	terraformPath string
 	envs          []string
 	variables     []*variable.Variable // terraform variables
 	proc          *os.Process          // current or last process
-	terminator    *terminator
 	downloader    releases.Downloader
 	token         []byte
 
 	*workdir
 }
 
-type step func(context.Context) error
+type newOperationOptions struct {
+	logger     logr.Logger
+	client     client
+	job        *Job
+	downloader releases.Downloader
+	envs       []string
+	token      []byte
+}
 
-func (w *worker) doAndHandleError(ctx context.Context) {
-	// do the job, and then handle any error and send appropriate job status
-	// update
-	err := w.do(ctx)
-
-	var opts finishJobOptions
-	switch {
-	case w.canceled:
-		opts.Status = JobCanceled
-		if err != nil {
-			w.Error(err, "job canceled")
-		} else {
-			w.V(0).Info("job canceled")
-		}
-	case err != nil:
-		opts.Status = JobErrored
-		opts.Error = err.Error()
-		w.Error(err, "finished job with error")
-	default:
-		opts.Status = JobFinished
-		w.V(0).Info("finished job successfully")
-	}
-
-	if err := w.finishJob(ctx, w.job.JobSpec, opts); err != nil {
-		w.Error(err, "sending job status", "status", opts.Status)
+func newOperation(opts newOperationOptions) *operation {
+	// an operation has its own uninherited context; the operation is instead
+	// canceled via its cancel() method.
+	ctx, cancelfn := context.WithCancel(context.Background())
+	return &operation{
+		Logger:     opts.logger.WithValues("job", opts.job),
+		client:     opts.client,
+		job:        opts.job,
+		envs:       opts.envs,
+		downloader: opts.downloader,
+		token:      opts.token,
+		ctx:        ctx,
+		cancelfn:   cancelfn,
 	}
 }
 
-// do the Job
-func (w *worker) do(ctx context.Context) error {
-	// check worker in with the terminator, so that if a cancelation signal
-	// arrives it can be handled accordingly for the duration of the worker.
-	ctx, cancel := context.WithCancel(ctx)
-	w.cancelfn = cancel
-	w.terminator.checkIn(w.job.JobSpec, w)
-	defer w.terminator.checkOut(w.job.JobSpec)
+// doAndFinish executes the job and marks the job as complete with the
+// appropriate status.
+func (o *operation) doAndFinish() {
+	// do the job, and then handle any error and send appropriate job status
+	// update
+	err := o.do()
 
+	var opts finishJobOptions
+	switch {
+	case o.canceled:
+		if o.ctx.Err() != nil {
+			// the context is closed, which only occurs when the server has
+			// already canceled the job and the server has sent the operation a
+			// force-cancel signal. In which case there is nothing more to be
+			// done other than tell the user what happened.
+			o.Error(err, "job forceably canceled")
+			return
+		}
+		opts.Status = JobCanceled
+		o.Error(err, "job canceled")
+	case err != nil:
+		opts.Status = JobErrored
+		opts.Error = err.Error()
+		o.Error(err, "finished job with error")
+	default:
+		opts.Status = JobFinished
+		o.V(0).Info("finished job successfully")
+	}
+	if err := o.finishJob(o.ctx, o.job.JobSpec, opts); err != nil {
+		o.Error(err, "sending job status", "status", opts.Status)
+	}
+}
+
+// do executes the job
+func (o *operation) do() error {
 	// if this is a pool agent using RPC to communicate with the server
 	// then use a new client for this job, configured to authenticate with the
 	// job token and to retry requests upon encountering transient errors.
-	if _, ok := w.client.(*rpcClient); ok {
+	if _, ok := o.client.(*rpcClient); ok {
 		client, err := NewRPCClient(otfapi.Config{
-			Token:         string(w.token),
+			Token:         string(o.token),
 			RetryRequests: true,
 			RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {
 				// ignore first un-retried requests
 				if n == 0 {
 					return
 				}
-				w.Error(nil, "retrying request", "url", r.URL, "attempt", n)
+				o.Error(nil, "retrying request", "url", r.URL, "attempt", n)
 			},
 		})
 		if err != nil {
 			return fmt.Errorf("initializing job client: %w", err)
 		}
-		w.client = client
+		o.client = client
 	} else {
 		// this is a server agent: directly authenticate as job with services
-		ctx = internal.AddSubjectToContext(ctx, w.job)
+		o.ctx = internal.AddSubjectToContext(o.ctx, o.job)
 	}
 
 	// make token available to terraform CLI
-	w.envs = append(w.envs, internal.CredentialEnv(w.Hostname(), w.token))
+	o.envs = append(o.envs, internal.CredentialEnv(o.Hostname(), o.token))
 
-	run, err := w.GetRun(ctx, w.job.RunID)
+	run, err := o.GetRun(o.ctx, o.job.RunID)
 	if err != nil {
 		return err
 	}
-	w.Run = run
+	o.Run = run
 
 	// Get workspace in order to get working directory path
 	//
 	// TODO: add working directory to run.Run
-	ws, err := w.GetWorkspace(ctx, w.job.WorkspaceID)
+	ws, err := o.GetWorkspace(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
@@ -144,9 +165,9 @@ func (w *worker) do(ctx context.Context) error {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}
 	defer wd.close()
-	w.workdir = wd
+	o.workdir = wd
 	// retrieve variables and add them to the environment
-	variables, err := w.ListEffectiveVariables(ctx, run.ID)
+	variables, err := o.ListEffectiveVariables(o.ctx, run.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
@@ -155,66 +176,67 @@ func (w *worker) do(ctx context.Context) error {
 	for _, v := range variables {
 		if v.Category == variable.CategoryEnv {
 			ev := fmt.Sprintf("%s=%s", v.Key, v.Value)
-			w.envs = append(w.envs, ev)
+			o.envs = append(o.envs, ev)
 		}
 	}
-	writer := logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
+	writer := logs.NewPhaseWriter(o.ctx, logs.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
-		Writer: w,
+		Writer: o,
 	})
 	defer writer.Close()
-	w.out = writer
+	o.out = writer
 
 	// dump info if in debug mode
-	if w.debug {
+	if o.debug {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(w.out)
-		fmt.Fprintln(w.out, "Debug mode enabled")
-		fmt.Fprintln(w.out, "------------------")
-		fmt.Fprintf(w.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(w.out, "External agent: %t\n", !w.config.server)
-		fmt.Fprintf(w.out, "Sandbox mode: %t\n", !w.config.Sandbox)
-		fmt.Fprintln(w.out, "------------------")
-		fmt.Fprintln(w.out)
+		fmt.Fprintln(o.out)
+		fmt.Fprintln(o.out, "Debug mode enabled")
+		fmt.Fprintln(o.out, "------------------")
+		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
+		fmt.Fprintf(o.out, "External agent: %t\n", !o.config.server)
+		fmt.Fprintf(o.out, "Sandbox mode: %t\n", !o.config.Sandbox)
+		fmt.Fprintln(o.out, "------------------")
+		fmt.Fprintln(o.out)
 	}
 
-	// compile list of steps that comprise operation
+	// compile list of steps comprising operation
+	type step func(context.Context) error
 	steps := []step{
-		w.downloadTerraform,
-		w.downloadConfig,
-		w.writeTerraformVars,
-		w.deleteBackendConfig,
-		w.downloadState,
+		o.downloadTerraform,
+		o.downloadConfig,
+		o.writeTerraformVars,
+		o.deleteBackendConfig,
+		o.downloadState,
 	}
 	switch run.Phase() {
 	case internal.PlanPhase:
-		steps = append(steps, w.terraformInit)
-		steps = append(steps, w.terraformPlan)
-		steps = append(steps, w.convertPlanToJSON)
-		steps = append(steps, w.uploadPlan)
-		steps = append(steps, w.uploadJSONPlan)
-		steps = append(steps, w.uploadLockFile)
+		steps = append(steps, o.terraformInit)
+		steps = append(steps, o.terraformPlan)
+		steps = append(steps, o.convertPlanToJSON)
+		steps = append(steps, o.uploadPlan)
+		steps = append(steps, o.uploadJSONPlan)
+		steps = append(steps, o.uploadLockFile)
 	case internal.ApplyPhase:
 		// Download lock file from plan phase for the apply phase, to ensure
 		// same providers are used in both phases.
-		steps = append(steps, w.downloadLockFile)
-		steps = append(steps, w.downloadPlanFile)
-		steps = append(steps, w.terraformInit)
-		steps = append(steps, w.terraformApply)
+		steps = append(steps, o.downloadLockFile)
+		steps = append(steps, o.downloadPlanFile)
+		steps = append(steps, o.terraformInit)
+		steps = append(steps, o.terraformApply)
 	}
 
 	// do each step
 	for _, step := range steps {
 		// skip remaining steps if op is canceled
-		if w.canceled {
+		if o.canceled {
 			return fmt.Errorf("execution canceled")
 		}
 		// do step
-		if err := step(ctx); err != nil {
+		if err := step(o.ctx); err != nil {
 			// write error message to output
 			errbuilder := strings.Builder{}
 			errbuilder.WriteRune('\n')
@@ -225,25 +247,25 @@ func (w *worker) do(ctx context.Context) error {
 
 			errbuilder.WriteString(err.Error())
 			errbuilder.WriteRune('\n')
-			fmt.Fprint(w.out, errbuilder.String())
+			fmt.Fprint(o.out, errbuilder.String())
 			return err
 		}
 	}
 	return nil
 }
 
-func (w *worker) cancel(force bool) {
-	w.canceled = true
+func (o *operation) cancel(force bool) {
+	o.canceled = true
 	// cancel context only if forced and if there is a context to cancel
-	if force && w.cancelfn != nil {
-		w.cancelfn()
+	if force && o.cancelfn != nil {
+		o.cancelfn()
 	}
 	// signal current process if there is one.
-	if w.proc != nil {
+	if o.proc != nil {
 		if force {
-			w.proc.Signal(os.Kill)
+			o.proc.Signal(os.Kill)
 		} else {
-			w.proc.Signal(os.Interrupt)
+			o.proc.Signal(os.Interrupt)
 		}
 	}
 }
@@ -274,7 +296,7 @@ func redirectStdout(dst string) executionOptionFunc {
 }
 
 // execute executes a process.
-func (w *worker) execute(args []string, funcs ...executionOptionFunc) error {
+func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	if len(args) == 0 {
 		return fmt.Errorf("missing command name")
 	}
@@ -282,34 +304,34 @@ func (w *worker) execute(args []string, funcs ...executionOptionFunc) error {
 	for _, fn := range funcs {
 		fn(&opts)
 	}
-	if opts.sandboxIfEnabled && w.config.Sandbox {
-		args = w.addSandboxWrapper(args)
+	if opts.sandboxIfEnabled && o.config.Sandbox {
+		args = o.addSandboxWrapper(args)
 	}
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Dir = w.workdir.String()
+	cmd.Dir = o.workdir.String()
 	cmd.Env = os.Environ()
-	cmd.Env = append(os.Environ(), w.envs...)
+	cmd.Env = append(os.Environ(), o.envs...)
 
 	if opts.redirectStdout != nil {
-		dst, err := os.Create(path.Join(w.workdir.String(), *opts.redirectStdout))
+		dst, err := os.Create(path.Join(o.workdir.String(), *opts.redirectStdout))
 		if err != nil {
 			return err
 		}
 		defer dst.Close()
 		cmd.Stdout = dst
 	} else {
-		cmd.Stdout = w.out
+		cmd.Stdout = o.out
 	}
 
 	// send stderr to both output (for sending to client) and to
 	// buffer, so that upon error its contents can be relayed.
 	stderr := new(bytes.Buffer)
-	cmd.Stderr = io.MultiWriter(w.out, stderr)
+	cmd.Stderr = io.MultiWriter(o.out, stderr)
 
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	w.proc = cmd.Process
+	o.proc = cmd.Process
 
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
@@ -318,48 +340,48 @@ func (w *worker) execute(args []string, funcs ...executionOptionFunc) error {
 }
 
 // addSandboxWrapper wraps the args within a bubblewrap sandbox.
-func (w *worker) addSandboxWrapper(args []string) []string {
+func (o *operation) addSandboxWrapper(args []string) []string {
 	bargs := []string{
 		"bwrap",
 		"--ro-bind", args[0], path.Join("/bin", path.Base(args[0])),
-		"--bind", w.root, "/config",
+		"--bind", o.root, "/config",
 		// for DNS lookups
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 		// for verifying SSL connections
 		"--ro-bind", internal.SSLCertsDir(), internal.SSLCertsDir(),
-		"--chdir", path.Join("/config", w.relative),
+		"--chdir", path.Join("/config", o.relative),
 		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
 		"--proc", "/proc",
 		// avoids provider error "failed to read schema..."
 		"--tmpfs", "/tmp",
 	}
-	if w.config.PluginCache {
+	if o.config.PluginCache {
 		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
 	}
 	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))
 	return append(bargs, args[1:]...)
 }
 
-func (b *worker) downloadTerraform(ctx context.Context) error {
+func (o *operation) downloadTerraform(ctx context.Context) error {
 	var err error
-	b.terraformPath, err = b.downloader.Download(ctx, b.TerraformVersion, b.out)
+	o.terraformPath, err = o.downloader.Download(ctx, o.TerraformVersion, o.out)
 	return err
 }
 
-func (b *worker) downloadConfig(ctx context.Context) error {
-	cv, err := b.DownloadConfig(ctx, b.ConfigurationVersionID)
+func (o *operation) downloadConfig(ctx context.Context) error {
+	cv, err := o.DownloadConfig(ctx, o.ConfigurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
 	// Decompress and untar config into root dir
-	if err := internal.Unpack(bytes.NewBuffer(cv), b.root); err != nil {
+	if err := internal.Unpack(bytes.NewBuffer(cv), o.root); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 	return nil
 }
 
-func (b *worker) deleteBackendConfig(ctx context.Context) error {
-	if err := internal.RewriteHCL(b.workdir.String(), internal.RemoveBackendBlock); err != nil {
+func (o *operation) deleteBackendConfig(ctx context.Context) error {
+	if err := internal.RewriteHCL(o.workdir.String(), internal.RemoveBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
@@ -367,14 +389,14 @@ func (b *worker) deleteBackendConfig(ctx context.Context) error {
 
 // downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
-func (b *worker) downloadState(ctx context.Context) error {
-	statefile, err := b.DownloadCurrentState(ctx, b.WorkspaceID)
+func (o *operation) downloadState(ctx context.Context) error {
+	statefile, err := o.DownloadCurrentState(ctx, o.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-	if err := b.writeFile(localStateFilename, statefile); err != nil {
+	if err := o.writeFile(localStateFilename, statefile); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 	return nil
@@ -383,38 +405,38 @@ func (b *worker) downloadState(ctx context.Context) error {
 // downloadLockFile downloads the .terraform.lock.hcl file into the working
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
-func (b *worker) downloadLockFile(ctx context.Context) error {
-	lockFile, err := b.GetLockFile(ctx, b.ID)
+func (o *operation) downloadLockFile(ctx context.Context) error {
+	lockFile, err := o.GetLockFile(ctx, o.ID)
 	if err != nil {
 		return err
 	}
-	return b.writeFile(lockFilename, lockFile)
+	return o.writeFile(lockFilename, lockFile)
 }
 
-func (b *worker) writeTerraformVars(ctx context.Context) error {
-	if err := variable.WriteTerraformVars(b.workdir.String(), b.variables); err != nil {
+func (o *operation) writeTerraformVars(ctx context.Context) error {
+	if err := variable.WriteTerraformVars(o.workdir.String(), o.variables); err != nil {
 		return fmt.Errorf("writing terraform.fvars: %w", err)
 	}
 	return nil
 }
 
-func (b *worker) terraformInit(ctx context.Context) error {
-	return b.execute([]string{b.terraformPath, "init"})
+func (o *operation) terraformInit(ctx context.Context) error {
+	return o.execute([]string{o.terraformPath, "init"})
 }
 
-func (b *worker) terraformPlan(ctx context.Context) error {
+func (o *operation) terraformPlan(ctx context.Context) error {
 	args := []string{"plan"}
-	if b.IsDestroy {
+	if o.IsDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+planFilename)
-	return b.execute(append([]string{b.terraformPath}, args...))
+	return o.execute(append([]string{o.terraformPath}, args...))
 }
 
-func (b *worker) terraformApply(ctx context.Context) (err error) {
+func (o *operation) terraformApply(ctx context.Context) (err error) {
 	// prior to running an apply, capture info about local state file
 	// so we can detect changes...
-	statePath := filepath.Join(b.workdir.String(), localStateFilename)
+	statePath := filepath.Join(o.workdir.String(), localStateFilename)
 	stateInfoBefore, _ := os.Stat(statePath)
 	// ...and after the apply finishes, determine if there were changes, and if
 	// so, create a new state version. We do this even if the apply failed
@@ -434,77 +456,77 @@ func (b *worker) terraformApply(ctx context.Context) (err error) {
 		// either there was no state file before and there is one now, or the
 		// state file modification time has changed. In either case we upload
 		// the new state.
-		if stateErr := b.uploadState(ctx); stateErr != nil {
+		if stateErr := o.uploadState(ctx); stateErr != nil {
 			err = errors.Join(err, stateErr)
 		}
 	}()
 
 	args := []string{"apply"}
-	if b.IsDestroy {
+	if o.IsDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return b.execute(append([]string{b.terraformPath}, args...), sandboxIfEnabled())
+	return o.execute(append([]string{o.terraformPath}, args...), sandboxIfEnabled())
 }
 
-func (b *worker) convertPlanToJSON(ctx context.Context) error {
+func (o *operation) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
-	return b.execute(
-		append([]string{b.terraformPath}, args...),
+	return o.execute(
+		append([]string{o.terraformPath}, args...),
 		redirectStdout(jsonPlanFilename),
 	)
 }
 
-func (b *worker) uploadPlan(ctx context.Context) error {
-	file, err := b.readFile(planFilename)
+func (o *operation) uploadPlan(ctx context.Context) error {
+	file, err := o.readFile(planFilename)
 	if err != nil {
 		return err
 	}
 
-	if err := b.UploadPlanFile(ctx, b.ID, file, run.PlanFormatBinary); err != nil {
+	if err := o.UploadPlanFile(ctx, o.ID, file, run.PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
 	return nil
 }
 
-func (b *worker) uploadJSONPlan(ctx context.Context) error {
-	jsonFile, err := b.readFile(jsonPlanFilename)
+func (o *operation) uploadJSONPlan(ctx context.Context) error {
+	jsonFile, err := o.readFile(jsonPlanFilename)
 	if err != nil {
 		return err
 	}
-	if err := b.UploadPlanFile(ctx, b.ID, jsonFile, run.PlanFormatJSON); err != nil {
+	if err := o.UploadPlanFile(ctx, o.ID, jsonFile, run.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
 }
 
-func (b *worker) uploadLockFile(ctx context.Context) error {
-	lockFile, err := b.readFile(lockFilename)
+func (o *operation) uploadLockFile(ctx context.Context) error {
+	lockFile, err := o.readFile(lockFilename)
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("reading lock file: %w", err)
 	}
-	if err := b.UploadLockFile(ctx, b.ID, lockFile); err != nil {
+	if err := o.UploadLockFile(ctx, o.ID, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
 	}
 	return nil
 }
 
-func (b *worker) downloadPlanFile(ctx context.Context) error {
-	plan, err := b.GetPlanFile(ctx, b.ID, run.PlanFormatBinary)
+func (o *operation) downloadPlanFile(ctx context.Context) error {
+	plan, err := o.GetPlanFile(ctx, o.ID, run.PlanFormatBinary)
 	if err != nil {
 		return err
 	}
 
-	return b.writeFile(planFilename, plan)
+	return o.writeFile(planFilename, plan)
 }
 
 // uploadState reads, parses, and uploads terraform state
-func (b *worker) uploadState(ctx context.Context) error {
-	statefile, err := b.readFile(localStateFilename)
+func (o *operation) uploadState(ctx context.Context) error {
+	statefile, err := o.readFile(localStateFilename)
 	if err != nil {
 		return err
 	}
@@ -513,8 +535,8 @@ func (b *worker) uploadState(ctx context.Context) error {
 	if err := json.Unmarshal(statefile, &f); err != nil {
 		return err
 	}
-	_, err = b.CreateStateVersion(ctx, state.CreateStateVersionOptions{
-		WorkspaceID: &b.WorkspaceID,
+	_, err = o.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+		WorkspaceID: &o.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,
 	})

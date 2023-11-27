@@ -18,7 +18,7 @@ SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -27,7 +27,7 @@ FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.agent_id = pggen.arg('agent_id')
-AND   j.status = 'allocated' OR (j.status = 'running' AND j.signal IS NOT NULL)
+AND   j.status = 'allocated' OR (j.status = 'running' AND j.signaled IS NOT NULL)
 ;
 
 -- name: FindJobs :many
@@ -35,7 +35,7 @@ SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -50,7 +50,7 @@ SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -67,7 +67,7 @@ SELECT
     j.run_id,
     j.phase,
     j.status,
-    j.signal,
+    j.signaled,
     j.agent_id,
     w.execution_mode,
     r.workspace_id,
@@ -83,7 +83,7 @@ FOR UPDATE OF j
 -- name: UpdateJob :one
 UPDATE jobs
 SET status   = pggen.arg('status'),
-    signal   = pggen.arg('signal'),
+    signaled = pggen.arg('signaled'),
     agent_id = pggen.arg('agent_id')
 WHERE run_id = pggen.arg('run_id')
 AND   phase = pggen.arg('phase')

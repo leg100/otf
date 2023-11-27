@@ -521,6 +521,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			LockID:    internal.Int64(agent.ManagerLockID),
 			System:    d.NewManager(),
 		},
+		{
+			Name:   "agent-daemon",
+			Logger: d.Logger,
+			DB:     d.DB,
+			System: d.agent,
+		},
 	}
 	if !d.DisableScheduler {
 		subsystems = append(subsystems, &Subsystem{
@@ -551,14 +557,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		return fmt.Errorf("timed out waiting for broker to start")
 	case <-d.Broker.Started():
 	}
-
-	// Run agent daemon in background
-	g.Go(func() error {
-		if err := d.agent.Start(ctx); err != nil {
-			return fmt.Errorf("agent daemon terminated: %w", err)
-		}
-		return nil
-	})
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {

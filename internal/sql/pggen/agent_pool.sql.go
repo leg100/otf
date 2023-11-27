@@ -30,7 +30,7 @@ type InsertAgentPoolParams struct {
 	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
 	OrganizationName   pgtype.Text
-	OrganizationScoped bool
+	OrganizationScoped pgtype.Bool
 }
 
 // InsertAgentPool implements Querier.InsertAgentPool.
@@ -94,7 +94,7 @@ type FindAgentPoolsRow struct {
 	Name                pgtype.Text        `json:"name"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
-	OrganizationScoped  bool               `json:"organization_scoped"`
+	OrganizationScoped  pgtype.Bool        `json:"organization_scoped"`
 	WorkspaceIds        []string           `json:"workspace_ids"`
 	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
 }
@@ -168,7 +168,7 @@ type FindAgentPoolRow struct {
 	Name                pgtype.Text        `json:"name"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
-	OrganizationScoped  bool               `json:"organization_scoped"`
+	OrganizationScoped  pgtype.Bool        `json:"organization_scoped"`
 	WorkspaceIds        []string           `json:"workspace_ids"`
 	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
 }
@@ -221,7 +221,7 @@ type FindAgentPoolByAgentTokenIDRow struct {
 	Name                pgtype.Text        `json:"name"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
-	OrganizationScoped  bool               `json:"organization_scoped"`
+	OrganizationScoped  pgtype.Bool        `json:"organization_scoped"`
 	WorkspaceIds        []string           `json:"workspace_ids"`
 	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
 }
@@ -260,7 +260,7 @@ RETURNING *;`
 
 type UpdateAgentPoolParams struct {
 	Name               pgtype.Text
-	OrganizationScoped bool
+	OrganizationScoped pgtype.Bool
 	PoolID             pgtype.Text
 }
 
@@ -269,7 +269,7 @@ type UpdateAgentPoolRow struct {
 	Name               pgtype.Text        `json:"name"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	OrganizationName   pgtype.Text        `json:"organization_name"`
-	OrganizationScoped bool               `json:"organization_scoped"`
+	OrganizationScoped pgtype.Bool        `json:"organization_scoped"`
 }
 
 // UpdateAgentPool implements Querier.UpdateAgentPool.
@@ -309,7 +309,7 @@ type DeleteAgentPoolRow struct {
 	Name               pgtype.Text        `json:"name"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	OrganizationName   pgtype.Text        `json:"organization_name"`
-	OrganizationScoped bool               `json:"organization_scoped"`
+	OrganizationScoped pgtype.Bool        `json:"organization_scoped"`
 }
 
 // DeleteAgentPool implements Querier.DeleteAgentPool.

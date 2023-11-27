@@ -42,7 +42,7 @@ type InsertNotificationConfigurationParams struct {
 	URL                         pgtype.Text
 	Triggers                    []string
 	DestinationType             pgtype.Text
-	Enabled                     bool
+	Enabled                     pgtype.Bool
 	WorkspaceID                 pgtype.Text
 }
 
@@ -84,7 +84,7 @@ type FindNotificationConfigurationsByWorkspaceIDRow struct {
 	Triggers                    []string           `json:"triggers"`
 	DestinationType             pgtype.Text        `json:"destination_type"`
 	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
-	Enabled                     bool               `json:"enabled"`
+	Enabled                     pgtype.Bool        `json:"enabled"`
 }
 
 // FindNotificationConfigurationsByWorkspaceID implements Querier.FindNotificationConfigurationsByWorkspaceID.
@@ -148,7 +148,7 @@ type FindAllNotificationConfigurationsRow struct {
 	Triggers                    []string           `json:"triggers"`
 	DestinationType             pgtype.Text        `json:"destination_type"`
 	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
-	Enabled                     bool               `json:"enabled"`
+	Enabled                     pgtype.Bool        `json:"enabled"`
 }
 
 // FindAllNotificationConfigurations implements Querier.FindAllNotificationConfigurations.
@@ -213,7 +213,7 @@ type FindNotificationConfigurationRow struct {
 	Triggers                    []string           `json:"triggers"`
 	DestinationType             pgtype.Text        `json:"destination_type"`
 	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
-	Enabled                     bool               `json:"enabled"`
+	Enabled                     pgtype.Bool        `json:"enabled"`
 }
 
 // FindNotificationConfiguration implements Querier.FindNotificationConfiguration.
@@ -257,7 +257,7 @@ type FindNotificationConfigurationForUpdateRow struct {
 	Triggers                    []string           `json:"triggers"`
 	DestinationType             pgtype.Text        `json:"destination_type"`
 	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
-	Enabled                     bool               `json:"enabled"`
+	Enabled                     pgtype.Bool        `json:"enabled"`
 }
 
 // FindNotificationConfigurationForUpdate implements Querier.FindNotificationConfigurationForUpdate.
@@ -299,7 +299,7 @@ RETURNING notification_configuration_id
 
 type UpdateNotificationConfigurationByIDParams struct {
 	UpdatedAt                   pgtype.Timestamptz
-	Enabled                     bool
+	Enabled                     pgtype.Bool
 	Name                        pgtype.Text
 	Triggers                    []string
 	URL                         pgtype.Text

@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 
@@ -18,11 +19,6 @@ type api struct {
 
 type updateAgentStatusParams struct {
 	Status AgentStatus `json:"status"`
-}
-
-type updateJobParams struct {
-	JobSpec
-	Status JobStatus
 }
 
 func (a *api) addHandlers(r *mux.Router) {
@@ -89,8 +85,13 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	err = a.service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status)
+	if err != nil {
+		if errors.Is(err, ErrInvalidAgentStateTransition) {
+			tfeapi.Error(w, err)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 }

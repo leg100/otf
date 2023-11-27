@@ -15,6 +15,19 @@ import (
 	"github.com/leg100/otf/internal"
 )
 
+// Bool converts a go-boolean into a postgres non-null boolean
+func Bool(b bool) pgtype.Bool {
+	return pgtype.Bool{Bool: b, Status: pgtype.Present}
+}
+
+// BoolPtr converts a go-boolean pointer into a postgres nullable boolean
+func BoolPtr(s *bool) pgtype.Bool {
+	if s != nil {
+		return pgtype.Bool{Bool: *s, Status: pgtype.Present}
+	}
+	return pgtype.Bool{Status: pgtype.Null}
+}
+
 // String converts a go-string into a postgres non-null string
 func String(s string) pgtype.Text {
 	return pgtype.Text{String: s, Status: pgtype.Present}
