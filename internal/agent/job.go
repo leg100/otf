@@ -179,7 +179,7 @@ func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
 	)
 	switch run.Status {
 	case otfrun.RunPlanning, otfrun.RunApplying:
-		if run.CanceledAt != nil {
+		if run.CancelSignaledAt != nil {
 			// run is still in progress but the user has requested it be
 			// canceled, so signal job to gracefully cancel current operation
 			signal = internal.Bool(false)

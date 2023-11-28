@@ -19,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
@@ -499,11 +500,11 @@ func (s *service) Cancel(ctx context.Context, runID string, immediate bool) erro
 	if err != nil {
 		return err
 	}
-	var signal bool
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+	_, isUser := subject.(*user.User)
+
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 		return s.cancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-			signal, err = run.Cancel(immediate)
-			if err != nil {
+			if err = run.Cancel(isUser, immediate); err != nil {
 				return nil, err
 			}
 			return run, nil
@@ -513,7 +514,7 @@ func (s *service) Cancel(ctx context.Context, runID string, immediate bool) erro
 		s.Error(err, "canceling run", "id", runID, "subject", subject)
 		return err
 	}
-	if signal {
+	if run.CancelSignaledAt != nil {
 		s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
 	} else {
 		s.V(0).Info("canceled run", "id", runID, "subject", subject)
@@ -529,7 +530,7 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	}
 	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 		return s.forceCancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-			if err := run.ForceCancel(); err != nil {
+			if err = run.Cancel(true, true); err != nil {
 				return nil, err
 			}
 			return run, nil

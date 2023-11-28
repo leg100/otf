@@ -822,12 +822,12 @@ type Querier interface {
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdateCanceledAt(ctx context.Context, canceledAt pgtype.Timestamptz, id pgtype.Text) (pgtype.Text, error)
-	// UpdateCanceledAtBatch enqueues a UpdateCanceledAt query into batch to be executed
+	UpdateCancelSignaledAt(ctx context.Context, cancelSignaledAt pgtype.Timestamptz, id pgtype.Text) (pgtype.Text, error)
+	// UpdateCancelSignaledAtBatch enqueues a UpdateCancelSignaledAt query into batch to be executed
 	// later by the batch.
-	UpdateCanceledAtBatch(batch genericBatch, canceledAt pgtype.Timestamptz, id pgtype.Text)
-	// UpdateCanceledAtScan scans the result of an executed UpdateCanceledAtBatch query.
-	UpdateCanceledAtScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateCancelSignaledAtBatch(batch genericBatch, cancelSignaledAt pgtype.Timestamptz, id pgtype.Text)
+	// UpdateCancelSignaledAtScan scans the result of an executed UpdateCancelSignaledAtBatch query.
+	UpdateCancelSignaledAtScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
@@ -1930,8 +1930,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateCanceledAtSQL, updateCanceledAtSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateCanceledAt': %w", err)
+	if _, err := p.Prepare(ctx, updateCancelSignaledAtSQL, updateCancelSignaledAtSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateCancelSignaledAt': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
@@ -2325,7 +2325,7 @@ type RunVariables struct {
 type Runs struct {
 	RunID                  pgtype.Text        `json:"run_id"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	CanceledAt             pgtype.Timestamptz `json:"canceled_at"`
+	CancelSignaledAt       pgtype.Timestamptz `json:"cancel_signaled_at"`
 	IsDestroy              pgtype.Bool        `json:"is_destroy"`
 	PositionInQueue        pgtype.Int4        `json:"position_in_queue"`
 	Refresh                pgtype.Bool        `json:"refresh"`
@@ -2615,7 +2615,7 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		"runs",
 		compositeField{"run_id", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"canceled_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"cancel_signaled_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"is_destroy", "bool", &pgtype.Bool{}},
 		compositeField{"position_in_queue", "int4", &pgtype.Int4{}},
 		compositeField{"refresh", "bool", &pgtype.Bool{}},

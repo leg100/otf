@@ -26,7 +26,7 @@ type (
 	pgresult struct {
 		RunID                  pgtype.Text                   `json:"run_id"`
 		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
-		CanceledAt             pgtype.Timestamptz            `json:"canceled_at"`
+		CancelSignaledAt       pgtype.Timestamptz            `json:"cancel_signaled_at"`
 		IsDestroy              pgtype.Bool                   `json:"is_destroy"`
 		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
 		Refresh                pgtype.Bool                   `json:"refresh"`
@@ -140,8 +140,8 @@ func (result pgresult) toRun() *Run {
 	if result.CreatedBy.Status == pgtype.Present {
 		run.CreatedBy = &result.CreatedBy.String
 	}
-	if result.CanceledAt.Status == pgtype.Present {
-		run.CanceledAt = internal.Time(result.CanceledAt.Time.UTC())
+	if result.CancelSignaledAt.Status == pgtype.Present {
+		run.CancelSignaledAt = internal.Time(result.CancelSignaledAt.Time.UTC())
 	}
 	if result.IngressAttributes != nil {
 		run.IngressAttributes = configversion.NewIngressFromRow(result.IngressAttributes)
@@ -220,7 +220,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 		runStatus := run.Status
 		planStatus := run.Plan.Status
 		applyStatus := run.Apply.Status
-		forceCancelAvailableAt := run.CanceledAt
+		cancelSignaledAt := run.CancelSignaledAt
 
 		if err := fn(run); err != nil {
 			return err
@@ -259,8 +259,8 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 			}
 		}
 
-		if run.CanceledAt != forceCancelAvailableAt && run.CanceledAt != nil {
-			_, err := q.UpdateCanceledAt(ctx, sql.Timestamptz(*run.CanceledAt), sql.String(run.ID))
+		if run.CancelSignaledAt != cancelSignaledAt && run.CancelSignaledAt != nil {
+			_, err := q.UpdateCancelSignaledAt(ctx, sql.Timestamptz(*run.CancelSignaledAt), sql.String(run.ID))
 			if err != nil {
 				return err
 			}

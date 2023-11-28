@@ -67,7 +67,7 @@
 						<form action="{{ discardRunPath .ID }}" method="POST">
 							<button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
 						</form>
-					{{ else if and .Canceled (not .Done)}}
+					{{ else if and .CancelSignaledAt (not .Done)}}
 						cancelling...
 					{{ end }}
         </div>

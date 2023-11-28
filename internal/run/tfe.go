@@ -397,28 +397,27 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		Actions: &types.RunActions{
 			IsCancelable:      from.Cancelable(),
 			IsConfirmable:     from.Confirmable(),
-			IsForceCancelable: from.CanceledAt != nil,
+			IsForceCancelable: from.CancelSignaledAt != nil,
 			IsDiscardable:     from.Discardable(),
 		},
-		AllowEmptyApply:        from.AllowEmptyApply,
-		AutoApply:              from.AutoApply,
-		CreatedAt:              from.CreatedAt,
-		ExecutionMode:          string(from.ExecutionMode),
-		ForceCancelAvailableAt: from.ForceCancelAvailableAt(),
-		HasChanges:             from.Plan.HasChanges(),
-		IsDestroy:              from.IsDestroy,
-		Message:                from.Message,
-		Permissions:            perms,
-		PlanOnly:               from.PlanOnly,
-		PositionInQueue:        0,
-		Refresh:                from.Refresh,
-		RefreshOnly:            from.RefreshOnly,
-		ReplaceAddrs:           from.ReplaceAddrs,
-		Source:                 string(from.Source),
-		Status:                 string(from.Status),
-		StatusTimestamps:       &timestamps,
-		TargetAddrs:            from.TargetAddrs,
-		TerraformVersion:       from.TerraformVersion,
+		AllowEmptyApply:  from.AllowEmptyApply,
+		AutoApply:        from.AutoApply,
+		CreatedAt:        from.CreatedAt,
+		ExecutionMode:    string(from.ExecutionMode),
+		HasChanges:       from.Plan.HasChanges(),
+		IsDestroy:        from.IsDestroy,
+		Message:          from.Message,
+		Permissions:      perms,
+		PlanOnly:         from.PlanOnly,
+		PositionInQueue:  0,
+		Refresh:          from.Refresh,
+		RefreshOnly:      from.RefreshOnly,
+		ReplaceAddrs:     from.ReplaceAddrs,
+		Source:           string(from.Source),
+		Status:           string(from.Status),
+		StatusTimestamps: &timestamps,
+		TargetAddrs:      from.TargetAddrs,
+		TerraformVersion: from.TerraformVersion,
 		// Relations
 		Plan:  &types.Plan{ID: internal.ConvertID(from.ID, "plan")},
 		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
@@ -439,6 +438,11 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	if from.CostEstimationEnabled {
 		to.CostEstimate = &types.CostEstimate{ID: internal.ConvertID(from.ID, "ce")}
 	}
+	//
+	// go-tfe integration tests expect this parameter to be set even when a run
+	// is no longer force cancelable - e.g. run has transitioned to a
+	// completed state - so it is set regardless of current run status.
+	to.ForceCancelAvailableAt = from.cancelCoolOff()
 
 	return to, nil
 }

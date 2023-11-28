@@ -173,15 +173,15 @@ AFTER INSERT OR UPDATE OR DELETE ON jobs
     FOR EACH ROW EXECUTE PROCEDURE jobs_notify_event();
 -- +goose StatementEnd
 
--- rename run column from force_cancel_available_at to cancel_at - hence forth
--- the time at which a run was canceled is to be recorded and then the time at
--- which a force cancel is a available can be inferred.
+-- rename run column from force_cancel_available_at to cancel_signaled_at -
+-- hence forth the time at which a cancel signal was sent is recorded and then
+-- the time at which a force cancel is a available can be inferred.
 ALTER TABLE runs
-    RENAME COLUMN force_cancel_available_at TO canceled_at;
+    RENAME COLUMN force_cancel_available_at TO cancel_signaled_at;
 
 -- +goose Down
 ALTER TABLE runs
-    RENAME COLUMN canceled_at TO force_cancel_available_at;
+    RENAME COLUMN cancel_signaled_at TO force_cancel_available_at;
 
 DROP TRIGGER IF EXISTS notify_event ON jobs;
 DROP TRIGGER IF EXISTS notify_event ON agents;

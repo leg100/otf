@@ -173,9 +173,10 @@ func TestRun_States(t *testing.T) {
 
 	t.Run("cancel pending run", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		_, err := run.Cancel(false)
+		err := run.Cancel(true, false)
 		require.NoError(t, err)
-		assert.NotZero(t, run.CanceledAt)
+		// no signal should be sent
+		assert.Zero(t, run.CancelSignaledAt)
 		assert.Equal(t, PhaseUnreachable, run.Plan.Status)
 		assert.Equal(t, PhaseUnreachable, run.Apply.Status)
 	})
@@ -183,22 +184,54 @@ func TestRun_States(t *testing.T) {
 	t.Run("cancel planning run should indicate signal be sent", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
-		signal, err := run.Cancel(false)
+		err := run.Cancel(true, false)
 		require.NoError(t, err)
-		assert.True(t, signal)
-		assert.NotZero(t, run.CanceledAt)
+		assert.NotZero(t, run.CancelSignaledAt)
+		assert.Equal(t, RunPlanning, run.Status)
 	})
 
-	t.Run("cancel planning run with immediate argument should indicate signal is not sent", func(t *testing.T) {
+	t.Run("when non-user cancels a planning run, it should be placed into canceled state", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
-		// immediate=true
-		signal, err := run.Cancel(true)
+		err := run.Cancel(false, false)
 		require.NoError(t, err)
-		assert.False(t, signal)
-		assert.NotZero(t, run.CanceledAt)
 		assert.Equal(t, PhaseCanceled, run.Plan.Status)
 		assert.Equal(t, PhaseUnreachable, run.Apply.Status)
+		assert.Equal(t, RunCanceled, run.Status)
+	})
+
+	t.Run("user cannot cancel a run twice", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(true, false)
+		require.NoError(t, err)
+		err = run.Cancel(true, false)
+		assert.Equal(t, internal.ErrRunCancelNotAllowed, err)
+	})
+
+	t.Run("cannot force cancel a run when no previous attempt has been made to cancel run gracefully", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(true, true)
+		assert.Equal(t, internal.ErrRunForceCancelNotAllowed, err)
+	})
+
+	t.Run("force cancel run when graceful cancel has already been attempted and cool off period has elapsed", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		// gracefully canceled 11 seconds ago
+		run.CancelSignaledAt = internal.Time(time.Now().Add(-11 * time.Second))
+		// force cancel now
+		err := run.Cancel(true, true)
+		require.NoError(t, err)
+		assert.Equal(t, RunForceCanceled, run.Status)
+	})
+
+	t.Run("non-user cannot force cancel a run", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(false, true)
+		assert.Equal(t, internal.ErrRunForceCancelNotAllowed, err)
 	})
 }
 

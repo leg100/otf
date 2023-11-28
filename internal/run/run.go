@@ -43,7 +43,7 @@ type (
 		ID                     string                  `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
-		CanceledAt             *time.Time              `jsonapi:"attribute" json:"canceled_at"`
+		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
 		Message                string                  `jsonapi:"attribute" json:"message"`
 		Organization           string                  `jsonapi:"attribute" json:"organization"`
 		Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
@@ -304,68 +304,30 @@ func (r *Run) InProgress() bool {
 	}
 }
 
-// Cancel run.
-func (r *Run) Cancel(immediate bool) (bool, error) {
-	if !r.Cancelable() {
-		return false, internal.ErrRunCancelNotAllowed
+// Cancel run. Depending upon whether the run is currently in-progress, the run
+// is either immediately canceled and its status updated to reflect that, or
+// CancelSignaledAt is set to the current time to indicate that a cancelation
+// signal should be sent to the process executing the run.
+//
+// The isUser arg should be set to true if a user is directly instigating the
+// cancelation; otherwise it should be set to false, i.e. the job service has
+// canceled a job and is now canceling the corresponding run.
+//
+// The force arg when set to true forceably cancels the run. This is only
+// allowed when an attempt has already been made to cancel the run
+// non-forceably. The force arg is only respected when isUser is true.
+func (r *Run) Cancel(isUser, force bool) error {
+	if force {
+		if isUser {
+			if !r.ForceCancelable() {
+				return internal.ErrRunForceCancelNotAllowed
+			}
+		} else {
+			// only a user can forceably cancel a run.
+			return internal.ErrRunForceCancelNotAllowed
+		}
 	}
-	if r.CanceledAt == nil {
-		// only set CanceledAt time once
-		now := internal.CurrentTimestamp(nil)
-		r.CanceledAt = &now
-	} else if !immediate {
-		// cannot cancel run that has already been canceled without setting
-		// immediate argument
-		return false, internal.ErrRunCancelNotAllowed
-	}
-	signal := r.setCancelStatus(false, immediate)
-	return signal, nil
-}
-
-// Cancelable determines whether run can be cancelled.
-func (r *Run) Cancelable() bool {
-	switch r.Status {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
-		return true
-	default:
-		return false
-	}
-}
-
-// ForceCancel force cancels a run. A cool-off period of 10 seconds must have
-// elapsed following a cancelation request before a run can be force canceled.
-func (r *Run) ForceCancel() error {
-	if !r.ForceCancelable() {
-		return internal.ErrRunForceCancelNotAllowed
-	}
-	r.setCancelStatus(true, true)
-	return nil
-}
-
-// ForceCancelable determines whether run can be forceably cancelled.
-func (r *Run) ForceCancelable() bool {
-	if r.Done() {
-		// cannot force cancel a run that is already complete
-		return false
-	}
-	availableAt := r.ForceCancelAvailableAt()
-	if availableAt == nil || time.Now().Before(*availableAt) {
-		return false
-	}
-	return true
-}
-
-func (r *Run) ForceCancelAvailableAt() *time.Time {
-	if r.CanceledAt == nil {
-		return nil
-	}
-	// permit run to be force canceled once a cool off period of 10 seconds has
-	// elapsed.
-	cooledOff := r.CanceledAt.Add(10 * time.Second)
-	return &cooledOff
-}
-
-func (r *Run) setCancelStatus(force, immediate bool) bool {
+	var signal bool
 	switch r.Status {
 	case RunPending:
 		r.Plan.UpdateStatus(PhaseUnreachable)
@@ -376,32 +338,81 @@ func (r *Run) setCancelStatus(force, immediate bool) bool {
 	case RunApplyQueued:
 		r.Apply.UpdateStatus(PhaseCanceled)
 	case RunPlanning:
-		if immediate {
+		if isUser && !force {
+			signal = true
+		} else {
 			r.Plan.UpdateStatus(PhaseCanceled)
 			r.Apply.UpdateStatus(PhaseUnreachable)
-		} else {
-			// don't set cancel statuses but send a cancelation signal to the
-			// corresponding job instead
-			return true
 		}
 	case RunPlanned:
 		r.Apply.UpdateStatus(PhaseUnreachable)
 	case RunApplying:
-		if immediate {
-			r.Apply.UpdateStatus(PhaseCanceled)
+		if isUser && !force {
+			signal = true
 		} else {
-			// don't set cancel statuses but send a cancelation signal to the
-			// corresponding job instead
-			return true
+			r.Apply.UpdateStatus(PhaseCanceled)
 		}
+	}
+	if signal {
+		if r.CancelSignaledAt != nil {
+			// cannot send cancel signal more than once.
+			return internal.ErrRunCancelNotAllowed
+		}
+		// set timestamp to indicate signal is to be sent, but do not set
+		// status to RunCanceled yet.
+		now := internal.CurrentTimestamp(nil)
+		r.CancelSignaledAt = &now
+		return nil
 	}
 	if force {
 		r.updateStatus(RunForceCanceled, nil)
 	} else {
 		r.updateStatus(RunCanceled, nil)
 	}
-	// don't send a cancelation signal
-	return false
+	return nil
+}
+
+// Cancelable determines whether run can be cancelled.
+func (r *Run) Cancelable() bool {
+	if r.CancelSignaledAt != nil {
+		return false
+	}
+	switch r.Status {
+	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+		return true
+	default:
+		return false
+	}
+}
+
+// ForceCancelable determines whether run can be forceably cancelled.
+func (r *Run) ForceCancelable() bool {
+	availableAt := r.ForceCancelAvailableAt()
+	if availableAt == nil || time.Now().Before(*availableAt) {
+		return false
+	}
+	return true
+}
+
+// ForceCancelAvailableAt provides the time from which point it is permitted to
+// forceably cancel the run. It only possible to do so when an attempt has
+// previously been made to cancel the run non-forceably and a cool-off period
+// has elapsed.
+func (r *Run) ForceCancelAvailableAt() *time.Time {
+	if r.Done() || r.CancelSignaledAt == nil {
+		// cannot force cancel a run that is already complete or when no attempt
+		// has previously been made to cancel run.
+		return nil
+	}
+	return r.cancelCoolOff()
+}
+
+func (r *Run) cancelCoolOff() *time.Time {
+	if r.CancelSignaledAt == nil {
+		return nil
+	}
+	cooledOff := r.CancelSignaledAt.Add(10 * time.Second)
+	return &cooledOff
 }
 
 // StartedAt returns the time the run was created.
