@@ -58,7 +58,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunPlannedAndFinished, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -69,7 +70,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true})
+		require.NoError(t, err)
 
 		require.Equal(t, RunErrored, run.Status)
 		require.Equal(t, PhaseErrored, run.Plan.Status)
@@ -82,7 +84,8 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunPlanned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -95,7 +98,8 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.OutputReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunPlanned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -110,11 +114,13 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		autoapply, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
-		require.Equal(t, RunApplyQueued, run.Status)
-		require.Equal(t, PhaseFinished, run.Plan.Status)
-		require.Equal(t, PhaseQueued, run.Apply.Status)
+		assert.True(t, autoapply)
+		assert.Equal(t, RunPlanned, run.Status)
+		assert.Equal(t, PhaseFinished, run.Plan.Status)
+		assert.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("finish plan with cost estimation enabled", func(t *testing.T) {
@@ -124,7 +130,8 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunCostEstimated, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -155,7 +162,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunApplying
 
-		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.ApplyPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunApplied, run.Status)
 		require.Equal(t, PhaseFinished, run.Apply.Status)
@@ -165,7 +173,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunApplying
 
-		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true}))
+		_, err := run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true})
+		require.NoError(t, err)
 
 		require.Equal(t, RunErrored, run.Status)
 		require.Equal(t, PhaseErrored, run.Apply.Status)

@@ -496,22 +496,24 @@ func (r *Run) Start() error {
 	return nil
 }
 
-// Finish updates the run to reflect its plan or apply phase having finished.
-func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
+// Finish updates the run to reflect its plan or apply phase having finished. If
+// a plan phase has finished and an apply should be automatically enqueued then
+// autoapply will be set to true.
+func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
 	if r.Status == RunCanceled {
 		// run was canceled before the phase finished so nothing more to do.
-		return nil
+		return false, nil
 	}
 	switch phase {
 	case internal.PlanPhase:
 		if r.Status != RunPlanning {
-			return ErrInvalidRunStateTransition
+			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
 			r.updateStatus(RunErrored, nil)
 			r.Plan.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
-			return nil
+			return false, nil
 		}
 		// Enter RunCostEstimated state if cost estimation is enabled. OTF does
 		// not support cost estimation but enter this state only in order to
@@ -526,13 +528,12 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 		if !r.HasChanges() || r.PlanOnly {
 			r.updateStatus(RunPlannedAndFinished, nil)
 			r.Apply.UpdateStatus(PhaseUnreachable)
-		} else if r.AutoApply {
-			return r.EnqueueApply()
+			return false, nil
 		}
-		return nil
+		return r.AutoApply, nil
 	case internal.ApplyPhase:
 		if r.Status != RunApplying {
-			return ErrInvalidRunStateTransition
+			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
 			r.updateStatus(RunErrored, nil)
@@ -541,9 +542,9 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			r.updateStatus(RunApplied, nil)
 			r.Apply.UpdateStatus(PhaseFinished)
 		}
-		return nil
+		return false, nil
 	default:
-		return fmt.Errorf("unknown phase")
+		return false, fmt.Errorf("unknown phase")
 	}
 }
 

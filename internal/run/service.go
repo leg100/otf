@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -56,14 +57,8 @@ type (
 		// returning a stream object with a Close() method. The calling code would
 		// call Watch(), and then defer a Close(), which is more readable IMO.
 		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error)
-		// Cancel a run. A run can only be canceled when in certain states. If
-		// the run is in-progress, i.e. planning or applying, then a cancelation
-		// signal is sent to the agent to stop the job. If the run is in other
-		// states, e.g. pending or queued, then the run is canceled immediately,
-		// and its status is changed to canceled. Set the immediate argument
-		// to true to override the above default behaviour, and skip sending a
-		// signal, and instead cancel the run immediately.
-		Cancel(ctx context.Context, runID string, immediate bool) error
+		// Cancel a run.
+		Cancel(ctx context.Context, runID string) error
 		// Apply enqueues an Apply for the run.
 		Apply(ctx context.Context, runID string) error
 		// Delete a run.
@@ -391,8 +386,20 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 			opts.Errored = true
 		}
 	}
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.Finish(phase, opts)
+	var run *Run
+	err := s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+		var autoapply bool
+		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+			autoapply, err = run.Finish(phase, opts)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		if autoapply {
+			return s.Apply(ctx, runID)
+		}
+		return nil
 	})
 	if err != nil {
 		s.Error(err, "finishing "+string(phase), "id", runID, "subject")
@@ -460,7 +467,7 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	err = s.planHook.Dispatch(ctx, nil, func(ctx context.Context) (*Run, error) {
+	err = s.applyHook.Dispatch(ctx, nil, func(ctx context.Context) (*Run, error) {
 		return s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 			return run.EnqueueApply()
 		})
@@ -495,7 +502,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 	return err
 }
 
-func (s *service) Cancel(ctx context.Context, runID string, immediate bool) error {
+func (s *service) Cancel(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -504,7 +511,7 @@ func (s *service) Cancel(ctx context.Context, runID string, immediate bool) erro
 
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 		return s.cancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-			if err = run.Cancel(isUser, immediate); err != nil {
+			if err = run.Cancel(isUser, false); err != nil {
 				return nil, err
 			}
 			return run, nil
@@ -514,7 +521,7 @@ func (s *service) Cancel(ctx context.Context, runID string, immediate bool) erro
 		s.Error(err, "canceling run", "id", runID, "subject", subject)
 		return err
 	}
-	if run.CancelSignaledAt != nil {
+	if run.CancelSignaledAt != nil && run.Status != RunCanceled {
 		s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
 	} else {
 		s.V(0).Info("canceled run", "id", runID, "subject", subject)

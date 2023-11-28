@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -17,9 +16,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
@@ -113,7 +110,7 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.finishJob(o.ctx, o.job.JobSpec, opts); err != nil {
+	if err := o.finishJob(o.ctx, o.job.Spec, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }
@@ -121,24 +118,14 @@ func (o *operation) doAndFinish() {
 // do executes the job
 func (o *operation) do() error {
 	// if this is a pool agent using RPC to communicate with the server
-	// then use a new client for this job, configured to authenticate with the
+	// then use a new ac for this job, configured to authenticate using the
 	// job token and to retry requests upon encountering transient errors.
-	if _, ok := o.client.(*rpcClient); ok {
-		client, err := NewRPCClient(otfapi.Config{
-			Token:         string(o.token),
-			RetryRequests: true,
-			RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {
-				// ignore first un-retried requests
-				if n == 0 {
-					return
-				}
-				o.Error(nil, "retrying request", "url", r.URL, "attempt", n)
-			},
-		})
+	if ac, ok := o.client.(*rpcClient); ok {
+		jc, err := ac.NewJobClient(o.token, o.Logger)
 		if err != nil {
 			return fmt.Errorf("initializing job client: %w", err)
 		}
-		o.client = client
+		o.client = jc
 	} else {
 		// this is a server agent: directly authenticate as job with services
 		o.ctx = internal.AddSubjectToContext(o.ctx, o.job)
@@ -147,7 +134,7 @@ func (o *operation) do() error {
 	// make token available to terraform CLI
 	o.envs = append(o.envs, internal.CredentialEnv(o.Hostname(), o.token))
 
-	run, err := o.GetRun(o.ctx, o.job.RunID)
+	run, err := o.GetRun(o.ctx, o.job.Spec.RunID)
 	if err != nil {
 		return err
 	}
@@ -263,8 +250,10 @@ func (o *operation) cancel(force bool) {
 	// signal current process if there is one.
 	if o.proc != nil {
 		if force {
+			o.Info("sending SIGKILL to terraform process", "pid", o.proc.Pid)
 			o.proc.Signal(os.Kill)
 		} else {
+			o.Info("sending SIGINT to terraform process", "pid", o.proc.Pid)
 			o.proc.Signal(os.Interrupt)
 		}
 	}

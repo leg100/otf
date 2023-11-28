@@ -79,7 +79,7 @@ type jobresult struct {
 
 func (r jobresult) toJob() *Job {
 	job := &Job{
-		JobSpec: JobSpec{
+		Spec: JobSpec{
 			RunID: r.RunID.String,
 			Phase: internal.PhaseType(r.Phase.String),
 		},
@@ -92,7 +92,7 @@ func (r jobresult) toJob() *Job {
 		job.AgentID = &r.AgentID.String
 	}
 	if r.Signaled.Status == pgtype.Present {
-		job.signaled = &r.Signaled.Bool
+		job.Signaled = &r.Signaled.Bool
 	}
 	return job
 }
@@ -319,21 +319,28 @@ func (db *db) deleteAgent(ctx context.Context, agentID string) error {
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
 	_, err := db.Conn(ctx).InsertJob(ctx, pggen.InsertJobParams{
-		RunID:  sql.String(job.RunID),
-		Phase:  sql.String(string(job.Phase)),
+		RunID:  sql.String(job.Spec.RunID),
+		Phase:  sql.String(string(job.Spec.Phase)),
 		Status: sql.String(string(job.Status)),
 	})
 	return sql.Error(err)
 }
 
 func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	rows, err := db.Conn(ctx).FindAllocatedAndSignaledJobs(ctx, sql.String(agentID))
+	allocated, err := db.Conn(ctx).FindAllocatedJobs(ctx, sql.String(agentID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	jobs := make([]*Job, len(rows))
-	for i, r := range rows {
+	signaled, err := db.Conn(ctx).FindAndUpdateSignaledJobs(ctx, sql.String(agentID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	jobs := make([]*Job, len(allocated)+len(signaled))
+	for i, r := range allocated {
 		jobs[i] = jobresult(r).toJob()
+	}
+	for i, r := range signaled {
+		jobs[len(allocated)+i] = jobresult(r).toJob()
 	}
 	return jobs, nil
 }
@@ -371,7 +378,7 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 		}
 		_, err = q.UpdateJob(ctx, pggen.UpdateJobParams{
 			Status:   sql.String(string(job.Status)),
-			Signaled: sql.BoolPtr(job.signaled),
+			Signaled: sql.BoolPtr(job.Signaled),
 			AgentID:  sql.StringPtr(job.AgentID),
 			RunID:    result.RunID,
 			Phase:    result.Phase,

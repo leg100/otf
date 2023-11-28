@@ -108,7 +108,7 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 
 // NewRPC constructs a agent daemon that communicates with the server via RPC.
 func NewRPC(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, error) {
-	app, err := NewRPCClient(apiConfig)
+	app, err := NewRPCClient(apiConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -121,10 +121,6 @@ func (d *daemon) Start(ctx context.Context) error {
 
 	// initialize terminator
 	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
-
-	go func() {
-		<-ctx.Done()
-	}()
 
 	if d.config.server {
 		// prior to registration, the server agent identifies itself as an
@@ -225,18 +221,18 @@ func (d *daemon) Start(ctx context.Context) error {
 				return err
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-			err := backoff.RetryNotify(getJobs, policy, func(err error, next time.Duration) {
+			_ = backoff.RetryNotify(getJobs, policy, func(err error, next time.Duration) {
 				d.poolLogger.Error(err, "waiting for next job", "backoff", next)
 			})
-			if err != nil {
-				// ctx canceled
+			// only stop retrying if context is canceled
+			if ctx.Err() != nil {
 				return nil
 			}
 			for _, j := range jobs {
 				if j.Status == JobAllocated {
 					d.poolLogger.Info("received job", "job", j)
 					// start job and receive job token in return
-					token, err := d.startJob(ctx, j.JobSpec)
+					token, err := d.startJob(ctx, j.Spec)
 					if err != nil {
 						if ctx.Err() != nil {
 							return nil
@@ -255,16 +251,16 @@ func (d *daemon) Start(ctx context.Context) error {
 					})
 					// check operation in with the terminator, so that if a cancelation signal
 					// arrives it can be handled accordingly for the duration of the operation.
-					terminator.checkIn(j.JobSpec, op)
+					terminator.checkIn(j.Spec, op)
 					op.V(0).Info("started job")
 					g.Go(func() error {
 						op.doAndFinish()
-						terminator.checkOut(op.job.JobSpec)
+						terminator.checkOut(op.job.Spec)
 						return nil
 					})
-				} else if j.signaled != nil {
-					d.poolLogger.Info("received cancelation signal", "force", *j.signaled, "job", j)
-					terminator.cancel(j.JobSpec, *j.signaled)
+				} else if j.Signaled != nil {
+					d.poolLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
+					terminator.cancel(j.Spec, *j.Signaled)
 				}
 			}
 		}

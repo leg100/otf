@@ -135,7 +135,7 @@ func NewService(opts ServiceOptions) *service {
 			return nil, err
 		}
 		if action == pubsub.DeleteDBAction {
-			return &Job{JobSpec: spec}, nil
+			return &Job{Spec: spec}, nil
 		}
 		return svc.getJob(ctx, spec)
 	}))
@@ -403,7 +403,7 @@ func (s *service) getAgent(ctx context.Context, agentID string) (*Agent, error) 
 	return s.db.getAgent(ctx, agentID)
 }
 
-func (s *service) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+func (s *service) updateAgentStatus(ctx context.Context, agentID string, to AgentStatus) error {
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
 	// (b) an agent with an ID matching agentID
@@ -429,13 +429,18 @@ func (s *service) updateAgentStatus(ctx context.Context, agentID string, status 
 	var from AgentStatus
 	err = s.db.updateAgent(ctx, agentID, func(agent *Agent) error {
 		from = agent.Status
-		return agent.setStatus(status, isAgent)
+		return agent.setStatus(to, isAgent)
 	})
 	if err != nil {
-		s.Error(err, "updating agent status", "agent_id", agentID, "status", status, "subject", subject)
+		s.Error(err, "updating agent status", "agent_id", agentID, "status", to, "subject", subject)
 		return err
 	}
-	s.V(9).Info("updated agent status", "agent_id", agentID, "from", from, "to", status, "subject", subject)
+	if isAgent && from == to {
+		// if no change in status then log it as a ping
+		s.V(9).Info("received agent ping", "agent_id", agentID)
+	} else {
+		s.V(9).Info("updated agent status", "agent_id", agentID, "from", from, "to", to, "subject", subject)
+	}
 	return nil
 }
 
@@ -575,7 +580,7 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		case JobAllocated:
 			return []*Job{job}, nil
 		case JobRunning:
-			if job.signaled != nil {
+			if job.Signaled != nil {
 				return []*Job{job}, nil
 			}
 		}
@@ -651,7 +656,7 @@ func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 		s.Error(err, "starting job", "spec", spec, "agent", subject)
 		return nil, err
 	}
-	s.V(0).Info("started job", "spec", spec, "agent", subject)
+	s.V(2).Info("started job", "spec", spec, "agent", subject)
 	return token, nil
 }
 
@@ -681,7 +686,7 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			err = s.RunService.Cancel(ctx, spec.RunID, true)
+			err = s.RunService.Cancel(ctx, spec.RunID)
 		}
 		if err != nil {
 			return err
@@ -693,9 +698,9 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		return err
 	}
 	if opts.Error != "" {
-		s.V(0).Info("finished job with error", "job", job, "status", opts.Status, "job_error", opts.Error)
+		s.V(2).Info("finished job with error", "job", job, "status", opts.Status, "job_error", opts.Error)
 	} else {
-		s.V(0).Info("finished job", "job", job, "status", opts.Status)
+		s.V(2).Info("finished job", "job", job, "status", opts.Status)
 	}
 	return nil
 }

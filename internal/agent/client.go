@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
@@ -65,7 +68,6 @@ type (
 	// rpcClient is a client for communication via RPC with the server.
 	rpcClient struct {
 		*otfapi.Client
-		otfapi.Config
 
 		*stateClient
 		*configClient
@@ -74,8 +76,10 @@ type (
 		*logsClient
 		*workspaceClient
 
-		// rpcClient only implements some of agent service
-		Service
+		// agentID is the ID of the agent using the client
+		agentID *string
+		// address of OTF server peer
+		address string
 	}
 
 	stateClient     = state.Client
@@ -86,14 +90,18 @@ type (
 	logsClient      = logs.Client
 )
 
-// NewRPCClient constructs a client that uses RPC to call OTF services.
-func NewRPCClient(cfg otfapi.Config) (*rpcClient, error) {
+// NewRPCClient constructs a client that uses RPC to call OTF services. The
+// agentID is added as an HTTP header to requests, allowing the server to
+// identify the client; if nil then it is automatically added once the client
+// successfully registers the agent.
+func NewRPCClient(cfg otfapi.Config, agentID *string) (*rpcClient, error) {
 	client, err := otfapi.NewClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &rpcClient{
 		Client:          client,
+		address:         cfg.Address,
 		stateClient:     &stateClient{Client: client},
 		configClient:    &configClient{Client: client},
 		variableClient:  &variableClient{Client: client},
@@ -101,6 +109,33 @@ func NewRPCClient(cfg otfapi.Config) (*rpcClient, error) {
 		workspaceClient: &workspaceClient{Client: client},
 		logsClient:      &logsClient{Client: client},
 	}, nil
+}
+
+func (c *rpcClient) NewJobClient(token []byte, logger logr.Logger) (*rpcClient, error) {
+	return NewRPCClient(otfapi.Config{
+		Address:       c.address,
+		Token:         string(token),
+		RetryRequests: true,
+		RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {
+			// ignore first un-retried requests
+			if n == 0 {
+				return
+			}
+			logger.Error(nil, "retrying request", "url", r.URL, "attempt", n)
+		},
+	}, c.agentID)
+}
+
+// NewRequest constructs a new API request
+func (c *rpcClient) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+	req, err := c.Client.NewRequest(method, path, v)
+	if err != nil {
+		return nil, err
+	}
+	if c.agentID != nil {
+		req.Header.Add(agentIDHeader, *c.agentID)
+	}
+	return req, err
 }
 
 func (c *rpcClient) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
@@ -112,6 +147,9 @@ func (c *rpcClient) registerAgent(ctx context.Context, opts registerAgentOptions
 	if err := c.Do(ctx, req, &agent); err != nil {
 		return nil, err
 	}
+	// add agent ID to future requests
+	agentID := agent.ID
+	c.agentID = &agentID
 	return &agent, nil
 }
 
@@ -120,7 +158,6 @@ func (c *rpcClient) getAgentJobs(ctx context.Context, agentID string) ([]*Job, e
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(agentIDHeader, agentID)
 
 	var jobs []*Job
 	// GET request blocks until:
@@ -131,7 +168,7 @@ func (c *rpcClient) getAgentJobs(ctx context.Context, agentID string) ([]*Job, e
 	//
 	// (c) can occur due to any intermediate proxies placed between otf-agent
 	// and otfd, such as nginx, which has a default proxy_read_timeout of 60s.
-	if err := c.Do(ctx, req, jobs); err != nil {
+	if err := c.Do(ctx, req, &jobs); err != nil {
 		return nil, err
 	}
 	return jobs, nil
@@ -144,7 +181,6 @@ func (c *rpcClient) updateAgentStatus(ctx context.Context, agentID string, statu
 	if err != nil {
 		return err
 	}
-	req.Header.Add(agentIDHeader, agentID)
 	if err := c.Do(ctx, req, nil); err != nil {
 		return err
 	}
@@ -169,7 +205,7 @@ func (c *rpcClient) CreateAgentToken(ctx context.Context, poolID string, opts Cr
 // jobs
 
 func (c *rpcClient) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
-	req, err := c.NewRequest("POST", "tokens/job", &spec)
+	req, err := c.NewRequest("POST", "agents/start", &spec)
 	if err != nil {
 		return nil, err
 	}
@@ -178,4 +214,18 @@ func (c *rpcClient) startJob(ctx context.Context, spec JobSpec) ([]byte, error) 
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func (c *rpcClient) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
+	req, err := c.NewRequest("POST", "agents/finish", &finishJobParams{
+		JobSpec:          spec,
+		finishJobOptions: opts,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
 }

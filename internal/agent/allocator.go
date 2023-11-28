@@ -82,9 +82,9 @@ func (a *allocator) Start(ctx context.Context) error {
 		case *Job:
 			switch event.Type {
 			case pubsub.DeletedEvent:
-				delete(a.jobs, payload.JobSpec)
+				delete(a.jobs, payload.Spec)
 			default:
-				a.jobs[payload.JobSpec] = payload
+				a.jobs[payload.Spec] = payload
 			}
 		}
 		if err := a.allocate(ctx); err != nil {
@@ -107,7 +107,7 @@ func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
 	}
 	a.jobs = make(map[JobSpec]*Job, len(jobs))
 	for _, job := range jobs {
-		a.jobs[job.JobSpec] = job
+		a.jobs[job.Spec] = job
 		// adjust capacities to take account of jobs already allocated or
 		// running on an agent.
 		switch job.Status {
@@ -150,7 +150,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			}
 		case JobFinished, JobCanceled, JobErrored:
 			// job has completed: remove and adjust agent capacity
-			delete(a.jobs, job.JobSpec)
+			delete(a.jobs, job.Spec)
 			a.capacities[*job.AgentID]++
 		}
 	}
@@ -186,9 +186,15 @@ func (a *allocator) findCandidateAgent(job *Job) (*Agent, error) {
 			if !ok {
 				return nil, fmt.Errorf("missing cache entry for agent pool: %s", *agent.AgentPoolID)
 			}
-			if !slices.Contains(pool.AssignedWorkspaces, job.WorkspaceID) {
-				// job's workspace is configured to use a different pool
+			// pool can only handle jobs in same organization
+			if pool.Organization != job.Organization {
 				continue
+			}
+			if !pool.OrganizationScoped {
+				if !slices.Contains(pool.AssignedWorkspaces, job.WorkspaceID) {
+					// job's workspace is configured to use a different pool
+					continue
+				}
 			}
 			candidates = append(candidates, agent)
 		}
@@ -199,30 +205,31 @@ func (a *allocator) findCandidateAgent(job *Job) (*Agent, error) {
 	// return agent that has most recently sent a ping
 	slices.SortFunc(candidates, func(a, b *Agent) int {
 		if a.LastPingAt.After(b.LastPingAt) {
-			return 1
+			// a with more recent ping comes first in list
+			return -1
 		} else {
-			return 0
+			return 1
 		}
 	})
 	return candidates[0], nil
 }
 
 func (a *allocator) allocateJob(ctx context.Context, agent *Agent, job *Job) error {
-	allocated, err := a.Service.allocateJob(ctx, job.JobSpec, agent.ID)
+	allocated, err := a.Service.allocateJob(ctx, job.Spec, agent.ID)
 	if err != nil {
 		return err
 	}
-	a.jobs[job.JobSpec] = allocated
+	a.jobs[job.Spec] = allocated
 	a.capacities[agent.ID]--
 	return nil
 }
 
 func (a *allocator) reallocateJob(ctx context.Context, agent *Agent, job *Job) error {
-	reallocated, err := a.Service.reallocateJob(ctx, job.JobSpec, agent.ID)
+	reallocated, err := a.Service.reallocateJob(ctx, job.Spec, agent.ID)
 	if err != nil {
 		return err
 	}
-	a.jobs[job.JobSpec] = reallocated
+	a.jobs[job.Spec] = reallocated
 	a.capacities[*job.AgentID]++
 	a.capacities[agent.ID]--
 	return nil

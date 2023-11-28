@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
@@ -8,9 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type agentCLI struct {
-	Service
-}
+type (
+	agentCLI struct {
+		agentCLIService
+	}
+
+	agentCLIService interface {
+		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+	}
+)
 
 func NewAgentsCommand(client *otfapi.Client) *cobra.Command {
 	cli := &agentCLI{}
@@ -21,7 +28,7 @@ func NewAgentsCommand(client *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &rpcClient{Client: client}
+			cli.agentCLIService = &rpcClient{Client: client}
 			return nil
 		},
 	}

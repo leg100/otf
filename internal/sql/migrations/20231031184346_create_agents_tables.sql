@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     phase TEXT REFERENCES job_phases ON UPDATE CASCADE NOT NULL,
     status TEXT REFERENCES job_statuses ON UPDATE CASCADE NOT NULL,
     agent_id TEXT REFERENCES agents ON UPDATE CASCADE ON DELETE CASCADE,
-    signaled BOOLEAN
+    signaled BOOLEAN,
 );
 
 -- create triggers for pools, agents, and jobs

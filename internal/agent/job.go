@@ -50,27 +50,31 @@ func (j JobSpec) String() string {
 	return fmt.Sprintf("%s/%s", j.RunID, j.Phase)
 }
 
+// Job is the unit of work corresponding to a run phase. A job is allocated to
+// an Agent, which then executes the work through to completion.
 type Job struct {
-	JobSpec
+	// Spec uniquely identifies the job, identifying the corresponding run
+	// phase.
+	Spec JobSpec `jsonapi:"primary,jobs"`
 	// Current status of job.
-	Status JobStatus
+	Status JobStatus `jsonapi:"attribute" json:"status"`
 	// Execution mode of job's workspace.
-	ExecutionMode workspace.ExecutionMode
+	ExecutionMode workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
 	// Name of job's organization
-	Organization string
+	Organization string `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
-	WorkspaceID string
+	WorkspaceID string `jsonapi:"attribute" json:"workspace_id"`
 	// ID of agent that this job is allocated to. Only set once job enters
 	// JobAllocated state.
-	AgentID *string
-	// signaled is non-nil when a cancelation signal has been sent to the job
+	AgentID *string `jsonapi:"attribute" json:"agent_id"`
+	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
-	signaled *bool
+	Signaled *bool `jsonapi:"attribute" json:"signaled"`
 }
 
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
-		JobSpec: JobSpec{
+		Spec: JobSpec{
 			RunID: run.ID,
 			Phase: run.Phase(),
 		},
@@ -81,14 +85,31 @@ func newJob(run *otfrun.Run) *Job {
 	}
 }
 
+func (j *Job) MarshalID() string {
+	return j.Spec.String()
+}
+
+func (j *Job) UnmarshalID(id string) error {
+	spec, err := jobSpecFromString(id)
+	if err != nil {
+		return err
+	}
+	j.Spec = spec
+	return nil
+}
+
+func (j *Job) String() string {
+	return j.Spec.String()
+}
+
 func (j *Job) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("run_id", j.RunID),
-		slog.String("phase", string(j.Phase)),
+		slog.String("run_id", j.Spec.RunID),
+		slog.String("phase", string(j.Spec.Phase)),
 		slog.String("status", string(j.Status)),
 	}
-	if j.signaled != nil {
-		if *j.signaled {
+	if j.Signaled != nil {
+		if *j.Signaled {
 			attrs = append(attrs, slog.Bool("force_cancel_signal_sent", true))
 		} else {
 			attrs = append(attrs, slog.Bool("cancel_signal_sent", true))
@@ -131,17 +152,17 @@ func (j *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePo
 	}
 	// allow actions on same workspace as job depending on run phase
 	switch action {
-	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction, rbac.ForceCancelRunAction:
+	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
 		// any phase
 		return true
-	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction:
+	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
 		// plan phase
-		if j.Phase == internal.PlanPhase {
+		if j.Spec.Phase == internal.PlanPhase {
 			return true
 		}
 	case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
 		// apply phase
-		if j.Phase == internal.ApplyPhase {
+		if j.Spec.Phase == internal.ApplyPhase {
 			return true
 		}
 	}
@@ -202,7 +223,7 @@ func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
 		if j.Status != JobRunning {
 			return nil, errors.New("job can only be signaled when in the JobRunning state")
 		}
-		j.signaled = signal
+		j.Signaled = signal
 		return signal, nil
 	}
 	return nil, nil

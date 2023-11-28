@@ -12,14 +12,21 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
-type api struct {
-	*service
-	*tfeapi.Responder
-}
+type (
+	api struct {
+		*service
+		*tfeapi.Responder
+	}
 
-type updateAgentStatusParams struct {
-	Status AgentStatus `json:"status"`
-}
+	updateAgentStatusParams struct {
+		Status AgentStatus `json:"status"`
+	}
+
+	finishJobParams struct {
+		JobSpec
+		finishJobOptions
+	}
+)
 
 func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
@@ -29,6 +36,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
 	r.HandleFunc("/agents/status", a.updateStatus).Methods("POST")
 	r.HandleFunc("/agents/start", a.startJob).Methods("POST")
+	r.HandleFunc("/agents/finish", a.finishJob).Methods("POST")
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
@@ -127,4 +135,17 @@ func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(token)
+}
+
+func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
+	var params finishJobParams
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	err := a.service.finishJob(r.Context(), params.JobSpec, params.finishJobOptions)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
 }

@@ -222,7 +222,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.Cancel(r.Context(), runID, false); err != nil {
+	if err := h.svc.Cancel(r.Context(), runID); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

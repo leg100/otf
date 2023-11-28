@@ -21,7 +21,7 @@ type api struct {
 func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 	r.HandleFunc("/runs", a.list).Methods("GET")
-	r.HandleFunc("/runs/{run_id}", a.get).Methods("GET")
+	r.HandleFunc("/runs/{id}", a.get).Methods("GET")
 	r.HandleFunc("/runs/{id}/planfile", a.getPlanFile).Methods("GET")
 	r.HandleFunc("/runs/{id}/planfile", a.uploadPlanFile).Methods("PUT")
 	r.HandleFunc("/runs/{id}/lockfile", a.getLockFile).Methods("GET")

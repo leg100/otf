@@ -111,11 +111,6 @@ func (c *Client) Hostname() string {
 	return c.baseURL.Host
 }
 
-// SetHeader sets a http header to be used on all requests. Not concurrent-safe.
-func (c *Client) SetHeader(k, v string) {
-	c.headers[k] = []string{v}
-}
-
 // NewRequest creates an API request with proper headers and serialization.
 //
 // A relative URL path can be provided, in which case it is resolved relative to the baseURL
