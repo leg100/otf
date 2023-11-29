@@ -15,8 +15,8 @@ func TestAllocator_seed(t *testing.T) {
 	pool1 := &Pool{ID: "pool-1"}
 	pool2 := &Pool{ID: "pool-2"}
 
-	agent1 := &Agent{ID: "agent-1", Status: AgentIdle, Concurrency: 5}
-	agent2 := &Agent{ID: "agent-2", Status: AgentIdle, Concurrency: 5}
+	agent1 := &Agent{ID: "agent-1", Status: AgentIdle, MaxJobs: 5}
+	agent2 := &Agent{ID: "agent-2", Status: AgentIdle, MaxJobs: 5}
 
 	job1 := &Job{
 		Spec:   JobSpec{RunID: "run-1", Phase: internal.PlanPhase},
@@ -66,7 +66,7 @@ func TestAllocator_allocate(t *testing.T) {
 		{
 			name: "allocate job to agent",
 			agents: []*Agent{
-				{ID: "agent-idle", Status: AgentIdle, Concurrency: 1},
+				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -86,8 +86,8 @@ func TestAllocator_allocate(t *testing.T) {
 		{
 			name: "allocate job to agent that has pinged more recently than another",
 			agents: []*Agent{
-				{ID: "agent-new", Status: AgentIdle, Concurrency: 1, LastPingAt: time.Now()},
-				{ID: "agent-old", Status: AgentIdle, Concurrency: 1, LastPingAt: time.Now().Add(-time.Second)},
+				{ID: "agent-new", Status: AgentIdle, MaxJobs: 1, LastPingAt: time.Now()},
+				{ID: "agent-old", Status: AgentIdle, MaxJobs: 1, LastPingAt: time.Now().Add(-time.Second)},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -111,7 +111,7 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "pool-1", OrganizationScoped: true, Organization: "acme-corp"},
 			},
 			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, Concurrency: 1, AgentPoolID: internal.String("pool-1")},
+				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -136,7 +136,7 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "pool-1", AssignedWorkspaces: []string{"workspace-1"}},
 			},
 			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, Concurrency: 1, AgentPoolID: internal.String("pool-1")},
+				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -161,7 +161,7 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "pool-1", OrganizationScoped: true, Organization: "acme-corp"},
 			},
 			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, Concurrency: 1, AgentPoolID: internal.String("pool-1")},
+				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -185,7 +185,7 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "pool-1", AssignedWorkspaces: []string{"workspace-non-matching"}},
 			},
 			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, Concurrency: 1, AgentPoolID: internal.String("pool-1")},
+				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -206,8 +206,8 @@ func TestAllocator_allocate(t *testing.T) {
 		{
 			name: "re-allocate job from unresponsive agent",
 			agents: []*Agent{
-				{ID: "agent-unknown", Status: AgentUnknown, Concurrency: 0},
-				{ID: "agent-idle", Status: AgentIdle, Concurrency: 1},
+				{ID: "agent-unknown", Status: AgentUnknown, MaxJobs: 0},
+				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},

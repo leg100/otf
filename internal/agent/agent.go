@@ -36,8 +36,10 @@ type Agent struct {
 	Version string `jsonapi:"attribute" json:"version"`
 	// Current status of agent
 	Status AgentStatus `jsonapi:"attribute" json:"status"`
-	// Number of jobs it can handle at once
-	Concurrency int `jsonapi:"attribute" json:"concurrency"`
+	// Max number of jobs agent can execute
+	MaxJobs int `jsonapi:"attribute" json:"max_jobs"`
+	// Current number of jobs allocated to agent.
+	CurrentJobs int `jsonapi:"attribute" json:"current_jobs"`
 	// Last time a ping was received from the agent
 	LastPingAt time.Time `jsonapi:"attribute" json:"last-ping-at"`
 	// Last time the status was updated
@@ -78,7 +80,7 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 		ID:          internal.NewID("agent"),
 		Name:        opts.Name,
 		Version:     opts.Version,
-		Concurrency: opts.Concurrency,
+		MaxJobs:     opts.Concurrency,
 		AgentPoolID: opts.AgentPoolID,
 	}
 	if err := agent.setStatus(AgentIdle, true); err != nil {

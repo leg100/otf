@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS agents (
     agent_id       TEXT,
     name           TEXT,
     version        TEXT NOT NULL,
-    concurrency    INT NOT NULL,
+    max_jobs       INT NOT NULL,
     ip_address     INET NOT NULL,
     last_ping_at   TIMESTAMPTZ NOT NULL,
     last_status_at TIMESTAMPTZ NOT NULL,

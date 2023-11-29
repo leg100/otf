@@ -407,11 +407,13 @@ func (r *Run) ForceCancelAvailableAt() *time.Time {
 	return r.cancelCoolOff()
 }
 
+const forceCancelCoolOff = time.Second * 10
+
 func (r *Run) cancelCoolOff() *time.Time {
 	if r.CancelSignaledAt == nil {
 		return nil
 	}
-	cooledOff := r.CancelSignaledAt.Add(10 * time.Second)
+	cooledOff := r.CancelSignaledAt.Add(forceCancelCoolOff)
 	return &cooledOff
 }
 

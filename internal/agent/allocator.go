@@ -27,9 +27,6 @@ type allocator struct {
 	agents map[string]*Agent
 	// jobs awaiting allocation to an agent, keyed by job ID
 	jobs map[JobSpec]*Job
-	// capacities keeps track of each agent's available capacity to execute
-	// jobs, keyed by agent ID.
-	capacities map[string]int
 }
 
 // Start the allocator. Should be invoked in a go routine.
@@ -41,7 +38,7 @@ func (a *allocator) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// seed allocator with pools, agents, capacities, and jobs
+	// seed allocator with pools, agents, and jobs
 	pools, err := a.listAllAgentPools(ctx)
 	if err != nil {
 		return err
@@ -71,12 +68,7 @@ func (a *allocator) Start(ctx context.Context) error {
 			switch event.Type {
 			case pubsub.DeletedEvent:
 				delete(a.agents, payload.ID)
-				delete(a.capacities, payload.ID)
 			default:
-				if _, ok := a.agents[payload.ID]; !ok {
-					// new agent, initialize its capacity
-					a.capacities[payload.ID] = payload.Concurrency
-				}
 				a.agents[payload.ID] = payload
 			}
 		case *Job:
@@ -100,20 +92,12 @@ func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
 		a.pools[pool.ID] = pool
 	}
 	a.agents = make(map[string]*Agent, len(agents))
-	a.capacities = make(map[string]int, len(agents))
 	for _, agent := range agents {
 		a.agents[agent.ID] = agent
-		a.capacities[agent.ID] = agent.Concurrency
 	}
 	a.jobs = make(map[JobSpec]*Job, len(jobs))
 	for _, job := range jobs {
 		a.jobs[job.Spec] = job
-		// adjust capacities to take account of jobs already allocated or
-		// running on an agent.
-		switch job.Status {
-		case JobAllocated, JobRunning:
-			a.capacities[*job.AgentID]--
-		}
 	}
 }
 
@@ -149,9 +133,10 @@ func (a *allocator) allocate(ctx context.Context) error {
 				}
 			}
 		case JobFinished, JobCanceled, JobErrored:
-			// job has completed: remove and adjust agent capacity
+			// job has completed: remove and adjust number of current jobs
+			// agents has
 			delete(a.jobs, job.Spec)
-			a.capacities[*job.AgentID]++
+			a.agents[*job.AgentID].CurrentJobs--
 		}
 	}
 	return nil
@@ -166,7 +151,7 @@ func (a *allocator) findCandidateAgent(job *Job) (*Agent, error) {
 			continue
 		}
 		// skip agents with insufficient capacity
-		if a.capacities[agent.ID] == 0 {
+		if a.agents[agent.ID].CurrentJobs == a.agents[agent.ID].MaxJobs {
 			continue
 		}
 		switch job.ExecutionMode {
@@ -220,7 +205,7 @@ func (a *allocator) allocateJob(ctx context.Context, agent *Agent, job *Job) err
 		return err
 	}
 	a.jobs[job.Spec] = allocated
-	a.capacities[agent.ID]--
+	a.agents[agent.ID].CurrentJobs++
 	return nil
 }
 
@@ -230,7 +215,7 @@ func (a *allocator) reallocateJob(ctx context.Context, agent *Agent, job *Job) e
 		return err
 	}
 	a.jobs[job.Spec] = reallocated
-	a.capacities[*job.AgentID]++
-	a.capacities[agent.ID]--
+	a.agents[*job.AgentID].CurrentJobs--
+	a.agents[agent.ID].CurrentJobs++
 	return nil
 }

@@ -16,6 +16,8 @@ export TFE_ADDRESS="${TFE_ADDRESS:-https://localhost:8080}"
 export TFE_TOKEN=${TFE_TOKEN:-site-token}
 export SKIP_PAID=1
 export SSL_CERT_FILE=$PWD/internal/integration/fixtures/cert.pem
+# necessary for agent pool tests
+export TFE_ADMIN_PROVISION_LICENSES_TOKEN=$TFE_TOKEN
 
 tests=()
 tests+=('TestOrganizations')

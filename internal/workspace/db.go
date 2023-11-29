@@ -127,28 +127,29 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		ID:                         sql.String(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		Name:                       sql.String(ws.Name),
 		AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+		AllowCLIApply:              sql.Bool(false),
 		AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 		AutoApply:                  sql.Bool(ws.AutoApply),
+		Branch:                     sql.String(""),
 		CanQueueDestroyPlan:        sql.Bool(ws.CanQueueDestroyPlan),
-		Environment:                sql.String(ws.Environment),
 		Description:                sql.String(ws.Description),
+		Environment:                sql.String(ws.Environment),
 		ExecutionMode:              sql.String(string(ws.ExecutionMode)),
 		GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
 		MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
+		Name:                       sql.String(ws.Name),
+		QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
+		SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
 		SourceName:                 sql.String(ws.SourceName),
 		SourceURL:                  sql.String(ws.SourceURL),
-		SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
 		StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
 		TerraformVersion:           sql.String(ws.TerraformVersion),
 		TriggerPrefixes:            ws.TriggerPrefixes,
 		TriggerPatterns:            ws.TriggerPatterns,
-		QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
+		VCSTagsRegex:               sql.StringPtr(nil),
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
-		Branch:                     sql.String(""),
-		VCSTagsRegex:               sql.StringPtr(nil),
 	}
 	if ws.Connection != nil {
 		params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
@@ -178,11 +179,11 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 		}
 		// persist update
 		params := pggen.UpdateWorkspaceByIDParams{
-			ID:                         sql.String(ws.ID),
-			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
 			AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
 			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
+			AllowCLIApply:              sql.Bool(false),
 			AutoApply:                  sql.Bool(ws.AutoApply),
+			Branch:                     sql.String(""),
 			Description:                sql.String(ws.Description),
 			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
 			GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
@@ -193,9 +194,10 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			TerraformVersion:           sql.String(ws.TerraformVersion),
 			TriggerPrefixes:            ws.TriggerPrefixes,
 			TriggerPatterns:            ws.TriggerPatterns,
-			WorkingDirectory:           sql.String(ws.WorkingDirectory),
-			Branch:                     sql.String(""),
 			VCSTagsRegex:               sql.StringPtr(nil),
+			WorkingDirectory:           sql.String(ws.WorkingDirectory),
+			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+			ID:                         sql.String(ws.ID),
 		}
 		if ws.Connection != nil {
 			params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)

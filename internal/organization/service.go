@@ -148,15 +148,16 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 
 	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) (*Organization, error) {
 		_, err = s.db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
-			ID:                     sql.String(org.ID),
-			CreatedAt:              sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
-			Name:                   sql.String(org.Name),
-			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
-			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
-			Email:                  sql.StringPtr(org.Email),
-			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:  sql.Bool(org.CostEstimationEnabled),
+			ID:                         sql.String(org.ID),
+			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
+			Name:                       sql.String(org.Name),
+			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
+			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
+			Email:                      sql.StringPtr(org.Email),
+			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
+			CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
+			AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
 		})
 		return org, sql.Error(err)
 	})
