@@ -10,7 +10,7 @@ import (
 
 func TestAgentTokenNewCommand(t *testing.T) {
 	cli := &agentCLI{
-		Service: &fakeService{
+		agentCLIService: &fakeService{
 			token: []byte("secret-token"),
 		},
 	}

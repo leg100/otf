@@ -75,7 +75,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 	require.Equal(t, "started", <-got)
 
 	// we can now send interrupt
-	_, err = daemon.Cancel(ctx, r.ID, false)
+	err = daemon.Cancel(ctx, r.ID)
 	require.NoError(t, err)
 
 	// fake bin has received interrupt

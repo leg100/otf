@@ -32,16 +32,15 @@ type (
 		CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
 		updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
 		getAgentPool(ctx context.Context, poolID string) (*Pool, error)
-		listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error)
+		listAllAgentPools(ctx context.Context) ([]*Pool, error)
+		listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
 		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
-		listAllowedPools(ctx context.Context, workspaceID string) ([]*Pool, error)
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		listAgents(ctx context.Context) ([]*Agent, error)
 		listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
 		listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
 		listServerAgents(ctx context.Context) ([]*Agent, error)
-		watchAgentsByOrganization(ctx context.Context, organization string) (<-chan *Agent, error)
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 		deleteAgent(ctx context.Context, agentID string) error
@@ -62,6 +61,7 @@ type (
 		logr.Logger
 		pubsub.Subscriber
 		otfrun.RunService
+		workspace.WorkspaceService
 
 		organization internal.Authorizer
 
@@ -88,11 +88,12 @@ type (
 
 func NewService(opts ServiceOptions) *service {
 	svc := &service{
-		Logger:       opts.Logger,
-		Subscriber:   opts.Broker,
-		RunService:   opts.RunService,
-		db:           &db{DB: opts.DB},
-		organization: &organization.Authorizer{Logger: opts.Logger},
+		Logger:           opts.Logger,
+		Subscriber:       opts.Broker,
+		RunService:       opts.RunService,
+		WorkspaceService: opts.WorkspaceService,
+		db:               &db{DB: opts.DB},
+		organization:     &organization.Authorizer{Logger: opts.Logger},
 		tokenFactory: &tokenFactory{
 			TokensService: opts.TokensService,
 		},
@@ -207,7 +208,7 @@ func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
 func (s *service) NewManager() *manager { return newManager(s) }
 
 func (s *service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, opts.Organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateAgentPoolAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +275,7 @@ func (s *service) getAgentPool(ctx context.Context, poolID string) (*Pool, error
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
 		return nil, err
 	}
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, pool.Organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.GetAgentPoolAction, pool.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -282,13 +283,26 @@ func (s *service) getAgentPool(ctx context.Context, poolID string) (*Pool, error
 	return pool, nil
 }
 
-func (s *service) listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
-	// TODO: handle authz with and without org
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateRunAction, "")
+func (s *service) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	pools, err := s.db.listPools(ctx, opts)
+	pools, err := s.db.listPools(ctx)
+	if err != nil {
+		s.Error(err, "listing all agent pools", "subject", subject)
+		return nil, err
+	}
+	s.V(9).Info("listed all agent pools", "subject", subject, "count", len(pools))
+	return pools, nil
+}
+
+func (s *service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentPoolsAction, organization)
+	if err != nil {
+		return nil, err
+	}
+	pools, err := s.db.listPoolsByOrganization(ctx, organization, opts)
 	if err != nil {
 		s.Error(err, "listing agent pools", "subject", subject)
 		return nil, err
@@ -325,18 +339,6 @@ func (s *service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, er
 	}
 	s.V(9).Info("deleted agent pool", "pool", pool, "subject", subject)
 	return pool, nil
-}
-
-func (s *service) listAllowedPools(ctx context.Context, workspaceID string) ([]*Pool, error) {
-	pools, err := s.db.listPools(ctx, listPoolOptions{
-		AllowedWorkspaceID: &workspaceID,
-	})
-	if err != nil {
-		s.Error(err, "listing allowed agent pools", "workspace_id", workspaceID)
-		return nil, err
-	}
-	s.V(9).Info("listed allowed agent pools", "workspace_id", workspaceID, "count", len(pools))
-	return pools, nil
 }
 
 // checkWorkspacePoolAccess checks if a workspace has been granted access to a pool. If the
@@ -462,27 +464,6 @@ func (s *service) listAgentsByOrganization(ctx context.Context, organization str
 
 func (s *service) listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error) {
 	return s.db.listAgentsByPool(ctx, poolID)
-}
-
-func (s *service) watchAgentsByOrganization(ctx context.Context, organization string) (<-chan *Agent, error) {
-	_, err := s.organization.CanAccess(ctx, rbac.WatchAgentsAction, organization)
-	if err != nil {
-		return nil, err
-	}
-	sub, err := s.Subscribe(ctx, "watch-agents-")
-	if err != nil {
-		return nil, err
-	}
-	agents := make(chan *Agent)
-	go func() {
-		for event := range sub {
-			if agent, ok := event.Payload.(*Agent); ok {
-				agents <- agent
-			}
-		}
-		close(agents)
-	}()
-	return agents, nil
 }
 
 func (s *service) deleteAgent(ctx context.Context, agentID string) error {

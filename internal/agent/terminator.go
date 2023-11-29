@@ -4,7 +4,7 @@ import "sync"
 
 // cancelable is something that is cancelable, either forcefully or gracefully.
 type cancelable interface {
-	cancel(force bool)
+	cancel(force, sendSignal bool)
 }
 
 // terminator handles canceling jobs
@@ -28,21 +28,21 @@ func (t *terminator) checkOut(spec JobSpec) {
 	delete(t.mapping, spec)
 }
 
-func (t *terminator) cancel(spec JobSpec, force bool) {
+func (t *terminator) cancel(spec JobSpec, force, sendSignal bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
 	if job, ok := t.mapping[spec]; ok {
-		job.cancel(force)
+		job.cancel(force, sendSignal)
 	}
 }
 
-func (t *terminator) cancelAll(force bool) {
+func (t *terminator) stopAll() {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
 	for _, job := range t.mapping {
-		job.cancel(force)
+		job.cancel(false, false)
 	}
 }
 

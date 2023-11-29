@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+trap "echo you will have to try harder than that" INT
+
+echo "ok, try killing me now"
+
+while true; do sleep 1; done

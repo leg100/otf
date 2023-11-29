@@ -206,7 +206,11 @@ func (d *daemon) Start(ctx context.Context) error {
 		defer func() {
 			if terminator.totalJobs() > 0 {
 				d.logger.Info("gracefully canceling in-progress jobs", "total", terminator.totalJobs())
-				terminator.cancelAll(false)
+				// The interrupt sent to the main process is also sent to the
+				// forked terraform processes, so there is no need to send the
+				// latter another interrupt but merely set the cancel semaphore
+				// on each operation.
+				terminator.stopAll()
 			}
 		}()
 
@@ -260,7 +264,7 @@ func (d *daemon) Start(ctx context.Context) error {
 					})
 				} else if j.Signaled != nil {
 					d.poolLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
-					terminator.cancel(j.Spec, *j.Signaled)
+					terminator.cancel(j.Spec, *j.Signaled, true)
 				}
 			}
 		}

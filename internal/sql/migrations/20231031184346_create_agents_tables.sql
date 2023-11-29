@@ -22,8 +22,8 @@ ALTER TABLE agent_tokens
     RENAME COLUMN token_id TO agent_token_id;
 
 -- alter agent tokens table, adding a fk to agent pools; for each organization
--- that has at least one agent token, add a default agent pool and update token
--- to reference that pool. Then drop the organization_name column.
+-- add a default agent pool and update token to reference that pool. Then drop
+-- the organization_name column.
 ALTER TABLE agent_tokens
     ADD COLUMN agent_pool_id TEXT,
     ADD CONSTRAINT agent_pool_id_fk FOREIGN KEY (agent_pool_id)
@@ -47,7 +47,17 @@ ALTER TABLE agent_tokens
 ALTER TABLE workspaces
     ADD COLUMN agent_pool_id TEXT,
     ADD CONSTRAINT agent_pool_fk FOREIGN KEY (agent_pool_id)
-        REFERENCES agent_pools ON UPDATE CASCADE,
+        REFERENCES agent_pools ON UPDATE CASCADE;
+
+-- for each workspace with execution_mode=agent, set it to use the default
+-- agent pool before adding a constraint requiring both to be set
+UPDATE workspaces w
+SET agent_pool_id = ap.agent_pool_id
+FROM organizations o, agent_pools ap
+WHERE w.organization_name = o.name
+AND ap.organization_name = o.name;
+
+ALTER TABLE workspaces
     ADD CONSTRAINT agent_pool_chk CHECK (execution_mode <> 'agent' OR agent_pool_id IS NOT NULL);
 
 CREATE TABLE IF NOT EXISTS agent_statuses (
@@ -99,7 +109,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     phase TEXT REFERENCES job_phases ON UPDATE CASCADE NOT NULL,
     status TEXT REFERENCES job_statuses ON UPDATE CASCADE NOT NULL,
     agent_id TEXT REFERENCES agents ON UPDATE CASCADE ON DELETE CASCADE,
-    signaled BOOLEAN,
+    signaled BOOLEAN
 );
 
 -- create triggers for pools, agents, and jobs
@@ -171,13 +181,13 @@ AFTER INSERT OR UPDATE OR DELETE ON agents
 CREATE TRIGGER notify_event
 AFTER INSERT OR UPDATE OR DELETE ON jobs
     FOR EACH ROW EXECUTE PROCEDURE jobs_notify_event();
--- +goose StatementEnd
 
 -- rename run column from force_cancel_available_at to cancel_signaled_at -
 -- hence forth the time at which a cancel signal was sent is recorded and then
 -- the time at which a force cancel is a available can be inferred.
 ALTER TABLE runs
     RENAME COLUMN force_cancel_available_at TO cancel_signaled_at;
+-- +goose StatementEnd
 
 -- +goose Down
 ALTER TABLE runs

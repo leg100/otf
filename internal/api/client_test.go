@@ -17,8 +17,8 @@ import (
 func TestClient_UnmarshalResponse(t *testing.T) {
 	want := types.WorkspaceList{
 		Items: []*types.Workspace{
-			{ID: "ws-1"},
-			{ID: "ws-2"},
+			{ID: "ws-1", Outputs: []*types.WorkspaceOutput{}},
+			{ID: "ws-2", Outputs: []*types.WorkspaceOutput{}},
 		},
 		Pagination: &types.Pagination{},
 	}

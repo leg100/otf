@@ -19,7 +19,11 @@ func (f *fakeService) CreateAgentPool(ctx context.Context, opts CreateAgentPoolO
 	return f.pool, nil
 }
 
-func (f *fakeService) listAgentPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
+func (f *fakeService) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
+	return []*Pool{f.pool}, nil
+}
+
+func (f *fakeService) listAgentPoolsByOrganization(context.Context, string, listPoolOptions) ([]*Pool, error) {
 	return []*Pool{f.pool}, nil
 }
 

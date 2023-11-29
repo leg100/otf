@@ -436,19 +436,16 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, p
 	})
 	require.NoError(t, err)
 
-	app, err := agent.NewRPCClient(api.Config{
+	agentDaemon, err := agent.NewRPC(logger, cfg, api.Config{
 		Token:   string(token),
 		Address: s.Hostname(),
 	})
 	require.NoError(t, err)
 
-	agent, err := agent.New(logger, app, cfg)
-	require.NoError(t, err)
-
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
-		err := agent.Start(ctx)
+		err := agentDaemon.Start(ctx)
 		close(done)
 		require.NoError(t, err)
 	}()

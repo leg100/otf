@@ -8,6 +8,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/leg100/otf/internal/logr"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,6 +71,7 @@ func TestExecutor_execute(t *testing.T) {
 	t.Run("cancel", func(t *testing.T) {
 		r, w := io.Pipe()
 		wkr := &operation{
+			Logger:  logr.Discard(),
 			out:     w,
 			workdir: &workdir{root: ""},
 		}
@@ -79,8 +81,30 @@ func TestExecutor_execute(t *testing.T) {
 		}()
 
 		assert.Equal(t, "ok, you can kill me now\n", <-iochan.DelimReader(r, '\n'))
-		wkr.cancel(false)
+		wkr.cancel(false, true)
 		assert.NoError(t, <-done)
+	})
+
+	t.Run("cancel forceably", func(t *testing.T) {
+		r, w := io.Pipe()
+		reader := iochan.DelimReader(r, '\n')
+		wkr := &operation{
+			Logger:  logr.Discard(),
+			out:     w,
+			workdir: &workdir{root: ""},
+		}
+		done := make(chan error)
+		go func() {
+			done <- wkr.execute([]string{"./testdata/killme_harder"})
+		}()
+
+		// send graceful cancel
+		assert.Equal(t, "ok, try killing me now\n", <-reader)
+		wkr.cancel(false, true)
+		assert.Equal(t, "you will have to try harder than that\n", <-reader)
+		// send force cancel
+		wkr.cancel(true, true)
+		assert.Error(t, <-done)
 	})
 }
 

@@ -87,6 +87,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// order agents to show 'freshest' at the top
 	agents := append(serverAgents, poolAgents...)
 	slices.SortFunc(agents, func(a, b *Agent) int {
 		if a.LastPingAt.Before(b.LastPingAt) {
@@ -172,9 +173,7 @@ func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := h.svc.listAgentPools(r.Context(), listPoolOptions{
-		Organization: &org,
-	})
+	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), org, listPoolOptions{})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -306,7 +305,12 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := h.svc.listAgentPools(r.Context(), listPoolOptions{
+	ws, err := h.workspaceService.GetWorkspace(r.Context(), workspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), ws.Organization, listPoolOptions{
 		AllowedWorkspaceID: &workspaceID,
 	})
 	if err != nil {

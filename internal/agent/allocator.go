@@ -42,7 +42,7 @@ func (a *allocator) Start(ctx context.Context) error {
 		return err
 	}
 	// seed allocator with pools, agents, capacities, and jobs
-	pools, err := a.listAgentPools(ctx, listPoolOptions{})
+	pools, err := a.listAllAgentPools(ctx)
 	if err != nil {
 		return err
 	}

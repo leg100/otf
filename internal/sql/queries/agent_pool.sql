@@ -26,14 +26,37 @@ SELECT ap.*,
         WHERE aw.agent_pool_id = ap.agent_pool_id
     ) AS allowed_workspace_ids
 FROM agent_pools ap
+ORDER BY ap.created_at DESC
+;
+
+-- Find agent pools in an organization, optionally filtering by any combination of:
+-- (a) name_substring: pool name contains substring
+-- (b) allowed_workspace_name: workspace with name is allowed to use pool
+-- (c) allowed_workspace_id: workspace with ID is allowed to use pool
+--
+-- name: FindAgentPoolsByOrganization :many
+SELECT ap.*,
+    (
+        SELECT array_agg(w.workspace_id)
+        FROM workspaces w
+        WHERE w.agent_pool_id = ap.agent_pool_id
+    ) AS workspace_ids,
+    (
+        SELECT array_agg(aw.workspace_id)
+        FROM agent_pool_allowed_workspaces aw
+        WHERE aw.agent_pool_id = ap.agent_pool_id
+    ) AS allowed_workspace_ids
+FROM agent_pools ap
 LEFT JOIN (agent_pool_allowed_workspaces aw JOIN workspaces w USING (workspace_id)) ON ap.agent_pool_id = aw.agent_pool_id
-WHERE ((pggen.arg('organization_name')::text IS NULL) OR ap.organization_name = pggen.arg('organization_name'))
+WHERE ap.organization_name = pggen.arg('organization_name')
 AND   ((pggen.arg('name_substring')::text IS NULL) OR ap.name LIKE '%' || pggen.arg('name_substring') || '%')
 AND   ((pggen.arg('allowed_workspace_name')::text IS NULL) OR
-        ap.organization_scoped OR w.name = pggen.arg('allowed_workspace_name')
+       ap.organization_scoped OR
+       w.name = pggen.arg('allowed_workspace_name')
       )
 AND   ((pggen.arg('allowed_workspace_id')::text IS NULL) OR
-        ap.organization_scoped OR w.workspace_id = pggen.arg('allowed_workspace_id')
+       ap.organization_scoped OR
+       w.workspace_id = pggen.arg('allowed_workspace_id')
       )
 GROUP BY ap.agent_pool_id
 ORDER BY ap.created_at DESC

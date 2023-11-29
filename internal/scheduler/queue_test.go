@@ -48,7 +48,7 @@ func TestQueue(t *testing.T) {
 		assert.True(t, q.ws.Locked())
 
 		// cancel run2, check it is removed from queue and run3 is shuffled forward
-		_, err = run2.Cancel(true)
+		err = run2.Cancel(false, false)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, pubsub.Event{Payload: run2})
 		require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestQueue(t *testing.T) {
 		assert.True(t, q.ws.Locked())
 
 		// cancel run1; check run3 takes its place as current run
-		_, err = run1.Cancel(true)
+		err = run1.Cancel(false, false)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, pubsub.Event{Payload: run1})
 		require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestQueue(t *testing.T) {
 		assert.True(t, q.ws.Locked())
 
 		// cancel run3; check everything is empty and workspace is unlocked
-		_, err = run3.Cancel(true)
+		err = run3.Cancel(false, false)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, pubsub.Event{Payload: run3})
 		require.NoError(t, err)

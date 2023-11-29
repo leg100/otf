@@ -69,25 +69,8 @@ const findAgentPoolsSQL = `SELECT ap.*,
         WHERE aw.agent_pool_id = ap.agent_pool_id
     ) AS allowed_workspace_ids
 FROM agent_pools ap
-LEFT JOIN (agent_pool_allowed_workspaces aw JOIN workspaces w USING (workspace_id)) ON ap.agent_pool_id = aw.agent_pool_id
-WHERE (($1::text IS NULL) OR ap.organization_name = $1)
-AND   (($2::text IS NULL) OR ap.name LIKE '%' || $2 || '%')
-AND   (($3::text IS NULL) OR
-        ap.organization_scoped OR w.name = $3
-      )
-AND   (($4::text IS NULL) OR
-        ap.organization_scoped OR w.workspace_id = $4
-      )
-GROUP BY ap.agent_pool_id
 ORDER BY ap.created_at DESC
 ;`
-
-type FindAgentPoolsParams struct {
-	OrganizationName     pgtype.Text
-	NameSubstring        pgtype.Text
-	AllowedWorkspaceName pgtype.Text
-	AllowedWorkspaceID   pgtype.Text
-}
 
 type FindAgentPoolsRow struct {
 	AgentPoolID         pgtype.Text        `json:"agent_pool_id"`
@@ -100,9 +83,9 @@ type FindAgentPoolsRow struct {
 }
 
 // FindAgentPools implements Querier.FindAgentPools.
-func (q *DBQuerier) FindAgentPools(ctx context.Context, params FindAgentPoolsParams) ([]FindAgentPoolsRow, error) {
+func (q *DBQuerier) FindAgentPools(ctx context.Context) ([]FindAgentPoolsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentPools")
-	rows, err := q.conn.Query(ctx, findAgentPoolsSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName, params.AllowedWorkspaceID)
+	rows, err := q.conn.Query(ctx, findAgentPoolsSQL)
 	if err != nil {
 		return nil, fmt.Errorf("query FindAgentPools: %w", err)
 	}
@@ -122,8 +105,8 @@ func (q *DBQuerier) FindAgentPools(ctx context.Context, params FindAgentPoolsPar
 }
 
 // FindAgentPoolsBatch implements Querier.FindAgentPoolsBatch.
-func (q *DBQuerier) FindAgentPoolsBatch(batch genericBatch, params FindAgentPoolsParams) {
-	batch.Queue(findAgentPoolsSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName, params.AllowedWorkspaceID)
+func (q *DBQuerier) FindAgentPoolsBatch(batch genericBatch) {
+	batch.Queue(findAgentPoolsSQL)
 }
 
 // FindAgentPoolsScan implements Querier.FindAgentPoolsScan.
@@ -143,6 +126,98 @@ func (q *DBQuerier) FindAgentPoolsScan(results pgx.BatchResults) ([]FindAgentPoo
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("close FindAgentPoolsBatch rows: %w", err)
+	}
+	return items, err
+}
+
+const findAgentPoolsByOrganizationSQL = `SELECT ap.*,
+    (
+        SELECT array_agg(w.workspace_id)
+        FROM workspaces w
+        WHERE w.agent_pool_id = ap.agent_pool_id
+    ) AS workspace_ids,
+    (
+        SELECT array_agg(aw.workspace_id)
+        FROM agent_pool_allowed_workspaces aw
+        WHERE aw.agent_pool_id = ap.agent_pool_id
+    ) AS allowed_workspace_ids
+FROM agent_pools ap
+LEFT JOIN (agent_pool_allowed_workspaces aw JOIN workspaces w USING (workspace_id)) ON ap.agent_pool_id = aw.agent_pool_id
+WHERE ap.organization_name = $1
+AND   (($2::text IS NULL) OR ap.name LIKE '%' || $2 || '%')
+AND   (($3::text IS NULL) OR
+       ap.organization_scoped OR
+       w.name = $3
+      )
+AND   (($4::text IS NULL) OR
+       ap.organization_scoped OR
+       w.workspace_id = $4
+      )
+GROUP BY ap.agent_pool_id
+ORDER BY ap.created_at DESC
+;`
+
+type FindAgentPoolsByOrganizationParams struct {
+	OrganizationName     pgtype.Text
+	NameSubstring        pgtype.Text
+	AllowedWorkspaceName pgtype.Text
+	AllowedWorkspaceID   pgtype.Text
+}
+
+type FindAgentPoolsByOrganizationRow struct {
+	AgentPoolID         pgtype.Text        `json:"agent_pool_id"`
+	Name                pgtype.Text        `json:"name"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
+	OrganizationScoped  pgtype.Bool        `json:"organization_scoped"`
+	WorkspaceIds        []string           `json:"workspace_ids"`
+	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
+}
+
+// FindAgentPoolsByOrganization implements Querier.FindAgentPoolsByOrganization.
+func (q *DBQuerier) FindAgentPoolsByOrganization(ctx context.Context, params FindAgentPoolsByOrganizationParams) ([]FindAgentPoolsByOrganizationRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentPoolsByOrganization")
+	rows, err := q.conn.Query(ctx, findAgentPoolsByOrganizationSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName, params.AllowedWorkspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindAgentPoolsByOrganization: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAgentPoolsByOrganizationRow{}
+	for rows.Next() {
+		var item FindAgentPoolsByOrganizationRow
+		if err := rows.Scan(&item.AgentPoolID, &item.Name, &item.CreatedAt, &item.OrganizationName, &item.OrganizationScoped, &item.WorkspaceIds, &item.AllowedWorkspaceIds); err != nil {
+			return nil, fmt.Errorf("scan FindAgentPoolsByOrganization row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAgentPoolsByOrganization rows: %w", err)
+	}
+	return items, err
+}
+
+// FindAgentPoolsByOrganizationBatch implements Querier.FindAgentPoolsByOrganizationBatch.
+func (q *DBQuerier) FindAgentPoolsByOrganizationBatch(batch genericBatch, params FindAgentPoolsByOrganizationParams) {
+	batch.Queue(findAgentPoolsByOrganizationSQL, params.OrganizationName, params.NameSubstring, params.AllowedWorkspaceName, params.AllowedWorkspaceID)
+}
+
+// FindAgentPoolsByOrganizationScan implements Querier.FindAgentPoolsByOrganizationScan.
+func (q *DBQuerier) FindAgentPoolsByOrganizationScan(results pgx.BatchResults) ([]FindAgentPoolsByOrganizationRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindAgentPoolsByOrganizationBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAgentPoolsByOrganizationRow{}
+	for rows.Next() {
+		var item FindAgentPoolsByOrganizationRow
+		if err := rows.Scan(&item.AgentPoolID, &item.Name, &item.CreatedAt, &item.OrganizationName, &item.OrganizationScoped, &item.WorkspaceIds, &item.AllowedWorkspaceIds); err != nil {
+			return nil, fmt.Errorf("scan FindAgentPoolsByOrganizationBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAgentPoolsByOrganizationBatch rows: %w", err)
 	}
 	return items, err
 }

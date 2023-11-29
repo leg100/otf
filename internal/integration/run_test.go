@@ -70,20 +70,20 @@ func TestRun(t *testing.T) {
 		assert.True(t, timestamp.After(got.CreatedAt))
 	})
 
-	t.Run("cancel run immediately", func(t *testing.T) {
+	t.Run("cancel pending run", func(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		run := svc.createRun(t, ctx, nil, nil)
 
-		got, err := svc.Cancel(ctx, run.ID, true)
+		err := svc.Cancel(ctx, run.ID)
+		require.NoError(t, err)
+
+		got, err := svc.GetRun(ctx, run.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, otfrun.RunCanceled, got.Status)
 		canceled, err := got.StatusTimestamp(otfrun.RunCanceled)
 		assert.NoError(t, err)
 		assert.True(t, canceled.After(got.CreatedAt))
-
-		// force cancel available after a cool down period following cancelation
-		assert.True(t, got.ForceCancelAvailableAt.After(canceled))
 	})
 
 	t.Run("get", func(t *testing.T) {

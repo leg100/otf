@@ -60,8 +60,6 @@ type (
 	}
 
 	listPoolOptions struct {
-		// Filter by organization name. Optional.
-		Organization *string
 		// Filter pools by those with this substring in their name. Optional.
 		NameSubstring *string
 		// Filter pools to those accessible to the named workspace. Optional.

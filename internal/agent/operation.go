@@ -43,7 +43,7 @@ type operation struct {
 	config        Config
 	job           *Job
 	debug         bool
-	canceled      bool
+	canceled      bool // semaphore instructing op to stop
 	ctx           context.Context
 	cancelfn      context.CancelFunc
 	out           io.Writer
@@ -142,7 +142,8 @@ func (o *operation) do() error {
 
 	// Get workspace in order to get working directory path
 	//
-	// TODO: add working directory to run.Run
+	// TODO: add working directory to run.Run so we skip having to retrieve
+	// workspace.
 	ws, err := o.GetWorkspace(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
@@ -241,19 +242,19 @@ func (o *operation) do() error {
 	return nil
 }
 
-func (o *operation) cancel(force bool) {
+func (o *operation) cancel(force, sendSignal bool) {
 	o.canceled = true
 	// cancel context only if forced and if there is a context to cancel
 	if force && o.cancelfn != nil {
 		o.cancelfn()
 	}
 	// signal current process if there is one.
-	if o.proc != nil {
+	if sendSignal && o.proc != nil {
 		if force {
-			o.Info("sending SIGKILL to terraform process", "pid", o.proc.Pid)
+			o.V(2).Info("sending SIGKILL to terraform process", "pid", o.proc.Pid)
 			o.proc.Signal(os.Kill)
 		} else {
-			o.Info("sending SIGINT to terraform process", "pid", o.proc.Pid)
+			o.V(2).Info("sending SIGINT to terraform process", "pid", o.proc.Pid)
 			o.proc.Signal(os.Interrupt)
 		}
 	}

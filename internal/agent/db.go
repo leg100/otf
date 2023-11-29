@@ -189,14 +189,25 @@ func (db *db) getPoolByTokenID(ctx context.Context, tokenID string) (*Pool, erro
 	return poolresult(result).toPool(), nil
 }
 
-func (db *db) listPools(ctx context.Context, opts listPoolOptions) ([]*Pool, error) {
-	params := pggen.FindAgentPoolsParams{
-		OrganizationName:     sql.StringPtr(opts.Organization),
+func (db *db) listPools(ctx context.Context) ([]*Pool, error) {
+	rows, err := db.Conn(ctx).FindAgentPools(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	pools := make([]*Pool, len(rows))
+	for i, r := range rows {
+		pools[i] = poolresult(r).toPool()
+	}
+	return pools, nil
+}
+
+func (db *db) listPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+	rows, err := db.Conn(ctx).FindAgentPoolsByOrganization(ctx, pggen.FindAgentPoolsByOrganizationParams{
+		OrganizationName:     sql.String(organization),
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),
 		AllowedWorkspaceName: sql.StringPtr(opts.AllowedWorkspaceName),
 		AllowedWorkspaceID:   sql.StringPtr(opts.AllowedWorkspaceID),
-	}
-	rows, err := db.Conn(ctx).FindAgentPools(ctx, params)
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}

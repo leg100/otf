@@ -155,8 +155,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := a.service.listAgentPools(r.Context(), listPoolOptions{
-		Organization:         &organization,
+	pools, err := a.service.listAgentPoolsByOrganization(r.Context(), organization, listPoolOptions{
 		NameSubstring:        params.Query,
 		AllowedWorkspaceName: params.AllowedWorkspacesName,
 	})

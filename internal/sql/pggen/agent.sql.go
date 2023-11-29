@@ -87,12 +87,24 @@ type Querier interface {
 	// InsertAgentPoolScan scans the result of an executed InsertAgentPoolBatch query.
 	InsertAgentPoolScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindAgentPools(ctx context.Context, params FindAgentPoolsParams) ([]FindAgentPoolsRow, error)
+	FindAgentPools(ctx context.Context) ([]FindAgentPoolsRow, error)
 	// FindAgentPoolsBatch enqueues a FindAgentPools query into batch to be executed
 	// later by the batch.
-	FindAgentPoolsBatch(batch genericBatch, params FindAgentPoolsParams)
+	FindAgentPoolsBatch(batch genericBatch)
 	// FindAgentPoolsScan scans the result of an executed FindAgentPoolsBatch query.
 	FindAgentPoolsScan(results pgx.BatchResults) ([]FindAgentPoolsRow, error)
+
+	// Find agent pools in an organization, optionally filtering by any combination of:
+	// (a) name_substring: pool name contains substring
+	// (b) allowed_workspace_name: workspace with name is allowed to use pool
+	// (c) allowed_workspace_id: workspace with ID is allowed to use pool
+	//
+	FindAgentPoolsByOrganization(ctx context.Context, params FindAgentPoolsByOrganizationParams) ([]FindAgentPoolsByOrganizationRow, error)
+	// FindAgentPoolsByOrganizationBatch enqueues a FindAgentPoolsByOrganization query into batch to be executed
+	// later by the batch.
+	FindAgentPoolsByOrganizationBatch(batch genericBatch, params FindAgentPoolsByOrganizationParams)
+	// FindAgentPoolsByOrganizationScan scans the result of an executed FindAgentPoolsByOrganizationBatch query.
+	FindAgentPoolsByOrganizationScan(results pgx.BatchResults) ([]FindAgentPoolsByOrganizationRow, error)
 
 	FindAgentPool(ctx context.Context, poolID pgtype.Text) (FindAgentPoolRow, error)
 	// FindAgentPoolBatch enqueues a FindAgentPool query into batch to be executed
@@ -1628,6 +1640,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findAgentPoolsSQL, findAgentPoolsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentPools': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findAgentPoolsByOrganizationSQL, findAgentPoolsByOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentPoolsByOrganization': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findAgentPoolSQL, findAgentPoolSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentPool': %w", err)
