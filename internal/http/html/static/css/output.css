@@ -1,5 +1,5 @@
 /*
-! tailwindcss v3.3.3 | MIT License | https://tailwindcss.com
+! tailwindcss v3.3.5 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -884,10 +884,6 @@ th, td {
   display: none;
 }
 
-.h-10 {
-  height: 2.5rem;
-}
-
 .h-3 {
   height: 0.75rem;
 }
@@ -904,32 +900,8 @@ th, td {
   height: 100%;
 }
 
-.h-11 {
-  height: 2.75rem;
-}
-
-.h-9 {
-  height: 2.25rem;
-}
-
-.h-8 {
-  height: 2rem;
-}
-
-.h-7 {
-  height: 1.75rem;
-}
-
-.h-6 {
-  height: 1.5rem;
-}
-
 .min-h-screen {
   min-height: 100vh;
-}
-
-.w-10 {
-  width: 2.5rem;
 }
 
 .w-3 {
@@ -988,22 +960,6 @@ th, td {
   width: 100%;
 }
 
-.w-8 {
-  width: 2rem;
-}
-
-.w-6 {
-  width: 1.5rem;
-}
-
-.w-4 {
-  width: 1rem;
-}
-
-.w-5 {
-  width: 1.25rem;
-}
-
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -1032,36 +988,12 @@ th, td {
   flex-grow: 1;
 }
 
-.grow-0 {
-  flex-grow: 0;
-}
-
 .basis-1\/5 {
   flex-basis: 20%;
 }
 
 .basis-4\/5 {
   flex-basis: 80%;
-}
-
-.basis-4 {
-  flex-basis: 1rem;
-}
-
-.basis-5 {
-  flex-basis: 1.25rem;
-}
-
-.basis-6 {
-  flex-basis: 1.5rem;
-}
-
-.basis-7 {
-  flex-basis: 1.75rem;
-}
-
-.basis-8 {
-  flex-basis: 2rem;
 }
 
 .table-fixed {

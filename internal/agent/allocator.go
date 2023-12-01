@@ -151,7 +151,7 @@ func (a *allocator) findCandidateAgent(job *Job) (*Agent, error) {
 			continue
 		}
 		// skip agents with insufficient capacity
-		if a.agents[agent.ID].CurrentJobs == a.agents[agent.ID].MaxJobs {
+		if agent.CurrentJobs == agent.MaxJobs {
 			continue
 		}
 		switch job.ExecutionMode {
@@ -210,12 +210,14 @@ func (a *allocator) allocateJob(ctx context.Context, agent *Agent, job *Job) err
 }
 
 func (a *allocator) reallocateJob(ctx context.Context, agent *Agent, job *Job) error {
+	from := *job.AgentID
 	reallocated, err := a.Service.reallocateJob(ctx, job.Spec, agent.ID)
 	if err != nil {
 		return err
 	}
 	a.jobs[job.Spec] = reallocated
-	a.agents[*job.AgentID].CurrentJobs--
+
+	a.agents[from].CurrentJobs--
 	a.agents[agent.ID].CurrentJobs++
 	return nil
 }

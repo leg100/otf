@@ -2879,11 +2879,16 @@ func (q *DBQuerier) UpdateAgentScan(results pgx.BatchResults) (UpdateAgentRow, e
 	return item, nil
 }
 
-const findAgentsSQL = `SELECT a.*, count(j.*) AS current_jobs
+const findAgentsSQL = `SELECT
+    a.*,
+    ( SELECT count(*)
+      FROM jobs j
+      WHERE a.agent_id = j.agent_id
+      AND j.status IN ('allocated', 'running')
+    ) AS current_jobs
 FROM agents a
-LEFT JOIN jobs j USING (agent_id)
 GROUP BY a.agent_id
-ORDER BY last_ping_at DESC;`
+ORDER BY a.last_ping_at DESC;`
 
 type FindAgentsRow struct {
 	AgentID      pgtype.Text        `json:"agent_id"`
@@ -2946,10 +2951,15 @@ func (q *DBQuerier) FindAgentsScan(results pgx.BatchResults) ([]FindAgentsRow, e
 	return items, err
 }
 
-const findAgentsByOrganizationSQL = `SELECT a.*, count(j.*) AS current_jobs
+const findAgentsByOrganizationSQL = `SELECT
+    a.*,
+    ( SELECT count(*)
+      FROM jobs j
+      WHERE a.agent_id = j.agent_id
+      AND j.status IN ('allocated', 'running')
+    ) AS current_jobs
 FROM agents a
 JOIN agent_pools ap USING (agent_pool_id)
-LEFT JOIN jobs j USING (agent_id)
 WHERE ap.organization_name = $1
 GROUP BY a.agent_id
 ORDER BY last_ping_at DESC;`
@@ -3015,10 +3025,15 @@ func (q *DBQuerier) FindAgentsByOrganizationScan(results pgx.BatchResults) ([]Fi
 	return items, err
 }
 
-const findAgentsByPoolIDSQL = `SELECT a.*, count(j.*) AS current_jobs
+const findAgentsByPoolIDSQL = `SELECT
+    a.*,
+    ( SELECT count(*)
+      FROM jobs j
+      WHERE a.agent_id = j.agent_id
+      AND j.status IN ('allocated', 'running')
+    ) AS current_jobs
 FROM agents a
 JOIN agent_pools ap USING (agent_pool_id)
-LEFT JOIN jobs j USING (agent_id)
 WHERE ap.agent_pool_id = $1
 GROUP BY a.agent_id
 ORDER BY last_ping_at DESC;`
@@ -3084,9 +3099,14 @@ func (q *DBQuerier) FindAgentsByPoolIDScan(results pgx.BatchResults) ([]FindAgen
 	return items, err
 }
 
-const findServerAgentsSQL = `SELECT a.*, count(j.*) AS current_jobs
+const findServerAgentsSQL = `SELECT
+    a.*,
+    ( SELECT count(*)
+      FROM jobs j
+      WHERE a.agent_id = j.agent_id
+      AND j.status IN ('allocated', 'running')
+    ) AS current_jobs
 FROM agents a
-LEFT JOIN jobs j USING (agent_id)
 WHERE agent_pool_id IS NULL
 GROUP BY a.agent_id
 ORDER BY last_ping_at DESC;`
@@ -3152,7 +3172,13 @@ func (q *DBQuerier) FindServerAgentsScan(results pgx.BatchResults) ([]FindServer
 	return items, err
 }
 
-const findAgentByIDSQL = `SELECT a.*, count(j.*) AS current_jobs
+const findAgentByIDSQL = `SELECT
+    a.*,
+    ( SELECT count(*)
+      FROM jobs j
+      WHERE a.agent_id = j.agent_id
+      AND j.status IN ('allocated', 'running')
+    ) AS current_jobs
 FROM agents a
 LEFT JOIN jobs j USING (agent_id)
 WHERE a.agent_id = $1
@@ -3197,11 +3223,12 @@ func (q *DBQuerier) FindAgentByIDScan(results pgx.BatchResults) (FindAgentByIDRo
 	return item, nil
 }
 
-const findAgentByIDForUpdateSQL = `SELECT *,
-    (
-        SELECT count(j.*)
-        FROM jobs j
-        WHERE j.agent_id = a.agent_id
+const findAgentByIDForUpdateSQL = `SELECT
+    a.*,
+    ( SELECT count(*)
+      FROM jobs j
+      WHERE a.agent_id = j.agent_id
+      AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM agents a
 WHERE agent_id = $1

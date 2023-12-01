@@ -116,7 +116,7 @@ install-pggen:
 .PHONY: sql
 sql: install-pggen
 	pggen gen go \
-		--postgres-connection "dbname=otf" \
+		--postgres-connection "postgres://postgres:password@localhost/otf" \
 		--query-glob 'internal/sql/queries/*.sql' \
 		--output-dir ./internal/sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \

@@ -39,17 +39,11 @@ func TestAllocator_seed(t *testing.T) {
 		assert.Contains(t, a.agents, "agent-1")
 		assert.Contains(t, a.agents, "agent-2")
 	}
-	if assert.Len(t, a.capacities, 2) {
-		if assert.Contains(t, a.capacities, "agent-1") {
-			assert.Equal(t, a.capacities["agent-1"], 5)
-		}
-		if assert.Contains(t, a.capacities, "agent-2") {
-			assert.Equal(t, a.capacities["agent-2"], 4)
-		}
-	}
 }
 
 func TestAllocator_allocate(t *testing.T) {
+	now := internal.CurrentTimestamp(nil)
+
 	tests := []struct {
 		name string
 		// seed allocator with pools
@@ -60,8 +54,8 @@ func TestAllocator_allocate(t *testing.T) {
 		job *Job
 		// want this job after allocation
 		wantJob *Job
-		// want these capacities after allocation
-		wantCapacities map[string]int
+		// want these agents after allocation
+		wantAgents map[string]*Agent
 	}{
 		{
 			name: "allocate job to agent",
@@ -79,15 +73,15 @@ func TestAllocator_allocate(t *testing.T) {
 				ExecutionMode: workspace.RemoteExecutionMode,
 				AgentID:       internal.String("agent-idle"),
 			},
-			wantCapacities: map[string]int{
-				"agent-idle": 0,
+			wantAgents: map[string]*Agent{
+				"agent-idle": {ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
 		},
 		{
 			name: "allocate job to agent that has pinged more recently than another",
 			agents: []*Agent{
-				{ID: "agent-new", Status: AgentIdle, MaxJobs: 1, LastPingAt: time.Now()},
-				{ID: "agent-old", Status: AgentIdle, MaxJobs: 1, LastPingAt: time.Now().Add(-time.Second)},
+				{ID: "agent-new", Status: AgentIdle, MaxJobs: 1, LastPingAt: now},
+				{ID: "agent-old", Status: AgentIdle, MaxJobs: 1, LastPingAt: now.Add(-time.Second)},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -100,9 +94,9 @@ func TestAllocator_allocate(t *testing.T) {
 				ExecutionMode: workspace.RemoteExecutionMode,
 				AgentID:       internal.String("agent-new"),
 			},
-			wantCapacities: map[string]int{
-				"agent-new": 0,
-				"agent-old": 1,
+			wantAgents: map[string]*Agent{
+				"agent-new": {ID: "agent-new", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, LastPingAt: now},
+				"agent-old": {ID: "agent-old", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 0, LastPingAt: now.Add(-time.Second)},
 			},
 		},
 		{
@@ -126,8 +120,8 @@ func TestAllocator_allocate(t *testing.T) {
 				AgentID:       internal.String("agent-1"),
 				Organization:  "acme-corp",
 			},
-			wantCapacities: map[string]int{
-				"agent-1": 0,
+			wantAgents: map[string]*Agent{
+				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 		},
 		{
@@ -151,8 +145,8 @@ func TestAllocator_allocate(t *testing.T) {
 				AgentID:       internal.String("agent-1"),
 				WorkspaceID:   "workspace-1",
 			},
-			wantCapacities: map[string]int{
-				"agent-1": 0,
+			wantAgents: map[string]*Agent{
+				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 		},
 		{
@@ -175,8 +169,8 @@ func TestAllocator_allocate(t *testing.T) {
 				ExecutionMode: workspace.AgentExecutionMode,
 				Organization:  "enron",
 			},
-			wantCapacities: map[string]int{
-				"agent-1": 1,
+			wantAgents: map[string]*Agent{
+				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 		},
 		{
@@ -199,15 +193,15 @@ func TestAllocator_allocate(t *testing.T) {
 				ExecutionMode: workspace.AgentExecutionMode,
 				WorkspaceID:   "workspace-1",
 			},
-			wantCapacities: map[string]int{
-				"agent-1": 1,
+			wantAgents: map[string]*Agent{
+				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 		},
 		{
 			name: "re-allocate job from unresponsive agent",
 			agents: []*Agent{
-				{ID: "agent-unknown", Status: AgentUnknown, MaxJobs: 0},
-				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1},
+				{ID: "agent-unknown", Status: AgentUnknown, CurrentJobs: 1},
+				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 0},
 			},
 			job: &Job{
 				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -221,10 +215,22 @@ func TestAllocator_allocate(t *testing.T) {
 				ExecutionMode: workspace.RemoteExecutionMode,
 				AgentID:       internal.String("agent-idle"),
 			},
-			wantCapacities: map[string]int{
-				"agent-unknown": 1,
-				"agent-idle":    0,
+			wantAgents: map[string]*Agent{
+				"agent-unknown": {ID: "agent-unknown", Status: AgentUnknown, CurrentJobs: 0},
+				"agent-idle":    {ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
+		},
+		{
+			name:   "de-allocate finished job",
+			agents: []*Agent{{ID: "agent-1", CurrentJobs: 1}},
+			job: &Job{
+				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:        JobFinished,
+				ExecutionMode: workspace.RemoteExecutionMode,
+				AgentID:       internal.String("agent-1"),
+			},
+			wantJob:    nil,
+			wantAgents: map[string]*Agent{"agent-1": {ID: "agent-1", CurrentJobs: 0}},
 		},
 	}
 	for _, tt := range tests {
@@ -237,10 +243,16 @@ func TestAllocator_allocate(t *testing.T) {
 			a.seed(tt.pools, tt.agents, []*Job{tt.job})
 			err := a.allocate(context.Background())
 			require.NoError(t, err)
-			// check capacities
-			assert.Equal(t, len(tt.wantCapacities), len(a.capacities))
+			// check agents
+			if assert.Equal(t, len(tt.wantAgents), len(a.agents)) {
+				for id, want := range tt.wantAgents {
+					assert.Equal(t, want, a.agents[id])
+				}
+			}
 			// check job
-			assert.Equal(t, tt.wantJob, a.jobs[tt.wantJob.Spec])
+			if tt.wantJob != nil {
+				assert.Equal(t, tt.wantJob, a.jobs[tt.wantJob.Spec])
+			}
 		})
 	}
 }

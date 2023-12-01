@@ -117,7 +117,10 @@ chmod -R +w $dest_dir
 
 cd $dest_dir
 
-# run beta tests
-ENABLE_BETA=1 go test -v -run $allBetaTests -timeout 600s
+# run beta tests unless user specifies tests (there is currently no way in this
+# script to specify individual *beta* tests to run)
+if [[ "$#" -eq 0 ]]; then
+    ENABLE_BETA=1 go test -v -run $allBetaTests -timeout 600s
+fi
 # run tests
 go test -v -run ${@:-$all} -timeout 600s

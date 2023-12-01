@@ -8,11 +8,12 @@
   }}
   <div class="widget">
     <div>
-      <div>
+      <div class="flex gap-2 items-center">
         {{ with .Name }}
           <span>{{ . }}</span>
         {{ end }}
-        <span class="{{ get $statusColors (toString .Status) }}">{{ .Status }}</span>
+        <div class="{{ get $statusColors (toString .Status) }}">{{ .Status }}</div>
+        <div class="text-sm" title="{{ .CurrentJobs }} jobs are currently allocated out of a maximum of {{ .MaxJobs }} jobs">({{ .CurrentJobs }}/{{ .MaxJobs }})</div>
       </div>
       <span title="{{ .LastPingAt }}">last seen {{ durationRound .LastPingAt }} ago</span>
     </div>

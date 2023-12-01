@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"crypto/rand"
+	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -31,6 +32,11 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// must parse flags before calling testing.Short()
+	flag.Parse()
+	if testing.Short() {
+		return
+	}
 	code, err := doMain(m)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to setup integration tests: %s\n", err.Error())
