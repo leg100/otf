@@ -43,6 +43,7 @@ func TestOrganization(t *testing.T) {
 			})
 		})
 		t.Run("receive events", func(t *testing.T) {
+			<-svc.sub // consume agent creation event
 			assert.Equal(t, pubsub.NewCreatedEvent(defaultOrg), <-svc.sub)
 			assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
 		})
@@ -50,6 +51,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("update name", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
+		<-daemon.sub // consume agent creation event
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 
 		want := uuid.NewString()
@@ -126,6 +128,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
+		<-daemon.sub // consume agent creation event
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 
 		err := daemon.DeleteOrganization(ctx, org.Name)

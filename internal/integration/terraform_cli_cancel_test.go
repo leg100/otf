@@ -78,8 +78,12 @@ data "http" "wait" {
 	require.NoError(t, <-tferr, string(testutils.ReadFile(t, out.Name())))
 	t.Log(string(testutils.ReadFile(t, out.Name())))
 
-	runs, err := svc.ListRuns(ctx, run.ListOptions{Organization: &org.Name})
-	require.NoError(t, err)
-	require.Equal(t, 1, len(runs.Items))
-	require.Equal(t, run.RunCanceled, runs.Items[0].Status)
+	for event := range svc.sub {
+		if r, ok := event.Payload.(*run.Run); ok {
+			if r.Status == run.RunCanceled {
+				break
+			}
+			require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)
+		}
+	}
 }

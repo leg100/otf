@@ -27,6 +27,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run("receive events", func(t *testing.T) {
+			<-daemon.sub // consume agent creation event
 			assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
 			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-daemon.sub)
@@ -92,6 +93,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
 		nc := svc.createNotificationConfig(t, ctx, ws)
+		<-svc.sub // consume agent creation event
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
 		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-svc.sub)
@@ -109,6 +111,8 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
+		<-svc.sub // consume agent creation event
+
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
 
 		ws := svc.createWorkspace(t, ctx, org)

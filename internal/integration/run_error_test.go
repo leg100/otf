@@ -24,18 +24,19 @@ func TestRunError(t *testing.T) {
 
 	// create a daemon and start an agent
 	daemon, org, ctx := setup(t, nil)
-	daemon.startAgent(t, ctx, org.Name, "", agent.Config{})
+	poolID := daemon.startAgent(t, ctx, org.Name, "", agent.Config{})
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
-		name string
-		mode workspace.ExecutionMode
+		name   string
+		mode   workspace.ExecutionMode
+		poolID *string
 	}{
 		{
-			"execute run via daemon", workspace.RemoteExecutionMode,
+			"execute run via daemon", workspace.RemoteExecutionMode, nil,
 		},
 		{
-			"execute run via agent", workspace.AgentExecutionMode,
+			"execute run via agent", workspace.AgentExecutionMode, &poolID,
 		},
 	}
 	for _, tt := range tests {
@@ -45,6 +46,7 @@ func TestRunError(t *testing.T) {
 				Name:          internal.String("ws-" + string(tt.mode)),
 				Organization:  internal.String(org.Name),
 				ExecutionMode: workspace.ExecutionModePtr(tt.mode),
+				AgentPoolID:   tt.poolID,
 			})
 			require.NoError(t, err)
 

@@ -58,6 +58,7 @@ type daemon struct {
 	envs       []string // terraform environment variables
 	config     Config
 	downloader releases.Downloader
+	registered chan struct{}
 	logger     logr.Logger // logger that logs messages regardless of whether agent is a pool agent or not.
 	poolLogger logr.Logger // logger that only logs messages if the agent is a pool agent.
 }
@@ -92,6 +93,7 @@ func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
 		client:     app,
 		envs:       DefaultEnvs,
 		downloader: releases.NewDownloader(cfg.TerraformBinDir),
+		registered: make(chan struct{}),
 		config:     cfg,
 		poolLogger: poolLogger,
 		logger:     logger,
@@ -143,7 +145,9 @@ func (d *daemon) Start(ctx context.Context) error {
 	if agent.AgentPoolID != nil {
 		registeredKeyValues = append(registeredKeyValues, "agent_pool_id", *agent.AgentPoolID)
 	}
-	d.logger.Info("registered successfully", registeredKeyValues...)
+	d.poolLogger.Info("registered successfully", registeredKeyValues...)
+	// close semaphore to indicate agent has registered
+	close(d.registered)
 
 	if d.config.server {
 		// server agents should identify themselves as a serverAgent
@@ -248,6 +252,7 @@ func (d *daemon) Start(ctx context.Context) error {
 					op := newOperation(newOperationOptions{
 						logger:     d.poolLogger.WithValues("job", j),
 						client:     d.client,
+						config:     d.config,
 						job:        j,
 						downloader: d.downloader,
 						envs:       d.envs,
@@ -270,4 +275,8 @@ func (d *daemon) Start(ctx context.Context) error {
 		}
 	})
 	return g.Wait()
+}
+
+func (d *daemon) Started() <-chan struct{} {
+	return d.registered
 }

@@ -22,6 +22,13 @@ func TestBroker(t *testing.T) {
 	local, _, ctx := setup(t, &cfg)
 	remote, _, _ := setup(t, &cfg)
 
+	// consume two agent creation events:
+	// local agent
+	<-local.sub
+	// remote agent
+	<-remote.sub
+	<-local.sub
+
 	// create an org which should trigger an event
 	org := local.createOrganization(t, ctx)
 	want := pubsub.NewCreatedEvent(org)

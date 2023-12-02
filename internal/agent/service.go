@@ -144,9 +144,9 @@ func NewService(opts ServiceOptions) *service {
 	opts.AfterEnqueuePlan(svc.createJob)
 	opts.AfterEnqueueApply(svc.createJob)
 	// cancel job when a run is canceled
-	opts.AfterCancel(svc.cancelJob)
+	opts.AfterCancelRun(svc.cancelJob)
 	// cancel job when a run is forceably canceled
-	opts.AfterForceCancel(svc.cancelJob)
+	opts.AfterForceCancelRun(svc.cancelJob)
 	// check whether a workspace is being created or updated and configured to
 	// use an agent pool, and if so, check that it is allowed to use the pool.
 	opts.BeforeCreateWorkspace(svc.checkWorkspacePoolAccess)

@@ -141,7 +141,7 @@ type (
 	}
 
 	UpdateOptions struct {
-		AgentPoolID                *string
+		AgentPoolID                *string `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string

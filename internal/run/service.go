@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -71,16 +70,16 @@ type (
 
 		// AfterEnqueuePlan allows caller to dispatch actions following the
 		// enqueuing of a plan.
-		AfterEnqueuePlan(l hooks.Listener[*Run])
+		AfterEnqueuePlan(hook func(context.Context, *Run) error)
 		// AfterEnqueueApply allows caller to dispatch actions following the
 		// enqueuing of an apply.
-		AfterEnqueueApply(l hooks.Listener[*Run])
+		AfterEnqueueApply(hook func(context.Context, *Run) error)
 		// AfterCancel allows caller to dispatch actions following the
 		// cancelation of a run.
-		AfterCancel(l hooks.Listener[*Run])
+		AfterCancelRun(hook func(context.Context, *Run) error)
 		// AfterForceCancel allows caller to dispatch actions following the
 		// forced cancelation of a run.
-		AfterForceCancel(l hooks.Listener[*Run])
+		AfterForceCancelRun(hook func(context.Context, *Run) error)
 
 		lockFileService
 
@@ -102,15 +101,15 @@ type (
 		workspace    internal.Authorizer
 		*authorizer
 
-		cache           internal.Cache
-		db              *pgdb
-		tfeapi          *tfe
-		api             *api
-		web             *webHandlers
-		planHook        *hooks.Hook[*Run]
-		applyHook       *hooks.Hook[*Run]
-		cancelHook      *hooks.Hook[*Run]
-		forceCancelHook *hooks.Hook[*Run]
+		cache                  internal.Cache
+		db                     *pgdb
+		tfeapi                 *tfe
+		api                    *api
+		web                    *webHandlers
+		afterCancelHooks       []func(context.Context, *Run) error
+		afterForceCancelHooks  []func(context.Context, *Run) error
+		afterEnqueuePlanHooks  []func(context.Context, *Run) error
+		afterEnqueueApplyHooks []func(context.Context, *Run) error
 
 		*factory
 	}
@@ -142,10 +141,6 @@ func NewService(opts Options) *service {
 		Logger:           opts.Logger,
 		PubSubService:    opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
-		planHook:         hooks.NewHook[*Run](opts.DB),
-		applyHook:        hooks.NewHook[*Run](opts.DB),
-		cancelHook:       hooks.NewHook[*Run](opts.DB),
-		forceCancelHook:  hooks.NewHook[*Run](opts.DB),
 	}
 
 	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
@@ -208,22 +203,6 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
-}
-
-func (s *service) AfterEnqueuePlan(l hooks.Listener[*Run]) {
-	s.planHook.After(l)
-}
-
-func (s *service) AfterEnqueueApply(l hooks.Listener[*Run]) {
-	s.applyHook.After(l)
-}
-
-func (s *service) AfterCancel(l hooks.Listener[*Run]) {
-	s.cancelHook.After(l)
-}
-
-func (s *service) AfterForceCancel(l hooks.Listener[*Run]) {
-	s.forceCancelHook.After(l)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
@@ -314,25 +293,34 @@ func (s *service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 // enqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	var run *Run
-	err = s.planHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-		return s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+func (s *service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
+		if err != nil {
+			return err
+		}
+		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 			return run.EnqueuePlan()
 		})
+		if err != nil {
+			s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
+			return err
+		}
+		s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
+		// invoke AfterEnqueuePlan hooks
+		for _, hook := range s.afterEnqueuePlanHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
-		return nil, err
-	}
-	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
+	return
+}
 
-	return run, nil
+func (s *service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after plan is enqueued
+	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
 func (s *service) Delete(ctx context.Context, runID string) error {
@@ -463,23 +451,33 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.E
 
 // Apply enqueues an apply for the run.
 func (s *service) Apply(ctx context.Context, runID string) error {
-	subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
-	if err != nil {
-		return err
-	}
-	err = s.applyHook.Dispatch(ctx, nil, func(ctx context.Context) (*Run, error) {
-		return s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
+		if err != nil {
+			return err
+		}
+		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 			return run.EnqueueApply()
 		})
+		if err != nil {
+			s.Error(err, "enqueuing apply", "id", runID, "subject", subject)
+			return err
+		}
+
+		s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
+		// invoke AfterEnqueueApply hooks
+		for _, hook := range s.afterEnqueueApplyHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "enqueuing apply", "id", runID, "subject", subject)
-		return err
-	}
+}
 
-	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
-
-	return err
+func (s *service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after apply is enqueued
+	s.afterEnqueueApplyHooks = append(s.afterEnqueueApplyHooks, hook)
 }
 
 // DiscardRun discards the run.
@@ -503,53 +501,68 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 }
 
 func (s *service) Cancel(ctx context.Context, runID string) error {
-	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
-	if err != nil {
-		return err
-	}
-	_, isUser := subject.(*user.User)
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
+		if err != nil {
+			return err
+		}
+		_, isUser := subject.(*user.User)
 
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		return s.cancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-			if err = run.Cancel(isUser, false); err != nil {
-				return nil, err
-			}
-			return run, nil
+		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+			return run.Cancel(isUser, false)
 		})
+		if err != nil {
+			s.Error(err, "canceling run", "id", runID, "subject", subject)
+			return err
+		}
+		if run.CancelSignaledAt != nil && run.Status != RunCanceled {
+			s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
+		} else {
+			s.V(0).Info("canceled run", "id", runID, "subject", subject)
+		}
+		// invoke AfterCancel hooks
+		for _, hook := range s.afterCancelHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "canceling run", "id", runID, "subject", subject)
-		return err
-	}
-	if run.CancelSignaledAt != nil && run.Status != RunCanceled {
-		s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
-	} else {
-		s.V(0).Info("canceled run", "id", runID, "subject", subject)
-	}
-	return nil
+}
+
+func (s *service) AfterCancelRun(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after run is canceled
+	s.afterCancelHooks = append(s.afterCancelHooks, hook)
 }
 
 // ForceCancelRun forcefully cancels a run.
 func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
-	subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
-	if err != nil {
-		return err
-	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		return s.forceCancelHook.Dispatch(ctx, run, func(ctx context.Context) (*Run, error) {
-			if err = run.Cancel(true, true); err != nil {
-				return nil, err
-			}
-			return run, nil
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
+		if err != nil {
+			return err
+		}
+		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+			return run.Cancel(true, true)
 		})
+		if err != nil {
+			s.Error(err, "force canceling run", "id", runID, "subject", subject)
+			return err
+		}
+		s.V(0).Info("force canceled run", "id", runID, "subject", subject)
+		// invoke AfterForceCancelRun hooks
+		for _, hook := range s.afterForceCancelHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "force canceling run", "id", runID, "subject", subject)
-		return err
-	}
-	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
+}
 
-	return err
+func (s *service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after run is force canceled
+	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
 
 func planFileCacheKey(f PlanFormat, id string) string {

@@ -21,6 +21,7 @@ func TestIntegration_Events(t *testing.T) {
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	run := daemon.createRun(t, ctx, ws, cv)
 
+	<-daemon.sub // consume agent creation event
 	assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 	assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
 	assert.Equal(t, pubsub.NewCreatedEvent(run), <-daemon.sub)

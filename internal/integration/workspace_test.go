@@ -37,6 +37,7 @@ func TestWorkspace(t *testing.T) {
 		})
 
 		t.Run("receive events", func(t *testing.T) {
+			<-daemon.sub // consume agent creation event
 			assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
 		})
@@ -126,8 +127,9 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
-		ws := daemon.createWorkspace(t, ctx, org)
+		<-daemon.sub // consume agent creation event
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
+		ws := daemon.createWorkspace(t, ctx, org)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
 
 		got, err := daemon.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
@@ -405,8 +407,9 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
-		ws := daemon.createWorkspace(t, ctx, org)
+		<-daemon.sub // consume agent creation event
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
+		ws := daemon.createWorkspace(t, ctx, org)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
 
 		_, err := daemon.DeleteWorkspace(ctx, ws.ID)

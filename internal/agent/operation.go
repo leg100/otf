@@ -42,7 +42,6 @@ type operation struct {
 
 	config        Config
 	job           *Job
-	debug         bool
 	canceled      bool // semaphore instructing op to stop
 	ctx           context.Context
 	cancelfn      context.CancelFunc
@@ -60,6 +59,7 @@ type operation struct {
 type newOperationOptions struct {
 	logger     logr.Logger
 	client     client
+	config     Config
 	job        *Job
 	downloader releases.Downloader
 	envs       []string
@@ -73,6 +73,7 @@ func newOperation(opts newOperationOptions) *operation {
 	return &operation{
 		Logger:     opts.logger.WithValues("job", opts.job),
 		client:     opts.client,
+		config:     opts.config,
 		job:        opts.job,
 		envs:       opts.envs,
 		downloader: opts.downloader,
@@ -159,6 +160,7 @@ func (o *operation) do() error {
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
+	o.variables = variables
 	// append variables that are environment variables to the list of
 	// environment variables
 	for _, v := range variables {
@@ -176,7 +178,7 @@ func (o *operation) do() error {
 	o.out = writer
 
 	// dump info if in debug mode
-	if o.debug {
+	if o.config.Debug {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
@@ -186,7 +188,7 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
 		fmt.Fprintf(o.out, "External agent: %t\n", !o.config.server)
-		fmt.Fprintf(o.out, "Sandbox mode: %t\n", !o.config.Sandbox)
+		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.config.Sandbox)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
 	}

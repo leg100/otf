@@ -93,8 +93,8 @@
     </summary>
     <form class="flex flex-col gap-5" action="{{ createAgentTokenPath .Pool.ID }}" method="POST">
       <div class="field">
-        <label for="description">Description</label>
-        <input class="text-input w-3/4" rows="3" type="text" name="description" id="description" required>
+        <label for="new-token-description">Description</label>
+        <input class="text-input w-3/4" rows="3" type="text" name="description" id="new-token-description" required>
         <span class="description">Enter a description to help identify the token.</span>
       </div>
       <div class="field">
@@ -112,7 +112,7 @@
       <div>
         {{ template "identifier" . }}
         <form action="{{ deleteAgentTokenPath .ID }}" method="POST">
-          <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+          <button id="delete-agent-token-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
         </form>
       </div>
     </div>

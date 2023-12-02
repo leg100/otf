@@ -408,8 +408,8 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 }
 
 // startAgent starts a pool agent, configuring it with the given organization
-// and configuring it to connect to the daemon.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, poolID string, cfg agent.Config) {
+// and configuring it to connect to the daemon. The pool ID is returned.
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, poolID string, cfg agent.Config) string {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -454,6 +454,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, p
 		cancel() // terminate agent
 		<-done   // don't exit test until agent fully terminated
 	})
+	return poolID
 }
 
 func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPath string, args ...string) string {

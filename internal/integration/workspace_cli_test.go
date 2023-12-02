@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,9 +36,16 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	require.NoError(t, err)
 
 	// edit workspace via CLI
+	//
+	// create pool first so that one can be specified in the CLI command
+	pool, err := daemon.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+		Organization: org.Name,
+		Name:         "pool-1",
+	})
+	require.NoError(t, err)
 	out = daemon.otfcli(t, ctx, "workspaces", "edit", "--organization", org.Name,
-		ws1.Name, "--execution-mode", "agent")
-	assert.Equal(t, "updated execution mode: agent\n", out)
+		ws1.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID)
+	assert.Equal(t, "updated workspace\n", out)
 	assert.Equal(t, workspace.AgentExecutionMode, daemon.getWorkspace(t, ctx, ws1.ID).ExecutionMode)
 
 	// lock/unlock/force-unlock workspace

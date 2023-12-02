@@ -79,6 +79,7 @@ type (
 
 	process interface {
 		Start(context.Context) error
+		Started() <-chan struct{}
 	}
 )
 
@@ -556,6 +557,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	case <-time.After(time.Second * 10):
 		return fmt.Errorf("timed out waiting for broker to start")
 	case <-d.Broker.Started():
+	}
+	// Wait for agent to register; otherwise some tests may fail
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-d.agent.Started():
 	}
 
 	// Run HTTP/JSON-API server and web app
