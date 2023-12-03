@@ -45,7 +45,6 @@ type (
 
 		internal.Authorizer // authorize access to org
 		logr.Logger
-		*pubsub.Broker
 
 		db           *pgdb
 		site         internal.Authorizer // authorize access to site
@@ -53,6 +52,7 @@ type (
 		tfeapi       *tfe
 		api          *api
 		tokenFactory *tokenFactory
+		broker       *pubsub.Broker[*Organization]
 
 		createHook *hooks.Hook[*Organization]
 		deleteHook *hooks.Hook[*Organization]
@@ -63,7 +63,7 @@ type (
 
 		*sql.DB
 		*tfeapi.Responder
-		*pubsub.Broker
+		*sql.Listener
 		html.Renderer
 		logr.Logger
 		tokens.TokensService
@@ -79,7 +79,6 @@ func NewService(opts Options) *service {
 	svc := service{
 		Authorizer:                   &Authorizer{opts.Logger},
 		Logger:                       opts.Logger,
-		Broker:                       opts.Broker,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
@@ -101,10 +100,12 @@ func NewService(opts Options) *service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-
-	// Register with broker an unmarshaler for unmarshaling organization
-	// database table events into organization events.
-	opts.Broker.Register("organizations", svc.db)
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"organizations",
+		svc.db.get,
+	)
 	// Fetch organization when API calls request organization be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)

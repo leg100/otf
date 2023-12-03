@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/pubsub"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -46,69 +45,69 @@ func (queueMaker) newQueue(opts queueOptions) eventHandler {
 	}
 }
 
-func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
-	switch payload := event.Payload.(type) {
-	case *workspace.Workspace:
-		q.ws = payload
-		// workspace state has changed; pessimistically schedule the current run
-		// in case the workspace has been unlocked.
-		if q.current != nil {
-			if err := q.scheduleRun(ctx, q.current); err != nil {
+func (q *queue) handleWorkspace(ctx context.Context, workspace *workspace.Workspace) error {
+	q.ws = workspace
+	// workspace state has changed; pessimistically schedule the current run
+	// in case the workspace has been unlocked.
+	if q.current != nil {
+		if err := q.scheduleRun(ctx, q.current); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (q *queue) handleRun(ctx context.Context, run *otfrun.Run) error {
+	if run.PlanOnly {
+		if run.Status == otfrun.RunPending {
+			// immediately enqueue onto global queue
+			_, err := q.EnqueuePlan(ctx, run.ID)
+			if err != nil {
 				return err
 			}
 		}
-	case *otfrun.Run:
-		if payload.PlanOnly {
-			if payload.Status == otfrun.RunPending {
-				// immediately enqueue onto global queue
-				_, err := q.EnqueuePlan(ctx, payload.ID)
+	} else if q.current != nil && q.current.ID == run.ID {
+		// current run event; scheduler only interested if it's done
+		if run.Done() {
+			// current run is done; see if there is pending run waiting to
+			// take its place
+			if len(q.queue) > 0 {
+				if err := q.setCurrentRun(ctx, q.queue[0]); err != nil {
+					return err
+				}
+				if err := q.scheduleRun(ctx, q.queue[0]); err != nil {
+					return err
+				}
+				q.queue = q.queue[1:]
+			} else {
+				// no current run & queue is empty; unlock workspace
+				q.current = nil
+				ws, err := q.UnlockWorkspace(ctx, q.ws.ID, &run.ID, false)
 				if err != nil {
 					return err
 				}
+				q.ws = ws
 			}
-		} else if q.current != nil && q.current.ID == payload.ID {
-			// current run event; scheduler only interested if it's done
-			if payload.Done() {
-				// current run is done; see if there is pending run waiting to
-				// take its place
-				if len(q.queue) > 0 {
-					if err := q.setCurrentRun(ctx, q.queue[0]); err != nil {
-						return err
-					}
-					if err := q.scheduleRun(ctx, q.queue[0]); err != nil {
-						return err
-					}
-					q.queue = q.queue[1:]
-				} else {
-					// no current run & queue is empty; unlock workspace
-					q.current = nil
-					ws, err := q.UnlockWorkspace(ctx, q.ws.ID, &payload.ID, false)
-					if err != nil {
-						return err
-					}
-					q.ws = ws
-				}
-			}
-		} else if q.current == nil {
-			// no current run; schedule immediately
-			if err := q.setCurrentRun(ctx, payload); err != nil {
-				return err
-			}
-			return q.scheduleRun(ctx, payload)
-		} else {
-			// check if run is in workspace queue
-			for i, queued := range q.queue {
-				if payload.ID == queued.ID {
-					if payload.Done() {
-						// remove run from queue
-						q.queue = append(q.queue[:i], q.queue[i+1:]...)
-						return nil
-					}
-				}
-			}
-			// run is not in queue; add it
-			q.queue = append(q.queue, payload)
 		}
+	} else if q.current == nil {
+		// no current run; schedule immediately
+		if err := q.setCurrentRun(ctx, run); err != nil {
+			return err
+		}
+		return q.scheduleRun(ctx, run)
+	} else {
+		// check if run is in workspace queue
+		for i, queued := range q.queue {
+			if run.ID == queued.ID {
+				if run.Done() {
+					// remove run from queue
+					q.queue = append(q.queue[:i], q.queue[i+1:]...)
+					return nil
+				}
+			}
+		}
+		// run is not in queue; add it
+		q.queue = append(q.queue, run)
 	}
 	return nil
 }

@@ -34,6 +34,7 @@ type (
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+		SubscribeWorkspaceEvents() (<-chan pubsub.Event[*Workspace], func())
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
@@ -48,7 +49,6 @@ type (
 
 	service struct {
 		logr.Logger
-		pubsub.Publisher
 		connections.ConnectionService
 
 		site                internal.Authorizer
@@ -59,6 +59,7 @@ type (
 		web    *webHandlers
 		tfeapi *tfe
 		api    *api
+		broker *pubsub.Broker[*Workspace]
 
 		createHook *hooks.Hook[*Workspace]
 		updateHook *hooks.Hook[*Workspace]
@@ -66,7 +67,7 @@ type (
 
 	Options struct {
 		*sql.DB
-		*pubsub.Broker
+		*sql.Listener
 		*tfeapi.Responder
 		html.Renderer
 		organization.OrganizationService
@@ -80,8 +81,7 @@ type (
 func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:    opts.Logger,
-		Publisher: opts.Broker,
+		Logger: opts.Logger,
 		Authorizer: &authorizer{
 			Logger: opts.Logger,
 			db:     db,
@@ -107,8 +107,12 @@ func NewService(opts Options) *service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	// Register with broker so that it can relay workspace events
-	opts.Broker.Register("workspaces", &svc)
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"workspaces",
+		db.get,
+	)
 	// Fetch workspace when API calls request workspace be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
@@ -134,6 +138,10 @@ func (s *service) AfterCreateWorkspace(l hooks.Listener[*Workspace]) {
 
 func (s *service) BeforeUpdateWorkspace(l hooks.Listener[*Workspace]) {
 	s.updateHook.Before(l)
+}
+
+func (s *service) SubscribeWorkspaceEvents() (<-chan pubsub.Event[*Workspace], func()) {
+	return s.broker.Subscribe()
 }
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
@@ -176,14 +184,6 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
 	return ws, nil
-}
-
-// GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, workspaceID string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &Workspace{ID: workspaceID}, nil
-	}
-	return s.db.get(ctx, workspaceID)
 }
 
 func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {

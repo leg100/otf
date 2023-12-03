@@ -13,18 +13,16 @@ import (
 
 func TestService_Watch(t *testing.T) {
 	// input event channel
-	in := make(chan pubsub.Event, 1)
+	in := make(chan pubsub.Event[*Run], 1)
 
 	svc := &service{
-		site:          internal.NewAllowAllAuthorizer(),
-		Logger:        logr.Discard(),
-		PubSubService: &fakeSubscriber{ch: in},
+		site:   internal.NewAllowAllAuthorizer(),
+		Logger: logr.Discard(),
+		broker: &fakeSubService{ch: in},
 	}
 
 	// inject input event
-	want := pubsub.Event{
-		Payload: &Run{},
-	}
+	want := pubsub.Event[*Run]{Payload: &Run{}}
 	in <- want
 
 	got, err := svc.Watch(context.Background(), WatchOptions{})

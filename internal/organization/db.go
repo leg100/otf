@@ -6,7 +6,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -66,18 +65,6 @@ func (r row) toOrganization() *Organization {
 // pgdb is a database of organizations on postgres
 type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
-}
-
-// GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &Organization{ID: id}, nil
-	}
-	r, err := db.Conn(ctx).FindOrganizationByID(ctx, sql.String(id))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return row(r).toOrganization(), nil
 }
 
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {

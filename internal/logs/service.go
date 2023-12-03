@@ -23,12 +23,12 @@ type (
 
 	service struct {
 		logr.Logger
-		pubsub.PubSubService // subscribe to tail log updates
 
 		run internal.Authorizer
 
-		api *api
-		web *webHandlers
+		api    *api
+		web    *webHandlers
+		broker pubsub.SubscriptionService[internal.Chunk]
 
 		chunkproxy
 	}
@@ -43,7 +43,7 @@ type (
 		logr.Logger
 		internal.Cache
 		*sql.DB
-		*pubsub.Broker
+		*sql.Listener
 		internal.Verifier
 
 		RunAuthorizer internal.Authorizer
@@ -51,11 +51,10 @@ type (
 )
 
 func NewService(opts Options) *service {
+	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:        opts.Logger,
-		PubSubService: opts.Broker,
-		chunkproxy:    newProxy(opts),
-		run:           opts.RunAuthorizer,
+		Logger: opts.Logger,
+		run:    opts.RunAuthorizer,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,
@@ -65,7 +64,18 @@ func NewService(opts Options) *service {
 		Logger: opts.Logger,
 		svc:    &svc,
 	}
-
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"logs",
+		db.getChunk,
+	)
+	svc.chunkproxy = &proxy{
+		Logger: opts.Logger,
+		cache:  opts.Cache,
+		db:     db,
+		broker: svc.broker,
+	}
 	return &svc
 }
 
@@ -113,10 +123,7 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub, err := s.Subscribe(ctx, "tail-")
-	if err != nil {
-		return nil, err
-	}
+	sub := s.broker.SubscribeWithContext(ctx)
 
 	chunk, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {
@@ -135,11 +142,7 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 
 		// relay chunks from subscription
 		for ev := range sub {
-			chunk, ok := ev.Payload.(internal.Chunk)
-			if !ok {
-				// skip non-chunk events
-				continue
-			}
+			chunk := ev.Payload
 			if opts.RunID != chunk.RunID || opts.Phase != chunk.Phase {
 				// skip logs for different run/phase
 				continue

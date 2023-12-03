@@ -51,11 +51,7 @@ type (
 		UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 		// Watch provides access to a stream of run events. The WatchOptions filters
 		// events. Context must be cancelled to close stream.
-		//
-		// TODO(@leg100): it would be clearer to the caller if the stream is closed by
-		// returning a stream object with a Close() method. The calling code would
-		// call Watch(), and then defer a Close(), which is more readable IMO.
-		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error)
+		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 		// Cancel a run.
 		Cancel(ctx context.Context, runID string) error
 		// Apply enqueues an Apply for the run.
@@ -80,6 +76,8 @@ type (
 		// AfterForceCancel allows caller to dispatch actions following the
 		// forced cancelation of a run.
 		AfterForceCancelRun(hook func(context.Context, *Run) error)
+		// SubscribeRunEvents subscribes the caller to a stream of run events.
+		SubscribeRunEvents() (<-chan pubsub.Event[*Run], func())
 
 		lockFileService
 
@@ -94,7 +92,6 @@ type (
 		logr.Logger
 
 		WorkspaceService
-		pubsub.PubSubService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
@@ -110,6 +107,7 @@ type (
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
 		afterEnqueueApplyHooks []func(context.Context, *Run) error
+		broker                 pubsub.SubscriptionService[*Run]
 
 		*factory
 	}
@@ -131,7 +129,7 @@ type (
 		*tfeapi.Responder
 		*surl.Signer
 		html.Renderer
-		*pubsub.Broker
+		*sql.Listener
 	}
 )
 
@@ -139,7 +137,6 @@ func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
 		Logger:           opts.Logger,
-		PubSubService:    opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
 	}
 
@@ -183,7 +180,14 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Broker.Register("runs", &svc)
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"runs",
+		func(ctx context.Context, id string) (*Run, error) {
+			return db.GetRun(ctx, id)
+		},
+	)
 
 	// Fetch related resources when API requests their inclusion
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
@@ -203,6 +207,10 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
+}
+
+func (s *service) SubscribeRunEvents() (<-chan pubsub.Event[*Run], func()) {
+	return s.broker.Subscribe()
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
@@ -241,14 +249,6 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	s.V(9).Info("retrieved run", "id", runID, "subject", subject)
 
 	return run, nil
-}
-
-// GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, runID string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &Run{ID: runID}, nil
-	}
-	return s.db.GetRun(ctx, runID)
 }
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
@@ -398,7 +398,7 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 }
 
 // Watch provides authenticated access to a stream of run events.
-func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error) {
+func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
@@ -414,35 +414,25 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.E
 		return nil, err
 	}
 
-	sub, err := s.Subscribe(ctx, "run-watch-")
-	if err != nil {
-		return nil, err
-	}
-
+	sub := s.broker.SubscribeWithContext(ctx)
 	// relay is returned to the caller to which filtered run events are sent
-	relay := make(chan pubsub.Event)
+	relay := make(chan pubsub.Event[*Run])
 	go func() {
 		// relay events
-		for ev := range sub {
-			run, ok := ev.Payload.(*Run)
-			if !ok {
-				continue // skip anything other than a run or a workspace
-			}
-
+		for event := range sub {
 			// apply workspace filter
 			if opts.WorkspaceID != nil {
-				if run.WorkspaceID != *opts.WorkspaceID {
+				if event.Payload.WorkspaceID != *opts.WorkspaceID {
 					continue
 				}
 			}
 			// apply organization filter
 			if opts.Organization != nil {
-				if run.Organization != *opts.Organization {
+				if event.Payload.Organization != *opts.Organization {
 					continue
 				}
 			}
-
-			relay <- ev
+			relay <- event
 		}
 		close(relay)
 	}()

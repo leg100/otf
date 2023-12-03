@@ -12,14 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeSubscriber struct {
-	ch chan pubsub.Event
+type fakeSubService struct {
+	ch chan pubsub.Event[*Run]
 
-	pubsub.PubSubService
+	pubsub.SubscriptionService[*Run]
 }
 
-func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan pubsub.Event, error) {
-	return f.ch, nil
+func (f *fakeSubService) SubscribeWithContext(context.Context) <-chan pubsub.Event[*Run] {
+	return f.ch
 }
 
 type (

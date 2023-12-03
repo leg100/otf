@@ -486,10 +486,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: &run.Reporter{
 				Logger:                      d.Logger.WithValues("component", "reporter"),
 				VCSProviderService:          d.VCSProviderService,
-				Subscriber:                  d.Broker,
 				HostnameService:             d.HostnameService,
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
+				Service:                     d.RunService,
 			},
 		},
 		{

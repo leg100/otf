@@ -23,7 +23,6 @@ type (
 	scheduler struct {
 		logr.Logger
 
-		pubsub.Subscriber
 		WorkspaceService
 		RunService
 
@@ -33,7 +32,6 @@ type (
 
 	Options struct {
 		logr.Logger
-		pubsub.Subscriber
 
 		WorkspaceService
 		RunService
@@ -48,7 +46,6 @@ func NewScheduler(opts Options) *scheduler {
 		Logger:           opts.Logger.WithValues("component", "scheduler"),
 		WorkspaceService: opts.WorkspaceService,
 		RunService:       opts.RunService,
-		Subscriber:       opts.Subscriber,
 		queueFactory:     queueMaker{},
 	}
 }
@@ -57,18 +54,16 @@ func NewScheduler(opts Options) *scheduler {
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
 func (s *scheduler) Start(ctx context.Context) error {
-	// Unsubscribe Subscribe() whenever exiting this routine.
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	// Reset queues each time scheduler starts
 	s.queues = make(map[string]eventHandler)
 
-	// subscribe to run events and workspace unlock events
-	sub, err := s.Subscribe(ctx, "scheduler-")
-	if err != nil {
-		return err
-	}
+	// subscribe to workspace events
+	subWorkspaces, unsubWorkspaces := s.SubscribeWorkspaceEvents()
+	defer unsubWorkspaces()
+
+	// subscribe to run events
+	subRuns, unsubRuns := s.SubscribeRunEvents()
+	defer unsubRuns()
 
 	// retrieve all existing workspaces
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
@@ -90,65 +85,79 @@ func (s *scheduler) Start(ctx context.Context) error {
 		return fmt.Errorf("retrieving incomplete runs: %w", err)
 	}
 
-	// feed in existing runs and workspaces and then events to the scheduler for processing
-	queue := make(chan pubsub.Event)
+	// feed in existing workspaces and then events to the scheduler for processing
+	workspaceQueue := make(chan pubsub.Event[*workspace.Workspace])
 	go func() {
 		for _, ws := range workspaces {
-			queue <- pubsub.Event{
+			workspaceQueue <- pubsub.Event[*workspace.Workspace]{
 				Payload: ws,
 			}
 		}
+		for event := range subWorkspaces {
+			workspaceQueue <- event
+		}
+		close(workspaceQueue)
+	}()
+
+	// feed in existing runs and then events to the scheduler for processing
+	runQueue := make(chan pubsub.Event[*run.Run])
+	go func() {
 		// spool existing runs in reverse order; ListRuns returns runs newest first,
 		// whereas we want oldest first.
 		for i := len(runs) - 1; i >= 0; i-- {
-			queue <- pubsub.Event{
+			runQueue <- pubsub.Event[*run.Run]{
 				Payload: runs[i],
 			}
 		}
-		for event := range sub {
-			queue <- event
+		for event := range subRuns {
+			runQueue <- event
 		}
-		close(queue)
+		close(runQueue)
 	}()
 
-	for event := range queue {
-		switch payload := event.Payload.(type) {
-		case *workspace.Workspace:
-			if event.Type == pubsub.DeletedEvent {
-				delete(s.queues, payload.ID)
+	for {
+		select {
+		case workspaceEvent, ok := <-workspaceQueue:
+			if !ok {
+				return pubsub.ErrSubscriptionTerminated
+			}
+			if workspaceEvent.Type == pubsub.DeletedEvent {
+				delete(s.queues, workspaceEvent.Payload.ID)
 				continue
 			}
 			// create workspace queue if it doesn't exist
-			q, ok := s.queues[payload.ID]
+			q, ok := s.queues[workspaceEvent.Payload.ID]
 			if !ok {
 				q = s.newQueue(queueOptions{
 					Logger:           s.Logger,
 					RunService:       s.RunService,
 					WorkspaceService: s.WorkspaceService,
-					Workspace:        payload,
+					Workspace:        workspaceEvent.Payload,
 				})
-				s.queues[payload.ID] = q
+				s.queues[workspaceEvent.Payload.ID] = q
 			}
-			if err := q.handleEvent(ctx, event); err != nil {
+			if err := q.handleWorkspace(ctx, workspaceEvent.Payload); err != nil {
 				return err
 			}
-		case *run.Run:
-			if event.Type == pubsub.DeletedEvent {
+		case runEvent, ok := <-runQueue:
+			if !ok {
+				return pubsub.ErrSubscriptionTerminated
+			}
+			if runEvent.Type == pubsub.DeletedEvent {
 				// ignore deleted run events - the only way runs are deleted is
 				// if its workspace is deleted, in which case the workspace
 				// queue is deleted along with any runs.
 				continue
 			}
-			q, ok := s.queues[payload.WorkspaceID]
+			q, ok := s.queues[runEvent.Payload.WorkspaceID]
 			if !ok {
 				// should never happen
-				s.Error(nil, "workspace queue does not exist for run event", "workspace", payload.WorkspaceID, "run", payload.ID, "event", event.Type)
+				s.Error(nil, "workspace queue does not exist for run event", "workspace", runEvent.Payload.WorkspaceID, "run", runEvent.Payload.ID, "event", runEvent.Type)
 				continue
 			}
-			if err := q.handleEvent(ctx, event); err != nil {
+			if err := q.handleRun(ctx, runEvent.Payload); err != nil {
 				return err
 			}
 		}
 	}
-	return pubsub.ErrSubscriptionTerminated
 }

@@ -3,7 +3,8 @@ package scheduler
 import (
 	"context"
 
-	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 // interfaces purely for faking purposes
@@ -12,5 +13,6 @@ type queueFactory interface {
 }
 
 type eventHandler interface {
-	handleEvent(context.Context, pubsub.Event) error
+	handleRun(context.Context, *run.Run) error
+	handleWorkspace(context.Context, *workspace.Workspace) error
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcs"
@@ -31,14 +30,6 @@ type (
 		GithubAppInstall *pggen.GithubAppInstalls `json:"github_app_install"`
 	}
 )
-
-// GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &VCSProvider{ID: providerID}, nil
-	}
-	return db.get(ctx, providerID)
-}
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {

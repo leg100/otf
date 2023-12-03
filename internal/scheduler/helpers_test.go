@@ -27,7 +27,6 @@ func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events
 		Logger:           logr.Discard(),
 		WorkspaceService: services,
 		RunService:       services,
-		Subscriber:       services,
 		queues:           make(map[string]eventHandler),
 	}
 	// handled chan receives events relayed to handlers

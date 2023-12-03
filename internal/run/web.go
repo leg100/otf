@@ -337,12 +337,6 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			run, ok := event.Payload.(*Run)
-			if !ok {
-				// skip non-run events
-				continue
-			}
-
 			// Handle query parameters which filter run events:
 			// - 'latest' specifies that the client is only interest in events
 			// relating to the latest run for the workspace
@@ -351,10 +345,10 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			// run.
 			// - otherwise, if neither of those parameters are specified
 			// then events for all runs are relayed.
-			if params.Latest && !run.Latest {
+			if params.Latest && !event.Payload.Latest {
 				// skip: run is not the latest run for a workspace
 				continue
-			} else if params.RunID != "" && params.RunID != run.ID {
+			} else if params.RunID != "" && params.RunID != event.Payload.ID {
 				// skip: event is for a run which does not match the
 				// filter
 				continue
@@ -364,7 +358,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			// render HTML snippet and send as payload in SSE events
 			//
 			itemHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
+			if err := h.RenderTemplate("run_item.tmpl", itemHTML, event.Payload); err != nil {
 				h.logger.Error(err, "rendering template for run item")
 				continue
 			}
@@ -373,7 +367,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
 			} else {
 				// updated run events target existing run items in page
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+event.Payload.ID), false)
 			}
 			if params.Latest {
 				// also write a 'latest-run' event if the caller has requested

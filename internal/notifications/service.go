@@ -26,7 +26,7 @@ type (
 
 	service struct {
 		logr.Logger
-		pubsub.PubSubService
+		pubsub.Subscriber
 		workspace.WorkspaceService
 		internal.HostnameService // for including a link in the notification
 
@@ -49,7 +49,7 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:           opts.Logger,
-		PubSubService:    opts.Broker,
+		Subscriber:       opts.Broker,
 		workspace:        opts.WorkspaceAuthorizer,
 		db:               &pgdb{opts.DB},
 		HostnameService:  opts.HostnameService,

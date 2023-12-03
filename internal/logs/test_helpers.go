@@ -26,10 +26,6 @@ type (
 	}
 
 	fakeAuthorizer struct{}
-
-	fakePubSubService struct {
-		stream chan pubsub.Event
-	}
 )
 
 func newFakeCache(keyvalues ...string) *fakeCache {
@@ -61,22 +57,16 @@ func (f *fakeTailProxy) get(ctx context.Context, opts internal.GetChunkOptions) 
 	return f.chunk, nil
 }
 
-func newFakePubSubService() *fakePubSubService {
-	return &fakePubSubService{stream: make(chan pubsub.Event)}
-}
-
-func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan pubsub.Event, error) {
-	go func() {
-		<-ctx.Done()
-		close(f.stream)
-	}()
-	return f.stream, nil
-}
-
-func (f *fakePubSubService) Publish(event pubsub.Event) {
-	f.stream <- event
-}
-
 func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (internal.Subject, error) {
 	return &internal.Superuser{}, nil
+}
+
+type fakeSubService struct {
+	stream chan pubsub.Event[internal.Chunk]
+
+	pubsub.SubscriptionService[internal.Chunk]
+}
+
+func (f *fakeSubService) Subscribe() (<-chan pubsub.Event[internal.Chunk], func()) {
+	return f.stream, func() { close(f.stream) }
 }
