@@ -178,13 +178,14 @@ func NewService(opts Options) *service {
 		VCSProviderService:          opts.VCSProviderService,
 		RunService:                  &svc,
 	}
-
-	// Register with broker so that it can relay run events
 	svc.broker = pubsub.NewBroker(
 		opts.Logger,
 		opts.Listener,
 		"runs",
-		func(ctx context.Context, id string) (*Run, error) {
+		func(ctx context.Context, id string, action sql.Action) (*Run, error) {
+			if action == sql.DeleteAction {
+				return &Run{ID: id}, nil
+			}
 			return db.GetRun(ctx, id)
 		},
 	)

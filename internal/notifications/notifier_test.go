@@ -106,7 +106,7 @@ func TestNotifier_handleConfig(t *testing.T) {
 
 	// Add config, should result in cache size of 1
 	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj1/topic1", TriggerPlanning)
-	err := notifier.handleConfig(ctx, config1, pubsub.CreatedEvent)
+	err := notifier.handleConfig(ctx, pubsub.Event[*Config]{Payload: config1, Type: pubsub.CreatedEvent})
 	require.NoError(t, err)
 	assert.Len(t, notifier.cache.configs, 1)
 	assert.Len(t, notifier.cache.clients, 1)
@@ -114,13 +114,13 @@ func TestNotifier_handleConfig(t *testing.T) {
 	// Update config url, cache size should still be 1
 	updated := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj2/topic2", TriggerPlanning)
 	updated.ID = config1.ID
-	err = notifier.handleConfig(ctx, updated, pubsub.UpdatedEvent)
+	err = notifier.handleConfig(ctx, pubsub.Event[*Config]{Payload: updated, Type: pubsub.UpdatedEvent})
 	require.NoError(t, err)
 	assert.Len(t, notifier.cache.configs, 1)
 	assert.Len(t, notifier.cache.clients, 1)
 
 	// Remove config, cache size should be 0
-	err = notifier.handleConfig(ctx, updated, pubsub.DeletedEvent)
+	err = notifier.handleConfig(ctx, pubsub.Event[*Config]{Payload: updated, Type: pubsub.DeletedEvent})
 	require.NoError(t, err)
 	assert.Len(t, notifier.cache.configs, 0)
 	assert.Len(t, notifier.cache.clients, 0)

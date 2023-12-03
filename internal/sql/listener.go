@@ -55,9 +55,9 @@ type (
 	}
 )
 
-func NewBroker(logger logr.Logger, db pool) *Listener {
+func NewListener(logger logr.Logger, db pool) *Listener {
 	return &Listener{
-		Logger:      logger.WithValues("component", "broker"),
+		Logger:      logger.WithValues("component", "listener"),
 		pool:        db,
 		islistening: make(chan struct{}),
 		channel:     defaultChannel,

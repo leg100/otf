@@ -28,7 +28,7 @@ type Broker[T any] struct {
 }
 
 // GetterFunc retrieves the type T using its unique id.
-type GetterFunc[T any] func(ctx context.Context, id string) (T, error)
+type GetterFunc[T any] func(ctx context.Context, id string, action sql.Action) (T, error)
 
 func NewBroker[T any](logger logr.Logger, listener *sql.Listener, table string, getter GetterFunc[T]) *Broker[T] {
 	b := &Broker[T]{
@@ -82,17 +82,12 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 // subscribers as an event together with the action.
 func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
 	var event Event[T]
-	if action == sql.DeleteAction {
-		event.Payload = *new(T)
-	} else {
-		// insert, update event
-		payload, err := b.getter(ctx, id)
-		if err != nil {
-			// log error
-			return
-		}
-		event.Payload = payload
+	payload, err := b.getter(ctx, id, action)
+	if err != nil {
+		// log error
+		return
 	}
+	event.Payload = payload
 	switch action {
 	case sql.InsertAction:
 		event.Type = CreatedEvent

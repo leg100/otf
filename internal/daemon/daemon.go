@@ -27,7 +27,6 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
@@ -51,7 +50,6 @@ type (
 		logr.Logger
 
 		*sql.DB
-		*pubsub.Broker
 
 		organization.OrganizationService
 		team.TeamService
@@ -114,9 +112,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	responder := tfeapi.NewResponder()
+	// listener listens to database events
+	listener := sql.NewListener(logger, db)
 
-	broker := pubsub.NewBroker(logger, db)
+	// responder responds to TFE API requests
+	responder := tfeapi.NewResponder()
 
 	// Setup url signer
 	signer := internal.NewSigner(cfg.Secret)
@@ -133,9 +133,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	orgService := organization.NewService(organization.Options{
 		Logger:                       logger,
 		DB:                           db,
+		Listener:                     listener,
 		Renderer:                     renderer,
 		Responder:                    responder,
-		Broker:                       broker,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 		TokensService:                tokensService,
 	})
@@ -215,7 +215,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
 		DB:                  db,
-		Broker:              broker,
+		Listener:            listener,
 		Renderer:            renderer,
 		Responder:           responder,
 		ConnectionService:   connectionService,
@@ -236,6 +236,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
 		DB:                          db,
+		Listener:                    listener,
 		Renderer:                    renderer,
 		Responder:                   responder,
 		WorkspaceAuthorizer:         workspaceService,
@@ -243,7 +244,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
 		VCSProviderService:          vcsProviderService,
-		Broker:                      broker,
 		Cache:                       cache,
 		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
@@ -255,7 +255,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:            db,
 		RunAuthorizer: runService,
 		Cache:         cache,
-		Broker:        broker,
+		Listener:      listener,
 		Verifier:      signer,
 	})
 	moduleService := module.NewService(module.Options{
@@ -297,7 +297,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:       runService,
 		WorkspaceService: workspaceService,
 		TokensService:    tokensService,
-		Broker:           broker,
+		Listener:         listener,
 	})
 
 	agentDaemon, err := agent.New(
@@ -357,7 +357,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	notificationService := notifications.NewService(notifications.Options{
 		Logger:              logger,
 		DB:                  db,
-		Broker:              broker,
+		Listener:            listener,
 		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
@@ -499,11 +499,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(notifications.LockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
-				Logger:           d.Logger,
-				Subscriber:       d.Broker,
-				HostnameService:  d.HostnameService,
-				WorkspaceService: d.WorkspaceService,
-				DB:               d.DB,
+				Logger:              d.Logger,
+				HostnameService:     d.HostnameService,
+				WorkspaceService:    d.WorkspaceService,
+				RunService:          d.RunService,
+				NotificationService: d.NotificationService,
+				DB:                  d.DB,
 			}),
 		},
 		{
@@ -540,7 +541,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
-				Subscriber:       d.Broker,
 			}),
 		})
 	}

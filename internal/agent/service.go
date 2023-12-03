@@ -35,6 +35,7 @@ type (
 		listAllAgentPools(ctx context.Context) ([]*Pool, error)
 		listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
 		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
+		watchAgentPools() (<-chan pubsub.Event[*Pool], func())
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		listAgents(ctx context.Context) ([]*Agent, error)
@@ -44,6 +45,7 @@ type (
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 		deleteAgent(ctx context.Context, agentID string) error
+		watchAgents() (<-chan pubsub.Event[*Agent], func())
 
 		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -55,6 +57,7 @@ type (
 		reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
 		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 		listJobs(ctx context.Context) ([]*Job, error)
+		watchJobs() (<-chan pubsub.Event[*Job], func())
 	}
 
 	service struct {

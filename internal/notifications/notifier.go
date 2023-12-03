@@ -20,9 +20,10 @@ type (
 	// Notifier relays run events onto interested parties
 	Notifier struct {
 		logr.Logger
-		pubsub.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
 		internal.HostnameService   // for including a link in the notification
+		run.RunService
+		NotificationService
 
 		*cache
 		db *pgdb
@@ -30,34 +31,32 @@ type (
 
 	NotifierOptions struct {
 		logr.Logger
-		pubsub.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
 		internal.HostnameService   // for including a link in the notification
+		run.RunService
+		NotificationService
 		*sql.DB
 	}
 )
 
 func NewNotifier(opts NotifierOptions) *Notifier {
 	return &Notifier{
-		Logger:           opts.Logger.WithValues("component", "notifier"),
-		Subscriber:       opts.Subscriber,
-		WorkspaceService: opts.WorkspaceService,
-		HostnameService:  opts.HostnameService,
-		db:               &pgdb{opts.DB},
+		Logger:              opts.Logger.WithValues("component", "notifier"),
+		WorkspaceService:    opts.WorkspaceService,
+		HostnameService:     opts.HostnameService,
+		RunService:          opts.RunService,
+		NotificationService: opts.NotificationService,
+		db:                  &pgdb{opts.DB},
 	}
 }
 
 // Start the notifier daemon. Should be started in a go-routine.
 func (s *Notifier) Start(ctx context.Context) error {
-	// Unsubscribe Subscribe() whenever exiting this routine.
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	// subscribe to both run events and notification config events
-	sub, err := s.Subscribe(ctx, "notifier-")
-	if err != nil {
-		return err
-	}
+	subRuns, unsubRuns := s.SubscribeRunEvents()
+	defer unsubRuns()
+	subConfigs, unsubConfigs := s.WatchNotificationConfigurations()
+	defer unsubConfigs()
 
 	// populate cache with existing notification configs
 	cache, err := newCache(ctx, s.db, &defaultFactory{})
@@ -67,36 +66,37 @@ func (s *Notifier) Start(ctx context.Context) error {
 	s.cache = cache
 
 	// block on handling events
-	for event := range sub {
-		if err := s.handle(ctx, event); err != nil {
-			s.Error(err, "handling event", "event", event.Type)
+	for {
+		select {
+		case event, ok := <-subRuns:
+			if !ok {
+				return pubsub.ErrSubscriptionTerminated
+			}
+			if err := s.handleRun(ctx, event.Payload); err != nil {
+				s.Error(err, "handling event", "event", event.Type)
+			}
+		case event, ok := <-subConfigs:
+			if !ok {
+				return pubsub.ErrSubscriptionTerminated
+			}
+			if err := s.handleConfig(ctx, event); err != nil {
+				s.Error(err, "handling event", "event", event.Type)
+			}
 		}
 	}
-	return pubsub.ErrSubscriptionTerminated
 }
 
-func (s *Notifier) handle(ctx context.Context, event pubsub.Event) error {
-	switch payload := event.Payload.(type) {
-	case *run.Run:
-		return s.handleRun(ctx, payload)
-	case *Config:
-		return s.handleConfig(ctx, payload, event.Type)
-	default:
-		return nil
-	}
-}
-
-func (s *Notifier) handleConfig(ctx context.Context, cfg *Config, eventType pubsub.EventType) error {
-	switch eventType {
+func (s *Notifier) handleConfig(ctx context.Context, event pubsub.Event[*Config]) error {
+	switch event.Type {
 	case pubsub.CreatedEvent:
-		return s.add(cfg)
+		return s.add(event.Payload)
 	case pubsub.UpdatedEvent:
-		if err := s.remove(cfg.ID); err != nil {
+		if err := s.remove(event.Payload.ID); err != nil {
 			return err
 		}
-		return s.add(cfg)
+		return s.add(event.Payload)
 	case pubsub.DeletedEvent:
-		return s.remove(cfg.ID)
+		return s.remove(event.Payload.ID)
 	default:
 		return nil
 	}

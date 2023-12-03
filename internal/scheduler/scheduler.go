@@ -121,43 +121,57 @@ func (s *scheduler) Start(ctx context.Context) error {
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if workspaceEvent.Type == pubsub.DeletedEvent {
-				delete(s.queues, workspaceEvent.Payload.ID)
-				continue
-			}
-			// create workspace queue if it doesn't exist
-			q, ok := s.queues[workspaceEvent.Payload.ID]
-			if !ok {
-				q = s.newQueue(queueOptions{
-					Logger:           s.Logger,
-					RunService:       s.RunService,
-					WorkspaceService: s.WorkspaceService,
-					Workspace:        workspaceEvent.Payload,
-				})
-				s.queues[workspaceEvent.Payload.ID] = q
-			}
-			if err := q.handleWorkspace(ctx, workspaceEvent.Payload); err != nil {
+			if err := s.handleWorkspaceEvent(ctx, workspaceEvent); err != nil {
 				return err
 			}
 		case runEvent, ok := <-runQueue:
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if runEvent.Type == pubsub.DeletedEvent {
-				// ignore deleted run events - the only way runs are deleted is
-				// if its workspace is deleted, in which case the workspace
-				// queue is deleted along with any runs.
-				continue
-			}
-			q, ok := s.queues[runEvent.Payload.WorkspaceID]
-			if !ok {
-				// should never happen
-				s.Error(nil, "workspace queue does not exist for run event", "workspace", runEvent.Payload.WorkspaceID, "run", runEvent.Payload.ID, "event", runEvent.Type)
-				continue
-			}
-			if err := q.handleRun(ctx, runEvent.Payload); err != nil {
+			if err := s.handleRunEvent(ctx, runEvent); err != nil {
 				return err
 			}
 		}
 	}
+}
+
+func (s *scheduler) handleWorkspaceEvent(ctx context.Context, event pubsub.Event[*workspace.Workspace]) error {
+	if event.Type == pubsub.DeletedEvent {
+		delete(s.queues, event.Payload.ID)
+		return nil
+	}
+	// create workspace queue if it doesn't exist
+	q, ok := s.queues[event.Payload.ID]
+	if !ok {
+		q = s.newQueue(queueOptions{
+			Logger:           s.Logger,
+			RunService:       s.RunService,
+			WorkspaceService: s.WorkspaceService,
+			Workspace:        event.Payload,
+		})
+		s.queues[event.Payload.ID] = q
+	}
+	if err := q.handleWorkspace(ctx, event.Payload); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *scheduler) handleRunEvent(ctx context.Context, event pubsub.Event[*run.Run]) error {
+	if event.Type == pubsub.DeletedEvent {
+		// ignore deleted run events - the only way runs are deleted is
+		// if its workspace is deleted, in which case the workspace
+		// queue is deleted along with any runs.
+		return nil
+	}
+	q, ok := s.queues[event.Payload.WorkspaceID]
+	if !ok {
+		// should never happen
+		s.Error(nil, "workspace queue does not exist for run event", "workspace", event.Payload.WorkspaceID, "run", event.Payload.ID, "event", event.Type)
+		return nil
+	}
+	if err := q.handleRun(ctx, event.Payload); err != nil {
+		return err
+	}
+	return nil
 }

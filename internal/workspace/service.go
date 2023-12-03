@@ -111,7 +111,12 @@ func NewService(opts Options) *service {
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
-		db.get,
+		func(ctx context.Context, id string, action sql.Action) (*Workspace, error) {
+			if action == sql.DeleteAction {
+				return &Workspace{ID: id}, nil
+			}
+			return db.get(ctx, id)
+		},
 	)
 	// Fetch workspace when API calls request workspace be included in the
 	// response
