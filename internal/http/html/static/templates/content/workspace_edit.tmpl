@@ -60,7 +60,7 @@
             <label class="text-md" for="agent-pool-id">Agent pool</label>
             <select hx-get="{{ poolsWorkspacePath .Workspace.ID }}" hx-trigger="load" hx-swap="innerHTML" id="agent-pool-id" name="agent_pool_id"></select>
           </div>
-          <span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a class="underline" href="{{ agentPoolsPath .Workspace.Organization }}">here</a>.</span>
+          <span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href="{{ agentPoolsPath .Workspace.Organization }}">here</a>.</span>
         </div>
       </div>
     </fieldset>

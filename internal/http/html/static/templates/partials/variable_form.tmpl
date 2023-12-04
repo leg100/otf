@@ -14,22 +14,22 @@
         <div class="form-checkbox">
           <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.EditMode) }} required>
           <label for="terraform">Terraform</label>
-          <span>These variables should match the declarations in your configuration. Click the HCL box to use interpolation or set a non-string value.</span>
+          <span class="description">These variables should match the declarations in your configuration. Click the HCL box to use interpolation or set a non-string value.</span>
         </div>
         <div class="form-checkbox">
           <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }} {{ disabled (and .Sensitive $.EditMode) }} required>
           <label for="env">Environment variable</label>
-          <span>These variables are available in the Terraform runtime environment.</span>
+          <span class="description">These variables are available in the Terraform runtime environment.</span>
       </fieldset>
       <div class="form-checkbox">
         <input class="" type="checkbox" name="hcl" id="hcl" {{ checked .HCL }} {{ disabled (and .Sensitive $.EditMode) }}>
         <label for="hcl">HCL</label>
-        <span>Parse this field as HashiCorp Configuration Language (HCL). This allows you to interpolate values at runtime.</span>
+        <span class="description">Parse this field as HashiCorp Configuration Language (HCL). This allows you to interpolate values at runtime.</span>
       </div>
       <div class="form-checkbox">
         <input type="checkbox" name="sensitive" id="sensitive" {{ checked .Sensitive }} {{ disabled (and .Sensitive $.EditMode) }}>
         <label for="sensitive">Sensitive</label>
-        <span>Sensitive variables are never shown in the UI or API. They may appear in Terraform logs if your configuration is designed to output them.</span>
+        <span class="description">Sensitive variables are never shown in the UI or API. They may appear in Terraform logs if your configuration is designed to output them.</span>
       </div>
       <div class="field">
         <label class="font-semibold" for="description">Description</label>
