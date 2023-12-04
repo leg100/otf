@@ -64,7 +64,7 @@ install-latest-release:
 # Run docker compose stack
 .PHONY: compose-up
 compose-up: image
-	docker compose up -d
+	docker compose up -d --wait --wait-timeout 60
 
 # Remove docker compose stack
 .PHONY: compose-rm
