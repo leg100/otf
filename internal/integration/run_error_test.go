@@ -77,11 +77,11 @@ func TestRunError(t *testing.T) {
 			require.NoError(t, err)
 
 			// watch run events
-			runsSub, runsUnsub := daemon.WatchRuns()
+			runsSub, runsUnsub := daemon.WatchRuns(ctx)
 			defer runsUnsub()
 
 			// watch log events
-			logsSub, logsUnsub := daemon.WatchLogs()
+			logsSub, logsUnsub := daemon.WatchLogs(ctx)
 			defer logsUnsub()
 
 			// create run

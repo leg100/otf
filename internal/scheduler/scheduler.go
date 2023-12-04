@@ -58,11 +58,11 @@ func (s *scheduler) Start(ctx context.Context) error {
 	s.queues = make(map[string]eventHandler)
 
 	// subscribe to workspace events
-	subWorkspaces, unsubWorkspaces := s.WatchWorkspaces()
+	subWorkspaces, unsubWorkspaces := s.WatchWorkspaces(ctx)
 	defer unsubWorkspaces()
 
 	// subscribe to run events
-	subRuns, unsubRuns := s.WatchRuns()
+	subRuns, unsubRuns := s.WatchRuns(ctx)
 	defer unsubRuns()
 
 	// retrieve all existing workspaces

@@ -17,7 +17,7 @@ type (
 	Service interface {
 		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
 		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
-		WatchLogs() (<-chan pubsub.Event[internal.Chunk], func())
+		WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func())
 		internal.PutChunkService
 		Start(context.Context) error
 	}
@@ -90,8 +90,8 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) WatchLogs() (<-chan pubsub.Event[internal.Chunk], func()) {
-	return s.broker.Subscribe()
+func (s *service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 // GetChunk reads a chunk of logs for a phase.
@@ -133,7 +133,7 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub := s.broker.SubscribeWithContext(ctx)
+	sub, _ := s.broker.Subscribe(ctx)
 
 	chunk, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {

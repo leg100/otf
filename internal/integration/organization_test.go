@@ -18,7 +18,7 @@ func TestOrganization(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, defaultOrg, ctx := setup(t, nil)
 		user := userFromContext(t, ctx)
-		sub, unsub := svc.WatchOrganizations()
+		sub, unsub := svc.WatchOrganizations(ctx)
 		defer unsub()
 		org, err := svc.CreateOrganization(ctx, organization.CreateOptions{
 			Name: internal.String(uuid.NewString()),
@@ -52,7 +52,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("update name", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
-		sub, unsub := daemon.WatchOrganizations()
+		sub, unsub := daemon.WatchOrganizations(ctx)
 		defer unsub()
 
 		want := uuid.NewString()
@@ -129,7 +129,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
-		sub, unsub := daemon.WatchOrganizations()
+		sub, unsub := daemon.WatchOrganizations(ctx)
 		defer unsub()
 
 		err := daemon.DeleteOrganization(ctx, org.Name)

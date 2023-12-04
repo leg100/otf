@@ -47,30 +47,21 @@ func NewBroker[T any](logger logr.Logger, listener databaseListener, table strin
 	return b
 }
 
-// Subscribe subscribes the caller to a stream of events; the onus is on the
-// caller to use the returned unsubscribe function to remove the subscription.
-func (b *Broker[T]) Subscribe() (<-chan Event[T], func()) {
-	return b.subscribe()
-}
-
-// SubscribeWithContext subscribes the caller to a stream of events,
-// unsubscribing them when the context is canceled.
-func (b *Broker[T]) SubscribeWithContext(ctx context.Context) <-chan Event[T] {
-	sub, unsub := b.subscribe()
-	// when the context is canceled remove the subscriber
-	go func() {
-		<-ctx.Done()
-		unsub()
-	}()
-	return sub
-}
-
-func (b *Broker[T]) subscribe() (chan Event[T], func()) {
+// Subscribe subscribes the caller to a stream of events. The caller can close
+// the subscription by either canceling the context or calling the returned
+// unsubscribe function.
+func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func()) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	sub := make(chan Event[T], subBufferSize)
 	b.subs[sub] = struct{}{}
+
+	// when the context is canceled remove the subscriber
+	go func() {
+		<-ctx.Done()
+		b.unsubscribe(sub)
+	}()
 
 	return sub, func() { b.unsubscribe(sub) }
 }
@@ -87,7 +78,7 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 	delete(b.subs, sub)
 }
 
-// GetByID retrieves the type T uniquely identified by id and forwards it onto
+// forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
 func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
 	var event Event[T]

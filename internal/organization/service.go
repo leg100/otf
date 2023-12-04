@@ -37,7 +37,7 @@ type (
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
 		DeleteOrganizationToken(ctx context.Context, organization string) error
-		WatchOrganizations() (<-chan pubsub.Event[*Organization], func())
+		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}
 
@@ -138,8 +138,8 @@ func (s *service) BeforeDeleteOrganization(l hooks.Listener[*Organization]) {
 	s.deleteHook.Before(l)
 }
 
-func (s *service) WatchOrganizations() (<-chan pubsub.Event[*Organization], func()) {
-	return s.broker.Subscribe()
+func (s *service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 // CreateOrganization creates an organization. Only users can create

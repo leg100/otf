@@ -14,12 +14,10 @@ import (
 
 type fakeSubService struct {
 	ch chan pubsub.Event[*Run]
-
-	pubsub.SubscriptionService[*Run]
 }
 
-func (f *fakeSubService) SubscribeWithContext(context.Context) <-chan pubsub.Event[*Run] {
-	return f.ch
+func (f *fakeSubService) Subscribe(context.Context) (<-chan pubsub.Event[*Run], func()) {
+	return f.ch, nil
 }
 
 type (

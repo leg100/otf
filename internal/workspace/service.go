@@ -34,7 +34,7 @@ type (
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-		WatchWorkspaces() (<-chan pubsub.Event[*Workspace], func())
+		WatchWorkspaces(context.Context) (<-chan pubsub.Event[*Workspace], func())
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
@@ -145,8 +145,8 @@ func (s *service) BeforeUpdateWorkspace(l hooks.Listener[*Workspace]) {
 	s.updateHook.Before(l)
 }
 
-func (s *service) WatchWorkspaces() (<-chan pubsub.Event[*Workspace], func()) {
-	return s.broker.Subscribe()
+func (s *service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {

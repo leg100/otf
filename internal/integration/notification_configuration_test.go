@@ -17,7 +17,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 		ws := daemon.createWorkspace(t, ctx, org)
-		sub, unsub := daemon.WatchNotificationConfigurations()
+		sub, unsub := daemon.WatchNotificationConfigurations(ctx)
 		defer unsub()
 		nc, err := daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
@@ -87,7 +87,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
-		sub, unsub := svc.WatchNotificationConfigurations()
+		sub, unsub := svc.WatchNotificationConfigurations(ctx)
 		defer unsub()
 		nc := svc.createNotificationConfig(t, ctx, ws)
 		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
@@ -105,7 +105,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
-		sub, unsub := svc.WatchNotificationConfigurations()
+		sub, unsub := svc.WatchNotificationConfigurations(ctx)
 		defer unsub()
 
 		ws := svc.createWorkspace(t, ctx, org)

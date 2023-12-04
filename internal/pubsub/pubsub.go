@@ -5,6 +5,5 @@ import "context"
 
 // SubscriptionService is a service that provides subscriptions to events
 type SubscriptionService[T any] interface {
-	Subscribe() (<-chan Event[T], func())
-	SubscribeWithContext(ctx context.Context) <-chan Event[T]
+	Subscribe(context.Context) (<-chan Event[T], func())
 }

@@ -77,7 +77,7 @@ type (
 		// forced cancelation of a run.
 		AfterForceCancelRun(hook func(context.Context, *Run) error)
 		// WatchRuns subscribes the caller to a stream of run events.
-		WatchRuns() (<-chan pubsub.Event[*Run], func())
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Run], func())
 
 		lockFileService
 
@@ -210,8 +210,8 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) WatchRuns() (<-chan pubsub.Event[*Run], func()) {
-	return s.broker.Subscribe()
+func (s *service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
@@ -415,7 +415,7 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.E
 		return nil, err
 	}
 
-	sub := s.broker.SubscribeWithContext(ctx)
+	sub, _ := s.broker.Subscribe(ctx)
 	// relay is returned to the caller to which filtered run events are sent
 	relay := make(chan pubsub.Event[*Run])
 	go func() {

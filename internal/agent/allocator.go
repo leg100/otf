@@ -30,11 +30,11 @@ type allocator struct {
 // Start the allocator. Should be invoked in a go routine.
 func (a *allocator) Start(ctx context.Context) error {
 	// Subscribe to pool, job and agent events and unsubscribe before returning.
-	poolsSub, poolsUnsub := a.watchAgentPools()
+	poolsSub, poolsUnsub := a.watchAgentPools(ctx)
 	defer poolsUnsub()
-	agentsSub, agentsUnsub := a.watchAgents()
+	agentsSub, agentsUnsub := a.watchAgents(ctx)
 	defer agentsUnsub()
-	jobsSub, jobsUnsub := a.watchJobs()
+	jobsSub, jobsUnsub := a.watchJobs(ctx)
 	defer jobsUnsub()
 
 	// seed allocator with pools, agents, and jobs

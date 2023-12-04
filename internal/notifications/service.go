@@ -22,7 +22,7 @@ type (
 		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
 		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
 		DeleteNotificationConfiguration(ctx context.Context, id string) error
-		WatchNotificationConfigurations() (<-chan pubsub.Event[*Config], func())
+		WatchNotificationConfigurations(context.Context) (<-chan pubsub.Event[*Config], func())
 	}
 
 	service struct {
@@ -78,8 +78,8 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) WatchNotificationConfigurations() (<-chan pubsub.Event[*Config], func()) {
-	return s.broker.Subscribe()
+func (s *service) WatchNotificationConfigurations(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {

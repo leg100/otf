@@ -23,7 +23,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
 		// watch workspace events
-		sub, unsub := daemon.WatchWorkspaces()
+		sub, unsub := daemon.WatchWorkspaces(ctx)
 		defer unsub()
 
 		ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -131,7 +131,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
 		// watch workspace events
-		sub, unsub := daemon.WatchWorkspaces()
+		sub, unsub := daemon.WatchWorkspaces(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
@@ -414,7 +414,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
 		// watch workspace events
-		sub, unsub := daemon.WatchWorkspaces()
+		sub, unsub := daemon.WatchWorkspaces(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)

@@ -16,7 +16,7 @@ func TestIntegration_StateUI(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// watch run events
-	sub, unsub := daemon.WatchRuns()
+	sub, unsub := daemon.WatchRuns(ctx)
 	defer unsub()
 
 	// create run and wait for it to complete

@@ -49,7 +49,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		sub, unsub := daemon.WatchRuns()
+		sub, unsub := daemon.WatchRuns(ctx)
 		defer unsub()
 
 		created, err := tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{

@@ -35,7 +35,7 @@ type (
 		listAllAgentPools(ctx context.Context) ([]*Pool, error)
 		listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
 		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
-		watchAgentPools() (<-chan pubsub.Event[*Pool], func())
+		watchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
 
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		listAgents(ctx context.Context) ([]*Agent, error)
@@ -45,7 +45,7 @@ type (
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 		deleteAgent(ctx context.Context, agentID string) error
-		watchAgents() (<-chan pubsub.Event[*Agent], func())
+		watchAgents(context.Context) (<-chan pubsub.Event[*Agent], func())
 
 		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -57,7 +57,7 @@ type (
 		reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
 		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 		listJobs(ctx context.Context) ([]*Job, error)
-		watchJobs() (<-chan pubsub.Event[*Job], func())
+		watchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
 	}
 
 	service struct {
@@ -377,16 +377,16 @@ func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 	return ErrWorkspaceNotAllowedToUsePool
 }
 
-func (s *service) watchAgentPools() (<-chan pubsub.Event[*Pool], func()) {
-	return s.poolBroker.Subscribe()
+func (s *service) watchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func()) {
+	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *service) watchAgents() (<-chan pubsub.Event[*Agent], func()) {
-	return s.agentBroker.Subscribe()
+func (s *service) watchAgents(ctx context.Context) (<-chan pubsub.Event[*Agent], func()) {
+	return s.agentBroker.Subscribe(ctx)
 }
 
-func (s *service) watchJobs() (<-chan pubsub.Event[*Job], func()) {
-	return s.jobBroker.Subscribe()
+func (s *service) watchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
+	return s.jobBroker.Subscribe(ctx)
 }
 
 func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
@@ -560,7 +560,7 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		return nil, internal.ErrAccessNotPermitted
 	}
 
-	sub, unsub := s.watchJobs()
+	sub, unsub := s.watchJobs(ctx)
 	defer unsub()
 	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, agentID)
 	if err != nil {
