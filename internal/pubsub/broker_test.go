@@ -9,9 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBroker_Subscribe(t *testing.T) {
-	type foo struct{}
+type foo struct {
+	id string
+}
 
+func fooGetter(ctx context.Context, id string, action sql.Action) (*foo, error) {
+	return &foo{id: id}, nil
+}
+
+func TestBroker_Subscribe(t *testing.T) {
 	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", nil)
 
 	sub, unsub := broker.Subscribe()
@@ -22,16 +28,24 @@ func TestBroker_Subscribe(t *testing.T) {
 	assert.Equal(t, 0, len(broker.subs))
 }
 
-func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
-	type foo struct {
-		id string
-	}
-	getter := func(ctx context.Context, id string, action sql.Action) (*foo, error) {
-		return &foo{id: id}, nil
-	}
+func TestBroker_forward(t *testing.T) {
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", fooGetter)
+
+	sub, unsub := broker.Subscribe()
+	defer unsub()
 
 	ctx := context.Background()
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", getter)
+	broker.forward(ctx, "bar", sql.InsertAction)
+	want := Event[*foo]{
+		Type:    CreatedEvent,
+		Payload: &foo{id: "bar"},
+	}
+	assert.Equal(t, want, <-sub)
+}
+
+func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
+	ctx := context.Background()
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", fooGetter)
 
 	broker.Subscribe()
 	assert.Equal(t, 1, len(broker.subs))
