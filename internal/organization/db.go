@@ -139,6 +139,14 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	return row(r).toOrganization(), nil
 }
 
+func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
+	r, err := db.Conn(ctx).FindOrganizationByID(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return row(r).toOrganization(), nil
+}
+
 func (db *pgdb) delete(ctx context.Context, name string) error {
 	_, err := db.Conn(ctx).DeleteOrganizationByName(ctx, sql.String(name))
 	if err != nil {

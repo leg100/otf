@@ -84,7 +84,7 @@ func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
 	var event Event[T]
 	payload, err := b.getter(ctx, id, action)
 	if err != nil {
-		b.Error(err, "retrieving %s from table %s", id, b.table)
+		b.Error(err, "retrieving type for database event", "table", b.table, "id", id, "action", action)
 		return
 	}
 	event.Payload = payload

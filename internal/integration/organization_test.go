@@ -51,9 +51,12 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("update name", func(t *testing.T) {
-		daemon, org, ctx := setup(t, nil)
+		daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
 		sub, unsub := daemon.WatchOrganizations(ctx)
 		defer unsub()
+
+		org := daemon.createOrganization(t, ctx)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		want := uuid.NewString()
 		updated, err := daemon.UpdateOrganization(ctx, org.Name, organization.UpdateOptions{
@@ -128,9 +131,12 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		daemon, org, ctx := setup(t, nil)
+		daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
 		sub, unsub := daemon.WatchOrganizations(ctx)
 		defer unsub()
+
+		org := daemon.createOrganization(t, ctx)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		err := daemon.DeleteOrganization(ctx, org.Name)
 		require.NoError(t, err)

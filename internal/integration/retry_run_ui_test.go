@@ -27,7 +27,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 		if event.Payload.Status == run.RunErrored {
 			t.Fatal("run unexpectedly errored")
 		}
-		if r.Status == run.RunPlannedAndFinished {
+		if event.Payload.Status == run.RunPlannedAndFinished {
 			break
 		}
 	}

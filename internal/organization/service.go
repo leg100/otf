@@ -105,11 +105,11 @@ func NewService(opts Options) *service {
 		opts.Logger,
 		opts.Listener,
 		"organizations",
-		func(ctx context.Context, name string, action sql.Action) (*Organization, error) {
+		func(ctx context.Context, id string, action sql.Action) (*Organization, error) {
 			if action == sql.DeleteAction {
-				return &Organization{Name: name}, nil
+				return &Organization{ID: id}, nil
 			}
-			return svc.db.get(ctx, name)
+			return svc.db.getByID(ctx, id)
 		},
 	)
 	// Fetch organization when API calls request organization be included in the
