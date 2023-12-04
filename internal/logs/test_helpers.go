@@ -67,6 +67,10 @@ type fakeSubService struct {
 	pubsub.SubscriptionService[internal.Chunk]
 }
 
-func (f *fakeSubService) Subscribe() (<-chan pubsub.Event[internal.Chunk], func()) {
-	return f.stream, func() { close(f.stream) }
+func (f *fakeSubService) SubscribeWithContext(ctx context.Context) <-chan pubsub.Event[internal.Chunk] {
+	go func() {
+		<-ctx.Done()
+		close(f.stream)
+	}()
+	return f.stream
 }
