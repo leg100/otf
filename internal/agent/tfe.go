@@ -134,7 +134,7 @@ func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool, err := a.service.getAgentPool(r.Context(), poolID)
+	pool, err := a.service.GetAgentPool(r.Context(), poolID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

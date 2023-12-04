@@ -401,8 +401,9 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 }
 
 // startAgent starts a pool agent, configuring it with the given organization
-// and configuring it to connect to the daemon. The pool ID is returned.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, poolID string, cfg agent.Config) string {
+// and configuring it to connect to the daemon. The corresponding agent type is
+// returned once registered, along with a function to shutdown the agent down.
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg agent.Config) (*agent.Agent, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -415,22 +416,24 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, p
 		logger = logr.Discard()
 	}
 
-	if poolID == "" {
-		pool, err := s.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
-			Name:         uuid.NewString(),
-			Organization: org,
+	if token == "" {
+		if poolID == "" {
+			pool, err := s.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+				Name:         uuid.NewString(),
+				Organization: org,
+			})
+			require.NoError(t, err)
+			poolID = pool.ID
+		}
+		_, tokenBytes, err := s.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)
-		poolID = pool.ID
+		token = string(tokenBytes)
 	}
 
-	_, token, err := s.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
-		Description: "lorem ipsum...",
-	})
-	require.NoError(t, err)
-
 	agentDaemon, err := agent.NewRPC(logger, cfg, api.Config{
-		Token:   string(token),
+		Token:   token,
 		Address: s.Hostname(),
 	})
 	require.NoError(t, err)
@@ -447,7 +450,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, p
 		cancel() // terminate agent
 		<-done   // don't exit test until agent fully terminated
 	})
-	return poolID
+	return <-agentDaemon.Registered(), cancel
 }
 
 func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPath string, args ...string) string {

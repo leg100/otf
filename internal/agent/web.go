@@ -199,7 +199,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool, err := h.svc.getAgentPool(r.Context(), poolID)
+	pool, err := h.svc.GetAgentPool(r.Context(), poolID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

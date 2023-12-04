@@ -52,7 +52,7 @@ type (
 		*sql.DB
 
 		listener *sql.Listener
-		agent    process
+		agent    agentDaemon
 
 		organization.OrganizationService
 		team.TeamService
@@ -76,9 +76,9 @@ type (
 		Handlers []internal.Handlers
 	}
 
-	process interface {
+	agentDaemon interface {
 		Start(context.Context) error
-		Started() <-chan struct{}
+		Registered() <-chan *agent.Agent
 	}
 )
 
@@ -514,7 +514,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive: true,
 			DB:        d.DB,
 			LockID:    internal.Int64(agent.AllocatorLockID),
-			System:    d.NewAllocator(),
+			System:    d.NewAllocator(d.Logger),
 		},
 		{
 			Name:      "agent-manager",
@@ -563,7 +563,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-d.agent.Started():
+	case <-d.agent.Registered():
 	}
 
 	// Run HTTP/JSON-API server and web app

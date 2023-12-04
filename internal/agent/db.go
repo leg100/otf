@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
-	"github.com/leg100/otf/internal/workspace"
 )
 
 // poolresult is the result of a database query for an agent pool
@@ -50,6 +49,7 @@ type agentresult struct {
 func (r agentresult) toAgent() *Agent {
 	agent := &Agent{
 		ID:           r.AgentID.String,
+		Name:         r.Name.String,
 		Version:      r.Version.String,
 		MaxJobs:      int(r.MaxJobs.Int),
 		CurrentJobs:  int(r.CurrentJobs.Int),
@@ -57,9 +57,6 @@ func (r agentresult) toAgent() *Agent {
 		LastPingAt:   r.LastPingAt.Time.UTC(),
 		LastStatusAt: r.LastStatusAt.Time.UTC(),
 		Status:       AgentStatus(r.Status.String),
-	}
-	if r.Name.Status == pgtype.Present {
-		agent.Name = &r.Name.String
 	}
 	if r.AgentPoolID.Status == pgtype.Present {
 		agent.AgentPoolID = &r.AgentPoolID.String
@@ -74,7 +71,7 @@ type jobresult struct {
 	Status           pgtype.Text `json:"status"`
 	Signaled         pgtype.Bool `json:"signaled"`
 	AgentID          pgtype.Text `json:"agent_id"`
-	ExecutionMode    pgtype.Text `json:"execution_mode"`
+	AgentPoolID      pgtype.Text `json:"agent_pool_id"`
 	WorkspaceID      pgtype.Text `json:"workspace_id"`
 	OrganizationName pgtype.Text `json:"organization_name"`
 }
@@ -85,13 +82,15 @@ func (r jobresult) toJob() *Job {
 			RunID: r.RunID.String,
 			Phase: internal.PhaseType(r.Phase.String),
 		},
-		Status:        JobStatus(r.Status.String),
-		ExecutionMode: workspace.ExecutionMode(r.ExecutionMode.String),
-		WorkspaceID:   r.WorkspaceID.String,
-		Organization:  r.OrganizationName.String,
+		Status:       JobStatus(r.Status.String),
+		WorkspaceID:  r.WorkspaceID.String,
+		Organization: r.OrganizationName.String,
 	}
 	if r.AgentID.Status == pgtype.Present {
 		job.AgentID = &r.AgentID.String
+	}
+	if r.AgentPoolID.Status == pgtype.Present {
+		job.AgentPoolID = &r.AgentPoolID.String
 	}
 	if r.Signaled.Status == pgtype.Present {
 		job.Signaled = &r.Signaled.Bool
@@ -233,7 +232,7 @@ func (db *db) deleteAgentPool(ctx context.Context, poolID string) error {
 func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
 		AgentID:      sql.String(agent.ID),
-		Name:         sql.StringPtr(agent.Name),
+		Name:         sql.String(agent.Name),
 		Version:      sql.String(agent.Version),
 		MaxJobs:      sql.Int4(agent.MaxJobs),
 		IPAddress:    sql.Inet(agent.IPAddress),

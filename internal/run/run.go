@@ -60,6 +60,7 @@ type (
 		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+		AgentPoolID            *string                 `jsonapi:"attribute" json:"agent_pool_id"`
 		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
 		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`

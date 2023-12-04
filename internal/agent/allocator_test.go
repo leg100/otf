@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,20 +58,18 @@ func TestAllocator_allocate(t *testing.T) {
 		wantAgents map[string]*Agent
 	}{
 		{
-			name: "allocate job to agent",
+			name: "allocate job to server agent",
 			agents: []*Agent{
 				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1},
 			},
 			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.RemoteExecutionMode,
+				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobAllocated,
-				ExecutionMode: workspace.RemoteExecutionMode,
-				AgentID:       internal.String("agent-idle"),
+				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:  JobAllocated,
+				AgentID: internal.String("agent-idle"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-idle": {ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1},
@@ -84,15 +82,13 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "agent-old", Status: AgentIdle, MaxJobs: 1, LastPingAt: now.Add(-time.Second)},
 			},
 			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.RemoteExecutionMode,
+				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobAllocated,
-				ExecutionMode: workspace.RemoteExecutionMode,
-				AgentID:       internal.String("agent-new"),
+				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:  JobAllocated,
+				AgentID: internal.String("agent-new"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-new": {ID: "agent-new", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, LastPingAt: now},
@@ -100,101 +96,42 @@ func TestAllocator_allocate(t *testing.T) {
 			},
 		},
 		{
-			name: "allocate job to organization-scoped pool agent",
-			pools: []*Pool{
-				{ID: "pool-1", OrganizationScoped: true, Organization: "acme-corp"},
-			},
+			name:  "allocate job to pool agent",
+			pools: []*Pool{{ID: "pool-1"}},
 			agents: []*Agent{
 				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				Organization:  "acme-corp",
+				Spec:        JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:      JobUnallocated,
+				AgentPoolID: internal.String("pool-1"),
 			},
 			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobAllocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				AgentID:       internal.String("agent-1"),
-				Organization:  "acme-corp",
+				Spec:        JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:      JobAllocated,
+				AgentPoolID: internal.String("pool-1"),
+				AgentID:     internal.String("agent-1"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, AgentPoolID: internal.String("pool-1")},
 			},
 		},
 		{
-			name: "allocate job to pool agent with matching assigned workspace",
-			pools: []*Pool{
-				{ID: "pool-1", AssignedWorkspaces: []string{"workspace-1"}},
-			},
+			name:  "do not allocate job to agent with insufficient capacity",
+			pools: []*Pool{{ID: "pool-1"}},
 			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
+				{ID: "agent-1", Status: AgentIdle, CurrentJobs: 1, MaxJobs: 1},
 			},
 			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				WorkspaceID:   "workspace-1",
+				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobAllocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				AgentID:       internal.String("agent-1"),
-				WorkspaceID:   "workspace-1",
+				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status: JobUnallocated,
 			},
 			wantAgents: map[string]*Agent{
-				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, AgentPoolID: internal.String("pool-1")},
-			},
-		},
-		{
-			name: "do not allocate job to pool agent in different org",
-			pools: []*Pool{
-				{ID: "pool-1", OrganizationScoped: true, Organization: "acme-corp"},
-			},
-			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
-			},
-			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				Organization:  "enron",
-			},
-			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				Organization:  "enron",
-			},
-			wantAgents: map[string]*Agent{
-				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
-			},
-		},
-		{
-			name: "do not allocate job to pool agent with non-matching assigned workspace",
-			pools: []*Pool{
-				{ID: "pool-1", AssignedWorkspaces: []string{"workspace-non-matching"}},
-			},
-			agents: []*Agent{
-				{ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
-			},
-			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				WorkspaceID:   "workspace-1",
-			},
-			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobUnallocated,
-				ExecutionMode: workspace.AgentExecutionMode,
-				WorkspaceID:   "workspace-1",
-			},
-			wantAgents: map[string]*Agent{
-				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
+				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
 		},
 		{
@@ -204,16 +141,14 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 0},
 			},
 			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobAllocated,
-				ExecutionMode: workspace.RemoteExecutionMode,
-				AgentID:       internal.String("agent-unknown"),
+				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:  JobAllocated,
+				AgentID: internal.String("agent-unknown"),
 			},
 			wantJob: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobAllocated,
-				ExecutionMode: workspace.RemoteExecutionMode,
-				AgentID:       internal.String("agent-idle"),
+				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:  JobAllocated,
+				AgentID: internal.String("agent-idle"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-unknown": {ID: "agent-unknown", Status: AgentUnknown, CurrentJobs: 0},
@@ -224,10 +159,9 @@ func TestAllocator_allocate(t *testing.T) {
 			name:   "de-allocate finished job",
 			agents: []*Agent{{ID: "agent-1", CurrentJobs: 1}},
 			job: &Job{
-				Spec:          JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:        JobFinished,
-				ExecutionMode: workspace.RemoteExecutionMode,
-				AgentID:       internal.String("agent-1"),
+				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:  JobFinished,
+				AgentID: internal.String("agent-1"),
 			},
 			wantJob:    nil,
 			wantAgents: map[string]*Agent{"agent-1": {ID: "agent-1", CurrentJobs: 0}},
@@ -236,6 +170,7 @@ func TestAllocator_allocate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &allocator{
+				Logger: logr.Discard(),
 				Service: &fakeService{
 					job: tt.job,
 				},

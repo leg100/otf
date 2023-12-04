@@ -3,7 +3,7 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
-GOOSE_DBSTRING=postgres:///otf
+DBSTRING=postgres://postgres:password@localhost/otf
 LD_FLAGS = " \
     -s -w \
 	-X 'github.com/leg100/otf/internal.Version=$(VERSION)' \
@@ -116,7 +116,7 @@ install-pggen:
 .PHONY: sql
 sql: install-pggen
 	pggen gen go \
-		--postgres-connection "postgres://postgres:password@localhost/otf" \
+		--postgres-connection $(DBSTRING) \
 		--query-glob 'internal/sql/queries/*.sql' \
 		--output-dir ./internal/sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
@@ -146,22 +146,22 @@ install-goose:
 # Migrate SQL schema to latest version
 .PHONY: migrate
 migrate: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
 
 # Redo SQL schema migration
 .PHONY: migrate-redo
 migrate-redo: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
 
 # Rollback SQL schema by one version
 .PHONY: migrate-rollback
 migrate-rollback: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
 
 # Get SQL schema migration status
 .PHONY: migrate-status
 migrate-status: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
 
 # Run docs server with live reload
 .PHONY: serve-docs

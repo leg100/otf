@@ -16,7 +16,7 @@ SELECT
     j.status,
     j.signaled,
     j.agent_id,
-    w.execution_mode,
+    w.agent_pool_id,
     r.workspace_id,
     w.organization_name
 FROM jobs j
@@ -31,7 +31,7 @@ SELECT
     j.status,
     j.signaled,
     j.agent_id,
-    w.execution_mode,
+    w.agent_pool_id,
     r.workspace_id,
     w.organization_name
 FROM jobs j
@@ -48,7 +48,7 @@ SELECT
     j.status,
     j.signaled,
     j.agent_id,
-    w.execution_mode,
+    w.agent_pool_id,
     r.workspace_id,
     w.organization_name
 FROM jobs j
@@ -66,7 +66,7 @@ SELECT
     j.status,
     j.signaled,
     j.agent_id,
-    w.execution_mode,
+    w.agent_pool_id,
     r.workspace_id,
     w.organization_name
 FROM jobs j
@@ -92,7 +92,7 @@ RETURNING
     j.status,
     j.signaled,
     j.agent_id,
-    w.execution_mode,
+    w.agent_pool_id,
     r.workspace_id,
     w.organization_name
 ;

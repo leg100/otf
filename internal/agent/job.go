@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	otfrun "github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/workspace"
 )
 
 var (
@@ -58,8 +57,10 @@ type Job struct {
 	Spec JobSpec `jsonapi:"primary,jobs"`
 	// Current status of job.
 	Status JobStatus `jsonapi:"attribute" json:"status"`
-	// Execution mode of job's workspace.
-	ExecutionMode workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+	// ID of agent pool the job's workspace is assigned to use. If non-nil then
+	// the job is allocated to a pool agent belonging to the pool. If nil then
+	// the job is allocated to a server agent.
+	AgentPoolID *string `jsonapi:"attribute" json:"agent_pool_id"`
 	// Name of job's organization
 	Organization string `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
@@ -78,10 +79,10 @@ func newJob(run *otfrun.Run) *Job {
 			RunID: run.ID,
 			Phase: run.Phase(),
 		},
-		Status:        JobUnallocated,
-		ExecutionMode: run.ExecutionMode,
-		Organization:  run.Organization,
-		WorkspaceID:   run.WorkspaceID,
+		Status:       JobUnallocated,
+		Organization: run.Organization,
+		WorkspaceID:  run.WorkspaceID,
+		AgentPoolID:  run.AgentPoolID,
 	}
 }
 

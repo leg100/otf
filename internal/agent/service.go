@@ -26,17 +26,18 @@ type (
 	AgentService = Service
 
 	Service interface {
-		NewAllocator() *allocator
+		NewAllocator(logr.Logger) *allocator
 		NewManager() *manager
 
 		CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
+		GetAgentPool(ctx context.Context, poolID string) (*Pool, error)
+		WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
 		updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
-		getAgentPool(ctx context.Context, poolID string) (*Pool, error)
 		listAllAgentPools(ctx context.Context) ([]*Pool, error)
 		listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
 		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
-		watchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
 
+		WatchAgents(context.Context) (<-chan pubsub.Event[*Agent], func())
 		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
 		listAgents(ctx context.Context) ([]*Agent, error)
 		listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
@@ -45,7 +46,6 @@ type (
 		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
 		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
 		deleteAgent(ctx context.Context, agentID string) error
-		watchAgents(context.Context) (<-chan pubsub.Event[*Agent], func())
 
 		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -57,7 +57,7 @@ type (
 		reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
 		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 		listJobs(ctx context.Context) ([]*Job, error)
-		watchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
+		WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
 	}
 
 	service struct {
@@ -214,8 +214,9 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) NewAllocator() *allocator {
+func (s *service) NewAllocator(logger logr.Logger) *allocator {
 	return &allocator{
+		Logger:  logger,
 		Service: s,
 	}
 }
@@ -284,7 +285,7 @@ func (s *service) updateAgentPool(ctx context.Context, poolID string, opts updat
 	return &after, nil
 }
 
-func (s *service) getAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+func (s *service) GetAgentPool(ctx context.Context, poolID string) (*Pool, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
@@ -364,7 +365,7 @@ func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 		// workspace is not using any pool
 		return nil
 	}
-	pool, err := s.getAgentPool(ctx, *ws.AgentPoolID)
+	pool, err := s.GetAgentPool(ctx, *ws.AgentPoolID)
 	if err != nil {
 		return err
 	}
@@ -377,15 +378,15 @@ func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 	return ErrWorkspaceNotAllowedToUsePool
 }
 
-func (s *service) watchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func()) {
+func (s *service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func()) {
 	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *service) watchAgents(ctx context.Context) (<-chan pubsub.Event[*Agent], func()) {
+func (s *service) WatchAgents(ctx context.Context) (<-chan pubsub.Event[*Agent], func()) {
 	return s.agentBroker.Subscribe(ctx)
 }
 
-func (s *service) watchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
+func (s *service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
 	return s.jobBroker.Subscribe(ctx)
 }
 
@@ -560,7 +561,7 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		return nil, internal.ErrAccessNotPermitted
 	}
 
-	sub, unsub := s.watchJobs(ctx)
+	sub, unsub := s.WatchJobs(ctx)
 	defer unsub()
 	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, agentID)
 	if err != nil {

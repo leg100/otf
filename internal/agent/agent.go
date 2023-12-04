@@ -31,7 +31,7 @@ type Agent struct {
 	// Unique system-wide ID
 	ID string `jsonapi:"primary,agents"`
 	// Optional name
-	Name *string `jsonapi:"attribute" json:"name"`
+	Name string `jsonapi:"attribute" json:"name"`
 	// Version of agent
 	Version string `jsonapi:"attribute" json:"version"`
 	// Current status of agent
@@ -53,7 +53,7 @@ type Agent struct {
 
 type registerAgentOptions struct {
 	// Descriptive name. Optional.
-	Name *string `json:"name"`
+	Name string `json:"name"`
 	// Version of agent.
 	Version string `json:"version"`
 	// Number of jobs the agent can handle at any one time.
@@ -137,8 +137,8 @@ func (a *Agent) LogValue() slog.Value {
 	if a.AgentPoolID != nil {
 		attrs = append(attrs, slog.String("pool_id", *a.AgentPoolID))
 	}
-	if a.Name != nil {
-		attrs = append(attrs, slog.String("name", *a.Name))
+	if a.Name != "" {
+		attrs = append(attrs, slog.String("name", a.Name))
 	}
 	return slog.GroupValue(attrs...)
 }

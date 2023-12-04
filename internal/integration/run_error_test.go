@@ -24,7 +24,7 @@ func TestRunError(t *testing.T) {
 
 	// create a daemon and start an agent
 	daemon, org, ctx := setup(t, nil)
-	poolID := daemon.startAgent(t, ctx, org.Name, "", agent.Config{})
+	agent, _ := daemon.startAgent(t, ctx, org.Name, "", "", agent.Config{})
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
@@ -36,7 +36,7 @@ func TestRunError(t *testing.T) {
 			"execute run via daemon", workspace.RemoteExecutionMode, nil,
 		},
 		{
-			"execute run via agent", workspace.AgentExecutionMode, &poolID,
+			"execute run via agent", workspace.AgentExecutionMode, agent.AgentPoolID,
 		},
 	}
 	for _, tt := range tests {

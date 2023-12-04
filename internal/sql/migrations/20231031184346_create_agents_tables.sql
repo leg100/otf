@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS agent_pools (
     created_at          TIMESTAMPTZ NOT NULL,
     organization_name   TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     organization_scoped BOOLEAN NOT NULL,
-                        PRIMARY KEY (agent_pool_id)
+                        PRIMARY KEY (agent_pool_id),
+                        UNIQUE (organization_name, name)
 );
 
 CREATE TABLE IF NOT EXISTS agent_pool_allowed_workspaces (
@@ -73,7 +74,7 @@ INSERT INTO agent_statuses (status) VALUES
 
 CREATE TABLE IF NOT EXISTS agents (
     agent_id       TEXT,
-    name           TEXT,
+    name           TEXT NOT NULL,
     version        TEXT NOT NULL,
     max_jobs       INT NOT NULL,
     ip_address     INET NOT NULL,
