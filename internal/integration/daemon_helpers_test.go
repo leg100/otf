@@ -21,7 +21,6 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
@@ -41,8 +40,6 @@ type (
 		*daemon.Daemon
 		// stub github server for test to use.
 		*github.TestServer
-		// event subscription for test to use.
-		sub <-chan pubsub.Event
 		// releases service to allow tests to download terraform
 		releases.ReleasesService
 	}
@@ -132,9 +129,6 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	sub, err := d.Broker.Subscribe(ctx, "")
-	require.NoError(t, err)
-
 	releasesService := releases.NewService(releases.Options{
 		Logger:          logger,
 		DB:              d.DB,
@@ -145,7 +139,6 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		Daemon:          d,
 		TestServer:      githubServer,
 		ReleasesService: releasesService,
-		sub:             sub,
 	}
 
 	// create a dedicated user account and context for test to use.

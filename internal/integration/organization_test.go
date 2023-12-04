@@ -18,6 +18,8 @@ func TestOrganization(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, defaultOrg, ctx := setup(t, nil)
 		user := userFromContext(t, ctx)
+		sub, unsub := svc.WatchOrganizations()
+		defer unsub()
 		org, err := svc.CreateOrganization(ctx, organization.CreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})
@@ -43,16 +45,15 @@ func TestOrganization(t *testing.T) {
 			})
 		})
 		t.Run("receive events", func(t *testing.T) {
-			<-svc.sub // consume agent creation event
-			assert.Equal(t, pubsub.NewCreatedEvent(defaultOrg), <-svc.sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(defaultOrg), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 		})
 	})
 
 	t.Run("update name", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
-		<-daemon.sub // consume agent creation event
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
+		sub, unsub := daemon.WatchOrganizations()
+		defer unsub()
 
 		want := uuid.NewString()
 		updated, err := daemon.UpdateOrganization(ctx, org.Name, organization.UpdateOptions{
@@ -61,7 +62,7 @@ func TestOrganization(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, want, updated.Name)
-		assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-daemon.sub)
+		assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
@@ -128,12 +129,12 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
-		<-daemon.sub // consume agent creation event
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
+		sub, unsub := daemon.WatchOrganizations()
+		defer unsub()
 
 		err := daemon.DeleteOrganization(ctx, org.Name)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-daemon.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-sub)
 
 		_, err = daemon.GetOrganization(ctx, org.Name)
 		assert.Equal(t, internal.ErrResourceNotFound, err)

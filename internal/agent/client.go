@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
@@ -37,7 +36,6 @@ type (
 		GetLockFile(ctx context.Context, id string) ([]byte, error)
 		UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
-		Watch(context.Context, run.WatchOptions) (<-chan pubsub.Event, error)
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)

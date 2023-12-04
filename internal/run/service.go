@@ -76,8 +76,8 @@ type (
 		// AfterForceCancel allows caller to dispatch actions following the
 		// forced cancelation of a run.
 		AfterForceCancelRun(hook func(context.Context, *Run) error)
-		// SubscribeRunEvents subscribes the caller to a stream of run events.
-		SubscribeRunEvents() (<-chan pubsub.Event[*Run], func())
+		// WatchRuns subscribes the caller to a stream of run events.
+		WatchRuns() (<-chan pubsub.Event[*Run], func())
 
 		lockFileService
 
@@ -210,7 +210,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) SubscribeRunEvents() (<-chan pubsub.Event[*Run], func()) {
+func (s *service) WatchRuns() (<-chan pubsub.Event[*Run], func()) {
 	return s.broker.Subscribe()
 }
 

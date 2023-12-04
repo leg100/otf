@@ -51,6 +51,9 @@ type (
 
 		*sql.DB
 
+		listener *sql.Listener
+		agent    process
+
 		organization.OrganizationService
 		team.TeamService
 		user.UserService
@@ -71,8 +74,6 @@ type (
 		agent.AgentService
 
 		Handlers []internal.Handlers
-
-		agent process
 	}
 
 	process interface {
@@ -424,9 +425,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
 		AgentService:                agentService,
-		Broker:                      broker,
 		DB:                          db,
 		agent:                       agentDaemon,
+		listener:                    listener,
 	}, nil
 }
 
@@ -468,9 +469,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	subsystems := []*Subsystem{
 		{
-			Name:   "broker",
+			Name:   "listener",
 			Logger: d.Logger,
-			System: d.Broker,
+			System: d.listener,
 		},
 		{
 			Name:   "proxy",
@@ -513,7 +514,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive: true,
 			DB:        d.DB,
 			LockID:    internal.Int64(agent.AllocatorLockID),
-			System:    d.NewAllocator(d.Broker),
+			System:    d.NewAllocator(),
 		},
 		{
 			Name:      "agent-manager",
@@ -550,13 +551,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		}
 	}
 
-	// Wait for broker start listening; otherwise some tests may fail
+	// Wait for database events listener start listening; otherwise some tests may fail
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timed out waiting for broker to start")
-	case <-d.Broker.Started():
+		return fmt.Errorf("timed out waiting for database events listener to start")
+	case <-d.listener.Started():
 	}
 	// Wait for agent to register; otherwise some tests may fail
 	select {

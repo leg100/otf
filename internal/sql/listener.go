@@ -17,9 +17,6 @@ import (
 const (
 	defaultChannel = "events"
 
-	// subBufferSize is the buffer size of the channel for each subscription.
-	subBufferSize = 100
-
 	InsertAction = "INSERT"
 	UpdateAction = "UPDATE"
 	DeleteAction = "DELETE"
@@ -65,8 +62,8 @@ func NewListener(logger logr.Logger, db pool) *Listener {
 	}
 }
 
-// Register a table and getter function with the pubsub broker, to enable the broker to
-// convert a database event into an OTF event.
+// RegisterFunc registers a function that is capable of converting database
+// events for the given table into an OTF event.
 func (b *Listener) RegisterFunc(table string, getter ForwardFunc) {
 	b.mu.Lock()
 	defer b.mu.Unlock()

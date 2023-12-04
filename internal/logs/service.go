@@ -17,6 +17,7 @@ type (
 	Service interface {
 		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
 		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
+		WatchLogs() (<-chan pubsub.Event[internal.Chunk], func())
 		internal.PutChunkService
 		Start(context.Context) error
 	}
@@ -68,7 +69,12 @@ func NewService(opts Options) *service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		db.getChunk,
+		func(ctx context.Context, id string, action sql.Action) (internal.Chunk, error) {
+			if action == sql.DeleteAction {
+				return internal.Chunk{ID: id}, nil
+			}
+			return db.getChunk(ctx, id)
+		},
 	)
 	svc.chunkproxy = &proxy{
 		Logger: opts.Logger,
@@ -82,6 +88,10 @@ func NewService(opts Options) *service {
 func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
+}
+
+func (s *service) WatchLogs() (<-chan pubsub.Event[internal.Chunk], func()) {
+	return s.broker.Subscribe()
 }
 
 // GetChunk reads a chunk of logs for a phase.

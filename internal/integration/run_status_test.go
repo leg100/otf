@@ -27,6 +27,10 @@ func TestIntegration_RunStatus(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// watch run events
+	sub, unsub := daemon.WatchRuns()
+	defer unsub()
+
 	// directory for root module
 	root := t.TempDir()
 
@@ -90,17 +94,16 @@ output "cat_name" { value = random_pet.cat.id }
 			require.NoError(t, err)
 
 			// create run and wait for it to reach wanted status
-			_ = daemon.createRun(t, ctx, ws, cv)
-			for event := range daemon.sub {
-				if r, ok := event.Payload.(*run.Run); ok {
-					if r.Status == step.wantStatus {
-						// status matches, now check whether reports match as well
-						assert.Equal(t, &step.wantResourceReport, r.Plan.ResourceReport)
-						assert.Equal(t, &step.wantOutputReport, r.Plan.OutputReport)
-						break
-					}
-					require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)
+			created := daemon.createRun(t, ctx, ws, cv)
+			for event := range sub {
+				r := event.Payload
+				if r.ID == created.ID && r.Status == step.wantStatus {
+					// status matches, now check whether reports match as well
+					assert.Equal(t, &step.wantResourceReport, event.Payload.Plan.ResourceReport)
+					assert.Equal(t, &step.wantOutputReport, r.Plan.OutputReport)
+					break
 				}
+				require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)
 			}
 		})
 	}

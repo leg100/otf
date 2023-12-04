@@ -25,27 +25,36 @@ type Broker[T any] struct {
 	subs   map[chan Event[T]]struct{} // subscriptions
 	mu     sync.Mutex                 // sync access to map
 	getter GetterFunc[T]
+	table  string
 }
 
 // GetterFunc retrieves the type T using its unique id.
 type GetterFunc[T any] func(ctx context.Context, id string, action sql.Action) (T, error)
 
-func NewBroker[T any](logger logr.Logger, listener *sql.Listener, table string, getter GetterFunc[T]) *Broker[T] {
+// databaseListener is the upstream database events listener
+type databaseListener interface {
+	RegisterFunc(table string, ff sql.ForwardFunc)
+}
+
+func NewBroker[T any](logger logr.Logger, listener databaseListener, table string, getter GetterFunc[T]) *Broker[T] {
 	b := &Broker[T]{
 		Logger: logger.WithValues("component", "broker"),
 		subs:   make(map[chan Event[T]]struct{}),
 		getter: getter,
+		table:  table,
 	}
 	listener.RegisterFunc(table, b.forward)
 	return b
 }
 
-// Subscribe subscribes the caller to a stream of events.
+// Subscribe subscribes the caller to a stream of events; the onus is on the
+// caller to use the returned unsubscribe function to remove the subscription.
 func (b *Broker[T]) Subscribe() (<-chan Event[T], func()) {
 	return b.subscribe()
 }
 
-// Subscribe subscribes the caller to a stream of events.
+// SubscribeWithContext subscribes the caller to a stream of events,
+// unsubscribing them when the context is canceled.
 func (b *Broker[T]) SubscribeWithContext(ctx context.Context) <-chan Event[T] {
 	sub, unsub := b.subscribe()
 	// when the context is canceled remove the subscriber
@@ -84,7 +93,7 @@ func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
 	var event Event[T]
 	payload, err := b.getter(ctx, id, action)
 	if err != nil {
-		// log error
+		b.Error(err, "retrieving %s from table %s", id, b.table)
 		return
 	}
 	event.Payload = payload
@@ -96,7 +105,7 @@ func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
 	case sql.DeleteAction:
 		event.Type = DeletedEvent
 	default:
-		// log error and return
+		b.Error(nil, "unknown action", "action", action)
 		return
 	}
 
@@ -115,7 +124,7 @@ func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
 	}
 	b.mu.Unlock()
 
-	// forceably unsubscribe full subscribers and let the client re-subscribe.
+	// forceably unsubscribe full subscribers and leave it them to re-subscribe
 	for _, name := range fullSubscribers {
 		b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", subBufferSize)
 		b.unsubscribe(name)

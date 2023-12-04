@@ -15,22 +15,25 @@ func TestIntegration_StateUI(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 
+	// watch run events
+	sub, unsub := daemon.WatchRuns()
+	defer unsub()
+
 	// create run and wait for it to complete
 	ws := daemon.createWorkspace(t, ctx, org)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	_ = daemon.createRun(t, ctx, ws, cv)
 applied:
-	for event := range daemon.sub {
-		if r, ok := event.Payload.(*run.Run); ok {
-			switch r.Status {
-			case run.RunApplied:
-				break applied
-			case run.RunPlanned:
-				err := daemon.Apply(ctx, r.ID)
-				require.NoError(t, err)
-			case run.RunErrored:
-				t.Fatal("run unexpectedly finished with an error")
-			}
+	for event := range sub {
+		r := event.Payload
+		switch r.Status {
+		case run.RunApplied:
+			break applied
+		case run.RunPlanned:
+			err := daemon.Apply(ctx, r.ID)
+			require.NoError(t, err)
+		case run.RunErrored:
+			t.Fatal("run unexpectedly finished with an error")
 		}
 	}
 

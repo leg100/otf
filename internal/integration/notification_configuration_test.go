@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,6 +17,8 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 		ws := daemon.createWorkspace(t, ctx, org)
+		sub, unsub := daemon.WatchNotificationConfigurations()
+		defer unsub()
 		nc, err := daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
@@ -25,13 +26,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 			URL:             internal.String("http://example.com"),
 		})
 		require.NoError(t, err)
-
-		t.Run("receive events", func(t *testing.T) {
-			<-daemon.sub // consume agent creation event
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-daemon.sub)
-		})
+		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
 	})
 
 	t.Run("update", func(t *testing.T) {
@@ -92,15 +87,14 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
+		sub, unsub := svc.WatchNotificationConfigurations()
+		defer unsub()
 		nc := svc.createNotificationConfig(t, ctx, ws)
-		<-svc.sub // consume agent creation event
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
 
 		err := svc.DeleteNotificationConfiguration(ctx, nc.ID)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-svc.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
 
 		_, err = svc.GetNotificationConfiguration(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
@@ -111,24 +105,21 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
-		<-svc.sub // consume agent creation event
-
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
+		sub, unsub := svc.WatchNotificationConfigurations()
+		defer unsub()
 
 		ws := svc.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
 
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-sub)
 
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-sub)
 
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-svc.sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-svc.sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-svc.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-sub)
 	})
 }

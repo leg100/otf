@@ -42,7 +42,7 @@ type (
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := r.SubscribeRunEvents()
+	sub, unsub := r.WatchRuns()
 	defer unsub()
 
 	for event := range sub {

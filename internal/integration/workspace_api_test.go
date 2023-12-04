@@ -98,17 +98,20 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// watch run events
+	runsSub, runsUnsub := daemon.WatchRuns()
+	defer runsUnsub()
+
 	_, err = daemon.CreateRun(ctx, ws.ID, run.CreateOptions{})
 	require.NoError(t, err)
 
-	for event := range daemon.sub {
-		if r, ok := event.Payload.(*run.Run); ok {
-			if r.Status == run.RunPlanned {
-				// status matches, now check whether reports match as well
-				assert.Equal(t, &run.Report{Additions: 2}, r.Plan.ResourceReport)
-				break
-			}
-			require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)
+	for event := range runsSub {
+		r := event.Payload
+		if r.Status == run.RunPlanned {
+			// status matches, now check whether reports match as well
+			assert.Equal(t, &run.Report{Additions: 2}, r.Plan.ResourceReport)
+			break
 		}
+		require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)
 	}
 }

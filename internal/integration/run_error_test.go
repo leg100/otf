@@ -76,6 +76,14 @@ func TestRunError(t *testing.T) {
 			err = daemon.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
+			// watch run events
+			runsSub, runsUnsub := daemon.WatchRuns()
+			defer runsUnsub()
+
+			// watch log events
+			logsSub, logsUnsub := daemon.WatchLogs()
+			defer logsUnsub()
+
 			// create run
 			_ = daemon.createRun(t, ctx, ws, cv)
 
@@ -87,14 +95,14 @@ func TestRunError(t *testing.T) {
 			)
 			errorRegex := regexp.MustCompile(`Error: exit status 1: Error: Invalid resource type on main.tf line 5, in resource "null_resourc" "e2e": 5: resource "null_resourc" "e2e" {} The provider hashicorp/null does not support resource type "null_resourc". Did you mean "null_resource"?`)
 			require.NoError(t, err)
-			for event := range daemon.sub {
-				switch payload := event.Payload.(type) {
-				case internal.Chunk:
-					if errorRegex.Match(payload.Data) {
+			for {
+				select {
+				case event := <-logsSub:
+					if errorRegex.Match(event.Payload.Data) {
 						gotErrorLogs = true
 					}
-				case *run.Run:
-					if payload.Status == run.RunErrored {
+				case event := <-runsSub:
+					if event.Payload.Status == run.RunErrored {
 						gotErrorStatus = true
 					}
 				}

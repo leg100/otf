@@ -16,9 +16,7 @@ const AllocatorLockID int64 = 5577006791947779412
 // allocator allocates jobs to agents. Only one allocator must be active on
 // an OTF cluster at any one time.
 type allocator struct {
-	// Subscriber for receiving stream of job and agent events
-	pubsub.Subscriber
-	// service for seeding allocator with pools, agents, and jobs, and for
+	// service for seeding and streaming pools, agents, and jobs, and for
 	// allocating jobs to agents.
 	Service
 	// cache of agent pools
@@ -31,13 +29,14 @@ type allocator struct {
 
 // Start the allocator. Should be invoked in a go routine.
 func (a *allocator) Start(ctx context.Context) error {
-	// Subscribe to job and agent events and unsubscribe before returning.
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	sub, err := a.Subscribe(ctx, "job-allocator-")
-	if err != nil {
-		return err
-	}
+	// Subscribe to pool, job and agent events and unsubscribe before returning.
+	poolsSub, poolsUnsub := a.watchAgentPools()
+	defer poolsUnsub()
+	agentsSub, agentsUnsub := a.watchAgents()
+	defer agentsUnsub()
+	jobsSub, jobsUnsub := a.watchJobs()
+	defer jobsUnsub()
+
 	// seed allocator with pools, agents, and jobs
 	pools, err := a.listAllAgentPools(ctx)
 	if err != nil {
@@ -52,38 +51,48 @@ func (a *allocator) Start(ctx context.Context) error {
 		return err
 	}
 	a.seed(pools, agents, jobs)
+
 	// allocate jobs to agents
 	a.allocate(ctx)
+
 	// consume events until subscriber channel is closed, and allocate jobs.
-	for event := range sub {
-		switch payload := event.Payload.(type) {
-		case *Pool:
-			switch event.Type {
-			case pubsub.DeletedEvent:
-				delete(a.pools, payload.ID)
-			default:
-				a.pools[payload.ID] = payload
+	for {
+		select {
+		case event, open := <-poolsSub:
+			if !open {
+				return pubsub.ErrSubscriptionTerminated
 			}
-		case *Agent:
 			switch event.Type {
 			case pubsub.DeletedEvent:
-				delete(a.agents, payload.ID)
+				delete(a.pools, event.Payload.ID)
 			default:
-				a.agents[payload.ID] = payload
+				a.pools[event.Payload.ID] = event.Payload
 			}
-		case *Job:
+		case event, open := <-agentsSub:
+			if !open {
+				return pubsub.ErrSubscriptionTerminated
+			}
 			switch event.Type {
 			case pubsub.DeletedEvent:
-				delete(a.jobs, payload.Spec)
+				delete(a.agents, event.Payload.ID)
 			default:
-				a.jobs[payload.Spec] = payload
+				a.agents[event.Payload.ID] = event.Payload
+			}
+		case event, open := <-jobsSub:
+			if !open {
+				return pubsub.ErrSubscriptionTerminated
+			}
+			switch event.Type {
+			case pubsub.DeletedEvent:
+				delete(a.jobs, event.Payload.Spec)
+			default:
+				a.jobs[event.Payload.Spec] = event.Payload
 			}
 		}
 		if err := a.allocate(ctx); err != nil {
 			return err
 		}
 	}
-	return pubsub.ErrSubscriptionTerminated
 }
 
 func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {

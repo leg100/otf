@@ -26,7 +26,7 @@ type (
 	AgentService = Service
 
 	Service interface {
-		NewAllocator(pubsub.Subscriber) *allocator
+		NewAllocator() *allocator
 		NewManager() *manager
 
 		CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
@@ -62,15 +62,17 @@ type (
 
 	service struct {
 		logr.Logger
-		pubsub.Subscriber
 		otfrun.RunService
 		workspace.WorkspaceService
 
 		organization internal.Authorizer
 
-		tfeapi *tfe
-		api    *api
-		web    *webHandlers
+		tfeapi      *tfe
+		api         *api
+		web         *webHandlers
+		poolBroker  pubsub.SubscriptionService[*Pool]
+		agentBroker pubsub.SubscriptionService[*Agent]
+		jobBroker   pubsub.SubscriptionService[*Job]
 
 		db *db
 		*registrar
@@ -80,7 +82,7 @@ type (
 	ServiceOptions struct {
 		logr.Logger
 		*sql.DB
-		*pubsub.Broker
+		*sql.Listener
 		html.Renderer
 		*tfeapi.Responder
 		otfrun.RunService
@@ -92,7 +94,6 @@ type (
 func NewService(opts ServiceOptions) *service {
 	svc := &service{
 		Logger:           opts.Logger,
-		Subscriber:       opts.Broker,
 		RunService:       opts.RunService,
 		WorkspaceService: opts.WorkspaceService,
 		db:               &db{DB: opts.DB},
@@ -118,31 +119,43 @@ func NewService(opts ServiceOptions) *service {
 	svc.registrar = &registrar{
 		service: svc,
 	}
-	// permit broker to transform database trigger events into agent pool events
-	opts.Broker.Register("agent_pools", pubsub.GetterFunc(func(ctx context.Context, poolID string, action pubsub.DBAction) (any, error) {
-		if action == pubsub.DeleteDBAction {
-			return &Agent{ID: poolID}, nil
-		}
-		return svc.getAgentPool(ctx, poolID)
-	}))
-	// permit broker to transform database trigger events into agent events
-	opts.Broker.Register("agents", pubsub.GetterFunc(func(ctx context.Context, agentID string, action pubsub.DBAction) (any, error) {
-		if action == pubsub.DeleteDBAction {
-			return &Agent{ID: agentID}, nil
-		}
-		return svc.getAgent(ctx, agentID)
-	}))
-	// permit broker to transform database trigger events into job events
-	opts.Broker.Register("jobs", pubsub.GetterFunc(func(ctx context.Context, jobspecString string, action pubsub.DBAction) (any, error) {
-		spec, err := jobSpecFromString(jobspecString)
-		if err != nil {
-			return nil, err
-		}
-		if action == pubsub.DeleteDBAction {
-			return &Job{Spec: spec}, nil
-		}
-		return svc.getJob(ctx, spec)
-	}))
+	svc.poolBroker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"agent_pools",
+		func(ctx context.Context, id string, action sql.Action) (*Pool, error) {
+			if action == sql.DeleteAction {
+				return &Pool{ID: id}, nil
+			}
+			return svc.db.getPool(ctx, id)
+		},
+	)
+	svc.agentBroker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"agents",
+		func(ctx context.Context, id string, action sql.Action) (*Agent, error) {
+			if action == sql.DeleteAction {
+				return &Agent{ID: id}, nil
+			}
+			return svc.db.getAgent(ctx, id)
+		},
+	)
+	svc.jobBroker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"jobs",
+		func(ctx context.Context, specStr string, action sql.Action) (*Job, error) {
+			spec, err := jobSpecFromString(specStr)
+			if err != nil {
+				return nil, err
+			}
+			if action == sql.DeleteAction {
+				return &Job{Spec: spec}, nil
+			}
+			return svc.db.getJob(ctx, spec)
+		},
+	)
 	// create jobs when a plan or apply is enqueued
 	opts.AfterEnqueuePlan(svc.createJob)
 	opts.AfterEnqueueApply(svc.createJob)
@@ -201,10 +214,9 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) NewAllocator(subscriber pubsub.Subscriber) *allocator {
+func (s *service) NewAllocator() *allocator {
 	return &allocator{
-		Subscriber: subscriber,
-		Service:    s,
+		Service: s,
 	}
 }
 
@@ -363,6 +375,18 @@ func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 		return nil
 	}
 	return ErrWorkspaceNotAllowedToUsePool
+}
+
+func (s *service) watchAgentPools() (<-chan pubsub.Event[*Pool], func()) {
+	return s.poolBroker.Subscribe()
+}
+
+func (s *service) watchAgents() (<-chan pubsub.Event[*Agent], func()) {
+	return s.agentBroker.Subscribe()
+}
+
+func (s *service) watchJobs() (<-chan pubsub.Event[*Job], func()) {
+	return s.jobBroker.Subscribe()
 }
 
 func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
@@ -536,13 +560,8 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 		return nil, internal.ErrAccessNotPermitted
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	// close subscription before returning
-	defer cancel()
-	sub, err := s.Subscribe(ctx, "get-agent-jobs-"+agentID+"-")
-	if err != nil {
-		return nil, err
-	}
+	sub, unsub := s.watchJobs()
+	defer unsub()
 	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, agentID)
 	if err != nil {
 		return nil, err
@@ -553,10 +572,7 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 	}
 	// wait for a job matching criteria to arrive:
 	for event := range sub {
-		job, ok := event.Payload.(*Job)
-		if !ok {
-			continue
-		}
+		job := event.Payload
 		if job.AgentID == nil || *job.AgentID != agentID {
 			continue
 		}
