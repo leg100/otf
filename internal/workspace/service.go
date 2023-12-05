@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
-	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -38,9 +37,9 @@ type (
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
-		BeforeCreateWorkspace(l hooks.Listener[*Workspace])
-		AfterCreateWorkspace(l hooks.Listener[*Workspace])
-		BeforeUpdateWorkspace(l hooks.Listener[*Workspace])
+		BeforeCreateWorkspace(hook func(context.Context, *Workspace) error)
+		AfterCreateWorkspace(hook func(context.Context, *Workspace) error)
+		BeforeUpdateWorkspace(hook func(context.Context, *Workspace) error)
 
 		LockService
 		PermissionsService
@@ -61,8 +60,9 @@ type (
 		api    *api
 		broker *pubsub.Broker[*Workspace]
 
-		createHook *hooks.Hook[*Workspace]
-		updateHook *hooks.Hook[*Workspace]
+		beforeCreateHooks []func(context.Context, *Workspace) error
+		afterCreateHooks  []func(context.Context, *Workspace) error
+		beforeUpdateHooks []func(context.Context, *Workspace) error
 	}
 
 	Options struct {
@@ -90,8 +90,6 @@ func NewService(opts Options) *service {
 		ConnectionService: opts.ConnectionService,
 		organization:      &organization.Authorizer{Logger: opts.Logger},
 		site:              &internal.SiteAuthorizer{Logger: opts.Logger},
-		createHook:        hooks.NewHook[*Workspace](opts.DB),
-		updateHook:        hooks.NewHook[*Workspace](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
@@ -133,18 +131,6 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) BeforeCreateWorkspace(l hooks.Listener[*Workspace]) {
-	s.createHook.Before(l)
-}
-
-func (s *service) AfterCreateWorkspace(l hooks.Listener[*Workspace]) {
-	s.createHook.After(l)
-}
-
-func (s *service) BeforeUpdateWorkspace(l hooks.Listener[*Workspace]) {
-	s.updateHook.Before(l)
-}
-
 func (s *service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
 	return s.broker.Subscribe(ctx)
 }
@@ -161,25 +147,35 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		return nil, err
 	}
 
-	err = s.createHook.Dispatch(ctx, ws, func(ctx context.Context) (*Workspace, error) {
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		for _, hook := range s.beforeCreateHooks {
+			if err := hook(ctx, ws); err != nil {
+				return err
+			}
+		}
 		if err := s.db.create(ctx, ws); err != nil {
-			return nil, err
+			return err
 		}
 		// Optionally connect workspace to repo.
 		if ws.Connection != nil {
 			if err := s.connect(ctx, ws.ID, ws.Connection); err != nil {
-				return nil, err
+				return err
 			}
 		}
 		// Optionally create tags.
 		if len(opts.Tags) > 0 {
 			added, err := s.addTags(ctx, ws, opts.Tags)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			ws.Tags = added
 		}
-		return ws, nil
+		for _, hook := range s.afterCreateHooks {
+			if err := hook(ctx, ws); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		s.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
@@ -189,6 +185,14 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
 	return ws, nil
+}
+
+func (s *service) BeforeCreateWorkspace(hook func(context.Context, *Workspace) error) {
+	s.beforeCreateHooks = append(s.beforeCreateHooks, hook)
+}
+
+func (s *service) AfterCreateWorkspace(hook func(context.Context, *Workspace) error) {
+	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
 func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
@@ -257,6 +261,10 @@ func (s *service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, re
 	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 
+func (s *service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) error) {
+	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
+}
+
 func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
@@ -268,6 +276,11 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		var connect *bool
 		updated, err = s.db.update(ctx, workspaceID, func(ws *Workspace) (err error) {
+			for _, hook := range s.beforeUpdateHooks {
+				if err := hook(ctx, ws); err != nil {
+					return err
+				}
+			}
 			connect, err = ws.Update(opts)
 			return err
 		})

@@ -67,6 +67,25 @@ type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
 }
 
+func (db *pgdb) create(ctx context.Context, org *Organization) error {
+	_, err := db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
+		ID:                         sql.String(org.ID),
+		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
+		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
+		Name:                       sql.String(org.Name),
+		SessionRemember:            sql.Int4Ptr(org.SessionRemember),
+		SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
+		Email:                      sql.StringPtr(org.Email),
+		CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
+		CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
+		AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
+	})
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
 	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
