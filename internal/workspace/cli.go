@@ -14,7 +14,7 @@ type CLI struct {
 	Service
 }
 
-func NewCommand(api *otfapi.Client) *cobra.Command {
+func NewCommand(client *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "workspaces",
@@ -23,7 +23,7 @@ func NewCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{Client: api}
+			cli.Service = &Client{Client: client}
 			return nil
 		},
 	}
@@ -106,7 +106,8 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 	var (
 		organization string
 		opts         UpdateOptions
-		mode         *string
+		mode         string
+		poolID       string
 	)
 
 	cmd := &cobra.Command{
@@ -117,29 +118,27 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-
-			if mode != nil && *mode != "" {
-				opts.ExecutionMode = (*ExecutionMode)(mode)
+			if mode != "" {
+				opts.ExecutionMode = (*ExecutionMode)(&mode)
 			}
-
+			if poolID != "" {
+				opts.AgentPoolID = &poolID
+			}
 			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
-			ws, err = a.UpdateWorkspace(cmd.Context(), ws.ID, opts)
+			_, err = a.UpdateWorkspace(cmd.Context(), ws.ID, opts)
 			if err != nil {
 				return err
 			}
-
-			if opts.ExecutionMode != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode)
-			}
-
+			fmt.Fprintln(cmd.OutOrStdout(), "updated workspace")
 			return nil
 		},
 	}
 
-	mode = cmd.Flags().StringP("execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
+	cmd.Flags().StringVarP(&mode, "execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
+	cmd.Flags().StringVar(&poolID, "agent-pool-id", "", "ID of the agent pool to use for runs. Required if execution-mode is set to agent.")
 
 	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")

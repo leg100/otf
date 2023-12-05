@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -49,15 +49,14 @@ func TestIntegration_RunCancel(t *testing.T) {
 
 	// start an external agent (it's the only way to specify a separate bin
 	// directory currently).
-	daemon.startAgent(t, ctx, org.Name, remoteops.AgentConfig{
-		Config: remoteops.Config{TerraformBinDir: bins},
-	})
+	agent, _ := daemon.startAgent(t, ctx, org.Name, "", "", agent.Config{TerraformBinDir: bins})
 
 	// create workspace specifying that it use an external agent.
 	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:          internal.String("ws-1"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
+		AgentPoolID:   internal.String(*agent.AgentPoolID),
 	})
 	require.NoError(t, err)
 
@@ -77,7 +76,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 	require.Equal(t, "started", <-got)
 
 	// we can now send interrupt
-	_, err = daemon.Cancel(ctx, r.ID)
+	err = daemon.Cancel(ctx, r.ID)
 	require.NoError(t, err)
 
 	// fake bin has received interrupt

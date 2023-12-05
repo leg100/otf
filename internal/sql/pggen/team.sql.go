@@ -46,12 +46,12 @@ type InsertTeamParams struct {
 	OrganizationName                pgtype.Text
 	Visibility                      pgtype.Text
 	SSOTeamID                       pgtype.Text
-	PermissionManageWorkspaces      bool
-	PermissionManageVCS             bool
-	PermissionManageModules         bool
-	PermissionManageProviders       bool
-	PermissionManagePolicies        bool
-	PermissionManagePolicyOverrides bool
+	PermissionManageWorkspaces      pgtype.Bool
+	PermissionManageVCS             pgtype.Bool
+	PermissionManageModules         pgtype.Bool
+	PermissionManageProviders       pgtype.Bool
+	PermissionManagePolicies        pgtype.Bool
+	PermissionManagePolicyOverrides pgtype.Bool
 }
 
 // InsertTeam implements Querier.InsertTeam.
@@ -87,15 +87,15 @@ type FindTeamsByOrgRow struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 // FindTeamsByOrg implements Querier.FindTeamsByOrg.
@@ -156,15 +156,15 @@ type FindTeamByNameRow struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 // FindTeamByName implements Querier.FindTeamByName.
@@ -202,15 +202,15 @@ type FindTeamByIDRow struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 // FindTeamByID implements Querier.FindTeamByID.
@@ -249,15 +249,15 @@ type FindTeamByTokenIDRow struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 // FindTeamByTokenID implements Querier.FindTeamByTokenID.
@@ -296,15 +296,15 @@ type FindTeamByIDForUpdateRow struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 // FindTeamByIDForUpdate implements Querier.FindTeamByIDForUpdate.
@@ -351,12 +351,12 @@ type UpdateTeamByIDParams struct {
 	Name                            pgtype.Text
 	Visibility                      pgtype.Text
 	SSOTeamID                       pgtype.Text
-	PermissionManageWorkspaces      bool
-	PermissionManageVCS             bool
-	PermissionManageModules         bool
-	PermissionManageProviders       bool
-	PermissionManagePolicies        bool
-	PermissionManagePolicyOverrides bool
+	PermissionManageWorkspaces      pgtype.Bool
+	PermissionManageVCS             pgtype.Bool
+	PermissionManageModules         pgtype.Bool
+	PermissionManageProviders       pgtype.Bool
+	PermissionManagePolicies        pgtype.Bool
+	PermissionManagePolicyOverrides pgtype.Bool
 	TeamID                          pgtype.Text
 }
 

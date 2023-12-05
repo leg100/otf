@@ -1,22 +1,8 @@
 package pubsub
 
-import (
-	"context"
-)
+import "github.com/leg100/otf/internal/sql"
 
-type (
-	fakePool struct {
-		pool
-	}
-	fakeGetter struct {
-		fake *fakeType
-	}
-	fakeType struct {
-		ID    string `json:"id"`
-		Stuff []byte `json:"stuff"`
-	}
-)
+type fakeListener struct{}
 
-func (f *fakeGetter) GetByID(context.Context, string, DBAction) (any, error) {
-	return f.fake, nil
+func (f *fakeListener) RegisterFunc(table string, ff sql.ForwardFunc) {
 }

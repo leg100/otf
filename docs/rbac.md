@@ -10,7 +10,7 @@ A user is created via one of several methods:
 * A site admin creates a user via the CLI/API.
 * If a user is added to a team and no user with the specified username exists.
 
-A user without team membership has no permissions other than the ability to create organizations (which can be [disabled](../config/flags/#-restrict-org-creation)).
+A user without team membership has no permissions other than the ability to create organizations (which can be [disabled](./config/flags.md#-restrict-org-creation)).
 
 ## Teams
 
@@ -52,5 +52,5 @@ See the [TFC/TFE documentation](https://developer.hashicorp.com/terraform/cloud-
 
 Site admins possesses supreme privileges across an OTF cluster. There are two ways to assume the role:
 
-* Use a [site token](../config/flags/#-site-token) to login as the `site-admin` user
-* Promote users to the role using the [`--site-admins` flag](../config/flags/#-site-admins)
+* Use a [site token](./config/flags.md#-site-token) to login as the `site-admin` user
+* Promote users to the role using the [`--site-admins` flag](./config/flags.md#-site-admins)

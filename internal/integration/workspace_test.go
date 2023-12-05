@@ -22,6 +22,10 @@ func TestWorkspace(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
+		// watch workspace events
+		sub, unsub := daemon.WatchWorkspaces(ctx)
+		defer unsub()
+
 		ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: internal.String(org.Name),
@@ -37,8 +41,7 @@ func TestWorkspace(t *testing.T) {
 		})
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 		})
 	})
 
@@ -126,16 +129,20 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
+
+		// watch workspace events
+		sub, unsub := daemon.WatchWorkspaces(ctx)
+		defer unsub()
+
 		ws := daemon.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 
 		got, err := daemon.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
 			Description: internal.String("updated description"),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, "updated description", got.Description)
-		assert.Equal(t, pubsub.NewUpdatedEvent(got), <-daemon.sub)
+		assert.Equal(t, pubsub.NewUpdatedEvent(got), <-sub)
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
@@ -405,13 +412,17 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
+
+		// watch workspace events
+		sub, unsub := daemon.WatchWorkspaces(ctx)
+		defer unsub()
+
 		ws := daemon.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 
 		_, err := daemon.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-daemon.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
 
 		results, err := daemon.ListWorkspaces(ctx, workspace.ListOptions{Organization: internal.String(ws.Organization)})
 		require.NoError(t, err)

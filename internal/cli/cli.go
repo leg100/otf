@@ -8,9 +8,9 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
@@ -22,13 +22,13 @@ import (
 
 // CLI is the `otf` cli application
 type CLI struct {
-	api   *api.Client
-	creds CredentialsStore
+	client *api.Client
+	creds  CredentialsStore
 }
 
 func NewCLI() *CLI {
 	return &CLI{
-		api: &api.Client{},
+		client: &api.Client{},
 	}
 }
 
@@ -54,14 +54,14 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.SetArgs(args)
 	cmd.SetOut(out)
 
-	cmd.AddCommand(organization.NewCommand(a.api))
-	cmd.AddCommand(user.NewUserCommand(a.api))
-	cmd.AddCommand(user.NewTeamMembershipCommand(a.api))
-	cmd.AddCommand(team.NewTeamCommand(a.api))
-	cmd.AddCommand(workspace.NewCommand(a.api))
-	cmd.AddCommand(run.NewCommand(a.api))
-	cmd.AddCommand(state.NewCommand(a.api))
-	cmd.AddCommand(remoteops.NewAgentsCommand(a.api))
+	cmd.AddCommand(organization.NewCommand(a.client))
+	cmd.AddCommand(user.NewUserCommand(a.client))
+	cmd.AddCommand(user.NewTeamMembershipCommand(a.client))
+	cmd.AddCommand(team.NewTeamCommand(a.client))
+	cmd.AddCommand(workspace.NewCommand(a.client))
+	cmd.AddCommand(run.NewCommand(a.client))
+	cmd.AddCommand(state.NewCommand(a.client))
+	cmd.AddCommand(agent.NewAgentsCommand(a.client))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
@@ -91,7 +91,7 @@ func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
-		*a.api = *httpClient
+		*a.client = *httpClient
 		return nil
 	}
 }

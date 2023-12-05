@@ -41,6 +41,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/force-cancel", h.forceCancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
@@ -221,18 +222,27 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.GetRun(r.Context(), runID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = h.svc.Cancel(r.Context(), runID)
-	if err != nil {
+	if err := h.svc.Cancel(r.Context(), runID); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, paths.Runs(run.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+}
+
+func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	if err := h.svc.ForceCancelRun(r.Context(), runID); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
@@ -327,12 +337,6 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			run, ok := event.Payload.(*Run)
-			if !ok {
-				// skip non-run events
-				continue
-			}
-
 			// Handle query parameters which filter run events:
 			// - 'latest' specifies that the client is only interest in events
 			// relating to the latest run for the workspace
@@ -341,10 +345,10 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			// run.
 			// - otherwise, if neither of those parameters are specified
 			// then events for all runs are relayed.
-			if params.Latest && !run.Latest {
+			if params.Latest && !event.Payload.Latest {
 				// skip: run is not the latest run for a workspace
 				continue
-			} else if params.RunID != "" && params.RunID != run.ID {
+			} else if params.RunID != "" && params.RunID != event.Payload.ID {
 				// skip: event is for a run which does not match the
 				// filter
 				continue
@@ -354,7 +358,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			// render HTML snippet and send as payload in SSE events
 			//
 			itemHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
+			if err := h.RenderTemplate("run_item.tmpl", itemHTML, event.Payload); err != nil {
 				h.logger.Error(err, "rendering template for run item")
 				continue
 			}
@@ -363,7 +367,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
 			} else {
 				// updated run events target existing run items in page
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+event.Payload.ID), false)
 			}
 			if params.Latest {
 				// also write a 'latest-run' event if the caller has requested

@@ -80,7 +80,7 @@ The tests require the following environment variables:
 * `OAUTH_CLIENT_GITHUB_TOKEN`: a personal access token with permissions to create webhooks on the above repo.
 
 !!! note
-    You can instead manually invoke API tests using the scripts in `./hack`. The tests first require `otfd` to be running at `https://localhost:8080`, with a [site token](../config/flags/#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.
+    You can instead manually invoke API tests using the scripts in `./hack`. The tests first require `otfd` to be running at `https://localhost:8080`, with a [site token](./config/flags.md#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.
 
 !!! note
     The tests create webhooks on the github repository specified in `GITHUB_POLICY_SET_IDENTIFIER`. The tests should delete the webhooks once they're finished. However, should the tests fail and/or panic, then the webhooks won't be deleted and you'll quickly run into the maximum limit of 20 webhooks Github imposes and you'll need to delete them manually.

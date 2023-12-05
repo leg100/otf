@@ -20,14 +20,14 @@ type (
 		Value       pgtype.Text `json:"value"`
 		Description pgtype.Text `json:"description"`
 		Category    pgtype.Text `json:"category"`
-		Sensitive   bool        `json:"sensitive"`
-		HCL         bool        `json:"hcl"`
+		Sensitive   pgtype.Bool `json:"sensitive"`
+		HCL         pgtype.Bool `json:"hcl"`
 		VersionID   pgtype.Text `json:"version_id"`
 	}
 
 	variableSetRow struct {
 		VariableSetID    pgtype.Text       `json:"variable_set_id"`
-		Global           bool              `json:"global"`
+		Global           pgtype.Bool       `json:"global"`
 		Name             pgtype.Text       `json:"name"`
 		Description      pgtype.Text       `json:"description"`
 		OrganizationName pgtype.Text       `json:"organization_name"`
@@ -43,8 +43,8 @@ func (row variableRow) convert() *Variable {
 		Value:       row.Value.String,
 		Description: row.Description.String,
 		Category:    VariableCategory(row.Category.String),
-		Sensitive:   row.Sensitive,
-		HCL:         row.HCL,
+		Sensitive:   row.Sensitive.Bool,
+		HCL:         row.HCL.Bool,
 		VersionID:   row.VersionID.String,
 	}
 }
@@ -52,7 +52,7 @@ func (row variableRow) convert() *Variable {
 func (row variableSetRow) convert() *VariableSet {
 	set := &VariableSet{
 		ID:           row.VariableSetID.String,
-		Global:       row.Global,
+		Global:       row.Global.Bool,
 		Description:  row.Description.String,
 		Name:         row.Name.String,
 		Organization: row.OrganizationName.String,
@@ -118,7 +118,7 @@ func (pdb *pgdb) createVariableSet(ctx context.Context, set *VariableSet) error 
 		VariableSetID:    sql.String(set.ID),
 		Name:             sql.String(set.Name),
 		Description:      sql.String(set.Description),
-		Global:           set.Global,
+		Global:           sql.Bool(set.Global),
 		OrganizationName: sql.String(set.Organization),
 	})
 	return sql.Error(err)
@@ -129,7 +129,7 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, set *VariableSet) error 
 		_, err := q.UpdateVariableSetByID(ctx, pggen.UpdateVariableSetByIDParams{
 			Name:          sql.String(set.Name),
 			Description:   sql.String(set.Description),
-			Global:        set.Global,
+			Global:        sql.Bool(set.Global),
 			VariableSetID: sql.String(set.ID),
 		})
 		if err != nil {
@@ -250,9 +250,9 @@ func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
 		Value:       sql.String(v.Value),
 		Description: sql.String(v.Description),
 		Category:    sql.String(string(v.Category)),
-		Sensitive:   v.Sensitive,
+		Sensitive:   sql.Bool(v.Sensitive),
 		VersionID:   sql.String(v.VersionID),
-		HCL:         v.HCL,
+		HCL:         sql.Bool(v.HCL),
 	})
 	return sql.Error(err)
 }
@@ -264,9 +264,9 @@ func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {
 		Value:       sql.String(v.Value),
 		Description: sql.String(v.Description),
 		Category:    sql.String(string(v.Category)),
-		Sensitive:   v.Sensitive,
+		Sensitive:   sql.Bool(v.Sensitive),
 		VersionID:   sql.String(v.VersionID),
-		HCL:         v.HCL,
+		HCL:         sql.Bool(v.HCL),
 	})
 	return sql.Error(err)
 }

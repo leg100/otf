@@ -4,16 +4,16 @@ package paths
 
 import "fmt"
 
-func AgentTokens(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agent-tokens", organization)
+func AgentTokens(agentPool string) string {
+	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens", agentPool)
 }
 
-func CreateAgentToken(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agent-tokens/create", organization)
+func CreateAgentToken(agentPool string) string {
+	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens/create", agentPool)
 }
 
-func NewAgentToken(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agent-tokens/new", organization)
+func NewAgentToken(agentPool string) string {
+	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens/new", agentPool)
 }
 
 func AgentToken(agentToken string) string {

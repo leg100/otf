@@ -62,28 +62,28 @@ If developer mode were disabled, you would need to re-build the `otfd` binary an
 * System: `otfd`
 * Default: ""
 
-Github OAuth Client ID. Set this flag along with [--github-client-secret](#-github-client-secret) to enable [Github authentication](../../auth/providers/github).
+Github OAuth Client ID. Set this flag along with [--github-client-secret](#-github-client-secret) to enable [Github authentication](../auth/providers/github.md).
 
 ## `--github-client-secret`
 
 * System: `otfd`
 * Default: ""
 
-Github OAuth client secret. Set this flag along with [--github-client-id](#-github-client-id) to enable [Github authentication](../../auth/providers/github).
+Github OAuth client secret. Set this flag along with [--github-client-id](#-github-client-id) to enable [Github authentication](../auth/providers/github.md).
 
 ## `--gitlab-client-id`
 
 * System: `otfd`
 * Default: ""
 
-Gitlab OAuth Client ID. Set this flag along with [--gitlab-client-secret](#-gitlab-client-secret) to enable [Gitlab authentication](../../auth/providers/gitlab).
+Gitlab OAuth Client ID. Set this flag along with [--gitlab-client-secret](#-gitlab-client-secret) to enable [Gitlab authentication](../auth/providers/gitlab.md).
 
 ## `--gitlab-client-secret`
 
 * System: `otfd`
 * Default: ""
 
-Gitlab OAuth client secret. Set this flag along with [--gitlab-client-id](#-gitlab-client-id) to enable [Gitlab authentication](../../auth/providers/gitlab).
+Gitlab OAuth client secret. Set this flag along with [--gitlab-client-id](#-gitlab-client-id) to enable [Gitlab authentication](../auth/providers/gitlab.md).
 
 ## `--google-jwt-audience`
 
@@ -91,7 +91,7 @@ Gitlab OAuth client secret. Set this flag along with [--gitlab-client-id](#-gitl
 * Default: ""
 
 The Google JWT audience claim for validation. If unspecified then the audience
-claim is not validated. See the [Google IAP](../../auth/providers/iap#verification) document for more details.
+claim is not validated. See the [Google IAP](../auth/providers/iap.md#verification) document for more details.
 
 ## `--hostname`
 
@@ -130,14 +130,14 @@ Maximum permitted configuration upload size. This refers to the size of the (com
 * System: `otfd`
 * Default: ""
 
-OIDC Client ID. Set this flag along with [--oidc-client-secret](#-oidc-client-secret) to enable [OIDC authentication](../../auth/providers/oidc).
+OIDC Client ID. Set this flag along with [--oidc-client-secret](#-oidc-client-secret) to enable [OIDC authentication](../auth/providers/oidc.md).
 
 ## `--oidc-client-secret`
 
 * System: `otfd`
 * Default: ""
 
-OIDC Client Secret. Set this flag along with [--oidc-client-id](#-oidc-client-id) to enable [OIDC authentication](../../auth/providers/oidc).
+OIDC Client Secret. Set this flag along with [--oidc-client-id](#-oidc-client-id) to enable [OIDC authentication](../auth/providers/oidc.md).
 
 ## `--oidc-issuer-url`
 
@@ -216,7 +216,7 @@ Users are automatically created if they don't exist already.
 * System: `otfd`
 * Default: ""
 
-The site token for authenticating with the [`site-admin`](../../auth/site_admin) user, e.g.:
+The site token for authenticating with the built-in [`site-admin`](../auth/site_admins.md) user, e.g.:
 
 ```bash
 otfd --site-token=643f57a1016cdde7e7e39914785d36d61fd

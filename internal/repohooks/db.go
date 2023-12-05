@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcs"
@@ -28,18 +27,6 @@ type (
 		VCSKind       pgtype.Text `json:"vcs_kind"`
 	}
 )
-
-// GetByID implements pubsub.Getter
-func (db *db) GetByID(ctx context.Context, rawID string, action pubsub.DBAction) (any, error) {
-	id, err := uuid.Parse(rawID)
-	if err != nil {
-		return nil, err
-	}
-	if action == pubsub.DeleteDBAction {
-		return &hook{id: id}, nil
-	}
-	return db.getHookByID(ctx, id)
-}
 
 // getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.

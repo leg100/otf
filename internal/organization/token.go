@@ -69,7 +69,7 @@ func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string
 	// can perform most actions in an organization, so it is easier to first refuse
 	// access to those actions it CANNOT perform.
 	switch action {
-	case rbac.GetRunAction, rbac.ListRunsAction, rbac.ApplyRunAction, rbac.CreateRunAction, rbac.DiscardRunAction, rbac.CancelRunAction, rbac.EnqueuePlanAction, rbac.StartPhaseAction, rbac.FinishPhaseAction, rbac.PutChunkAction, rbac.TailLogsAction, rbac.CreateStateVersionAction, rbac.RollbackStateVersionAction:
+	case rbac.GetRunAction, rbac.ListRunsAction, rbac.ApplyRunAction, rbac.CreateRunAction, rbac.DiscardRunAction, rbac.CancelRunAction, rbac.ForceCancelRunAction, rbac.EnqueuePlanAction, rbac.PutChunkAction, rbac.TailLogsAction, rbac.CreateStateVersionAction, rbac.RollbackStateVersionAction:
 		return false
 	}
 	return true

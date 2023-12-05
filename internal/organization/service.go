@@ -7,7 +7,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
@@ -28,8 +27,8 @@ type (
 		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
-		AfterCreateOrganization(l hooks.Listener[*Organization])
-		BeforeDeleteOrganization(l hooks.Listener[*Organization])
+		AfterCreateOrganization(hook func(context.Context, *Organization) error)
+		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
 
 		// organization tokens
 		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
@@ -37,6 +36,7 @@ type (
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
 		DeleteOrganizationToken(ctx context.Context, organization string) error
+		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}
 
@@ -45,7 +45,6 @@ type (
 
 		internal.Authorizer // authorize access to org
 		logr.Logger
-		*pubsub.Broker
 
 		db           *pgdb
 		site         internal.Authorizer // authorize access to site
@@ -53,9 +52,10 @@ type (
 		tfeapi       *tfe
 		api          *api
 		tokenFactory *tokenFactory
+		broker       *pubsub.Broker[*Organization]
 
-		createHook *hooks.Hook[*Organization]
-		deleteHook *hooks.Hook[*Organization]
+		afterCreateHooks  []func(context.Context, *Organization) error
+		beforeDeleteHooks []func(context.Context, *Organization) error
 	}
 
 	Options struct {
@@ -63,7 +63,7 @@ type (
 
 		*sql.DB
 		*tfeapi.Responder
-		*pubsub.Broker
+		*sql.Listener
 		html.Renderer
 		logr.Logger
 		tokens.TokensService
@@ -79,12 +79,9 @@ func NewService(opts Options) *service {
 	svc := service{
 		Authorizer:                   &Authorizer{opts.Logger},
 		Logger:                       opts.Logger,
-		Broker:                       opts.Broker,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
-		createHook:                   hooks.NewHook[*Organization](opts.DB),
-		deleteHook:                   hooks.NewHook[*Organization](opts.DB),
 		tokenFactory:                 &tokenFactory{TokensService: opts.TokensService},
 	}
 	svc.web = &web{
@@ -101,10 +98,17 @@ func NewService(opts Options) *service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-
-	// Register with broker an unmarshaler for unmarshaling organization
-	// database table events into organization events.
-	opts.Broker.Register("organizations", svc.db)
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"organizations",
+		func(ctx context.Context, id string, action sql.Action) (*Organization, error) {
+			if action == sql.DeleteAction {
+				return &Organization{ID: id}, nil
+			}
+			return svc.db.getByID(ctx, id)
+		},
+	)
 	// Fetch organization when API calls request organization be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
@@ -123,12 +127,8 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) AfterCreateOrganization(l hooks.Listener[*Organization]) {
-	s.createHook.After(l)
-}
-
-func (s *service) BeforeDeleteOrganization(l hooks.Listener[*Organization]) {
-	s.deleteHook.Before(l)
+func (s *service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 // CreateOrganization creates an organization. Only users can create
@@ -146,19 +146,16 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) error {
-		_, err = s.db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
-			ID:                     sql.String(org.ID),
-			CreatedAt:              sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
-			Name:                   sql.String(org.Name),
-			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
-			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
-			Email:                  sql.StringPtr(org.Email),
-			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:  org.CostEstimationEnabled,
-		})
-		return sql.Error(err)
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		if err := s.db.create(ctx, org); err != nil {
+			return err
+		}
+		for _, hook := range s.afterCreateHooks {
+			if err := hook(ctx, org); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
@@ -167,6 +164,10 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
 
 	return org, nil
+}
+
+func (s *service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
+	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
 func (s *service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
@@ -229,7 +230,16 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.deleteHook.Dispatch(ctx, &Organization{Name: name}, func(ctx context.Context) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		org, err := s.db.get(ctx, name)
+		if err != nil {
+			return err
+		}
+		for _, hook := range s.beforeDeleteHooks {
+			if err := hook(ctx, org); err != nil {
+				return err
+			}
+		}
 		return s.db.delete(ctx, name)
 	})
 	if err != nil {
@@ -239,6 +249,10 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 	s.V(0).Info("deleted organization", "name", name, "subject", subject)
 
 	return nil
+}
+
+func (s *service) BeforeDeleteOrganization(hook func(context.Context, *Organization) error) {
+	s.beforeDeleteHooks = append(s.beforeDeleteHooks, hook)
 }
 
 func (s *service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {

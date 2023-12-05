@@ -43,18 +43,25 @@
       <div class="form-checkbox">
         <input type="radio" name="execution_mode" id="remote" value="remote" {{ checked .Workspace.ExecutionMode "remote" }}/>
         <label for="remote">Remote</label>
-        <span>Your plans and applies occur on the OTF servers.</span>
+        <span class="description">Your plans and applies occur on the OTF servers.</span>
       </div>
       <div class="form-checkbox">
         <input type="radio" name="execution_mode" id="local" value="local" {{ checked .Workspace.ExecutionMode "local" }}/>
         <label for="local">Local</label>
-        <span>Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
+        <span class="description">Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
 </span>
       </div>
       <div class="form-checkbox">
-        <input type="radio" name="execution_mode" id="agent" value="agent" {{ checked .Workspace.ExecutionMode "agent" }}/>
+        <input class="peer" type="radio" name="execution_mode" id="agent" value="agent" {{ checked .Workspace.ExecutionMode "agent" }}/>
         <label for="agent">Agent</label>
-        <span>Your plans and applies occur on OTF agents.</span>
+        <span class="description">Your plans and applies occur on OTF agents.</span>
+        <div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-gray-100 p-2 gap-2">
+          <div class="flex items-center gap-2">
+            <label class="text-md" for="agent-pool-id">Agent pool</label>
+            <select hx-get="{{ poolsWorkspacePath .Workspace.ID }}" hx-trigger="load" hx-swap="innerHTML" id="agent-pool-id" name="agent_pool_id"></select>
+          </div>
+          <span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href="{{ agentPoolsPath .Workspace.Organization }}">here</a>.</span>
+        </div>
       </div>
     </fieldset>
     <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
@@ -62,12 +69,12 @@
       <div class="form-checkbox">
         <input type="radio" name="auto_apply" id="auto-apply" value="true" {{ checked .Workspace.AutoApply }}/>
         <label for="auto-apply">Auto apply</label>
-        <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="bg-gray-200">-auto-approve</span> flag with <span class="bg-gray-200">terraform apply</span>.</span>
+        <span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="bg-gray-200">-auto-approve</span> flag with <span class="bg-gray-200">terraform apply</span>.</span>
       </div>
       <div class="form-checkbox">
         <input type="radio" name="auto_apply" id="manual-apply" value="false" {{ checked (not .Workspace.AutoApply) }}/>
         <label for="manual-apply">Manual apply</label>
-        <span>Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
+        <span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
       </div>
     </fieldset>
     <div class="field">
@@ -92,13 +99,13 @@
         <div class="form-checkbox">
           <input type="radio" id="vcs-triggers-always" name="vcs_trigger" value="{{ $.VCSTriggerAlways }}" {{ checked (and (not $.Workspace.TriggerPatterns) (not .TagsRegex)) }}>
           <label for="vcs-triggers-always">Always trigger runs</label>
-          <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+          <span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
         </div>
 
         <div class="form-checkbox">
           <input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value="{{ $.VCSTriggerPatterns }}" {{ checked (gt (len $.Workspace.TriggerPatterns) 0) }}>
           <label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
-          <span class="col-start-2 description">Supports glob patterns.</span>
+          <span class="description">Supports glob patterns.</span>
           <script src="{{ addHash "/static/js/workspace_trigger_patterns.js" }}"></script>
           <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="workspace_trigger_patterns({{ toJson $.Workspace.TriggerPatterns }})">
             <input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)">
@@ -127,18 +134,18 @@
               <div class="form-checkbox">
                 <input type="radio" id="tags-regex-default" name="tags_regex" value="{{ $.VCSTagRegexDefault }}" {{ checked (or (eq .TagsRegex $.VCSTagRegexDefault) (eq .TagsRegex "")) }}/>
                 <label for="tags-regex-default">Default</label>
-                <span>e.g. <span class="bg-gray-200">12.33.4456</span></span>
+                <span class="description">e.g. <span class="bg-gray-200">12.33.4456</span></span>
               </div>
               <div class="form-checkbox">
                 <input type="radio" id="tags-regex-prefix" name="tags_regex" value="{{ $.VCSTagRegexPrefix }}" {{ checked (eq .TagsRegex $.VCSTagRegexPrefix) }}/>
                 <label for="tags-regex-prefix">Version contains a prefix</label>
-                <span>e.g. <span class="bg-gray-200">v12.33.4456</span></span>
+                <span class="description">e.g. <span class="bg-gray-200">v12.33.4456</span></span>
               </div>
               <div class="form-checkbox">
                 <input type="radio" id="tags-regex-suffix" name="tags_regex" value="{{ $.VCSTagRegexSuffix }}" {{ checked (eq .TagsRegex $.VCSTagRegexSuffix) }}/>
 
                 <label for="tags-regex-suffix">Version contains a suffix</label>
-                <span>e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
+                <span class="description">e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
               </div>
               <div class="form-checkbox">
                 {{ $isCustom := (and (ne .TagsRegex "") (ne .TagsRegex $.VCSTagRegexDefault) (ne .TagsRegex $.VCSTagRegexPrefix) (ne .TagsRegex $.VCSTagRegexSuffix)) }}
@@ -162,7 +169,7 @@
       <div class="form-checkbox">
         <input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" {{ checked .AllowCLIApply }}/>
         <label for="allow-cli-apply">Allow apply from the CLI</label>
-        <span>Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
+        <span class="description">Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
       </div>
     {{ end }}
 

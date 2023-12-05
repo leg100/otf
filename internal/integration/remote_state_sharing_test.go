@@ -39,20 +39,20 @@ func TestRemoteStateSharing(t *testing.T) {
 	producerCV := daemon.createConfigurationVersion(t, ctx, producer, nil)
 	err = daemon.UploadConfig(ctx, producerCV.ID, tarball)
 	require.NoError(t, err)
-	// create run and apply
+	// listen to run events, and create run and apply
+	sub, unsub := daemon.WatchRuns(ctx)
+	defer unsub()
 	_ = daemon.createRun(t, ctx, producer, producerCV)
 applied:
-	for event := range daemon.sub {
-		if r, ok := event.Payload.(*run.Run); ok {
-			switch r.Status {
-			case run.RunPlanned:
-				err := daemon.Apply(ctx, r.ID)
-				require.NoError(t, err)
-			case run.RunApplied:
-				break applied
-			case run.RunErrored:
-				t.Fatalf("run unexpectedly errored")
-			}
+	for event := range sub {
+		switch event.Payload.Status {
+		case run.RunPlanned:
+			err := daemon.Apply(ctx, event.Payload.ID)
+			require.NoError(t, err)
+		case run.RunApplied:
+			break applied
+		case run.RunErrored:
+			t.Fatalf("run unexpectedly errored")
 		}
 	}
 
@@ -85,17 +85,15 @@ output "remote_foo" {
 
 	// create run and apply
 	_ = daemon.createRun(t, ctx, consumer, consumerCV)
-	for event := range daemon.sub {
-		if r, ok := event.Payload.(*run.Run); ok {
-			switch r.Status {
-			case run.RunPlanned:
-				err := daemon.Apply(ctx, r.ID)
-				require.NoError(t, err)
-			case run.RunApplied:
-				return
-			case run.RunErrored:
-				t.Fatalf("run unexpectedly errored")
-			}
+	for event := range sub {
+		switch event.Payload.Status {
+		case run.RunPlanned:
+			err := daemon.Apply(ctx, event.Payload.ID)
+			require.NoError(t, err)
+		case run.RunApplied:
+			return
+		case run.RunErrored:
+			t.Fatalf("run unexpectedly errored")
 		}
 	}
 

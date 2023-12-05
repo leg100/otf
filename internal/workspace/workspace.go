@@ -33,6 +33,8 @@ var (
 	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
 	ErrInvalidTriggerPattern           = errors.New("invalid trigger glob pattern")
 	ErrInvalidTagsRegex                = errors.New("invalid vcs tags regular expression")
+	ErrAgentExecutionModeWithoutPool   = errors.New("agent execution mode requires agent pool ID")
+	ErrNonAgentExecutionModeWithPool   = errors.New("agent pool ID can only be specified with agent execution mode")
 
 	apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 )
@@ -43,6 +45,7 @@ type (
 		ID                         string        `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
+		AgentPoolID                *string       `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool          `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool          `jsonapi:"attribute" json:"auto_apply"`
 		CanQueueDestroyPlan        bool          `jsonapi:"attribute" json:"can_queue_destroy_plan"`
@@ -110,6 +113,7 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
+		AgentPoolID                *string
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
@@ -137,6 +141,7 @@ type (
 	}
 
 	UpdateOptions struct {
+		AgentPoolID                *string `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string
@@ -202,11 +207,8 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
 	}
-
-	if opts.ExecutionMode != nil {
-		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
-			return nil, err
-		}
+	if _, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
+		return nil, err
 	}
 	if opts.AllowDestroyPlan != nil {
 		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
@@ -319,10 +321,9 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Description = *opts.Description
 		updated = true
 	}
-	if opts.ExecutionMode != nil {
-		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
-			return nil, err
-		}
+	if changed, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {
+		return nil, err
+	} else if changed {
 		updated = true
 	}
 	if opts.Operations != nil {
@@ -474,12 +475,39 @@ func (ws *Workspace) setName(name string) error {
 	return nil
 }
 
-func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
-	if m != RemoteExecutionMode && m != LocalExecutionMode && m != AgentExecutionMode {
-		return errors.New("invalid execution mode")
+// setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
+// ID. The two parameters are intimately related, hence the validation and
+// setting of the parameters is handled in tandem.
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *string) (bool, error) {
+	if m == nil {
+		if agentPoolID == nil {
+			// neither specified; nothing more to be done
+			return false, nil
+		} else {
+			// agent pool ID can be set without specifying execution mode as long as
+			// existing execution mode is AgentExecutionMode
+			if ws.ExecutionMode != AgentExecutionMode {
+				return false, ErrNonAgentExecutionModeWithPool
+			}
+		}
+	} else {
+		if *m == AgentExecutionMode {
+			if agentPoolID == nil {
+				return false, ErrAgentExecutionModeWithoutPool
+			}
+		} else {
+			// mode is either remote or local; in either case no pool ID should be
+			// provided
+			if agentPoolID != nil {
+				return false, ErrNonAgentExecutionModeWithPool
+			}
+		}
 	}
-	ws.ExecutionMode = m
-	return nil
+	ws.AgentPoolID = agentPoolID
+	if m != nil {
+		ws.ExecutionMode = *m
+	}
+	return true, nil
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {

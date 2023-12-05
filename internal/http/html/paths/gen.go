@@ -209,6 +209,9 @@ var specs = []controllerSpec{
 					{
 						name: "state",
 					},
+					{
+						name: "pools",
+					},
 				},
 				nested: []controllerSpec{
 					{
@@ -223,6 +226,9 @@ var specs = []controllerSpec{
 							},
 							{
 								name: "cancel",
+							},
+							{
+								name: "force-cancel",
 							},
 							{
 								name: "retry",
@@ -242,8 +248,24 @@ var specs = []controllerSpec{
 				},
 			},
 			{
-				Name:           "agent_token",
+				Name:           "agent",
 				controllerType: resourcePath,
+				actions: []action{
+					{
+						name:       "watch",
+						collection: true,
+					},
+				},
+			},
+			{
+				Name:           "agent_pool",
+				controllerType: resourcePath,
+				nested: []controllerSpec{
+					{
+						Name:           "agent_token",
+						controllerType: resourcePath,
+					},
+				},
 			},
 			{
 				Name:           "variable_set",

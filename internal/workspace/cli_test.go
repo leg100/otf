@@ -24,12 +24,12 @@ func TestWorkspaceEdit(t *testing.T) {
 
 	t.Run("update execution mode", func(t *testing.T) {
 		cmd := app.workspaceEditCommand()
-		cmd.SetArgs([]string{"dev", "--organization", "acme-corp", "--execution-mode", "local"})
+		cmd.SetArgs([]string{"dev", "--organization", "acme-corp", "--execution-mode", "local", "--agent-pool-id", "pool-1"})
 		buf := bytes.Buffer{}
 		cmd.SetOut(&buf)
 		require.NoError(t, cmd.Execute())
 
-		assert.Equal(t, "updated execution mode: local\n", buf.String())
+		assert.Equal(t, "updated workspace\n", buf.String())
 	})
 
 	t.Run("missing organization", func(t *testing.T) {

@@ -4,12 +4,13 @@ go 1.21
 
 require (
 	cloud.google.com/go/pubsub v1.30.1
-	github.com/DataDog/jsonapi v0.8.0
+	github.com/DataDog/jsonapi v0.8.3
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.7.0
 	github.com/buildkite/terminal-to-html v3.2.0+incompatible
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chromedp/cdproto v0.0.0-20230220211738-2b1ec77315c9
 	github.com/chromedp/chromedp v0.9.1
 	github.com/coreos/go-oidc/v3 v3.5.0
@@ -26,8 +27,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
-	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hashicorp/go-retryablehttp v0.7.2
+	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hashicorp/go-tfe v1.27.0
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20221020162138-81db043ad408
@@ -43,7 +43,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.5.3
 	github.com/prometheus/client_golang v1.14.0
-	github.com/r3labs/sse/v2 v2.8.1
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -54,7 +53,6 @@ require (
 	golang.org/x/oauth2 v0.7.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/api v0.118.0
-	gopkg.in/cenkalti/backoff.v1 v1.1.0
 )
 
 require (
@@ -89,7 +87,6 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-slug v0.11.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect

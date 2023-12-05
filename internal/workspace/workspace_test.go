@@ -125,6 +125,44 @@ func TestNewWorkspace(t *testing.T) {
 			},
 			want: ErrInvalidTagsRegex,
 		},
+		{
+			name: "agent execution mode with agent pool ID",
+			opts: CreateOptions{
+				Name:          internal.String("my-workspace"),
+				Organization:  internal.String("my-org"),
+				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
+				AgentPoolID:   internal.String("apool-123"),
+			},
+			want: nil,
+		},
+		{
+			name: "agent execution mode without agent pool ID",
+			opts: CreateOptions{
+				Name:          internal.String("my-workspace"),
+				Organization:  internal.String("my-org"),
+				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
+			},
+			want: ErrAgentExecutionModeWithoutPool,
+		},
+		{
+			name: "default remote execution mode with agent pool ID",
+			opts: CreateOptions{
+				Name:         internal.String("my-workspace"),
+				Organization: internal.String("my-org"),
+				AgentPoolID:  internal.String("apool-123"),
+			},
+			want: ErrNonAgentExecutionModeWithPool,
+		},
+		{
+			name: "local execution mode with agent pool ID",
+			opts: CreateOptions{
+				Name:          internal.String("my-workspace"),
+				Organization:  internal.String("my-org"),
+				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
+				AgentPoolID:   internal.String("apool-123"),
+			},
+			want: ErrNonAgentExecutionModeWithPool,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -222,6 +260,48 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				},
 			},
 			want: ErrInvalidTagsRegex,
+		},
+		{
+			name: "agent execution mode with agent pool ID",
+			ws:   &Workspace{Name: "dev", Organization: "acme"},
+			opts: UpdateOptions{
+				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
+				AgentPoolID:   internal.String("apool-123"),
+			},
+			want: nil,
+		},
+		{
+			name: "agent execution mode without agent pool ID",
+			ws:   &Workspace{Name: "dev", Organization: "acme"},
+			opts: UpdateOptions{
+				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
+			},
+			want: ErrAgentExecutionModeWithoutPool,
+		},
+		{
+			name: "existing agent execution mode with updated agent pool ID",
+			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: AgentExecutionMode, AgentPoolID: internal.String("apool-123")},
+			opts: UpdateOptions{
+				AgentPoolID: internal.String("apool-456"),
+			},
+			want: nil,
+		},
+		{
+			name: "existing remote execution mode with updated agent pool ID",
+			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: RemoteExecutionMode},
+			opts: UpdateOptions{
+				AgentPoolID: internal.String("apool-123"),
+			},
+			want: ErrNonAgentExecutionModeWithPool,
+		},
+		{
+			name: "set local execution mode with agent pool ID",
+			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: RemoteExecutionMode},
+			opts: UpdateOptions{
+				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
+				AgentPoolID:   internal.String("apool-123"),
+			},
+			want: ErrNonAgentExecutionModeWithPool,
 		},
 	}
 	for _, tt := range tests {

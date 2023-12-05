@@ -15,15 +15,15 @@ type TeamRow struct {
 	TeamID                          pgtype.Text        `json:"team_id"`
 	Name                            pgtype.Text        `json:"name"`
 	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
-	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
 	OrganizationName                pgtype.Text        `json:"organization_name"`
 	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
 	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       bool               `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
 }
 
 func (row TeamRow) ToTeam() *Team {
@@ -34,12 +34,12 @@ func (row TeamRow) ToTeam() *Team {
 		Organization: row.OrganizationName.String,
 		Visibility:   row.Visibility.String,
 		Access: OrganizationAccess{
-			ManageWorkspaces:      row.PermissionManageWorkspaces,
-			ManageVCS:             row.PermissionManageVCS,
-			ManageModules:         row.PermissionManageModules,
-			ManageProviders:       row.PermissionManageProviders,
-			ManagePolicies:        row.PermissionManagePolicies,
-			ManagePolicyOverrides: row.PermissionManagePolicyOverrides,
+			ManageWorkspaces:      row.PermissionManageWorkspaces.Bool,
+			ManageVCS:             row.PermissionManageVCS.Bool,
+			ManageModules:         row.PermissionManageModules.Bool,
+			ManageProviders:       row.PermissionManageProviders.Bool,
+			ManagePolicies:        row.PermissionManagePolicies.Bool,
+			ManagePolicyOverrides: row.PermissionManagePolicyOverrides.Bool,
 		},
 	}
 	if row.SSOTeamID.Status == pgtype.Present {
@@ -62,12 +62,12 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 		OrganizationName:                sql.String(team.Organization),
 		Visibility:                      sql.String(team.Visibility),
 		SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
-		PermissionManageWorkspaces:      team.Access.ManageWorkspaces,
-		PermissionManageVCS:             team.Access.ManageVCS,
-		PermissionManageModules:         team.Access.ManageModules,
-		PermissionManageProviders:       team.Access.ManageProviders,
-		PermissionManagePolicies:        team.Access.ManagePolicies,
-		PermissionManagePolicyOverrides: team.Access.ManagePolicyOverrides,
+		PermissionManageWorkspaces:      sql.Bool(team.Access.ManageWorkspaces),
+		PermissionManageVCS:             sql.Bool(team.Access.ManageVCS),
+		PermissionManageModules:         sql.Bool(team.Access.ManageModules),
+		PermissionManageProviders:       sql.Bool(team.Access.ManageProviders),
+		PermissionManagePolicies:        sql.Bool(team.Access.ManagePolicies),
+		PermissionManagePolicyOverrides: sql.Bool(team.Access.ManagePolicyOverrides),
 	})
 	return sql.Error(err)
 }
@@ -94,12 +94,12 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 			Name:                            sql.String(team.Name),
 			Visibility:                      sql.String(team.Visibility),
 			SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
-			PermissionManageWorkspaces:      team.Access.ManageWorkspaces,
-			PermissionManageVCS:             team.Access.ManageVCS,
-			PermissionManageModules:         team.Access.ManageModules,
-			PermissionManageProviders:       team.Access.ManageProviders,
-			PermissionManagePolicies:        team.Access.ManagePolicies,
-			PermissionManagePolicyOverrides: team.Access.ManagePolicyOverrides,
+			PermissionManageWorkspaces:      sql.Bool(team.Access.ManageWorkspaces),
+			PermissionManageVCS:             sql.Bool(team.Access.ManageVCS),
+			PermissionManageModules:         sql.Bool(team.Access.ManageModules),
+			PermissionManageProviders:       sql.Bool(team.Access.ManageProviders),
+			PermissionManagePolicies:        sql.Bool(team.Access.ManagePolicies),
+			PermissionManagePolicyOverrides: sql.Bool(team.Access.ManagePolicyOverrides),
 		})
 		if err != nil {
 			return err

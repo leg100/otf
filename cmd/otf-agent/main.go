@@ -4,19 +4,26 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	// Configure ^C to terminate program
-	ctx, cancel := context.WithCancel(context.Background())
-	cmdutil.CatchCtrlC(cancel)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-ctx.Done()
+		// Stop handling ^C; another ^C will exit the program.
+		cancel()
+	}()
 
 	if err := run(ctx, os.Args[1:]); err != nil {
 		cmdutil.PrintError(err)
@@ -26,8 +33,9 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		loggerCfg *logr.Config
-		cfg       *remoteops.AgentConfig
+		loggerConfig *logr.Config
+		clientConfig otfapi.Config
+		agentConfig  *agent.Config
 	)
 
 	cmd := &cobra.Command{
@@ -36,25 +44,26 @@ func run(ctx context.Context, args []string) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(loggerCfg)
+			logger, err := logr.New(loggerConfig)
 			if err != nil {
 				return err
 			}
-
-			agent, err := remoteops.NewAgent(cmd.Context(), logger, *cfg)
+			agent, err := agent.NewRPC(logger, *agentConfig, clientConfig)
 			if err != nil {
-				return fmt.Errorf("unable to start agent: %w", err)
+				return fmt.Errorf("initializing agent: %w", err)
 			}
 			// blocks
-			return agent.Start(ctx)
+			return agent.Start(cmd.Context())
 		},
 	}
 
+	cmd.Flags().StringVar(&clientConfig.Address, "address", otfapi.DefaultAddress, "Address of OTF server")
+	cmd.Flags().StringVar(&clientConfig.Token, "token", "", "Agent token for authentication")
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
 
-	loggerCfg = logr.NewConfigFromFlags(cmd.Flags())
-	cfg = remoteops.NewAgentConfigFromFlags(cmd.Flags())
+	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
+	agentConfig = agent.NewConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

@@ -148,19 +148,6 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 	}
 	kind := Kind(kindClaim.(string))
 	return m.GetSubject(ctx, kind, parsed.Subject())
-	//case agentTokenKind:
-	//	return m.GetAgentToken(ctx, parsed.Subject())
-	//case userTokenKind:
-	//	return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: internal.String(parsed.Subject())})
-	//case organizationTokenKind:
-	//	return m.getOrganizationTokenByID(ctx, parsed.Subject())
-	//case teamTokenKind:
-	//	return m.GetTeamByTokenID(ctx, parsed.Subject())
-	//case runTokenKind:
-	//	return NewRunTokenFromJWT(parsed)
-	//default:
-	//	return nil, fmt.Errorf("unknown authentication kind")
-	//}
 }
 
 func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {

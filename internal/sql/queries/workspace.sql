@@ -3,6 +3,7 @@ INSERT INTO workspaces (
     workspace_id,
     created_at,
     updated_at,
+    agent_pool_id,
     allow_cli_apply,
     allow_destroy_plan,
     auto_apply,
@@ -29,6 +30,7 @@ INSERT INTO workspaces (
     pggen.arg('id'),
     pggen.arg('created_at'),
     pggen.arg('updated_at'),
+    pggen.arg('agent_pool_id'),
     pggen.arg('allow_cli_apply'),
     pggen.arg('allow_destroy_plan'),
     pggen.arg('auto_apply'),
@@ -231,6 +233,7 @@ FOR UPDATE OF w;
 -- name: UpdateWorkspaceByID :one
 UPDATE workspaces
 SET
+    agent_pool_id                 = pggen.arg('agent_pool_id'),
     allow_destroy_plan            = pggen.arg('allow_destroy_plan'),
     allow_cli_apply               = pggen.arg('allow_cli_apply'),
     auto_apply                    = pggen.arg('auto_apply'),

@@ -42,10 +42,10 @@ type InsertOrganizationParams struct {
 	Name                       pgtype.Text
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
-	CostEstimationEnabled      bool
+	CostEstimationEnabled      pgtype.Bool
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
-	AllowForceDeleteWorkspaces bool
+	AllowForceDeleteWorkspaces pgtype.Bool
 }
 
 // InsertOrganization implements Querier.InsertOrganization.
@@ -114,8 +114,8 @@ type FindOrganizationByNameRow struct {
 	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
-	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
-	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizationByName implements Querier.FindOrganizationByName.
@@ -155,8 +155,8 @@ type FindOrganizationByIDRow struct {
 	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
-	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
-	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizationByID implements Querier.FindOrganizationByID.
@@ -200,8 +200,8 @@ type FindOrganizationByNameForUpdateRow struct {
 	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
-	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
-	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizationByNameForUpdate implements Querier.FindOrganizationByNameForUpdate.
@@ -252,8 +252,8 @@ type FindOrganizationsRow struct {
 	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
-	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
-	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
@@ -352,10 +352,10 @@ type UpdateOrganizationByNameParams struct {
 	NewName                    pgtype.Text
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
-	CostEstimationEnabled      bool
+	CostEstimationEnabled      pgtype.Bool
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
-	AllowForceDeleteWorkspaces bool
+	AllowForceDeleteWorkspaces pgtype.Bool
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       pgtype.Text
 }

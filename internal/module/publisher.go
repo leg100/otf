@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -17,7 +16,6 @@ type (
 	// publisher publishes new versions of terraform modules from VCS tags
 	publisher struct {
 		logr.Logger
-		pubsub.Subscriber
 		vcsprovider.VCSProviderService
 		ModuleService
 	}

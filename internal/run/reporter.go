@@ -22,7 +22,7 @@ type (
 	// runs.
 	Reporter struct {
 		logr.Logger
-		pubsub.Subscriber
+		Service
 		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
@@ -33,6 +33,7 @@ type (
 		ConfigurationVersionService configversion.Service
 		WorkspaceService            workspace.Service
 		VCSProviderService          VCSProviderService
+		Service                     Service
 
 		logr.Logger
 	}
@@ -40,27 +41,16 @@ type (
 
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
-	// Unsubscribe whenever exiting this routine.
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	// subscribe to run events
-	sub, err := r.Subscribe(ctx, "reporter-")
-	if err != nil {
-		return err
-	}
+	sub, unsub := r.WatchRuns(ctx)
+	defer unsub()
 
 	for event := range sub {
-		run, ok := event.Payload.(*Run)
-		if !ok {
-			// Skip non-run events
-			continue
-		}
 		if event.Type == pubsub.DeletedEvent {
 			// Skip deleted run events
 			continue
 		}
-		if err := r.handleRun(ctx, run); err != nil {
+		if err := r.handleRun(ctx, event.Payload); err != nil {
 			return err
 		}
 	}

@@ -16,8 +16,10 @@ import (
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
@@ -49,14 +51,9 @@ type (
 		UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 		// Watch provides access to a stream of run events. The WatchOptions filters
 		// events. Context must be cancelled to close stream.
-		//
-		// TODO(@leg100): it would be clearer to the caller if the stream is closed by
-		// returning a stream object with a Close() method. The calling code would
-		// call Watch(), and then defer a Close(), which is more readable IMO.
-		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error)
-		// Cancel a run. If a run is in progress then a cancelation signal will be
-		// sent out.
-		Cancel(ctx context.Context, runID string) (*Run, error)
+		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
+		// Cancel a run.
+		Cancel(ctx context.Context, runID string) error
 		// Apply enqueues an Apply for the run.
 		Apply(ctx context.Context, runID string) error
 		// Delete a run.
@@ -67,33 +64,52 @@ type (
 		// ForceCancelRun forcefully cancels a run.
 		ForceCancelRun(ctx context.Context, runID string) error
 
+		// AfterEnqueuePlan allows caller to dispatch actions following the
+		// enqueuing of a plan.
+		AfterEnqueuePlan(hook func(context.Context, *Run) error)
+		// AfterEnqueueApply allows caller to dispatch actions following the
+		// enqueuing of an apply.
+		AfterEnqueueApply(hook func(context.Context, *Run) error)
+		// AfterCancel allows caller to dispatch actions following the
+		// cancelation of a run.
+		AfterCancelRun(hook func(context.Context, *Run) error)
+		// AfterForceCancel allows caller to dispatch actions following the
+		// forced cancelation of a run.
+		AfterForceCancelRun(hook func(context.Context, *Run) error)
+		// WatchRuns subscribes the caller to a stream of run events.
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Run], func())
+
+		lockFileService
+
 		internal.Authorizer // run authorizer
 
 		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 
 		lockFileService
-		tokenService
 	}
 
 	service struct {
 		logr.Logger
 
 		WorkspaceService
-		pubsub.PubSubService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
 		workspace    internal.Authorizer
 		*authorizer
 
-		cache  internal.Cache
-		db     *pgdb
-		tfeapi *tfe
-		api    *api
-		*factory
-		*tokenFactory
+		cache                  internal.Cache
+		db                     *pgdb
+		tfeapi                 *tfe
+		api                    *api
+		web                    *webHandlers
+		afterCancelHooks       []func(context.Context, *Run) error
+		afterForceCancelHooks  []func(context.Context, *Run) error
+		afterEnqueuePlanHooks  []func(context.Context, *Run) error
+		afterEnqueueApplyHooks []func(context.Context, *Run) error
+		broker                 pubsub.SubscriptionService[*Run]
 
-		web *webHandlers
+		*factory
 	}
 
 	Options struct {
@@ -113,7 +129,7 @@ type (
 		*tfeapi.Responder
 		*surl.Signer
 		html.Renderer
-		*pubsub.Broker
+		*sql.Listener
 	}
 )
 
@@ -121,7 +137,6 @@ func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
 		Logger:           opts.Logger,
-		PubSubService:    opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
 	}
 
@@ -139,10 +154,6 @@ func NewService(opts Options) *service {
 		opts.VCSProviderService,
 		opts.ReleasesService,
 	}
-	svc.tokenFactory = &tokenFactory{
-		TokensService: opts.TokensService,
-	}
-
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
 		WorkspaceService: opts.WorkspaceService,
@@ -167,9 +178,17 @@ func NewService(opts Options) *service {
 		VCSProviderService:          opts.VCSProviderService,
 		RunService:                  &svc,
 	}
-
-	// Register with broker so that it can relay run events
-	opts.Broker.Register("runs", &svc)
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"runs",
+		func(ctx context.Context, id string, action sql.Action) (*Run, error) {
+			if action == sql.DeleteAction {
+				return &Run{ID: id}, nil
+			}
+			return db.GetRun(ctx, id)
+		},
+	)
 
 	// Fetch related resources when API requests their inclusion
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
@@ -180,14 +199,7 @@ func NewService(opts Options) *service {
 
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.
-	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
-
-	// Register with auth middleware the run token and a means of
-	// retrieving RunToken corresponding to token.
-	opts.TokensService.RegisterKind(RunTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
-		return &RunToken{Organization: organization}, nil
-
-	})
+	opts.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
 }
@@ -196,6 +208,10 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
+}
+
+func (s *service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
@@ -234,14 +250,6 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	s.V(9).Info("retrieved run", "id", runID, "subject", subject)
 
 	return run, nil
-}
-
-// GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, runID string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &Run{ID: runID}, nil
-	}
-	return s.db.GetRun(ctx, runID)
 }
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
@@ -286,22 +294,34 @@ func (s *service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 // enqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.EnqueuePlan()
+func (s *service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
+		if err != nil {
+			return err
+		}
+		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+			return run.EnqueuePlan()
+		})
+		if err != nil {
+			s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
+			return err
+		}
+		s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
+		// invoke AfterEnqueuePlan hooks
+		for _, hook := range s.afterEnqueuePlanHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
-		return nil, err
-	}
-	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
+	return
+}
 
-	return run, nil
+func (s *service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after plan is enqueued
+	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
 func (s *service) Delete(ctx context.Context, runID string) error {
@@ -325,13 +345,8 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 
 // StartPhase starts a run phase.
 func (s *service) StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.StartPhaseAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.Start(phase)
+		return run.Start()
 	})
 	if err != nil {
 		// only log error if not an phase already started error - this occurs when
@@ -340,44 +355,51 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		// error condition and not something that should be reported to the
 		// user.
 		if !errors.Is(err, internal.ErrPhaseAlreadyStarted) {
-			s.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
+			s.Error(err, "starting "+string(phase), "id", runID)
 		}
 		return nil, err
 	}
-	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
+	s.V(0).Info("started "+string(phase), "id", runID)
 	return run, nil
 }
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
 func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.FinishPhaseAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
 		resourceReport, outputReport, err = s.createReports(ctx, runID, phase)
 		if err != nil {
-			s.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
+			s.Error(err, "creating report", "id", runID, "phase", phase)
 			opts.Errored = true
 		}
 	}
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.Finish(phase, opts)
+	var run *Run
+	err := s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+		var autoapply bool
+		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+			autoapply, err = run.Finish(phase, opts)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		if autoapply {
+			return s.Apply(ctx, runID)
+		}
+		return nil
 	})
 	if err != nil {
-		s.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
+		s.Error(err, "finishing "+string(phase), "id", runID, "subject")
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject, "run_status", run.Status)
+	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "run_status", run.Status)
 	return run, nil
 }
 
 // Watch provides authenticated access to a stream of run events.
-func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error) {
+func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
@@ -393,35 +415,25 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.E
 		return nil, err
 	}
 
-	sub, err := s.Subscribe(ctx, "run-watch-")
-	if err != nil {
-		return nil, err
-	}
-
+	sub, _ := s.broker.Subscribe(ctx)
 	// relay is returned to the caller to which filtered run events are sent
-	relay := make(chan pubsub.Event)
+	relay := make(chan pubsub.Event[*Run])
 	go func() {
 		// relay events
-		for ev := range sub {
-			run, ok := ev.Payload.(*Run)
-			if !ok {
-				continue // skip anything other than a run or a workspace
-			}
-
+		for event := range sub {
 			// apply workspace filter
 			if opts.WorkspaceID != nil {
-				if run.WorkspaceID != *opts.WorkspaceID {
+				if event.Payload.WorkspaceID != *opts.WorkspaceID {
 					continue
 				}
 			}
 			// apply organization filter
 			if opts.Organization != nil {
-				if run.Organization != *opts.Organization {
+				if event.Payload.Organization != *opts.Organization {
 					continue
 				}
 			}
-
-			relay <- ev
+			relay <- event
 		}
 		close(relay)
 	}()
@@ -430,21 +442,33 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.E
 
 // Apply enqueues an apply for the run.
 func (s *service) Apply(ctx context.Context, runID string) error {
-	subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
-	if err != nil {
-		return err
-	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.EnqueueApply()
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
+		if err != nil {
+			return err
+		}
+		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+			return run.EnqueueApply()
+		})
+		if err != nil {
+			s.Error(err, "enqueuing apply", "id", runID, "subject", subject)
+			return err
+		}
+
+		s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
+		// invoke AfterEnqueueApply hooks
+		for _, hook := range s.afterEnqueueApplyHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "enqueuing apply", "id", runID, "subject", subject)
-		return err
-	}
+}
 
-	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
-
-	return err
+func (s *service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after apply is enqueued
+	s.afterEnqueueApplyHooks = append(s.afterEnqueueApplyHooks, hook)
 }
 
 // DiscardRun discards the run.
@@ -467,41 +491,69 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 	return err
 }
 
-// Cancel a run. If a run is in progress then a cancelation signal will be
-// sent out.
-func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
-	if err != nil {
-		return nil, err
-	}
+func (s *service) Cancel(ctx context.Context, runID string) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
+		if err != nil {
+			return err
+		}
+		_, isUser := subject.(*user.User)
 
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		return run.Cancel()
+		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+			return run.Cancel(isUser, false)
+		})
+		if err != nil {
+			s.Error(err, "canceling run", "id", runID, "subject", subject)
+			return err
+		}
+		if run.CancelSignaledAt != nil && run.Status != RunCanceled {
+			s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
+		} else {
+			s.V(0).Info("canceled run", "id", runID, "subject", subject)
+		}
+		// invoke AfterCancel hooks
+		for _, hook := range s.afterCancelHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "canceling run", "id", runID, "subject", subject)
-		return nil, err
-	}
-	s.V(0).Info("canceled run", "id", runID, "subject", subject)
-	return run, nil
+}
+
+func (s *service) AfterCancelRun(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after run is canceled
+	s.afterCancelHooks = append(s.afterCancelHooks, hook)
 }
 
 // ForceCancelRun forcefully cancels a run.
 func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
-	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
-	if err != nil {
-		return err
-	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.ForceCancel()
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
+		if err != nil {
+			return err
+		}
+		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+			return run.Cancel(true, true)
+		})
+		if err != nil {
+			s.Error(err, "force canceling run", "id", runID, "subject", subject)
+			return err
+		}
+		s.V(0).Info("force canceled run", "id", runID, "subject", subject)
+		// invoke AfterForceCancelRun hooks
+		for _, hook := range s.afterForceCancelHooks {
+			if err := hook(ctx, run); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		s.Error(err, "force canceling run", "id", runID, "subject", subject)
-		return err
-	}
-	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
+}
 
-	return err
+func (s *service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after run is force canceled
+	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
 
 func planFileCacheKey(f PlanFormat, id string) string {

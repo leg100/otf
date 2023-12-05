@@ -1,0 +1,12 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}agents{{ end }}
+
+{{ define "content" }}
+  <div class="description max-w-2xl">
+    An agent handles the execution of runs. There are two types of agents: the agent built into <span class="bg-gray-200 font-mono p-0.5 text-xs">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="bg-gray-200 font-mono p-0.5 text-xs">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
+  </div>
+  {{ range .Agents }}
+    {{ template "agent_item" . }}
+  {{ end }}
+{{ end }}

@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -245,14 +244,13 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	sub, unsub := daemon.WatchRuns(ctx)
+	defer unsub()
+
 	// send event
 	push := testutils.ReadFile(t, "./fixtures/github_app_push.json")
 	github.SendEventRequest(t, github.PushEvent, daemon.HostnameService.URL(github.AppEventsPath), "secret", push)
 
 	// wait for run to be created
-	for event := range daemon.sub {
-		if _, ok := event.Payload.(*run.Run); ok {
-			return
-		}
-	}
+	<-sub
 }

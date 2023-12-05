@@ -4,6 +4,7 @@ Package sql implements persistent storage using the postgres database.
 package sql
 
 import (
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,19 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 )
+
+// Bool converts a go-boolean into a postgres non-null boolean
+func Bool(b bool) pgtype.Bool {
+	return pgtype.Bool{Bool: b, Status: pgtype.Present}
+}
+
+// BoolPtr converts a go-boolean pointer into a postgres nullable boolean
+func BoolPtr(s *bool) pgtype.Bool {
+	if s != nil {
+		return pgtype.Bool{Bool: *s, Status: pgtype.Present}
+	}
+	return pgtype.Bool{Status: pgtype.Null}
+}
 
 // String converts a go-string into a postgres non-null string
 func String(s string) pgtype.Text {
@@ -79,6 +93,12 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 // JSON converts a []byte into a postgres JSON type
 func JSON(b []byte) pgtype.JSON {
 	return pgtype.JSON{Bytes: b, Status: pgtype.Present}
+}
+
+// Inet converts net.IP into the postgres type pgtype.Inet
+func Inet(ip net.IP) pgtype.Inet {
+	mask := net.CIDRMask(32, 0)
+	return pgtype.Inet{IPNet: &net.IPNet{Mask: mask, IP: ip}, Status: pgtype.Present}
 }
 
 func Error(err error) error {

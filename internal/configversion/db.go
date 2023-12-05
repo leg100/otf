@@ -21,9 +21,9 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 		_, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 			ID:            sql.String(cv.ID),
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
-			AutoQueueRuns: cv.AutoQueueRuns,
+			AutoQueueRuns: sql.Bool(cv.AutoQueueRuns),
 			Source:        sql.String(string(cv.Source)),
-			Speculative:   cv.Speculative,
+			Speculative:   sql.Bool(cv.Speculative),
 			Status:        sql.String(string(cv.Status)),
 			WorkspaceID:   sql.String(cv.WorkspaceID),
 		})
@@ -45,8 +45,8 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 				SenderHTMLURL:          sql.String(ia.SenderHTMLURL),
 				Tag:                    sql.String(ia.Tag),
 				Identifier:             sql.String(ia.Repo),
-				IsPullRequest:          ia.IsPullRequest,
-				OnDefaultBranch:        ia.OnDefaultBranch,
+				IsPullRequest:          sql.Bool(ia.IsPullRequest),
+				OnDefaultBranch:        sql.Bool(ia.OnDefaultBranch),
 				ConfigurationVersionID: sql.String(cv.ID),
 			})
 			if err != nil {
@@ -158,9 +158,9 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 type pgRow struct {
 	ConfigurationVersionID               pgtype.Text                                  `json:"configuration_version_id"`
 	CreatedAt                            pgtype.Timestamptz                           `json:"created_at"`
-	AutoQueueRuns                        bool                                         `json:"auto_queue_runs"`
+	AutoQueueRuns                        pgtype.Bool                                  `json:"auto_queue_runs"`
 	Source                               pgtype.Text                                  `json:"source"`
-	Speculative                          bool                                         `json:"speculative"`
+	Speculative                          pgtype.Bool                                  `json:"speculative"`
 	Status                               pgtype.Text                                  `json:"status"`
 	WorkspaceID                          pgtype.Text                                  `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []pggen.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
@@ -171,8 +171,8 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	cv := ConfigurationVersion{
 		ID:               result.ConfigurationVersionID.String,
 		CreatedAt:        result.CreatedAt.Time.UTC(),
-		AutoQueueRuns:    result.AutoQueueRuns,
-		Speculative:      result.Speculative,
+		AutoQueueRuns:    result.AutoQueueRuns.Bool,
+		Speculative:      result.Speculative.Bool,
 		Source:           Source(result.Source.String),
 		Status:           ConfigurationStatus(result.Status.String),
 		StatusTimestamps: unmarshalStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
@@ -190,7 +190,7 @@ func NewIngressFromRow(row *pggen.IngressAttributes) *IngressAttributes {
 		CommitSHA:         row.CommitSHA.String,
 		CommitURL:         row.CommitURL.String,
 		Repo:              row.Identifier.String,
-		IsPullRequest:     row.IsPullRequest,
+		IsPullRequest:     row.IsPullRequest.Bool,
 		PullRequestNumber: int(row.PullRequestNumber.Int),
 		PullRequestURL:    row.PullRequestURL.String,
 		PullRequestTitle:  row.PullRequestTitle.String,
@@ -198,7 +198,7 @@ func NewIngressFromRow(row *pggen.IngressAttributes) *IngressAttributes {
 		SenderAvatarURL:   row.SenderAvatarURL.String,
 		SenderHTMLURL:     row.SenderHTMLURL.String,
 		Tag:               row.Tag.String,
-		OnDefaultBranch:   row.IsPullRequest,
+		OnDefaultBranch:   row.IsPullRequest.Bool,
 	}
 }
 

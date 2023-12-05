@@ -8,11 +8,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -29,7 +29,7 @@ type (
 		UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
 		DeleteTeam(ctx context.Context, teamID string) error
 
-		AfterCreateTeam(l hooks.Listener[*Team])
+		AfterCreateTeam(hook func(context.Context, *Team) error)
 
 		teamTokenService
 	}
@@ -45,7 +45,7 @@ type (
 		tfeapi *tfe
 		api    *api
 
-		createHook *hooks.Hook[*Team]
+		afterCreateHooks []func(context.Context, *Team) error
 
 		*teamTokenFactory
 	}
@@ -70,7 +70,6 @@ func NewService(opts Options) *service {
 		teamTokenFactory: &teamTokenFactory{
 			TokensService: opts.TokensService,
 		},
-		createHook: hooks.NewHook[*Team](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:      opts.Renderer,
@@ -117,10 +116,6 @@ func (a *service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *service) AfterCreateTeam(l hooks.Listener[*Team]) {
-	a.createHook.After(l)
-}
-
 func (a *service) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, organization)
 	if err != nil {
@@ -132,8 +127,16 @@ func (a *service) CreateTeam(ctx context.Context, organization string, opts Crea
 		return nil, err
 	}
 
-	err = a.createHook.Dispatch(ctx, team, func(ctx context.Context) error {
-		return a.db.createTeam(ctx, team)
+	err = a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		if err := a.db.createTeam(ctx, team); err != nil {
+			return err
+		}
+		for _, hook := range a.afterCreateHooks {
+			if err := hook(ctx, team); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		a.Error(err, "creating team", "name", team.Name, "organization", organization, "subject", subject)
@@ -142,6 +145,10 @@ func (a *service) CreateTeam(ctx context.Context, organization string, opts Crea
 	a.V(0).Info("created team", "name", team.Name, "organization", organization, "subject", subject)
 
 	return team, nil
+}
+
+func (a *service) AfterCreateTeam(hook func(context.Context, *Team) error) {
+	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
 func (a *service) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {

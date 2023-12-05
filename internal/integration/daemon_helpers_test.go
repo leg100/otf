@@ -11,6 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/cli"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
@@ -19,9 +21,7 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -40,8 +40,6 @@ type (
 		*daemon.Daemon
 		// stub github server for test to use.
 		*github.TestServer
-		// event subscription for test to use.
-		sub <-chan pubsub.Event
 		// releases service to allow tests to download terraform
 		releases.ReleasesService
 	}
@@ -131,9 +129,6 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	sub, err := d.Broker.Subscribe(ctx, "")
-	require.NoError(t, err)
-
 	releasesService := releases.NewService(releases.Options{
 		Logger:          logger,
 		DB:              d.DB,
@@ -144,7 +139,6 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		Daemon:          d,
 		TestServer:      githubServer,
 		ReleasesService: releasesService,
-		sub:             sub,
 	}
 
 	// create a dedicated user account and context for test to use.
@@ -406,20 +400,10 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 	return nc
 }
 
-func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organization string) []byte {
-	t.Helper()
-
-	token, err := s.CreateAgentToken(ctx, remoteops.CreateAgentTokenOptions{
-		Organization: organization,
-		Description:  "lorem ipsum...",
-	})
-	require.NoError(t, err)
-	return token
-}
-
-// startAgent starts an external agent, configuring it with the given
-// organization and configuring it to connect to the daemon.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg remoteops.AgentConfig) {
+// startAgent starts a pool agent, configuring it with the given organization
+// and configuring it to connect to the daemon. The corresponding agent type is
+// returned once registered, along with a function to shutdown the agent down.
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg agent.Config) (*agent.Agent, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -432,17 +416,32 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 		logger = logr.Discard()
 	}
 
-	token := s.createAgentToken(t, ctx, organization)
-	cfg.APIConfig.Token = string(token)
-	cfg.APIConfig.Address = s.Hostname()
+	if token == "" {
+		if poolID == "" {
+			pool, err := s.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+				Name:         uuid.NewString(),
+				Organization: org,
+			})
+			require.NoError(t, err)
+			poolID = pool.ID
+		}
+		_, tokenBytes, err := s.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+			Description: "lorem ipsum...",
+		})
+		require.NoError(t, err)
+		token = string(tokenBytes)
+	}
 
-	agent, err := remoteops.NewAgent(ctx, logger, cfg)
+	agentDaemon, err := agent.NewRPC(logger, cfg, api.Config{
+		Token:   token,
+		Address: s.Hostname(),
+	})
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
-		err := agent.Start(ctx)
+		err := agentDaemon.Start(ctx)
 		close(done)
 		require.NoError(t, err)
 	}()
@@ -451,6 +450,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 		cancel() // terminate agent
 		<-done   // don't exit test until agent fully terminated
 	})
+	return <-agentDaemon.Registered(), cancel
 }
 
 func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPath string, args ...string) string {

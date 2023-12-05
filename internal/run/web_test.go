@@ -67,12 +67,12 @@ func TestWeb_GetHandler(t *testing.T) {
 }
 
 func TestRuns_CancelHandler(t *testing.T) {
-	h := newTestWebHandlers(t, withRuns(&Run{ID: "run-1", WorkspaceID: "ws-1"}))
+	h := newTestWebHandlers(t, withRuns(&Run{ID: "run-1"}))
 
-	r := httptest.NewRequest("POST", "/?run_id=run-123", nil)
+	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
 	h.cancel(w, r)
-	testutils.AssertRedirect(t, w, paths.Runs("ws-1"))
+	testutils.AssertRedirect(t, w, paths.Run("run-1"))
 }
 
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {

@@ -44,3 +44,8 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 ![new variable form](images/variables_entering_top_secret.png){.screenshot}
 <figcaption>Editing a workspace variable</figcaption>
 </figure>
+
+<figure markdown>
+![agent pools](./images/agent_pool_workspace_granted_and_assigned.png){.screenshot}
+<figcaption>Managing workspace access to specific agent pool</figcaption>
+</figure>

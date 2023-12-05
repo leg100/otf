@@ -16,7 +16,7 @@
       <div class="form-checkbox">
         <input type="checkbox" id="public" x-model="public" x-init="$watch('public', value => manifest.public = public)">
         <label for="public">Public</label>
-        <span>By default an app is private and can only be installed on the owner's account. If you intend to install the app in more than one organization or user account then it is necessary to make the app public.</span>
+        <span class="description">By default an app is private and can only be installed on the owner's account. If you intend to install the app in more than one organization or user account then it is necessary to make the app public.</span>
       </div>
       <input type="hidden" name="manifest" :value="JSON.stringify(manifest)">
       <button class="btn w-40">Create</button>

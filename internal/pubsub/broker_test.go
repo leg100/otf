@@ -5,17 +5,35 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
+type foo struct {
+	id string
+}
+
+func fooGetter(ctx context.Context, id string, action sql.Action) (*foo, error) {
+	return &foo{id: id}, nil
+}
+
 func TestBroker_Subscribe(t *testing.T) {
-	broker := NewBroker(logr.Discard(), &fakePool{})
+	ctx := context.Background()
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", nil)
+
+	sub, unsub := broker.Subscribe(ctx)
+	assert.Equal(t, 1, len(broker.subs))
+
+	unsub()
+	<-sub
+	assert.Equal(t, 0, len(broker.subs))
+}
+
+func TestBroker_UnsubscribeViaContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", nil)
 
-	sub, err := broker.Subscribe(ctx, "")
-	require.NoError(t, err)
-
+	sub, _ := broker.Subscribe(ctx)
 	assert.Equal(t, 1, len(broker.subs))
 
 	cancel()
@@ -23,36 +41,32 @@ func TestBroker_Subscribe(t *testing.T) {
 	assert.Equal(t, 0, len(broker.subs))
 }
 
-func TestBroker_Publish_Local(t *testing.T) {
+func TestBroker_forward(t *testing.T) {
 	ctx := context.Background()
-	broker := NewBroker(logr.Discard(), &fakePool{})
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", fooGetter)
 
-	sub, err := broker.Subscribe(ctx, "")
-	require.NoError(t, err)
+	sub, unsub := broker.Subscribe(ctx)
+	defer unsub()
 
-	event := Event{
-		Type:  EventType("payload_update"),
-		Local: true,
+	broker.forward(ctx, "bar", sql.InsertAction)
+	want := Event[*foo]{
+		Type:    CreatedEvent,
+		Payload: &foo{id: "bar"},
 	}
-	broker.Publish(event)
-
-	assert.Equal(t, event, <-sub)
+	assert.Equal(t, want, <-sub)
 }
 
 func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 	ctx := context.Background()
-	broker := NewBroker(logr.Discard(), &fakePool{})
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", fooGetter)
 
-	_, err := broker.Subscribe(ctx, "")
-	require.NoError(t, err)
+	broker.Subscribe(ctx)
 	assert.Equal(t, 1, len(broker.subs))
 
 	// deliberating publish more than subBufferSize events to trigger broker to
 	// unsubscribe the sub
 	for i := 0; i < subBufferSize+1; i++ {
-		broker.localPublish(Event{
-			Type: EventType("test"),
-		})
+		broker.forward(ctx, "bar", sql.InsertAction)
 	}
 	assert.Equal(t, 0, len(broker.subs))
 }

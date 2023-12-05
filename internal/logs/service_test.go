@@ -15,7 +15,13 @@ func TestTail(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("receive chunk event", func(t *testing.T) {
-		app := fakeService(internal.Chunk{})
+		sub := make(chan pubsub.Event[internal.Chunk])
+		app := &service{
+			chunkproxy: &fakeTailProxy{},
+			broker:     &fakeSubService{stream: sub},
+			Logger:     logr.Discard(),
+			run:        &fakeAuthorizer{},
+		}
 
 		stream, err := app.Tail(ctx, internal.GetChunkOptions{
 			RunID: "run-123",
@@ -29,7 +35,7 @@ func TestTail(t *testing.T) {
 			Data:   []byte("\x02hello world\x03"),
 			Offset: 6,
 		}
-		app.Publish(pubsub.Event{Payload: want})
+		sub <- pubsub.Event[internal.Chunk]{Payload: want}
 		require.Equal(t, want, <-stream)
 	})
 
@@ -39,14 +45,19 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		svc := fakeService(want)
-
+		svc := &service{
+			chunkproxy: &fakeTailProxy{chunk: want},
+			broker: &fakeSubService{
+				stream: make(chan pubsub.Event[internal.Chunk]),
+			},
+			Logger: logr.Discard(),
+			run:    &fakeAuthorizer{},
+		}
 		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
 			RunID: "run-123",
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
-
 		require.Equal(t, want, <-stream)
 	})
 
@@ -57,7 +68,13 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		svc := fakeService(want)
+		sub := make(chan pubsub.Event[internal.Chunk])
+		svc := &service{
+			chunkproxy: &fakeTailProxy{chunk: want},
+			broker:     &fakeSubService{stream: sub},
+			Logger:     logr.Discard(),
+			run:        &fakeAuthorizer{},
+		}
 
 		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
 			RunID: "run-123",
@@ -69,14 +86,14 @@ func TestTail(t *testing.T) {
 		require.Equal(t, want, <-stream)
 
 		// send second, overlapping, chunk
-		svc.Publish(pubsub.Event{
+		sub <- pubsub.Event[internal.Chunk]{
 			Payload: internal.Chunk{
 				RunID:  "run-123",
 				Phase:  internal.PlanPhase,
 				Data:   []byte("lo world\x03"),
 				Offset: 4,
 			},
-		})
+		}
 
 		// receive non-overlapping part of second chunk.
 		want = internal.Chunk{
@@ -94,9 +111,15 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app := fakeService(want)
+		sub := make(chan pubsub.Event[internal.Chunk])
+		svc := &service{
+			chunkproxy: &fakeTailProxy{chunk: want},
+			broker:     &fakeSubService{stream: sub},
+			Logger:     logr.Discard(),
+			run:        &fakeAuthorizer{},
+		}
 
-		stream, err := app.Tail(ctx, internal.GetChunkOptions{
+		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
 			RunID: "run-123",
 			Phase: internal.PlanPhase,
 		})
@@ -106,13 +129,13 @@ func TestTail(t *testing.T) {
 		require.Equal(t, want, <-stream)
 
 		// publish duplicate chunk
-		app.Publish(pubsub.Event{
+		sub <- pubsub.Event[internal.Chunk]{
 			Payload: internal.Chunk{
 				RunID: "run-123",
 				Phase: internal.PlanPhase,
 				Data:  []byte("\x02hello"),
 			},
-		})
+		}
 
 		// publish non-duplicate chunk
 		want = internal.Chunk{
@@ -121,28 +144,34 @@ func TestTail(t *testing.T) {
 			Data:   []byte(" world\x03"),
 			Offset: 6,
 		}
-		app.Publish(pubsub.Event{Payload: want})
+		sub <- pubsub.Event[internal.Chunk]{Payload: want}
 		// dup event is skipped and non-dup is received
 		assert.Equal(t, want, <-stream)
 	})
 
 	t.Run("ignore chunk for other run", func(t *testing.T) {
-		app := fakeService(internal.Chunk{})
+		sub := make(chan pubsub.Event[internal.Chunk])
+		svc := &service{
+			chunkproxy: &fakeTailProxy{},
+			broker:     &fakeSubService{stream: sub},
+			Logger:     logr.Discard(),
+			run:        &fakeAuthorizer{},
+		}
 
-		stream, err := app.Tail(ctx, internal.GetChunkOptions{
+		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
 			RunID: "run-123",
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
 
 		// publish chunk for other run
-		app.Publish(pubsub.Event{
+		sub <- pubsub.Event[internal.Chunk]{
 			Payload: internal.Chunk{
 				RunID: "run-456",
 				Phase: internal.PlanPhase,
 				Data:  []byte("workers of the world, unite"),
 			},
-		})
+		}
 
 		// publish chunk for tailed run
 		want := internal.Chunk{
@@ -150,19 +179,8 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app.Publish(pubsub.Event{
-			Payload: want,
-		})
+		sub <- pubsub.Event[internal.Chunk]{Payload: want}
 		// chunk for other run is skipped but chunk for this run is received
 		assert.Equal(t, want, <-stream)
 	})
-}
-
-func fakeService(existing internal.Chunk) *service {
-	return &service{
-		chunkproxy:    &fakeTailProxy{chunk: existing},
-		PubSubService: newFakePubSubService(),
-		Logger:        logr.Discard(),
-		run:           &fakeAuthorizer{},
-	}
 }

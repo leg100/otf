@@ -30,7 +30,7 @@ const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
 type InsertStateVersionOutputParams struct {
 	ID             pgtype.Text
 	Name           pgtype.Text
-	Sensitive      bool
+	Sensitive      pgtype.Bool
 	Type           pgtype.Text
 	Value          []byte
 	StateVersionID pgtype.Text
@@ -68,7 +68,7 @@ WHERE state_version_output_id = $1
 type FindStateVersionOutputByIDRow struct {
 	StateVersionOutputID pgtype.Text `json:"state_version_output_id"`
 	Name                 pgtype.Text `json:"name"`
-	Sensitive            bool        `json:"sensitive"`
+	Sensitive            pgtype.Bool `json:"sensitive"`
 	Type                 pgtype.Text `json:"type"`
 	Value                []byte      `json:"value"`
 	StateVersionID       pgtype.Text `json:"state_version_id"`

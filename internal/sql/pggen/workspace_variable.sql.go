@@ -54,8 +54,8 @@ type FindWorkspaceVariablesByWorkspaceIDRow struct {
 	Value       pgtype.Text `json:"value"`
 	Description pgtype.Text `json:"description"`
 	Category    pgtype.Text `json:"category"`
-	Sensitive   bool        `json:"sensitive"`
-	HCL         bool        `json:"hcl"`
+	Sensitive   pgtype.Bool `json:"sensitive"`
+	HCL         pgtype.Bool `json:"hcl"`
 	VersionID   pgtype.Text `json:"version_id"`
 }
 

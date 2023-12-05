@@ -8,6 +8,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	DefaultBasePath = "/otfapi"
+	PingEndpoint    = "ping"
+	DefaultAddress  = "localhost:8080"
+)
+
 type Handlers struct{}
 
 func (h *Handlers) AddHandlers(r *mux.Router) {

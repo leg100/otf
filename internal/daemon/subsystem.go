@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/cenkalti/backoff.v1"
 )
 
 type (

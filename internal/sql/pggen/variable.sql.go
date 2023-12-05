@@ -37,8 +37,8 @@ type InsertVariableParams struct {
 	Value       pgtype.Text
 	Description pgtype.Text
 	Category    pgtype.Text
-	Sensitive   bool
-	HCL         bool
+	Sensitive   pgtype.Bool
+	HCL         pgtype.Bool
 	VersionID   pgtype.Text
 }
 
@@ -77,8 +77,8 @@ type FindVariableRow struct {
 	Value       pgtype.Text `json:"value"`
 	Description pgtype.Text `json:"description"`
 	Category    pgtype.Text `json:"category"`
-	Sensitive   bool        `json:"sensitive"`
-	HCL         bool        `json:"hcl"`
+	Sensitive   pgtype.Bool `json:"sensitive"`
+	HCL         pgtype.Bool `json:"hcl"`
 	VersionID   pgtype.Text `json:"version_id"`
 }
 
@@ -126,9 +126,9 @@ type UpdateVariableByIDParams struct {
 	Value       pgtype.Text
 	Description pgtype.Text
 	Category    pgtype.Text
-	Sensitive   bool
+	Sensitive   pgtype.Bool
 	VersionID   pgtype.Text
-	HCL         bool
+	HCL         pgtype.Bool
 	VariableID  pgtype.Text
 }
 
@@ -170,8 +170,8 @@ type DeleteVariableByIDRow struct {
 	Value       pgtype.Text `json:"value"`
 	Description pgtype.Text `json:"description"`
 	Category    pgtype.Text `json:"category"`
-	Sensitive   bool        `json:"sensitive"`
-	HCL         bool        `json:"hcl"`
+	Sensitive   pgtype.Bool `json:"sensitive"`
+	HCL         pgtype.Bool `json:"hcl"`
 	VersionID   pgtype.Text `json:"version_id"`
 }
 
