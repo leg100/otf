@@ -12,18 +12,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOrganization(t *testing.T) {
+func TestIntegration_Organization(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, defaultOrg, ctx := setup(t, nil)
-		user := userFromContext(t, ctx)
+		svc, _, ctx := setup(t, &config{skipDefaultOrganization: true})
 		sub, unsub := svc.WatchOrganizations(ctx)
 		defer unsub()
 		org, err := svc.CreateOrganization(ctx, organization.CreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
+		// confirm creation triggers an event.
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := svc.CreateOrganization(ctx, organization.CreateOptions{
@@ -40,13 +41,10 @@ func TestOrganization(t *testing.T) {
 				members, err := svc.ListTeamUsers(ctx, owners.ID)
 				require.NoError(t, err)
 				if assert.Equal(t, 1, len(members)) {
+					user := userFromContext(t, ctx)
 					assert.Equal(t, user.Username, members[0].Username)
 				}
 			})
-		})
-		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(defaultOrg), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 		})
 	})
 
