@@ -148,7 +148,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 	}
 
 	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		for _, hook := range s.afterCreateHooks {
+		for _, hook := range s.beforeCreateHooks {
 			if err := hook(ctx, ws); err != nil {
 				return err
 			}
