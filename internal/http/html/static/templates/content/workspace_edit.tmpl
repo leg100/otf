@@ -201,15 +201,15 @@
             <td class="p-2">admin</td>
           </tr>
           <!-- iterate through existing role assignments -->
-          {{ range .Policy.Permissions }}
-            {{ if eq .Team "owners" }}
+          {{ range .Assigned }}
+            {{ if eq .Team.Name "owners" }}
               {{ continue }}
             {{ end }}
-            <tr class="border-b" id="permissions-{{ .Team }}">
-              <td class="p-2"><a href="{{ teamPath .TeamID }}">{{ .Team }}</a></td>
+            <tr class="border-b" id="permissions-{{ .Team.Name }}">
+              <td class="p-2"><a href="{{ teamPath .Team.ID }}">{{ .Team.Name }}</a></td>
               <td class="p-2">
                 <form class="" action="{{ setPermissionWorkspacePath $.Workspace.ID }}" method="POST">
-                  <input name="team_name" value="{{ .Team }}" type="hidden">
+                  <input name="team_id" value="{{ .Team.ID }}" type="hidden">
                   <select name="role" id="role-select">
                     {{ $currentRole := .Role.String }}
                     {{ range $.Roles }}
@@ -221,7 +221,7 @@
               </td>
               <td>
                 <form class="" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
-                  <input name="team_name" value="{{ .Team }}" type="hidden">
+                  <input name="team_id" value="{{ .Team.ID }}" type="hidden">
                   <button class="btn-danger">Remove</button>
                 </form>
               </td>
@@ -230,10 +230,10 @@
           <tr class="border-b">
             <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Workspace.ID }}" method="POST"></form>
             <td class="p-2">
-              <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
+              <select form="permissions-add-form" name="team_id" id="permissions-add-select-team">
                 <option value="">--team--</option>
                 {{ range .Unassigned }}
-                  <option value="{{ .Name }}">{{ .Name }}</option>
+                  <option value="{{ .ID }}">{{ .Name }}</option>
                 {{ end }}
               </select>
             </td>

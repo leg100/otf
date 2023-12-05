@@ -29,7 +29,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	// engineer's team.
 	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "plan"),
+		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.ID, "plan"),
 	})
 
 	// As engineer, run terraform init, and plan. This should succeed because

@@ -177,7 +177,7 @@ func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, role string) chromedp.Tasks {
+func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, teamID, role string) chromedp.Tasks {
 	t.Helper()
 
 	return chromedp.Tasks{
@@ -191,7 +191,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 		matchText(t, "#permissions-owners td:last-child", "admin", chromedp.ByQuery),
 		// assign role to team
 		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role),
-		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team),
+		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, teamID),
 		// scroll to bottom so that permissions are visible in screenshot
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
