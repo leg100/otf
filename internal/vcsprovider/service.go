@@ -7,11 +7,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -38,18 +38,18 @@ type (
 		// provider is, after all, to construct a vcs client.
 		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 
-		BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider])
+		BeforeDeleteVCSProvider(hook func(context.Context, *VCSProvider) error)
 	}
 
 	service struct {
 		logr.Logger
 
-		site         internal.Authorizer
-		organization internal.Authorizer
-		db           *pgdb
-		web          *webHandlers
-		api          *tfe
-		deleteHook   *hooks.Hook[*VCSProvider]
+		site              internal.Authorizer
+		organization      internal.Authorizer
+		db                *pgdb
+		web               *webHandlers
+		api               *tfe
+		beforeDeleteHooks []func(context.Context, *VCSProvider) error
 
 		internal.HostnameService
 		github.GithubAppService
@@ -89,7 +89,6 @@ func NewService(opts Options) *service {
 			DB:      opts.DB,
 			factory: &factory,
 		},
-		deleteHook: hooks.NewHook[*VCSProvider](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
@@ -130,10 +129,6 @@ func NewService(opts Options) *service {
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 	a.api.addHandlers(r)
-}
-
-func (a *service) BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider]) {
-	a.deleteHook.Before(l)
 }
 
 func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
@@ -255,20 +250,29 @@ func (a *service) GetVCSClient(ctx context.Context, providerID string) (vcs.Clie
 }
 
 func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
-	// retrieve vcs provider first in order to get organization for authorization
-	provider, err := a.db.get(ctx, id)
-	if err != nil {
-		a.Error(err, "retrieving vcs provider", "id", id)
-		return nil, err
-	}
+	var (
+		provider *VCSProvider
+		subject  internal.Subject
+	)
+	err := a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+		// retrieve vcs provider first in order to get organization for authorization
+		provider, err = a.db.get(ctx, id)
+		if err != nil {
+			a.Error(err, "retrieving vcs provider", "id", id)
+			return err
+		}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.DeleteVCSProviderAction, provider.Organization)
-	if err != nil {
-		return nil, err
-	}
+		subject, err = a.organization.CanAccess(ctx, rbac.DeleteVCSProviderAction, provider.Organization)
+		if err != nil {
+			return err
+		}
 
-	err = a.deleteHook.Dispatch(ctx, provider, func(ctx context.Context) (*VCSProvider, error) {
-		return provider, a.db.delete(ctx, id)
+		for _, hook := range a.beforeDeleteHooks {
+			if err := hook(ctx, provider); err != nil {
+				return err
+			}
+		}
+		return a.db.delete(ctx, id)
 	})
 	if err != nil {
 		a.Error(err, "deleting vcs provider", "provider", provider, "subject", subject)
@@ -276,4 +280,8 @@ func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvide
 	}
 	a.V(0).Info("deleted vcs provider", "provider", provider, "subject", subject)
 	return provider, nil
+}
+
+func (a *service) BeforeDeleteVCSProvider(hook func(context.Context, *VCSProvider) error) {
+	a.beforeDeleteHooks = append(a.beforeDeleteHooks, hook)
 }
