@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
@@ -26,9 +27,7 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
@@ -51,7 +50,9 @@ type (
 		logr.Logger
 
 		*sql.DB
-		*pubsub.Broker
+
+		listener *sql.Listener
+		agent    agentDaemon
 
 		organization.OrganizationService
 		team.TeamService
@@ -70,15 +71,14 @@ type (
 		notifications.NotificationService
 		connections.ConnectionService
 		github.GithubAppService
-		remoteops.AgentTokenService
+		agent.AgentService
 
 		Handlers []internal.Handlers
-
-		opsDaemon process
 	}
 
-	process interface {
+	agentDaemon interface {
 		Start(context.Context) error
+		Registered() <-chan *agent.Agent
 	}
 )
 
@@ -113,9 +113,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	responder := tfeapi.NewResponder()
+	// listener listens to database events
+	listener := sql.NewListener(logger, db)
 
-	broker := pubsub.NewBroker(logger, db)
+	// responder responds to TFE API requests
+	responder := tfeapi.NewResponder()
 
 	// Setup url signer
 	signer := internal.NewSigner(cfg.Secret)
@@ -132,9 +134,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	orgService := organization.NewService(organization.Options{
 		Logger:                       logger,
 		DB:                           db,
+		Listener:                     listener,
 		Renderer:                     renderer,
 		Responder:                    responder,
-		Broker:                       broker,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 		TokensService:                tokensService,
 	})
@@ -214,7 +216,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
 		DB:                  db,
-		Broker:              broker,
+		Listener:            listener,
 		Renderer:            renderer,
 		Responder:           responder,
 		ConnectionService:   connectionService,
@@ -235,6 +237,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
 		DB:                          db,
+		Listener:                    listener,
 		Renderer:                    renderer,
 		Responder:                   responder,
 		WorkspaceAuthorizer:         workspaceService,
@@ -242,7 +245,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
 		VCSProviderService:          vcsProviderService,
-		Broker:                      broker,
 		Cache:                       cache,
 		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
@@ -254,7 +256,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:            db,
 		RunAuthorizer: runService,
 		Cache:         cache,
-		Broker:        broker,
+		Listener:      listener,
 		Verifier:      signer,
 	})
 	moduleService := module.NewService(module.Options{
@@ -287,17 +289,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:    workspaceService,
 		RunService:          runService,
 	})
-	agentTokenService := remoteops.NewService(remoteops.ServiceOptions{
-		Logger:        logger,
-		DB:            db,
-		Renderer:      renderer,
-		Responder:     responder,
-		TokensService: tokensService,
+
+	agentService := agent.NewService(agent.ServiceOptions{
+		Logger:           logger,
+		DB:               db,
+		Renderer:         renderer,
+		Responder:        responder,
+		RunService:       runService,
+		WorkspaceService: workspaceService,
+		TokensService:    tokensService,
+		Listener:         listener,
 	})
 
-	remoteopsDaemon, err := remoteops.NewDaemon(
-		logger.WithValues("component", "remoteops"),
-		remoteops.InProcClient{
+	agentDaemon, err := agent.New(
+		logger.WithValues("component", "agent"),
+		agent.InProcClient{
 			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
@@ -305,8 +311,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
+			Service:                     agentService,
 		},
-		*cfg.RemoteOpsConfig,
+		*cfg.AgentConfig,
 	)
 	if err != nil {
 		return nil, err
@@ -351,7 +358,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	notificationService := notifications.NewService(notifications.Options{
 		Logger:              logger,
 		DB:                  db,
-		Broker:              broker,
+		Listener:            listener,
 		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
@@ -384,7 +391,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		configService,
 		notificationService,
 		githubAppService,
-		agentTokenService,
+		agentService,
 		disco.Service{},
 		&ghapphandler.Handler{
 			Logger:             logger,
@@ -417,10 +424,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		NotificationService:         notificationService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
-		AgentTokenService:           agentTokenService,
-		Broker:                      broker,
+		AgentService:                agentService,
 		DB:                          db,
-		opsDaemon:                   remoteopsDaemon,
+		agent:                       agentDaemon,
+		listener:                    listener,
 	}, nil
 }
 
@@ -462,9 +469,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	subsystems := []*Subsystem{
 		{
-			Name:   "broker",
+			Name:   "listener",
 			Logger: d.Logger,
-			System: d.Broker,
+			System: d.listener,
 		},
 		{
 			Name:   "proxy",
@@ -480,10 +487,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: &run.Reporter{
 				Logger:                      d.Logger.WithValues("component", "reporter"),
 				VCSProviderService:          d.VCSProviderService,
-				Subscriber:                  d.Broker,
 				HostnameService:             d.HostnameService,
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
+				Service:                     d.RunService,
 			},
 		},
 		{
@@ -493,12 +500,35 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(notifications.LockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
-				Logger:           d.Logger,
-				Subscriber:       d.Broker,
-				HostnameService:  d.HostnameService,
-				WorkspaceService: d.WorkspaceService,
-				DB:               d.DB,
+				Logger:              d.Logger,
+				HostnameService:     d.HostnameService,
+				WorkspaceService:    d.WorkspaceService,
+				RunService:          d.RunService,
+				NotificationService: d.NotificationService,
+				DB:                  d.DB,
 			}),
+		},
+		{
+			Name:      "job-allocator",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(agent.AllocatorLockID),
+			System:    d.NewAllocator(d.Logger),
+		},
+		{
+			Name:      "agent-manager",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(agent.ManagerLockID),
+			System:    d.NewManager(),
+		},
+		{
+			Name:   "agent-daemon",
+			Logger: d.Logger,
+			DB:     d.DB,
+			System: d.agent,
 		},
 	}
 	if !d.DisableScheduler {
@@ -512,7 +542,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
-				Subscriber:       d.Broker,
 			}),
 		})
 	}
@@ -522,24 +551,20 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		}
 	}
 
-	// Wait for broker start listening; otherwise some tests may fail
+	// Wait for database events listener start listening; otherwise some tests may fail
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timed out waiting for broker to start")
-	case <-d.Broker.Started():
+		return fmt.Errorf("timed out waiting for database events listener to start")
+	case <-d.listener.Started():
 	}
-
-	// Run remote ops daemon in background
-	g.Go(func() error {
-		// give daemon unlimited access to services
-		daemonCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "remoteops-daemon"})
-		if err := d.opsDaemon.Start(daemonCtx); err != nil {
-			return fmt.Errorf("remote ops daemon terminated: %w", err)
-		}
-		return nil
-	})
+	// Wait for agent to register; otherwise some tests may fail
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-d.agent.Registered():
+	}
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {

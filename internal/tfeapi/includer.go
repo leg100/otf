@@ -12,6 +12,7 @@ import (
 const (
 	IncludeOrganization IncludeName = "organization"
 	IncludeWorkspace    IncludeName = "workspace"
+	IncludeWorkspaces   IncludeName = "workspaces"
 	IncludeCurrentRun   IncludeName = "current_run"
 	IncludeConfig       IncludeName = "configuration_version"
 	IncludeIngress      IncludeName = "ingress_attributes"

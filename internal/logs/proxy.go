@@ -12,10 +12,10 @@ import (
 type (
 	// proxy is a caching proxy for log chunks
 	proxy struct {
-		cache internal.Cache
-		db    proxydb
+		cache  internal.Cache
+		db     proxydb
+		broker pubsub.SubscriptionService[internal.Chunk]
 
-		pubsub.PubSubService
 		logr.Logger
 	}
 
@@ -25,35 +25,17 @@ type (
 	}
 )
 
-func newProxy(opts Options) *proxy {
-	db := &pgdb{opts.DB}
-	p := &proxy{
-		Logger:        opts.Logger,
-		PubSubService: opts.Broker,
-		cache:         opts.Cache,
-		db:            db,
-	}
-	// Register with broker so that it can relay log chunks
-	opts.Register("logs", db)
-	return p
-}
-
 // Start chunk proxy daemon, which keeps the cache up-to-date with logs
 // published across the cluster.
 func (p *proxy) Start(ctx context.Context) error {
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
 	// it may have missed updates, potentially rendering the cache stale.
-	sub, err := p.Subscribe(ctx, "chunk-proxy-")
-	if err != nil {
-		return err
-	}
+	sub, unsub := p.broker.Subscribe(ctx)
+	defer unsub()
 
 	for event := range sub {
-		chunk, ok := event.Payload.(internal.Chunk)
-		if !ok {
-			continue
-		}
+		chunk := event.Payload
 		key := cacheKey(chunk.RunID, chunk.Phase)
 
 		var logs []byte

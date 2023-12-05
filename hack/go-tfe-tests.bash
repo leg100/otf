@@ -16,6 +16,8 @@ export TFE_ADDRESS="${TFE_ADDRESS:-https://localhost:8080}"
 export TFE_TOKEN=${TFE_TOKEN:-site-token}
 export SKIP_PAID=1
 export SSL_CERT_FILE=$PWD/internal/integration/fixtures/cert.pem
+# necessary for agent pool tests
+export TFE_ADMIN_PROVISION_LICENSES_TOKEN=$TFE_TOKEN
 
 tests=()
 tests+=('TestOrganizations')
@@ -85,6 +87,8 @@ tests+=('TestVariableSetsApplyToAndRemoveFromWorkspaces')
 tests+=('TestVariableSetsDelete')
 tests+=('TestVariableSetVariables')
 tests+=('TestStateVersion')
+tests+=('TestAgentPools')
+tests+=('TestAgentTokens')
 
 betaTests=()
 betaTests+=('TestStateVersionsCreate')
@@ -113,7 +117,10 @@ chmod -R +w $dest_dir
 
 cd $dest_dir
 
-# run beta tests
-ENABLE_BETA=1 go test -v -run $allBetaTests -timeout 600s
+# run beta tests unless user specifies tests (there is currently no way in this
+# script to specify individual *beta* tests to run)
+if [[ "$#" -eq 0 ]]; then
+    ENABLE_BETA=1 go test -v -run $allBetaTests -timeout 600s
+fi
 # run tests
 go test -v -run ${@:-$all} -timeout 600s

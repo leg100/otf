@@ -6,7 +6,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -31,8 +30,8 @@ type row struct {
 	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
-	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
-	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
 }
 
 // row converts an organization database row into an
@@ -43,8 +42,8 @@ func (r row) toOrganization() *Organization {
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		Name:                       r.Name.String,
-		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces,
-		CostEstimationEnabled:      r.CostEstimationEnabled,
+		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces.Bool,
+		CostEstimationEnabled:      r.CostEstimationEnabled.Bool,
 	}
 	if r.SessionRemember.Status == pgtype.Present {
 		sessionRememberInt := int(r.SessionRemember.Int)
@@ -68,18 +67,6 @@ type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
 }
 
-// GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &Organization{ID: id}, nil
-	}
-	r, err := db.Conn(ctx).FindOrganizationByID(ctx, sql.String(id))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return row(r).toOrganization(), nil
-}
-
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
 	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
@@ -97,11 +84,11 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 			NewName:                    sql.String(org.Name),
 			Email:                      sql.StringPtr(org.Email),
 			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:      org.CostEstimationEnabled,
+			CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
 			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
 			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
-			AllowForceDeleteWorkspaces: org.AllowForceDeleteWorkspaces,
+			AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
 		})
 		if err != nil {
 			return err
@@ -146,6 +133,14 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	r, err := db.Conn(ctx).FindOrganizationByName(ctx, sql.String(name))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return row(r).toOrganization(), nil
+}
+
+func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
+	r, err := db.Conn(ctx).FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

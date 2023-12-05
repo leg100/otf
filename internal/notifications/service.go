@@ -22,23 +22,24 @@ type (
 		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
 		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
 		DeleteNotificationConfiguration(ctx context.Context, id string) error
+		WatchNotificationConfigurations(context.Context) (<-chan pubsub.Event[*Config], func())
 	}
 
 	service struct {
 		logr.Logger
-		pubsub.PubSubService
 		workspace.WorkspaceService
 		internal.HostnameService // for including a link in the notification
 
 		workspace internal.Authorizer // authorize workspaces actions
 		db        *pgdb
 		api       *tfe
+		broker    *pubsub.Broker[*Config]
 	}
 
 	Options struct {
 		*sql.DB
+		*sql.Listener
 		*tfeapi.Responder
-		*pubsub.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
 		workspace.WorkspaceService
@@ -49,7 +50,6 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:           opts.Logger,
-		PubSubService:    opts.Broker,
 		workspace:        opts.WorkspaceAuthorizer,
 		db:               &pgdb{opts.DB},
 		HostnameService:  opts.HostnameService,
@@ -59,13 +59,27 @@ func NewService(opts Options) *service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	// Register with broker so that it can relay events
-	opts.Broker.Register("notification_configurations", svc.db)
+	// Register with broker so that it can relay run events
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"notification_configurations",
+		func(ctx context.Context, id string, action sql.Action) (*Config, error) {
+			if action == sql.DeleteAction {
+				return &Config{ID: id}, nil
+			}
+			return svc.db.get(ctx, id)
+		},
+	)
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
+}
+
+func (s *service) WatchNotificationConfigurations(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {

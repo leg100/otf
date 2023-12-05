@@ -26,6 +26,9 @@ var ports = map[Service]int{
 }
 
 func Up() error {
+	if err := exec.Command("docker", "compose").Run(); err != nil {
+		return fmt.Errorf("docker compose error (not installed?): %w", err)
+	}
 	// --wait implies -d, which detaches the containers
 	args := []string{"compose", "-p", "otf", "up", "--wait", "--wait-timeout", "60"}
 	args = append(args, string(Postgres), string(Squid))

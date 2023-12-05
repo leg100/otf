@@ -407,7 +407,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AutoApply         bool `schema:"auto_apply"`
+		AgentPoolID       *string `schema:"agent_pool_id"`
+		AutoApply         bool    `schema:"auto_apply"`
 		Name              *string
 		Description       *string
 		ExecutionMode     *ExecutionMode `schema:"execution_mode"`
@@ -467,6 +468,10 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 				opts.ConnectOptions.TagsRegex = &params.PredefinedTagsRegex
 			}
 		}
+	}
+	// only set agent pool ID if execution mode is set to agent
+	if opts.ExecutionMode != nil && *opts.ExecutionMode == AgentExecutionMode {
+		opts.AgentPoolID = params.AgentPoolID
 	}
 
 	ws, err = h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)

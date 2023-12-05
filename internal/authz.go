@@ -95,3 +95,18 @@ func (s *Superuser) String() string                                     { return
 func (s *Superuser) ID() string                                         { return s.Username }
 func (s *Superuser) IsSiteAdmin() bool                                  { return true }
 func (s *Superuser) IsOwner(string) bool                                { return true }
+
+// Nobody is a subject with no privileges.
+type Nobody struct {
+	Username string
+}
+
+func (*Nobody) CanAccessSite(action rbac.Action) bool                { return false }
+func (*Nobody) CanAccessTeam(rbac.Action, string) bool               { return false }
+func (*Nobody) CanAccessOrganization(rbac.Action, string) bool       { return false }
+func (*Nobody) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return false }
+func (s *Nobody) Organizations() []string                            { return nil }
+func (s *Nobody) String() string                                     { return s.Username }
+func (s *Nobody) ID() string                                         { return s.Username }
+func (s *Nobody) IsSiteAdmin() bool                                  { return false }
+func (s *Nobody) IsOwner(string) bool                                { return false }

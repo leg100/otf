@@ -38,9 +38,8 @@ func NewHook[T any](db *sql.DB) *Hook[T] {
 	}
 }
 
-// Dispatch invokes all listeners synchronously within a transaction. The id
-// should uniquely identify the resource that triggers the dispatch.
-func (h *Hook[T]) Dispatch(ctx context.Context, event T, fn func(context.Context) error) error {
+// Dispatch invokes all listeners synchronously within a transaction.
+func (h *Hook[T]) Dispatch(ctx context.Context, event T, fn func(context.Context) (T, error)) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -51,8 +50,12 @@ func (h *Hook[T]) Dispatch(ctx context.Context, event T, fn func(context.Context
 			}
 		}
 
-		if err := fn(ctx); err != nil {
-			return err
+		if fn != nil {
+			var err error
+			event, err = fn(ctx)
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, callback := range h.after {

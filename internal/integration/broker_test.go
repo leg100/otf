@@ -22,12 +22,18 @@ func TestBroker(t *testing.T) {
 	local, _, ctx := setup(t, &cfg)
 	remote, _, _ := setup(t, &cfg)
 
+	// setup subscriptions
+	localSub, localUnsub := local.WatchOrganizations(ctx)
+	defer localUnsub()
+	remoteSub, remoteUnsub := remote.WatchOrganizations(ctx)
+	defer remoteUnsub()
+
 	// create an org which should trigger an event
 	org := local.createOrganization(t, ctx)
 	want := pubsub.NewCreatedEvent(org)
 
 	// receive event on local broker
-	assert.Equal(t, want, <-local.sub)
+	assert.Equal(t, want, <-localSub)
 	// receive event on remote broker (via postgres)
-	assert.Equal(t, want, <-remote.sub)
+	assert.Equal(t, want, <-remoteSub)
 }

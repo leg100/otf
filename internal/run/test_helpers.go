@@ -12,13 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeSubscriber struct {
-	ch chan pubsub.Event
-
-	pubsub.PubSubService
+type fakeSubService struct {
+	ch chan pubsub.Event[*Run]
 }
 
-func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan pubsub.Event, error) {
+func (f *fakeSubService) Subscribe(context.Context) (<-chan pubsub.Event[*Run], func()) {
 	return f.ch, nil
 }
 
@@ -87,7 +85,7 @@ func (f *fakeWebServices) getLogs(context.Context, string, internal.PhaseType) (
 	return nil, nil
 }
 
-func (f *fakeWebServices) Cancel(ctx context.Context, runID string) (*Run, error) { return nil, nil }
+func (f *fakeWebServices) Cancel(context.Context, string) error { return nil }
 
 func (f *fakeWebServices) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil

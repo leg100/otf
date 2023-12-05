@@ -3,7 +3,7 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
-GOOSE_DBSTRING=postgres:///otf
+DBSTRING=postgres://postgres:password@localhost/otf
 LD_FLAGS = " \
     -s -w \
 	-X 'github.com/leg100/otf/internal.Version=$(VERSION)' \
@@ -64,7 +64,7 @@ install-latest-release:
 # Run docker compose stack
 .PHONY: compose-up
 compose-up: image
-	docker compose up -d
+	docker compose up -d --wait --wait-timeout 60
 
 # Remove docker compose stack
 .PHONY: compose-rm
@@ -116,13 +116,13 @@ install-pggen:
 .PHONY: sql
 sql: install-pggen
 	pggen gen go \
-		--postgres-connection "dbname=otf" \
+		--postgres-connection $(DBSTRING) \
 		--query-glob 'internal/sql/queries/*.sql' \
 		--output-dir ./internal/sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
 		--go-type 'int4=github.com/jackc/pgtype.Int4' \
 		--go-type 'int8=github.com/jackc/pgtype.Int8' \
-		--go-type 'bool=bool' \
+		--go-type 'bool=github.com/jackc/pgtype.Bool' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \
 		--acronym cli \
@@ -133,7 +133,8 @@ sql: install-pggen
 		--acronym http \
 		--acronym tls \
 		--acronym sso \
-		--acronym hcl
+		--acronym hcl \
+		--acronym ip
 	goimports -w ./internal/sql/pggen
 	go fmt ./internal/sql/pggen
 
@@ -145,22 +146,22 @@ install-goose:
 # Migrate SQL schema to latest version
 .PHONY: migrate
 migrate: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
 
 # Redo SQL schema migration
 .PHONY: migrate-redo
 migrate-redo: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
 
 # Rollback SQL schema by one version
 .PHONY: migrate-rollback
 migrate-rollback: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
 
 # Get SQL schema migration status
 .PHONY: migrate-status
 migrate-status: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
+	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
 
 # Run docs server with live reload
 .PHONY: serve-docs

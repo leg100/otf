@@ -213,7 +213,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = a.Cancel(r.Context(), id); err != nil {
+	if err = a.Cancel(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -357,7 +357,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	perms := &types.RunPermissions{
 		CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
 		CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
+		CanForceCancel:  subject.CanAccessWorkspace(rbac.ForceCancelRunAction, policy),
 		CanCancel:       subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
 		CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 	}
@@ -397,28 +397,27 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		Actions: &types.RunActions{
 			IsCancelable:      from.Cancelable(),
 			IsConfirmable:     from.Confirmable(),
-			IsForceCancelable: from.ForceCancelAvailableAt != nil,
+			IsForceCancelable: from.CancelSignaledAt != nil,
 			IsDiscardable:     from.Discardable(),
 		},
-		AllowEmptyApply:        from.AllowEmptyApply,
-		AutoApply:              from.AutoApply,
-		CreatedAt:              from.CreatedAt,
-		ExecutionMode:          string(from.ExecutionMode),
-		ForceCancelAvailableAt: from.ForceCancelAvailableAt,
-		HasChanges:             from.Plan.HasChanges(),
-		IsDestroy:              from.IsDestroy,
-		Message:                from.Message,
-		Permissions:            perms,
-		PlanOnly:               from.PlanOnly,
-		PositionInQueue:        0,
-		Refresh:                from.Refresh,
-		RefreshOnly:            from.RefreshOnly,
-		ReplaceAddrs:           from.ReplaceAddrs,
-		Source:                 string(from.Source),
-		Status:                 string(from.Status),
-		StatusTimestamps:       &timestamps,
-		TargetAddrs:            from.TargetAddrs,
-		TerraformVersion:       from.TerraformVersion,
+		AllowEmptyApply:  from.AllowEmptyApply,
+		AutoApply:        from.AutoApply,
+		CreatedAt:        from.CreatedAt,
+		ExecutionMode:    string(from.ExecutionMode),
+		HasChanges:       from.Plan.HasChanges(),
+		IsDestroy:        from.IsDestroy,
+		Message:          from.Message,
+		Permissions:      perms,
+		PlanOnly:         from.PlanOnly,
+		PositionInQueue:  0,
+		Refresh:          from.Refresh,
+		RefreshOnly:      from.RefreshOnly,
+		ReplaceAddrs:     from.ReplaceAddrs,
+		Source:           string(from.Source),
+		Status:           string(from.Status),
+		StatusTimestamps: &timestamps,
+		TargetAddrs:      from.TargetAddrs,
+		TerraformVersion: from.TerraformVersion,
 		// Relations
 		Plan:  &types.Plan{ID: internal.ConvertID(from.ID, "plan")},
 		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
@@ -439,7 +438,22 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	if from.CostEstimationEnabled {
 		to.CostEstimate = &types.CostEstimate{ID: internal.ConvertID(from.ID, "ce")}
 	}
-
+	//
+	// go-tfe integration tests expect this parameter to be set even if a run
+	// has already been successfully canceled gracefully and its status has been
+	// set to RunCanceled; whereas OTF only permits a run to be force canceled
+	// if the run has not been successfully canceled and the run is yet to reach
+	// RunCanceled status. As a compromise, it is set in either of these
+	// circumstances.
+	if timestamps.CanceledAt != nil {
+		// run successfully canceled
+		cooledOff := timestamps.CanceledAt.Add(forceCancelCoolOff)
+		to.ForceCancelAvailableAt = &cooledOff
+	} else if from.CancelSignaledAt != nil {
+		// run not successfully canceled yet
+		cooledOff := from.CancelSignaledAt.Add(forceCancelCoolOff)
+		to.ForceCancelAvailableAt = &cooledOff
+	}
 	return to, nil
 }
 

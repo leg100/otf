@@ -13,7 +13,7 @@ type teamCLI struct {
 	TeamService
 }
 
-func NewTeamCommand(api *otfapi.Client) *cobra.Command {
+func NewTeamCommand(client *otfapi.Client) *cobra.Command {
 	cli := &teamCLI{}
 	cmd := &cobra.Command{
 		Use:   "teams",
@@ -22,7 +22,7 @@ func NewTeamCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.TeamService = &Client{Client: api}
+			cli.TeamService = &Client{Client: client}
 			return nil
 		},
 	}

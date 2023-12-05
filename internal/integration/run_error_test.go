@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/remoteops"
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -24,18 +24,19 @@ func TestRunError(t *testing.T) {
 
 	// create a daemon and start an agent
 	daemon, org, ctx := setup(t, nil)
-	daemon.startAgent(t, ctx, org.Name, remoteops.AgentConfig{})
+	agent, _ := daemon.startAgent(t, ctx, org.Name, "", "", agent.Config{})
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
-		name string
-		mode workspace.ExecutionMode
+		name   string
+		mode   workspace.ExecutionMode
+		poolID *string
 	}{
 		{
-			"execute run via daemon", workspace.RemoteExecutionMode,
+			"execute run via daemon", workspace.RemoteExecutionMode, nil,
 		},
 		{
-			"execute run via agent", workspace.AgentExecutionMode,
+			"execute run via agent", workspace.AgentExecutionMode, agent.AgentPoolID,
 		},
 	}
 	for _, tt := range tests {
@@ -45,6 +46,7 @@ func TestRunError(t *testing.T) {
 				Name:          internal.String("ws-" + string(tt.mode)),
 				Organization:  internal.String(org.Name),
 				ExecutionMode: workspace.ExecutionModePtr(tt.mode),
+				AgentPoolID:   tt.poolID,
 			})
 			require.NoError(t, err)
 
@@ -74,6 +76,14 @@ func TestRunError(t *testing.T) {
 			err = daemon.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
+			// watch run events
+			runsSub, runsUnsub := daemon.WatchRuns(ctx)
+			defer runsUnsub()
+
+			// watch log events
+			logsSub, logsUnsub := daemon.WatchLogs(ctx)
+			defer logsUnsub()
+
 			// create run
 			_ = daemon.createRun(t, ctx, ws, cv)
 
@@ -85,14 +95,14 @@ func TestRunError(t *testing.T) {
 			)
 			errorRegex := regexp.MustCompile(`Error: exit status 1: Error: Invalid resource type on main.tf line 5, in resource "null_resourc" "e2e": 5: resource "null_resourc" "e2e" {} The provider hashicorp/null does not support resource type "null_resourc". Did you mean "null_resource"?`)
 			require.NoError(t, err)
-			for event := range daemon.sub {
-				switch payload := event.Payload.(type) {
-				case internal.Chunk:
-					if errorRegex.Match(payload.Data) {
+			for {
+				select {
+				case event := <-logsSub:
+					if errorRegex.Match(event.Payload.Data) {
 						gotErrorLogs = true
 					}
-				case *run.Run:
-					if payload.Status == run.RunErrored {
+				case event := <-runsSub:
+					if event.Payload.Status == run.RunErrored {
 						gotErrorStatus = true
 					}
 				}

@@ -47,7 +47,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanQueued
 
-		require.NoError(t, run.Start(internal.PlanPhase))
+		require.NoError(t, run.Start())
 
 		require.Equal(t, RunPlanning, run.Status)
 		require.Equal(t, PhaseRunning, run.Plan.Status)
@@ -58,7 +58,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunPlannedAndFinished, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -69,7 +70,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true})
+		require.NoError(t, err)
 
 		require.Equal(t, RunErrored, run.Status)
 		require.Equal(t, PhaseErrored, run.Plan.Status)
@@ -82,7 +84,8 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunPlanned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -95,7 +98,8 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.OutputReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunPlanned, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -110,11 +114,13 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		autoapply, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
-		require.Equal(t, RunApplyQueued, run.Status)
-		require.Equal(t, PhaseFinished, run.Plan.Status)
-		require.Equal(t, PhaseQueued, run.Apply.Status)
+		assert.True(t, autoapply)
+		assert.Equal(t, RunPlanned, run.Status)
+		assert.Equal(t, PhaseFinished, run.Plan.Status)
+		assert.Equal(t, PhasePending, run.Apply.Status)
 	})
 
 	t.Run("finish plan with cost estimation enabled", func(t *testing.T) {
@@ -124,7 +130,8 @@ func TestRun_States(t *testing.T) {
 
 		run.Plan.ResourceReport = &Report{Additions: 1}
 
-		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.PlanPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunCostEstimated, run.Status)
 		require.Equal(t, PhaseFinished, run.Plan.Status)
@@ -145,7 +152,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunApplyQueued
 
-		require.NoError(t, run.Start(internal.ApplyPhase))
+		require.NoError(t, run.Start())
 
 		require.Equal(t, RunApplying, run.Status)
 		require.Equal(t, PhaseRunning, run.Apply.Status)
@@ -155,7 +162,8 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunApplying
 
-		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{}))
+		_, err := run.Finish(internal.ApplyPhase, PhaseFinishOptions{})
+		require.NoError(t, err)
 
 		require.Equal(t, RunApplied, run.Status)
 		require.Equal(t, PhaseFinished, run.Apply.Status)
@@ -165,17 +173,74 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunApplying
 
-		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true}))
+		_, err := run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true})
+		require.NoError(t, err)
 
 		require.Equal(t, RunErrored, run.Status)
 		require.Equal(t, PhaseErrored, run.Apply.Status)
 	})
 
-	t.Run("cancel run", func(t *testing.T) {
+	t.Run("cancel pending run", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
-		err := run.Cancel()
+		err := run.Cancel(true, false)
 		require.NoError(t, err)
-		assert.NotZero(t, run.ForceCancelAvailableAt)
+		// no signal should be sent
+		assert.Zero(t, run.CancelSignaledAt)
+		assert.Equal(t, PhaseUnreachable, run.Plan.Status)
+		assert.Equal(t, PhaseUnreachable, run.Apply.Status)
+	})
+
+	t.Run("cancel planning run should indicate signal be sent", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(true, false)
+		require.NoError(t, err)
+		assert.NotZero(t, run.CancelSignaledAt)
+		assert.Equal(t, RunPlanning, run.Status)
+	})
+
+	t.Run("when non-user cancels a planning run, it should be placed into canceled state", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(false, false)
+		require.NoError(t, err)
+		assert.Equal(t, PhaseCanceled, run.Plan.Status)
+		assert.Equal(t, PhaseUnreachable, run.Apply.Status)
+		assert.Equal(t, RunCanceled, run.Status)
+	})
+
+	t.Run("user cannot cancel a run twice", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(true, false)
+		require.NoError(t, err)
+		err = run.Cancel(true, false)
+		assert.Equal(t, internal.ErrRunCancelNotAllowed, err)
+	})
+
+	t.Run("cannot force cancel a run when no previous attempt has been made to cancel run gracefully", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(true, true)
+		assert.Equal(t, internal.ErrRunForceCancelNotAllowed, err)
+	})
+
+	t.Run("force cancel run when graceful cancel has already been attempted and cool off period has elapsed", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		// gracefully canceled 11 seconds ago
+		run.CancelSignaledAt = internal.Time(time.Now().Add(-11 * time.Second))
+		// force cancel now
+		err := run.Cancel(true, true)
+		require.NoError(t, err)
+		assert.Equal(t, RunForceCanceled, run.Status)
+	})
+
+	t.Run("non-user cannot force cancel a run", func(t *testing.T) {
+		run := newTestRun(ctx, CreateOptions{})
+		run.Status = RunPlanning
+		err := run.Cancel(false, true)
+		assert.Equal(t, internal.ErrRunForceCancelNotAllowed, err)
 	})
 }
 

@@ -49,6 +49,9 @@ func TestIntegration_RunAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		sub, unsub := daemon.WatchRuns(ctx)
+		defer unsub()
+
 		created, err := tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
 			// no config version ID specified
 			Workspace: &tfe.Workspace{
@@ -58,20 +61,18 @@ func TestIntegration_RunAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// wait for run to reach planned status
-		for event := range daemon.sub {
-			if r, ok := event.Payload.(*run.Run); ok {
-				switch r.Status {
-				case run.RunErrored:
-					t.Fatal("run unexpectedly errored")
-				case run.RunPlanned:
-					// run should have planned two resources (defined in the config from the
-					// github repo)
-					planned, err := daemon.GetRun(ctx, created.ID)
-					require.NoError(t, err)
+		for event := range sub {
+			switch event.Payload.Status {
+			case run.RunErrored:
+				t.Fatal("run unexpectedly errored")
+			case run.RunPlanned:
+				// run should have planned two resources (defined in the config from the
+				// github repo)
+				planned, err := daemon.GetRun(ctx, created.ID)
+				require.NoError(t, err)
 
-					assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)
-					return // success
-				}
+				assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)
+				return // success
 			}
 		}
 	})

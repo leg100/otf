@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -25,7 +24,7 @@ type (
 		Triggers                    []string           `json:"triggers"`
 		DestinationType             pgtype.Text        `json:"destination_type"`
 		WorkspaceID                 pgtype.Text        `json:"workspace_id"`
-		Enabled                     bool               `json:"enabled"`
+		Enabled                     pgtype.Bool        `json:"enabled"`
 	}
 )
 
@@ -35,7 +34,7 @@ func (r pgresult) toNotificationConfiguration() *Config {
 		CreatedAt:       r.CreatedAt.Time.UTC(),
 		UpdatedAt:       r.UpdatedAt.Time.UTC(),
 		Name:            r.Name.String,
-		Enabled:         r.Enabled,
+		Enabled:         r.Enabled.Bool,
 		DestinationType: Destination(r.DestinationType.String),
 		WorkspaceID:     r.WorkspaceID.String,
 	}
@@ -48,21 +47,13 @@ func (r pgresult) toNotificationConfiguration() *Config {
 	return nc
 }
 
-// GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) (any, error) {
-	if action == pubsub.DeleteDBAction {
-		return &Config{ID: id}, nil
-	}
-	return db.get(ctx, id)
-}
-
 func (db *pgdb) create(ctx context.Context, nc *Config) error {
 	params := pggen.InsertNotificationConfigurationParams{
 		NotificationConfigurationID: sql.String(nc.ID),
 		CreatedAt:                   sql.Timestamptz(nc.CreatedAt),
 		UpdatedAt:                   sql.Timestamptz(nc.UpdatedAt),
 		Name:                        sql.String(nc.Name),
-		Enabled:                     nc.Enabled,
+		Enabled:                     sql.Bool(nc.Enabled),
 		DestinationType:             sql.String(string(nc.DestinationType)),
 		URL:                         sql.NullString(),
 		WorkspaceID:                 sql.String(nc.WorkspaceID),
@@ -90,7 +81,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 		}
 		params := pggen.UpdateNotificationConfigurationByIDParams{
 			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
-			Enabled:                     nc.Enabled,
+			Enabled:                     sql.Bool(nc.Enabled),
 			Name:                        sql.String(nc.Name),
 			URL:                         sql.NullString(),
 			NotificationConfigurationID: sql.String(nc.ID),

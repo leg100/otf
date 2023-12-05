@@ -110,12 +110,13 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	org, err := a.UpdateOrganization(r.Context(), name, UpdateOptions{
-		Name:                   opts.Name,
-		Email:                  opts.Email,
-		CollaboratorAuthPolicy: (*string)(opts.CollaboratorAuthPolicy),
-		CostEstimationEnabled:  opts.CostEstimationEnabled,
-		SessionRemember:        opts.SessionRemember,
-		SessionTimeout:         opts.SessionTimeout,
+		Name:                       opts.Name,
+		Email:                      opts.Email,
+		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
+		CostEstimationEnabled:      opts.CostEstimationEnabled,
+		SessionRemember:            opts.SessionRemember,
+		SessionTimeout:             opts.SessionTimeout,
+		AllowForceDeleteWorkspaces: opts.AllowForceDeleteWorkspaces,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

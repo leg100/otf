@@ -43,7 +43,7 @@ type (
 		ID                     string                  `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
-		ForceCancelAvailableAt *time.Time              `jsonapi:"attribute" json:"force_cancel_available_at"`
+		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
 		Message                string                  `jsonapi:"attribute" json:"message"`
 		Organization           string                  `jsonapi:"attribute" json:"organization"`
 		Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
@@ -60,6 +60,7 @@ type (
 		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+		AgentPoolID            *string                 `jsonapi:"attribute" json:"agent_pool_id"`
 		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
 		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
@@ -295,41 +296,126 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// Cancel run. Returns a boolean indicating whether a cancel request should be
-// enqueued (for an agent to kill an in progress process)
-func (r *Run) Cancel() error {
-	if !r.Cancelable() {
-		return internal.ErrRunCancelNotAllowed
+func (r *Run) InProgress() bool {
+	switch r.Status {
+	case RunPlanning, RunApplying:
+		return true
+	default:
+		return false
 	}
-	// permit run to be force canceled after a cool off period of 10 seconds has
-	// elapsed.
-	tenSecondsFromNow := internal.CurrentTimestamp(nil).Add(10 * time.Second)
-	r.ForceCancelAvailableAt = &tenSecondsFromNow
+}
 
+// Cancel run. Depending upon whether the run is currently in-progress, the run
+// is either immediately canceled and its status updated to reflect that, or
+// CancelSignaledAt is set to the current time to indicate that a cancelation
+// signal should be sent to the process executing the run.
+//
+// The isUser arg should be set to true if a user is directly instigating the
+// cancelation; otherwise it should be set to false, i.e. the job service has
+// canceled a job and is now canceling the corresponding run.
+//
+// The force arg when set to true forceably cancels the run. This is only
+// allowed when an attempt has already been made to cancel the run
+// non-forceably. The force arg is only respected when isUser is true.
+func (r *Run) Cancel(isUser, force bool) error {
+	if force {
+		if isUser {
+			if !r.ForceCancelable() {
+				return internal.ErrRunForceCancelNotAllowed
+			}
+		} else {
+			// only a user can forceably cancel a run.
+			return internal.ErrRunForceCancelNotAllowed
+		}
+	}
+	var signal bool
 	switch r.Status {
 	case RunPending:
 		r.Plan.UpdateStatus(PhaseUnreachable)
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunPlanQueued, RunPlanning:
+	case RunPlanQueued:
 		r.Plan.UpdateStatus(PhaseCanceled)
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunApplyQueued, RunApplying:
+	case RunApplyQueued:
 		r.Apply.UpdateStatus(PhaseCanceled)
+	case RunPlanning:
+		if isUser && !force {
+			signal = true
+		} else {
+			r.Plan.UpdateStatus(PhaseCanceled)
+			r.Apply.UpdateStatus(PhaseUnreachable)
+		}
+	case RunPlanned:
+		r.Apply.UpdateStatus(PhaseUnreachable)
+	case RunApplying:
+		if isUser && !force {
+			signal = true
+		} else {
+			r.Apply.UpdateStatus(PhaseCanceled)
+		}
 	}
-
-	r.updateStatus(RunCanceled, nil)
-
+	if signal {
+		if r.CancelSignaledAt != nil {
+			// cannot send cancel signal more than once.
+			return internal.ErrRunCancelNotAllowed
+		}
+		// set timestamp to indicate signal is to be sent, but do not set
+		// status to RunCanceled yet.
+		now := internal.CurrentTimestamp(nil)
+		r.CancelSignaledAt = &now
+		return nil
+	}
+	if force {
+		r.updateStatus(RunForceCanceled, nil)
+	} else {
+		r.updateStatus(RunCanceled, nil)
+	}
 	return nil
 }
 
-// ForceCancel force cancels a run. A cool-off period of 10 seconds must have
-// elapsed following a cancelation request before a run can be force canceled.
-func (r *Run) ForceCancel() error {
-	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(RunForceCanceled, nil)
+// Cancelable determines whether run can be cancelled.
+func (r *Run) Cancelable() bool {
+	if r.CancelSignaledAt != nil {
+		return false
+	}
+	switch r.Status {
+	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+		return true
+	default:
+		return false
+	}
+}
+
+// ForceCancelable determines whether run can be forceably cancelled.
+func (r *Run) ForceCancelable() bool {
+	availableAt := r.ForceCancelAvailableAt()
+	if availableAt == nil || time.Now().Before(*availableAt) {
+		return false
+	}
+	return true
+}
+
+// ForceCancelAvailableAt provides the time from which point it is permitted to
+// forceably cancel the run. It only possible to do so when an attempt has
+// previously been made to cancel the run non-forceably and a cool-off period
+// has elapsed.
+func (r *Run) ForceCancelAvailableAt() *time.Time {
+	if r.Done() || r.CancelSignaledAt == nil {
+		// cannot force cancel a run that is already complete or when no attempt
+		// has previously been made to cancel run.
 		return nil
 	}
-	return internal.ErrRunForceCancelNotAllowed
+	return r.cancelCoolOff()
+}
+
+const forceCancelCoolOff = time.Second * 10
+
+func (r *Run) cancelCoolOff() *time.Time {
+	if r.CancelSignaledAt == nil {
+		return nil
+	}
+	cooledOff := r.CancelSignaledAt.Add(forceCancelCoolOff)
+	return &cooledOff
 }
 
 // StartedAt returns the time the run was created.
@@ -341,7 +427,7 @@ func (r *Run) StartedAt() time.Time {
 // discarded, etc.
 func (r *Run) Done() bool {
 	switch r.Status {
-	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
+	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunForceCanceled, RunErrored:
 		return true
 	default:
 		return false
@@ -397,7 +483,7 @@ func (r *Run) StatusTimestamp(status Status) (time.Time, error) {
 }
 
 // Start a run phase
-func (r *Run) Start(phase internal.PhaseType) error {
+func (r *Run) Start() error {
 	switch r.Status {
 	case RunPlanQueued:
 		r.updateStatus(RunPlanning, nil)
@@ -413,22 +499,24 @@ func (r *Run) Start(phase internal.PhaseType) error {
 	return nil
 }
 
-// Finish updates the run to reflect its plan or apply phase having finished.
-func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
+// Finish updates the run to reflect its plan or apply phase having finished. If
+// a plan phase has finished and an apply should be automatically enqueued then
+// autoapply will be set to true.
+func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
 	if r.Status == RunCanceled {
 		// run was canceled before the phase finished so nothing more to do.
-		return nil
+		return false, nil
 	}
 	switch phase {
 	case internal.PlanPhase:
 		if r.Status != RunPlanning {
-			return ErrInvalidRunStateTransition
+			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
 			r.updateStatus(RunErrored, nil)
 			r.Plan.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
-			return nil
+			return false, nil
 		}
 		// Enter RunCostEstimated state if cost estimation is enabled. OTF does
 		// not support cost estimation but enter this state only in order to
@@ -443,13 +531,12 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 		if !r.HasChanges() || r.PlanOnly {
 			r.updateStatus(RunPlannedAndFinished, nil)
 			r.Apply.UpdateStatus(PhaseUnreachable)
-		} else if r.AutoApply {
-			return r.EnqueueApply()
+			return false, nil
 		}
-		return nil
+		return r.AutoApply, nil
 	case internal.ApplyPhase:
 		if r.Status != RunApplying {
-			return ErrInvalidRunStateTransition
+			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
 			r.updateStatus(RunErrored, nil)
@@ -458,9 +545,9 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			r.updateStatus(RunApplied, nil)
 			r.Apply.UpdateStatus(PhaseFinished)
 		}
-		return nil
+		return false, nil
 	default:
-		return fmt.Errorf("unknown phase")
+		return false, fmt.Errorf("unknown phase")
 	}
 }
 
@@ -477,16 +564,6 @@ func (r *Run) updateStatus(status Status, now *time.Time) *Run {
 func (r *Run) Discardable() bool {
 	switch r.Status {
 	case RunPending, RunPlanned, RunCostEstimated:
-		return true
-	default:
-		return false
-	}
-}
-
-// Cancelable determines whether run can be cancelled.
-func (r *Run) Cancelable() bool {
-	switch r.Status {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true
 	default:
 		return false

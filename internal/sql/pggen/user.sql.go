@@ -69,7 +69,7 @@ type FindUsersRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -148,7 +148,7 @@ type FindUsersByOrganizationRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -227,7 +227,7 @@ type FindUsersByTeamIDRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -303,7 +303,7 @@ type FindUserByIDRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -357,7 +357,7 @@ type FindUserByUsernameRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -412,7 +412,7 @@ type FindUserByAuthenticationTokenIDRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin bool               `json:"site_admin"`
+	SiteAdmin pgtype.Bool        `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 

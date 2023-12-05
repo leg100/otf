@@ -44,6 +44,10 @@ func CancelRun(run string) string {
 	return fmt.Sprintf("/app/runs/%s/cancel", run)
 }
 
+func ForceCancelRun(run string) string {
+	return fmt.Sprintf("/app/runs/%s/force-cancel", run)
+}
+
 func RetryRun(run string) string {
 	return fmt.Sprintf("/app/runs/%s/retry", run)
 }

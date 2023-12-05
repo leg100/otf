@@ -17,18 +17,19 @@ type (
 	Service interface {
 		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
 		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
+		WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func())
 		internal.PutChunkService
 		Start(context.Context) error
 	}
 
 	service struct {
 		logr.Logger
-		pubsub.PubSubService // subscribe to tail log updates
 
 		run internal.Authorizer
 
-		api *api
-		web *webHandlers
+		api    *api
+		web    *webHandlers
+		broker pubsub.SubscriptionService[internal.Chunk]
 
 		chunkproxy
 	}
@@ -43,7 +44,7 @@ type (
 		logr.Logger
 		internal.Cache
 		*sql.DB
-		*pubsub.Broker
+		*sql.Listener
 		internal.Verifier
 
 		RunAuthorizer internal.Authorizer
@@ -51,11 +52,10 @@ type (
 )
 
 func NewService(opts Options) *service {
+	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:        opts.Logger,
-		PubSubService: opts.Broker,
-		chunkproxy:    newProxy(opts),
-		run:           opts.RunAuthorizer,
+		Logger: opts.Logger,
+		run:    opts.RunAuthorizer,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,
@@ -65,13 +65,33 @@ func NewService(opts Options) *service {
 		Logger: opts.Logger,
 		svc:    &svc,
 	}
-
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"logs",
+		func(ctx context.Context, id string, action sql.Action) (internal.Chunk, error) {
+			if action == sql.DeleteAction {
+				return internal.Chunk{ID: id}, nil
+			}
+			return db.getChunk(ctx, id)
+		},
+	)
+	svc.chunkproxy = &proxy{
+		Logger: opts.Logger,
+		cache:  opts.Cache,
+		db:     db,
+		broker: svc.broker,
+	}
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
+}
+
+func (s *service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func()) {
+	return s.broker.Subscribe(ctx)
 }
 
 // GetChunk reads a chunk of logs for a phase.
@@ -113,10 +133,7 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub, err := s.Subscribe(ctx, "tail-")
-	if err != nil {
-		return nil, err
-	}
+	sub, _ := s.broker.Subscribe(ctx)
 
 	chunk, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {
@@ -135,11 +152,7 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 
 		// relay chunks from subscription
 		for ev := range sub {
-			chunk, ok := ev.Payload.(internal.Chunk)
-			if !ok {
-				// skip non-chunk events
-				continue
-			}
+			chunk := ev.Payload
 			if opts.RunID != chunk.RunID || opts.Phase != chunk.Phase {
 				// skip logs for different run/phase
 				continue

@@ -14,16 +14,16 @@
         <div class="form-checkbox">
           <input type="radio" name="global" id="global" value="true" {{ checked .Global }} required>
           <label for="global">Global</label>
-          <span>All current and future workspaces in this organization will access this variable set.</span>
+          <span class="description">All current and future workspaces in this organization will access this variable set.</span>
         </div>
         <div class="form-checkbox">
           <input class="peer" type="radio" name="global" value="false" id="workspace-scoped" {{ checked (not .Global) }} required>
           <label for="workspace-scoped">Apply to specific workspaces</label>
           <span class="col-start-2 description">Only the selected workspaces will access this variable set.</span>
-          <script src="{{ addHash "/static/js/variable_set_workspaces.js" }}"></script>
+          <script src="{{ addHash "/static/js/dropdown.js" }}"></script>
           <div
             class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
-            x-data="variable_set_workspaces({{ toJson $.ExistingWorkspaces }}, {{ toJson $.AvailableWorkspaces }})"
+            x-data="dropdown({{ toJson $.ExistingWorkspaces }}, {{ toJson $.AvailableWorkspaces }})"
             x-ref="workspace_select"
             @keydown.escape.prevent.stop="close($refs.workspace_input)"
             @focusin.window="! $refs.workspace_select.contains($event.target) && close()"
@@ -47,16 +47,16 @@
                 x-show="showPanel"
                 x-cloak
                 class="absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black">
-                <template x-for="item in filterAvailable" :key="item.ID">
-                  <button @click="addWorkspace(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.Name"></button>
+                <template x-for="item in filterAvailable" :key="item.id">
+                  <button @click="addItem(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.name"></button>
                 </template>
               </div>
             </div>
             <div class="flex flex-row gap-2 mt-2" id="existing-workspaces">
               <template x-for="item in existing">
                 <div class="flex p-1 gap-1 bg-gray-200 group">
-                  <span class="" x-text="item.Name"></span>
-                  <button @click="deleteWorkspace(item)" type="button" class="group-hover:bg-gray-400" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                  <span class="" x-text="item.name"></span>
+                  <button @click="deleteItem(item)" type="button" class="group-hover:bg-gray-400" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
                 </div>
               </template>
             </div>

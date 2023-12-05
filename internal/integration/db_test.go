@@ -55,14 +55,16 @@ func TestTx(t *testing.T) {
 
 	err = db.Tx(ctx, func(txCtx context.Context, q pggen.Querier) error {
 		_, err := q.InsertOrganization(txCtx, pggen.InsertOrganizationParams{
-			ID:                     sql.String(org.ID),
-			CreatedAt:              sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
-			Name:                   sql.String(org.Name),
-			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
-			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
-			Email:                  sql.StringPtr(org.Email),
-			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
+			ID:                         sql.String(org.ID),
+			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
+			Name:                       sql.String(org.Name),
+			Email:                      sql.StringPtr(org.Email),
+			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
+			CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
+			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
+			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
+			AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
 		})
 		if err != nil {
 			return err

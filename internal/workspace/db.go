@@ -22,20 +22,20 @@ type (
 		WorkspaceID                pgtype.Text            `json:"workspace_id"`
 		CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
 		UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-		AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
-		AutoApply                  bool                   `json:"auto_apply"`
-		CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
+		AllowDestroyPlan           pgtype.Bool            `json:"allow_destroy_plan"`
+		AutoApply                  pgtype.Bool            `json:"auto_apply"`
+		CanQueueDestroyPlan        pgtype.Bool            `json:"can_queue_destroy_plan"`
 		Description                pgtype.Text            `json:"description"`
 		Environment                pgtype.Text            `json:"environment"`
 		ExecutionMode              pgtype.Text            `json:"execution_mode"`
-		GlobalRemoteState          bool                   `json:"global_remote_state"`
+		GlobalRemoteState          pgtype.Bool            `json:"global_remote_state"`
 		MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
 		Name                       pgtype.Text            `json:"name"`
-		QueueAllRuns               bool                   `json:"queue_all_runs"`
-		SpeculativeEnabled         bool                   `json:"speculative_enabled"`
+		QueueAllRuns               pgtype.Bool            `json:"queue_all_runs"`
+		SpeculativeEnabled         pgtype.Bool            `json:"speculative_enabled"`
 		SourceName                 pgtype.Text            `json:"source_name"`
 		SourceURL                  pgtype.Text            `json:"source_url"`
-		StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
+		StructuredRunOutputEnabled pgtype.Bool            `json:"structured_run_output_enabled"`
 		TerraformVersion           pgtype.Text            `json:"terraform_version"`
 		TriggerPrefixes            []string               `json:"trigger_prefixes"`
 		WorkingDirectory           pgtype.Text            `json:"working_directory"`
@@ -47,7 +47,8 @@ type (
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
 		TriggerPatterns            []string               `json:"trigger_patterns"`
 		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
-		AllowCLIApply              bool                   `json:"allow_cli_apply"`
+		AllowCLIApply              pgtype.Bool            `json:"allow_cli_apply"`
+		AgentPoolID                pgtype.Text            `json:"agent_pool_id"`
 		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
@@ -61,18 +62,18 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ID:                         r.WorkspaceID.String,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
-		AllowDestroyPlan:           r.AllowDestroyPlan,
-		AutoApply:                  r.AutoApply,
-		CanQueueDestroyPlan:        r.CanQueueDestroyPlan,
+		AllowDestroyPlan:           r.AllowDestroyPlan.Bool,
+		AutoApply:                  r.AutoApply.Bool,
+		CanQueueDestroyPlan:        r.CanQueueDestroyPlan.Bool,
 		Description:                r.Description.String,
 		Environment:                r.Environment.String,
 		ExecutionMode:              ExecutionMode(r.ExecutionMode.String),
-		GlobalRemoteState:          r.GlobalRemoteState,
+		GlobalRemoteState:          r.GlobalRemoteState.Bool,
 		MigrationEnvironment:       r.MigrationEnvironment.String,
 		Name:                       r.Name.String,
-		QueueAllRuns:               r.QueueAllRuns,
-		SpeculativeEnabled:         r.SpeculativeEnabled,
-		StructuredRunOutputEnabled: r.StructuredRunOutputEnabled,
+		QueueAllRuns:               r.QueueAllRuns.Bool,
+		SpeculativeEnabled:         r.SpeculativeEnabled.Bool,
+		StructuredRunOutputEnabled: r.StructuredRunOutputEnabled.Bool,
 		SourceName:                 r.SourceName.String,
 		SourceURL:                  r.SourceURL.String,
 		TerraformVersion:           r.TerraformVersion.String,
@@ -82,10 +83,13 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		Organization:               r.OrganizationName.String,
 		Tags:                       r.Tags,
 	}
+	if r.AgentPoolID.Status == pgtype.Present {
+		ws.AgentPoolID = &r.AgentPoolID.String
+	}
 
 	if r.WorkspaceConnection != nil {
 		ws.Connection = &Connection{
-			AllowCLIApply: r.AllowCLIApply,
+			AllowCLIApply: r.AllowCLIApply.Bool,
 			VCSProviderID: r.WorkspaceConnection.VCSProviderID.String,
 			Repo:          r.WorkspaceConnection.RepoPath.String,
 			Branch:        r.Branch.String,
@@ -123,30 +127,32 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		ID:                         sql.String(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		Name:                       sql.String(ws.Name),
-		AllowDestroyPlan:           ws.AllowDestroyPlan,
-		AutoApply:                  ws.AutoApply,
-		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
-		Environment:                sql.String(ws.Environment),
+		AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+		AllowCLIApply:              sql.Bool(false),
+		AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
+		AutoApply:                  sql.Bool(ws.AutoApply),
+		Branch:                     sql.String(""),
+		CanQueueDestroyPlan:        sql.Bool(ws.CanQueueDestroyPlan),
 		Description:                sql.String(ws.Description),
+		Environment:                sql.String(ws.Environment),
 		ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-		GlobalRemoteState:          ws.GlobalRemoteState,
+		GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
 		MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
+		Name:                       sql.String(ws.Name),
+		QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
+		SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
 		SourceName:                 sql.String(ws.SourceName),
 		SourceURL:                  sql.String(ws.SourceURL),
-		SpeculativeEnabled:         ws.SpeculativeEnabled,
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+		StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
 		TerraformVersion:           sql.String(ws.TerraformVersion),
 		TriggerPrefixes:            ws.TriggerPrefixes,
 		TriggerPatterns:            ws.TriggerPatterns,
-		QueueAllRuns:               ws.QueueAllRuns,
+		VCSTagsRegex:               sql.StringPtr(nil),
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
-		Branch:                     sql.String(""),
-		VCSTagsRegex:               sql.StringPtr(nil),
 	}
 	if ws.Connection != nil {
-		params.AllowCLIApply = ws.Connection.AllowCLIApply
+		params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
 		params.Branch = sql.String(ws.Connection.Branch)
 		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 	}
@@ -173,26 +179,28 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 		}
 		// persist update
 		params := pggen.UpdateWorkspaceByIDParams{
-			ID:                         sql.String(ws.ID),
-			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-			AllowDestroyPlan:           ws.AllowDestroyPlan,
-			AutoApply:                  ws.AutoApply,
+			AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
+			AllowCLIApply:              sql.Bool(false),
+			AutoApply:                  sql.Bool(ws.AutoApply),
+			Branch:                     sql.String(""),
 			Description:                sql.String(ws.Description),
 			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-			GlobalRemoteState:          ws.GlobalRemoteState,
+			GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
 			Name:                       sql.String(ws.Name),
-			QueueAllRuns:               ws.QueueAllRuns,
-			SpeculativeEnabled:         ws.SpeculativeEnabled,
-			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+			QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
+			SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
+			StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
 			TerraformVersion:           sql.String(ws.TerraformVersion),
 			TriggerPrefixes:            ws.TriggerPrefixes,
 			TriggerPatterns:            ws.TriggerPatterns,
-			WorkingDirectory:           sql.String(ws.WorkingDirectory),
-			Branch:                     sql.String(""),
 			VCSTagsRegex:               sql.StringPtr(nil),
+			WorkingDirectory:           sql.String(ws.WorkingDirectory),
+			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+			ID:                         sql.String(ws.ID),
 		}
 		if ws.Connection != nil {
-			params.AllowCLIApply = ws.Connection.AllowCLIApply
+			params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
 			params.Branch = sql.String(ws.Connection.Branch)
 			params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 		}

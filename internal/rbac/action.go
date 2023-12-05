@@ -18,9 +18,19 @@ const (
 	ListVCSProvidersAction
 	DeleteVCSProviderAction
 
+	CreateAgentPoolAction
+	UpdateAgentPoolAction
+	ListAgentPoolsAction
+	GetAgentPoolAction
+	DeleteAgentPoolAction
+
 	CreateAgentTokenAction
 	ListAgentTokensAction
+	GetAgentTokenAction
 	DeleteAgentTokenAction
+
+	ListAgentsAction
+	WatchAgentsAction
 
 	CreateOrganizationTokenAction
 	DeleteOrganizationTokenAction
@@ -69,9 +79,8 @@ const (
 	DiscardRunAction
 	DeleteRunAction
 	CancelRunAction
+	ForceCancelRunAction
 	EnqueuePlanAction
-	StartPhaseAction
-	FinishPhaseAction
 	PutChunkAction
 	TailLogsAction
 

@@ -27,7 +27,7 @@ const insertVariableSetSQL = `INSERT INTO variable_sets (
 
 type InsertVariableSetParams struct {
 	VariableSetID    pgtype.Text
-	Global           bool
+	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
@@ -77,7 +77,7 @@ WHERE organization_name = $1;`
 
 type FindVariableSetsByOrganizationRow struct {
 	VariableSetID    pgtype.Text `json:"variable_set_id"`
-	Global           bool        `json:"global"`
+	Global           pgtype.Bool `json:"global"`
 	Name             pgtype.Text `json:"name"`
 	Description      pgtype.Text `json:"description"`
 	OrganizationName pgtype.Text `json:"organization_name"`
@@ -182,7 +182,7 @@ AND w.workspace_id = $1;`
 
 type FindVariableSetsByWorkspaceRow struct {
 	VariableSetID    pgtype.Text `json:"variable_set_id"`
-	Global           bool        `json:"global"`
+	Global           pgtype.Bool `json:"global"`
 	Name             pgtype.Text `json:"name"`
 	Description      pgtype.Text `json:"description"`
 	OrganizationName pgtype.Text `json:"organization_name"`
@@ -266,7 +266,7 @@ WHERE vs.variable_set_id = $1;`
 
 type FindVariableSetBySetIDRow struct {
 	VariableSetID    pgtype.Text `json:"variable_set_id"`
-	Global           bool        `json:"global"`
+	Global           pgtype.Bool `json:"global"`
 	Name             pgtype.Text `json:"name"`
 	Description      pgtype.Text `json:"description"`
 	OrganizationName pgtype.Text `json:"organization_name"`
@@ -329,7 +329,7 @@ WHERE vsv.variable_id = $1;`
 
 type FindVariableSetByVariableIDRow struct {
 	VariableSetID    pgtype.Text `json:"variable_set_id"`
-	Global           bool        `json:"global"`
+	Global           pgtype.Bool `json:"global"`
 	Name             pgtype.Text `json:"name"`
 	Description      pgtype.Text `json:"description"`
 	OrganizationName pgtype.Text `json:"organization_name"`
@@ -392,7 +392,7 @@ FOR UPDATE OF vs;`
 
 type FindVariableSetForUpdateRow struct {
 	VariableSetID    pgtype.Text `json:"variable_set_id"`
-	Global           bool        `json:"global"`
+	Global           pgtype.Bool `json:"global"`
 	Name             pgtype.Text `json:"name"`
 	Description      pgtype.Text `json:"description"`
 	OrganizationName pgtype.Text `json:"organization_name"`
@@ -443,7 +443,7 @@ WHERE variable_set_id = $4
 RETURNING variable_set_id;`
 
 type UpdateVariableSetByIDParams struct {
-	Global        bool
+	Global        pgtype.Bool
 	Name          pgtype.Text
 	Description   pgtype.Text
 	VariableSetID pgtype.Text
@@ -482,7 +482,7 @@ RETURNING *;`
 
 type DeleteVariableSetByIDRow struct {
 	VariableSetID    pgtype.Text `json:"variable_set_id"`
-	Global           bool        `json:"global"`
+	Global           pgtype.Bool `json:"global"`
 	Name             pgtype.Text `json:"name"`
 	Description      pgtype.Text `json:"description"`
 	OrganizationName pgtype.Text `json:"organization_name"`

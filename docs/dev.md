@@ -30,7 +30,7 @@ That builds and runs the documentation site on your workstation at `http://local
 Before running the make task you'll need to install some python packages:
 
 ```
-pip install mkdocs-glightbox mkdocs-material-otf
+pip install -r docs/requirements.txt
 ```
 
 Screenshots in the documentation are largely automated. The browser-based integration tests produce screenshots at various steps. If the environment variable `OTF_DOC_SCREENSHOTS=true` is present then such a test also writes the screenshot into the documentation directory. The following make task runs the tests along with the aforementioned environment variable:
@@ -66,7 +66,7 @@ Rails-style path helpers are generated using `go generate`. The path specificati
 
 ## Web development
 
-If you're making changes to web templates then you may want to enable [developer mode](../config/flags/#-dev-mode). Once enabled you will be able to see changes without restarting `otfd`.
+If you're making changes to web templates then you may want to enable [developer mode](config/flags.md/#-dev-mode). Once enabled you will be able to see changes without restarting `otfd`.
 
 OTF uses [Tailwind CSS](https://tailwindcss.com/) to generate CSS classes. Run the following make task to generate the CSS:
 

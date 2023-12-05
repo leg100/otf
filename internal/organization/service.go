@@ -37,6 +37,7 @@ type (
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
 		DeleteOrganizationToken(ctx context.Context, organization string) error
+		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}
 
@@ -45,7 +46,6 @@ type (
 
 		internal.Authorizer // authorize access to org
 		logr.Logger
-		*pubsub.Broker
 
 		db           *pgdb
 		site         internal.Authorizer // authorize access to site
@@ -53,6 +53,7 @@ type (
 		tfeapi       *tfe
 		api          *api
 		tokenFactory *tokenFactory
+		broker       *pubsub.Broker[*Organization]
 
 		createHook *hooks.Hook[*Organization]
 		deleteHook *hooks.Hook[*Organization]
@@ -63,7 +64,7 @@ type (
 
 		*sql.DB
 		*tfeapi.Responder
-		*pubsub.Broker
+		*sql.Listener
 		html.Renderer
 		logr.Logger
 		tokens.TokensService
@@ -79,7 +80,6 @@ func NewService(opts Options) *service {
 	svc := service{
 		Authorizer:                   &Authorizer{opts.Logger},
 		Logger:                       opts.Logger,
-		Broker:                       opts.Broker,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
@@ -101,10 +101,17 @@ func NewService(opts Options) *service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-
-	// Register with broker an unmarshaler for unmarshaling organization
-	// database table events into organization events.
-	opts.Broker.Register("organizations", svc.db)
+	svc.broker = pubsub.NewBroker(
+		opts.Logger,
+		opts.Listener,
+		"organizations",
+		func(ctx context.Context, id string, action sql.Action) (*Organization, error) {
+			if action == sql.DeleteAction {
+				return &Organization{ID: id}, nil
+			}
+			return svc.db.getByID(ctx, id)
+		},
+	)
 	// Fetch organization when API calls request organization be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
@@ -131,6 +138,10 @@ func (s *service) BeforeDeleteOrganization(l hooks.Listener[*Organization]) {
 	s.deleteHook.Before(l)
 }
 
+func (s *service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
+	return s.broker.Subscribe(ctx)
+}
+
 // CreateOrganization creates an organization. Only users can create
 // organizations, or, if RestrictOrganizationCreation is true, then only the
 // site admin can create organizations. Creating an organization automatically
@@ -146,19 +157,20 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) error {
+	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) (*Organization, error) {
 		_, err = s.db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
-			ID:                     sql.String(org.ID),
-			CreatedAt:              sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
-			Name:                   sql.String(org.Name),
-			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
-			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
-			Email:                  sql.StringPtr(org.Email),
-			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:  org.CostEstimationEnabled,
+			ID:                         sql.String(org.ID),
+			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
+			Name:                       sql.String(org.Name),
+			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
+			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
+			Email:                      sql.StringPtr(org.Email),
+			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
+			CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
+			AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
 		})
-		return sql.Error(err)
+		return org, sql.Error(err)
 	})
 	if err != nil {
 		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
@@ -229,8 +241,9 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.deleteHook.Dispatch(ctx, &Organization{Name: name}, func(ctx context.Context) error {
-		return s.db.delete(ctx, name)
+	org := &Organization{Name: name}
+	err = s.deleteHook.Dispatch(ctx, org, func(ctx context.Context) (*Organization, error) {
+		return org, s.db.delete(ctx, name)
 	})
 	if err != nil {
 		s.Error(err, "deleting organization", "name", name, "subject", subject)

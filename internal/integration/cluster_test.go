@@ -3,8 +3,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/daemon"
-	"github.com/leg100/otf/internal/remoteops"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,9 +28,15 @@ func TestCluster(t *testing.T) {
 	otfd1, org, ctx := setup(t, &config{Config: daemon.Config{Database: connstr}})
 	otfd2, _, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
+	pool, err := otfd1.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+		Organization: org.Name,
+		Name:         "pool-1",
+	})
+	require.NoError(t, err)
+
 	// start agent, instructing it to connect to otfd2,
 	// add --debug flag, which dumps info that this test relies upon
-	otfd2.startAgent(t, ctx, org.Name, remoteops.AgentConfig{Config: remoteops.Config{Debug: true}})
+	otfd2.startAgent(t, ctx, org.Name, pool.ID, "", agent.Config{Debug: true})
 
 	// create root module, setting otfd1 as hostname
 	root := newRootModule(t, otfd1.Hostname(), org.Name, "dev")
@@ -39,8 +45,8 @@ func TestCluster(t *testing.T) {
 	otfd1.tfcli(t, ctx, "init", root)
 
 	// edit workspace to use agent
-	out := otfd1.otfcli(t, ctx, "workspaces", "edit", "dev", "--organization", org.Name, "--execution-mode", "agent")
-	assert.Equal(t, "updated execution mode: agent\n", out)
+	out := otfd1.otfcli(t, ctx, "workspaces", "edit", "dev", "--organization", org.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID)
+	assert.Equal(t, "updated workspace\n", out)
 
 	// terraform plan
 	out = otfd1.tfcli(t, ctx, "plan", root)

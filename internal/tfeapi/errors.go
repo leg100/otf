@@ -20,6 +20,7 @@ var codes = map[error]int{
 	internal.ErrRunDiscardNotAllowed:     http.StatusConflict,
 	internal.ErrRunCancelNotAllowed:      http.StatusConflict,
 	internal.ErrRunForceCancelNotAllowed: http.StatusConflict,
+	internal.ErrConflict:                 http.StatusConflict,
 }
 
 func lookupHTTPCode(err error) int {

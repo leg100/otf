@@ -62,6 +62,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := CreateOptions{
+		AgentPoolID:                params.AgentPoolID,
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
 		Description:                params.Description,
@@ -315,6 +316,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	}
 
 	opts := UpdateOptions{
+		AgentPoolID:                params.AgentPoolID,
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
 		Description:                params.Description,
@@ -450,6 +452,9 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
 	}
+	if from.AgentPoolID != nil {
+		to.AgentPoolID = *from.AgentPoolID
+	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true
 	}
@@ -492,17 +497,52 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !field.IsValid() {
 		return nil, nil
 	}
-	tfeWorkspace, ok := field.Interface().(*types.Workspace)
+	onlyID, ok := field.Interface().(*types.Workspace)
 	if !ok {
 		return nil, nil
 	}
-	ws, err := a.GetWorkspace(ctx, tfeWorkspace.ID)
+	// onlyID only contains the ID field, e.g. types.Workspace{ID:
+	// "ws-123"}; so now retrieve the fully populated workspace, convert to a
+	// tfe workspace and return.
+	ws, err := a.GetWorkspace(ctx, onlyID.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace: %w", err)
 	}
-	converted, err := a.convert(ws, (&http.Request{}).WithContext(ctx))
+	include, err := a.convert(ws, (&http.Request{}).WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
-	return []any{converted}, nil
+	return []any{include}, nil
+}
+
+func (a *tfe) includeMany(ctx context.Context, v any) ([]any, error) {
+	dst := reflect.Indirect(reflect.ValueOf(v))
+
+	// v must be a struct with a field named Workspaces of type []*types.Workspace
+	if dst.Kind() != reflect.Struct {
+		return nil, nil
+	}
+	field := dst.FieldByName("Workspaces")
+	if !field.IsValid() {
+		return nil, nil
+	}
+	onlyIDs, ok := field.Interface().([]*types.Workspace)
+	if !ok {
+		return nil, nil
+	}
+	// onlyIDs only contains the ID field, e.g. []*types.Workspace{{ID:
+	// "ws-123"}}; so now retrieve the fully populated workspaces, convert and
+	// return them.
+	include := make([]any, len(onlyIDs))
+	for i, onlyID := range onlyIDs {
+		ws, err := a.GetWorkspace(ctx, onlyID.ID)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving workspace: %w", err)
+		}
+		include[i], err = a.convert(ws, (&http.Request{}).WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return include, nil
 }
