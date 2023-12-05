@@ -10,8 +10,8 @@ import (
 type PermissionsService interface {
 	GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
 
-	SetPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-	UnsetPermission(ctx context.Context, workspaceID, team string) error
+	SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error
+	UnsetPermission(ctx context.Context, workspaceID, teamID string) error
 }
 
 // GetPolicy retrieves a workspace policy.
@@ -22,32 +22,32 @@ func (s *service) GetPolicy(ctx context.Context, workspaceID string) (internal.W
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
-func (s *service) SetPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
+func (s *service) SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
 	subject, err := s.CanAccess(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
 	}
 
-	if err := s.db.SetWorkspacePermission(ctx, workspaceID, team, role); err != nil {
+	if err := s.db.SetWorkspacePermission(ctx, workspaceID, teamID, role); err != nil {
 		s.Error(err, "setting workspace permission", "subject", subject, "workspace", workspaceID)
 		return err
 	}
 
-	s.V(0).Info("set workspace permission", "team", team, "role", role, "subject", subject, "workspace", workspaceID)
+	s.V(0).Info("set workspace permission", "team_id", teamID, "role", role, "subject", subject, "workspace", workspaceID)
 
 	// TODO: publish event
 
 	return nil
 }
 
-func (s *service) UnsetPermission(ctx context.Context, workspaceID, team string) error {
+func (s *service) UnsetPermission(ctx context.Context, workspaceID, teamID string) error {
 	subject, err := s.CanAccess(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
-		s.Error(err, "unsetting workspace permission", "team", team, "subject", subject, "workspace", workspaceID)
+		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
 		return err
 	}
 
-	s.V(0).Info("unset workspace permission", "team", team, "subject", subject, "workspace", workspaceID)
+	s.V(0).Info("unset workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
 	// TODO: publish event
-	return s.db.UnsetWorkspacePermission(ctx, workspaceID, team)
+	return s.db.UnsetWorkspacePermission(ctx, workspaceID, teamID)
 }

@@ -333,11 +333,31 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get teams that have yet to be assigned a permission
+	// Get teams for populating team permissions
 	teams, err := h.ListTeams(r.Context(), workspace.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// want current policy permissions to include not only team ID but team name
+	// too for user's benefit
+	type perm struct {
+		Role rbac.Role
+		Team *team.Team
+	}
+	perms := make([]perm, len(policy.Permissions))
+	for i, pp := range policy.Permissions {
+		// get team name corresponding to team ID
+		for _, t := range teams {
+			if t.ID == pp.TeamID {
+				perms[i] = perm{
+					Role: pp.Role,
+					Team: t,
+				}
+				break
+			}
+		}
 	}
 
 	var provider *vcsprovider.VCSProvider
@@ -367,7 +387,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
-		Policy             internal.WorkspacePolicy
+		Assigned           []perm
 		Unassigned         []*team.Team
 		Roles              []rbac.Role
 		VCSProvider        *vcsprovider.VCSProvider
@@ -383,7 +403,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerTags     string
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
-		Policy:        policy,
+		Assigned:      perms,
 		Unassigned:    filterUnassigned(policy, teams),
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
@@ -664,7 +684,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		TeamName    string `schema:"team_name,required"`
+		TeamID      string `schema:"team_id,required"`
 		Role        string `schema:"role,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -677,7 +697,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.svc.SetPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
+	err = h.svc.SetPermission(r.Context(), params.WorkspaceID, params.TeamID, role)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -689,14 +709,14 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		TeamName    string `schema:"team_name,required"`
+		TeamID      string `schema:"team_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	err := h.svc.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
+	err := h.svc.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -713,13 +733,13 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 func filterUnassigned(policy internal.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
 	assigned := make(map[string]struct{}, len(teams))
 	for _, p := range policy.Permissions {
-		assigned[p.Team] = struct{}{}
+		assigned[p.TeamID] = struct{}{}
 	}
 	for _, t := range teams {
 		if t.Name == "owners" {
 			continue
 		}
-		if _, ok := assigned[t.Name]; !ok {
+		if _, ok := assigned[t.ID]; !ok {
 			unassigned = append(unassigned, t)
 		}
 	}

@@ -28,7 +28,7 @@ func TestWritePermissionE2E(t *testing.T) {
 	// engineer's team.
 	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "write"),
+		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.ID, "write"),
 	})
 
 	// As engineer, run terraform init

@@ -15,25 +15,22 @@ const upsertWorkspacePermissionSQL = `INSERT INTO workspace_permissions (
     workspace_id,
     team_id,
     role
-) SELECT w.workspace_id, t.team_id, $1
-    FROM teams t
-    JOIN organizations o ON t.organization_name = o.name
-    JOIN workspaces w ON w.organization_name = o.name
-    WHERE t.name = $2
-    AND w.workspace_id = $3
-ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = $1
-;`
+) VALUES (
+    $1,
+    $2,
+    $3
+) ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = $3;`
 
 type UpsertWorkspacePermissionParams struct {
-	Role        pgtype.Text
-	TeamName    pgtype.Text
 	WorkspaceID pgtype.Text
+	TeamID      pgtype.Text
+	Role        pgtype.Text
 }
 
 // UpsertWorkspacePermission implements Querier.UpsertWorkspacePermission.
 func (q *DBQuerier) UpsertWorkspacePermission(ctx context.Context, params UpsertWorkspacePermissionParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpsertWorkspacePermission")
-	cmdTag, err := q.conn.Exec(ctx, upsertWorkspacePermissionSQL, params.Role, params.TeamName, params.WorkspaceID)
+	cmdTag, err := q.conn.Exec(ctx, upsertWorkspacePermissionSQL, params.WorkspaceID, params.TeamID, params.Role)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query UpsertWorkspacePermission: %w", err)
 	}
@@ -42,7 +39,7 @@ func (q *DBQuerier) UpsertWorkspacePermission(ctx context.Context, params Upsert
 
 // UpsertWorkspacePermissionBatch implements Querier.UpsertWorkspacePermissionBatch.
 func (q *DBQuerier) UpsertWorkspacePermissionBatch(batch genericBatch, params UpsertWorkspacePermissionParams) {
-	batch.Queue(upsertWorkspacePermissionSQL, params.Role, params.TeamName, params.WorkspaceID)
+	batch.Queue(upsertWorkspacePermissionSQL, params.WorkspaceID, params.TeamID, params.Role)
 }
 
 // UpsertWorkspacePermissionScan implements Querier.UpsertWorkspacePermissionScan.
@@ -54,17 +51,14 @@ func (q *DBQuerier) UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgc
 	return cmdTag, err
 }
 
-const findWorkspacePermissionsByWorkspaceIDSQL = `SELECT
-    wp.role,
-    (t.*)::"teams" AS team
-FROM workspace_permissions wp
-JOIN teams t USING (team_id)
-WHERE wp.workspace_id = $1
-;`
+const findWorkspacePermissionsByWorkspaceIDSQL = `SELECT *
+FROM workspace_permissions
+WHERE workspace_id = $1;`
 
 type FindWorkspacePermissionsByWorkspaceIDRow struct {
-	Role pgtype.Text `json:"role"`
-	Team *Teams      `json:"team"`
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	TeamID      pgtype.Text `json:"team_id"`
+	Role        pgtype.Text `json:"role"`
 }
 
 // FindWorkspacePermissionsByWorkspaceID implements Querier.FindWorkspacePermissionsByWorkspaceID.
@@ -76,14 +70,10 @@ func (q *DBQuerier) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, w
 	}
 	defer rows.Close()
 	items := []FindWorkspacePermissionsByWorkspaceIDRow{}
-	teamRow := q.types.newTeams()
 	for rows.Next() {
 		var item FindWorkspacePermissionsByWorkspaceIDRow
-		if err := rows.Scan(&item.Role, teamRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.TeamID, &item.Role); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacePermissionsByWorkspaceID row: %w", err)
-		}
-		if err := teamRow.AssignTo(&item.Team); err != nil {
-			return nil, fmt.Errorf("assign FindWorkspacePermissionsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
 	}
@@ -106,14 +96,10 @@ func (q *DBQuerier) FindWorkspacePermissionsByWorkspaceIDScan(results pgx.BatchR
 	}
 	defer rows.Close()
 	items := []FindWorkspacePermissionsByWorkspaceIDRow{}
-	teamRow := q.types.newTeams()
 	for rows.Next() {
 		var item FindWorkspacePermissionsByWorkspaceIDRow
-		if err := rows.Scan(&item.Role, teamRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.TeamID, &item.Role); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacePermissionsByWorkspaceIDBatch row: %w", err)
-		}
-		if err := teamRow.AssignTo(&item.Team); err != nil {
-			return nil, fmt.Errorf("assign FindWorkspacePermissionsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
 	}
@@ -124,19 +110,14 @@ func (q *DBQuerier) FindWorkspacePermissionsByWorkspaceIDScan(results pgx.BatchR
 }
 
 const deleteWorkspacePermissionByIDSQL = `DELETE
-FROM workspace_permissions wp
-USING workspaces w, teams t
-WHERE wp.team_id = t.team_id
-AND wp.workspace_id = $1
-AND w.workspace_id = wp.workspace_id
-AND w.organization_name = t.organization_name
-AND t.name = $2
-;`
+FROM workspace_permissions
+WHERE workspace_id = $1
+AND team_id = $2;`
 
 // DeleteWorkspacePermissionByID implements Querier.DeleteWorkspacePermissionByID.
-func (q *DBQuerier) DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspacePermissionByID")
-	cmdTag, err := q.conn.Exec(ctx, deleteWorkspacePermissionByIDSQL, workspaceID, teamName)
+	cmdTag, err := q.conn.Exec(ctx, deleteWorkspacePermissionByIDSQL, workspaceID, teamID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query DeleteWorkspacePermissionByID: %w", err)
 	}
@@ -144,8 +125,8 @@ func (q *DBQuerier) DeleteWorkspacePermissionByID(ctx context.Context, workspace
 }
 
 // DeleteWorkspacePermissionByIDBatch implements Querier.DeleteWorkspacePermissionByIDBatch.
-func (q *DBQuerier) DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamName pgtype.Text) {
-	batch.Queue(deleteWorkspacePermissionByIDSQL, workspaceID, teamName)
+func (q *DBQuerier) DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamID pgtype.Text) {
+	batch.Queue(deleteWorkspacePermissionByIDSQL, workspaceID, teamID)
 }
 
 // DeleteWorkspacePermissionByIDScan implements Querier.DeleteWorkspacePermissionByIDScan.

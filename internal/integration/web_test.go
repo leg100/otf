@@ -47,7 +47,7 @@ func TestWeb(t *testing.T) {
 			matchText(t, "//div[@role='alert']", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", "devops", "write"),
+		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", team.ID, "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org

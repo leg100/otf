@@ -126,15 +126,15 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			user: user.SiteAdmin,
 			policy: internal.WorkspacePolicy{
 				Permissions: []internal.WorkspacePermission{
-					{Team: "bosses", Role: rbac.WorkspaceAdminRole},
-					{Team: "workers", Role: rbac.WorkspacePlanRole},
+					{TeamID: "team-1", Role: rbac.WorkspaceAdminRole},
+					{TeamID: "team-4", Role: rbac.WorkspacePlanRole},
 				},
 			},
 			teams: []*team.Team{
-				{Name: "bosses"},
-				{Name: "stewards"},
-				{Name: "cleaners"},
-				{Name: "workers"},
+				{ID: "team-1", Name: "bosses"},
+				{ID: "team-2", Name: "stewards"},
+				{ID: "team-3", Name: "cleaners"},
+				{ID: "team-4", Name: "workers"},
 			},
 			want: func(t *testing.T, doc *html.Node) {
 				// tabulate existing assigned permissions
@@ -145,13 +145,13 @@ func TestEditWorkspaceHandler(t *testing.T) {
 				findText(t, doc, "plan", "//tr[@id='permissions-workers']/td[2]//option[@selected]")
 
 				// form for assigning permissions to unassigned teams
-				findText(t, doc, "stewards", "//select[@form='permissions-add-form']/option[@value='stewards']")
-				findText(t, doc, "cleaners", "//select[@form='permissions-add-form']/option[@value='cleaners']")
+				findText(t, doc, "stewards", "//select[@form='permissions-add-form']/option[@value='team-2']")
+				findText(t, doc, "cleaners", "//select[@form='permissions-add-form']/option[@value='team-3']")
 
 				// form should not include teams already assigned permissions,
 				// nor owners team
-				findTextNot(t, doc, "//select[@form='permissions-add-form']/option[@value='bosses']")
-				findTextNot(t, doc, "//select[@form='permissions-add-form']/option[@value='workers']")
+				findTextNot(t, doc, "//select[@form='permissions-add-form']/option[@value='team-1']")
+				findTextNot(t, doc, "//select[@form='permissions-add-form']/option[@value='team-4']")
 				findTextNot(t, doc, "//select[@form='permissions-add-form']/option[@value='owners']")
 			},
 		},
@@ -392,19 +392,20 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 
 func TestFilterUnassigned(t *testing.T) {
 	policy := internal.WorkspacePolicy{Permissions: []internal.WorkspacePermission{
-		{Team: "bosses", Role: rbac.WorkspaceAdminRole},
-		{Team: "workers", Role: rbac.WorkspacePlanRole},
+		{TeamID: "bosses", Role: rbac.WorkspaceAdminRole},
+		{TeamID: "workers", Role: rbac.WorkspacePlanRole},
 	}}
 	teams := []*team.Team{
-		{Name: "owners"},
-		{Name: "bosses"},
-		{Name: "stewards"},
-		{Name: "cleaners"},
-		{Name: "workers"},
+		{ID: "owners"},
+		{ID: "bosses"},
+		{ID: "stewards"},
+		{ID: "cleaners"},
+		{ID: "workers"},
 	}
 	want := []*team.Team{
-		{Name: "stewards"},
-		{Name: "cleaners"},
+		{ID: "owners"},
+		{ID: "stewards"},
+		{ID: "cleaners"},
 	}
 	got := filterUnassigned(policy, teams)
 	assert.Equal(t, want, got)

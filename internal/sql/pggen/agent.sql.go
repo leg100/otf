@@ -1497,10 +1497,10 @@ type Querier interface {
 	// FindWorkspacePermissionsByWorkspaceIDScan scans the result of an executed FindWorkspacePermissionsByWorkspaceIDBatch query.
 	FindWorkspacePermissionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByWorkspaceIDRow, error)
 
-	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
+	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
 	// later by the batch.
-	DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamName pgtype.Text)
+	DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamID pgtype.Text)
 	// DeleteWorkspacePermissionByIDScan scans the result of an executed DeleteWorkspacePermissionByIDBatch query.
 	DeleteWorkspacePermissionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 

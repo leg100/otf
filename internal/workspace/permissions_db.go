@@ -10,10 +10,10 @@ import (
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
 	_, err := db.Conn(ctx).UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
 		WorkspaceID: sql.String(workspaceID),
-		TeamName:    sql.String(team),
+		TeamID:      sql.String(teamID),
 		Role:        sql.String(role.String()),
 	})
 	if err != nil {
@@ -54,8 +54,7 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (int
 			return internal.WorkspacePolicy{}, err
 		}
 		policy.Permissions = append(policy.Permissions, internal.WorkspacePermission{
-			Team:   perm.Team.Name.String,
-			TeamID: perm.Team.TeamID.String,
+			TeamID: perm.TeamID.String,
 			Role:   role,
 		})
 	}

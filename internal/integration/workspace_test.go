@@ -327,8 +327,8 @@ func TestWorkspace(t *testing.T) {
 
 		team1 := svc.createTeam(t, ctx, org)
 		team2 := svc.createTeam(t, ctx, org)
-		_ = svc.SetPermission(ctx, ws1.ID, team1.Name, rbac.WorkspacePlanRole)
-		_ = svc.SetPermission(ctx, ws2.ID, team2.Name, rbac.WorkspacePlanRole)
+		_ = svc.SetPermission(ctx, ws1.ID, team1.ID, rbac.WorkspacePlanRole)
+		_ = svc.SetPermission(ctx, ws2.ID, team2.ID, rbac.WorkspacePlanRole)
 		user1 := svc.createUser(t, user.WithTeams(team1, team2))
 		user2 := svc.createUser(t)
 

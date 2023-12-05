@@ -174,7 +174,7 @@ func (t *Team) CanAccessWorkspace(action rbac.Action, policy internal.WorkspaceP
 		return false
 	}
 	for _, perm := range policy.Permissions {
-		if t.Name == perm.Team {
+		if t.ID == perm.TeamID {
 			return perm.Role.IsAllowed(action)
 		}
 	}
