@@ -10,6 +10,7 @@ require (
 	github.com/antchfx/htmlquery v1.3.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.7.0
 	github.com/buildkite/terminal-to-html v3.2.0+incompatible
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chromedp/cdproto v0.0.0-20230220211738-2b1ec77315c9
 	github.com/chromedp/chromedp v0.9.1
 	github.com/coreos/go-oidc/v3 v3.5.0
@@ -52,7 +53,6 @@ require (
 	golang.org/x/oauth2 v0.7.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/api v0.118.0
-	gopkg.in/cenkalti/backoff.v1 v1.1.0
 )
 
 require (
@@ -67,7 +67,6 @@ require (
 	github.com/antchfx/xpath v1.2.3 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect

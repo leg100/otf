@@ -26,37 +26,37 @@ First, create an agent pool in your organization. Go to the organization main me
 
 Select **New agent pool** to reveal the form.
 
-![organization main menu](./images/new_agent_pool.png){.screenshot}
+![new agent pool](./images/new_agent_pool.png){.screenshot}
 
 Give the pool a name and click **Create agent pool**.
 
-![organization main menu](./images/created_agent_pool.png){.screenshot}
+![created agent pool](./images/created_agent_pool.png){.screenshot}
 
 By default you can assign *any* workspace to the agent pool. To grant access only to specific workspaces, select **Grant access to specific workspaces**.
 
-![organization main menu](./images/agent_pool_grant_workspace_form.png){.screenshot}
+![grant access to specific workspace form](./images/agent_pool_grant_workspace_form.png){.screenshot}
 
-Select a workspace from the dropdown menu and it should be added to the list of graned workspaces.
+Select a workspace from the dropdown menu and it should be added to the list of granted workspaces.
 
-![organization main menu](./images/agent_pool_granted_workspace.png){.screenshot}
+![granted access to specific workspace](./images/agent_pool_granted_workspace.png){.screenshot}
 
 Click **Save changes** to persist the change.
 
 You then need to *assign* a workspace to the pool. Go to the settings of a workspace and change the execution mode to **agent**:
 
-![organization main menu](./images/workspace_select_agent_execution_mode.png){.screenshot}
+![setting execution mode on workspace](./images/workspace_select_agent_execution_mode.png){.screenshot}
 
 Click **Save changes** and return to the agent pool. You should see that the workspace is both *granted* and *assigned*.
 
-![organization main menu](./images/agent_pool_workspace_granted_and_assigned.png){.screenshot}
+![granted and assigned workspace](./images/agent_pool_workspace_granted_and_assigned.png){.screenshot}
 
 Now create an agent token. A pool agent needs to authenticate with a token in order to join a pool. Click **New token** to reveal the form.
 
-![organization main menu](./images/agent_pool_open_new_token_form.png){.screenshot}
+![new agent token form](./images/agent_pool_open_new_token_form.png){.screenshot}
 
 Give the token a description and click **Create token**.
 
-![organization main menu](./images/agent_pool_token_created.png){.screenshot}
+![created agent token](./images/agent_pool_token_created.png){.screenshot}
 
 Copy the token to your system clipboard. Now you can run the agent:
 
@@ -76,6 +76,6 @@ ab60a67ccf4fc
 
 Go to the agent pool and you should see the agent listed:
 
-![organization main menu](./images/agent_pool_with_idle_agent.png){.screenshot}
+![agent pool with agent idle](./images/agent_pool_with_idle_agent.png){.screenshot}
 
-You've successfully reached the end of this walkthrough. Any runs triggered on the workspace above will now be executed on the agent. You can create more agent pools and agents and assign workspaces to different pools, giving you control over where runs are executed.
+You've successfully reached the end of this walkthrough. Any runs triggered on the workspace above will now be executed on the agent. You can create more agent pools and agents and assign workspaces to specific pools, giving you control over where runs are executed.
