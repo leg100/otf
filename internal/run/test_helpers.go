@@ -25,8 +25,8 @@ type (
 		runs []*Run
 		ws   *workspace.Workspace
 
-		RunService
-		WorkspaceService
+		// fakeWebServices does not implement all of webRunClient
+		webRunClient
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)
@@ -54,10 +54,9 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	}
 
 	return &webHandlers{
-		Renderer:         renderer,
-		WorkspaceService: &svc,
-		starter:          &svc,
-		svc:              &svc,
+		Renderer:   renderer,
+		workspaces: &svc,
+		runs:       &svc,
 	}
 }
 
@@ -91,6 +90,6 @@ func (f *fakeWebServices) GetRun(ctx context.Context, runID string) (*Run, error
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) startRun(context.Context, string, Operation) (*Run, error) {
-	return f.runs[0], nil
+func (f *fakeWebServices) Apply(ctx context.Context, runID string) error {
+	return nil
 }

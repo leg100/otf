@@ -13,10 +13,6 @@ import (
 
 type Client struct {
 	*otfapi.Client
-	otfapi.Config
-
-	// Client does not implement all of service yet
-	Service
 }
 
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {

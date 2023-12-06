@@ -19,7 +19,7 @@ import (
 )
 
 type tfe struct {
-	Service
+	*Service
 	workspace.PermissionsService
 	internal.Signer
 	*tfeapi.Responder

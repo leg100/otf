@@ -36,8 +36,8 @@ type fakeCLIService struct {
 
 func newFakeCLI(run *Run, tarball []byte) *CLI {
 	return &CLI{
-		Service:                     &fakeCLIService{run: run, tarball: tarball},
-		ConfigurationVersionService: &fakeCLIService{run: run, tarball: tarball},
+		client:  &fakeCLIService{run: run, tarball: tarball},
+		configs: &fakeCLIService{run: run, tarball: tarball},
 	}
 }
 

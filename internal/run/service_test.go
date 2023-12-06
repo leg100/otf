@@ -15,7 +15,7 @@ func TestService_Watch(t *testing.T) {
 	// input event channel
 	in := make(chan pubsub.Event[*Run], 1)
 
-	svc := &service{
+	svc := &Service{
 		site:   internal.NewAllowAllAuthorizer(),
 		Logger: logr.Discard(),
 		broker: &fakeSubService{ch: in},

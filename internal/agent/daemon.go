@@ -14,6 +14,8 @@ import (
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
@@ -64,58 +66,81 @@ type daemon struct {
 	poolLogger logr.Logger // logger that only logs messages if the agent is a pool agent.
 }
 
+type DaemonOptions struct {
+	Logger          logr.Logger
+	Config          Config
+	RunClient       runClient
+	WorkspaceClient workspaceClient
+	AgentClient     agentClient
+}
+
+// agentClient provides the daemon with access to agent services
+type agentClient interface {
+	registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
+	getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
+	updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
+	startJob(ctx context.Context, spec JobSpec) ([]byte, error)
+	finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
+}
+
 // New constructs an agent daemon.
-func New(logger logr.Logger, app client, cfg Config) (*daemon, error) {
+func New(opts DaemonOptions) (*daemon, error) {
 	if _, ok := app.(*rpcClient); !ok {
 		// agent is deemed a server agent if it is not using an RPC client.
-		cfg.server = true
+		opts.Config.server = true
 	}
-	poolLogger := logger
-	if cfg.server {
+	poolLogger := opts.Logger
+	if opts.Config.server {
 		// disable logging for server agents otherwise the server logs are
 		// likely to contain duplicate logs from both the agent daemon and the
 		// agent service, but still make logger available to server agent when
 		// it does need to log something.
 		poolLogger = logr.NewNoopLogger()
 	}
-	if cfg.Concurrency == 0 {
-		cfg.Concurrency = DefaultConcurrency
+	if opts.Config.Concurrency == 0 {
+		opts.Config.Concurrency = DefaultConcurrency
 	}
-	if cfg.Debug {
-		logger.V(0).Info("enabled debug mode")
+	if opts.Config.Debug {
+		opts.Logger.V(0).Info("enabled debug mode")
 	}
-	if cfg.Sandbox {
+	if opts.Config.Sandbox {
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
 		}
-		logger.V(0).Info("enabled sandbox mode")
+		opts.Logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &daemon{
-		client:     app,
+		client:     opts.Config,
 		envs:       DefaultEnvs,
-		downloader: releases.NewDownloader(cfg.TerraformBinDir),
+		downloader: releases.NewDownloader(opts.Config.TerraformBinDir),
 		registered: make(chan *Agent),
-		config:     cfg,
+		config:     opts.Config,
 		poolLogger: poolLogger,
-		logger:     logger,
+		logger:     opts.Logger,
 	}
-	if cfg.PluginCache {
+	if opts.Config.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
 		d.envs = append(d.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
-		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
+		opts.Logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 	return d, nil
 }
 
 // NewRPC constructs a agent daemon that communicates with the server via RPC.
 func NewRPC(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, error) {
-	app, err := NewRPCClient(apiConfig, nil)
+	client, err := otfapi.NewClient(apiConfig)
 	if err != nil {
 		return nil, err
 	}
-	return New(logger, app, cfg)
+	return New(DaemonOptions{
+		Logger:          logger,
+		Config:          cfg,
+		AgentClient:     &rpcClient{Client: client, address: apiConfig.Address},
+		RunClient:       &run.Client{Client: client},
+		WorkspaceClient: &workspace.Client{Client: client},
+	})
 }
 
 // Start the agent daemon.
@@ -134,7 +159,7 @@ func (d *daemon) Start(ctx context.Context) error {
 	}
 
 	// register agent with server
-	agent, err := d.registerAgent(ctx, registerAgentOptions{
+	agent, err := d.client.agents.registerAgent(ctx, registerAgentOptions{
 		Name:        d.config.Name,
 		Version:     internal.Version,
 		Concurrency: d.config.Concurrency,

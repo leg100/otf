@@ -55,6 +55,8 @@ type (
 		agent    agentDaemon
 
 		Organizations *organization.Service
+		Runs          *run.Service
+
 		team.TeamService
 		user.UserService
 		tokens.TokensService
@@ -65,7 +67,6 @@ type (
 		module.ModuleService
 		internal.HostnameService
 		configversion.ConfigurationVersionService
-		run.RunService
 		repohooks.RepohookService
 		logs.LogsService
 		notifications.NotificationService
@@ -303,7 +304,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	agentDaemon, err := agent.New(
 		logger.WithValues("component", "agent"),
-		agent.InProcClient{
 			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
@@ -312,7 +312,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			RunService:                  runService,
 			LogsService:                 logsService,
 			Service:                     agentService,
-		},
 		*cfg.AgentConfig,
 	)
 	if err != nil {
