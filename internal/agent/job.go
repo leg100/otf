@@ -121,8 +121,8 @@ func (j *Job) LogValue() slog.Value {
 
 func (j *Job) Organizations() []string { return nil }
 
-func (j *Job) IsSiteAdmin() bool   { return true }
-func (j *Job) IsOwner(string) bool { return true }
+func (j *Job) IsSiteAdmin() bool   { return false }
+func (j *Job) IsOwner(string) bool { return false }
 
 func (j *Job) CanAccessSite(action rbac.Action) bool {
 	return false
@@ -176,10 +176,9 @@ func (j *Job) CanAccessTeam(rbac.Action, string) bool {
 }
 
 func (j *Job) allocate(agentID string) error {
-	if j.Status != JobUnallocated {
-		return errors.New("job can only be allocated when it is in the unallocated state")
+	if err := j.updateStatus(JobAllocated); err != nil {
+		return err
 	}
-	j.Status = JobAllocated
 	j.AgentID = &agentID
 	return nil
 }
@@ -195,10 +194,8 @@ func (j *Job) reallocate(agentID string) error {
 // cancel job based on current state of its parent run - depending on its state,
 // the job is signaled and/or its state is updated too.
 func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
-	var (
-		// whether job be signaled
-		signal *bool
-	)
+	// whether job be signaled
+	var signal *bool
 	switch run.Status {
 	case otfrun.RunPlanning, otfrun.RunApplying:
 		if run.CancelSignaledAt != nil {
@@ -207,17 +204,16 @@ func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
 			signal = internal.Bool(false)
 		}
 	case otfrun.RunCanceled:
-		// run has been canceled so immediately cancel job too unless already
-		// canceled
-		if j.Status != JobCanceled {
-			j.Status = JobCanceled
+		// run has been canceled so immediately cancel job too
+		if err := j.updateStatus(JobCanceled); err != nil {
+			return nil, err
 		}
 	case otfrun.RunForceCanceled:
 		// run has been forceably canceled, so both signal job to forcefully
 		// cancel current operation, and immediately cancel job.
 		signal = internal.Bool(true)
-		if j.Status != JobCanceled {
-			j.Status = JobCanceled
+		if err := j.updateStatus(JobCanceled); err != nil {
+			return nil, err
 		}
 	}
 	if signal != nil {
@@ -230,19 +226,36 @@ func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
 	return nil, nil
 }
 
+func (j *Job) startJob() error {
+	return j.updateStatus(JobRunning)
+}
+
+func (j *Job) finishJob(to JobStatus) error {
+	return j.updateStatus(to)
+}
+
 func (j *Job) updateStatus(to JobStatus) error {
-	switch to {
+	var isValid bool
+	switch j.Status {
+	case JobUnallocated:
+		switch to {
+		case JobAllocated, JobCanceled:
+			isValid = true
+		}
+	case JobAllocated:
+		switch to {
+		case JobRunning, JobCanceled:
+			isValid = true
+		}
 	case JobRunning:
-		if j.Status != JobAllocated {
-			return ErrInvalidJobStateTransition
+		switch to {
+		case JobFinished, JobCanceled, JobErrored:
+			isValid = true
 		}
-	case JobFinished, JobErrored, JobCanceled:
-		if j.Status != JobRunning {
-			return ErrInvalidJobStateTransition
-		}
-	default:
-		return ErrInvalidJobStateTransition
 	}
-	j.Status = to
-	return nil
+	if isValid {
+		j.Status = to
+		return nil
+	}
+	return ErrInvalidJobStateTransition
 }

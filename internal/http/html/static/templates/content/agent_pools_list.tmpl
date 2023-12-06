@@ -33,9 +33,6 @@
     </div>
     <div>
       {{ template "identifier" . }}
-      <form action="{{ deleteAgentPoolPath .ID }}" method="POST">
-        <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-      </form>
     </div>
   </div>
 {{ end }}
