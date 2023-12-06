@@ -13,6 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type FakeService struct {
+	Workspaces []*Workspace
+}
+
+func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+	return f.Workspaces, nil
+}
+
 type (
 	fakeWebService struct {
 		workspaces []*Workspace

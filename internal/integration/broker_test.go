@@ -23,9 +23,9 @@ func TestBroker(t *testing.T) {
 	remote, _, _ := setup(t, &cfg)
 
 	// setup subscriptions
-	localSub, localUnsub := local.WatchOrganizations(ctx)
+	localSub, localUnsub := local.Organizations.WatchOrganizations(ctx)
 	defer localUnsub()
-	remoteSub, remoteUnsub := remote.WatchOrganizations(ctx)
+	remoteSub, remoteUnsub := remote.Organizations.WatchOrganizations(ctx)
 	defer remoteUnsub()
 
 	// create an org which should trigger an event

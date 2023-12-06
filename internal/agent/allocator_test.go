@@ -171,7 +171,7 @@ func TestAllocator_allocate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &allocator{
 				Logger: logr.Discard(),
-				Service: &fakeService{
+				client: &fakeService{
 					job: tt.job,
 				},
 			}

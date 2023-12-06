@@ -169,11 +169,11 @@ type (
 
 func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion, latestVersion string) *factory {
 	return &factory{
-		OrganizationService:         &fakeFactoryOrganizationService{org: org},
-		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
-		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
-		VCSProviderService:          &fakeFactoryVCSProviderService{},
-		ReleasesService:             &fakeReleasesService{latestVersion: latestVersion},
+		organizations: &fakeFactoryOrganizationService{org: org},
+		workspaces:    &fakeFactoryWorkspaceService{ws: ws},
+		configs:       &fakeFactoryConfigurationVersionService{cv: cv},
+		vcs:           &fakeFactoryVCSProviderService{},
+		releases:      &fakeReleasesService{latestVersion: latestVersion},
 	}
 }
 

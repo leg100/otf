@@ -115,7 +115,7 @@ func newFakeCLI(ws *workspace.Workspace, opts ...fakeCLIOption) *CLI {
 	for _, fn := range opts {
 		fn(&svc)
 	}
-	return &CLI{Service: &svc, WorkspaceService: &svc}
+	return &CLI{state: &svc, workspaces: &svc}
 }
 
 func withStateVersion(sv *Version) fakeCLIOption {

@@ -161,7 +161,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.CreateOrganization(ctx, organization.CreateOptions{
+	org, err := s.Organizations.CreateOrganization(ctx, organization.CreateOptions{
 		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)

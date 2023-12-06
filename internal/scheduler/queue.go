@@ -16,8 +16,8 @@ type (
 	queue struct {
 		logr.Logger
 
-		WorkspaceService
-		RunService
+		workspaceClient
+		runClient
 
 		ws      *workspace.Workspace
 		current *otfrun.Run
@@ -27,8 +27,8 @@ type (
 	queueOptions struct {
 		logr.Logger
 
-		WorkspaceService
-		RunService
+		workspaceClient
+		runClient
 
 		*workspace.Workspace
 	}
@@ -38,10 +38,10 @@ type (
 
 func (queueMaker) newQueue(opts queueOptions) eventHandler {
 	return &queue{
-		Logger:           opts.WithValues("workspace", opts.Workspace.ID),
-		RunService:       opts.RunService,
-		WorkspaceService: opts.WorkspaceService,
-		ws:               opts.Workspace,
+		Logger:          opts.WithValues("workspace", opts.Workspace.ID),
+		runClient:       opts.runClient,
+		workspaceClient: opts.workspaceClient,
+		ws:              opts.Workspace,
 	}
 }
 

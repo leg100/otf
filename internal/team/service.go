@@ -55,7 +55,7 @@ type (
 		*tfeapi.Responder
 		html.Renderer
 		internal.HostnameService
-		organization.OrganizationService
+		OrganizationService *organization.Service
 		tokens.TokensService
 		logr.Logger
 	}
@@ -87,7 +87,7 @@ func NewService(opts Options) *service {
 
 	// Whenever an organization is created, also create an owners team. (The
 	// user package hooks into CreateTeam to add the creator as a member).
-	opts.AfterCreateOrganization(func(ctx context.Context, organization *organization.Organization) error {
+	opts.OrganizationService.AfterCreateOrganization(func(ctx context.Context, organization *organization.Organization) error {
 		// only an owner can create a team but there are no owners until an
 		// owners team is created, so in this particular instance authorization
 		// is skipped.

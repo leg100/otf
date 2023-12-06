@@ -18,29 +18,7 @@ import (
 )
 
 type (
-	OrganizationService = Service
-
-	Service interface {
-		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
-		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
-		DeleteOrganization(ctx context.Context, name string) error
-		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
-		AfterCreateOrganization(hook func(context.Context, *Organization) error)
-		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
-
-		// organization tokens
-		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		// GetOrganizationToken gets the organization token. If a token does not
-		// exist, then nil is returned without an error.
-		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
-		DeleteOrganizationToken(ctx context.Context, organization string) error
-		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
-		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
-	}
-
-	service struct {
+	Service struct {
 		RestrictOrganizationCreation bool
 
 		internal.Authorizer // authorize access to org
@@ -75,8 +53,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := service{
+func NewService(opts Options) *Service {
+	svc := Service{
 		Authorizer:                   &Authorizer{opts.Logger},
 		Logger:                       opts.Logger,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
@@ -121,13 +99,13 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 
-func (s *service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
+func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
@@ -135,7 +113,7 @@ func (s *service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*
 // organizations, or, if RestrictOrganizationCreation is true, then only the
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
-func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
+func (s *Service) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
 	creator, err := s.restrictOrganizationCreation(ctx)
 	if err != nil {
 		return nil, err
@@ -166,11 +144,11 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 	return org, nil
 }
 
-func (s *service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
+func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
+func (s *Service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -196,7 +174,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Upda
 // Subject is an agent: return its organization
 // Subject is an organization token: return its organization
 // Subject is a team: return its organization
-func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
+func (s *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -207,7 +185,7 @@ func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*res
 	return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: subject.Organizations()})
 }
 
-func (s *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
+func (s *Service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -224,7 +202,7 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 	return org, nil
 }
 
-func (s *service) DeleteOrganization(ctx context.Context, name string) error {
+func (s *Service) DeleteOrganization(ctx context.Context, name string) error {
 	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
 		return err
@@ -251,11 +229,11 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 	return nil
 }
 
-func (s *service) BeforeDeleteOrganization(hook func(context.Context, *Organization) error) {
+func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organization) error) {
 	s.beforeDeleteHooks = append(s.beforeDeleteHooks, hook)
 }
 
-func (s *service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
+func (s *Service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
 	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err
@@ -268,7 +246,7 @@ func (s *service) GetEntitlements(ctx context.Context, organization string) (Ent
 	return defaultEntitlements(org.ID), nil
 }
 
-func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Subject, error) {
+func (s *Service) restrictOrganizationCreation(ctx context.Context) (internal.Subject, error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -282,7 +260,7 @@ func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Su
 
 // CreateOrganizationToken creates an organization token. If an organization
 // token already exists it is replaced.
-func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
+func (s *Service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
 	if err != nil {
 		return nil, nil, err
@@ -304,11 +282,11 @@ func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrgani
 	return ot, token, nil
 }
 
-func (s *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
+func (s *Service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
 	return s.db.getOrganizationTokenByName(ctx, organization)
 }
 
-func (s *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
+func (s *Service) DeleteOrganizationToken(ctx context.Context, organization string) error {
 	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
 	if err != nil {
 		return err
@@ -324,6 +302,6 @@ func (s *service) DeleteOrganizationToken(ctx context.Context, organization stri
 	return nil
 }
 
-func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+func (s *Service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
 	return s.db.getOrganizationTokenByID(ctx, tokenID)
 }

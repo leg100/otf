@@ -89,7 +89,7 @@ func TestWebhook_Purger(t *testing.T) {
 		{
 			name: "delete organization",
 			event: func(t *testing.T, org, _, _ string) {
-				err := daemon.DeleteOrganization(ctx, org)
+				err := daemon.Organizations.DeleteOrganization(ctx, org)
 				require.NoError(t, err)
 			},
 		},

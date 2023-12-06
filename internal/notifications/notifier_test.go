@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,12 @@ func TestNotifier_handleRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			published := make(chan *run.Run, 100)
-			notifier := newTestNotifier(t, &fakeFactory{published}, tt.cfg)
+			notifier := &Notifier{
+				Logger:          logr.Discard(),
+				workspaces:      &fakeWorkspaceService{},
+				HostnameService: &fakeHostnameService{},
+				cache:           newTestCache(t, &fakeFactory{published}, tt.cfg),
+			}
 
 			err := notifier.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -92,7 +98,12 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 	config2 := newTestConfig(t, "ws-123", DestinationSlack, "", TriggerPlanning)
 
 	published := make(chan *run.Run, 2)
-	notifier := newTestNotifier(t, &fakeFactory{published}, config1, config2)
+	notifier := &Notifier{
+		Logger:          logr.Discard(),
+		workspaces:      &fakeWorkspaceService{},
+		HostnameService: &fakeHostnameService{},
+		cache:           newTestCache(t, &fakeFactory{published}, config1, config2),
+	}
 
 	err := notifier.handleRun(ctx, planningRun)
 	require.NoError(t, err)
@@ -102,7 +113,12 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 
 func TestNotifier_handleConfig(t *testing.T) {
 	ctx := context.Background()
-	notifier := newTestNotifier(t, &fakeFactory{})
+	notifier := &Notifier{
+		Logger:          logr.Discard(),
+		workspaces:      &fakeWorkspaceService{},
+		HostnameService: &fakeHostnameService{},
+		cache:           newTestCache(t, &fakeFactory{}),
+	}
 
 	// Add config, should result in cache size of 1
 	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj1/topic1", TriggerPlanning)

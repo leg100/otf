@@ -49,8 +49,8 @@ type (
 		*sql.DB
 		VCSEventBroker *vcs.Broker
 		internal.HostnameService
-		VCSProviderService vcsprovider.Service
-		organization.OrganizationService
+		VCSProviderService  vcsprovider.Service
+		OrganizationService *organization.Service
 		github.GithubAppService
 	}
 

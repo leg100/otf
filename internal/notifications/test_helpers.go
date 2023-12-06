@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -30,15 +29,6 @@ type (
 		published chan *run.Run
 	}
 )
-
-func newTestNotifier(t *testing.T, f clientFactory, configs ...*Config) *Notifier {
-	return &Notifier{
-		Logger:           logr.Discard(),
-		WorkspaceService: &fakeWorkspaceService{},
-		HostnameService:  &fakeHostnameService{},
-		cache:            newTestCache(t, f, configs...),
-	}
-}
 
 func newTestCache(t *testing.T, f clientFactory, configs ...*Config) *cache {
 	if f == nil {

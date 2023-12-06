@@ -81,9 +81,9 @@ func NewService(opts Options) *service {
 	}
 
 	svc.web = &web{
-		Renderer: opts.Renderer,
-		Service:  opts.WorkspaceService,
-		svc:      &svc,
+		Renderer:   opts.Renderer,
+		workspaces: opts.WorkspaceService,
+		svc:        &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,

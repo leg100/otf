@@ -13,7 +13,7 @@ import (
 )
 
 type tfe struct {
-	Service
+	*Service
 	*tfeapi.Responder
 }
 

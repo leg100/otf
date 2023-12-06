@@ -67,10 +67,10 @@ func TestReporter_HandleRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var got vcs.SetStatusOptions
 			reporter := &Reporter{
-				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
-				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
-				VCSProviderService:          &fakeReporterVCSProviderService{got: &got},
-				HostnameService:             internal.NewHostnameService("otf-host.org"),
+				Workspaces:      &fakeReporterWorkspaceService{ws: tt.ws},
+				Configs:         &fakeReporterConfigurationVersionService{cv: tt.cv},
+				VCS:             &fakeReporterVCSProviderService{got: &got},
+				HostnameService: internal.NewHostnameService("otf-host.org"),
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)

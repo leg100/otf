@@ -193,63 +193,41 @@ func TestSpawner(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			services := &fakeSpawnerServices{
-				workspaces: []*workspace.Workspace{tt.ws},
-				pullFiles:  tt.pullFiles,
-			}
+			runClient := &fakeSpawnerRunClient{}
 			spawner := Spawner{
-				ConfigurationVersionService: services,
-				WorkspaceService:            services,
-				VCSProviderService:          services,
-				RunService:                  services,
+				configs: &configversion.FakeService{},
+				workspaces: &workspace.FakeService{
+					Workspaces: []*workspace.Workspace{tt.ws},
+				},
+				runs: runClient,
+				vcs: &fakeSpawnerVCSProviderClient{
+					pullFiles: tt.pullFiles,
+				},
 			}
 			err := spawner.handleWithError(logr.Discard(), tt.event)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.spawn, services.spawned)
+			assert.Equal(t, tt.spawn, runClient.spawned)
 		})
 	}
 }
 
-type fakeSpawnerServices struct {
-	// workspaces to return from stubbed ListWorkspacesByRepoID()
-	workspaces []*workspace.Workspace
-	// created config versions
-	created []*configversion.ConfigurationVersion
+type fakeSpawnerRunClient struct {
 	// whether a run was spawned
 	spawned bool
-	// list of file paths to return from stubbed ListPullRequestFiles()
-	pullFiles []string
-
-	ConfigurationVersionService
-	WorkspaceService
-	VCSProviderService
-	RunService
 }
 
-func (f *fakeSpawnerServices) ListConnectedWorkspaces(context.Context, string, string) ([]*workspace.Workspace, error) {
-	return f.workspaces, nil
-}
-
-func (f *fakeSpawnerServices) CreateConfigurationVersion(ctx context.Context, wid string, opts configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
-	cv, err := configversion.NewConfigurationVersion(wid, opts)
-	if err != nil {
-		return nil, err
-	}
-	f.created = append(f.created, cv)
-	return cv, nil
-}
-
-func (f *fakeSpawnerServices) UploadConfig(context.Context, string, []byte) error {
-	return nil
-}
-
-func (f *fakeSpawnerServices) CreateRun(context.Context, string, CreateOptions) (*Run, error) {
+func (f *fakeSpawnerRunClient) CreateRun(context.Context, string, CreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }
 
-func (f *fakeSpawnerServices) GetVCSClient(context.Context, string) (vcs.Client, error) {
+type fakeSpawnerVCSProviderClient struct {
+	// list of file paths to return from stubbed ListPullRequestFiles()
+	pullFiles []string
+}
+
+func (f *fakeSpawnerVCSProviderClient) GetVCSClient(context.Context, string) (vcs.Client, error) {
 	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
 }
 

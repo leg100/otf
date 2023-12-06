@@ -216,8 +216,8 @@ func (s *service) AddHandlers(r *mux.Router) {
 
 func (s *service) NewAllocator(logger logr.Logger) *allocator {
 	return &allocator{
-		Logger:  logger,
-		Service: s,
+		Logger: logger,
+		client: s,
 	}
 }
 

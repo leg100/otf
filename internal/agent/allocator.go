@@ -19,7 +19,7 @@ type allocator struct {
 	logr.Logger
 	// service for seeding and streaming pools, agents, and jobs, and for
 	// allocating jobs to agents.
-	Service
+	client allocatorClient
 	// cache of agent pools
 	pools map[string]*Pool
 	// agents to allocate jobs to, keyed by agent ID
@@ -28,26 +28,39 @@ type allocator struct {
 	jobs map[JobSpec]*Job
 }
 
+type allocatorClient interface {
+	WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
+	WatchAgents(context.Context) (<-chan pubsub.Event[*Agent], func())
+	WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
+
+	listAllAgentPools(ctx context.Context) ([]*Pool, error)
+	listAgents(ctx context.Context) ([]*Agent, error)
+	listJobs(ctx context.Context) ([]*Job, error)
+
+	allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
+	reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
+}
+
 // Start the allocator. Should be invoked in a go routine.
 func (a *allocator) Start(ctx context.Context) error {
 	// Subscribe to pool, job and agent events and unsubscribe before returning.
-	poolsSub, poolsUnsub := a.WatchAgentPools(ctx)
+	poolsSub, poolsUnsub := a.client.WatchAgentPools(ctx)
 	defer poolsUnsub()
-	agentsSub, agentsUnsub := a.WatchAgents(ctx)
+	agentsSub, agentsUnsub := a.client.WatchAgents(ctx)
 	defer agentsUnsub()
-	jobsSub, jobsUnsub := a.WatchJobs(ctx)
+	jobsSub, jobsUnsub := a.client.WatchJobs(ctx)
 	defer jobsUnsub()
 
 	// seed allocator with pools, agents, and jobs
-	pools, err := a.listAllAgentPools(ctx)
+	pools, err := a.client.listAllAgentPools(ctx)
 	if err != nil {
 		return err
 	}
-	agents, err := a.listAgents(ctx)
+	agents, err := a.client.listAgents(ctx)
 	if err != nil {
 		return err
 	}
-	jobs, err := a.listJobs(ctx)
+	jobs, err := a.client.listJobs(ctx)
 	if err != nil {
 		return err
 	}
@@ -186,13 +199,13 @@ func (a *allocator) allocate(ctx context.Context) error {
 		)
 		if reallocate {
 			from := *job.AgentID
-			updatedJob, err = a.reallocateJob(ctx, job.Spec, agent.ID)
+			updatedJob, err = a.client.reallocateJob(ctx, job.Spec, agent.ID)
 			if err != nil {
 				return err
 			}
 			a.agents[from].CurrentJobs--
 		} else {
-			updatedJob, err = a.allocateJob(ctx, job.Spec, agent.ID)
+			updatedJob, err = a.client.allocateJob(ctx, job.Spec, agent.ID)
 			if err != nil {
 				return err
 			}

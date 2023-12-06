@@ -19,9 +19,16 @@ import (
 type (
 	web struct {
 		html.Renderer
-		workspace.Service
+		workspaces webWorkspaceClient
 
 		svc Service
+	}
+
+	// webWorkspaceClient provides web handlers with access to workspaces
+	webWorkspaceClient interface {
+		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
+		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
 	}
 
 	workspaceInfo struct {
@@ -91,7 +98,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -150,12 +157,12 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.GetPolicy(r.Context(), ws.ID)
+	policy, err := h.workspaces.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -214,7 +221,7 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), wv.WorkspaceID)
+	ws, err := h.workspaces.GetWorkspace(r.Context(), wv.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -631,7 +638,7 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspaceInfo, error) {
 	// retrieve names of all workspaces in org to show in dropdown widget
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return h.Service.ListWorkspaces(ctx, workspace.ListOptions{
+		return h.workspaces.ListWorkspaces(ctx, workspace.ListOptions{
 			Organization: &org,
 			PageOptions:  opts,
 		})

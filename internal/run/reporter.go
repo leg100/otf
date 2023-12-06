@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
@@ -22,27 +21,35 @@ type (
 	// runs.
 	Reporter struct {
 		logr.Logger
-		Service
-		VCSProviderService
-		ConfigurationVersionService
-		WorkspaceService
 		internal.HostnameService
+
+		Configs    reporterConfigClient
+		Workspaces reporterWorkspaceClient
+		VCS        reporterVCSClient
+		Runs       reporterRunClient
 	}
 
-	ReporterOptions struct {
-		ConfigurationVersionService configversion.Service
-		WorkspaceService            workspace.Service
-		VCSProviderService          VCSProviderService
-		Service                     Service
+	reporterWorkspaceClient interface {
+		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+	}
 
-		logr.Logger
+	reporterConfigClient interface {
+		GetConfigurationVersion(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+	}
+
+	reporterVCSClient interface {
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+	}
+
+	reporterRunClient interface {
+		WatchRuns(context.Context) (<-chan pubsub.Event[*Run], func())
 	}
 )
 
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := r.WatchRuns(ctx)
+	sub, unsub := r.Runs.WatchRuns(ctx)
 	defer unsub()
 
 	for event := range sub {
@@ -63,7 +70,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
+	cv, err := r.Configs.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
 	if err != nil {
 		return err
 	}
@@ -73,7 +80,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	ws, err := r.GetWorkspace(ctx, run.WorkspaceID)
+	ws, err := r.Workspaces.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return err
 	}
@@ -81,7 +88,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
 	}
 
-	client, err := r.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	client, err := r.VCS.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return err
 	}
@@ -118,10 +125,6 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
-		TargetURL: (&url.URL{
-			Scheme: "https",
-			Host:   r.Hostname(),
-			Path:   paths.Run(run.ID),
-		}).String(),
+		TargetURL:   r.URL(paths.Run(run.ID)),
 	})
 }

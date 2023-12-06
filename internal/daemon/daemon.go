@@ -54,7 +54,7 @@ type (
 		listener *sql.Listener
 		agent    agentDaemon
 
-		organization.OrganizationService
+		Organizations *organization.Service
 		team.TeamService
 		user.UserService
 		tokens.TokensService
@@ -361,8 +361,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:            listener,
 		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
-		WorkspaceService:    workspaceService,
-		HostnameService:     hostnameService,
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{
@@ -411,7 +409,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		UserService:                 userService,
 		TokensService:               tokensService,
 		WorkspaceService:            workspaceService,
-		OrganizationService:         orgService,
+		Organizations:               orgService,
 		VariableService:             variableService,
 		VCSProviderService:          vcsProviderService,
 		StateService:                stateService,
@@ -485,12 +483,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(run.ReporterLockID),
 			System: &run.Reporter{
-				Logger:                      d.Logger.WithValues("component", "reporter"),
-				VCSProviderService:          d.VCSProviderService,
-				HostnameService:             d.HostnameService,
-				ConfigurationVersionService: d.ConfigurationVersionService,
-				WorkspaceService:            d.WorkspaceService,
-				Service:                     d.RunService,
+				Logger:          d.Logger.WithValues("component", "reporter"),
+				VCS:             d.VCSProviderService,
+				HostnameService: d.HostnameService,
+				Configs:         d.ConfigurationVersionService,
+				Workspaces:      d.WorkspaceService,
+				Runs:            d.RunService,
 			},
 		},
 		{
@@ -539,9 +537,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(scheduler.LockID),
 			System: scheduler.NewScheduler(scheduler.Options{
-				Logger:           d.Logger,
-				WorkspaceService: d.WorkspaceService,
-				RunService:       d.RunService,
+				Logger:          d.Logger,
+				WorkspaceClient: d.WorkspaceService,
+				RunClient:       d.RunService,
 			}),
 		})
 	}

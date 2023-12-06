@@ -70,7 +70,7 @@ type (
 		*sql.Listener
 		*tfeapi.Responder
 		html.Renderer
-		organization.OrganizationService
+		OrganizationService *organization.Service
 		vcsprovider.VCSProviderService
 		connections.ConnectionService
 		team.TeamService

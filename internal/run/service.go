@@ -30,7 +30,7 @@ type (
 	// Alias services so they don't conflict when nested together in struct
 	RunService                  = Service
 	ConfigurationVersionService configversion.Service
-	OrganizationService         organization.Service
+	OrganizationService         = organization.Service
 	WorkspaceService            workspace.Service
 	VCSProviderService          vcsprovider.Service
 
@@ -116,7 +116,7 @@ type (
 		WorkspaceAuthorizer internal.Authorizer
 		VCSEventSubscriber  vcs.Subscriber
 
-		OrganizationService
+		OrganizationService *organization.Service
 		WorkspaceService
 		ConfigurationVersionService
 		VCSProviderService
@@ -136,8 +136,7 @@ type (
 func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:           opts.Logger,
-		WorkspaceService: opts.WorkspaceService,
+		Logger: opts.Logger,
 	}
 
 	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
@@ -148,11 +147,11 @@ func NewService(opts Options) *service {
 	svc.cache = opts.Cache
 	svc.db = db
 	svc.factory = &factory{
-		opts.OrganizationService,
-		opts.WorkspaceService,
-		opts.ConfigurationVersionService,
-		opts.VCSProviderService,
-		opts.ReleasesService,
+		organizations: opts.OrganizationService,
+		workspaces:    opts.WorkspaceService,
+		configs:       opts.ConfigurationVersionService,
+		vcs:           opts.VCSProviderService,
+		releases:      opts.ReleasesService,
 	}
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
@@ -172,11 +171,11 @@ func NewService(opts Options) *service {
 		Logger:    opts.Logger,
 	}
 	spawner := &Spawner{
-		Logger:                      opts.Logger.WithValues("component", "spawner"),
-		ConfigurationVersionService: opts.ConfigurationVersionService,
-		WorkspaceService:            opts.WorkspaceService,
-		VCSProviderService:          opts.VCSProviderService,
-		RunService:                  &svc,
+		Logger:     opts.Logger.WithValues("component", "spawner"),
+		configs:    opts.ConfigurationVersionService,
+		workspaces: opts.WorkspaceService,
+		vcs:        opts.VCSProviderService,
+		runs:       &svc,
 	}
 	svc.broker = pubsub.NewBroker(
 		opts.Logger,

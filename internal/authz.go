@@ -28,7 +28,6 @@ type Subject interface {
 	IsOwner(organization string) bool
 	IsSiteAdmin() bool
 
-	// Organizations returns subject's organization memberships
 	Organizations() []string
 
 	String() string

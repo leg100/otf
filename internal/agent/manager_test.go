@@ -43,7 +43,7 @@ func TestManager(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &fakeService{}
-			m := &manager{Service: svc}
+			m := &manager{client: svc}
 			err := m.update(context.Background(), tt.agent)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, svc.status)
