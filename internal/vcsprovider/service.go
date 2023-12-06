@@ -91,12 +91,12 @@ func NewService(opts Options) *service {
 		},
 	}
 	svc.web = &webHandlers{
-		Renderer:         opts.Renderer,
-		HostnameService:  opts.HostnameService,
-		GithubAppService: opts.GithubAppService,
-		GithubHostname:   opts.GithubHostname,
-		GitlabHostname:   opts.GitlabHostname,
-		svc:              &svc,
+		Renderer:        opts.Renderer,
+		HostnameService: opts.HostnameService,
+		GithubHostname:  opts.GithubHostname,
+		GitlabHostname:  opts.GitlabHostname,
+		client:          &svc,
+		githubApps:      opts.GithubAppService,
 	}
 	svc.api = &tfe{
 		Service:   &svc,

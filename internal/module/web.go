@@ -1,6 +1,7 @@
 package module
 
 import (
+	"context"
 	"errors"
 	"html/template"
 	"net/http"
@@ -31,7 +32,16 @@ type (
 		vcsprovider.VCSProviderService
 		internal.HostnameService
 
-		svc Service
+		client webModulesClient
+	}
+
+	// webModulesClient provides web handlers with access to modules
+	webModulesClient interface {
+		GetModuleByID(ctx context.Context, id string) (*Module, error)
+		GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error)
+		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
+		PublishModule(context.Context, PublishOptions) (*Module, error)
+		DeleteModule(ctx context.Context, id string) (*Module, error)
 	}
 
 	newModuleStep string
@@ -54,7 +64,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	modules, err := h.svc.ListModules(r.Context(), opts)
+	modules, err := h.client.ListModules(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,7 +96,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.svc.GetModuleByID(r.Context(), params.ID)
+	module, err := h.client.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,7 +113,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		modver = module.Latest()
 	}
 	if modver != nil {
-		tfmod, err = h.svc.GetModuleInfo(r.Context(), modver.ID)
+		tfmod, err = h.client.GetModuleInfo(r.Context(), modver.ID)
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -278,7 +288,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.svc.PublishModule(r.Context(), PublishOptions{
+	module, err := h.client.PublishModule(r.Context(), PublishOptions{
 		Repo:          params.Repo,
 		VCSProviderID: params.VCSProviderID,
 	})
@@ -301,7 +311,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleted, err := h.svc.DeleteModule(r.Context(), id)
+	deleted, err := h.client.DeleteModule(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

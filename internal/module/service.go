@@ -90,7 +90,7 @@ func NewService(opts Options) *service {
 		HostnameService:    opts.HostnameService,
 		Renderer:           opts.Renderer,
 		VCSProviderService: opts.VCSProviderService,
-		svc:                &svc,
+		client:             &svc,
 	}
 	publisher := &publisher{
 		Logger:             opts.Logger.WithValues("component", "publisher"),

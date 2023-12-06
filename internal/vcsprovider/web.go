@@ -1,6 +1,7 @@
 package vcsprovider
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -16,11 +17,25 @@ import (
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
-	github.GithubAppService
 
-	svc            Service
+	client     webClient
+	githubApps webGithubAppClient
+
 	GithubHostname string
 	GitlabHostname string
+}
+
+type webClient interface {
+	CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
+	UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error)
+	GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
+	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
+	DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
+}
+
+type webGithubAppClient interface {
+	GetGithubApp(ctx context.Context) (*github.App, error)
+	ListInstallations(ctx context.Context) ([]*github.Installation, error)
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -82,12 +97,12 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := h.GetGithubApp(r.Context())
+	app, err := h.githubApps.GetGithubApp(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	installs, err := h.ListInstallations(r.Context())
+	installs, err := h.githubApps.ListInstallations(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,7 +135,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
+	provider, err := h.client.CreateVCSProvider(r.Context(), CreateOptions{
 		Organization:       params.OrganizationName,
 		Token:              params.Token,
 		GithubAppInstallID: params.GithubAppInstallID,
@@ -142,7 +157,7 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.svc.GetVCSProvider(r.Context(), providerID)
+	provider, err := h.client.GetVCSProvider(r.Context(), providerID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,7 +194,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	if params.Token != "" {
 		opts.Token = &params.Token
 	}
-	provider, err := h.svc.UpdateVCSProvider(r.Context(), params.ID, opts)
+	provider, err := h.client.UpdateVCSProvider(r.Context(), params.ID, opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -194,12 +209,12 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	app, err := h.GetGithubApp(r.Context())
+	app, err := h.githubApps.GetGithubApp(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	providers, err := h.svc.ListVCSProviders(r.Context(), org)
+	providers, err := h.client.ListVCSProviders(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -222,7 +237,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.svc.GetVCSProvider(r.Context(), id)
+	provider, err := h.client.GetVCSProvider(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -241,7 +256,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.svc.DeleteVCSProvider(r.Context(), id)
+	provider, err := h.client.DeleteVCSProvider(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

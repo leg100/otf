@@ -33,7 +33,7 @@ func TestVCSProvider_newPersonalToken(t *testing.T) {
 func TestVCSProvider_newGithubApp(t *testing.T) {
 	svc := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
-		GithubAppService: &fakeGithubAppService{
+		githubApps: &fakeGithubAppService{
 			app: &github.App{},
 			installs: []*github.Installation{{
 				Installation: &gogithub.Installation{ID: internal.Int64(123)},
@@ -50,9 +50,9 @@ func TestVCSProvider_newGithubApp(t *testing.T) {
 
 func TestCreateVCSProviderHandler(t *testing.T) {
 	svc := &webHandlers{
-		Renderer:         testutils.NewRenderer(t),
-		GithubAppService: &fakeGithubAppService{},
-		svc:              &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
+		Renderer:   testutils.NewRenderer(t),
+		githubApps: &fakeGithubAppService{},
+		client:     &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
 	}
 
 	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/create", strings.NewReader(url.Values{
@@ -71,9 +71,9 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 
 func TestListVCSProvidersHandler(t *testing.T) {
 	svc := &webHandlers{
-		Renderer:         testutils.NewRenderer(t),
-		GithubAppService: &fakeGithubAppService{},
-		svc:              &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
+		Renderer:   testutils.NewRenderer(t),
+		githubApps: &fakeGithubAppService{},
+		client:     &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
 	}
 
 	r := httptest.NewRequest("GET", "/?organization_name=acme-corp", nil)
@@ -85,7 +85,7 @@ func TestListVCSProvidersHandler(t *testing.T) {
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
 	svc := &webHandlers{
-		svc: &fakeService{provider: &VCSProvider{Organization: "acme"}},
+		client: &fakeService{provider: &VCSProvider{Organization: "acme"}},
 	}
 
 	r := httptest.NewRequest("POST", "/?", strings.NewReader(url.Values{
