@@ -427,15 +427,15 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID       *string `schema:"agent_pool_id"`
-		AutoApply         bool    `schema:"auto_apply"`
-		Name              *string
-		Description       *string
-		ExecutionMode     *ExecutionMode `schema:"execution_mode"`
-		TerraformVersion  *string        `schema:"terraform_version"`
-		WorkingDirectory  *string        `schema:"working_directory"`
-		WorkspaceID       string         `schema:"workspace_id,required"`
-		GlobalRemoteState bool           `schema:"global_remote_state"`
+		AgentPoolID       string `schema:"agent_pool_id"`
+		AutoApply         bool   `schema:"auto_apply"`
+		Name              string
+		Description       string
+		ExecutionMode     ExecutionMode `schema:"execution_mode"`
+		TerraformVersion  string        `schema:"terraform_version"`
+		WorkingDirectory  string        `schema:"working_directory"`
+		WorkspaceID       string        `schema:"workspace_id,required"`
+		GlobalRemoteState bool          `schema:"global_remote_state"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`
@@ -459,11 +459,11 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	opts := UpdateOptions{
 		AutoApply:         &params.AutoApply,
-		Name:              params.Name,
-		Description:       params.Description,
-		ExecutionMode:     params.ExecutionMode,
-		TerraformVersion:  params.TerraformVersion,
-		WorkingDirectory:  params.WorkingDirectory,
+		Name:              &params.Name,
+		Description:       &params.Description,
+		ExecutionMode:     &params.ExecutionMode,
+		TerraformVersion:  &params.TerraformVersion,
+		WorkingDirectory:  &params.WorkingDirectory,
 		GlobalRemoteState: &params.GlobalRemoteState,
 	}
 	if ws.Connection != nil {
@@ -490,8 +490,8 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// only set agent pool ID if execution mode is set to agent
-	if opts.ExecutionMode != nil && *opts.ExecutionMode == AgentExecutionMode {
-		opts.AgentPoolID = params.AgentPoolID
+	if params.ExecutionMode == AgentExecutionMode {
+		opts.AgentPoolID = &params.AgentPoolID
 	}
 
 	ws, err = h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)

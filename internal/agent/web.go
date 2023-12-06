@@ -304,7 +304,6 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	ws, err := h.workspaceService.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -318,7 +317,13 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("agent_pools_list_allowed.tmpl", w, pools)
+	h.Render("agent_pools_list_allowed.tmpl", w, struct {
+		Pools         []*Pool
+		CurrentPoolID string
+	}{
+		Pools:         pools,
+		CurrentPoolID: r.URL.Query().Get("agent_pool_id"),
+	})
 }
 
 // agent token handlers
