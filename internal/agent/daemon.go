@@ -152,7 +152,7 @@ func (d *daemon) Start(ctx context.Context) error {
 
 	if d.config.server {
 		// prior to registration, the server agent identifies itself as an
-		// unregisteredServerAgent (the non-server agent identifies itself as an
+		// unregisteredServerAgent (the pool agent identifies itself as an
 		// unregisteredPoolAgent but the server-side token middleware handles
 		// that).
 		ctx = internal.AddSubjectToContext(ctx, &unregisteredServerAgent{})

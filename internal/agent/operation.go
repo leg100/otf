@@ -119,7 +119,7 @@ func (o *operation) doAndFinish() {
 // do executes the job
 func (o *operation) do() error {
 	// if this is a pool agent using RPC to communicate with the server
-	// then use a new ac for this job, configured to authenticate using the
+	// then use a new client for this job, configured to authenticate using the
 	// job token and to retry requests upon encountering transient errors.
 	if ac, ok := o.client.(*rpcClient); ok {
 		jc, err := ac.NewJobClient(o.token, o.Logger)
@@ -135,7 +135,7 @@ func (o *operation) do() error {
 	// make token available to terraform CLI
 	o.envs = append(o.envs, internal.CredentialEnv(o.Hostname(), o.token))
 
-	run, err := o.GetRun(o.ctx, o.job.Spec.RunID)
+	run, err := o.runs.GetRun(o.ctx, o.job.Spec.RunID)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (o *operation) do() error {
 	//
 	// TODO: add working directory to run.Run so we skip having to retrieve
 	// workspace.
-	ws, err := o.GetWorkspace(o.ctx, o.job.WorkspaceID)
+	ws, err := o.workspaces.GetWorkspace(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
@@ -156,7 +156,7 @@ func (o *operation) do() error {
 	defer wd.close()
 	o.workdir = wd
 	// retrieve variables and add them to the environment
-	variables, err := o.ListEffectiveVariables(o.ctx, run.ID)
+	variables, err := o.client.variables.ListEffectiveVariables(o.ctx, run.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
@@ -527,7 +527,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 	if err := json.Unmarshal(statefile, &f); err != nil {
 		return err
 	}
-	_, err = o.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	_, err = o.state.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: &o.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,

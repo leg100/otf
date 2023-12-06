@@ -25,9 +25,9 @@ type (
 	client struct {
 		runs       runClient
 		workspaces workspaceClient
+		variables  variablesClient
 		//state      stateClient
 
-		//ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
 		//GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
 		//UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
 		//GetLockFile(ctx context.Context, id string) ([]byte, error)
@@ -59,5 +59,9 @@ type (
 
 	workspaceClient interface {
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+	}
+
+	variablesClient interface {
+		ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
 	}
 )
