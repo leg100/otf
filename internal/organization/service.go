@@ -35,6 +35,7 @@ type (
 		// GetOrganizationToken gets the organization token. If a token does not
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
+		ListOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error)
 		DeleteOrganizationToken(ctx context.Context, organization string) error
 		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
@@ -114,10 +115,9 @@ func NewService(opts Options) *service {
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
 	// Register with auth middleware the organization token and a means of
 	// retrieving organization corresponding to token.
-	opts.TokensService.RegisterKind(OrganizationTokenKind, func(ctx context.Context, organization string) (internal.Subject, error) {
-		return svc.GetOrganizationToken(ctx, organization)
+	opts.TokensService.RegisterKind(OrganizationTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+		return svc.getOrganizationTokenByID(ctx, tokenID)
 	})
-
 	return &svc
 }
 
@@ -305,7 +305,33 @@ func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrgani
 }
 
 func (s *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
-	return s.db.getOrganizationTokenByName(ctx, organization)
+	ot, err := s.db.getOrganizationTokenByName(ctx, organization)
+	if err != nil {
+		s.Error(err, "retrieving organization token", "organization", organization)
+		return nil, err
+	}
+	s.V(0).Info("retrieved organization token", "organization", organization)
+	return ot, nil
+}
+
+func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+	ot, err := s.db.getOrganizationTokenByID(ctx, tokenID)
+	if err != nil {
+		s.Error(err, "retrieving organization token", "token_id", tokenID)
+		return nil, err
+	}
+	s.V(0).Info("retrieved organization token", "token_id", tokenID, "organization", ot.Organization)
+	return ot, nil
+}
+
+func (s *service) ListOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error) {
+	tokens, err := s.db.listOrganizationTokens(ctx, organization)
+	if err != nil {
+		s.Error(err, "listing organization tokens", "organization", organization)
+		return nil, err
+	}
+	s.V(0).Info("listed organization tokens", "organization", organization, "count", len(tokens))
+	return tokens, nil
 }
 
 func (s *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
@@ -322,8 +348,4 @@ func (s *service) DeleteOrganizationToken(ctx context.Context, organization stri
 	s.V(0).Info("deleted organization token", "organization", organization)
 
 	return nil
-}
-
-func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
-	return s.db.getOrganizationTokenByID(ctx, tokenID)
 }

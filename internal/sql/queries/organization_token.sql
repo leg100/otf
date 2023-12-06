@@ -14,7 +14,12 @@ INSERT INTO organization_tokens (
       organization_token_id = pggen.arg('organization_token_id'),
       expiry                = pggen.arg('expiry');
 
--- name: FindOrganizationTokensByName :many
+-- name: FindOrganizationTokens :many
+SELECT *
+FROM organization_tokens
+WHERE organization_name = pggen.arg('organization_name');
+
+-- name: FindOrganizationTokensByName :one
 SELECT *
 FROM organization_tokens
 WHERE organization_name = pggen.arg('organization_name');

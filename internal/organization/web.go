@@ -239,12 +239,16 @@ func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := a.svc.GetOrganizationToken(r.Context(), org)
+	// ListOrganizationTokens should only ever return either 0 or 1 token
+	tokens, err := a.svc.ListOrganizationTokens(r.Context(), org)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	var token *OrganizationToken
+	if len(tokens) > 0 {
+		token = tokens[0]
+	}
 	a.Render("organization_token.tmpl", w, struct {
 		OrganizationPage
 		Token *OrganizationToken
