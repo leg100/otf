@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +50,8 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, secret)
 	return newMiddleware(middlewareOptions{
-		key: key,
+		Logger: logr.Discard(),
+		key:    key,
 		registry: &registry{
 			kinds: map[Kind]SubjectGetter{
 				"test-kind": func(context.Context, string) (internal.Subject, error) {
@@ -68,6 +70,7 @@ func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
+		Logger:   logr.Discard(),
 		registry: &registry{SiteToken: token, SiteAdmin: &internal.Superuser{}},
 		key:      key,
 	})
@@ -78,6 +81,7 @@ func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
+		Logger: logr.Discard(),
 		registry: &registry{
 			uiSubjectGetterOrCreator: func(context.Context, string) (internal.Subject, error) {
 				return &internal.Superuser{}, nil
