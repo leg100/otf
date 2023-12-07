@@ -50,7 +50,7 @@ type (
 	}
 )
 
-func (s *service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+func (s *Service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.ListTagsAction, organization)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (s *service) ListTags(ctx context.Context, organization string, opts ListTa
 	return list, nil
 }
 
-func (s *service) DeleteTags(ctx context.Context, organization string, tagIDs []string) error {
+func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []string) error {
 	subject, err := s.organization.CanAccess(ctx, rbac.DeleteTagsAction, organization)
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func (s *service) DeleteTags(ctx context.Context, organization string, tagIDs []
 	return nil
 }
 
-func (s *service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error {
+func (s *Service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (s *service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs 
 	return nil
 }
 
-func (s *service) AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (s *Service) AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
 	subject, err := s.CanAccess(ctx, rbac.AddTagsAction, workspaceID)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (s *service) AddTags(ctx context.Context, workspaceID string, tags []TagSpe
 	return nil
 }
 
-func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (s *Service) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
 	subject, err := s.CanAccess(ctx, rbac.RemoveTagsAction, workspaceID)
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 	return nil
 }
 
-func (s *service) ListWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.CanAccess(ctx, rbac.ListWorkspaceTags, workspaceID)
 	if err != nil {
 		return nil, err
@@ -188,7 +188,7 @@ func (s *service) ListWorkspaceTags(ctx context.Context, workspaceID string, opt
 	return list, nil
 }
 
-func (s *service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([]string, error) {
+func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([]string, error) {
 	// For each tag:
 	// (i) if specified by name, create new tag if it does not exist and get its ID.
 	// (ii) add tag to workspace

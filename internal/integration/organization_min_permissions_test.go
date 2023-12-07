@@ -27,7 +27,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 
 	// Assign read role to guests team. Guests now receive a minimum set of
 	// permissions across the workspace's organization.
-	err = svc.SetPermission(ctx, ws.ID, guests.ID, rbac.WorkspaceReadRole)
+	err = svc.Workspaces.SetPermission(ctx, ws.ID, guests.ID, rbac.WorkspaceReadRole)
 	require.NoError(t, err)
 
 	// Guest should be able to get org

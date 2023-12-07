@@ -56,6 +56,7 @@ type (
 
 		Organizations *organization.Service
 		Runs          *run.Service
+		Workspaces    *workspace.Service
 
 		team.TeamService
 		user.UserService
@@ -63,7 +64,6 @@ type (
 		variable.VariableService
 		vcsprovider.VCSProviderService
 		state.StateService
-		workspace.WorkspaceService
 		module.ModuleService
 		internal.HostnameService
 		configversion.ConfigurationVersionService
@@ -288,7 +288,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
-		RunService:          runService,
+		RunClient:           runService,
 	})
 
 	agentService := agent.NewService(agent.ServiceOptions{
@@ -302,17 +302,19 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:         listener,
 	})
 
-	agentDaemon, err := agent.New(
+	agentDaemon, err := agent.NewServerDaemon(
 		logger.WithValues("component", "agent"),
+		*cfg.AgentConfig,
+		agent.ServerDaemonOptions{
 			WorkspaceService:            workspaceService,
 			VariableService:             variableService,
 			StateService:                stateService,
-			HostnameService:             hostnameService,
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
-			Service:                     agentService,
-		*cfg.AgentConfig,
+			AgentService:                agentService,
+			HostnameService:             hostnameService,
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -407,7 +409,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TeamService:                 teamService,
 		UserService:                 userService,
 		TokensService:               tokensService,
-		WorkspaceService:            workspaceService,
 		Organizations:               orgService,
 		VariableService:             variableService,
 		VCSProviderService:          vcsProviderService,
@@ -415,7 +416,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ModuleService:               moduleService,
 		HostnameService:             hostnameService,
 		ConfigurationVersionService: configService,
-		RunService:                  runService,
+		Runs:                        runService,
+		Workspaces:                  workspaceService,
 		LogsService:                 logsService,
 		RepohookService:             repoService,
 		NotificationService:         notificationService,
@@ -486,8 +488,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				VCS:             d.VCSProviderService,
 				HostnameService: d.HostnameService,
 				Configs:         d.ConfigurationVersionService,
-				Workspaces:      d.WorkspaceService,
-				Runs:            d.RunService,
+				Workspaces:      d.Workspaces,
+				Runs:            d.Runs,
 			},
 		},
 		{
@@ -499,8 +501,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:              d.Logger,
 				HostnameService:     d.HostnameService,
-				WorkspaceService:    d.WorkspaceService,
-				RunService:          d.RunService,
+				WorkspaceClient:     d.Workspaces,
+				RunClient:           d.Runs,
 				NotificationService: d.NotificationService,
 				DB:                  d.DB,
 			}),
@@ -537,8 +539,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			LockID:    internal.Int64(scheduler.LockID),
 			System: scheduler.NewScheduler(scheduler.Options{
 				Logger:          d.Logger,
-				WorkspaceClient: d.WorkspaceService,
-				RunClient:       d.RunService,
+				WorkspaceClient: d.Workspaces,
+				RunClient:       d.Runs,
 			}),
 		})
 	}

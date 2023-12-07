@@ -34,7 +34,7 @@ func TestAutoApply(t *testing.T) {
 		},
 	})
 	// check UI has correctly updated the workspace resource
-	ws, err := svc.GetWorkspaceByName(ctx, org.Name, t.Name())
+	ws, err := svc.Workspaces.GetWorkspaceByName(ctx, org.Name, t.Name())
 	require.NoError(t, err)
 	require.Equal(t, true, ws.AutoApply)
 }

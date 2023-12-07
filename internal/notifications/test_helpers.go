@@ -16,7 +16,7 @@ type (
 		configs []*Config
 	}
 	fakeWorkspaceService struct {
-		workspace.WorkspaceService
+		workspace.Service
 	}
 	fakeHostnameService struct {
 		internal.HostnameService

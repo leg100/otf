@@ -70,9 +70,9 @@ type (
 		html.Renderer
 
 		WorkspaceAuthorizer internal.Authorizer
+		WorkspaceService    *workspace.Service
 
 		internal.Cache
-		workspace.WorkspaceService
 		*sql.DB
 		*tfeapi.Responder
 		*surl.Signer
@@ -100,10 +100,10 @@ func NewService(opts Options) *service {
 		Service:  &svc,
 	}
 	svc.tfeapi = &tfe{
-		Service:          &svc,
-		WorkspaceService: opts.WorkspaceService,
-		Responder:        opts.Responder,
-		Signer:           opts.Signer,
+		Service:    &svc,
+		workspaces: opts.WorkspaceService,
+		Responder:  opts.Responder,
+		Signer:     opts.Signer,
 	}
 	svc.api = &api{
 		Service:   &svc,

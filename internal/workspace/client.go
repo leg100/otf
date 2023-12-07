@@ -11,8 +11,6 @@ import (
 
 type Client struct {
 	*otfapi.Client
-
-	WorkspaceService
 }
 
 func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {

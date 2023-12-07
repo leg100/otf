@@ -22,9 +22,10 @@ import (
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
 	html.Renderer
-	svc              Service
-	workspaceService workspacepkg.WorkspaceService
-	logger           logr.Logger
+
+	svc        Service
+	workspaces *workspacepkg.Service
+	logger     logr.Logger
 }
 
 type (
@@ -220,7 +221,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	// fetch all workspaces in organization then distribute them among the three
 	// sets documented above.
 	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspacepkg.Workspace], error) {
-		return h.workspaceService.ListWorkspaces(r.Context(), workspacepkg.ListOptions{
+		return h.workspaces.ListWorkspaces(r.Context(), workspacepkg.ListOptions{
 			Organization: &pool.Organization,
 		})
 	})
@@ -304,7 +305,7 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := h.workspaceService.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.workspaces.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

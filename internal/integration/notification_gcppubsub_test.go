@@ -53,7 +53,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 
 	// add some tags to the workspace so we can check below that they are added
 	// to the pubsub message.
-	err = daemon.AddTags(ctx, ws.ID, []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}})
+	err = daemon.Workspaces.AddTags(ctx, ws.ID, []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}})
 	require.NoError(t, err)
 
 	_, err = daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{

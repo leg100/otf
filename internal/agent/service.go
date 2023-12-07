@@ -62,8 +62,6 @@ type (
 
 	service struct {
 		logr.Logger
-		otfrun.RunService
-		workspace.WorkspaceService
 
 		organization internal.Authorizer
 
@@ -73,6 +71,7 @@ type (
 		poolBroker  pubsub.SubscriptionService[*Pool]
 		agentBroker pubsub.SubscriptionService[*Agent]
 		jobBroker   pubsub.SubscriptionService[*Job]
+		phases      phaseClient
 
 		db *db
 		*registrar
@@ -85,22 +84,28 @@ type (
 		*sql.Listener
 		html.Renderer
 		*tfeapi.Responder
-		otfrun.RunService
 		tokens.TokensService
-		workspace.WorkspaceService
+
+		RunService       *otfrun.Service
+		WorkspaceService *workspace.Service
+	}
+
+	phaseClient interface {
+		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
+		FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
+		Cancel(ctx context.Context, runID string) error
 	}
 )
 
 func NewService(opts ServiceOptions) *service {
 	svc := &service{
-		Logger:           opts.Logger,
-		RunService:       opts.RunService,
-		WorkspaceService: opts.WorkspaceService,
-		db:               &db{DB: opts.DB},
-		organization:     &organization.Authorizer{Logger: opts.Logger},
+		Logger:       opts.Logger,
+		db:           &db{DB: opts.DB},
+		organization: &organization.Authorizer{Logger: opts.Logger},
 		tokenFactory: &tokenFactory{
 			TokensService: opts.TokensService,
 		},
+		phases: opts.RunService,
 	}
 	svc.tfeapi = &tfe{
 		service:   svc,
@@ -111,10 +116,10 @@ func NewService(opts ServiceOptions) *service {
 		Responder: opts.Responder,
 	}
 	svc.web = &webHandlers{
-		Renderer:         opts.Renderer,
-		logger:           opts.Logger,
-		svc:              svc,
-		workspaceService: opts.WorkspaceService,
+		Renderer:   opts.Renderer,
+		logger:     opts.Logger,
+		svc:        svc,
+		workspaces: opts.WorkspaceService,
 	}
 	svc.registrar = &registrar{
 		service: svc,
@@ -157,16 +162,16 @@ func NewService(opts ServiceOptions) *service {
 		},
 	)
 	// create jobs when a plan or apply is enqueued
-	opts.AfterEnqueuePlan(svc.createJob)
-	opts.AfterEnqueueApply(svc.createJob)
+	opts.RunService.AfterEnqueuePlan(svc.createJob)
+	opts.RunService.AfterEnqueueApply(svc.createJob)
 	// cancel job when a run is canceled
-	opts.AfterCancelRun(svc.cancelJob)
+	opts.RunService.AfterCancelRun(svc.cancelJob)
 	// cancel job when a run is forceably canceled
-	opts.AfterForceCancelRun(svc.cancelJob)
+	opts.RunService.AfterForceCancelRun(svc.cancelJob)
 	// check whether a workspace is being created or updated and configured to
 	// use an agent pool, and if so, check that it is allowed to use the pool.
-	opts.BeforeCreateWorkspace(svc.checkWorkspacePoolAccess)
-	opts.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
+	opts.WorkspaceService.BeforeCreateWorkspace(svc.checkWorkspacePoolAccess)
+	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate agent corresponding to the agent token ID
 	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
@@ -644,7 +649,7 @@ func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 			return err
 		}
 		// start corresponding run phase too
-		if _, err = s.RunService.StartPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseStartOptions{}); err != nil {
+		if _, err = s.phases.StartPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseStartOptions{}); err != nil {
 			return err
 		}
 		token, err = s.tokenFactory.createJobToken(spec)
@@ -683,11 +688,11 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		var err error
 		switch opts.Status {
 		case JobFinished, JobErrored:
-			_, err = s.RunService.FinishPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseFinishOptions{
+			_, err = s.phases.FinishPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseFinishOptions{
 				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			err = s.RunService.Cancel(ctx, spec.RunID)
+			err = s.phases.Cancel(ctx, spec.RunID)
 		}
 		if err != nil {
 			return err

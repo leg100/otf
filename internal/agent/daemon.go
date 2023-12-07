@@ -12,9 +12,13 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -39,8 +43,6 @@ type (
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
-
-		server bool // otfd (true) or otf-agent (false)
 	}
 )
 
@@ -56,7 +58,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 
 // daemon implements the agent itself.
 type daemon struct {
-	client
+	*daemonClient
 
 	envs       []string // terraform environment variables
 	config     Config
@@ -64,33 +66,23 @@ type daemon struct {
 	registered chan *Agent
 	logger     logr.Logger // logger that logs messages regardless of whether agent is a pool agent or not.
 	poolLogger logr.Logger // logger that only logs messages if the agent is a pool agent.
+
+	isPoolAgent bool
 }
 
 type DaemonOptions struct {
-	Logger          logr.Logger
-	Config          Config
-	RunClient       runClient
-	WorkspaceClient workspaceClient
-	AgentClient     agentClient
+	Logger logr.Logger
+	Config Config
+	client *daemonClient
+
+	// whether daemon is for a pool agent (true) or for a server agent (false).
+	isPoolAgent bool
 }
 
-// agentClient provides the daemon with access to agent services
-type agentClient interface {
-	registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
-	getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
-	updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
-	startJob(ctx context.Context, spec JobSpec) ([]byte, error)
-	finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
-}
-
-// New constructs an agent daemon.
-func New(opts DaemonOptions) (*daemon, error) {
-	if _, ok := app.(*rpcClient); !ok {
-		// agent is deemed a server agent if it is not using an RPC client.
-		opts.Config.server = true
-	}
+// newDaemon constructs an agent daemon.
+func newDaemon(opts DaemonOptions) (*daemon, error) {
 	poolLogger := opts.Logger
-	if opts.Config.server {
+	if !opts.isPoolAgent {
 		// disable logging for server agents otherwise the server logs are
 		// likely to contain duplicate logs from both the agent daemon and the
 		// agent service, but still make logger available to server agent when
@@ -110,13 +102,13 @@ func New(opts DaemonOptions) (*daemon, error) {
 		opts.Logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &daemon{
-		client:     opts.Config,
-		envs:       DefaultEnvs,
-		downloader: releases.NewDownloader(opts.Config.TerraformBinDir),
-		registered: make(chan *Agent),
-		config:     opts.Config,
-		poolLogger: poolLogger,
-		logger:     opts.Logger,
+		envs:        DefaultEnvs,
+		downloader:  releases.NewDownloader(opts.Config.TerraformBinDir),
+		registered:  make(chan *Agent),
+		config:      opts.Config,
+		poolLogger:  poolLogger,
+		logger:      opts.Logger,
+		isPoolAgent: opts.isPoolAgent,
 	}
 	if opts.Config.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
@@ -128,18 +120,49 @@ func New(opts DaemonOptions) (*daemon, error) {
 	return d, nil
 }
 
-// NewRPC constructs a agent daemon that communicates with the server via RPC.
-func NewRPC(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, error) {
-	client, err := otfapi.NewClient(apiConfig)
+type ServerDaemonOptions struct {
+	Logger                      logr.Logger
+	Config                      Config
+	RunService                  *run.Service
+	WorkspaceService            *workspace.Service
+	VariableService             variable.Service
+	ConfigurationVersionService configversion.Service
+	StateService                state.Service
+	LogsService                 logs.Service
+	AgentService                Service
+	HostnameService             internal.HostnameService
+}
+
+// NewServerDaemon constructs a server agent daemon that is part of the otfd
+// server.
+func NewServerDaemon(logger logr.Logger, cfg Config, opts ServerDaemonOptions) (*daemon, error) {
+	return newDaemon(DaemonOptions{
+		Logger: logger,
+		Config: cfg,
+		client: &daemonClient{
+			runs:       opts.RunService,
+			workspaces: opts.WorkspaceService,
+			state:      opts.StateService,
+			variables:  opts.VariableService,
+			configs:    opts.ConfigurationVersionService,
+			logs:       opts.LogsService,
+			agents:     opts.AgentService,
+			server:     opts.HostnameService,
+		},
+	})
+}
+
+// NewPoolDaemon constructs a pool agent daemon that communicates with the otfd server via RPC.
+func NewPoolDaemon(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, error) {
+	rpcClient, err := newRPCDaemonClient(apiConfig, nil)
 	if err != nil {
 		return nil, err
 	}
-	return New(DaemonOptions{
-		Logger:          logger,
-		Config:          cfg,
-		AgentClient:     &rpcClient{Client: client, address: apiConfig.Address},
-		RunClient:       &run.Client{Client: client},
-		WorkspaceClient: &workspace.Client{Client: client},
+	return newDaemon(DaemonOptions{
+		Logger:      logger,
+		Config:      cfg,
+		client:      rpcClient,
+		isPoolAgent: true,
 	})
 }
 
@@ -150,7 +173,7 @@ func (d *daemon) Start(ctx context.Context) error {
 	// initialize terminator
 	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
 
-	if d.config.server {
+	if !d.isPoolAgent {
 		// prior to registration, the server agent identifies itself as an
 		// unregisteredServerAgent (the pool agent identifies itself as an
 		// unregisteredPoolAgent but the server-side token middleware handles
@@ -159,7 +182,7 @@ func (d *daemon) Start(ctx context.Context) error {
 	}
 
 	// register agent with server
-	agent, err := d.client.agents.registerAgent(ctx, registerAgentOptions{
+	agent, err := d.agents.registerAgent(ctx, registerAgentOptions{
 		Name:        d.config.Name,
 		Version:     internal.Version,
 		Concurrency: d.config.Concurrency,
@@ -174,7 +197,7 @@ func (d *daemon) Start(ctx context.Context) error {
 		d.registered <- agent
 	}()
 
-	if d.config.server {
+	if !d.isPoolAgent {
 		// server agents should identify themselves as a serverAgent
 		// (pool agents identify themselves as a poolAgent, but the
 		// bearer token middleware takes care of that server-side).
@@ -189,7 +212,7 @@ func (d *daemon) Start(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			if updateErr := d.updateAgentStatus(ctx, agent.ID, AgentExited); updateErr != nil {
+			if updateErr := d.agents.updateAgentStatus(ctx, agent.ID, AgentExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			} else {
 				d.logger.Info("sent final status update", "status", "exited")
@@ -206,7 +229,7 @@ func (d *daemon) Start(ctx context.Context) error {
 				if terminator.totalJobs() > 0 {
 					status = AgentBusy
 				}
-				if err := d.updateAgentStatus(ctx, agent.ID, status); err != nil {
+				if err := d.agents.updateAgentStatus(ctx, agent.ID, status); err != nil {
 					if ctx.Err() != nil {
 						// context canceled
 						return nil
@@ -249,7 +272,7 @@ func (d *daemon) Start(ctx context.Context) error {
 			processJobs := func() (err error) {
 				d.poolLogger.Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := d.getAgentJobs(ctx, agent.ID)
+				jobs, err := d.agents.getAgentJobs(ctx, agent.ID)
 				if err != nil {
 					return err
 				}
@@ -257,7 +280,7 @@ func (d *daemon) Start(ctx context.Context) error {
 					if j.Status == JobAllocated {
 						d.poolLogger.Info("received job", "job", j)
 						// start job and receive job token in return
-						token, err := d.startJob(ctx, j.Spec)
+						token, err := d.agents.startJob(ctx, j.Spec)
 						if err != nil {
 							if ctx.Err() != nil {
 								return nil
@@ -267,13 +290,15 @@ func (d *daemon) Start(ctx context.Context) error {
 						}
 						d.poolLogger.V(0).Info("started job")
 						op := newOperation(newOperationOptions{
-							logger:     d.poolLogger.WithValues("job", j),
-							client:     d.client,
-							config:     d.config,
-							job:        j,
-							downloader: d.downloader,
-							envs:       d.envs,
-							token:      token,
+							logger:      d.poolLogger.WithValues("job", j),
+							client:      d.daemonClient,
+							config:      d.config,
+							agentID:     agent.ID,
+							job:         j,
+							downloader:  d.downloader,
+							envs:        d.envs,
+							token:       token,
+							isPoolAgent: d.isPoolAgent,
 						})
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.

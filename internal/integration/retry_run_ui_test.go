@@ -19,7 +19,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 		Speculative: internal.Bool(true),
 	})
 	// watch run events
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.WatchRuns(ctx)
 	defer unsub()
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv)

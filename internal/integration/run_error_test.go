@@ -42,7 +42,7 @@ func TestRunError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create workspace
-			ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 				Name:          internal.String("ws-" + string(tt.mode)),
 				Organization:  internal.String(org.Name),
 				ExecutionMode: workspace.ExecutionModePtr(tt.mode),
@@ -77,7 +77,7 @@ func TestRunError(t *testing.T) {
 			require.NoError(t, err)
 
 			// watch run events
-			runsSub, runsUnsub := daemon.WatchRuns(ctx)
+			runsSub, runsUnsub := daemon.Runs.WatchRuns(ctx)
 			defer runsUnsub()
 
 			// watch log events

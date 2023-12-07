@@ -234,7 +234,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	require.NoError(t, err)
 
 	// create and connect a workspace to a repo using the app install
-	_, err = daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	_, err = daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         internal.String("dev"),
 		Organization: internal.String(org.Name),
 		ConnectOptions: &workspace.ConnectOptions{
@@ -244,7 +244,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.WatchRuns(ctx)
 	defer unsub()
 
 	// send event

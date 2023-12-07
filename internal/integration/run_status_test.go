@@ -20,7 +20,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 
 	// Create a workspace with auto-apply enabled
 	daemon, org, ctx := setup(t, nil)
-	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         internal.String(t.Name()),
 		Organization: internal.String(org.Name),
 		AutoApply:    internal.Bool(true),
@@ -28,7 +28,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// watch run events
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.WatchRuns(ctx)
 	defer unsub()
 
 	// directory for root module

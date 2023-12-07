@@ -175,7 +175,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 		org = s.createOrganization(t, ctx)
 	}
 
-	ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := s.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         internal.String("workspace-" + internal.GenerateRandomString(6)),
 		Organization: &org.Name,
 	})
@@ -186,7 +186,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID string) *workspace.Workspace {
 	t.Helper()
 
-	ws, err := s.GetWorkspace(ctx, workspaceID)
+	ws, err := s.Workspaces.GetWorkspace(ctx, workspaceID)
 	require.NoError(t, err)
 	return ws
 }
@@ -316,7 +316,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
 
-	run, err := s.CreateRun(ctx, ws.ID, run.CreateOptions{
+	run, err := s.Runs.CreateRun(ctx, ws.ID, run.CreateOptions{
 		ConfigurationVersionID: internal.String(cv.ID),
 	})
 	require.NoError(t, err)
@@ -432,7 +432,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 		token = string(tokenBytes)
 	}
 
-	agentDaemon, err := agent.NewRPC(logger, cfg, api.Config{
+	agentDaemon, err := agent.NewPoolDaemon(logger, cfg, api.Config{
 		Token:   token,
 		Address: s.Hostname(),
 	})

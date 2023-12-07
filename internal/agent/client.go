@@ -1,67 +1,124 @@
 package agent
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 
-	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/tokens"
-	"github.com/leg100/otf/internal/variable"
-	"github.com/leg100/otf/internal/workspace"
+	"github.com/hashicorp/go-retryablehttp"
+	otfapi "github.com/leg100/otf/internal/api"
 )
 
 const agentIDHeader = "otf-agent-id"
 
-var (
-	_ client = (*InProcClient)(nil)
-	_ client = (*rpcClient)(nil)
-)
+// client accesses the service endpoints via RPC.
+type client struct {
+	*otfapi.Client
 
-type (
-	// client allows the daemon to communicate with the server endpoints.
-	client struct {
-		runs       runClient
-		workspaces workspaceClient
-		variables  variablesClient
-		//state      stateClient
+	// agentID is the ID of the agent using the client
+	agentID *string
+}
 
-		//GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
-		//UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
-		//GetLockFile(ctx context.Context, id string) ([]byte, error)
-		//UploadLockFile(ctx context.Context, id string, lockFile []byte) error
-		//DownloadConfig(ctx context.Context, id string) ([]byte, error)
-		//CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		//DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
-		//Hostname() string
+// NewRequest constructs a new API request
+func (c *client) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+	req, err := c.Client.NewRequest(method, path, v)
+	if err != nil {
+		return nil, err
+	}
+	if c.agentID != nil {
+		req.Header.Add(agentIDHeader, *c.agentID)
+	}
+	return req, err
+}
 
-		//internal.PutChunkService
+func (c *client) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
+	req, err := c.NewRequest("POST", "agents/register", &opts)
+	if err != nil {
+		return nil, err
+	}
+	var agent Agent
+	if err := c.Do(ctx, req, &agent); err != nil {
+		return nil, err
+	}
+	// add agent ID to future requests
+	agentID := agent.ID
+	c.agentID = &agentID
+	return &agent, nil
+}
+
+func (c *client) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
+	req, err := c.NewRequest("GET", "agents/jobs", nil)
+	if err != nil {
+		return nil, err
 	}
 
-	// InProcClient is a client for in-process communication with the server.
-	InProcClient struct {
-		tokens.TokensService
-		variable.VariableService
-		state.StateService
-		internal.HostnameService
-		configversion.ConfigurationVersionService
-		//run.RunService
-		workspace.WorkspaceService
-		logs.LogsService
-		Service
+	var jobs []*Job
+	// GET request blocks until:
+	//
+	// (a) job(s) are allocated to agent
+	// (b) job(s) already allocated to agent are sent a cancelation signal
+	// (c) a timeout is reached
+	//
+	// (c) can occur due to any intermediate proxies placed between otf-agent
+	// and otfd, such as nginx, which has a default proxy_read_timeout of 60s.
+	if err := c.Do(ctx, req, &jobs); err != nil {
+		return nil, err
 	}
+	return jobs, nil
+}
 
-	runClient interface {
-		GetRun(ctx context.Context, runID string) (*run.Run, error)
+func (c *client) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+	req, err := c.NewRequest("POST", "agents/status", &updateAgentStatusParams{
+		Status: status,
+	})
+	if err != nil {
+		return err
 	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}
 
-	workspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
-	}
+// agent tokens
 
-	variablesClient interface {
-		ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
+func (c *client) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
+	req, err := c.NewRequest("POST", u, &opts)
+	if err != nil {
+		return nil, nil, err
 	}
-)
+	var buf bytes.Buffer
+	if err := c.Do(ctx, req, &buf); err != nil {
+		return nil, nil, err
+	}
+	return nil, buf.Bytes(), nil
+}
+
+// jobs
+
+func (c *client) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
+	req, err := c.NewRequest("POST", "agents/start", &spec)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := c.Do(ctx, req, &buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (c *client) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
+	req, err := c.NewRequest("POST", "agents/finish", &finishJobParams{
+		JobSpec:          spec,
+		finishJobOptions: opts,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}

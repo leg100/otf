@@ -104,7 +104,6 @@ type (
 		workspace        *workspace.Workspace
 
 		Service
-		workspace.WorkspaceService
 	}
 
 	fakeCLIOption func(*fakeCLIService)

@@ -39,7 +39,7 @@ type (
 		workspaceAuthorizer internal.Authorizer
 		*authorizer
 
-		workspaces workspace.WorkspaceService
+		workspaces *workspace.Service
 
 		cache                  internal.Cache
 		db                     *pgdb
@@ -58,9 +58,9 @@ type (
 	Options struct {
 		WorkspaceAuthorizer internal.Authorizer
 		VCSEventSubscriber  vcs.Subscriber
+		WorkspaceService    *workspace.Service
 
 		OrganizationService *organization.Service
-		workspace.WorkspaceService
 		ConfigurationVersionService
 		VCSProviderService
 		releases.ReleasesService
@@ -103,10 +103,10 @@ func NewService(opts Options) *Service {
 		workspaces: opts.WorkspaceService,
 	}
 	svc.tfeapi = &tfe{
-		Service:            &svc,
-		PermissionsService: opts.WorkspaceService,
-		Responder:          opts.Responder,
-		Signer:             opts.Signer,
+		Service:    &svc,
+		workspaces: opts.WorkspaceService,
+		Responder:  opts.Responder,
+		Signer:     opts.Signer,
 	}
 	svc.api = &api{
 		Service:   &svc,
@@ -141,7 +141,7 @@ func NewService(opts Options) *Service {
 
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.
-	opts.AfterCreateWorkspace(svc.autoQueueRun)
+	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
 }
@@ -233,7 +233,7 @@ func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 	return page, nil
 }
 
-// enqueuePlan enqueues a plan for the run.
+// EnqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
 func (s *Service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {

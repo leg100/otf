@@ -28,7 +28,7 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces
 	tfe struct {
-		Service
+		*Service
 		*tfeapi.Responder
 	}
 )

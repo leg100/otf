@@ -116,7 +116,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
 		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-sub)
 
-		_, err := svc.DeleteWorkspace(ctx, ws.ID)
+		_, err := svc.Workspaces.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-sub)

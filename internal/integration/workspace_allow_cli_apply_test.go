@@ -25,7 +25,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	)
 
 	vcsProvider := daemon.createVCSProvider(t, ctx, org)
-	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         internal.String("connected-workspace"),
 		Organization: internal.String(org.Name),
 		ConnectOptions: &workspace.ConnectOptions{
@@ -42,7 +42,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	require.Error(t, err, out)
 	assert.Contains(t, out, "Apply not allowed for workspaces with a VCS connection")
 
-	_, err = daemon.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
+	_, err = daemon.Workspaces.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
 		ConnectOptions: &workspace.ConnectOptions{
 			AllowCLIApply: internal.Bool(true),
 		},

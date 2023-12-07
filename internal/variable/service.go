@@ -49,7 +49,6 @@ type (
 
 	service struct {
 		logr.Logger
-		run.RunService
 
 		db           *pgdb
 		web          *web
@@ -57,17 +56,23 @@ type (
 		api          *api
 		workspace    internal.Authorizer
 		organization internal.Authorizer
+		runs         runClient
 	}
 
 	Options struct {
 		WorkspaceAuthorizer internal.Authorizer
-		WorkspaceService    workspace.Service
+		WorkspaceService    *workspace.Service
 
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
-		run.RunService
+
+		RunClient runClient
+	}
+
+	runClient interface {
+		GetRun(ctx context.Context, runID string) (*run.Run, error)
 	}
 )
 
@@ -77,7 +82,7 @@ func NewService(opts Options) *service {
 		db:           &pgdb{opts.DB},
 		workspace:    opts.WorkspaceAuthorizer,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		RunService:   opts.RunService,
+		runs:         opts.RunClient,
 	}
 
 	svc.web = &web{
@@ -104,7 +109,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 }
 
 func (s *service) ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error) {
-	run, err := s.GetRun(ctx, runID)
+	run, err := s.runs.GetRun(ctx, runID)
 	if err != nil {
 		return nil, err
 	}

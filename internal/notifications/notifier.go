@@ -31,10 +31,10 @@ type (
 	}
 
 	NotifierOptions struct {
-		RunClient notifierRunClient
+		RunClient       notifierRunClient
+		WorkspaceClient notifierWorkspaceClient
 
 		logr.Logger
-		workspace.WorkspaceService
 		internal.HostnameService
 		NotificationService
 		*sql.DB
@@ -56,7 +56,7 @@ type (
 func NewNotifier(opts NotifierOptions) *Notifier {
 	return &Notifier{
 		Logger:          opts.Logger.WithValues("component", "notifier"),
-		workspaces:      opts.WorkspaceService,
+		workspaces:      opts.WorkspaceClient,
 		HostnameService: opts.HostnameService,
 		runs:            opts.RunClient,
 		notifications:   opts.NotificationService,

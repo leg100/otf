@@ -20,9 +20,10 @@ import (
 
 type tfe struct {
 	*Service
-	workspace.PermissionsService
 	internal.Signer
 	*tfeapi.Responder
+
+	workspaces *workspace.Service
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -350,7 +351,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	policy, err := a.GetPolicy(ctx, from.WorkspaceID)
+	policy, err := a.workspaces.GetPolicy(ctx, from.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ func TestRemoteStateSharing(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 	// producer is the workspace sharing its state
-	producer, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	producer, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:              internal.String("producer"),
 		Organization:      internal.String(org.Name),
 		GlobalRemoteState: internal.Bool(true),
@@ -40,14 +40,14 @@ func TestRemoteStateSharing(t *testing.T) {
 	err = daemon.UploadConfig(ctx, producerCV.ID, tarball)
 	require.NoError(t, err)
 	// listen to run events, and create run and apply
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.WatchRuns(ctx)
 	defer unsub()
 	_ = daemon.createRun(t, ctx, producer, producerCV)
 applied:
 	for event := range sub {
 		switch event.Payload.Status {
 		case run.RunPlanned:
-			err := daemon.Apply(ctx, event.Payload.ID)
+			err := daemon.Runs.Apply(ctx, event.Payload.ID)
 			require.NoError(t, err)
 		case run.RunApplied:
 			break applied
@@ -88,7 +88,7 @@ output "remote_foo" {
 	for event := range sub {
 		switch event.Payload.Status {
 		case run.RunPlanned:
-			err := daemon.Apply(ctx, event.Payload.ID)
+			err := daemon.Runs.Apply(ctx, event.Payload.ID)
 			require.NoError(t, err)
 		case run.RunApplied:
 			return

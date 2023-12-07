@@ -16,7 +16,7 @@ func TestIntegration_StateUI(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// watch run events
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.WatchRuns(ctx)
 	defer unsub()
 
 	// create run and wait for it to complete
@@ -30,7 +30,7 @@ applied:
 		case run.RunApplied:
 			break applied
 		case run.RunPlanned:
-			err := daemon.Apply(ctx, r.ID)
+			err := daemon.Runs.Apply(ctx, r.ID)
 			require.NoError(t, err)
 		case run.RunErrored:
 			t.Fatal("run unexpectedly finished with an error")

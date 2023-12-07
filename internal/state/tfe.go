@@ -25,9 +25,10 @@ import (
 
 type tfe struct {
 	Service
-	workspace.WorkspaceService
 	*tfeapi.Responder
 	*surl.Signer
+
+	workspaces *workspace.Service
 }
 
 // Implements TFC state versions API:
@@ -132,7 +133,7 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	ws, err := a.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
+	ws, err := a.workspaces.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
