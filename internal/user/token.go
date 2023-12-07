@@ -35,7 +35,7 @@ type (
 	}
 
 	userTokenFactory struct {
-		tokens.TokensService
+		tokens *tokens.Service
 	}
 )
 
@@ -46,7 +46,7 @@ func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOpt
 		Description: opts.Description,
 		Username:    username,
 	}
-	token, err := f.NewToken(tokens.NewTokenOptions{
+	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: ut.ID,
 		Kind:    UserTokenKind,
 	})

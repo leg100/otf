@@ -30,7 +30,7 @@ type (
 
 	// tokenFactory constructs organization tokens
 	tokenFactory struct {
-		tokens.TokensService
+		tokens *tokens.Service
 	}
 )
 
@@ -41,7 +41,7 @@ func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions)
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
 	}
-	token, err := f.NewToken(tokens.NewTokenOptions{
+	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: ot.ID,
 		Kind:    OrganizationTokenKind,
 		Expiry:  opts.Expiry,

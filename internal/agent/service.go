@@ -84,10 +84,10 @@ type (
 		*sql.Listener
 		html.Renderer
 		*tfeapi.Responder
-		tokens.TokensService
 
 		RunService       *otfrun.Service
 		WorkspaceService *workspace.Service
+		TokensService    *tokens.Service
 	}
 
 	phaseClient interface {
@@ -103,7 +103,7 @@ func NewService(opts ServiceOptions) *service {
 		db:           &db{DB: opts.DB},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		tokenFactory: &tokenFactory{
-			TokensService: opts.TokensService,
+			tokens: opts.TokensService,
 		},
 		phases: opts.RunService,
 	}

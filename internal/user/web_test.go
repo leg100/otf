@@ -114,9 +114,9 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 
 func TestAdminLoginHandler(t *testing.T) {
 	h := &webHandlers{
-		Renderer:      testutils.NewRenderer(t),
-		siteToken:     "secrettoken",
-		tokensService: &fakeTokensService{},
+		Renderer:  testutils.NewRenderer(t),
+		siteToken: "secrettoken",
+		tokens:    &fakeTokensService{},
 	}
 
 	tests := []struct {
@@ -161,9 +161,7 @@ func TestUserDiff(t *testing.T) {
 	assert.Equal(t, []*User{{Username: "alice"}}, diffUsers(a, b))
 }
 
-type fakeTokensService struct {
-	tokens.TokensService
-}
+type fakeTokensService struct{}
 
 func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)

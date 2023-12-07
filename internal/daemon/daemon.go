@@ -64,10 +64,10 @@ type (
 		Configs       *configversion.Service
 		Modules       *module.Service
 		VCSProviders  *vcsprovider.Service
+		Tokens        *tokens.Service
 
 		team.TeamService
 		user.UserService
-		tokens.TokensService
 		internal.HostnameService
 		repohooks.RepohookService
 		connections.ConnectionService
@@ -408,7 +408,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Handlers:          handlers,
 		TeamService:       teamService,
 		UserService:       userService,
-		TokensService:     tokensService,
 		Organizations:     orgService,
 		HostnameService:   hostnameService,
 		Runs:              runService,
@@ -420,6 +419,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Configs:           configService,
 		Modules:           moduleService,
 		VCSProviders:      vcsProviderService,
+		Tokens:            tokensService,
 		RepohookService:   repoService,
 		GithubAppService:  githubAppService,
 		ConnectionService: connectionService,
@@ -446,7 +446,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		KeyFile:              d.KeyFile,
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
-		Middleware:           []mux.MiddlewareFunc{d.TokensService.Middleware()},
+		Middleware:           []mux.MiddlewareFunc{d.Tokens.Middleware()},
 		Handlers:             d.Handlers,
 	})
 	if err != nil {

@@ -17,7 +17,7 @@ import (
 func TestService_StartSession(t *testing.T) {
 	key, err := jwk.FromRaw([]byte("abcdef123"))
 	require.NoError(t, err)
-	svc := service{
+	svc := Service{
 		Logger: logr.Discard(),
 		sessionFactory: &sessionFactory{
 			factory: &factory{key: key},

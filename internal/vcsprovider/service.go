@@ -17,27 +17,6 @@ import (
 )
 
 type (
-	//	Service interface {
-	//		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
-	//		UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error)
-	//		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
-	//		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
-	//		ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error)
-	//		// ListVCSProvidersByGithubAppInstall lists VCS providers using the
-	//		// credentials of a particular github app installation.
-	//		ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error)
-	//		DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
-	//
-	//		// GetVCSClient combines retrieving a vcs provider and construct a cloud
-	//		// client from that provider.
-	//		//
-	//		// TODO: rename vcs provider to vcs client; the central purpose of the vcs
-	//		// provider is, after all, to construct a vcs client.
-	//		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
-	//
-	//		BeforeDeleteVCSProvider(hook func(context.Context, *VCSProvider) error)
-	//	}
-
 	Service struct {
 		logr.Logger
 

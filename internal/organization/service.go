@@ -38,13 +38,13 @@ type (
 
 	Options struct {
 		RestrictOrganizationCreation bool
+		TokensService                *tokens.Service
 
 		*sql.DB
 		*tfeapi.Responder
 		*sql.Listener
 		html.Renderer
 		logr.Logger
-		tokens.TokensService
 	}
 
 	// ListOptions represents the options for listing organizations.
@@ -60,7 +60,7 @@ func NewService(opts Options) *Service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
-		tokenFactory:                 &tokenFactory{TokensService: opts.TokensService},
+		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,

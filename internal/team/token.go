@@ -43,7 +43,7 @@ type (
 	}
 
 	teamTokenFactory struct {
-		tokens.TokensService
+		tokens *tokens.Service
 	}
 )
 
@@ -54,7 +54,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
 	}
-	token, err := f.NewToken(tokens.NewTokenOptions{
+	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: tt.ID,
 		Kind:    TeamTokenKind,
 		Expiry:  opts.Expiry,

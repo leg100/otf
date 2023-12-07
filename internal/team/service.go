@@ -55,9 +55,10 @@ type (
 		*tfeapi.Responder
 		html.Renderer
 		internal.HostnameService
-		OrganizationService *organization.Service
-		tokens.TokensService
 		logr.Logger
+
+		OrganizationService *organization.Service
+		TokensService       *tokens.Service
 	}
 )
 
@@ -68,7 +69,7 @@ func NewService(opts Options) *service {
 		team:         &authorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB, opts.Logger},
 		teamTokenFactory: &teamTokenFactory{
-			TokensService: opts.TokensService,
+			tokens: opts.TokensService,
 		},
 	}
 	svc.web = &webHandlers{
@@ -102,7 +103,7 @@ func NewService(opts Options) *service {
 	})
 	// Register with auth middleware the team token kind and a means of
 	// retrieving team corresponding to token.
-	opts.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 
 	})

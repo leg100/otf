@@ -8,19 +8,15 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type (
-	fakeTokensService struct {
-		tokens.TokensService
-	}
-
-	fakeTokenHandler struct {
-		username string
-	}
-)
+type fakeTokenHandler struct {
+	username string
+}
 
 func (f fakeTokenHandler) getUsername(ctx context.Context, token *oauth2.Token) (string, error) {
 	return f.username, nil
 }
+
+type fakeTokensService struct{}
 
 func (fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
 	w.Header().Set("username", *opts.Username)

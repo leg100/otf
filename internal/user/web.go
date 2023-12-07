@@ -21,10 +21,14 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc           UserService
-	teamService   otfteam.TeamService
-	tokensService tokens.TokensService
-	siteToken     string
+	svc         UserService
+	teamService otfteam.TeamService
+	tokens      tokensClient
+	siteToken   string
+}
+
+type tokensClient interface {
+	StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -119,7 +123,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.tokensService.StartSession(w, r, tokens.StartSessionOptions{
+	err = h.tokens.StartSession(w, r, tokens.StartSessionOptions{
 		Username: internal.String(SiteAdminUsername),
 	})
 	if err != nil {

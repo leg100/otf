@@ -18,7 +18,7 @@ type webHandlers struct {
 	html.Renderer
 
 	svc           TeamService
-	tokensService tokens.TokensService
+	tokensService *tokens.Service
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {

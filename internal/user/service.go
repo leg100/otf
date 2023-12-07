@@ -51,13 +51,13 @@ type (
 	}
 
 	Options struct {
-		SiteToken string
+		SiteToken     string
+		TokensService *tokens.Service
 
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		internal.HostnameService
-		tokens.TokensService
 		logr.Logger
 		team.TeamService
 	}
@@ -70,16 +70,16 @@ func NewService(opts Options) *service {
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB, opts.Logger},
 		userTokenFactory: &userTokenFactory{
-			TokensService: opts.TokensService,
+			tokens: opts.TokensService,
 		},
 		teamService: opts.TeamService,
 	}
 	svc.web = &webHandlers{
-		Renderer:      opts.Renderer,
-		teamService:   opts.TeamService,
-		tokensService: opts.TokensService,
-		siteToken:     opts.SiteToken,
-		svc:           &svc,
+		Renderer:    opts.Renderer,
+		teamService: opts.TeamService,
+		tokens:      opts.TokensService,
+		siteToken:   opts.SiteToken,
+		svc:         &svc,
 	}
 	svc.tfeapi = &tfe{
 		UserService: &svc,
@@ -112,16 +112,16 @@ func NewService(opts Options) *service {
 	opts.Register(tfeapi.IncludeUsers, svc.tfeapi.includeUsers)
 	// Register site token and site admin with the auth middleware, to permit
 	// the latter to authenticate using the former.
-	opts.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
+	opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
 	// Register with auth middleware the user token kind and a means of
 	// retrieving user corresponding to token.
-	opts.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
 		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: internal.String(tokenID)})
 
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.
-	opts.RegisterUISubjectGetterOrCreator(func(ctx context.Context, username string) (internal.Subject, error) {
+	opts.TokensService.RegisterUISubjectGetterOrCreator(func(ctx context.Context, username string) (internal.Subject, error) {
 		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
 			user, err = svc.CreateUser(ctx, username)

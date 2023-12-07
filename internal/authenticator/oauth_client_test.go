@@ -57,7 +57,7 @@ func newTestOAuthServerClient(t *testing.T, username string) *OAuthClient {
 	client, err := newOAuthClient(
 		fakeTokenHandler{username},
 		internal.NewHostnameService("otf-server.com"),
-		fakeTokensService{},
+		&fakeTokensService{},
 		OAuthConfig{
 			Hostname: u.Host,
 			Endpoint: oauth2.Endpoint{

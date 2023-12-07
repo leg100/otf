@@ -17,12 +17,11 @@ type (
 		html.Renderer
 
 		internal.HostnameService
-		tokens.TokensService
 
+		TokensService        *tokens.Service
 		OpaqueHandlerConfigs []OpaqueHandlerConfig
 		IDTokenHandlerConfig OIDCConfig
-
-		SkipTLSVerification bool
+		SkipTLSVerification  bool
 	}
 
 	service struct {

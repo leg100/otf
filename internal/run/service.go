@@ -64,8 +64,7 @@ type (
 		ConfigVersionService *configversion.Service
 		ReleasesService      *releases.Service
 		VCSProviderService   *vcsprovider.Service
-
-		tokens.TokensService
+		TokensService        *tokens.Service
 
 		logr.Logger
 		internal.Cache
