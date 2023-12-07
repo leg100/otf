@@ -12,31 +12,6 @@ import (
 )
 
 type (
-	TagService interface {
-		// ListTags lists tags within an organization
-		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error)
-
-		// DeleteTags deletes tags from an organization
-		DeleteTags(ctx context.Context, organization string, tagIDs []string) error
-
-		// TagWorkspaces adds an existing tag to a list of workspaces
-		TagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error
-
-		// AddTags appends tags to a workspace. Any tag specified by ID must
-		// exist. Any tag specified by name is created if it does not
-		// exist.
-		AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error
-
-		// RemoveTags removes tags from a workspace. The workspace must already
-		// exist. Any tag specifying an ID must exist. Any tag specifying a name
-		// need not exist and no action is taken. If a tag is no longer
-		// associated with any workspaces it is removed.
-		RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error
-
-		// ListWorkspaceTags lists the tags for a workspace.
-		ListWorkspaceTags(ctx context.Context, workspaceID string, options ListWorkspaceTagsOptions) (*resource.Page[*Tag], error)
-	}
-
 	// ListTagsOptions are options for paginating and filtering a list of
 	// tags
 	ListTagsOptions struct {
