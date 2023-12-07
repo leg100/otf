@@ -128,7 +128,7 @@ type ServerDaemonOptions struct {
 	VariableService             *variable.Service
 	ConfigurationVersionService configversion.Service
 	StateService                state.Service
-	LogsService                 logs.Service
+	LogsService                 *logs.Service
 	AgentService                Service
 	HostnameService             internal.HostnameService
 }

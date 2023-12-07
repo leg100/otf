@@ -18,7 +18,7 @@ func TestLogs(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, internal.PutChunkOptions{
+		err := svc.Logs.PutChunk(ctx, internal.PutChunkOptions{
 			RunID: run.ID,
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -30,7 +30,7 @@ func TestLogs(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, internal.PutChunkOptions{
+		err := svc.Logs.PutChunk(ctx, internal.PutChunkOptions{
 			RunID: run.ID,
 			Phase: internal.PlanPhase,
 		})
@@ -41,7 +41,7 @@ func TestLogs(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, internal.PutChunkOptions{
+		err := svc.Logs.PutChunk(ctx, internal.PutChunkOptions{
 			RunID: run.ID,
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -112,7 +112,7 @@ func TestLogs(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := svc.GetChunk(ctx, tt.opts)
+				got, err := svc.Logs.GetChunk(ctx, tt.opts)
 				require.NoError(t, err)
 
 				assert.Equal(t, tt.want, got)
@@ -143,14 +143,14 @@ func TestClusterLogs(t *testing.T) {
 	run := local.createRun(t, ctx, nil, nil)
 
 	// follow run's plan logs on remote node
-	sub, err := remote.Tail(ctx, internal.GetChunkOptions{
+	sub, err := remote.Logs.Tail(ctx, internal.GetChunkOptions{
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
 	})
 	require.NoError(t, err)
 
 	// upload first chunk to local node
-	err = local.PutChunk(ctx, internal.PutChunkOptions{
+	err = local.Logs.PutChunk(ctx, internal.PutChunkOptions{
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
 		Data:  []byte("\x02hello"),
@@ -158,7 +158,7 @@ func TestClusterLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	// upload second and last chunk to local node
-	err = local.PutChunk(ctx, internal.PutChunkOptions{
+	err = local.Logs.PutChunk(ctx, internal.PutChunkOptions{
 		RunID:  run.ID,
 		Phase:  internal.PlanPhase,
 		Data:   []byte(" world\x03"),

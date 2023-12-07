@@ -81,7 +81,7 @@ func TestRunError(t *testing.T) {
 			defer runsUnsub()
 
 			// watch log events
-			logsSub, logsUnsub := daemon.WatchLogs(ctx)
+			logsSub, logsUnsub := daemon.Logs.WatchLogs(ctx)
 			defer logsUnsub()
 
 			// create run

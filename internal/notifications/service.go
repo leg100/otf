@@ -13,15 +13,6 @@ import (
 )
 
 type (
-	//	Service interface {
-	//		CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error)
-	//		UpdateNotificationConfiguration(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error)
-	//		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
-	//		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
-	//		DeleteNotificationConfiguration(ctx context.Context, id string) error
-	//		WatchNotificationConfigurations(context.Context) (<-chan pubsub.Event[*Config], func())
-	//	}
-
 	Service struct {
 		logr.Logger
 

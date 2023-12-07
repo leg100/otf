@@ -59,6 +59,7 @@ type (
 		Workspaces    *workspace.Service
 		Variables     *variable.Service
 		Notifications *notifications.Service
+		Logs          *logs.Service
 
 		team.TeamService
 		user.UserService
@@ -69,7 +70,6 @@ type (
 		internal.HostnameService
 		configversion.ConfigurationVersionService
 		repohooks.RepohookService
-		logs.LogsService
 		connections.ConnectionService
 		github.GithubAppService
 		agent.AgentService
@@ -419,7 +419,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Workspaces:                  workspaceService,
 		Variables:                   variableService,
 		Notifications:               notificationService,
-		LogsService:                 logsService,
+		Logs:                        logsService,
 		RepohookService:             repoService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
@@ -475,7 +475,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		{
 			Name:   "proxy",
 			Logger: d.Logger,
-			System: d.LogsService,
+			System: d.Logs,
 		},
 		{
 			Name:      "reporter",
