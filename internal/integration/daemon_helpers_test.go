@@ -292,7 +292,7 @@ func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Contex
 		opts = &configversion.ConfigurationVersionCreateOptions{}
 	}
 
-	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, *opts)
+	cv, err := s.Configs.CreateConfigurationVersion(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return cv
 }
@@ -301,7 +301,7 @@ func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx conte
 	cv := s.createConfigurationVersion(t, ctx, ws, opts)
 	tarball, err := os.ReadFile("./testdata/root.tar.gz")
 	require.NoError(t, err)
-	err = s.UploadConfig(ctx, cv.ID, tarball)
+	err = s.Configs.UploadConfig(ctx, cv.ID, tarball)
 	require.NoError(t, err)
 	return cv
 }

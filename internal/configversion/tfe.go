@@ -21,11 +21,23 @@ import (
 )
 
 type tfe struct {
-	Service
+	tfeClient
+
 	*surl.Signer
 	*tfeapi.Responder
 
 	maxConfigSize int64 // Maximum permitted config upload size in bytes
+}
+
+// tfeConfigsClient gives the tfe handlers access to config version services
+type tfeClient interface {
+	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
+	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
+	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error)
+	UploadConfig(ctx context.Context, id string, config []byte) error
+	DownloadConfig(ctx context.Context, id string) ([]byte, error)
+	DeleteConfigurationVersion(ctx context.Context, cvID string) error
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {

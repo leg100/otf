@@ -37,7 +37,7 @@ func TestRemoteStateSharing(t *testing.T) {
 	tarball, err := internal.Pack(producerRoot)
 	require.NoError(t, err)
 	producerCV := daemon.createConfigurationVersion(t, ctx, producer, nil)
-	err = daemon.UploadConfig(ctx, producerCV.ID, tarball)
+	err = daemon.Configs.UploadConfig(ctx, producerCV.ID, tarball)
 	require.NoError(t, err)
 	// listen to run events, and create run and apply
 	sub, unsub := daemon.Runs.WatchRuns(ctx)
@@ -80,7 +80,7 @@ output "remote_foo" {
 	tarball, err = internal.Pack(consumerRoot)
 	require.NoError(t, err)
 	consumerCV := daemon.createConfigurationVersion(t, ctx, consumer, nil)
-	err = daemon.UploadConfig(ctx, consumerCV.ID, tarball)
+	err = daemon.Configs.UploadConfig(ctx, consumerCV.ID, tarball)
 	require.NoError(t, err)
 
 	// create run and apply

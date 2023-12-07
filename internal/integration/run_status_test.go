@@ -90,7 +90,7 @@ output "cat_name" { value = random_pet.cat.id }
 			require.NoError(t, err)
 			tarball, err := internal.Pack(root)
 			require.NoError(t, err)
-			err = daemon.UploadConfig(ctx, cv.ID, tarball)
+			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
 			// create run and wait for it to reach wanted status

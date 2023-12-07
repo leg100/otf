@@ -61,6 +61,7 @@ type (
 		Notifications *notifications.Service
 		Logs          *logs.Service
 		State         *state.Service
+		Configs       *configversion.Service
 
 		team.TeamService
 		user.UserService
@@ -68,7 +69,6 @@ type (
 		vcsprovider.VCSProviderService
 		module.ModuleService
 		internal.HostnameService
-		configversion.ConfigurationVersionService
 		repohooks.RepohookService
 		connections.ConnectionService
 		github.GithubAppService
@@ -236,21 +236,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	runService := run.NewService(run.Options{
-		Logger:                      logger,
-		DB:                          db,
-		Listener:                    listener,
-		Renderer:                    renderer,
-		Responder:                   responder,
-		WorkspaceAuthorizer:         workspaceService,
-		OrganizationService:         orgService,
-		WorkspaceService:            workspaceService,
-		ConfigurationVersionService: configService,
-		VCSProviderService:          vcsProviderService,
-		Cache:                       cache,
-		VCSEventSubscriber:          vcsEventBroker,
-		Signer:                      signer,
-		ReleasesService:             releasesService,
-		TokensService:               tokensService,
+		Logger:               logger,
+		DB:                   db,
+		Listener:             listener,
+		Renderer:             renderer,
+		Responder:            responder,
+		WorkspaceAuthorizer:  workspaceService,
+		OrganizationService:  orgService,
+		WorkspaceService:     workspaceService,
+		ConfigVersionService: configService,
+		VCSProviderService:   vcsProviderService,
+		Cache:                cache,
+		VCSEventSubscriber:   vcsEventBroker,
+		Signer:               signer,
+		ReleasesService:      releasesService,
+		TokensService:        tokensService,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -403,30 +403,30 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	return &Daemon{
-		Config:                      cfg,
-		Logger:                      logger,
-		Handlers:                    handlers,
-		TeamService:                 teamService,
-		UserService:                 userService,
-		TokensService:               tokensService,
-		Organizations:               orgService,
-		VCSProviderService:          vcsProviderService,
-		ModuleService:               moduleService,
-		HostnameService:             hostnameService,
-		ConfigurationVersionService: configService,
-		Runs:                        runService,
-		Workspaces:                  workspaceService,
-		Variables:                   variableService,
-		Notifications:               notificationService,
-		Logs:                        logsService,
-		State:                       stateService,
-		RepohookService:             repoService,
-		GithubAppService:            githubAppService,
-		ConnectionService:           connectionService,
-		AgentService:                agentService,
-		DB:                          db,
-		agent:                       agentDaemon,
-		listener:                    listener,
+		Config:             cfg,
+		Logger:             logger,
+		Handlers:           handlers,
+		TeamService:        teamService,
+		UserService:        userService,
+		TokensService:      tokensService,
+		Organizations:      orgService,
+		VCSProviderService: vcsProviderService,
+		ModuleService:      moduleService,
+		HostnameService:    hostnameService,
+		Runs:               runService,
+		Workspaces:         workspaceService,
+		Variables:          variableService,
+		Notifications:      notificationService,
+		Logs:               logsService,
+		State:              stateService,
+		Configs:            configService,
+		RepohookService:    repoService,
+		GithubAppService:   githubAppService,
+		ConnectionService:  connectionService,
+		AgentService:       agentService,
+		DB:                 db,
+		agent:              agentDaemon,
+		listener:           listener,
 	}, nil
 }
 
@@ -487,9 +487,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Logger:          d.Logger.WithValues("component", "reporter"),
 				VCS:             d.VCSProviderService,
 				HostnameService: d.HostnameService,
-				Configs:         d.ConfigurationVersionService,
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,
+				Configs:         d.Configs,
 			},
 		},
 		{

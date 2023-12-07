@@ -73,7 +73,7 @@ func TestRunError(t *testing.T) {
 			require.NoError(t, err)
 			tarball, err := internal.Pack(path)
 			require.NoError(t, err)
-			err = daemon.UploadConfig(ctx, cv.ID, tarball)
+			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
 			// watch run events

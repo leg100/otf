@@ -60,8 +60,9 @@ type (
 		VCSEventSubscriber  vcs.Subscriber
 		WorkspaceService    *workspace.Service
 
-		OrganizationService *organization.Service
-		ConfigurationVersionService
+		OrganizationService  *organization.Service
+		ConfigVersionService *configversion.Service
+
 		VCSProviderService
 		releases.ReleasesService
 		tokens.TokensService
@@ -92,7 +93,7 @@ func NewService(opts Options) *Service {
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
 		workspaces:    opts.WorkspaceService,
-		configs:       opts.ConfigurationVersionService,
+		configs:       opts.ConfigVersionService,
 		vcs:           opts.VCSProviderService,
 		releases:      opts.ReleasesService,
 	}
@@ -115,7 +116,7 @@ func NewService(opts Options) *Service {
 	}
 	spawner := &Spawner{
 		Logger:     opts.Logger.WithValues("component", "spawner"),
-		configs:    opts.ConfigurationVersionService,
+		configs:    opts.ConfigVersionService,
 		workspaces: opts.WorkspaceService,
 		vcs:        opts.VCSProviderService,
 		runs:       &svc,
