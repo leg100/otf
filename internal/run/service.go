@@ -58,13 +58,13 @@ type (
 	Options struct {
 		WorkspaceAuthorizer internal.Authorizer
 		VCSEventSubscriber  vcs.Subscriber
-		WorkspaceService    *workspace.Service
 
+		WorkspaceService     *workspace.Service
 		OrganizationService  *organization.Service
 		ConfigVersionService *configversion.Service
+		ReleasesService      *releases.Service
 
 		VCSProviderService
-		releases.ReleasesService
 		tokens.TokensService
 
 		logr.Logger

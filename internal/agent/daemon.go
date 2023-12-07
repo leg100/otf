@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -62,7 +63,7 @@ type daemon struct {
 
 	envs       []string // terraform environment variables
 	config     Config
-	downloader releases.Downloader
+	downloader downloader
 	registered chan *Agent
 	logger     logr.Logger // logger that logs messages regardless of whether agent is a pool agent or not.
 	poolLogger logr.Logger // logger that only logs messages if the agent is a pool agent.
@@ -77,6 +78,11 @@ type DaemonOptions struct {
 
 	// whether daemon is for a pool agent (true) or for a server agent (false).
 	isPoolAgent bool
+}
+
+// downloader downloads terraform versions
+type downloader interface {
+	Download(ctx context.Context, version string, w io.Writer) (string, error)
 }
 
 // newDaemon constructs an agent daemon.

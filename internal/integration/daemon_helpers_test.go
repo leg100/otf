@@ -40,8 +40,13 @@ type (
 		*daemon.Daemon
 		// stub github server for test to use.
 		*github.TestServer
-		// releases service to allow tests to download terraform
-		releases.ReleasesService
+		// dowloader allows tests to download terraform
+		downloader
+	}
+
+	// downloader downloads terraform versions
+	downloader interface {
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
 	}
 
 	// configures the daemon for integration tests
@@ -129,16 +134,10 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	releasesService := releases.NewService(releases.Options{
-		Logger:          logger,
-		DB:              d.DB,
-		TerraformBinDir: cfg.terraformBinDir,
-	})
-
 	daemon := &testDaemon{
-		Daemon:          d,
-		TestServer:      githubServer,
-		ReleasesService: releasesService,
+		Daemon:     d,
+		TestServer: githubServer,
+		downloader: releases.NewDownloader(cfg.terraformBinDir),
 	}
 
 	// create a dedicated user account and context for test to use.
@@ -216,7 +215,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 		org = s.createOrganization(t, ctx)
 	}
 
-	module, err := s.CreateModule(ctx, module.CreateOptions{
+	module, err := s.Modules.CreateModule(ctx, module.CreateOptions{
 		Name:         uuid.NewString(),
 		Provider:     uuid.NewString(),
 		Organization: org.Name,

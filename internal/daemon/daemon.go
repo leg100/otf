@@ -62,12 +62,12 @@ type (
 		Logs          *logs.Service
 		State         *state.Service
 		Configs       *configversion.Service
+		Modules       *module.Service
 
 		team.TeamService
 		user.UserService
 		tokens.TokensService
 		vcsprovider.VCSProviderService
-		module.ModuleService
 		internal.HostnameService
 		repohooks.RepohookService
 		connections.ConnectionService
@@ -411,7 +411,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:      tokensService,
 		Organizations:      orgService,
 		VCSProviderService: vcsProviderService,
-		ModuleService:      moduleService,
 		HostnameService:    hostnameService,
 		Runs:               runService,
 		Workspaces:         workspaceService,
@@ -420,6 +419,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logs:               logsService,
 		State:              stateService,
 		Configs:            configService,
+		Modules:            moduleService,
 		RepohookService:    repoService,
 		GithubAppService:   githubAppService,
 		ConnectionService:  connectionService,

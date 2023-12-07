@@ -16,7 +16,7 @@ func TestModule(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 
-		_, err := svc.CreateModule(ctx, module.CreateOptions{
+		_, err := svc.Modules.CreateModule(ctx, module.CreateOptions{
 			Name:         uuid.NewString(),
 			Provider:     uuid.NewString(),
 			Organization: org.Name,
@@ -29,7 +29,7 @@ func TestModule(t *testing.T) {
 
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
-		mod, err := svc.PublishModule(ctx, module.PublishOptions{
+		mod, err := svc.Modules.PublishModule(ctx, module.PublishOptions{
 			VCSProviderID: vcsprov.ID,
 			Repo:          module.Repo("leg100/terraform-aws-stuff"),
 		})
@@ -40,7 +40,7 @@ func TestModule(t *testing.T) {
 		require.Equal(t, github.WebhookCreated, hook.Action)
 
 		t.Run("delete module", func(t *testing.T) {
-			_, err := svc.DeleteModule(ctx, mod.ID)
+			_, err := svc.Modules.DeleteModule(ctx, mod.ID)
 			require.NoError(t, err)
 		})
 
@@ -53,7 +53,7 @@ func TestModule(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
-		got, err := svc.GetModule(ctx, module.GetModuleOptions{
+		got, err := svc.Modules.GetModule(ctx, module.GetModuleOptions{
 			Organization: want.Organization,
 			Provider:     want.Provider,
 			Name:         want.Name,
@@ -67,7 +67,7 @@ func TestModule(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
-		got, err := svc.GetModuleByID(ctx, want.ID)
+		got, err := svc.Modules.GetModuleByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -80,7 +80,7 @@ func TestModule(t *testing.T) {
 		module2 := svc.createModule(t, ctx, org)
 		module3 := svc.createModule(t, ctx, org)
 
-		got, err := svc.ListModules(ctx, module.ListModulesOptions{
+		got, err := svc.Modules.ListModules(ctx, module.ListModulesOptions{
 			Organization: org.Name,
 		})
 		require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestModule(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
-		got, err := svc.DeleteModule(ctx, want.ID)
+		got, err := svc.Modules.DeleteModule(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)

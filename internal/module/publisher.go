@@ -17,7 +17,8 @@ type (
 	publisher struct {
 		logr.Logger
 		vcsprovider.VCSProviderService
-		ModuleService
+
+		modules *Service
 	}
 )
 
@@ -55,7 +56,7 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 	// TODO: we're only retrieving *one* module, but can not *multiple* modules
 	// be connected to a repo?
-	module, err := p.GetModuleByConnection(ctx, event.VCSProviderID, event.RepoPath)
+	module, err := p.modules.GetModuleByConnection(ctx, event.VCSProviderID, event.RepoPath)
 	if err != nil {
 		return err
 	}
@@ -66,7 +67,7 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	if err != nil {
 		return err
 	}
-	return p.PublishVersion(ctx, PublishVersionOptions{
+	return p.modules.PublishVersion(ctx, PublishVersionOptions{
 		ModuleID: module.ID,
 		// strip off v prefix if it has one
 		Version: strings.TrimPrefix(event.Tag, "v"),

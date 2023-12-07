@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -145,25 +144,19 @@ func TestFactory(t *testing.T) {
 type (
 	fakeFactoryOrganizationService struct {
 		org *organization.Organization
-		organization.Service
 	}
 	fakeFactoryWorkspaceService struct {
 		ws *workspace.Workspace
-		workspace.Service
 	}
 	fakeFactoryConfigurationVersionService struct {
 		cv *configversion.ConfigurationVersion
-		configversion.Service
 	}
-	fakeFactoryVCSProviderService struct {
-		vcsprovider.Service
-	}
-	fakeFactoryCloudClient struct {
+	fakeFactoryVCSProviderService struct{}
+	fakeFactoryCloudClient        struct {
 		vcs.Client
 	}
 	fakeReleasesService struct {
 		latestVersion string
-		releases.ReleasesService
 	}
 )
 

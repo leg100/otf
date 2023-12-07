@@ -19,7 +19,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -50,7 +49,7 @@ type operation struct {
 	envs          []string
 	variables     []*variable.Variable
 	proc          *os.Process
-	downloader    releases.Downloader
+	downloader    downloader
 	token         []byte
 	agentID       string
 	isPoolAgent   bool
@@ -63,7 +62,7 @@ type newOperationOptions struct {
 	client      *daemonClient
 	config      Config
 	job         *Job
-	downloader  releases.Downloader
+	downloader  downloader
 	envs        []string
 	token       []byte
 	agentID     string

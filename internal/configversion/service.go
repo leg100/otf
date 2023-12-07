@@ -14,22 +14,6 @@ import (
 )
 
 type (
-	//Service interface {
-	//	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-	//	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
-	//	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-	//	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error)
-
-	//	// Upload handles verification and upload of the config tarball, updating
-	//	// the config version upon success or failure.
-	//	UploadConfig(ctx context.Context, id string, config []byte) error
-
-	//	// Download retrieves the config tarball for the given config version ID.
-	//	DownloadConfig(ctx context.Context, id string) ([]byte, error)
-
-	//	DeleteConfigurationVersion(ctx context.Context, cvID string) error
-	//}
-
 	Service struct {
 		logr.Logger
 
