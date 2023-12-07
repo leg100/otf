@@ -63,11 +63,11 @@ type (
 		State         *state.Service
 		Configs       *configversion.Service
 		Modules       *module.Service
+		VCSProviders  *vcsprovider.Service
 
 		team.TeamService
 		user.UserService
 		tokens.TokensService
-		vcsprovider.VCSProviderService
 		internal.HostnameService
 		repohooks.RepohookService
 		connections.ConnectionService
@@ -393,40 +393,40 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		agentService,
 		disco.Service{},
 		&ghapphandler.Handler{
-			Logger:             logger,
-			Publisher:          vcsEventBroker,
-			GithubAppService:   githubAppService,
-			VCSProviderService: vcsProviderService,
+			Logger:           logger,
+			Publisher:        vcsEventBroker,
+			GithubAppService: githubAppService,
+			VCSProviders:     vcsProviderService,
 		},
 		&api.Handlers{},
 		&tfeapi.Handlers{},
 	}
 
 	return &Daemon{
-		Config:             cfg,
-		Logger:             logger,
-		Handlers:           handlers,
-		TeamService:        teamService,
-		UserService:        userService,
-		TokensService:      tokensService,
-		Organizations:      orgService,
-		VCSProviderService: vcsProviderService,
-		HostnameService:    hostnameService,
-		Runs:               runService,
-		Workspaces:         workspaceService,
-		Variables:          variableService,
-		Notifications:      notificationService,
-		Logs:               logsService,
-		State:              stateService,
-		Configs:            configService,
-		Modules:            moduleService,
-		RepohookService:    repoService,
-		GithubAppService:   githubAppService,
-		ConnectionService:  connectionService,
-		AgentService:       agentService,
-		DB:                 db,
-		agent:              agentDaemon,
-		listener:           listener,
+		Config:            cfg,
+		Logger:            logger,
+		Handlers:          handlers,
+		TeamService:       teamService,
+		UserService:       userService,
+		TokensService:     tokensService,
+		Organizations:     orgService,
+		HostnameService:   hostnameService,
+		Runs:              runService,
+		Workspaces:        workspaceService,
+		Variables:         variableService,
+		Notifications:     notificationService,
+		Logs:              logsService,
+		State:             stateService,
+		Configs:           configService,
+		Modules:           moduleService,
+		VCSProviders:      vcsProviderService,
+		RepohookService:   repoService,
+		GithubAppService:  githubAppService,
+		ConnectionService: connectionService,
+		AgentService:      agentService,
+		DB:                db,
+		agent:             agentDaemon,
+		listener:          listener,
 	}, nil
 }
 
@@ -485,7 +485,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			LockID:    internal.Int64(run.ReporterLockID),
 			System: &run.Reporter{
 				Logger:          d.Logger.WithValues("component", "reporter"),
-				VCS:             d.VCSProviderService,
+				VCS:             d.VCSProviders,
 				HostnameService: d.HostnameService,
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,

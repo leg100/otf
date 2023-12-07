@@ -45,11 +45,13 @@ type (
 		*sql.Listener
 		*tfeapi.Responder
 		html.Renderer
-		OrganizationService *organization.Service
-		vcsprovider.VCSProviderService
+
 		connections.ConnectionService
 		team.TeamService
 		logr.Logger
+
+		OrganizationService *organization.Service
+		VCSProviderService  *vcsprovider.Service
 	}
 )
 

@@ -23,7 +23,6 @@ import (
 
 type (
 	Service struct {
-		vcsprovider.VCSProviderService
 		connections.ConnectionService
 		logr.Logger
 		*publisher
@@ -32,8 +31,9 @@ type (
 
 		organization internal.Authorizer
 
-		api *api
-		web *webHandlers
+		api          *api
+		web          *webHandlers
+		vcsproviders *vcsprovider.Service
 	}
 
 	Options struct {
@@ -41,38 +41,37 @@ type (
 
 		*sql.DB
 		internal.HostnameService
-		vcsprovider.VCSProviderService
 		*surl.Signer
 		html.Renderer
 		connections.ConnectionService
 		repohooks.RepohookService
 
+		VCSProviderService *vcsprovider.Service
 		VCSEventSubscriber vcs.Subscriber
 	}
 )
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:             opts.Logger,
-		VCSProviderService: opts.VCSProviderService,
-		ConnectionService:  opts.ConnectionService,
-		organization:       &organization.Authorizer{Logger: opts.Logger},
-		db:                 &pgdb{opts.DB},
+		Logger:            opts.Logger,
+		ConnectionService: opts.ConnectionService,
+		organization:      &organization.Authorizer{Logger: opts.Logger},
+		db:                &pgdb{opts.DB},
 	}
 	svc.api = &api{
 		svc:    &svc,
 		Signer: opts.Signer,
 	}
 	svc.web = &webHandlers{
-		HostnameService:    opts.HostnameService,
-		Renderer:           opts.Renderer,
-		VCSProviderService: opts.VCSProviderService,
-		client:             &svc,
+		HostnameService: opts.HostnameService,
+		Renderer:        opts.Renderer,
+		client:          &svc,
+		vcsproviders:    opts.VCSProviderService,
 	}
 	publisher := &publisher{
-		Logger:             opts.Logger.WithValues("component", "publisher"),
-		VCSProviderService: opts.VCSProviderService,
-		modules:            &svc,
+		Logger:       opts.Logger.WithValues("component", "publisher"),
+		vcsproviders: opts.VCSProviderService,
+		modules:      &svc,
 	}
 	// Subscribe module publisher to incoming vcs events
 	opts.VCSEventSubscriber.Subscribe(publisher.handle)
@@ -88,7 +87,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Module, error) {
-	vcsprov, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
+	vcsprov, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,7 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 		if err != nil {
 			return err
 		}
-		client, err = s.GetVCSClient(ctx, opts.VCSProviderID)
+		client, err = s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
 		if err != nil {
 			return err
 		}

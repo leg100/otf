@@ -63,24 +63,26 @@ type (
 
 	Options struct {
 		logr.Logger
-		vcsprovider.VCSProviderService
 		repohooks.RepohookService
 		*sql.DB
+
+		VCSProviderService *vcsprovider.Service
 	}
 
 	service struct {
 		logr.Logger
-		vcsprovider.Service
 		repohooks.RepohookService
 
 		*db
+
+		vcsproviders *vcsprovider.Service
 	}
 )
 
 func NewService(ctx context.Context, opts Options) *service {
 	return &service{
 		Logger:          opts.Logger,
-		Service:         opts.VCSProviderService,
+		vcsproviders:    opts.VCSProviderService,
 		RepohookService: opts.RepohookService,
 		db:              &db{opts.DB},
 	}
@@ -89,7 +91,7 @@ func NewService(ctx context.Context, opts Options) *service {
 // Connect an OTF resource to a VCS repo.
 func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	// check vcs provider is valid
-	provider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
+	provider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}

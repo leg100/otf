@@ -35,22 +35,23 @@ type (
 
 	service struct {
 		logr.Logger
-		vcsprovider.Service
 
 		*db
-
 		*handlers     // handles incoming vcs events
 		*synchroniser // synchronise hooks
+
+		vcsproviders *vcsprovider.Service
 	}
 
 	Options struct {
 		logr.Logger
 
+		OrganizationService *organization.Service
+		VCSProviderService  *vcsprovider.Service
+
 		*sql.DB
 		VCSEventBroker *vcs.Broker
 		internal.HostnameService
-		VCSProviderService  vcsprovider.Service
-		OrganizationService *organization.Service
 		github.GithubAppService
 	}
 
@@ -63,9 +64,9 @@ type (
 func NewService(ctx context.Context, opts Options) *service {
 	db := &db{opts.DB, opts.HostnameService}
 	svc := &service{
-		Logger:  opts.Logger,
-		Service: opts.VCSProviderService,
-		db:      db,
+		Logger:       opts.Logger,
+		vcsproviders: opts.VCSProviderService,
+		db:           db,
 		handlers: newHandler(
 			opts.Logger,
 			opts.VCSEventBroker,
@@ -85,7 +86,7 @@ func NewService(ctx context.Context, opts Options) *service {
 }
 
 func (s *service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error) {
-	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
+	vcsProvider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
@@ -93,7 +94,7 @@ func (s *service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 		// github apps don't need a webhook created on each repo.
 		return uuid.UUID{}, nil
 	}
-	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
+	client, err := s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs client: %w", err)
 	}
@@ -146,7 +147,7 @@ func (s *service) DeleteUnreferencedRepohooks(ctx context.Context) error {
 }
 
 func (s *service) deleteOrganizationRepohooks(ctx context.Context, org *organization.Organization) error {
-	providers, err := s.ListVCSProviders(ctx, org.Name)
+	providers, err := s.vcsproviders.ListVCSProviders(ctx, org.Name)
 	if err != nil {
 		return err
 	}
@@ -185,7 +186,7 @@ func (s *service) deleteRepohook(ctx context.Context, repohook *hook) error {
 	if err := s.db.deleteHook(ctx, repohook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}
-	client, err := s.GetVCSClient(ctx, repohook.vcsProviderID)
+	client, err := s.vcsproviders.GetVCSClient(ctx, repohook.vcsProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client from db: %w", err)
 	}

@@ -17,8 +17,6 @@ type fakeService struct {
 
 	Service
 	internal.HostnameService
-
-	vcsprovider.VCSProviderService
 }
 
 func (f *fakeService) PublishModule(context.Context, PublishOptions) (*Module, error) {

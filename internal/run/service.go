@@ -63,8 +63,8 @@ type (
 		OrganizationService  *organization.Service
 		ConfigVersionService *configversion.Service
 		ReleasesService      *releases.Service
+		VCSProviderService   *vcsprovider.Service
 
-		VCSProviderService
 		tokens.TokensService
 
 		logr.Logger

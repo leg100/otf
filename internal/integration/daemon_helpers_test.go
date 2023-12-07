@@ -197,7 +197,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		org = s.createOrganization(t, ctx)
 	}
 
-	provider, err := s.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+	provider, err := s.VCSProviders.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update

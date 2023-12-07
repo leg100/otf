@@ -227,7 +227,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	provider, err := daemon.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+	provider, err := daemon.VCSProviders.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 		Organization:       org.Name,
 		GithubAppInstallID: internal.Int64(42997659),
 	})

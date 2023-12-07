@@ -16,9 +16,9 @@ type (
 	// publisher publishes new versions of terraform modules from VCS tags
 	publisher struct {
 		logr.Logger
-		vcsprovider.VCSProviderService
 
-		modules *Service
+		modules      *Service
+		vcsproviders *vcsprovider.Service
 	}
 )
 
@@ -63,7 +63,7 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	if module.Connection == nil {
 		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
-	client, err := p.GetVCSClient(ctx, module.Connection.VCSProviderID)
+	client, err := p.vcsproviders.GetVCSClient(ctx, module.Connection.VCSProviderID)
 	if err != nil {
 		return err
 	}

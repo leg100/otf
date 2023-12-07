@@ -96,7 +96,7 @@ func TestWebhook_Purger(t *testing.T) {
 		{
 			name: "delete vcs provider",
 			event: func(t *testing.T, _, _, vcsProviderID string) {
-				_, err := daemon.DeleteVCSProvider(ctx, vcsProviderID)
+				_, err := daemon.VCSProviders.DeleteVCSProvider(ctx, vcsProviderID)
 				require.NoError(t, err)
 			},
 		},

@@ -29,10 +29,10 @@ type (
 	webHandlers struct {
 		internal.Signer
 		html.Renderer
-		vcsprovider.VCSProviderService
 		internal.HostnameService
 
-		client webModulesClient
+		client       webModulesClient
+		vcsproviders vcsprovidersClient
 	}
 
 	// webModulesClient provides web handlers with access to modules
@@ -42,6 +42,13 @@ type (
 		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
 		DeleteModule(ctx context.Context, id string) (*Module, error)
+	}
+
+	// vcsprovidersClient provides web handlers with access to vcs providers
+	vcsprovidersClient interface {
+		GetVCSProvider(context.Context, string) (*vcsprovider.VCSProvider, error)
+		ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error)
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 	}
 
 	newModuleStep string
@@ -180,7 +187,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providers, err := h.ListVCSProviders(r.Context(), org)
+	providers, err := h.vcsproviders.ListVCSProviders(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -208,7 +215,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := h.GetVCSClient(r.Context(), params.VCSProviderID)
+	client, err := h.vcsproviders.GetVCSClient(r.Context(), params.VCSProviderID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -259,7 +266,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vcsprov, err := h.GetVCSProvider(r.Context(), params.VCSProviderID)
+	vcsprov, err := h.vcsproviders.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
