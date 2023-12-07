@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
@@ -31,18 +30,10 @@ type (
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
 		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
-		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
-		AfterCreateOrganization(hook func(context.Context, *Organization) error)
-		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
 
-		// organization tokens
 		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		// GetOrganizationToken gets the organization token. If a token does not
-		// exist, then nil is returned without an error.
-		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
+		ListOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error)
 		DeleteOrganizationToken(ctx context.Context, organization string) error
-		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
-		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}
 
 	// OrganizationPage contains data shared by all organization-based pages.
@@ -262,12 +253,16 @@ func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := a.svc.GetOrganizationToken(r.Context(), org)
+	// ListOrganizationTokens should only ever return either 0 or 1 token
+	tokens, err := a.svc.ListOrganizationTokens(r.Context(), org)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	var token *OrganizationToken
+	if len(tokens) > 0 {
+		token = tokens[0]
+	}
 	a.Render("organization_token.tmpl", w, struct {
 		OrganizationPage
 		Token *OrganizationToken

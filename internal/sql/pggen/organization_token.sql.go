@@ -57,6 +57,65 @@ func (q *DBQuerier) UpsertOrganizationTokenScan(results pgx.BatchResults) (pgcon
 	return cmdTag, err
 }
 
+const findOrganizationTokensSQL = `SELECT *
+FROM organization_tokens
+WHERE organization_name = $1;`
+
+type FindOrganizationTokensRow struct {
+	OrganizationTokenID pgtype.Text        `json:"organization_token_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
+	Expiry              pgtype.Timestamptz `json:"expiry"`
+}
+
+// FindOrganizationTokens implements Querier.FindOrganizationTokens.
+func (q *DBQuerier) FindOrganizationTokens(ctx context.Context, organizationName pgtype.Text) ([]FindOrganizationTokensRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationTokens")
+	rows, err := q.conn.Query(ctx, findOrganizationTokensSQL, organizationName)
+	if err != nil {
+		return nil, fmt.Errorf("query FindOrganizationTokens: %w", err)
+	}
+	defer rows.Close()
+	items := []FindOrganizationTokensRow{}
+	for rows.Next() {
+		var item FindOrganizationTokensRow
+		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
+			return nil, fmt.Errorf("scan FindOrganizationTokens row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindOrganizationTokens rows: %w", err)
+	}
+	return items, err
+}
+
+// FindOrganizationTokensBatch implements Querier.FindOrganizationTokensBatch.
+func (q *DBQuerier) FindOrganizationTokensBatch(batch genericBatch, organizationName pgtype.Text) {
+	batch.Queue(findOrganizationTokensSQL, organizationName)
+}
+
+// FindOrganizationTokensScan implements Querier.FindOrganizationTokensScan.
+func (q *DBQuerier) FindOrganizationTokensScan(results pgx.BatchResults) ([]FindOrganizationTokensRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindOrganizationTokensBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindOrganizationTokensRow{}
+	for rows.Next() {
+		var item FindOrganizationTokensRow
+		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
+			return nil, fmt.Errorf("scan FindOrganizationTokensBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindOrganizationTokensBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findOrganizationTokensByNameSQL = `SELECT *
 FROM organization_tokens
 WHERE organization_name = $1;`
@@ -69,25 +128,14 @@ type FindOrganizationTokensByNameRow struct {
 }
 
 // FindOrganizationTokensByName implements Querier.FindOrganizationTokensByName.
-func (q *DBQuerier) FindOrganizationTokensByName(ctx context.Context, organizationName pgtype.Text) ([]FindOrganizationTokensByNameRow, error) {
+func (q *DBQuerier) FindOrganizationTokensByName(ctx context.Context, organizationName pgtype.Text) (FindOrganizationTokensByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationTokensByName")
-	rows, err := q.conn.Query(ctx, findOrganizationTokensByNameSQL, organizationName)
-	if err != nil {
-		return nil, fmt.Errorf("query FindOrganizationTokensByName: %w", err)
+	row := q.conn.QueryRow(ctx, findOrganizationTokensByNameSQL, organizationName)
+	var item FindOrganizationTokensByNameRow
+	if err := row.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
+		return item, fmt.Errorf("query FindOrganizationTokensByName: %w", err)
 	}
-	defer rows.Close()
-	items := []FindOrganizationTokensByNameRow{}
-	for rows.Next() {
-		var item FindOrganizationTokensByNameRow
-		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
-			return nil, fmt.Errorf("scan FindOrganizationTokensByName row: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindOrganizationTokensByName rows: %w", err)
-	}
-	return items, err
+	return item, nil
 }
 
 // FindOrganizationTokensByNameBatch implements Querier.FindOrganizationTokensByNameBatch.
@@ -96,24 +144,13 @@ func (q *DBQuerier) FindOrganizationTokensByNameBatch(batch genericBatch, organi
 }
 
 // FindOrganizationTokensByNameScan implements Querier.FindOrganizationTokensByNameScan.
-func (q *DBQuerier) FindOrganizationTokensByNameScan(results pgx.BatchResults) ([]FindOrganizationTokensByNameRow, error) {
-	rows, err := results.Query()
-	if err != nil {
-		return nil, fmt.Errorf("query FindOrganizationTokensByNameBatch: %w", err)
+func (q *DBQuerier) FindOrganizationTokensByNameScan(results pgx.BatchResults) (FindOrganizationTokensByNameRow, error) {
+	row := results.QueryRow()
+	var item FindOrganizationTokensByNameRow
+	if err := row.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
+		return item, fmt.Errorf("scan FindOrganizationTokensByNameBatch row: %w", err)
 	}
-	defer rows.Close()
-	items := []FindOrganizationTokensByNameRow{}
-	for rows.Next() {
-		var item FindOrganizationTokensByNameRow
-		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
-			return nil, fmt.Errorf("scan FindOrganizationTokensByNameBatch row: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindOrganizationTokensByNameBatch rows: %w", err)
-	}
-	return items, err
+	return item, nil
 }
 
 const findOrganizationTokensByIDSQL = `SELECT *

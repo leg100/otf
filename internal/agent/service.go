@@ -512,8 +512,8 @@ func (s *service) createJob(ctx context.Context, run *otfrun.Run) error {
 }
 
 // cancelJob is called when a user cancels a run - cancelJob determines whether
-// the corresponding job is signaled and what type of signal, and/or whether the job
-// should be canceled.
+// the corresponding job is signaled and what type of signal, and/or whether the
+// job should be canceled.
 func (s *service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	var (
 		spec   = JobSpec{RunID: run.ID, Phase: run.Phase()}
@@ -525,7 +525,7 @@ func (s *service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	})
 	if err != nil {
 		if errors.Is(err, internal.ErrResourceNotFound) {
-			// ignore when there is no job corresponding to a run phase yet.
+			// ignore when no job has yet been created for the run.
 			return nil
 		}
 		s.Error(err, "canceling job", "spec", spec)
@@ -640,7 +640,7 @@ func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 		if job.AgentID == nil || *job.AgentID != subject.String() {
 			return internal.ErrAccessNotPermitted
 		}
-		if err := job.updateStatus(JobRunning); err != nil {
+		if err := job.startJob(); err != nil {
 			return err
 		}
 		// start corresponding run phase too
@@ -692,7 +692,7 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		if err != nil {
 			return err
 		}
-		return job.updateStatus(opts.Status)
+		return job.finishJob(opts.Status)
 	})
 	if err != nil {
 		s.Error(err, "finishing job", "spec", spec)

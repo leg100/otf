@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
@@ -35,6 +36,7 @@ var AuthenticatedPrefixes = []string{
 type (
 	middlewareOptions struct {
 		GoogleIAPConfig
+		logr.Logger
 
 		key jwk.Key
 
@@ -94,6 +96,7 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 			} else if bearer := r.Header.Get("Authorization"); bearer != "" {
 				subject, err = mw.validateBearer(ctx, bearer)
 				if err != nil {
+					mw.Error(err, "validating bearer token")
 					http.Error(w, err.Error(), http.StatusUnauthorized)
 					return
 				}

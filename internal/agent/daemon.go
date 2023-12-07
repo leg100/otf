@@ -246,56 +246,58 @@ func (d *daemon) Start(ctx context.Context) error {
 		// fetch jobs allocated to this agent and launch workers to do jobs; also
 		// handle cancelation signals for jobs
 		for {
-			// block on waiting for jobs
-			var jobs []*Job
-			getJobs := func() (err error) {
+			processJobs := func() (err error) {
 				d.poolLogger.Info("waiting for next job")
-				jobs, err = d.getAgentJobs(ctx, agent.ID)
-				return err
+				// block on waiting for jobs
+				jobs, err := d.getAgentJobs(ctx, agent.ID)
+				if err != nil {
+					return err
+				}
+				for _, j := range jobs {
+					if j.Status == JobAllocated {
+						d.poolLogger.Info("received job", "job", j)
+						// start job and receive job token in return
+						token, err := d.startJob(ctx, j.Spec)
+						if err != nil {
+							if ctx.Err() != nil {
+								return nil
+							}
+							d.poolLogger.Error(err, "starting job")
+							continue
+						}
+						d.poolLogger.V(0).Info("started job")
+						op := newOperation(newOperationOptions{
+							logger:     d.poolLogger.WithValues("job", j),
+							client:     d.client,
+							config:     d.config,
+							job:        j,
+							downloader: d.downloader,
+							envs:       d.envs,
+							token:      token,
+						})
+						// check operation in with the terminator, so that if a cancelation signal
+						// arrives it can be handled accordingly for the duration of the operation.
+						terminator.checkIn(j.Spec, op)
+						op.V(0).Info("started job")
+						g.Go(func() error {
+							op.doAndFinish()
+							terminator.checkOut(op.job.Spec)
+							return nil
+						})
+					} else if j.Signaled != nil {
+						d.poolLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
+						terminator.cancel(j.Spec, *j.Signaled, true)
+					}
+				}
+				return nil
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-			_ = backoff.RetryNotify(getJobs, policy, func(err error, next time.Duration) {
+			_ = backoff.RetryNotify(processJobs, policy, func(err error, next time.Duration) {
 				d.poolLogger.Error(err, "waiting for next job", "backoff", next)
 			})
 			// only stop retrying if context is canceled
 			if ctx.Err() != nil {
 				return nil
-			}
-			for _, j := range jobs {
-				if j.Status == JobAllocated {
-					d.poolLogger.Info("received job", "job", j)
-					// start job and receive job token in return
-					token, err := d.startJob(ctx, j.Spec)
-					if err != nil {
-						if ctx.Err() != nil {
-							return nil
-						}
-						d.poolLogger.Error(err, "starting job")
-						continue
-					}
-					d.poolLogger.V(0).Info("started job")
-					op := newOperation(newOperationOptions{
-						logger:     d.poolLogger.WithValues("job", j),
-						client:     d.client,
-						config:     d.config,
-						job:        j,
-						downloader: d.downloader,
-						envs:       d.envs,
-						token:      token,
-					})
-					// check operation in with the terminator, so that if a cancelation signal
-					// arrives it can be handled accordingly for the duration of the operation.
-					terminator.checkIn(j.Spec, op)
-					op.V(0).Info("started job")
-					g.Go(func() error {
-						op.doAndFinish()
-						terminator.checkOut(op.job.Spec)
-						return nil
-					})
-				} else if j.Signaled != nil {
-					d.poolLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
-					terminator.cancel(j.Spec, *j.Signaled, true)
-				}
 			}
 		}
 	})
