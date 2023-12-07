@@ -229,7 +229,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 func (s *testDaemon) createUser(t *testing.T, opts ...otfuser.NewUserOption) *otfuser.User {
 	t.Helper()
 
-	user, err := s.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
+	user, err := s.Users.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
@@ -246,7 +246,7 @@ func (s *testDaemon) createUserCtx(t *testing.T, opts ...otfuser.NewUserOption) 
 func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *otfuser.User {
 	t.Helper()
 
-	user, err := s.GetUser(ctx, otfuser.UserSpec{Username: &username})
+	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
 	return user
 }
@@ -254,7 +254,7 @@ func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string)
 func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*otfuser.User, context.Context) {
 	t.Helper()
 
-	user, err := s.GetUser(ctx, otfuser.UserSpec{Username: &username})
+	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
 	return user, internal.AddSubjectToContext(ctx, user)
 }
@@ -266,7 +266,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
+	team, err := s.Teams.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
@@ -276,7 +276,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *team.Team {
 	t.Helper()
 
-	team, err := s.GetTeam(ctx, org, name)
+	team, err := s.Teams.GetTeam(ctx, org, name)
 	require.NoError(t, err)
 	return team
 }
@@ -375,7 +375,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *otfuse
 		ctx = internal.AddSubjectToContext(ctx, user)
 	}
 
-	ut, token, err := s.CreateUserToken(ctx, otfuser.CreateUserTokenOptions{
+	ut, token, err := s.Users.CreateUserToken(ctx, otfuser.CreateUserTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)

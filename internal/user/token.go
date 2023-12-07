@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -23,15 +22,6 @@ type (
 	// endpoint
 	CreateUserTokenOptions struct {
 		Description string
-	}
-
-	userTokenService interface {
-		// CreateUserToken creates a user token.
-		CreateUserToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
-		// ListUserTokens lists API tokens for a user
-		ListUserTokens(ctx context.Context) ([]*UserToken, error)
-		// DeleteUserToken deletes a user token.
-		DeleteUserToken(ctx context.Context, tokenID string) error
 	}
 
 	userTokenFactory struct {

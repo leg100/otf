@@ -8,14 +8,9 @@ import (
 	otfapi "github.com/leg100/otf/internal/api"
 )
 
-type (
-	Client struct {
-		*otfapi.Client
-
-		// Client does not implement all of TeamService
-		TeamService
-	}
-)
+type Client struct {
+	*otfapi.Client
+}
 
 // CreateTeam creates a team via HTTP/JSONAPI.
 func (c *Client) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {

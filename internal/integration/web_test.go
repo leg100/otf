@@ -17,11 +17,11 @@ func TestWeb(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 	user := userFromContext(t, ctx)
 
-	team, err := daemon.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
+	team, err := daemon.Teams.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("devops"),
 	})
 	require.NoError(t, err)
-	err = daemon.AddTeamMembership(ctx, team.ID, []string{user.Username})
+	err = daemon.Users.AddTeamMembership(ctx, team.ID, []string{user.Username})
 	require.NoError(t, err)
 
 	browser.Run(t, ctx, chromedp.Tasks{

@@ -10,7 +10,7 @@ import (
 
 func Test_teamNewCommand(t *testing.T) {
 	cli := &teamCLI{
-		TeamService: &fakeService{
+		client: &fakeService{
 			team: &Team{Name: "owners", Organization: "acme-corp"},
 		},
 	}
@@ -26,7 +26,7 @@ func Test_teamNewCommand(t *testing.T) {
 
 func TestTeam_DeleteCommand(t *testing.T) {
 	cli := &teamCLI{
-		TeamService: &fakeService{
+		client: &fakeService{
 			team: &Team{Name: "owners", Organization: "acme-corp"},
 		},
 	}

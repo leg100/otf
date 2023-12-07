@@ -47,11 +47,11 @@ type (
 		html.Renderer
 
 		connections.ConnectionService
-		team.TeamService
 		logr.Logger
 
 		OrganizationService *organization.Service
 		VCSProviderService  *vcsprovider.Service
+		TeamService         *team.Service
 	}
 )
 

@@ -12,7 +12,7 @@ import (
 
 type (
 	api struct {
-		TeamService
+		*Service
 		*tfeapi.Responder
 	}
 )

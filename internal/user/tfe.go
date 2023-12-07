@@ -21,7 +21,7 @@ type (
 	teamMembersAction int
 
 	tfe struct {
-		UserService
+		*Service
 		*tfeapi.Responder
 	}
 )

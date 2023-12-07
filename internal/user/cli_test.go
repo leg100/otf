@@ -11,7 +11,7 @@ import (
 
 func TestUserNewCommand(t *testing.T) {
 	cli := &userCLI{
-		UserService: &fakeService{
+		client: &fakeService{
 			user: &User{Username: "bobby"},
 		},
 	}
@@ -27,7 +27,7 @@ func TestUserNewCommand(t *testing.T) {
 
 func TestUserDeleteCommand(t *testing.T) {
 	cli := &userCLI{
-		UserService: &fakeService{},
+		client: &fakeService{},
 	}
 	cmd := cli.userDeleteCommand()
 
@@ -41,8 +41,8 @@ func TestUserDeleteCommand(t *testing.T) {
 
 func TestTeam_AddMembership(t *testing.T) {
 	cli := &membershipCLI{
-		UserService: &fakeService{},
-		TeamService: &fakeTeamService{
+		client: &fakeService{},
+		teams: &fakeTeamService{
 			team: &team.Team{Name: "owners", Organization: "acme-corp"},
 		},
 	}
@@ -58,8 +58,8 @@ func TestTeam_AddMembership(t *testing.T) {
 
 func TestTeam_RemoveMembership(t *testing.T) {
 	cli := &membershipCLI{
-		UserService: &fakeService{},
-		TeamService: &fakeTeamService{
+		client: &fakeService{},
+		teams: &fakeTeamService{
 			team: &team.Team{Name: "owners", Organization: "acme-corp"},
 		},
 	}

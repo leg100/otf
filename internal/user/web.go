@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"net/http"
 	"sort"
 	"time"
@@ -21,14 +22,32 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc         UserService
-	teamService otfteam.TeamService
-	tokens      tokensClient
-	siteToken   string
+	users     usersClient
+	teams     teamsClient
+	tokens    tokensClient
+	siteToken string
+}
+
+type usersClient interface {
+	CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
+	ListUsers(ctx context.Context) ([]*User, error)
+	ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
+	ListTeamUsers(ctx context.Context, teamID string) ([]*User, error)
+	DeleteUser(ctx context.Context, username string) error
+	AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
+
+	CreateUserToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
+	ListUserTokens(ctx context.Context) ([]*UserToken, error)
+	DeleteUserToken(ctx context.Context, tokenID string) error
 }
 
 type tokensClient interface {
 	StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error
+}
+
+type teamsClient interface {
+	GetTeamByID(ctx context.Context, teamID string) (*otfteam.Team, error)
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -74,7 +93,7 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	users, err := h.svc.ListOrganizationUsers(r.Context(), name)
+	users, err := h.users.ListOrganizationUsers(r.Context(), name)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -159,7 +178,7 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.AddTeamMembership(r.Context(), params.TeamID, []string{*params.Username})
+	err := h.users.AddTeamMembership(r.Context(), params.TeamID, []string{*params.Username})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,7 +198,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username})
+	err := h.users.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -196,14 +215,14 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.teamService.GetTeamByID(r.Context(), teamID)
+	team, err := h.teams.GetTeamByID(r.Context(), teamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// get usernames of team members
-	members, err := h.svc.ListTeamUsers(r.Context(), teamID)
+	members, err := h.users.ListTeamUsers(r.Context(), teamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -225,7 +244,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// get usernames of non-members
 	var nonMemberUsernames []string
 	if user.CanAccessSite(rbac.ListUsersAction) {
-		users, err := h.svc.ListUsers(r.Context())
+		users, err := h.users.ListUsers(r.Context())
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -283,7 +302,7 @@ func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	_, token, err := h.svc.CreateUserToken(r.Context(), opts)
+	_, token, err := h.users.CreateUserToken(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -297,7 +316,7 @@ func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
-	tokens, err := h.svc.ListUserTokens(r.Context())
+	tokens, err := h.users.ListUserTokens(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -326,7 +345,7 @@ func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := h.svc.DeleteUserToken(r.Context(), id); err != nil {
+	if err := h.users.DeleteUserToken(r.Context(), id); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

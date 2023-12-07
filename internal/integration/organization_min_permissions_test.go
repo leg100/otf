@@ -20,7 +20,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	// Create user and add as member of guests team
 	guest := svc.createUser(t)
 	guests := svc.createTeam(t, ctx, org)
-	err := svc.AddTeamMembership(ctx, guests.ID, []string{guest.Username})
+	err := svc.Users.AddTeamMembership(ctx, guests.ID, []string{guest.Username})
 	require.NoError(t, err)
 	// Refresh guest user context to include new team membership
 	_, guestCtx := svc.getUserCtx(t, adminCtx, guest.Username)
@@ -35,7 +35,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Guest should be able to list teams
-	_, err = svc.ListTeams(guestCtx, org.Name)
+	_, err = svc.Teams.ListTeams(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list providers

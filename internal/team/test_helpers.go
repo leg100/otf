@@ -4,8 +4,6 @@ import "context"
 
 type fakeService struct {
 	team *Team
-
-	TeamService
 }
 
 func (f *fakeService) CreateTeam(context.Context, string, CreateTeamOptions) (*Team, error) {

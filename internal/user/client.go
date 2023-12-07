@@ -8,13 +8,9 @@ import (
 	otfapi "github.com/leg100/otf/internal/api"
 )
 
-type (
-	client struct {
-		*otfapi.Client
-
-		UserService
-	}
-)
+type client struct {
+	*otfapi.Client
+}
 
 // CreateUser creates a user via HTTP/JSONAPI. Options are ignored.
 func (c *client) CreateUser(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {

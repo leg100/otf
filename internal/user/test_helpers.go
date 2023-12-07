@@ -11,7 +11,7 @@ type fakeService struct {
 	token []byte
 	ut    *UserToken
 
-	UserService
+	*Service
 }
 
 func (f *fakeService) CreateUser(context.Context, string, ...NewUserOption) (*User, error) {
@@ -52,8 +52,6 @@ func (f *fakeService) DeleteUserToken(context.Context, string) error {
 
 type fakeTeamService struct {
 	team *team.Team
-
-	team.TeamService
 }
 
 func (f *fakeTeamService) GetTeam(context.Context, string, string) (*team.Team, error) {

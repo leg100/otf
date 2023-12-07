@@ -39,7 +39,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: "team-123"}
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc:      &fakeService{team: team},
+			teams:    &fakeService{team: team},
 		}
 
 		q := "/?team_id=team-123&manage_workspaces=true"
@@ -53,7 +53,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: "team-123"}
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc:      &fakeService{team: team},
+			teams:    &fakeService{team: team},
 		}
 		// make request with user with full perms, to ensure parts of
 		// page that are hidden to unprivileged users are not hidden.
@@ -71,7 +71,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: "team-123", Organization: "acme-org"}
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc:      &fakeService{team: team},
+			teams:    &fakeService{team: team},
 		}
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("POST", q, nil)

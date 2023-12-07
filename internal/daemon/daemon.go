@@ -65,9 +65,9 @@ type (
 		Modules       *module.Service
 		VCSProviders  *vcsprovider.Service
 		Tokens        *tokens.Service
+		Teams         *team.Service
+		Users         *user.Service
 
-		team.TeamService
-		user.UserService
 		internal.HostnameService
 		repohooks.RepohookService
 		connections.ConnectionService
@@ -364,15 +364,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceAuthorizer: workspaceService,
 	})
 
-	loginServer, err := loginserver.NewServer(loginserver.Options{
-		Secret:      cfg.Secret,
-		Renderer:    renderer,
-		UserService: userService,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	handlers := []internal.Handlers{
 		teamService,
 		userService,
@@ -386,7 +377,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logsService,
 		repoService,
 		authenticatorService,
-		loginServer,
+		loginserver.NewServer(loginserver.Options{
+			Secret:      cfg.Secret,
+			Renderer:    renderer,
+			UserService: userService,
+		}),
 		configService,
 		notificationService,
 		githubAppService,
@@ -406,8 +401,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Config:            cfg,
 		Logger:            logger,
 		Handlers:          handlers,
-		TeamService:       teamService,
-		UserService:       userService,
 		Organizations:     orgService,
 		HostnameService:   hostnameService,
 		Runs:              runService,
@@ -420,6 +413,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Modules:           moduleService,
 		VCSProviders:      vcsProviderService,
 		Tokens:            tokensService,
+		Teams:             teamService,
+		Users:             userService,
 		RepohookService:   repoService,
 		GithubAppService:  githubAppService,
 		ConnectionService: connectionService,

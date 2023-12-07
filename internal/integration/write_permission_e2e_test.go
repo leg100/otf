@@ -18,7 +18,7 @@ func TestWritePermissionE2E(t *testing.T) {
 	// Create engineer user and team and make member of a team
 	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
-	err := svc.AddTeamMembership(ctx, team.ID, []string{engineer.Username})
+	err := svc.Users.AddTeamMembership(ctx, team.ID, []string{engineer.Username})
 	require.NoError(t, err)
 
 	// create terraform config

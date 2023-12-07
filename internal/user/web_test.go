@@ -39,7 +39,7 @@ func TestWeb_UserTokens(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc:      &fakeService{},
+			users:    &fakeService{},
 		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
@@ -57,7 +57,7 @@ func TestWeb_UserTokens(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc: &fakeService{
+			users: &fakeService{
 				ut: &UserToken{},
 			},
 		}
@@ -74,7 +74,7 @@ func TestWeb_UserTokens(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
-			svc:      &fakeService{},
+			users:    &fakeService{},
 		}
 		q := "/?id=token-123"
 		r := httptest.NewRequest("POST", q, nil)
@@ -97,9 +97,9 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 	owners := &team.Team{Name: "owners", Organization: "acme-org"}
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	h := &webHandlers{
-		Renderer:    testutils.NewRenderer(t),
-		teamService: &fakeTeamService{team: owners},
-		svc:         &fakeService{user: owner},
+		Renderer: testutils.NewRenderer(t),
+		teams:    &fakeTeamService{team: owners},
+		users:    &fakeService{user: owner},
 	}
 
 	q := "/?team_id=team-123"
