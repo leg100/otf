@@ -12,14 +12,6 @@ import (
 )
 
 type (
-	//Service interface {
-	//	GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
-	//	Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
-	//	WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func())
-	//	internal.PutChunkService
-	//	Start(context.Context) error
-	//}
-
 	Service struct {
 		logr.Logger
 

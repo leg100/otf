@@ -349,7 +349,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	file, err := os.ReadFile("./testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	sv, err := s.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	sv, err := s.State.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		State:       file,
 		WorkspaceID: internal.String(ws.ID),
 		// serial matches that in ./testdata/terraform.tfstate
@@ -362,7 +362,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID string) *state.Version {
 	t.Helper()
 
-	sv, err := s.GetCurrentStateVersion(ctx, wsID)
+	sv, err := s.State.GetCurrentStateVersion(ctx, wsID)
 	require.NoError(t, err)
 	return sv
 }

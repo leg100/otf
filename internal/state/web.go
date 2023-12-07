@@ -10,7 +10,7 @@ import (
 
 type webHandlers struct {
 	html.Renderer
-	Service
+	*Service
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
