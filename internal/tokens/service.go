@@ -55,6 +55,7 @@ func NewService(opts Options) (*service, error) {
 		kinds: make(map[Kind]SubjectGetter),
 	}
 	svc.middleware = newMiddleware(middlewareOptions{
+		Logger:          opts.Logger,
 		GoogleIAPConfig: opts.GoogleIAPConfig,
 		key:             key,
 		registry:        svc.registry,

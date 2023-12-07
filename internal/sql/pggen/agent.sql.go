@@ -578,12 +578,19 @@ type Querier interface {
 	// UpsertOrganizationTokenScan scans the result of an executed UpsertOrganizationTokenBatch query.
 	UpsertOrganizationTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindOrganizationTokensByName(ctx context.Context, organizationName pgtype.Text) ([]FindOrganizationTokensByNameRow, error)
+	FindOrganizationTokens(ctx context.Context, organizationName pgtype.Text) ([]FindOrganizationTokensRow, error)
+	// FindOrganizationTokensBatch enqueues a FindOrganizationTokens query into batch to be executed
+	// later by the batch.
+	FindOrganizationTokensBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindOrganizationTokensScan scans the result of an executed FindOrganizationTokensBatch query.
+	FindOrganizationTokensScan(results pgx.BatchResults) ([]FindOrganizationTokensRow, error)
+
+	FindOrganizationTokensByName(ctx context.Context, organizationName pgtype.Text) (FindOrganizationTokensByNameRow, error)
 	// FindOrganizationTokensByNameBatch enqueues a FindOrganizationTokensByName query into batch to be executed
 	// later by the batch.
 	FindOrganizationTokensByNameBatch(batch genericBatch, organizationName pgtype.Text)
 	// FindOrganizationTokensByNameScan scans the result of an executed FindOrganizationTokensByNameBatch query.
-	FindOrganizationTokensByNameScan(results pgx.BatchResults) ([]FindOrganizationTokensByNameRow, error)
+	FindOrganizationTokensByNameScan(results pgx.BatchResults) (FindOrganizationTokensByNameRow, error)
 
 	FindOrganizationTokensByID(ctx context.Context, organizationTokenID pgtype.Text) (FindOrganizationTokensByIDRow, error)
 	// FindOrganizationTokensByIDBatch enqueues a FindOrganizationTokensByID query into batch to be executed
@@ -1841,6 +1848,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, upsertOrganizationTokenSQL, upsertOrganizationTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertOrganizationToken': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findOrganizationTokensSQL, findOrganizationTokensSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationTokens': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationTokensByNameSQL, findOrganizationTokensByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationTokensByName': %w", err)
