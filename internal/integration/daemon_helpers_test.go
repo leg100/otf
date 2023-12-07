@@ -330,7 +330,7 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	v, err := s.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
+	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
 		Key:      internal.String("key-" + internal.GenerateRandomString(4)),
 		Value:    internal.String("val-" + internal.GenerateRandomString(4)),
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),

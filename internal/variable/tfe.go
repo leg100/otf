@@ -13,8 +13,8 @@ import (
 )
 
 type tfe struct {
-	Service
 	*tfeapi.Responder
+	*Service
 }
 
 // Implements TFC workspace variables and variable set APIs:

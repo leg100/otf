@@ -125,7 +125,7 @@ type ServerDaemonOptions struct {
 	Config                      Config
 	RunService                  *run.Service
 	WorkspaceService            *workspace.Service
-	VariableService             variable.Service
+	VariableService             *variable.Service
 	ConfigurationVersionService configversion.Service
 	StateService                state.Service
 	LogsService                 logs.Service

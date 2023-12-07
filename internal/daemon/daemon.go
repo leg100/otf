@@ -57,11 +57,11 @@ type (
 		Organizations *organization.Service
 		Runs          *run.Service
 		Workspaces    *workspace.Service
+		Variables     *variable.Service
 
 		team.TeamService
 		user.UserService
 		tokens.TokensService
-		variable.VariableService
 		vcsprovider.VCSProviderService
 		state.StateService
 		module.ModuleService
@@ -410,7 +410,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		UserService:                 userService,
 		TokensService:               tokensService,
 		Organizations:               orgService,
-		VariableService:             variableService,
 		VCSProviderService:          vcsProviderService,
 		StateService:                stateService,
 		ModuleService:               moduleService,
@@ -418,6 +417,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConfigurationVersionService: configService,
 		Runs:                        runService,
 		Workspaces:                  workspaceService,
+		Variables:                   variableService,
 		LogsService:                 logsService,
 		RepohookService:             repoService,
 		NotificationService:         notificationService,
