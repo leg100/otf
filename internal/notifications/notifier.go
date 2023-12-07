@@ -31,12 +31,12 @@ type (
 	}
 
 	NotifierOptions struct {
-		RunClient       notifierRunClient
-		WorkspaceClient notifierWorkspaceClient
+		RunClient          notifierRunClient
+		WorkspaceClient    notifierWorkspaceClient
+		NotificationClient notifierNotificationClient
 
 		logr.Logger
 		internal.HostnameService
-		NotificationService
 		*sql.DB
 	}
 
@@ -59,7 +59,7 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 		workspaces:      opts.WorkspaceClient,
 		HostnameService: opts.HostnameService,
 		runs:            opts.RunClient,
-		notifications:   opts.NotificationService,
+		notifications:   opts.NotificationClient,
 		db:              &pgdb{opts.DB},
 	}
 }

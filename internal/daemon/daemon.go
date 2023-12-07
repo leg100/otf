@@ -58,6 +58,7 @@ type (
 		Runs          *run.Service
 		Workspaces    *workspace.Service
 		Variables     *variable.Service
+		Notifications *notifications.Service
 
 		team.TeamService
 		user.UserService
@@ -69,7 +70,6 @@ type (
 		configversion.ConfigurationVersionService
 		repohooks.RepohookService
 		logs.LogsService
-		notifications.NotificationService
 		connections.ConnectionService
 		github.GithubAppService
 		agent.AgentService
@@ -418,9 +418,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Runs:                        runService,
 		Workspaces:                  workspaceService,
 		Variables:                   variableService,
+		Notifications:               notificationService,
 		LogsService:                 logsService,
 		RepohookService:             repoService,
-		NotificationService:         notificationService,
 		GithubAppService:            githubAppService,
 		ConnectionService:           connectionService,
 		AgentService:                agentService,
@@ -499,12 +499,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(notifications.LockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
-				Logger:              d.Logger,
-				HostnameService:     d.HostnameService,
-				WorkspaceClient:     d.Workspaces,
-				RunClient:           d.Runs,
-				NotificationService: d.NotificationService,
-				DB:                  d.DB,
+				Logger:             d.Logger,
+				HostnameService:    d.HostnameService,
+				WorkspaceClient:    d.Workspaces,
+				RunClient:          d.Runs,
+				NotificationClient: d.Notifications,
+				DB:                 d.DB,
 			}),
 		},
 		{

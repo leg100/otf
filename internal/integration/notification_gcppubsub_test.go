@@ -56,7 +56,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	err = daemon.Workspaces.AddTags(ctx, ws.ID, []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}})
 	require.NoError(t, err)
 
-	_, err = daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+	_, err = daemon.Notifications.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGCPPubSub,
 		Enabled:         internal.Bool(true),
 		Name:            internal.String("testing"),

@@ -17,34 +17,6 @@ import (
 )
 
 type (
-	//Service interface {
-	//	// ListEffectiveVariables lists the effective variables for a run, i.e.
-	//	// merging variable sets, workspace variables, and run variables, and
-	//	// removing those that are overridden according to precedence rules.
-	//	ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error)
-
-	//	CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
-	//	UpdateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-	//	ListWorkspaceVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
-	//	GetWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
-	//	DeleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
-
-	//	createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
-	//	updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error)
-	//	listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
-	//	listWorkspaceVariableSets(ctx context.Context, workspaceID string) ([]*VariableSet, error)
-	//	getVariableSet(ctx context.Context, setID string) (*VariableSet, error)
-	//	getVariableSetByVariableID(ctx context.Context, variableID string) (*VariableSet, error)
-	//	deleteVariableSet(ctx context.Context, setID string) (*VariableSet, error)
-
-	//	createVariableSetVariable(ctx context.Context, setID string, opts CreateVariableOptions) (*Variable, error)
-	//	updateVariableSetVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*VariableSet, error)
-	//	deleteVariableSetVariable(ctx context.Context, variableID string) (*VariableSet, error)
-
-	//	applySetToWorkspaces(ctx context.Context, setID string, workspaceIDs []string) error
-	//	deleteSetFromWorkspaces(ctx context.Context, setID string, workspaceIDs []string) error
-	//}
-
 	Service struct {
 		logr.Logger
 
@@ -60,13 +32,12 @@ type (
 	Options struct {
 		WorkspaceAuthorizer internal.Authorizer
 		WorkspaceService    *workspace.Service
+		RunClient           runClient
 
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
-
-		RunClient runClient
 	}
 
 	runClient interface {
