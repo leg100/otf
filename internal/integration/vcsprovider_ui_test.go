@@ -29,7 +29,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	// create a vcs provider with a github personal access token
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to org
-		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 		screenshot(t, "organization_main_menu"),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
@@ -117,7 +117,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// create app
-	_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{
+	_, err := daemon.GithubApp.CreateGithubApp(ctx, github.CreateAppOptions{
 		AppID:      123,
 		Slug:       "otf-123",
 		PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
@@ -127,7 +127,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	// create github app vcs provider via UI.
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to org
-		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
 		screenshot(t, "vcs_provider_list_including_github_app"),

@@ -25,7 +25,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	assert.Equal(t, org.Name, ot.Organization)
 
 	apiClient, err := api.NewClient(api.Config{
-		Address: daemon.Hostname(),
+		Address: daemon.System.Hostname(),
 		Token:   string(token),
 	})
 	require.NoError(t, err)

@@ -15,10 +15,10 @@ func TestAutoApply(t *testing.T) {
 
 	// create workspace and enable auto-apply
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, svc.Hostname(), org.Name, t.Name()),
+		createWorkspace(t, svc.System.Hostname(), org.Name, t.Name()),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, t.Name())),
+			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, t.Name())),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`),

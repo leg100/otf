@@ -34,8 +34,8 @@ func TestWebhook(t *testing.T) {
 
 	// create and connect first workspace
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.String()),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-1"),
+		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1", provider.String()),
 	})
 
 	// webhook should be registered with github
@@ -44,8 +44,8 @@ func TestWebhook(t *testing.T) {
 
 	// create and connect second workspace
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2", provider.String()),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-2"),
+		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-2", provider.String()),
 	})
 
 	// second workspace re-uses same webhook on github
@@ -53,14 +53,14 @@ func TestWebhook(t *testing.T) {
 	require.Equal(t, github.WebhookUpdated, hook.Action)
 
 	// disconnect second workspace
-	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2"))
+	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-2"))
 
 	// first workspace is still connected, so webhook should still be configured
 	// on github
 	require.True(t, daemon.HasWebhook())
 
 	// disconnect first workspace
-	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"))
+	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1"))
 
 	// No more workspaces are connected to repo, so webhook should have been
 	// deleted

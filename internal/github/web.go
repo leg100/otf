@@ -2,6 +2,7 @@ package github
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -23,13 +24,23 @@ const (
 
 type webHandlers struct {
 	html.Renderer
-	internal.HostnameService
+	*internal.HostnameService
 
-	svc            Service
+	svc webClient
+
 	GithubHostname string
-
 	// toggle skipping TLS on connections to github (for testing purposes)
 	GithubSkipTLS bool
+}
+
+// webClient provides web handlers with access to github app service endpoints
+type webClient interface {
+	CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error)
+	GetGithubApp(ctx context.Context) (*App, error)
+	DeleteGithubApp(ctx context.Context) error
+
+	ListInstallations(ctx context.Context) ([]*Installation, error)
+	DeleteInstallation(ctx context.Context, installID int64) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {

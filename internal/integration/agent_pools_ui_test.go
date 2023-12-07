@@ -24,17 +24,17 @@ func TestAgentPoolsUI(t *testing.T) {
 	//ws2 := daemon.createWorkspace(t, ctx, org)
 
 	// subscribe to agent pool events
-	poolsSub, unsub := daemon.WatchAgentPools(ctx)
+	poolsSub, unsub := daemon.Agents.WatchAgentPools(ctx)
 	defer unsub()
 
 	// subscribe to agent events
-	agentsSub, agentsUnsub := daemon.WatchAgents(ctx)
+	agentsSub, agentsUnsub := daemon.Agents.WatchAgents(ctx)
 	defer agentsUnsub()
 
 	// create agent pool via UI
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to org main menu
-		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 		// go to list of agent pools
 		chromedp.Click("#agent_pools > a", chromedp.ByQuery),
 		screenshot(t),
@@ -62,7 +62,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	// grant and assign workspace to agent pool, and create agent token.
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go back to agent pool
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/agent-pools/" + created.Payload.ID),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID),
 		// grant access to specific workspace
 		chromedp.Click(`input#workspaces-specific`, chromedp.ByQuery),
 		chromedp.Focus(`input#workspace-input`, chromedp.ByQuery, chromedp.NodeVisible),
@@ -77,7 +77,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		// ws1 should still appear in list of granted workspaces
 		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name)),
 		// go to workspaces
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, ws1.Name)),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name)),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// select agent execution mode radio button
@@ -89,7 +89,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		// confirm execution mode change has persisted
 		chromedp.WaitVisible(`input#agent:checked`, chromedp.ByQuery),
 		// go back to agent pool
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/agent-pools/" + created.Payload.ID),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID),
 		screenshot(t, "agent_pool_workspace_granted_and_assigned"),
 		// confirm workspace is now listed under 'Granted & Assigned'
 		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='granted-and-assigned-workspaces']//a[text()='%s']`, ws1.Name)),
@@ -119,7 +119,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go back to agent pool
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/agent-pools/" + created.Payload.ID),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID),
 		// confirm agent is listed
 		chromedp.ScrollIntoView(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID)),
 		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID)),
@@ -134,7 +134,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to agent pool
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/agent-pools/" + created.Payload.ID),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID),
 		// delete the token
 		chromedp.Click(`//button[@id="delete-agent-token-button"]`),
 		screenshot(t),
@@ -143,7 +143,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		// before pool can be deleted
 		chromedp.WaitVisible(fmt.Sprintf(`//ul[@id='unassign-workspaces-before-deletion']/a[text()='%s']`, ws1.Name)),
 		// go to workspace
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, ws1.Name)),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name)),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// switch execution mode from agent to remote
@@ -153,7 +153,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		// confirm execution mode change has persisted
 		chromedp.WaitVisible(`input#remote:checked`, chromedp.ByQuery),
 		// go to agent pool
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/agent-pools/" + created.Payload.ID),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID),
 		// delete the pool
 		chromedp.Click(`//button[@id="delete-agent-pool-button"]`),
 		screenshot(t),

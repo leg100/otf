@@ -22,7 +22,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// go to teams listing
 			chromedp.Click(`//a[text()='teams']`),

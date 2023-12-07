@@ -24,7 +24,7 @@ func TestLocal(t *testing.T) {
 	require.NoError(t, err)
 
 	// create root module, setting otfd1 as hostname
-	root := newRootModule(t, daemon.Hostname(), org.Name, "local-ws")
+	root := newRootModule(t, daemon.System.Hostname(), org.Name, "local-ws")
 
 	// run terraform locally, configuring OTF as a remote backend.
 	daemon.tfcli(t, ctx, "init", root)

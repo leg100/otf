@@ -16,7 +16,7 @@ type (
 		logr.Logger
 		html.Renderer
 
-		internal.HostnameService
+		*internal.HostnameService
 
 		TokensService        *tokens.Service
 		OpaqueHandlerConfigs []OpaqueHandlerConfig

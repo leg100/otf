@@ -19,7 +19,7 @@ func TestSiteAdminUI(t *testing.T) {
 	// nil ctx skips seeding browser with a session cookie
 	browser.Run(t, nil, chromedp.Tasks{
 		// login as site admin
-		chromedp.Navigate("https://" + daemon.Hostname() + "/login"),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/login"),
 		screenshot(t, "no_authenticators_site_admin_login"),
 		// use the link in the bottom right corner
 		matchText(t, ".footer-site-login", "site admin", chromedp.ByQuery),

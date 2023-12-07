@@ -39,7 +39,7 @@ func TestIntegration_TerraformCLICancel(t *testing.T) {
 	}))
 
 	// create some config and run terraform init
-	config := newRootModule(t, svc.Hostname(), org.Name, t.Name(), fmt.Sprintf(`
+	config := newRootModule(t, svc.System.Hostname(), org.Name, t.Name(), fmt.Sprintf(`
 data "http" "wait" {
 	url = "%s"
 }
@@ -59,7 +59,7 @@ data "http" "wait" {
 		expect.PartialMatch(true),
 		expect.Tee(out),
 		expect.SetEnv(
-			append(sharedEnvs, internal.CredentialEnv(svc.Hostname(), token)),
+			append(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token)),
 		),
 	)
 	require.NoError(t, err)

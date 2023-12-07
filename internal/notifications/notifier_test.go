@@ -69,10 +69,10 @@ func TestNotifier_handleRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			published := make(chan *run.Run, 100)
 			notifier := &Notifier{
-				Logger:          logr.Discard(),
-				workspaces:      &fakeWorkspaceService{},
-				HostnameService: &fakeHostnameService{},
-				cache:           newTestCache(t, &fakeFactory{published}, tt.cfg),
+				Logger:     logr.Discard(),
+				workspaces: &fakeWorkspaceService{},
+				system:     &fakeHostnameService{},
+				cache:      newTestCache(t, &fakeFactory{published}, tt.cfg),
 			}
 
 			err := notifier.handleRun(ctx, tt.run)
@@ -99,10 +99,10 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 
 	published := make(chan *run.Run, 2)
 	notifier := &Notifier{
-		Logger:          logr.Discard(),
-		workspaces:      &fakeWorkspaceService{},
-		HostnameService: &fakeHostnameService{},
-		cache:           newTestCache(t, &fakeFactory{published}, config1, config2),
+		Logger:     logr.Discard(),
+		workspaces: &fakeWorkspaceService{},
+		system:     &fakeHostnameService{},
+		cache:      newTestCache(t, &fakeFactory{published}, config1, config2),
 	}
 
 	err := notifier.handleRun(ctx, planningRun)
@@ -114,10 +114,10 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 func TestNotifier_handleConfig(t *testing.T) {
 	ctx := context.Background()
 	notifier := &Notifier{
-		Logger:          logr.Discard(),
-		workspaces:      &fakeWorkspaceService{},
-		HostnameService: &fakeHostnameService{},
-		cache:           newTestCache(t, &fakeFactory{}),
+		Logger:     logr.Discard(),
+		workspaces: &fakeWorkspaceService{},
+		system:     &fakeHostnameService{},
+		cache:      newTestCache(t, &fakeFactory{}),
 	}
 
 	// Add config, should result in cache size of 1

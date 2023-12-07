@@ -74,7 +74,7 @@ data "terraform_remote_state" "producer" {
 output "remote_foo" {
   value = data.terraform_remote_state.producer.outputs.foo
 }
-`, daemon.Hostname(), org.Name, producer.Name)
+`, daemon.System.Hostname(), org.Name, producer.Name)
 	err = os.WriteFile(filepath.Join(consumerRoot, "main.tf"), []byte(consumerConfig), 0o777)
 	require.NoError(t, err)
 	tarball, err = internal.Pack(consumerRoot)

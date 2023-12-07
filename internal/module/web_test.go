@@ -160,10 +160,10 @@ func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
 		fn(&svc)
 	}
 	return &webHandlers{
-		Renderer:        testutils.NewRenderer(t),
-		HostnameService: &svc,
-		client:          &svc,
-		vcsproviders:    &svc,
+		Renderer:     testutils.NewRenderer(t),
+		system:       &svc,
+		client:       &svc,
+		vcsproviders: &svc,
 	}
 }
 

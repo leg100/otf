@@ -29,7 +29,7 @@ func TestCloudBlock(t *testing.T) {
   }
 }
 resource "null_resource" "e2e" {}
-`, svc.Hostname(), org.Name))
+`, svc.System.Hostname(), org.Name))
 	root := t.TempDir()
 	err := os.WriteFile(filepath.Join(root, "main.tf"), config, 0o600)
 	require.NoError(t, err)

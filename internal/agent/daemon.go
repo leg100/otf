@@ -135,8 +135,8 @@ type ServerDaemonOptions struct {
 	ConfigurationVersionService *configversion.Service
 	StateService                *state.Service
 	LogsService                 *logs.Service
-	AgentService                Service
-	HostnameService             internal.HostnameService
+	AgentService                *Service
+	HostnameService             *internal.HostnameService
 }
 
 // NewServerDaemon constructs a server agent daemon that is part of the otfd

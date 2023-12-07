@@ -110,7 +110,6 @@ func TestWebHandlers_deleteInstall(t *testing.T) {
 type fakeService struct {
 	app      *App
 	installs []*Installation
-	GithubAppService
 }
 
 func (f *fakeService) CreateGithubApp(context.Context, CreateAppOptions) (*App, error) {

@@ -27,10 +27,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	// demonstrate listing and searching
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-12"),
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),
-		chromedp.Navigate(workspacesURL(daemon.Hostname(), org.Name)),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-1"),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-12"),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-2"),
+		chromedp.Navigate(workspacesURL(daemon.System.Hostname(), org.Name)),
 		// search for 'workspace-1' which should produce two results
 		chromedp.Focus(`input[type="search"]`, chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("workspace-1"),
@@ -45,8 +45,8 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 	// demonstrate setting vcs trigger patterns
 	browser.Run(t, ctx, chromedp.Tasks{
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.String()),
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1", provider.String()),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// default should be set to always trigger runs
@@ -85,7 +85,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	// set vcs trigger to use tag regex
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// trigger patterns strategy should be set
@@ -111,7 +111,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	// set vcs branch
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// tag regex strategy should be set
@@ -131,7 +131,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	// permit applies from the CLI
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// allow applies from the CLI
@@ -148,7 +148,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	// set description
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`), waitLoaded,
 		// enter a description

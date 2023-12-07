@@ -16,24 +16,7 @@ import (
 )
 
 type (
-	RepohookService = Service
-
-	// RepohookService manages webhooks
-	Service interface {
-		// CreateRepohook creates a webhook on a VCS repository. If the webhook
-		// already exists, it is updated if there are discrepancies; otherwise
-		// no action is taken. In any case an identifier is returned uniquely
-		// identifying the webhook.
-		CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error)
-		// RegisterCloudHandler registers a new cloud handler, to handle VCS
-		// events for a specific vcs hosting provider.
-		RegisterCloudHandler(kind vcs.Kind, h EventUnmarshaler)
-		// DeleteUnreferencedRepohooks deletes any repohooks no longer used
-		// by a VCS connection
-		DeleteUnreferencedRepohooks(ctx context.Context) error
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
 		*db
@@ -48,11 +31,11 @@ type (
 
 		OrganizationService *organization.Service
 		VCSProviderService  *vcsprovider.Service
+		GithubAppService    *github.Service
+		VCSEventBroker      *vcs.Broker
 
 		*sql.DB
-		VCSEventBroker *vcs.Broker
-		internal.HostnameService
-		github.GithubAppService
+		*internal.HostnameService
 	}
 
 	CreateRepohookOptions struct {
@@ -61,9 +44,9 @@ type (
 	}
 )
 
-func NewService(ctx context.Context, opts Options) *service {
+func NewService(ctx context.Context, opts Options) *Service {
 	db := &db{opts.DB, opts.HostnameService}
-	svc := &service{
+	svc := &Service{
 		Logger:       opts.Logger,
 		vcsproviders: opts.VCSProviderService,
 		db:           db,
@@ -85,7 +68,7 @@ func NewService(ctx context.Context, opts Options) *service {
 	return svc
 }
 
-func (s *service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error) {
+func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error) {
 	vcsProvider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
@@ -129,11 +112,11 @@ func (s *service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	return hook.id, nil
 }
 
-func (s *service) RegisterCloudHandler(kind vcs.Kind, h EventUnmarshaler) {
+func (s *Service) RegisterCloudHandler(kind vcs.Kind, h EventUnmarshaler) {
 	s.handlers.cloudHandlers.Set(kind, h)
 }
 
-func (s *service) DeleteUnreferencedRepohooks(ctx context.Context) error {
+func (s *Service) DeleteUnreferencedRepohooks(ctx context.Context) error {
 	hooks, err := s.db.listUnreferencedRepohooks(ctx)
 	if err != nil {
 		return fmt.Errorf("listing unreferenced webhooks: %w", err)
@@ -146,7 +129,7 @@ func (s *service) DeleteUnreferencedRepohooks(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) deleteOrganizationRepohooks(ctx context.Context, org *organization.Organization) error {
+func (s *Service) deleteOrganizationRepohooks(ctx context.Context, org *organization.Organization) error {
 	providers, err := s.vcsproviders.ListVCSProviders(ctx, org.Name)
 	if err != nil {
 		return err
@@ -167,7 +150,7 @@ func (s *service) deleteOrganizationRepohooks(ctx context.Context, org *organiza
 	return nil
 }
 
-func (s *service) deleteProviderRepohooks(ctx context.Context, provider *vcsprovider.VCSProvider) error {
+func (s *Service) deleteProviderRepohooks(ctx context.Context, provider *vcsprovider.VCSProvider) error {
 	hooks, err := s.db.listHooks(ctx)
 	if err != nil {
 		return err
@@ -182,7 +165,7 @@ func (s *service) deleteProviderRepohooks(ctx context.Context, provider *vcsprov
 	return nil
 }
 
-func (s *service) deleteRepohook(ctx context.Context, repohook *hook) error {
+func (s *Service) deleteRepohook(ctx context.Context, repohook *hook) error {
 	if err := s.db.deleteHook(ctx, repohook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}

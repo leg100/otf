@@ -417,14 +417,14 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 
 	if token == "" {
 		if poolID == "" {
-			pool, err := s.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+			pool, err := s.Agents.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
 				Name:         uuid.NewString(),
 				Organization: org,
 			})
 			require.NoError(t, err)
 			poolID = pool.ID
 		}
-		_, tokenBytes, err := s.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+		_, tokenBytes, err := s.Agents.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)
@@ -433,7 +433,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 
 	agentDaemon, err := agent.NewPoolDaemon(logger, cfg, api.Config{
 		Token:   token,
-		Address: s.Hostname(),
+		Address: s.System.Hostname(),
 	})
 	require.NoError(t, err)
 
@@ -475,7 +475,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	cmd := exec.Command(tfpath, cmdargs...)
 	cmd.Dir = configPath
 
-	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.Hostname(), token))
+	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.System.Hostname(), token))
 
 	// Run tf and collect stdout/stderr
 	out, err := cmd.CombinedOutput()
@@ -491,7 +491,7 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
-	cmdargs := []string{"--address", s.Hostname(), "--token", string(token)}
+	cmdargs := []string{"--address", s.System.Hostname(), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer

@@ -26,7 +26,7 @@ func TestGithubLogin(t *testing.T) {
 
 	browser.Run(t, nil, chromedp.Tasks{
 		// go to login page
-		chromedp.Navigate("https://" + svc.Hostname() + "/login"),
+		chromedp.Navigate("https://" + svc.System.Hostname() + "/login"),
 		screenshot(t, "github_login_button"),
 		// login
 		chromedp.Click("a#login-button-github", chromedp.ByQuery),

@@ -26,21 +26,21 @@ type (
 		web               *webHandlers
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *VCSProvider) error
+		githubapps        *github.Service
 
-		internal.HostnameService
-		github.GithubAppService
+		*internal.HostnameService
 		*factory
 	}
 
 	Options struct {
-		internal.HostnameService
+		*internal.HostnameService
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
-		github.GithubAppService
 		vcs.Subscriber
 
+		GithubAppService    *github.Service
 		GithubHostname      string
 		GitlabHostname      string
 		SkipTLSVerification bool
@@ -49,18 +49,18 @@ type (
 
 func NewService(opts Options) *Service {
 	factory := factory{
-		GithubAppService:    opts.GithubAppService,
+		githubapps:          opts.GithubAppService,
 		githubHostname:      opts.GithubHostname,
 		gitlabHostname:      opts.GitlabHostname,
 		skipTLSVerification: opts.SkipTLSVerification,
 	}
 	svc := Service{
-		Logger:           opts.Logger,
-		HostnameService:  opts.HostnameService,
-		GithubAppService: opts.GithubAppService,
-		site:             &internal.SiteAuthorizer{Logger: opts.Logger},
-		organization:     &organization.Authorizer{Logger: opts.Logger},
-		factory:          &factory,
+		Logger:          opts.Logger,
+		HostnameService: opts.HostnameService,
+		githubapps:      opts.GithubAppService,
+		site:            &internal.SiteAuthorizer{Logger: opts.Logger},
+		organization:    &organization.Authorizer{Logger: opts.Logger},
+		factory:         &factory,
 		db: &pgdb{
 			DB:      opts.DB,
 			factory: &factory,

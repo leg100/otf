@@ -34,7 +34,7 @@ terraform {
   }
 }
 resource "null_resource" "tags_e2e" {}
-`, daemon.Hostname(), org.Name))
+`, daemon.System.Hostname(), org.Name))
 
 	tfpath := daemon.downloadTerraform(t, ctx, nil)
 
@@ -44,7 +44,7 @@ resource "null_resource" "tags_e2e" {}
 		[]string{tfpath, "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
-		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.Hostname(), token))),
+		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()
@@ -72,7 +72,7 @@ resource "null_resource" "tags_e2e" {}
 
 	// test UI management of tags
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "tagged")),
 		// confirm workspace page lists both tags
 		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'foo')]`),
 		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'bar')]`),

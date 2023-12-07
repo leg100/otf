@@ -20,11 +20,11 @@ type (
 	// Notifier relays run events onto interested parties
 	Notifier struct {
 		logr.Logger
-		internal.HostnameService
 
 		workspaces    notifierWorkspaceClient
 		runs          notifierRunClient
 		notifications notifierNotificationClient
+		system        notifierHostnameClient
 
 		*cache
 		db *pgdb
@@ -36,7 +36,7 @@ type (
 		NotificationClient notifierNotificationClient
 
 		logr.Logger
-		internal.HostnameService
+		*internal.HostnameService
 		*sql.DB
 	}
 
@@ -51,16 +51,20 @@ type (
 	notifierNotificationClient interface {
 		WatchNotificationConfigurations(context.Context) (<-chan pubsub.Event[*Config], func())
 	}
+
+	notifierHostnameClient interface {
+		Hostname() string
+	}
 )
 
 func NewNotifier(opts NotifierOptions) *Notifier {
 	return &Notifier{
-		Logger:          opts.Logger.WithValues("component", "notifier"),
-		workspaces:      opts.WorkspaceClient,
-		HostnameService: opts.HostnameService,
-		runs:            opts.RunClient,
-		notifications:   opts.NotificationClient,
-		db:              &pgdb{opts.DB},
+		Logger:        opts.Logger.WithValues("component", "notifier"),
+		workspaces:    opts.WorkspaceClient,
+		system:        opts.HostnameService,
+		runs:          opts.RunClient,
+		notifications: opts.NotificationClient,
+		db:            &pgdb{opts.DB},
 	}
 }
 
@@ -167,7 +171,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,
-			hostname:  s.Hostname(),
+			hostname:  s.system.Hostname(),
 		}
 		s.V(3).Info("publishing notification", "notification", msg)
 		if err := client.Publish(ctx, msg); err != nil {

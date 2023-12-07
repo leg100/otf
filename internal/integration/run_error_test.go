@@ -64,7 +64,7 @@ func TestRunError(t *testing.T) {
 		}
 		# should be 'null_resource'
 		resource "null_resourc" "e2e" {}
-		`, daemon.Hostname(), org.Name, ws.Name)
+		`, daemon.System.Hostname(), org.Name, ws.Name)
 
 			// upload config
 			cv := daemon.createConfigurationVersion(t, ctx, ws, nil)

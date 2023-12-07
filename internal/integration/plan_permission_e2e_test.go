@@ -23,13 +23,13 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	require.NoError(t, err)
 
 	// create some terraform configuration
-	configPath := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
+	configPath := newRootModule(t, svc.System.Hostname(), org.Name, "my-test-workspace")
 
 	// Open tab and create a workspace and assign plan role to the
 	// engineer's team.
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.ID, "plan"),
+		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
+		addWorkspacePermission(t, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "plan"),
 	})
 
 	// As engineer, run terraform init, and plan. This should succeed because
@@ -53,7 +53,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	// Now demonstrate engineer can start a plan via the UI.
 	browser.Run(t, engineerCtx, chromedp.Tasks{
 		// go to workspace page
-		chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
+		chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// select operation for run
 		chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only"),

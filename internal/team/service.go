@@ -40,7 +40,6 @@ type (
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
-		internal.HostnameService
 		logr.Logger
 
 		OrganizationService *organization.Service

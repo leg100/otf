@@ -23,7 +23,6 @@ import (
 
 type (
 	Service struct {
-		connections.ConnectionService
 		logr.Logger
 		*publisher
 
@@ -34,39 +33,40 @@ type (
 		api          *api
 		web          *webHandlers
 		vcsproviders *vcsprovider.Service
+		connections  *connections.Service
 	}
 
 	Options struct {
 		logr.Logger
 
 		*sql.DB
-		internal.HostnameService
+		*internal.HostnameService
 		*surl.Signer
 		html.Renderer
-		connections.ConnectionService
-		repohooks.RepohookService
 
+		RepohookService    *repohooks.Service
 		VCSProviderService *vcsprovider.Service
+		ConnectionsService *connections.Service
 		VCSEventSubscriber vcs.Subscriber
 	}
 )
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:            opts.Logger,
-		ConnectionService: opts.ConnectionService,
-		organization:      &organization.Authorizer{Logger: opts.Logger},
-		db:                &pgdb{opts.DB},
+		Logger:       opts.Logger,
+		connections:  opts.ConnectionsService,
+		organization: &organization.Authorizer{Logger: opts.Logger},
+		db:           &pgdb{opts.DB},
 	}
 	svc.api = &api{
 		svc:    &svc,
 		Signer: opts.Signer,
 	}
 	svc.web = &webHandlers{
-		HostnameService: opts.HostnameService,
-		Renderer:        opts.Renderer,
-		client:          &svc,
-		vcsproviders:    opts.VCSProviderService,
+		Renderer:     opts.Renderer,
+		client:       &svc,
+		vcsproviders: opts.VCSProviderService,
+		system:       opts.HostnameService,
 	}
 	publisher := &publisher{
 		Logger:       opts.Logger.WithValues("component", "publisher"),
@@ -129,7 +129,7 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 		tags   []string
 	)
 	setup := func() (err error) {
-		mod.Connection, err = s.Connect(ctx, connections.ConnectOptions{
+		mod.Connection, err = s.connections.Connect(ctx, connections.ConnectOptions{
 			ConnectionType: connections.ModuleConnection,
 			ResourceID:     mod.ID,
 			VCSProviderID:  opts.VCSProviderID,
@@ -293,7 +293,7 @@ func (s *Service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
-			err := s.Disconnect(ctx, connections.DisconnectOptions{
+			err := s.connections.Disconnect(ctx, connections.DisconnectOptions{
 				ConnectionType: connections.ModuleConnection,
 				ResourceID:     module.ID,
 			})

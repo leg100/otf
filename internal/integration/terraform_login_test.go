@@ -34,7 +34,7 @@ func TestTerraformLogin(t *testing.T) {
 	tfpath := svc.downloadTerraform(t, ctx, nil)
 
 	e, tferr, err := expect.SpawnWithArgs(
-		[]string{tfpath, "login", svc.Hostname()},
+		[]string{tfpath, "login", svc.System.Hostname()},
 		time.Minute,
 		expect.PartialMatch(true),
 		// expect.Verbose(testing.Verbose()),
@@ -75,7 +75,7 @@ func TestTerraformLogin(t *testing.T) {
 	// create some terraform config and run terraform init to demonstrate user
 	// has authenticated successfully.
 	org := svc.createOrganization(t, ctx)
-	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
+	configPath := newRootModule(t, svc.System.Hostname(), org.Name, t.Name())
 	cmd := exec.Command(tfpath, "init")
 	cmd.Dir = configPath
 	assert.NoError(t, cmd.Run())

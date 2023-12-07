@@ -39,7 +39,7 @@ type (
 		// extract username from token
 		tokenHandler
 		// for retrieving OTF system hostname to construct redirect URLs
-		internal.HostnameService
+		*internal.HostnameService
 
 		OAuthConfig
 
@@ -60,7 +60,7 @@ type (
 
 func newOAuthClient(
 	handler tokenHandler,
-	hostnameService internal.HostnameService,
+	hostnameService *internal.HostnameService,
 	tokensService sessionStarter,
 	cfg OAuthConfig,
 ) (*OAuthClient, error) {

@@ -15,7 +15,7 @@ import (
 type (
 	db struct {
 		*sql.DB
-		internal.HostnameService
+		*internal.HostnameService
 	}
 
 	hookRow struct {

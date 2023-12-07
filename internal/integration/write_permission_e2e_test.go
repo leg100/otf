@@ -22,13 +22,13 @@ func TestWritePermissionE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	// create terraform config
-	config := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
+	config := newRootModule(t, svc.System.Hostname(), org.Name, "my-test-workspace")
 
 	// Open browser, create workspace and assign write permissions to the
 	// engineer's team.
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.ID, "write"),
+		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
+		addWorkspacePermission(t, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write"),
 	})
 
 	// As engineer, run terraform init

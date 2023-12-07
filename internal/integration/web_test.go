@@ -26,11 +26,11 @@ func TestWeb(t *testing.T) {
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		// create workspace
-		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.ByQuery),
@@ -47,11 +47,11 @@ func TestWeb(t *testing.T) {
 			matchText(t, "//div[@role='alert']", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", team.ID, "write"),
+		addWorkspacePermission(t, daemon.System.Hostname(), org.Name, "my-workspace", team.ID, "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.ByQuery),
@@ -61,7 +61,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.ByQuery),

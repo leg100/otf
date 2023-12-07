@@ -29,10 +29,14 @@ type (
 	webHandlers struct {
 		internal.Signer
 		html.Renderer
-		internal.HostnameService
 
 		client       webModulesClient
 		vcsproviders vcsprovidersClient
+		system       webHostnameClient
+	}
+
+	webHostnameClient interface {
+		Hostname() string
 	}
 
 	// webModulesClient provides web handlers with access to modules
@@ -152,7 +156,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		TerraformModule:           tfmod,
 		Readme:                    readme,
 		CurrentVersion:            modver,
-		Hostname:                  h.Hostname(),
+		Hostname:                  h.system.Hostname(),
 		ModuleStatusPending:       ModuleStatusPending,
 		ModuleStatusNoVersionTags: ModuleStatusNoVersionTags,
 		ModuleStatusSetupFailed:   ModuleStatusSetupFailed,

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -23,9 +24,29 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc        Service
+	svc        webClient
 	workspaces *workspacepkg.Service
 	logger     logr.Logger
+}
+
+// webClient gives web handlers access to the agents service endpoints
+type webClient interface {
+	CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
+	GetAgentPool(ctx context.Context, poolID string) (*Pool, error)
+	updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
+	listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
+	deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
+
+	registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
+	listAgents(ctx context.Context) ([]*Agent, error)
+	listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
+	listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
+	listServerAgents(ctx context.Context) ([]*Agent, error)
+
+	CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+	GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
+	ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error)
+	DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
 }
 
 type (

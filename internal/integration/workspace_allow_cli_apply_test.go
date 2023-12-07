@@ -36,7 +36,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	require.NoError(t, err)
 
 	// by default, terraform apply should fail
-	config := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
+	config := newRootModule(t, daemon.System.Hostname(), ws.Organization, ws.Name)
 	daemon.tfcli(t, ctx, "init", config)
 	out, err := daemon.tfcliWithError(t, ctx, "apply", config, "-auto-approve")
 	require.Error(t, err, out)

@@ -19,7 +19,7 @@ type (
 		workspace.Service
 	}
 	fakeHostnameService struct {
-		internal.HostnameService
+		*internal.HostnameService
 	}
 	// fakeFactory makes fake clients
 	fakeFactory struct {

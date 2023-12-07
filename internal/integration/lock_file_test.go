@@ -20,7 +20,7 @@ func TestLockFile(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// in a browser, create workspace
-	browser.Run(t, ctx, createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"))
+	browser.Run(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"))
 
 	// create root module with only a variable and no resources - this should
 	// result in *no* lock file being created.
@@ -40,7 +40,7 @@ terraform {
 variable "foo" {
 	default = "bar"
 }
-`, svc.Hostname(), org.Name, "my-test-workspace"))
+`, svc.System.Hostname(), org.Name, "my-test-workspace"))
 	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 

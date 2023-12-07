@@ -16,7 +16,7 @@ import (
 
 type webHandlers struct {
 	html.Renderer
-	internal.HostnameService
+	*internal.HostnameService
 
 	client     webClient
 	githubApps webGithubAppClient

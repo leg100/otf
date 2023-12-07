@@ -21,20 +21,6 @@ import (
 var ErrCannotDeleteOnlyOwner = errors.New("cannot remove the last owner")
 
 type (
-	//	UserService interface {
-	//		CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
-	//		GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	//		ListUsers(ctx context.Context) ([]*User, error)
-	//		ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
-	//		ListTeamUsers(ctx context.Context, teamID string) ([]*User, error)
-	//		DeleteUser(ctx context.Context, username string) error
-	//		AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
-	//		RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
-	//		SetSiteAdmins(ctx context.Context, usernames ...string) error
-	//
-	//		userTokenService
-	//	}
-	//
 	Service struct {
 		logr.Logger
 
@@ -58,7 +44,6 @@ type (
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
-		internal.HostnameService
 		logr.Logger
 	}
 )

@@ -30,7 +30,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 	_, token := daemon.createToken(t, ctx, nil)
 
 	tfeClient, err := tfe.NewClient(&tfe.Config{
-		Address:           "https://" + daemon.Hostname(),
+		Address:           "https://" + daemon.System.Hostname(),
 		Token:             string(token),
 		RetryServerErrors: true,
 	})

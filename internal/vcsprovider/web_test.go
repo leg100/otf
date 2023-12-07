@@ -119,7 +119,8 @@ func (f *fakeService) DeleteVCSProvider(context.Context, string) (*VCSProvider, 
 type fakeGithubAppService struct {
 	app      *github.App
 	installs []*github.Installation
-	github.GithubAppService
+
+	*github.Service
 }
 
 func (f *fakeGithubAppService) GetGithubApp(context.Context) (*github.App, error) {

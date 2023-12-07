@@ -34,7 +34,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 
 	// open browser, go to run, and click retry
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(runURL(daemon.Hostname(), r.ID)),
+		chromedp.Navigate(runURL(daemon.System.Hostname(), r.ID)),
 		// run should be in planned and finished state
 		chromedp.WaitVisible(`//a[text()='planned and finished']`),
 		screenshot(t, "run_page_planned_and_finished_state"),

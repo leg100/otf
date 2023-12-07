@@ -21,7 +21,7 @@ type (
 	// runs.
 	Reporter struct {
 		logr.Logger
-		internal.HostnameService
+		*internal.HostnameService
 
 		Configs    reporterConfigClient
 		Workspaces reporterWorkspaceClient

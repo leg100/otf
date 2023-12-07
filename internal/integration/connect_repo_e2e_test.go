@@ -27,11 +27,11 @@ func TestConnectRepoE2E(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", provider.String()),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-test-workspace"),
+		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "my-test-workspace", provider.String()),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
-		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation),
+		startRunTasks(t, daemon.System.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation),
 	})
 
 	// Now we test the webhook functionality by sending an event to the daemon
@@ -45,7 +45,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// commit-triggered run should appear as latest run on workspace
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// branch should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`),
@@ -72,7 +72,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// workspace and vcs provider
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
@@ -94,7 +94,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		// delete vcs provider
 		//
 		// go to org
-		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),

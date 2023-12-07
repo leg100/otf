@@ -18,7 +18,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
 			// go to variable sets
 			chromedp.Click(`//a[text()='variable sets']`), waitLoaded,
 			// click new variable set button
@@ -60,7 +60,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
 			// go to variable sets
 			chromedp.Click(`//a[text()='variable sets']`),
 			// click new variable set button and wait for alpine to load on new
@@ -107,7 +107,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			// confirm variable added
 			matchText(t, "//div[@role='alert']", "added variable: foo"),
 			// go to variables page for workspace ws1
-			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, ws1.Name)),
+			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, ws1.Name)),
 			chromedp.Click(`//a[text()='variables']`),
 			// page should list 2 variable sets, one global, one
 			// workspace-scoped

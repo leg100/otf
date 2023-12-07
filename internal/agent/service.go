@@ -23,44 +23,7 @@ import (
 )
 
 type (
-	AgentService = Service
-
-	Service interface {
-		NewAllocator(logr.Logger) *allocator
-		NewManager() *manager
-
-		CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
-		GetAgentPool(ctx context.Context, poolID string) (*Pool, error)
-		WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
-		updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
-		listAllAgentPools(ctx context.Context) ([]*Pool, error)
-		listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
-		deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
-
-		WatchAgents(context.Context) (<-chan pubsub.Event[*Agent], func())
-		registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
-		listAgents(ctx context.Context) ([]*Agent, error)
-		listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
-		listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
-		listServerAgents(ctx context.Context) ([]*Agent, error)
-		getAgentJobs(ctx context.Context, agentID string) ([]*Job, error)
-		updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
-		deleteAgent(ctx context.Context, agentID string) error
-
-		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
-		GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
-		ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error)
-		DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
-
-		startJob(ctx context.Context, spec JobSpec) ([]byte, error)
-		allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
-		reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
-		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
-		listJobs(ctx context.Context) ([]*Job, error)
-		WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
 		organization internal.Authorizer
@@ -97,8 +60,8 @@ type (
 	}
 )
 
-func NewService(opts ServiceOptions) *service {
-	svc := &service{
+func NewService(opts ServiceOptions) *Service {
+	svc := &Service{
 		Logger:       opts.Logger,
 		db:           &db{DB: opts.DB},
 		organization: &organization.Authorizer{Logger: opts.Logger},
@@ -108,11 +71,11 @@ func NewService(opts ServiceOptions) *service {
 		phases: opts.RunService,
 	}
 	svc.tfeapi = &tfe{
-		service:   svc,
+		Service:   svc,
 		Responder: opts.Responder,
 	}
 	svc.api = &api{
-		service:   svc,
+		Service:   svc,
 		Responder: opts.Responder,
 	}
 	svc.web = &webHandlers{
@@ -122,7 +85,7 @@ func NewService(opts ServiceOptions) *service {
 		workspaces: opts.WorkspaceService,
 	}
 	svc.registrar = &registrar{
-		service: svc,
+		Service: svc,
 	}
 	svc.poolBroker = pubsub.NewBroker(
 		opts.Logger,
@@ -213,22 +176,22 @@ func NewService(opts ServiceOptions) *service {
 	return svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
-func (s *service) NewAllocator(logger logr.Logger) *allocator {
+func (s *Service) NewAllocator(logger logr.Logger) *allocator {
 	return &allocator{
 		Logger: logger,
 		client: s,
 	}
 }
 
-func (s *service) NewManager() *manager { return newManager(s) }
+func (s *Service) NewManager() *manager { return newManager(s) }
 
-func (s *service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
+func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.CreateAgentPoolAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -245,7 +208,7 @@ func (s *service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 	return pool, nil
 }
 
-func (s *service) updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
+func (s *Service) updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
 	var (
 		subject       internal.Subject
 		before, after Pool
@@ -290,7 +253,7 @@ func (s *service) updateAgentPool(ctx context.Context, poolID string, opts updat
 	return &after, nil
 }
 
-func (s *service) GetAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+func (s *Service) GetAgentPool(ctx context.Context, poolID string) (*Pool, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
@@ -304,7 +267,7 @@ func (s *service) GetAgentPool(ctx context.Context, poolID string) (*Pool, error
 	return pool, nil
 }
 
-func (s *service) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
+func (s *Service) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -318,7 +281,7 @@ func (s *service) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
 	return pools, nil
 }
 
-func (s *service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentPoolsAction, organization)
 	if err != nil {
 		return nil, err
@@ -332,7 +295,7 @@ func (s *service) listAgentPoolsByOrganization(ctx context.Context, organization
 	return pools, nil
 }
 
-func (s *service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+func (s *Service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, error) {
 	pool, subject, err := func() (*Pool, internal.Subject, error) {
 		// retrieve pool in order to get organization for authorization
 		pool, err := s.db.getPool(ctx, poolID)
@@ -365,7 +328,7 @@ func (s *service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, er
 // checkWorkspacePoolAccess checks if a workspace has been granted access to a pool. If the
 // pool is organization-scoped then the workspace automatically has access;
 // otherwise access must already have been granted explicity.
-func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Workspace) error {
+func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Workspace) error {
 	if ws.AgentPoolID == nil {
 		// workspace is not using any pool
 		return nil
@@ -383,19 +346,19 @@ func (s *service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 	return ErrWorkspaceNotAllowedToUsePool
 }
 
-func (s *service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func()) {
+func (s *Service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Pool], func()) {
 	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *service) WatchAgents(ctx context.Context) (<-chan pubsub.Event[*Agent], func()) {
+func (s *Service) WatchAgents(ctx context.Context) (<-chan pubsub.Event[*Agent], func()) {
 	return s.agentBroker.Subscribe(ctx)
 }
 
-func (s *service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
+func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
 	return s.jobBroker.Subscribe(ctx)
 }
 
-func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
+func (s *Service) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
 	agent, err := func() (*Agent, error) {
 		// subject must be an unregistered agent
 		subject, err := internal.SubjectFromContext(ctx)
@@ -434,11 +397,11 @@ func (s *service) registerAgent(ctx context.Context, opts registerAgentOptions) 
 	return agent, nil
 }
 
-func (s *service) getAgent(ctx context.Context, agentID string) (*Agent, error) {
+func (s *Service) getAgent(ctx context.Context, agentID string) (*Agent, error) {
 	return s.db.getAgent(ctx, agentID)
 }
 
-func (s *service) updateAgentStatus(ctx context.Context, agentID string, to AgentStatus) error {
+func (s *Service) updateAgentStatus(ctx context.Context, agentID string, to AgentStatus) error {
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
 	// (b) an agent with an ID matching agentID
@@ -479,15 +442,15 @@ func (s *service) updateAgentStatus(ctx context.Context, agentID string, to Agen
 	return nil
 }
 
-func (s *service) listAgents(ctx context.Context) ([]*Agent, error) {
+func (s *Service) listAgents(ctx context.Context) ([]*Agent, error) {
 	return s.db.listAgents(ctx)
 }
 
-func (s *service) listServerAgents(ctx context.Context) ([]*Agent, error) {
+func (s *Service) listServerAgents(ctx context.Context) ([]*Agent, error) {
 	return s.db.listServerAgents(ctx)
 }
 
-func (s *service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
+func (s *Service) listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error) {
 	_, err := s.organization.CanAccess(ctx, rbac.ListAgentsAction, organization)
 	if err != nil {
 		return nil, err
@@ -495,11 +458,11 @@ func (s *service) listAgentsByOrganization(ctx context.Context, organization str
 	return s.db.listAgentsByOrganization(ctx, organization)
 }
 
-func (s *service) listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error) {
+func (s *Service) listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error) {
 	return s.db.listAgentsByPool(ctx, poolID)
 }
 
-func (s *service) deleteAgent(ctx context.Context, agentID string) error {
+func (s *Service) deleteAgent(ctx context.Context, agentID string) error {
 	if err := s.db.deleteAgent(ctx, agentID); err != nil {
 		s.Error(err, "deleting agent", "agent_id", agentID)
 		return err
@@ -508,7 +471,7 @@ func (s *service) deleteAgent(ctx context.Context, agentID string) error {
 	return nil
 }
 
-func (s *service) createJob(ctx context.Context, run *otfrun.Run) error {
+func (s *Service) createJob(ctx context.Context, run *otfrun.Run) error {
 	job := newJob(run)
 	if err := s.db.createJob(ctx, job); err != nil {
 		return err
@@ -519,7 +482,7 @@ func (s *service) createJob(ctx context.Context, run *otfrun.Run) error {
 // cancelJob is called when a user cancels a run - cancelJob determines whether
 // the corresponding job is signaled and what type of signal, and/or whether the
 // job should be canceled.
-func (s *service) cancelJob(ctx context.Context, run *otfrun.Run) error {
+func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	var (
 		spec   = JobSpec{RunID: run.ID, Phase: run.Phase()}
 		signal *bool
@@ -550,7 +513,7 @@ func (s *service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 //
 // getAgentJobs is intended to be called by an agent in order to retrieve jobs to
 // execute and jobs to cancel.
-func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
+func (s *Service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) an agent with an ID matching agentID
 	subject, err := internal.SubjectFromContext(ctx)
@@ -594,15 +557,15 @@ func (s *service) getAgentJobs(ctx context.Context, agentID string) ([]*Job, err
 	return nil, nil
 }
 
-func (s *service) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
+func (s *Service) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
 	return s.db.getJob(ctx, spec)
 }
 
-func (s *service) listJobs(ctx context.Context) ([]*Job, error) {
+func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+func (s *Service) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
 	allocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
 		return job.allocate(agentID)
 	})
@@ -614,7 +577,7 @@ func (s *service) allocateJob(ctx context.Context, spec JobSpec, agentID string)
 	return allocated, nil
 }
 
-func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
 	var (
 		from        string // ID of agent that job *was* allocated to
 		reallocated *Job
@@ -634,7 +597,7 @@ func (s *service) reallocateJob(ctx context.Context, spec JobSpec, agentID strin
 // startJob starts a job and returns a job token with permissions to
 // carry out the job. Only an agent that has been allocated the job can
 // call this method.
-func (s *service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
+func (s *Service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 	subject, err := registeredAgentFromContext(ctx)
 	if err != nil {
 		return nil, internal.ErrAccessNotPermitted
@@ -672,7 +635,7 @@ type finishJobOptions struct {
 }
 
 // finishJob finishes a job. Only the job itself may call this endpoint.
-func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
+func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
 	{
 		subject, err := internal.SubjectFromContext(ctx)
 		if err != nil {
@@ -713,7 +676,7 @@ func (s *service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 
 // agent tokens
 
-func (s *service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (s *Service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	at, token, subject, err := func() (*agentToken, []byte, internal.Subject, error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
@@ -741,7 +704,7 @@ func (s *service) CreateAgentToken(ctx context.Context, poolID string, opts Crea
 	return at, token, nil
 }
 
-func (s *service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+func (s *Service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, internal.Subject, error) {
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
@@ -765,7 +728,7 @@ func (s *service) GetAgentToken(ctx context.Context, tokenID string) (*agentToke
 	return at, nil
 }
 
-func (s *service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
+func (s *Service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		return nil, err
@@ -784,7 +747,7 @@ func (s *service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentT
 	return tokens, nil
 }
 
-func (s *service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+func (s *Service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, internal.Subject, error) {
 		// retrieve agent token and pool in order to get organization for authorization
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)

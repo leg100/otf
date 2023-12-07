@@ -51,9 +51,6 @@ type (
 
 		*sql.DB
 
-		listener *sql.Listener
-		agent    agentDaemon
-
 		Organizations *organization.Service
 		Runs          *run.Service
 		Workspaces    *workspace.Service
@@ -67,14 +64,15 @@ type (
 		Tokens        *tokens.Service
 		Teams         *team.Service
 		Users         *user.Service
+		GithubApp     *github.Service
+		RepoHooks     *repohooks.Service
+		Agents        *agent.Service
+		Connections   *connections.Service
+		System        *internal.HostnameService
 
-		internal.HostnameService
-		repohooks.RepohookService
-		connections.ConnectionService
-		github.GithubAppService
-		agent.AgentService
-
-		Handlers []internal.Handlers
+		handlers []internal.Handlers
+		listener *sql.Listener
+		agent    agentDaemon
 	}
 
 	agentDaemon interface {
@@ -147,19 +145,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                  db,
 		Renderer:            renderer,
 		Responder:           responder,
-		HostnameService:     hostnameService,
 		OrganizationService: orgService,
 		TokensService:       tokensService,
 	})
 	userService := user.NewService(user.Options{
-		Logger:          logger,
-		DB:              db,
-		Renderer:        renderer,
-		Responder:       responder,
-		HostnameService: hostnameService,
-		TokensService:   tokensService,
-		SiteToken:       cfg.SiteToken,
-		TeamService:     teamService,
+		Logger:        logger,
+		DB:            db,
+		Renderer:      renderer,
+		Responder:     responder,
+		TokensService: tokensService,
+		SiteToken:     cfg.SiteToken,
+		TeamService:   teamService,
 	})
 	// promote nominated users to site admin
 	if err := userService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
@@ -205,7 +201,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:             logger,
 		DB:                 db,
 		VCSProviderService: vcsProviderService,
-		RepohookService:    repoService,
+		RepoHooksService:   repoService,
 	})
 	releasesService := releases.NewService(releases.Options{
 		Logger: logger,
@@ -267,7 +263,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService:    hostnameService,
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
-		ConnectionService:  connectionService,
+		ConnectionsService: connectionService,
 		RepohookService:    repoService,
 		VCSEventSubscriber: vcsEventBroker,
 	})
@@ -388,40 +384,40 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		agentService,
 		disco.Service{},
 		&ghapphandler.Handler{
-			Logger:           logger,
-			Publisher:        vcsEventBroker,
-			GithubAppService: githubAppService,
-			VCSProviders:     vcsProviderService,
+			Logger:       logger,
+			Publisher:    vcsEventBroker,
+			GithubApps:   githubAppService,
+			VCSProviders: vcsProviderService,
 		},
 		&api.Handlers{},
 		&tfeapi.Handlers{},
 	}
 
 	return &Daemon{
-		Config:            cfg,
-		Logger:            logger,
-		Handlers:          handlers,
-		Organizations:     orgService,
-		HostnameService:   hostnameService,
-		Runs:              runService,
-		Workspaces:        workspaceService,
-		Variables:         variableService,
-		Notifications:     notificationService,
-		Logs:              logsService,
-		State:             stateService,
-		Configs:           configService,
-		Modules:           moduleService,
-		VCSProviders:      vcsProviderService,
-		Tokens:            tokensService,
-		Teams:             teamService,
-		Users:             userService,
-		RepohookService:   repoService,
-		GithubAppService:  githubAppService,
-		ConnectionService: connectionService,
-		AgentService:      agentService,
-		DB:                db,
-		agent:             agentDaemon,
-		listener:          listener,
+		Config:        cfg,
+		Logger:        logger,
+		handlers:      handlers,
+		Organizations: orgService,
+		System:        hostnameService,
+		Runs:          runService,
+		Workspaces:    workspaceService,
+		Variables:     variableService,
+		Notifications: notificationService,
+		Logs:          logsService,
+		State:         stateService,
+		Configs:       configService,
+		Modules:       moduleService,
+		VCSProviders:  vcsProviderService,
+		Tokens:        tokensService,
+		Teams:         teamService,
+		Users:         userService,
+		RepoHooks:     repoService,
+		GithubApp:     githubAppService,
+		Connections:   connectionService,
+		Agents:        agentService,
+		DB:            db,
+		agent:         agentDaemon,
+		listener:      listener,
 	}, nil
 }
 
@@ -442,7 +438,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
 		Middleware:           []mux.MiddlewareFunc{d.Tokens.Middleware()},
-		Handlers:             d.Handlers,
+		Handlers:             d.handlers,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
@@ -457,9 +453,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// of the http server.
 	if d.Host == "" {
 		listenAddress := ln.Addr().(*net.TCPAddr)
-		d.SetHostname(internal.NormalizeAddress(listenAddress))
+		d.System.SetHostname(internal.NormalizeAddress(listenAddress))
 	}
-	d.V(0).Info("set system hostname", "hostname", d.Hostname())
+	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())
 
 	subsystems := []*Subsystem{
 		{
@@ -481,7 +477,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: &run.Reporter{
 				Logger:          d.Logger.WithValues("component", "reporter"),
 				VCS:             d.VCSProviders,
-				HostnameService: d.HostnameService,
+				HostnameService: d.System,
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,
 				Configs:         d.Configs,
@@ -495,7 +491,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			LockID:    internal.Int64(notifications.LockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:             d.Logger,
-				HostnameService:    d.HostnameService,
+				HostnameService:    d.System,
 				WorkspaceClient:    d.Workspaces,
 				RunClient:          d.Runs,
 				NotificationClient: d.Notifications,
@@ -508,7 +504,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive: true,
 			DB:        d.DB,
 			LockID:    internal.Int64(agent.AllocatorLockID),
-			System:    d.NewAllocator(d.Logger),
+			System:    d.Agents.NewAllocator(d.Logger),
 		},
 		{
 			Name:      "agent-manager",
@@ -516,7 +512,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive: true,
 			DB:        d.DB,
 			LockID:    internal.Int64(agent.ManagerLockID),
-			System:    d.NewManager(),
+			System:    d.Agents.NewManager(),
 		},
 		{
 			Name:   "agent-daemon",

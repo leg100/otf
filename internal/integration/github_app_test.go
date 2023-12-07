@@ -101,7 +101,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			daemon, _, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
 			tasks := chromedp.Tasks{
 				// go to site settings page
-				chromedp.Navigate("https://" + daemon.Hostname() + "/app/admin"),
+				chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/admin"),
 				screenshot(t, "site_settings"),
 				// go to github app page
 				chromedp.Click("//a[text()='GitHub app']"),
@@ -150,7 +150,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			// go to the exchange code endpoint
 			chromedp.Navigate((&url.URL{
 				Scheme:   "https",
-				Host:     daemon.Hostname(),
+				Host:     daemon.System.Hostname(),
 				Path:     "/app/github-apps/exchange-code",
 				RawQuery: "code=anything",
 			}).String()),
@@ -176,14 +176,14 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}),
 		}
 		daemon, _, _ := setup(t, nil, handlers...)
-		_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{
+		_, err := daemon.GithubApp.CreateGithubApp(ctx, github.CreateAppOptions{
 			AppID:      123,
 			Slug:       "otf-123",
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		})
 		require.NoError(t, err)
 		browser.Run(t, ctx, chromedp.Tasks{
-			chromedp.Navigate(daemon.HostnameService.URL("/app/github-apps")),
+			chromedp.Navigate(daemon.System.URL("/app/github-apps")),
 			chromedp.WaitVisible(`//div[@id='installations']//a[contains(text(), "user/leg100")]`),
 			screenshot(t, "github_app_install_list"),
 		})
@@ -219,7 +219,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	ctx = internal.AddSubjectToContext(ctx, &user.SiteAdmin)
 	// create an OTF daemon with a fake github backend, and serve up a repo and
 	// its contents via tarball.
-	_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{
+	_, err := daemon.GithubApp.CreateGithubApp(ctx, github.CreateAppOptions{
 		// any key will do, the stub github server won't actually authenticate it.
 		PrivateKey:    string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		Slug:          "test-app",
@@ -249,7 +249,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 
 	// send event
 	push := testutils.ReadFile(t, "./fixtures/github_app_push.json")
-	github.SendEventRequest(t, github.PushEvent, daemon.HostnameService.URL(github.AppEventsPath), "secret", push)
+	github.SendEventRequest(t, github.PushEvent, daemon.System.URL(github.AppEventsPath), "secret", push)
 
 	// wait for run to be created
 	<-sub

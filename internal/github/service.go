@@ -16,23 +16,8 @@ import (
 )
 
 type (
-	// Alias services so they don't conflict when nested together in struct
-	GithubAppService Service
-
-	Service interface {
-		CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error)
-		// GetGithubApp returns the github app. If no github app has been
-		// created then nil is returned without an error.
-		GetGithubApp(ctx context.Context) (*App, error)
-		DeleteGithubApp(ctx context.Context) error
-
-		ListInstallations(ctx context.Context) ([]*Installation, error)
-		DeleteInstallation(ctx context.Context, installID int64) error
-
-		GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error)
-	}
-
-	service struct {
+	// Service is the service for github app management
+	Service struct {
 		logr.Logger
 
 		GithubHostname string
@@ -44,18 +29,19 @@ type (
 	}
 
 	Options struct {
-		internal.HostnameService
 		*sql.DB
 		html.Renderer
 		logr.Logger
 		vcs.Publisher
+		*internal.HostnameService
+
 		GithubHostname      string
 		SkipTLSVerification bool
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := service{
+func NewService(opts Options) *Service {
+	svc := Service{
 		Logger:         opts.Logger,
 		GithubHostname: opts.GithubHostname,
 		site:           &internal.SiteAuthorizer{Logger: opts.Logger},
@@ -72,11 +58,11 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (a *service) AddHandlers(r *mux.Router) {
+func (a *Service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 }
 
-func (a *service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
+func (a *Service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.CreateGithubAppAction, "")
 	if err != nil {
 		return nil, err
@@ -92,7 +78,7 @@ func (a *service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*
 	return app, nil
 }
 
-func (a *service) GetGithubApp(ctx context.Context) (*App, error) {
+func (a *Service) GetGithubApp(ctx context.Context) (*App, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.GetGithubAppAction, "")
 	if err != nil {
 		return nil, err
@@ -109,7 +95,7 @@ func (a *service) GetGithubApp(ctx context.Context) (*App, error) {
 	return app, nil
 }
 
-func (a *service) DeleteGithubApp(ctx context.Context) error {
+func (a *Service) DeleteGithubApp(ctx context.Context) error {
 	subject, err := a.site.CanAccess(ctx, rbac.DeleteGithubAppAction, "")
 	if err != nil {
 		return err
@@ -124,7 +110,7 @@ func (a *service) DeleteGithubApp(ctx context.Context) error {
 	return nil
 }
 
-func (a *service) ListInstallations(ctx context.Context) ([]*Installation, error) {
+func (a *Service) ListInstallations(ctx context.Context) ([]*Installation, error) {
 	app, err := a.db.get(ctx)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil, nil
@@ -146,7 +132,7 @@ func (a *service) ListInstallations(ctx context.Context) ([]*Installation, error
 	return to, nil
 }
 
-func (a *service) GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error) {
+func (a *Service) GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error) {
 	app, err := a.db.get(ctx)
 	if err != nil {
 		return nil, err
@@ -177,7 +163,7 @@ func (a *service) GetInstallCredentials(ctx context.Context, installID int64) (*
 	return &creds, nil
 }
 
-func (a *service) DeleteInstallation(ctx context.Context, installID int64) error {
+func (a *Service) DeleteInstallation(ctx context.Context, installID int64) error {
 	app, err := a.db.get(ctx)
 	if err != nil {
 		return err
@@ -192,7 +178,7 @@ func (a *service) DeleteInstallation(ctx context.Context, installID int64) error
 	return nil
 }
 
-func (a *service) newClient(app *App) (*Client, error) {
+func (a *Service) newClient(app *App) (*Client, error) {
 	return NewClient(ClientOptions{
 		Hostname:            a.GithubHostname,
 		SkipTLSVerification: true,

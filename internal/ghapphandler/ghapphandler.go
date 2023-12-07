@@ -15,9 +15,9 @@ import (
 type Handler struct {
 	logr.Logger
 	vcs.Publisher
-	github.GithubAppService
 
 	VCSProviders *vcsprovider.Service
+	GithubApps   *github.Service
 }
 
 func (h *Handler) AddHandlers(r *mux.Router) {
@@ -29,7 +29,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "github-app-event-handler"})
 	// retrieve github app config; if one hasn't been configured then return a
 	// 400
-	app, err := h.GetGithubApp(ctx)
+	app, err := h.GithubApps.GetGithubApp(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

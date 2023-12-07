@@ -23,17 +23,17 @@ import (
 type (
 	Service struct {
 		logr.Logger
-		connections.ConnectionService
 
 		site                internal.Authorizer
 		organization        internal.Authorizer
 		internal.Authorizer // workspace authorizer
 
-		db     *pgdb
-		web    *webHandlers
-		tfeapi *tfe
-		api    *api
-		broker *pubsub.Broker[*Workspace]
+		db          *pgdb
+		web         *webHandlers
+		tfeapi      *tfe
+		api         *api
+		broker      *pubsub.Broker[*Workspace]
+		connections *connections.Service
 
 		beforeCreateHooks []func(context.Context, *Workspace) error
 		afterCreateHooks  []func(context.Context, *Workspace) error
@@ -46,12 +46,12 @@ type (
 		*tfeapi.Responder
 		html.Renderer
 
-		connections.ConnectionService
 		logr.Logger
 
 		OrganizationService *organization.Service
 		VCSProviderService  *vcsprovider.Service
 		TeamService         *team.Service
+		ConnectionService   *connections.Service
 	}
 )
 
@@ -63,10 +63,10 @@ func NewService(opts Options) *Service {
 			Logger: opts.Logger,
 			db:     db,
 		},
-		db:                db,
-		ConnectionService: opts.ConnectionService,
-		organization:      &organization.Authorizer{Logger: opts.Logger},
-		site:              &internal.SiteAuthorizer{Logger: opts.Logger},
+		db:           db,
+		connections:  opts.ConnectionService,
+		organization: &organization.Authorizer{Logger: opts.Logger},
+		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.web = &webHandlers{
 		Renderer:     opts.Renderer,
@@ -322,7 +322,7 @@ func (s *Service) connect(ctx context.Context, workspaceID string, connection *C
 		return err
 	}
 
-	_, err = s.Connect(ctx, connections.ConnectOptions{
+	_, err = s.connections.Connect(ctx, connections.ConnectOptions{
 		ConnectionType: connections.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  connection.VCSProviderID,
@@ -343,7 +343,7 @@ func (s *Service) disconnect(ctx context.Context, workspaceID string) error {
 		return err
 	}
 
-	err = s.Disconnect(ctx, connections.DisconnectOptions{
+	err = s.connections.Disconnect(ctx, connections.DisconnectOptions{
 		ConnectionType: connections.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})

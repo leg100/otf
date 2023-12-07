@@ -17,13 +17,13 @@ func TestIntegration_Agents(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 
-	pool1, err := daemon.CreateAgentPool(ctx, agentpkg.CreateAgentPoolOptions{
+	pool1, err := daemon.Agents.CreateAgentPool(ctx, agentpkg.CreateAgentPoolOptions{
 		Name:         "pool-1",
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
 
-	pool2, err := daemon.CreateAgentPool(ctx, agentpkg.CreateAgentPoolOptions{
+	pool2, err := daemon.Agents.CreateAgentPool(ctx, agentpkg.CreateAgentPoolOptions{
 		Name:         "pool-2",
 		Organization: org.Name,
 	})
@@ -54,7 +54,7 @@ func TestIntegration_Agents(t *testing.T) {
 	defer shutdown2()
 
 	// watch job events
-	jobsSub, unsub := daemon.WatchJobs(ctx)
+	jobsSub, unsub := daemon.Agents.WatchJobs(ctx)
 	defer unsub()
 
 	// create a run on ws1

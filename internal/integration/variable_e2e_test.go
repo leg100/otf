@@ -19,10 +19,10 @@ func TestVariableE2E(t *testing.T) {
 
 	// Create variable in browser
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
+		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
+			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`),
@@ -51,7 +51,7 @@ func TestVariableE2E(t *testing.T) {
 	})
 
 	// write some terraform config that declares and outputs the variable
-	root := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
+	root := newRootModule(t, svc.System.Hostname(), org.Name, "my-test-workspace")
 	config := `
 variable "foo" {
   default = "overwrite_this"
@@ -75,7 +75,7 @@ output "foo" {
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
+			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`),
