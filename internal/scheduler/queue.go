@@ -82,7 +82,7 @@ func (q *queue) handleRun(ctx context.Context, run *otfrun.Run) error {
 			} else {
 				// no current run & queue is empty; unlock workspace
 				q.current = nil
-				ws, err := q.UnlockWorkspace(ctx, q.ws.ID, &run.ID, false)
+				ws, err := q.Unlock(ctx, q.ws.ID, &run.ID, false)
 				if err != nil {
 					return err
 				}
@@ -142,7 +142,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *otfrun.Run) error {
 		return nil
 	}
 
-	ws, err := q.LockWorkspace(ctx, q.ws.ID, &run.ID)
+	ws, err := q.Lock(ctx, q.ws.ID, &run.ID)
 	if err != nil {
 		if errors.Is(err, internal.ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between

@@ -174,7 +174,7 @@ func (f *fakeFactoryOrganizationService) GetOrganization(context.Context, string
 	return f.org, nil
 }
 
-func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeFactoryWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

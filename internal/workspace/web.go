@@ -61,14 +61,14 @@ type (
 
 	// webClient provides web handlers with access to the workspace service
 	webClient interface {
-		CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
-		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
-		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-		LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
-		UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error)
+		Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*Workspace, error)
+		GetByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
+		Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
+		Delete(ctx context.Context, workspaceID string) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error)
 
 		AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error
 		RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error
@@ -129,7 +129,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.client.ListWorkspaces(r.Context(), ListOptions{
+	workspaces, err := h.client.List(r.Context(), ListOptions{
 		Search:       params.Search,
 		Tags:         params.Tags,
 		Organization: params.Organization,
@@ -222,7 +222,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.client.CreateWorkspace(r.Context(), CreateOptions{
+	ws, err := h.client.Create(r.Context(), CreateOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -246,7 +246,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.client.GetWorkspace(r.Context(), id)
+	ws, err := h.client.Get(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -332,7 +332,7 @@ func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ws, err := h.client.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.client.GetByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -348,7 +348,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := h.client.GetWorkspace(r.Context(), workspaceID)
+	workspace, err := h.client.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -483,7 +483,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get workspace before updating to determine if it is connected or not.
-	ws, err := h.client.GetWorkspace(r.Context(), params.WorkspaceID)
+	ws, err := h.client.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -526,7 +526,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		opts.AgentPoolID = &params.AgentPoolID
 	}
 
-	ws, err = h.client.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	ws, err = h.client.Update(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -544,7 +544,7 @@ func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.client.DeleteWorkspace(r.Context(), workspaceID)
+	ws, err := h.client.Delete(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -560,7 +560,7 @@ func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.client.LockWorkspace(r.Context(), id, nil)
+	ws, err := h.client.Lock(r.Context(), id, nil)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -575,7 +575,7 @@ func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.client.UnlockWorkspace(r.Context(), workspaceID, nil, false)
+	ws, err := h.client.Unlock(r.Context(), workspaceID, nil, false)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -591,7 +591,7 @@ func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ws, err := h.client.UnlockWorkspace(r.Context(), workspaceID, nil, true)
+	ws, err := h.client.Unlock(r.Context(), workspaceID, nil, true)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -607,7 +607,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	ws, err := h.client.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.client.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -639,7 +639,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ws, err := h.client.GetWorkspace(r.Context(), params.WorkspaceID)
+	ws, err := h.client.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -679,7 +679,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.client.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
+	_, err := h.client.Update(r.Context(), params.WorkspaceID, UpdateOptions{
 		ConnectOptions: &ConnectOptions{
 			VCSProviderID: params.VCSProviderID,
 			RepoPath:      params.RepoPath,
@@ -701,7 +701,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.client.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
+	_, err = h.client.Update(r.Context(), workspaceID, UpdateOptions{
 		Disconnect: true,
 	})
 	if err != nil {

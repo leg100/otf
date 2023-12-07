@@ -41,7 +41,7 @@ type (
 	}
 
 	notifierWorkspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 	}
 
 	notifierRunClient interface {
@@ -156,7 +156,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 		// (b) add workspace info to run itself
 		if ws == nil {
 			var err error
-			ws, err = s.workspaces.GetWorkspace(ctx, r.WorkspaceID)
+			ws, err = s.workspaces.Get(ctx, r.WorkspaceID)
 			if err != nil {
 				return err
 			}

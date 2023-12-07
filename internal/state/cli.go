@@ -28,7 +28,7 @@ type cliStateService interface {
 }
 
 type cliWorkspaceService interface {
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
+	GetByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
@@ -67,7 +67,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 
 			// first retrieve workspace and current state version so that the
 			// user can be informed which state version is current
-			workspace, err := a.workspaces.GetWorkspaceByName(ctx, opts.Organization, opts.Workspace)
+			workspace, err := a.workspaces.GetByName(ctx, opts.Organization, opts.Workspace)
 			if err != nil {
 				return err
 			}

@@ -27,7 +27,7 @@ type (
 	}
 
 	factoryWorkspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 	}
 
 	factoryConfigClient interface {
@@ -48,7 +48,7 @@ type (
 
 // NewRun constructs a new run using the provided options.
 func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
-	ws, err := f.workspaces.GetWorkspace(ctx, workspaceID)
+	ws, err := f.workspaces.Get(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}

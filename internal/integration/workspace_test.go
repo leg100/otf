@@ -23,17 +23,17 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+		sub, unsub := daemon.Workspaces.Watch(ctx)
 		defer unsub()
 
-		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: internal.String(org.Name),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+			_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 				Name:         internal.String(ws.Name),
 				Organization: internal.String(org.Name),
 			})
@@ -49,7 +49,7 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org)
-		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -80,7 +80,7 @@ func TestWorkspace(t *testing.T) {
 		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org)
-		ws, err := svc.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -94,7 +94,7 @@ func TestWorkspace(t *testing.T) {
 		hook := <-svc.WebhookEvents
 		require.Equal(t, github.WebhookCreated, hook.Action)
 
-		_, err = svc.Workspaces.DeleteWorkspace(ctx, ws.ID)
+		_, err = svc.Workspaces.Delete(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// webhook should now have been deleted from github
@@ -131,13 +131,13 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+		sub, unsub := daemon.Workspaces.Watch(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 
-		got, err := daemon.Workspaces.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
+		got, err := daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
 			Description: internal.String("updated description"),
 		})
 		require.NoError(t, err)
@@ -146,7 +146,7 @@ func TestWorkspace(t *testing.T) {
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
-		want, err := daemon.Workspaces.GetWorkspace(ctx, ws.ID)
+		want, err := daemon.Workspaces.Get(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -155,7 +155,7 @@ func TestWorkspace(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createWorkspace(t, ctx, nil)
 
-		got, err := svc.Workspaces.GetWorkspace(ctx, want.ID)
+		got, err := svc.Workspaces.Get(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -164,7 +164,7 @@ func TestWorkspace(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createWorkspace(t, ctx, nil)
 
-		got, err := svc.Workspaces.GetWorkspaceByName(ctx, want.Organization, want.Name)
+		got, err := svc.Workspaces.GetByName(ctx, want.Organization, want.Name)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -173,7 +173,7 @@ func TestWorkspace(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
-		wsTagged, err := svc.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		wsTagged, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Organization: internal.String(org.Name),
 			Name:         internal.String("ws-tagged"),
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
@@ -254,7 +254,7 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// call endpoint using admin to avoid authz errors.
-				results, err := svc.Workspaces.ListWorkspaces(adminCtx, tt.opts)
+				results, err := svc.Workspaces.List(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -264,13 +264,13 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("list by tag", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
-		ws1, err := svc.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws1, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}},
 		})
 		require.NoError(t, err)
-		ws2, err := svc.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws2, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
@@ -309,7 +309,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := svc.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{
+				results, err := svc.Workspaces.List(ctx, workspace.ListOptions{
 					Organization: &org.Name,
 					Tags:         tt.tags,
 				})
@@ -387,7 +387,7 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				ctx := internal.AddSubjectToContext(ctx, tt.user)
-				results, err := svc.Workspaces.ListWorkspaces(ctx, tt.opts)
+				results, err := svc.Workspaces.List(ctx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -399,12 +399,12 @@ func TestWorkspace(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
 
-		got, err := svc.Workspaces.LockWorkspace(ctx, ws.ID, nil)
+		got, err := svc.Workspaces.Lock(ctx, ws.ID, nil)
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 
 		t.Run("unlock", func(t *testing.T) {
-			got, err := svc.Workspaces.UnlockWorkspace(ctx, ws.ID, nil, false)
+			got, err := svc.Workspaces.Unlock(ctx, ws.ID, nil, false)
 			require.NoError(t, err)
 			assert.False(t, got.Locked())
 		})
@@ -414,17 +414,17 @@ func TestWorkspace(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 
 		// watch workspace events
-		sub, unsub := daemon.Workspaces.WatchWorkspaces(ctx)
+		sub, unsub := daemon.Workspaces.Watch(ctx)
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 
-		_, err := daemon.Workspaces.DeleteWorkspace(ctx, ws.ID)
+		_, err := daemon.Workspaces.Delete(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
 
-		results, err := daemon.Workspaces.ListWorkspaces(ctx, workspace.ListOptions{Organization: internal.String(ws.Organization)})
+		results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{Organization: internal.String(ws.Organization)})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 	})

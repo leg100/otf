@@ -108,11 +108,11 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) WatchWorkspaces(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
+func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, error) {
 	ws, err := NewWorkspace(opts)
 	if err != nil {
 		s.Error(err, "constructing workspace")
@@ -172,7 +172,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) Get(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (s *Service) GetWorkspace(ctx context.Context, workspaceID string) (*Worksp
 	return ws, nil
 }
 
-func (s *Service) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (s *Service) GetByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	ws, err := s.db.getByName(ctx, organization, workspace)
 	if err != nil {
 		s.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
@@ -206,7 +206,7 @@ func (s *Service) GetWorkspaceByName(ctx context.Context, organization, workspac
 	return ws, nil
 }
 
-func (s *Service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
@@ -242,7 +242,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
 }
 
-func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
+func (s *Service) Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 	return updated, nil
 }
 
-func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) Delete(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err

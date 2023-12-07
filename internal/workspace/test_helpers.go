@@ -20,36 +20,36 @@ func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID
 	return f.Workspaces, nil
 }
 
-func (f *FakeService) CreateWorkspace(context.Context, CreateOptions) (*Workspace, error) {
+func (f *FakeService) Create(context.Context, CreateOptions) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) UpdateWorkspace(_ context.Context, _ string, opts UpdateOptions) (*Workspace, error) {
+func (f *FakeService) Update(_ context.Context, _ string, opts UpdateOptions) (*Workspace, error) {
 	f.Workspaces[0].Update(opts)
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+func (f *FakeService) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	return resource.NewPage(f.Workspaces, opts.PageOptions, nil), nil
 }
 
-func (f *FakeService) GetWorkspace(context.Context, string) (*Workspace, error) {
+func (f *FakeService) Get(context.Context, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) GetWorkspaceByName(context.Context, string, string) (*Workspace, error) {
+func (f *FakeService) GetByName(context.Context, string, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) DeleteWorkspace(context.Context, string) (*Workspace, error) {
+func (f *FakeService) Delete(context.Context, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) LockWorkspace(context.Context, string, *string) (*Workspace, error) {
+func (f *FakeService) Lock(context.Context, string, *string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) UnlockWorkspace(context.Context, string, *string, bool) (*Workspace, error) {
+func (f *FakeService) Unlock(context.Context, string, *string, bool) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 

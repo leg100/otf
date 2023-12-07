@@ -13,7 +13,7 @@ type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (c *Client) GetByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -26,7 +26,7 @@ func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace
 	return &ws, nil
 }
 
-func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (c *Client) Get(ctx context.Context, workspaceID string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -39,7 +39,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspa
 	return &ws, nil
 }
 
-func (c *Client) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+func (c *Client) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*opts.Organization))
 	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {
@@ -52,7 +52,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, opts ListOptions) (*resourc
 	return &page, nil
 }
 
-func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
+func (c *Client) Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
 	// Pre-emptively validate options
 	if _, err := (&Workspace{}).Update(opts); err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, opts U
 	return &ws, nil
 }
 
-func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
+func (c *Client) Lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.NewRequest("POST", path, nil)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *s
 	return &ws, nil
 }
 
-func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
+func (c *Client) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
 	var u string
 	if force {
 		u = fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)

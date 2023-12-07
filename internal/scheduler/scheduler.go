@@ -31,10 +31,10 @@ type (
 	}
 
 	workspaceClient interface {
-		ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		WatchWorkspaces(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
-		LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error)
-		UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error)
+		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
+		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
+		Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error)
+		Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error)
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error)
 	}
 
@@ -69,7 +69,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	s.queues = make(map[string]eventHandler)
 
 	// subscribe to workspace events
-	subWorkspaces, unsubWorkspaces := s.workspaces.WatchWorkspaces(ctx)
+	subWorkspaces, unsubWorkspaces := s.workspaces.Watch(ctx)
 	defer unsubWorkspaces()
 
 	// subscribe to run events
@@ -78,7 +78,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 
 	// retrieve all existing workspaces
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return s.workspaces.ListWorkspaces(ctx, workspace.ListOptions{
+		return s.workspaces.List(ctx, workspace.ListOptions{
 			PageOptions: opts,
 		})
 	})

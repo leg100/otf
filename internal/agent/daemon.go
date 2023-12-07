@@ -108,13 +108,14 @@ func newDaemon(opts DaemonOptions) (*daemon, error) {
 		opts.Logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &daemon{
-		envs:        DefaultEnvs,
-		downloader:  releases.NewDownloader(opts.Config.TerraformBinDir),
-		registered:  make(chan *Agent),
-		config:      opts.Config,
-		poolLogger:  poolLogger,
-		logger:      opts.Logger,
-		isPoolAgent: opts.isPoolAgent,
+		daemonClient: opts.client,
+		envs:         DefaultEnvs,
+		downloader:   releases.NewDownloader(opts.Config.TerraformBinDir),
+		registered:   make(chan *Agent),
+		config:       opts.Config,
+		poolLogger:   poolLogger,
+		logger:       opts.Logger,
+		isPoolAgent:  opts.isPoolAgent,
 	}
 	if opts.Config.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {

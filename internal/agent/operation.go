@@ -150,7 +150,7 @@ func (o *operation) do() error {
 	//
 	// TODO: add working directory to run.Run so we skip having to retrieve
 	// workspace.
-	ws, err := o.workspaces.GetWorkspace(o.ctx, o.job.WorkspaceID)
+	ws, err := o.workspaces.Get(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}

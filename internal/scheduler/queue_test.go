@@ -169,14 +169,14 @@ func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*otf
 	return f.runs[runID], nil
 }
 
-func (f *fakeQueueServices) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
+func (f *fakeQueueServices) Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
 	if err := f.ws.Enlock(*runID, workspace.RunLock); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeQueueServices) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
+func (f *fakeQueueServices) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
 	if err := f.ws.Unlock(*runID, workspace.RunLock, false); err != nil {
 		return nil, err
 	}

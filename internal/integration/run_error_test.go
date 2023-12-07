@@ -42,7 +42,7 @@ func TestRunError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create workspace
-			ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 				Name:          internal.String("ws-" + string(tt.mode)),
 				Organization:  internal.String(org.Name),
 				ExecutionMode: workspace.ExecutionModePtr(tt.mode),

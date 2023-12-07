@@ -40,7 +40,7 @@ type (
 	}
 
 	webWorkspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
 	}
 )
@@ -98,7 +98,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.workspaces.GetWorkspace(r.Context(), params.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -157,7 +157,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.workspaces.GetWorkspace(r.Context(), run.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

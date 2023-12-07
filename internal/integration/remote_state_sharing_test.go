@@ -20,7 +20,7 @@ func TestRemoteStateSharing(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 	// producer is the workspace sharing its state
-	producer, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+	producer, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:              internal.String("producer"),
 		Organization:      internal.String(org.Name),
 		GlobalRemoteState: internal.Bool(true),

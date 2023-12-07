@@ -30,7 +30,7 @@ type (
 	}
 
 	reporterWorkspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 	}
 
 	reporterConfigClient interface {
@@ -80,7 +80,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	ws, err := r.Workspaces.GetWorkspace(ctx, run.WorkspaceID)
+	ws, err := r.Workspaces.Get(ctx, run.WorkspaceID)
 	if err != nil {
 		return err
 	}

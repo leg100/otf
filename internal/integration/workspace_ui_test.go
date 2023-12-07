@@ -77,7 +77,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		matchText(t, "//div[@role='alert']", "updated workspace"),
 	})
 	// check UI has correctly updated the workspace resource
-	ws, err := daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	ws, err := daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Len(t, ws.TriggerPatterns, 2)
 	require.Contains(t, ws.TriggerPatterns, "/foo/*.tf")
@@ -103,7 +103,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.WaitVisible(`input#tags-regex-prefix:checked`, chromedp.ByQuery),
 	})
 	// check UI has correctly updated the workspace resource
-	ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Len(t, ws.TriggerPatterns, 0)
 	require.NotNil(t, ws.Connection)
@@ -125,7 +125,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		matchText(t, "//div[@role='alert']", "updated workspace"),
 	})
 	// check UI has correctly updated the workspace resource
-	ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Equal(t, "dev", ws.Connection.Branch)
 
@@ -142,7 +142,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.WaitVisible(`input#allow-cli-apply:checked`, chromedp.ByQuery),
 	})
 	// check UI has correctly updated the workspace resource
-	ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Equal(t, true, ws.Connection.AllowCLIApply)
 
@@ -162,7 +162,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.WaitVisible(`//textarea[@id='description' and text()='my big fat workspace']`),
 	})
 	// check UI has correctly updated the workspace resource
-	ws, err = daemon.Workspaces.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Equal(t, "my big fat workspace", ws.Description)
 }

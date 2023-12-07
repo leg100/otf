@@ -43,7 +43,7 @@ func TestRun(t *testing.T) {
 		)
 		org := daemon.createOrganization(t, ctx)
 		vcsProvider := daemon.createVCSProvider(t, ctx, org)
-		ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String("connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{

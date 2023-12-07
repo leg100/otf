@@ -79,16 +79,15 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger: opts.Logger,
+		Logger:              opts.Logger,
+		workspaces:          opts.WorkspaceService,
+		db:                  db,
+		cache:               opts.Cache,
+		site:                &internal.SiteAuthorizer{Logger: opts.Logger},
+		organization:        &organization.Authorizer{Logger: opts.Logger},
+		workspaceAuthorizer: opts.WorkspaceAuthorizer,
+		authorizer:          &authorizer{db, opts.WorkspaceAuthorizer},
 	}
-
-	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
-	svc.organization = &organization.Authorizer{Logger: opts.Logger}
-	svc.workspaceAuthorizer = opts.WorkspaceAuthorizer
-	svc.authorizer = &authorizer{db, opts.WorkspaceAuthorizer}
-
-	svc.cache = opts.Cache
-	svc.db = db
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
 		workspaces:    opts.WorkspaceService,
@@ -202,7 +201,7 @@ func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 		authErr error
 	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {
-		workspace, err := s.workspaces.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
+		workspace, err := s.workspaces.GetByName(ctx, *opts.Organization, *opts.WorkspaceName)
 		if err != nil {
 			return nil, err
 		}

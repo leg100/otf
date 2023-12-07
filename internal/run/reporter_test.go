@@ -95,7 +95,7 @@ type fakeReporterWorkspaceService struct {
 	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeReporterWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

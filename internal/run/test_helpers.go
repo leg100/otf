@@ -64,7 +64,7 @@ func (f *fakeWebServices) GetWorkspaceByName(context.Context, string, string) (*
 	return f.ws, nil
 }
 
-func (f *fakeWebServices) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeWebServices) Get(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

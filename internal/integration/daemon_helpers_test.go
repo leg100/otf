@@ -174,7 +174,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 		org = s.createOrganization(t, ctx)
 	}
 
-	ws, err := s.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := s.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String("workspace-" + internal.GenerateRandomString(6)),
 		Organization: &org.Name,
 	})
@@ -185,7 +185,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID string) *workspace.Workspace {
 	t.Helper()
 
-	ws, err := s.Workspaces.GetWorkspace(ctx, workspaceID)
+	ws, err := s.Workspaces.Get(ctx, workspaceID)
 	require.NoError(t, err)
 	return ws
 }

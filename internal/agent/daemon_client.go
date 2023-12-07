@@ -43,7 +43,7 @@ type (
 	}
 
 	workspaceClient interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 	}
 
 	variablesClient interface {

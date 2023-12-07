@@ -133,7 +133,7 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	ws, err := a.workspaces.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
+	ws, err := a.workspaces.GetByName(r.Context(), opts.Organization, opts.Workspace)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -20,7 +20,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 
 	// Create a workspace with auto-apply enabled
 	daemon, org, ctx := setup(t, nil)
-	ws, err := daemon.Workspaces.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String(t.Name()),
 		Organization: internal.String(org.Name),
 		AutoApply:    internal.Bool(true),
