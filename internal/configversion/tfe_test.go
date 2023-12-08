@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,7 @@ import (
 
 func TestUploadConfigurationVersion(t *testing.T) {
 	api := &tfe{
+		Logger: logr.Discard(),
 		// only permit upto 100 byte uploads
 		maxConfigSize: 100,
 		tfeClient:     &fakeConfigService{},
