@@ -19,20 +19,20 @@ type (
 	// cliService provides the cli with access to organizations
 	cliService interface {
 		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
-		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
+		Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
+		Get(ctx context.Context, name string) (*Organization, error)
+		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
 		AfterCreateOrganization(hook func(context.Context, *Organization) error)
 		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
 
 		// organization tokens
-		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
+		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
 		// GetOrganizationToken gets the organization token. If a token does not
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
-		DeleteOrganizationToken(ctx context.Context, organization string) error
+		DeleteToken(ctx context.Context, organization string) error
 		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}

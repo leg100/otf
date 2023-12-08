@@ -99,10 +99,10 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	require.NoError(t, err)
 
 	// watch run events
-	runsSub, runsUnsub := daemon.Runs.WatchRuns(ctx)
+	runsSub, runsUnsub := daemon.Runs.Watch(ctx)
 	defer runsUnsub()
 
-	_, err = daemon.Runs.CreateRun(ctx, ws.ID, run.CreateOptions{})
+	_, err = daemon.Runs.Create(ctx, ws.ID, run.CreateOptions{})
 	require.NoError(t, err)
 
 	for event := range runsSub {

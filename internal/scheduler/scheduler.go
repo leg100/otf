@@ -39,8 +39,8 @@ type (
 	}
 
 	runClient interface {
-		ListRuns(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
-		WatchRuns(context.Context) (<-chan pubsub.Event[*run.Run], func())
+		List(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
+		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
 		EnqueuePlan(ctx context.Context, runID string) (*run.Run, error)
 	}
 
@@ -73,7 +73,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	defer unsubWorkspaces()
 
 	// subscribe to run events
-	subRuns, unsubRuns := s.runs.WatchRuns(ctx)
+	subRuns, unsubRuns := s.runs.Watch(ctx)
 	defer unsubRuns()
 
 	// retrieve all existing workspaces
@@ -87,7 +87,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 	// retrieve all incomplete runs
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
-		return s.runs.ListRuns(ctx, run.ListOptions{
+		return s.runs.List(ctx, run.ListOptions{
 			Statuses:    run.IncompleteRun,
 			PageOptions: opts,
 		})

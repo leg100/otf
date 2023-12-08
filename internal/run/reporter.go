@@ -34,7 +34,7 @@ type (
 	}
 
 	reporterConfigClient interface {
-		GetConfigurationVersion(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
@@ -42,14 +42,14 @@ type (
 	}
 
 	reporterRunClient interface {
-		WatchRuns(context.Context) (<-chan pubsub.Event[*Run], func())
+		Watch(context.Context) (<-chan pubsub.Event[*Run], func())
 	}
 )
 
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
 	// subscribe to run events
-	sub, unsub := r.Runs.WatchRuns(ctx)
+	sub, unsub := r.Runs.Watch(ctx)
 	defer unsub()
 
 	for event := range sub {
@@ -70,7 +70,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	cv, err := r.Configs.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
+	cv, err := r.Configs.Get(ctx, run.ConfigurationVersionID)
 	if err != nil {
 		return err
 	}

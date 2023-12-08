@@ -19,21 +19,21 @@ type (
 	web struct {
 		html.Renderer
 
-		svc                          webService
-		RestrictOrganizationCreation bool
+		svc              webService
+		RestrictCreation bool
 	}
 
 	// webService provides the web app with access to organizations
 	webService interface {
-		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
-		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
-		DeleteOrganization(ctx context.Context, name string) error
+		Create(ctx context.Context, opts CreateOptions) (*Organization, error)
+		Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
+		Get(ctx context.Context, name string) (*Organization, error)
+		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
+		Delete(ctx context.Context, name string) error
 
-		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		ListOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error)
-		DeleteOrganizationToken(ctx context.Context, organization string) error
+		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
+		ListTokens(ctx context.Context, organization string) ([]*OrganizationToken, error)
+		DeleteToken(ctx context.Context, organization string) error
 	}
 
 	// OrganizationPage contains data shared by all organization-based pages.
@@ -82,7 +82,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.CreateOrganization(r.Context(), opts)
+	org, err := a.svc.Create(r.Context(), opts)
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)
@@ -106,7 +106,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organizations, err := a.svc.ListOrganizations(r.Context(), ListOptions{
+	organizations, err := a.svc.List(r.Context(), ListOptions{
 		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
 			PageSize:   html.PageSize,
@@ -126,7 +126,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var canCreate bool
-	if !a.RestrictOrganizationCreation || subject.CanAccessSite(rbac.CreateOrganizationAction) {
+	if !a.RestrictCreation || subject.CanAccessSite(rbac.CreateOrganizationAction) {
 		canCreate = true
 	}
 
@@ -148,7 +148,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.GetOrganization(r.Context(), name)
+	org, err := a.svc.Get(r.Context(), name)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -170,7 +170,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.GetOrganization(r.Context(), name)
+	org, err := a.svc.Get(r.Context(), name)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -195,7 +195,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.UpdateOrganization(r.Context(), params.Name, UpdateOptions{
+	org, err := a.svc.Update(r.Context(), params.Name, UpdateOptions{
 		Name: &params.UpdatedName,
 	})
 	if err != nil {
@@ -214,7 +214,7 @@ func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.svc.DeleteOrganization(r.Context(), organization)
+	err = a.svc.Delete(r.Context(), organization)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -234,7 +234,7 @@ func (a *web) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	_, token, err := a.svc.CreateOrganizationToken(r.Context(), opts)
+	_, token, err := a.svc.CreateToken(r.Context(), opts)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -254,7 +254,7 @@ func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// ListOrganizationTokens should only ever return either 0 or 1 token
-	tokens, err := a.svc.ListOrganizationTokens(r.Context(), org)
+	tokens, err := a.svc.ListTokens(r.Context(), org)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -278,7 +278,7 @@ func (a *web) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := a.svc.DeleteOrganizationToken(r.Context(), organization); err != nil {
+	if err := a.svc.DeleteToken(r.Context(), organization); err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

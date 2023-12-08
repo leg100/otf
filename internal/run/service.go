@@ -151,11 +151,11 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
+func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
 	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -176,8 +176,8 @@ func (s *Service) CreateRun(ctx context.Context, workspaceID string, opts Create
 	return run, nil
 }
 
-// GetRun retrieves a run from the db.
-func (s *Service) GetRun(ctx context.Context, runID string) (*Run, error) {
+// Get retrieves a run from the db.
+func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -193,9 +193,9 @@ func (s *Service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return run, nil
 }
 
-// ListRuns retrieves multiple runs. Use opts to filter and paginate the
+// List retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (s *Service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
+func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	var (
 		subject internal.Subject
 		authErr error
@@ -339,8 +339,9 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 	return run, nil
 }
 
-// Watch provides authenticated access to a stream of run events.
-func (s *Service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
+// WatchWithOptions provides authenticated access to a stream of run events,
+// with the option to filter events.
+func (s *Service) WatchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
@@ -412,8 +413,8 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 	s.afterEnqueueApplyHooks = append(s.afterEnqueueApplyHooks, hook)
 }
 
-// DiscardRun discards the run.
-func (s *Service) DiscardRun(ctx context.Context, runID string) error {
+// Discard discards the run.
+func (s *Service) Discard(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -467,8 +468,8 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 	s.afterCancelHooks = append(s.afterCancelHooks, hook)
 }
 
-// ForceCancelRun forcefully cancels a run.
-func (s *Service) ForceCancelRun(ctx context.Context, runID string) error {
+// ForceCancel forcefully cancels a run.
+func (s *Service) ForceCancel(ctx context.Context, runID string) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
 		if err != nil {
@@ -606,7 +607,7 @@ func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) err
 	// Auto queue a run only if configured on the worspace and the workspace is
 	// a connected to a VCS repo.
 	if ws.QueueAllRuns && ws.Connection != nil {
-		_, err := s.CreateRun(ctx, ws.ID, CreateOptions{})
+		_, err := s.Create(ctx, ws.ID, CreateOptions{})
 		if err != nil {
 			return err
 		}

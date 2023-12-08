@@ -54,21 +54,15 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	}
 
 	return &webHandlers{
-		Renderer:   renderer,
-		workspaces: &svc,
-		runs:       &svc,
+		Renderer: renderer,
+		workspaces: &workspace.FakeService{
+			Workspaces: []*workspace.Workspace{svc.ws},
+		},
+		runs: &svc,
 	}
 }
 
-func (f *fakeWebServices) GetWorkspaceByName(context.Context, string, string) (*workspace.Workspace, error) {
-	return f.ws, nil
-}
-
-func (f *fakeWebServices) Get(context.Context, string) (*workspace.Workspace, error) {
-	return f.ws, nil
-}
-
-func (f *fakeWebServices) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
+func (f *fakeWebServices) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
 	return f.runs[0], nil
 }
 
@@ -76,7 +70,7 @@ func (f *fakeWebServices) GetPolicy(context.Context, string) (internal.Workspace
 	return internal.WorkspacePolicy{}, nil
 }
 
-func (f *fakeWebServices) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
+func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
@@ -86,7 +80,7 @@ func (f *fakeWebServices) getLogs(context.Context, string, internal.PhaseType) (
 
 func (f *fakeWebServices) Cancel(context.Context, string) error { return nil }
 
-func (f *fakeWebServices) GetRun(ctx context.Context, runID string) (*Run, error) {
+func (f *fakeWebServices) Get(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil
 }
 

@@ -115,9 +115,9 @@ func TestWeb_ListHandler(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				svc := &web{
-					svc:                          &fakeWebService{},
-					Renderer:                     testutils.NewRenderer(t),
-					RestrictOrganizationCreation: tt.restrict,
+					svc:              &fakeWebService{},
+					Renderer:         testutils.NewRenderer(t),
+					RestrictCreation: tt.restrict,
 				}
 				r := httptest.NewRequest("GET", "/?", nil)
 				r = r.WithContext(internal.AddSubjectToContext(context.Background(), tt.subject))
@@ -167,15 +167,15 @@ type (
 	}
 )
 
-func (f *fakeWebService) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
+func (f *fakeWebService) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
 	return NewOrganization(opts)
 }
 
-func (f *fakeWebService) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
+func (f *fakeWebService) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebService) DeleteOrganization(context.Context, string) error {
+func (f *fakeWebService) Delete(context.Context, string) error {
 	return nil
 }
 

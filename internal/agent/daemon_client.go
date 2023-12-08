@@ -35,7 +35,7 @@ type (
 	// InProcClient is a client for in-process communication with the server.
 
 	runClient interface {
-		GetRun(ctx context.Context, runID string) (*run.Run, error)
+		Get(ctx context.Context, runID string) (*run.Run, error)
 		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
 		UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
 		GetLockFile(ctx context.Context, id string) ([]byte, error)

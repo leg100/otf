@@ -170,7 +170,7 @@ func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv 
 	}
 }
 
-func (f *fakeFactoryOrganizationService) GetOrganization(context.Context, string) (*organization.Organization, error) {
+func (f *fakeFactoryOrganizationService) Get(context.Context, string) (*organization.Organization, error) {
 	return f.org, nil
 }
 
@@ -178,15 +178,15 @@ func (f *fakeFactoryWorkspaceService) Get(context.Context, string) (*workspace.W
 	return f.ws, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) Get(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetLatestConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) CreateConfigurationVersion(context.Context, string, configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) Create(context.Context, string, configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
 	return &configversion.ConfigurationVersion{ID: "created"}, nil
 }
 

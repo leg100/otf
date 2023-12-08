@@ -24,7 +24,7 @@ func TestIntegration_TerraformCLICancel(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// watch run events
-	runsSub, runsUnsub := svc.Runs.WatchRuns(ctx)
+	runsSub, runsUnsub := svc.Runs.Watch(ctx)
 	defer runsUnsub()
 
 	// Canceling a run is not straight-forward, because to do so reliably the

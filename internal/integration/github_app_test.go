@@ -244,7 +244,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sub, unsub := daemon.Runs.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 
 	// send event

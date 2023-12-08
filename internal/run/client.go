@@ -89,7 +89,7 @@ func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page
 	return &list, nil
 }
 
-func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
+func (c *Client) Get(ctx context.Context, runID string) (*Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {

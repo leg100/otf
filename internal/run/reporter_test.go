@@ -85,7 +85,7 @@ type fakeReporterConfigurationVersionService struct {
 	cv *configversion.ConfigurationVersion
 }
 
-func (f *fakeReporterConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeReporterConfigurationVersionService) Get(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 

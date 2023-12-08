@@ -29,9 +29,9 @@ type (
 	}
 
 	spawnerConfigClient interface {
-		CreateConfigurationVersion(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error)
-		GetConfigurationVersion(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
-		GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
+		Create(ctx context.Context, workspaceID string, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id string, config []byte) error
 	}
 
@@ -40,7 +40,7 @@ type (
 	}
 
 	spawnerRunClient interface {
-		CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
 	}
 )
 
@@ -178,7 +178,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 
 	// create a config version for each workspace and spawn run.
 	for _, ws := range workspaces {
-		cvOpts := configversion.ConfigurationVersionCreateOptions{
+		cvOpts := configversion.CreateOptions{
 			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
@@ -210,7 +210,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			cvOpts.Source = configversion.SourceGitlab
 			runOpts.Source = SourceGitlab
 		}
-		cv, err := s.configs.CreateConfigurationVersion(ctx, ws.ID, cvOpts)
+		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
 		if err != nil {
 			return err
 		}
@@ -218,7 +218,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			return err
 		}
 		runOpts.ConfigurationVersionID = internal.String(cv.ID)
-		_, err = s.runs.CreateRun(ctx, ws.ID, runOpts)
+		_, err = s.runs.Create(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err
 		}

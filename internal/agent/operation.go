@@ -140,7 +140,7 @@ func (o *operation) do() error {
 	// make token available to terraform CLI
 	o.envs = append(o.envs, internal.CredentialEnv(o.server.Hostname(), o.token))
 
-	run, err := o.runs.GetRun(o.ctx, o.job.Spec.RunID)
+	run, err := o.runs.Get(o.ctx, o.job.Spec.RunID)
 	if err != nil {
 		return err
 	}

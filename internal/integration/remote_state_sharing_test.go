@@ -40,7 +40,7 @@ func TestRemoteStateSharing(t *testing.T) {
 	err = daemon.Configs.UploadConfig(ctx, producerCV.ID, tarball)
 	require.NoError(t, err)
 	// listen to run events, and create run and apply
-	sub, unsub := daemon.Runs.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 	_ = daemon.createRun(t, ctx, producer, producerCV)
 applied:

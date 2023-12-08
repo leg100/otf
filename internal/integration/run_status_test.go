@@ -28,7 +28,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// watch run events
-	sub, unsub := daemon.Runs.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 
 	// directory for root module

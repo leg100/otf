@@ -41,7 +41,7 @@ type (
 	}
 
 	runClient interface {
-		GetRun(ctx context.Context, runID string) (*run.Run, error)
+		Get(ctx context.Context, runID string) (*run.Run, error)
 	}
 )
 
@@ -78,7 +78,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error) {
-	run, err := s.runs.GetRun(ctx, runID)
+	run, err := s.runs.Get(ctx, runID)
 	if err != nil {
 		return nil, err
 	}

@@ -217,7 +217,7 @@ type fakeSpawnerRunClient struct {
 	spawned bool
 }
 
-func (f *fakeSpawnerRunClient) CreateRun(context.Context, string, CreateOptions) (*Run, error) {
+func (f *fakeSpawnerRunClient) Create(context.Context, string, CreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }

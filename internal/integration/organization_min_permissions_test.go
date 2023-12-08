@@ -31,7 +31,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Guest should be able to get org
-	_, err = svc.Organizations.GetOrganization(guestCtx, org.Name)
+	_, err = svc.Organizations.Get(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list teams

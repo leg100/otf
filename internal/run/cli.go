@@ -20,7 +20,7 @@ type CLI struct {
 }
 
 type cliClient interface {
-	GetRun(ctx context.Context, runID string) (*Run, error)
+	Get(ctx context.Context, runID string) (*Run, error)
 }
 
 type cliConfigsClient interface {
@@ -55,7 +55,7 @@ func (a *CLI) runDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			run, err := a.client.GetRun(cmd.Context(), args[0])
+			run, err := a.client.Get(cmd.Context(), args[0])
 			if err != nil {
 				return errors.Wrap(err, "retrieving run")
 			}

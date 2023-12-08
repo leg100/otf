@@ -6,15 +6,15 @@ type FakeService struct {
 	cv *ConfigurationVersion
 }
 
-func (f *FakeService) GetConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
+func (f *FakeService) Get(context.Context, string) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *FakeService) GetLatestConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
+func (f *FakeService) GetLatest(context.Context, string) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *FakeService) CreateConfigurationVersion(context.Context, string, ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func (f *FakeService) Create(context.Context, string, CreateOptions) (*ConfigurationVersion, error) {
 	return &ConfigurationVersion{ID: "created"}, nil
 }
 

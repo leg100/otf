@@ -18,7 +18,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 
-	ot, token, err := daemon.Organizations.CreateOrganizationToken(ctx, organization.CreateOrganizationTokenOptions{
+	ot, token, err := daemon.Organizations.CreateToken(ctx, organization.CreateOrganizationTokenOptions{
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	assert.Equal(t, 3, len(got.Items))
 
 	// re-generate token
-	_, _, err = daemon.Organizations.CreateOrganizationToken(ctx, organization.CreateOrganizationTokenOptions{
+	_, _, err = daemon.Organizations.CreateToken(ctx, organization.CreateOrganizationTokenOptions{
 		Organization: org.Name,
 	})
 	require.NoError(t, err)

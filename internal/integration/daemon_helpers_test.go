@@ -160,7 +160,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.Organizations.CreateOrganization(ctx, organization.CreateOptions{
+	org, err := s.Organizations.Create(ctx, organization.CreateOptions{
 		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
@@ -281,22 +281,22 @@ func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string
 	return team
 }
 
-func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
+func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.CreateOptions) *configversion.ConfigurationVersion {
 	t.Helper()
 
 	if ws == nil {
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 	if opts == nil {
-		opts = &configversion.ConfigurationVersionCreateOptions{}
+		opts = &configversion.CreateOptions{}
 	}
 
-	cv, err := s.Configs.CreateConfigurationVersion(ctx, ws.ID, *opts)
+	cv, err := s.Configs.Create(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return cv
 }
 
-func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
+func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.CreateOptions) *configversion.ConfigurationVersion {
 	cv := s.createConfigurationVersion(t, ctx, ws, opts)
 	tarball, err := os.ReadFile("./testdata/root.tar.gz")
 	require.NoError(t, err)
@@ -315,7 +315,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
 
-	run, err := s.Runs.CreateRun(ctx, ws.ID, run.CreateOptions{
+	run, err := s.Runs.Create(ctx, ws.ID, run.CreateOptions{
 		ConfigurationVersionID: internal.String(cv.ID),
 	})
 	require.NoError(t, err)

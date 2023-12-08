@@ -27,15 +27,16 @@ type (
 	}
 
 	webRunClient interface {
-		CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
-		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		GetRun(ctx context.Context, id string) (*Run, error)
+		Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
+		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
+		Get(ctx context.Context, id string) (*Run, error)
 		Delete(ctx context.Context, runID string) error
 		Cancel(ctx context.Context, runID string) error
-		ForceCancelRun(ctx context.Context, runID string) error
+		ForceCancel(ctx context.Context, runID string) error
 		Apply(ctx context.Context, runID string) error
-		DiscardRun(ctx context.Context, runID string) error
-		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
+		Discard(ctx context.Context, runID string) error
+		WatchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
+
 		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 	}
 
@@ -74,7 +75,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.runs.CreateRun(r.Context(), params.WorkspaceID, CreateOptions{
+	run, err := h.runs.Create(r.Context(), params.WorkspaceID, CreateOptions{
 		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
 		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
 		Source:    SourceUI,
@@ -108,7 +109,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.runs.ListRuns(r.Context(), ListOptions{
+	runs, err := h.runs.List(r.Context(), ListOptions{
 		WorkspaceID: &params.WorkspaceID,
 		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
@@ -152,7 +153,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.runs.GetRun(r.Context(), runID)
+	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -197,7 +198,7 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.runs.GetRun(r.Context(), runID)
+	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -215,7 +216,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.runs.GetRun(r.Context(), runID)
+	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -250,7 +251,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.runs.ForceCancelRun(r.Context(), runID); err != nil {
+	if err := h.runs.ForceCancel(r.Context(), runID); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -280,7 +281,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.runs.DiscardRun(r.Context(), runID)
+	err = h.runs.Discard(r.Context(), runID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -295,13 +296,13 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.runs.GetRun(r.Context(), runID)
+	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	run, err = h.runs.CreateRun(r.Context(), run.WorkspaceID, CreateOptions{
+	run, err = h.runs.Create(r.Context(), run.WorkspaceID, CreateOptions{
 		ConfigurationVersionID: &run.ConfigurationVersionID,
 		IsDestroy:              &run.IsDestroy,
 		PlanOnly:               &run.PlanOnly,
@@ -327,7 +328,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := h.runs.Watch(r.Context(), WatchOptions{
+	events, err := h.runs.WatchWithOptions(r.Context(), WatchOptions{
 		WorkspaceID: internal.String(params.WorkspaceID),
 	})
 	if err != nil {

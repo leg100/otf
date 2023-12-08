@@ -45,7 +45,7 @@ type (
 	}
 
 	notifierRunClient interface {
-		WatchRuns(context.Context) (<-chan pubsub.Event[*run.Run], func())
+		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
 	}
 
 	notifierNotificationClient interface {
@@ -71,7 +71,7 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 // Start the notifier daemon. Should be started in a go-routine.
 func (s *Notifier) Start(ctx context.Context) error {
 	// subscribe to both run events and notification config events
-	subRuns, unsubRuns := s.runs.WatchRuns(ctx)
+	subRuns, unsubRuns := s.runs.Watch(ctx)
 	defer unsubRuns()
 	subConfigs, unsubConfigs := s.notifications.WatchNotificationConfigurations(ctx)
 	defer unsubConfigs()

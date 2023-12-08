@@ -49,7 +49,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		sub, unsub := daemon.Runs.WatchRuns(ctx)
+		sub, unsub := daemon.Runs.Watch(ctx)
 		defer unsub()
 
 		created, err := tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
@@ -68,7 +68,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 			case run.RunPlanned:
 				// run should have planned two resources (defined in the config from the
 				// github repo)
-				planned, err := daemon.Runs.GetRun(ctx, created.ID)
+				planned, err := daemon.Runs.Get(ctx, created.ID)
 				require.NoError(t, err)
 
 				assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)

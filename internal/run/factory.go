@@ -23,7 +23,7 @@ type (
 	}
 
 	factoryOrganizationClient interface {
-		GetOrganization(ctx context.Context, name string) (*organization.Organization, error)
+		Get(ctx context.Context, name string) (*organization.Organization, error)
 	}
 
 	factoryWorkspaceClient interface {
@@ -31,9 +31,9 @@ type (
 	}
 
 	factoryConfigClient interface {
-		CreateConfigurationVersion(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error)
-		GetConfigurationVersion(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
-		GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
+		Create(ctx context.Context, workspaceID string, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
 		UploadConfig(ctx context.Context, id string, config []byte) error
 	}
 
@@ -52,7 +52,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOpt
 	if err != nil {
 		return nil, err
 	}
-	org, err := f.organizations.GetOrganization(ctx, ws.Organization)
+	org, err := f.organizations.Get(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +72,9 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOpt
 	// 	(ii) connected: same behaviour as (a): vcs repo contents are retrieved.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
-		cv, err = f.configs.GetConfigurationVersion(ctx, *opts.ConfigurationVersionID)
+		cv, err = f.configs.Get(ctx, *opts.ConfigurationVersionID)
 	} else if ws.Connection == nil {
-		cv, err = f.configs.GetLatestConfigurationVersion(ctx, workspaceID)
+		cv, err = f.configs.GetLatest(ctx, workspaceID)
 	} else {
 		cv, err = f.createConfigVersionFromVCS(ctx, ws)
 	}
@@ -111,7 +111,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, fmt.Errorf("retrieving commit information: %s: %w", ref, err)
 	}
-	cv, err := f.configs.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+	cv, err := f.configs.Create(ctx, ws.ID, configversion.CreateOptions{
 		IngressAttributes: &configversion.IngressAttributes{
 			Branch:          branch,
 			CommitSHA:       commit.SHA,
