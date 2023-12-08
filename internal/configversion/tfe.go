@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
@@ -23,6 +24,7 @@ import (
 type tfe struct {
 	tfeClient
 
+	logr.Logger
 	*surl.Signer
 	*tfeapi.Responder
 
@@ -155,6 +157,11 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 					Code:    422,
 					Message: fmt.Sprintf("config exceeds maximum size (%d bytes)", a.maxConfigSize),
 				})
+				// Terraform CLI only informs the user that an HTTP 422 response
+				// was received, and they aren't informed that their config
+				// exceeds the max size. To help them diagnose the cause, the
+				// error is logged on the server side too.
+				a.Error(err, "uploaded config exceeds max size", "bytes", a.maxConfigSize)
 			} else {
 				tfeapi.Error(w, err)
 			}

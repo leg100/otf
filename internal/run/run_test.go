@@ -215,14 +215,14 @@ func TestRun_States(t *testing.T) {
 		err := run.Cancel(true, false)
 		require.NoError(t, err)
 		err = run.Cancel(true, false)
-		assert.Equal(t, internal.ErrRunCancelNotAllowed, err)
+		assert.Equal(t, ErrRunCancelNotAllowed, err)
 	})
 
 	t.Run("cannot force cancel a run when no previous attempt has been made to cancel run gracefully", func(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
 		err := run.Cancel(true, true)
-		assert.Equal(t, internal.ErrRunForceCancelNotAllowed, err)
+		assert.Equal(t, ErrRunForceCancelNotAllowed, err)
 	})
 
 	t.Run("force cancel run when graceful cancel has already been attempted and cool off period has elapsed", func(t *testing.T) {
@@ -240,7 +240,7 @@ func TestRun_States(t *testing.T) {
 		run := newTestRun(ctx, CreateOptions{})
 		run.Status = RunPlanning
 		err := run.Cancel(false, true)
-		assert.Equal(t, internal.ErrRunForceCancelNotAllowed, err)
+		assert.Equal(t, ErrRunForceCancelNotAllowed, err)
 	})
 }
 

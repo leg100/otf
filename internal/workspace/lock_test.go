@@ -25,14 +25,14 @@ func TestWorkspace_Lock(t *testing.T) {
 	t.Run("user cannot lock a locked workspace", func(t *testing.T) {
 		ws := &Workspace{Lock: &Lock{id: "run-123", LockKind: RunLock}}
 		err := ws.Enlock("janitor", UserLock)
-		require.Equal(t, internal.ErrWorkspaceAlreadyLocked, err)
+		require.Equal(t, ErrWorkspaceAlreadyLocked, err)
 	})
 }
 
 func TestWorkspace_Unlock(t *testing.T) {
 	t.Run("cannot unlock workspace already unlocked", func(t *testing.T) {
 		err := (&Workspace{}).Unlock("janitor", UserLock, false)
-		require.Equal(t, internal.ErrWorkspaceAlreadyUnlocked, err)
+		require.Equal(t, ErrWorkspaceAlreadyUnlocked, err)
 	})
 	t.Run("user can unlock their own lock", func(t *testing.T) {
 		ws := &Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}}
@@ -43,7 +43,7 @@ func TestWorkspace_Unlock(t *testing.T) {
 	t.Run("user cannot unlock another user's lock", func(t *testing.T) {
 		ws := &Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}}
 		err := ws.Unlock("burglar", UserLock, false)
-		require.Equal(t, internal.ErrWorkspaceLockedByDifferentUser, err)
+		require.Equal(t, ErrWorkspaceLockedByDifferentUser, err)
 	})
 	t.Run("user can unlock a lock by force", func(t *testing.T) {
 		ws := &Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}}

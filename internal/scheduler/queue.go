@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -144,7 +143,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *otfrun.Run) error {
 
 	ws, err := q.Lock(ctx, q.ws.ID, &run.ID)
 	if err != nil {
-		if errors.Is(err, internal.ErrWorkspaceAlreadyLocked) {
+		if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between
 			// getting the lock above and attempting to enqueue plan.
 			q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)

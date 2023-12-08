@@ -3,7 +3,7 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
-DBSTRING=postgres://postgres:password@localhost/otf
+DBSTRING=postgres:///otf
 LD_FLAGS = " \
     -s -w \
 	-X 'github.com/leg100/otf/internal.Version=$(VERSION)' \
