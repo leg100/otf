@@ -1,6 +1,7 @@
 package team
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -17,8 +18,17 @@ import (
 type webHandlers struct {
 	html.Renderer
 
-	svc           TeamService
-	tokensService tokens.TokensService
+	teams  webClient
+	tokens *tokens.Service
+}
+
+type webClient interface {
+	Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
+	Get(ctx context.Context, organization, team string) (*Team, error)
+	GetByID(ctx context.Context, teamID string) (*Team, error)
+	List(ctx context.Context, organization string) ([]*Team, error)
+	Update(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
+	Delete(ctx context.Context, teamID string) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -58,7 +68,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.svc.CreateTeam(r.Context(), *params.Organization, CreateTeamOptions{
+	team, err := h.teams.Create(r.Context(), *params.Organization, CreateTeamOptions{
 		Name: params.Name,
 	})
 	if err == internal.ErrResourceAlreadyExists {
@@ -85,7 +95,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.svc.UpdateTeam(r.Context(), params.TeamID, params.UpdateTeamOptions)
+	team, err := h.teams.Update(r.Context(), params.TeamID, params.UpdateTeamOptions)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,7 +112,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teams, err := h.svc.ListTeams(r.Context(), org)
+	teams, err := h.teams.List(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -132,12 +142,12 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.svc.GetTeamByID(r.Context(), teamID)
+	team, err := h.teams.GetByID(r.Context(), teamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = h.svc.DeleteTeam(r.Context(), teamID)
+	err = h.teams.Delete(r.Context(), teamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

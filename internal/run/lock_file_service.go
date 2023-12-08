@@ -11,15 +11,8 @@ func lockFileCacheKey(runID string) string {
 	return fmt.Sprintf("%s.terraform.lock.hcl", runID)
 }
 
-type lockFileService interface {
-	// GetLockFile returns the lock file for the run.
-	GetLockFile(ctx context.Context, runID string) ([]byte, error)
-	// UploadLockFile persists the lock file for a run.
-	UploadLockFile(ctx context.Context, runID string, plan []byte) error
-}
-
-// getLockFile returns the lock file for the run.
-func (s *service) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
+// GetLockFile returns the lock file for the run.
+func (s *Service) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetLockFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -43,7 +36,7 @@ func (s *service) GetLockFile(ctx context.Context, runID string) ([]byte, error)
 }
 
 // UploadLockFile persists the lock file for a run.
-func (s *service) UploadLockFile(ctx context.Context, runID string, file []byte) error {
+func (s *Service) UploadLockFile(ctx context.Context, runID string, file []byte) error {
 	subject, err := s.CanAccess(ctx, rbac.UploadLockFileAction, runID)
 	if err != nil {
 		return err

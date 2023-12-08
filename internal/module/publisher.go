@@ -16,8 +16,9 @@ type (
 	// publisher publishes new versions of terraform modules from VCS tags
 	publisher struct {
 		logr.Logger
-		vcsprovider.VCSProviderService
-		ModuleService
+
+		modules      *Service
+		vcsproviders *vcsprovider.Service
 	}
 )
 
@@ -55,18 +56,18 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 	// TODO: we're only retrieving *one* module, but can not *multiple* modules
 	// be connected to a repo?
-	module, err := p.GetModuleByConnection(ctx, event.VCSProviderID, event.RepoPath)
+	module, err := p.modules.GetModuleByConnection(ctx, event.VCSProviderID, event.RepoPath)
 	if err != nil {
 		return err
 	}
 	if module.Connection == nil {
 		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
-	client, err := p.GetVCSClient(ctx, module.Connection.VCSProviderID)
+	client, err := p.vcsproviders.GetVCSClient(ctx, module.Connection.VCSProviderID)
 	if err != nil {
 		return err
 	}
-	return p.PublishVersion(ctx, PublishVersionOptions{
+	return p.modules.PublishVersion(ctx, PublishVersionOptions{
 		ModuleID: module.ID,
 		// strip off v prefix if it has one
 		Version: strings.TrimPrefix(event.Tag, "v"),

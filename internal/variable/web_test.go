@@ -103,7 +103,7 @@ func fakeWebApp(t *testing.T, workspaceID string, v *Variable) *web {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &web{
-		Renderer: renderer,
-		svc:      &fakeService{v: v, workspaceID: workspaceID},
+		Renderer:  renderer,
+		variables: &fakeService{v: v, workspaceID: workspaceID},
 	}
 }

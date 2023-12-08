@@ -140,10 +140,12 @@ func TestQueue(t *testing.T) {
 
 func newTestQueue(services *fakeQueueServices, ws *workspace.Workspace) *queue {
 	return &queue{
-		WorkspaceService: services,
-		RunService:       services,
-		ws:               ws,
-		Logger:           logr.Discard(),
+		workspaceClient: &fakeWorkspaceService{
+			ws: ws,
+		},
+		runClient: services,
+		ws:        ws,
+		Logger:    logr.Discard(),
 	}
 }
 
@@ -152,8 +154,7 @@ type fakeQueueServices struct {
 	runs    map[string]*otfrun.Run // mock run db
 	current []string               // list of IDs of runs that have been set as the current run
 
-	WorkspaceService
-	RunService
+	runClient
 }
 
 func newFakeQueueApp(ws *workspace.Workspace, runs ...*otfrun.Run) *fakeQueueServices {
@@ -169,21 +170,28 @@ func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*otf
 	return f.runs[runID], nil
 }
 
-func (f *fakeQueueServices) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
+type fakeWorkspaceService struct {
+	ws *workspace.Workspace
+
+	// fakeWorkspaceService does not implement all of workspaceClient
+	workspaceClient
+}
+
+func (f *fakeWorkspaceService) Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
 	if err := f.ws.Enlock(*runID, workspace.RunLock); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeQueueServices) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
 	if err := f.ws.Unlock(*runID, workspace.RunLock, false); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeQueueServices) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error) {
 	f.ws.LatestRun = &workspace.LatestRun{ID: runID}
 	return f.ws, nil
 }

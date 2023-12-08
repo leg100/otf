@@ -42,7 +42,7 @@ func TestRunError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create workspace
-			ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 				Name:          internal.String("ws-" + string(tt.mode)),
 				Organization:  internal.String(org.Name),
 				ExecutionMode: workspace.ExecutionModePtr(tt.mode),
@@ -64,7 +64,7 @@ func TestRunError(t *testing.T) {
 		}
 		# should be 'null_resource'
 		resource "null_resourc" "e2e" {}
-		`, daemon.Hostname(), org.Name, ws.Name)
+		`, daemon.System.Hostname(), org.Name, ws.Name)
 
 			// upload config
 			cv := daemon.createConfigurationVersion(t, ctx, ws, nil)
@@ -73,15 +73,15 @@ func TestRunError(t *testing.T) {
 			require.NoError(t, err)
 			tarball, err := internal.Pack(path)
 			require.NoError(t, err)
-			err = daemon.UploadConfig(ctx, cv.ID, tarball)
+			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
 			// watch run events
-			runsSub, runsUnsub := daemon.WatchRuns(ctx)
+			runsSub, runsUnsub := daemon.Runs.Watch(ctx)
 			defer runsUnsub()
 
 			// watch log events
-			logsSub, logsUnsub := daemon.WatchLogs(ctx)
+			logsSub, logsUnsub := daemon.Logs.WatchLogs(ctx)
 			defer logsUnsub()
 
 			// create run

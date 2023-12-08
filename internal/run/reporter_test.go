@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,10 +66,10 @@ func TestReporter_HandleRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var got vcs.SetStatusOptions
 			reporter := &Reporter{
-				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
-				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
-				VCSProviderService:          &fakeReporterVCSProviderService{got: &got},
-				HostnameService:             internal.NewHostnameService("otf-host.org"),
+				Workspaces:      &fakeReporterWorkspaceService{ws: tt.ws},
+				Configs:         &fakeReporterConfigurationVersionService{cv: tt.cv},
+				VCS:             &fakeReporterVCSProviderService{got: &got},
+				HostnameService: internal.NewHostnameService("otf-host.org"),
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -86,7 +85,7 @@ type fakeReporterConfigurationVersionService struct {
 	cv *configversion.ConfigurationVersion
 }
 
-func (f *fakeReporterConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeReporterConfigurationVersionService) Get(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
@@ -96,13 +95,11 @@ type fakeReporterWorkspaceService struct {
 	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeReporterWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
 type fakeReporterVCSProviderService struct {
-	vcsprovider.VCSProviderService
-
 	got *vcs.SetStatusOptions
 }
 

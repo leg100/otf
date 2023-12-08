@@ -4,6 +4,8 @@
 package loginserver
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/user"
@@ -28,18 +30,22 @@ var Discovery = DiscoverySpec{
 
 type (
 	server struct {
-		secret []byte // for encrypting auth code
+		secret []byte           // for encrypting auth code
+		users  userTokensClient // for creating user API token
 
-		html.Renderer    // render consent UI
-		user.UserService // for creating user API token
+		html.Renderer // render consent UI
+	}
+
+	userTokensClient interface {
+		CreateToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
 	}
 
 	// Options for server constructor
 	Options struct {
-		Secret []byte // for encrypting auth code
+		Secret      []byte // for encrypting auth code
+		UserService *user.Service
 
 		html.Renderer
-		user.UserService
 	}
 
 	authcode struct {
@@ -57,12 +63,12 @@ type (
 	}
 )
 
-func NewServer(opts Options) (*server, error) {
+func NewServer(opts Options) *server {
 	return &server{
-		UserService: opts.UserService,
-		Renderer:    opts.Renderer,
-		secret:      opts.Secret,
-	}, nil
+		Renderer: opts.Renderer,
+		secret:   opts.Secret,
+		users:    opts.UserService,
+	}
 }
 
 func (s *server) AddHandlers(r *mux.Router) {

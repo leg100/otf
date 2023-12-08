@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -145,55 +144,49 @@ func TestFactory(t *testing.T) {
 type (
 	fakeFactoryOrganizationService struct {
 		org *organization.Organization
-		organization.Service
 	}
 	fakeFactoryWorkspaceService struct {
 		ws *workspace.Workspace
-		workspace.Service
 	}
 	fakeFactoryConfigurationVersionService struct {
 		cv *configversion.ConfigurationVersion
-		configversion.Service
 	}
-	fakeFactoryVCSProviderService struct {
-		vcsprovider.Service
-	}
-	fakeFactoryCloudClient struct {
+	fakeFactoryVCSProviderService struct{}
+	fakeFactoryCloudClient        struct {
 		vcs.Client
 	}
 	fakeReleasesService struct {
 		latestVersion string
-		releases.ReleasesService
 	}
 )
 
 func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion, latestVersion string) *factory {
 	return &factory{
-		OrganizationService:         &fakeFactoryOrganizationService{org: org},
-		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
-		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
-		VCSProviderService:          &fakeFactoryVCSProviderService{},
-		ReleasesService:             &fakeReleasesService{latestVersion: latestVersion},
+		organizations: &fakeFactoryOrganizationService{org: org},
+		workspaces:    &fakeFactoryWorkspaceService{ws: ws},
+		configs:       &fakeFactoryConfigurationVersionService{cv: cv},
+		vcs:           &fakeFactoryVCSProviderService{},
+		releases:      &fakeReleasesService{latestVersion: latestVersion},
 	}
 }
 
-func (f *fakeFactoryOrganizationService) GetOrganization(context.Context, string) (*organization.Organization, error) {
+func (f *fakeFactoryOrganizationService) Get(context.Context, string) (*organization.Organization, error) {
 	return f.org, nil
 }
 
-func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeFactoryWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) Get(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetLatestConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) CreateConfigurationVersion(context.Context, string, configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) Create(context.Context, string, configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
 	return &configversion.ConfigurationVersion{ID: "created"}, nil
 }
 

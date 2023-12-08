@@ -18,7 +18,7 @@ func TestConfigurationVersion(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
-		_, err := svc.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+		_, err := svc.Configs.Create(ctx, ws.ID, configversion.CreateOptions{})
 		require.NoError(t, err)
 	})
 
@@ -28,16 +28,16 @@ func TestConfigurationVersion(t *testing.T) {
 		tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
 		require.NoError(t, err)
 
-		err = svc.UploadConfig(ctx, cv.ID, tarball)
+		err = svc.Configs.UploadConfig(ctx, cv.ID, tarball)
 		require.NoError(t, err)
 
-		got, err := svc.GetConfigurationVersion(ctx, cv.ID)
+		got, err := svc.Configs.Get(ctx, cv.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, configversion.ConfigurationUploaded, got.Status)
 
 		t.Run("download config", func(t *testing.T) {
-			gotConfig, err := svc.DownloadConfig(ctx, cv.ID)
+			gotConfig, err := svc.Configs.DownloadConfig(ctx, cv.ID)
 			require.NoError(t, err)
 			assert.Equal(t, tarball, gotConfig)
 		})
@@ -47,7 +47,7 @@ func TestConfigurationVersion(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
-		got, err := svc.GetConfigurationVersion(ctx, want.ID)
+		got, err := svc.Configs.Get(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -56,7 +56,7 @@ func TestConfigurationVersion(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
-		got, err := svc.GetLatestConfigurationVersion(ctx, want.WorkspaceID)
+		got, err := svc.Configs.GetLatest(ctx, want.WorkspaceID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -70,7 +70,7 @@ func TestConfigurationVersion(t *testing.T) {
 		tests := []struct {
 			name        string
 			workspaceID string
-			opts        configversion.ConfigurationVersionListOptions
+			opts        configversion.ListOptions
 			want        func(*testing.T, *resource.Page[*configversion.ConfigurationVersion], error)
 		}{
 			{
@@ -87,7 +87,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
+				opts:        configversion.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
@@ -97,7 +97,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "stray pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
+				opts:        configversion.ListOptions{PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					// Zero items but total count should ignore pagination
@@ -116,7 +116,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := svc.ListConfigurationVersions(ctx, tt.workspaceID, tt.opts)
+				results, err := svc.Configs.List(ctx, tt.workspaceID, tt.opts)
 				tt.want(t, results, err)
 			})
 		}

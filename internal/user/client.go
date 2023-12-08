@@ -8,16 +8,12 @@ import (
 	otfapi "github.com/leg100/otf/internal/api"
 )
 
-type (
-	client struct {
-		*otfapi.Client
+type client struct {
+	*otfapi.Client
+}
 
-		UserService
-	}
-)
-
-// CreateUser creates a user via HTTP/JSONAPI. Options are ignored.
-func (c *client) CreateUser(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
+// Create creates a user via HTTP/JSONAPI. Options are ignored.
+func (c *client) Create(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
 	req, err := c.NewRequest("POST", "admin/users", &CreateUserOptions{
 		Username: username,
 	})
@@ -31,8 +27,8 @@ func (c *client) CreateUser(ctx context.Context, username string, _ ...NewUserOp
 	return &user, nil
 }
 
-// DeleteUser deletes a user via HTTP/JSONAPI.
-func (c *client) DeleteUser(ctx context.Context, username string) error {
+// Delete deletes a user via HTTP/JSONAPI.
+func (c *client) Delete(ctx context.Context, username string) error {
 	u := fmt.Sprintf("admin/users/%s", url.QueryEscape(username))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {

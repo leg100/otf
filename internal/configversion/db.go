@@ -78,7 +78,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn fu
 	})
 }
 
-func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{

@@ -18,7 +18,7 @@ func TestUploadConfigurationVersion(t *testing.T) {
 	api := &tfe{
 		// only permit upto 100 byte uploads
 		maxConfigSize: 100,
-		Service:       &fakeConfigService{},
+		tfeClient:     &fakeConfigService{},
 	}
 
 	// setup web server

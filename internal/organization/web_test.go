@@ -8,15 +8,21 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
+	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWeb_NewHandler(t *testing.T) {
-	svc := newFakeWeb(t, &fakeService{}, false)
+	svc := &web{
+		svc:      &fakeWebService{},
+		Renderer: testutils.NewRenderer(t),
+	}
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()
@@ -25,7 +31,10 @@ func TestWeb_NewHandler(t *testing.T) {
 }
 
 func TestWeb_CreateHandler(t *testing.T) {
-	svc := newFakeWeb(t, &fakeService{}, false)
+	svc := &web{
+		svc:      &fakeWebService{},
+		Renderer: testutils.NewRenderer(t),
+	}
 
 	form := strings.NewReader(url.Values{
 		"name": {"my-new-org"},
@@ -48,9 +57,12 @@ func TestWeb_ListHandler(t *testing.T) {
 	t.Run("pagination", func(t *testing.T) {
 		orgs := make([]*Organization, 201)
 		for i := 1; i <= 201; i++ {
-			orgs[i-1] = NewTestOrganization(t)
+			orgs[i-1] = &Organization{Name: uuid.NewString()}
 		}
-		svc := newFakeWeb(t, &fakeService{orgs: orgs}, false)
+		svc := &web{
+			svc:      &fakeWebService{orgs: orgs},
+			Renderer: testutils.NewRenderer(t),
+		}
 
 		t.Run("first page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=1", nil)
@@ -102,7 +114,11 @@ func TestWeb_ListHandler(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				svc := newFakeWeb(t, &fakeService{}, tt.restrict)
+				svc := &web{
+					svc:              &fakeWebService{},
+					Renderer:         testutils.NewRenderer(t),
+					RestrictCreation: tt.restrict,
+				}
 				r := httptest.NewRequest("GET", "/?", nil)
 				r = r.WithContext(internal.AddSubjectToContext(context.Background(), tt.subject))
 				w := httptest.NewRecorder()
@@ -126,12 +142,43 @@ func TestWeb_ListHandler(t *testing.T) {
 }
 
 func TestWeb_DeleteHandler(t *testing.T) {
-	svc := newFakeWeb(t, &fakeService{
-		orgs: []*Organization{NewTestOrganization(t)},
-	}, false)
+	svc := &web{
+		svc: &fakeWebService{
+			orgs: []*Organization{{Name: uuid.NewString()}},
+		},
+		Renderer: testutils.NewRenderer(t),
+	}
 
 	r := httptest.NewRequest("POST", "/?name=acme-corp", nil)
 	w := httptest.NewRecorder()
 	svc.delete(w, r)
 	testutils.AssertRedirect(t, w, paths.Organizations())
+}
+
+type (
+	fakeWebService struct {
+		orgs []*Organization
+
+		webService
+	}
+
+	unprivilegedSubject struct {
+		internal.Subject
+	}
+)
+
+func (f *fakeWebService) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
+	return NewOrganization(opts)
+}
+
+func (f *fakeWebService) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
+	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
+}
+
+func (f *fakeWebService) Delete(context.Context, string) error {
+	return nil
+}
+
+func (s *unprivilegedSubject) CanAccessSite(_ rbac.Action) bool {
+	return false
 }

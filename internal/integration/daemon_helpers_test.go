@@ -40,8 +40,13 @@ type (
 		*daemon.Daemon
 		// stub github server for test to use.
 		*github.TestServer
-		// releases service to allow tests to download terraform
-		releases.ReleasesService
+		// dowloader allows tests to download terraform
+		downloader
+	}
+
+	// downloader downloads terraform versions
+	downloader interface {
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
 	}
 
 	// configures the daemon for integration tests
@@ -129,16 +134,10 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	releasesService := releases.NewService(releases.Options{
-		Logger:          logger,
-		DB:              d.DB,
-		TerraformBinDir: cfg.terraformBinDir,
-	})
-
 	daemon := &testDaemon{
-		Daemon:          d,
-		TestServer:      githubServer,
-		ReleasesService: releasesService,
+		Daemon:     d,
+		TestServer: githubServer,
+		downloader: releases.NewDownloader(cfg.terraformBinDir),
 	}
 
 	// create a dedicated user account and context for test to use.
@@ -161,7 +160,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.CreateOrganization(ctx, organization.CreateOptions{
+	org, err := s.Organizations.Create(ctx, organization.CreateOptions{
 		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
@@ -175,7 +174,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 		org = s.createOrganization(t, ctx)
 	}
 
-	ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := s.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String("workspace-" + internal.GenerateRandomString(6)),
 		Organization: &org.Name,
 	})
@@ -186,7 +185,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID string) *workspace.Workspace {
 	t.Helper()
 
-	ws, err := s.GetWorkspace(ctx, workspaceID)
+	ws, err := s.Workspaces.Get(ctx, workspaceID)
 	require.NoError(t, err)
 	return ws
 }
@@ -198,7 +197,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		org = s.createOrganization(t, ctx)
 	}
 
-	provider, err := s.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+	provider, err := s.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
@@ -216,7 +215,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 		org = s.createOrganization(t, ctx)
 	}
 
-	module, err := s.CreateModule(ctx, module.CreateOptions{
+	module, err := s.Modules.CreateModule(ctx, module.CreateOptions{
 		Name:         uuid.NewString(),
 		Provider:     uuid.NewString(),
 		Organization: org.Name,
@@ -230,7 +229,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 func (s *testDaemon) createUser(t *testing.T, opts ...otfuser.NewUserOption) *otfuser.User {
 	t.Helper()
 
-	user, err := s.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
+	user, err := s.Users.Create(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
@@ -247,7 +246,7 @@ func (s *testDaemon) createUserCtx(t *testing.T, opts ...otfuser.NewUserOption) 
 func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *otfuser.User {
 	t.Helper()
 
-	user, err := s.GetUser(ctx, otfuser.UserSpec{Username: &username})
+	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
 	return user
 }
@@ -255,7 +254,7 @@ func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string)
 func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*otfuser.User, context.Context) {
 	t.Helper()
 
-	user, err := s.GetUser(ctx, otfuser.UserSpec{Username: &username})
+	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
 	return user, internal.AddSubjectToContext(ctx, user)
 }
@@ -267,7 +266,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
+	team, err := s.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
@@ -277,31 +276,31 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *team.Team {
 	t.Helper()
 
-	team, err := s.GetTeam(ctx, org, name)
+	team, err := s.Teams.Get(ctx, org, name)
 	require.NoError(t, err)
 	return team
 }
 
-func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
+func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.CreateOptions) *configversion.ConfigurationVersion {
 	t.Helper()
 
 	if ws == nil {
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 	if opts == nil {
-		opts = &configversion.ConfigurationVersionCreateOptions{}
+		opts = &configversion.CreateOptions{}
 	}
 
-	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, *opts)
+	cv, err := s.Configs.Create(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return cv
 }
 
-func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
+func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.CreateOptions) *configversion.ConfigurationVersion {
 	cv := s.createConfigurationVersion(t, ctx, ws, opts)
 	tarball, err := os.ReadFile("./testdata/root.tar.gz")
 	require.NoError(t, err)
-	err = s.UploadConfig(ctx, cv.ID, tarball)
+	err = s.Configs.UploadConfig(ctx, cv.ID, tarball)
 	require.NoError(t, err)
 	return cv
 }
@@ -316,7 +315,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
 
-	run, err := s.CreateRun(ctx, ws.ID, run.CreateOptions{
+	run, err := s.Runs.Create(ctx, ws.ID, run.CreateOptions{
 		ConfigurationVersionID: internal.String(cv.ID),
 	})
 	require.NoError(t, err)
@@ -330,7 +329,7 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	v, err := s.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
+	v, err := s.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
 		Key:      internal.String("key-" + internal.GenerateRandomString(4)),
 		Value:    internal.String("val-" + internal.GenerateRandomString(4)),
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
@@ -349,7 +348,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	file, err := os.ReadFile("./testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	sv, err := s.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	sv, err := s.State.Create(ctx, state.CreateStateVersionOptions{
 		State:       file,
 		WorkspaceID: internal.String(ws.ID),
 		// serial matches that in ./testdata/terraform.tfstate
@@ -362,7 +361,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID string) *state.Version {
 	t.Helper()
 
-	sv, err := s.GetCurrentStateVersion(ctx, wsID)
+	sv, err := s.State.GetCurrent(ctx, wsID)
 	require.NoError(t, err)
 	return sv
 }
@@ -376,7 +375,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *otfuse
 		ctx = internal.AddSubjectToContext(ctx, user)
 	}
 
-	ut, token, err := s.CreateUserToken(ctx, otfuser.CreateUserTokenOptions{
+	ut, token, err := s.Users.CreateToken(ctx, otfuser.CreateUserTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)
@@ -390,7 +389,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	nc, err := s.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+	nc, err := s.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGeneric,
 		Enabled:         internal.Bool(true),
 		Name:            internal.String(uuid.NewString()),
@@ -418,23 +417,23 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 
 	if token == "" {
 		if poolID == "" {
-			pool, err := s.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+			pool, err := s.Agents.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
 				Name:         uuid.NewString(),
 				Organization: org,
 			})
 			require.NoError(t, err)
 			poolID = pool.ID
 		}
-		_, tokenBytes, err := s.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+		_, tokenBytes, err := s.Agents.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)
 		token = string(tokenBytes)
 	}
 
-	agentDaemon, err := agent.NewRPC(logger, cfg, api.Config{
+	agentDaemon, err := agent.NewPoolDaemon(logger, cfg, api.Config{
 		Token:   token,
-		Address: s.Hostname(),
+		Address: s.System.Hostname(),
 	})
 	require.NoError(t, err)
 
@@ -476,7 +475,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	cmd := exec.Command(tfpath, cmdargs...)
 	cmd.Dir = configPath
 
-	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.Hostname(), token))
+	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.System.Hostname(), token))
 
 	// Run tf and collect stdout/stderr
 	out, err := cmd.CombinedOutput()
@@ -492,7 +491,7 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
-	cmdargs := []string{"--address", s.Hostname(), "--token", string(token)}
+	cmdargs := []string{"--address", s.System.Hostname(), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer

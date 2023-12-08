@@ -15,8 +15,9 @@ import (
 type Handler struct {
 	logr.Logger
 	vcs.Publisher
-	github.GithubAppService
-	vcsprovider.VCSProviderService
+
+	VCSProviders *vcsprovider.Service
+	GithubApps   *github.Service
 }
 
 func (h *Handler) AddHandlers(r *mux.Router) {
@@ -28,7 +29,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "github-app-event-handler"})
 	// retrieve github app config; if one hasn't been configured then return a
 	// 400
-	app, err := h.GetGithubApp(ctx)
+	app, err := h.GithubApps.GetApp(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -41,7 +42,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.V(2).Info("received vcs event", "type", "github-app", "repo", payload.RepoPath)
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
-	providers, err := h.ListVCSProvidersByGithubAppInstall(ctx, *payload.GithubAppInstallID)
+	providers, err := h.VCSProviders.ListVCSProvidersByGithubAppInstall(ctx, *payload.GithubAppInstallID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

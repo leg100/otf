@@ -10,7 +10,7 @@ import (
 
 type webHandlers struct {
 	html.Renderer
-	Service
+	*Service
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -28,7 +28,7 @@ func (h *webHandlers) getState(w http.ResponseWriter, r *http.Request) {
 
 	// ignore errors and instead render unpopulated template
 	f := &File{}
-	sv, err := h.GetCurrentStateVersion(r.Context(), id)
+	sv, err := h.GetCurrent(r.Context(), id)
 	if err == nil {
 		f, _ = sv.File()
 	}

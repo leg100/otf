@@ -18,7 +18,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	// test creating/updating/deleting
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to the list of organizations
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/organizations"),
 		// add an org
 		chromedp.Click("#new-organization-button", chromedp.ByQuery),
 		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
@@ -55,7 +55,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	// open browser
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to the list of organizations
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
+		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/organizations"),
 		// should be 100 orgs listed on page one
 		chromedp.Nodes(`.widget`, &pageOneWidgets, chromedp.NodeVisible),
 		// go to page two

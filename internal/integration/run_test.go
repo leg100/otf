@@ -24,7 +24,7 @@ func TestRun(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 
-		run, err := svc.CreateRun(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
+		run, err := svc.Runs.Create(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 
 		user, err := user.UserFromContext(ctx)
@@ -43,7 +43,7 @@ func TestRun(t *testing.T) {
 		)
 		org := daemon.createOrganization(t, ctx)
 		vcsProvider := daemon.createVCSProvider(t, ctx, org)
-		ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String("connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{
@@ -53,7 +53,7 @@ func TestRun(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = daemon.CreateRun(ctx, ws.ID, otfrun.CreateOptions{})
+		_, err = daemon.Runs.Create(ctx, ws.ID, otfrun.CreateOptions{})
 		require.NoError(t, err)
 	})
 
@@ -61,7 +61,7 @@ func TestRun(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		run := svc.createRun(t, ctx, nil, nil)
 
-		got, err := svc.EnqueuePlan(ctx, run.ID)
+		got, err := svc.Runs.EnqueuePlan(ctx, run.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, otfrun.RunPlanQueued, got.Status)
@@ -74,10 +74,10 @@ func TestRun(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.Cancel(ctx, run.ID)
+		err := svc.Runs.Cancel(ctx, run.ID)
 		require.NoError(t, err)
 
-		got, err := svc.GetRun(ctx, run.ID)
+		got, err := svc.Runs.Get(ctx, run.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, otfrun.RunCanceled, got.Status)
@@ -90,7 +90,7 @@ func TestRun(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		want := svc.createRun(t, ctx, nil, nil)
 
-		got, err := svc.GetRun(ctx, want.ID)
+		got, err := svc.Runs.Get(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -107,7 +107,7 @@ func TestRun(t *testing.T) {
 		ws1 := svc.createWorkspace(t, ctx, nil)
 		ws2 := svc.createWorkspace(t, ctx, nil)
 		cv1 := svc.createConfigurationVersion(t, ctx, ws1, nil)
-		cv2, err := svc.CreateConfigurationVersion(ctx, ws2.ID, configversion.ConfigurationVersionCreateOptions{
+		cv2, err := svc.Configs.Create(ctx, ws2.ID, configversion.CreateOptions{
 			Speculative: internal.Bool(true),
 		})
 		require.NoError(t, err)
@@ -201,7 +201,7 @@ func TestRun(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				// call endpoint using admin to avoid authz errors (particularly
 				// when listing runs across a site).
-				got, err := svc.ListRuns(adminCtx, tt.opts)
+				got, err := svc.Runs.List(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, got)

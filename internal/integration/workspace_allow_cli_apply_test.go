@@ -25,7 +25,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	)
 
 	vcsProvider := daemon.createVCSProvider(t, ctx, org)
-	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String("connected-workspace"),
 		Organization: internal.String(org.Name),
 		ConnectOptions: &workspace.ConnectOptions{
@@ -36,13 +36,13 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	require.NoError(t, err)
 
 	// by default, terraform apply should fail
-	config := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
+	config := newRootModule(t, daemon.System.Hostname(), ws.Organization, ws.Name)
 	daemon.tfcli(t, ctx, "init", config)
 	out, err := daemon.tfcliWithError(t, ctx, "apply", config, "-auto-approve")
 	require.Error(t, err, out)
 	assert.Contains(t, out, "Apply not allowed for workspaces with a VCS connection")
 
-	_, err = daemon.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
+	_, err = daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
 		ConnectOptions: &workspace.ConnectOptions{
 			AllowCLIApply: internal.Bool(true),
 		},

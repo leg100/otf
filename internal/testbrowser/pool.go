@@ -26,7 +26,7 @@ var poolSize = runtime.GOMAXPROCS(0)
 type Pool struct {
 	pool chan *browser
 	// service for creating new session in browser
-	tokensService tokens.TokensService
+	tokens *tokens.Service
 	// allocator of browsers
 	allocator context.Context
 }
@@ -58,9 +58,9 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		)...)
 
 	p := Pool{
-		pool:          make(chan *browser, poolSize),
-		tokensService: tokensService,
-		allocator:     allocator,
+		pool:      make(chan *browser, poolSize),
+		tokens:    tokensService,
+		allocator: allocator,
 	}
 	for i := 0; i < poolSize; i++ {
 		p.pool <- nil
@@ -115,7 +115,7 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 			if err != nil {
 				return err
 			}
-			token, err := p.tokensService.NewSessionToken(user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
+			token, err := p.tokens.NewSessionToken(user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
 			if err != nil {
 				return err
 			}

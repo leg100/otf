@@ -26,7 +26,7 @@ func TestGithubPullRequest(t *testing.T) {
 	)
 
 	provider := daemon.createVCSProvider(t, ctx, org)
-	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:            internal.String("dev"),
 		Organization:    internal.String(org.Name),
 		TriggerPatterns: []string{"/foo/**/*.tf"},
@@ -58,7 +58,7 @@ func TestGithubPullRequest(t *testing.T) {
 		// commit-triggered run should appear as latest run on workspace
 		browser.Run(t, ctx, chromedp.Tasks{
 			// go to runs
-			chromedp.Navigate(runsURL(daemon.Hostname(), ws.ID)),
+			chromedp.Navigate(runsURL(daemon.System.Hostname(), ws.ID)),
 			screenshot(t),
 			// should be one run widget with info matching the pull request
 			chromedp.WaitVisible(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`),

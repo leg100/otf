@@ -34,7 +34,7 @@ terraform {
   }
 }
 resource "null_resource" "tags_e2e" {}
-`, daemon.Hostname(), org.Name))
+`, daemon.System.Hostname(), org.Name))
 
 	tfpath := daemon.downloadTerraform(t, ctx, nil)
 
@@ -44,7 +44,7 @@ resource "null_resource" "tags_e2e" {}
 		[]string{tfpath, "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
-		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.Hostname(), token))),
+		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()
@@ -59,7 +59,7 @@ resource "null_resource" "tags_e2e" {}
 	require.NoError(t, <-tferr, e.String)
 
 	// confirm tagged workspace has been created
-	got, err := daemon.ListWorkspaces(ctx, workspace.ListOptions{
+	got, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
 		Organization: internal.String(org.Name),
 		Tags:         []string{"foo", "bar"},
 	})
@@ -72,7 +72,7 @@ resource "null_resource" "tags_e2e" {}
 
 	// test UI management of tags
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "tagged")),
 		// confirm workspace page lists both tags
 		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'foo')]`),
 		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'bar')]`),
@@ -100,16 +100,16 @@ resource "null_resource" "tags_e2e" {}
 	})
 
 	// should be tags 'foo' and 'baz'
-	tags, err := daemon.ListTags(ctx, org.Name, workspace.ListTagsOptions{})
+	tags, err := daemon.Workspaces.ListTags(ctx, org.Name, workspace.ListTagsOptions{})
 	require.NoError(t, err)
 	assert.Len(t, tags.Items, 2)
 
 	// demonstrate deleting the workspace also deletes the tags from the system
-	_, err = daemon.DeleteWorkspace(ctx, ws.ID)
+	_, err = daemon.Workspaces.Delete(ctx, ws.ID)
 	require.NoError(t, err)
 
 	// should be no tags
-	tags, err = daemon.ListTags(ctx, org.Name, workspace.ListTagsOptions{})
+	tags, err = daemon.Workspaces.ListTags(ctx, org.Name, workspace.ListTagsOptions{})
 	require.NoError(t, err)
 	assert.Len(t, tags.Items, 0)
 }

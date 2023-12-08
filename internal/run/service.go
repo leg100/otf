@@ -28,75 +28,18 @@ import (
 
 type (
 	// Alias services so they don't conflict when nested together in struct
-	RunService                  = Service
 	ConfigurationVersionService configversion.Service
-	OrganizationService         organization.Service
-	WorkspaceService            workspace.Service
 	VCSProviderService          vcsprovider.Service
 
-	Service interface {
-		CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
-		GetRun(ctx context.Context, id string) (*Run, error)
-		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
-		// StartPhase starts a run phase.
-		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error)
-		// FinishPhase finishes a phase. Creates a report of changes before updating the status of
-		// the run.
-		FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error)
-		// GetPlanFile returns the plan file for the run.
-		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
-		// UploadPlanFile persists a run's plan file. The plan format should be either
-		// be binary or json.
-		UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
-		// Watch provides access to a stream of run events. The WatchOptions filters
-		// events. Context must be cancelled to close stream.
-		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
-		// Cancel a run.
-		Cancel(ctx context.Context, runID string) error
-		// Apply enqueues an Apply for the run.
-		Apply(ctx context.Context, runID string) error
-		// Delete a run.
-		Delete(ctx context.Context, runID string) error
-
-		// DiscardRun discards a run. Run must be in the planned state.
-		DiscardRun(ctx context.Context, runID string) error
-		// ForceCancelRun forcefully cancels a run.
-		ForceCancelRun(ctx context.Context, runID string) error
-
-		// AfterEnqueuePlan allows caller to dispatch actions following the
-		// enqueuing of a plan.
-		AfterEnqueuePlan(hook func(context.Context, *Run) error)
-		// AfterEnqueueApply allows caller to dispatch actions following the
-		// enqueuing of an apply.
-		AfterEnqueueApply(hook func(context.Context, *Run) error)
-		// AfterCancel allows caller to dispatch actions following the
-		// cancelation of a run.
-		AfterCancelRun(hook func(context.Context, *Run) error)
-		// AfterForceCancel allows caller to dispatch actions following the
-		// forced cancelation of a run.
-		AfterForceCancelRun(hook func(context.Context, *Run) error)
-		// WatchRuns subscribes the caller to a stream of run events.
-		WatchRuns(context.Context) (<-chan pubsub.Event[*Run], func())
-
-		lockFileService
-
-		internal.Authorizer // run authorizer
-
-		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
-
-		lockFileService
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
-		WorkspaceService
-
-		site         internal.Authorizer
-		organization internal.Authorizer
-		workspace    internal.Authorizer
+		site                internal.Authorizer
+		organization        internal.Authorizer
+		workspaceAuthorizer internal.Authorizer
 		*authorizer
+
+		workspaces *workspace.Service
 
 		cache                  internal.Cache
 		db                     *pgdb
@@ -116,12 +59,12 @@ type (
 		WorkspaceAuthorizer internal.Authorizer
 		VCSEventSubscriber  vcs.Subscriber
 
-		OrganizationService
-		WorkspaceService
-		ConfigurationVersionService
-		VCSProviderService
-		releases.ReleasesService
-		tokens.TokensService
+		WorkspaceService     *workspace.Service
+		OrganizationService  *organization.Service
+		ConfigVersionService *configversion.Service
+		ReleasesService      *releases.Service
+		VCSProviderService   *vcsprovider.Service
+		TokensService        *tokens.Service
 
 		logr.Logger
 		internal.Cache
@@ -133,38 +76,36 @@ type (
 	}
 )
 
-func NewService(opts Options) *service {
+func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
-	svc := service{
-		Logger:           opts.Logger,
-		WorkspaceService: opts.WorkspaceService,
+	svc := Service{
+		Logger:              opts.Logger,
+		workspaces:          opts.WorkspaceService,
+		db:                  db,
+		cache:               opts.Cache,
+		site:                &internal.SiteAuthorizer{Logger: opts.Logger},
+		organization:        &organization.Authorizer{Logger: opts.Logger},
+		workspaceAuthorizer: opts.WorkspaceAuthorizer,
+		authorizer:          &authorizer{db, opts.WorkspaceAuthorizer},
 	}
-
-	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
-	svc.organization = &organization.Authorizer{Logger: opts.Logger}
-	svc.workspace = opts.WorkspaceAuthorizer
-	svc.authorizer = &authorizer{db, opts.WorkspaceAuthorizer}
-
-	svc.cache = opts.Cache
-	svc.db = db
 	svc.factory = &factory{
-		opts.OrganizationService,
-		opts.WorkspaceService,
-		opts.ConfigurationVersionService,
-		opts.VCSProviderService,
-		opts.ReleasesService,
+		organizations: opts.OrganizationService,
+		workspaces:    opts.WorkspaceService,
+		configs:       opts.ConfigVersionService,
+		vcs:           opts.VCSProviderService,
+		releases:      opts.ReleasesService,
 	}
 	svc.web = &webHandlers{
-		Renderer:         opts.Renderer,
-		WorkspaceService: opts.WorkspaceService,
-		logger:           opts.Logger,
-		svc:              &svc,
+		Renderer:   opts.Renderer,
+		logger:     opts.Logger,
+		runs:       &svc,
+		workspaces: opts.WorkspaceService,
 	}
 	svc.tfeapi = &tfe{
-		Service:            &svc,
-		PermissionsService: opts.WorkspaceService,
-		Responder:          opts.Responder,
-		Signer:             opts.Signer,
+		Service:    &svc,
+		workspaces: opts.WorkspaceService,
+		Responder:  opts.Responder,
+		Signer:     opts.Signer,
 	}
 	svc.api = &api{
 		Service:   &svc,
@@ -172,11 +113,11 @@ func NewService(opts Options) *service {
 		Logger:    opts.Logger,
 	}
 	spawner := &Spawner{
-		Logger:                      opts.Logger.WithValues("component", "spawner"),
-		ConfigurationVersionService: opts.ConfigurationVersionService,
-		WorkspaceService:            opts.WorkspaceService,
-		VCSProviderService:          opts.VCSProviderService,
-		RunService:                  &svc,
+		Logger:     opts.Logger.WithValues("component", "spawner"),
+		configs:    opts.ConfigVersionService,
+		workspaces: opts.WorkspaceService,
+		vcs:        opts.VCSProviderService,
+		runs:       &svc,
 	}
 	svc.broker = pubsub.NewBroker(
 		opts.Logger,
@@ -199,23 +140,19 @@ func NewService(opts Options) *service {
 
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.
-	opts.AfterCreateWorkspace(svc.autoQueueRun)
+	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
 
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 
-func (s *service) WatchRuns(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
-	return s.broker.Subscribe(ctx)
-}
-
-func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
+func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
+	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -235,8 +172,8 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts Create
 	return run, nil
 }
 
-// GetRun retrieves a run from the db.
-func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
+// Get retrieves a run from the db.
+func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -252,23 +189,23 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return run, nil
 }
 
-// ListRuns retrieves multiple runs. Use opts to filter and paginate the
+// List retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (s *service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
+func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	var (
 		subject internal.Subject
 		authErr error
 	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {
-		workspace, err := s.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
+		workspace, err := s.workspaces.GetByName(ctx, *opts.Organization, *opts.WorkspaceName)
 		if err != nil {
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, workspace.ID)
+		subject, authErr = s.workspaceAuthorizer.CanAccess(ctx, rbac.GetWorkspaceAction, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, *opts.WorkspaceID)
+		subject, authErr = s.workspaceAuthorizer.CanAccess(ctx, rbac.GetWorkspaceAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
 		subject, authErr = s.organization.CanAccess(ctx, rbac.ListRunsAction, *opts.Organization)
@@ -291,10 +228,10 @@ func (s *service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Pag
 	return page, nil
 }
 
-// enqueuePlan enqueues a plan for the run.
+// EnqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (s *service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
+func (s *Service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
 	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
 		if err != nil {
@@ -319,18 +256,18 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err 
 	return
 }
 
-func (s *service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
+func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 	// add hook to list of hooks to be triggered after plan is enqueued
 	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
-func (s *service) Delete(ctx context.Context, runID string) error {
+func (s *Service) Delete(ctx context.Context, runID string) error {
 	run, err := s.db.GetRun(ctx, runID)
 	if err != nil {
 		return err
 	}
 
-	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteRunAction, run.WorkspaceID)
+	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.DeleteRunAction, run.WorkspaceID)
 	if err != nil {
 		return err
 	}
@@ -344,7 +281,7 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 }
 
 // StartPhase starts a run phase.
-func (s *service) StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
+func (s *Service) StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Start()
 	})
@@ -365,7 +302,7 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
@@ -398,12 +335,17 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 	return run, nil
 }
 
-// Watch provides authenticated access to a stream of run events.
-func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
+	return s.broker.Subscribe(ctx)
+}
+
+// watchWithOptions provides authenticated access to a stream of run events,
+// with the option to filter events.
+func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = s.workspace.CanAccess(ctx, rbac.WatchAction, *opts.WorkspaceID)
+		_, err = s.workspaceAuthorizer.CanAccess(ctx, rbac.WatchAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
 		_, err = s.organization.CanAccess(ctx, rbac.WatchAction, *opts.Organization)
@@ -441,7 +383,7 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.E
 }
 
 // Apply enqueues an apply for the run.
-func (s *service) Apply(ctx context.Context, runID string) error {
+func (s *Service) Apply(ctx context.Context, runID string) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
 		if err != nil {
@@ -466,13 +408,13 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	})
 }
 
-func (s *service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
+func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 	// add hook to list of hooks to be triggered after apply is enqueued
 	s.afterEnqueueApplyHooks = append(s.afterEnqueueApplyHooks, hook)
 }
 
-// DiscardRun discards the run.
-func (s *service) DiscardRun(ctx context.Context, runID string) error {
+// Discard discards the run.
+func (s *Service) Discard(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -491,7 +433,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 	return err
 }
 
-func (s *service) Cancel(ctx context.Context, runID string) error {
+func (s *Service) Cancel(ctx context.Context, runID string) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 		if err != nil {
@@ -521,13 +463,13 @@ func (s *service) Cancel(ctx context.Context, runID string) error {
 	})
 }
 
-func (s *service) AfterCancelRun(hook func(context.Context, *Run) error) {
+func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 	// add hook to list of hooks to be triggered after run is canceled
 	s.afterCancelHooks = append(s.afterCancelHooks, hook)
 }
 
-// ForceCancelRun forcefully cancels a run.
-func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
+// ForceCancel forcefully cancels a run.
+func (s *Service) ForceCancel(ctx context.Context, runID string) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
 		if err != nil {
@@ -551,7 +493,7 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	})
 }
 
-func (s *service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
+func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 	// add hook to list of hooks to be triggered after run is force canceled
 	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
@@ -561,7 +503,7 @@ func planFileCacheKey(f PlanFormat, id string) string {
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s *service) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+func (s *Service) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -585,7 +527,7 @@ func (s *service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
+func (s *Service) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
 	subject, err := s.CanAccess(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -606,7 +548,7 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 }
 
 // createReports creates reports of changes for the phase.
-func (s *service) createReports(ctx context.Context, runID string, phase internal.PhaseType) (resource Report, output Report, err error) {
+func (s *Service) createReports(ctx context.Context, runID string, phase internal.PhaseType) (resource Report, output Report, err error) {
 	switch phase {
 	case internal.PlanPhase:
 		resource, output, err = s.createPlanReports(ctx, runID)
@@ -618,7 +560,7 @@ func (s *service) createReports(ctx context.Context, runID string, phase interna
 	return resource, output, err
 }
 
-func (s *service) createPlanReports(ctx context.Context, runID string) (resources Report, outputs Report, err error) {
+func (s *Service) createPlanReports(ctx context.Context, runID string) (resources Report, outputs Report, err error) {
 	plan, err := s.GetPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return Report{}, Report{}, err
@@ -633,7 +575,7 @@ func (s *service) createPlanReports(ctx context.Context, runID string) (resource
 	return resourceReport, outputReport, nil
 }
 
-func (s *service) createApplyReport(ctx context.Context, runID string) (Report, error) {
+func (s *Service) createApplyReport(ctx context.Context, runID string) (Report, error) {
 	logs, err := s.getLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return Report{}, err
@@ -648,7 +590,7 @@ func (s *service) createApplyReport(ctx context.Context, runID string) (Report, 
 	return report, nil
 }
 
-func (s *service) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+func (s *Service) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
 	data, err := s.db.Conn(ctx).FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
 	if err != nil {
 		// Don't consider no rows an error because logs may not have been
@@ -661,11 +603,11 @@ func (s *service) getLogs(ctx context.Context, runID string, phase internal.Phas
 	return data, nil
 }
 
-func (s *service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {
+func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {
 	// Auto queue a run only if configured on the worspace and the workspace is
 	// a connected to a VCS repo.
 	if ws.QueueAllRuns && ws.Connection != nil {
-		_, err := s.CreateRun(ctx, ws.ID, CreateOptions{})
+		_, err := s.Create(ctx, ws.ID, CreateOptions{})
 		if err != nil {
 			return err
 		}

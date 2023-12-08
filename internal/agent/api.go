@@ -14,7 +14,7 @@ import (
 
 type (
 	api struct {
-		*service
+		*Service
 		*tfeapi.Responder
 	}
 
@@ -52,7 +52,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	// determine ip address from connection source address
 	opts.IPAddress = net.ParseIP(r.RemoteAddr)
 
-	agent, err := a.service.registerAgent(r.Context(), opts)
+	agent, err := a.Service.registerAgent(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,7 +69,7 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs, err := a.service.getAgentJobs(r.Context(), subject.agent.ID)
+	jobs, err := a.Service.getAgentJobs(r.Context(), subject.agent.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status)
+	err = a.Service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status)
 	if err != nil {
 		if errors.Is(err, ErrInvalidAgentStateTransition) {
 			tfeapi.Error(w, err)
@@ -129,7 +129,7 @@ func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.service.startJob(r.Context(), spec)
+	token, err := a.Service.startJob(r.Context(), spec)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -143,7 +143,7 @@ func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	err := a.service.finishJob(r.Context(), params.JobSpec, params.finishJobOptions)
+	err := a.Service.finishJob(r.Context(), params.JobSpec, params.finishJobOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -16,7 +16,7 @@ func TestIntegration_StateUI(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// watch run events
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 
 	// create run and wait for it to complete
@@ -30,7 +30,7 @@ applied:
 		case run.RunApplied:
 			break applied
 		case run.RunPlanned:
-			err := daemon.Apply(ctx, r.ID)
+			err := daemon.Runs.Apply(ctx, r.ID)
 			require.NoError(t, err)
 		case run.RunErrored:
 			t.Fatal("run unexpectedly finished with an error")
@@ -38,7 +38,7 @@ applied:
 	}
 
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, ws.Name)),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name)),
 		matchRegex(t, `//label[@id='resources-label']`, `Resources \(1\)`),
 		matchRegex(t, `//label[@id='outputs-label']`, `Outputs \(0\)`),
 		matchText(t, `//table[@id='resources-table']/tbody/tr/td[1]`, `test`),

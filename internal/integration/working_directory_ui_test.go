@@ -20,10 +20,10 @@ func TestWorkingDirectory(t *testing.T) {
 
 	// create workspace and set working directory
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-workspace")),
+			chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace")),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`),
@@ -42,7 +42,7 @@ func TestWorkingDirectory(t *testing.T) {
 
 	// create root module along with a sub-directory containing the config we're
 	// going to test
-	root := newRootModule(t, daemon.Hostname(), org.Name, "my-workspace")
+	root := newRootModule(t, daemon.System.Hostname(), org.Name, "my-workspace")
 	subdir := path.Join(root, "subdir")
 	err := os.Mkdir(subdir, 0o755)
 	require.NoError(t, err)

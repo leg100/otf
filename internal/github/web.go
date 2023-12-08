@@ -2,6 +2,7 @@ package github
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -23,13 +24,23 @@ const (
 
 type webHandlers struct {
 	html.Renderer
-	internal.HostnameService
+	*internal.HostnameService
 
-	svc            Service
+	svc webClient
+
 	GithubHostname string
-
 	// toggle skipping TLS on connections to github (for testing purposes)
 	GithubSkipTLS bool
+}
+
+// webClient provides web handlers with access to github app service endpoints
+type webClient interface {
+	CreateApp(ctx context.Context, opts CreateAppOptions) (*App, error)
+	GetApp(ctx context.Context) (*App, error)
+	DeleteApp(ctx context.Context) error
+
+	ListInstallations(ctx context.Context) ([]*Installation, error)
+	DeleteInstallation(ctx context.Context, installID int64) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -94,7 +105,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	app, err := h.svc.GetGithubApp(r.Context())
+	app, err := h.svc.GetApp(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -162,7 +173,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	if cfg.GetOwner().GetType() == "Organization" {
 		opts.Organization = cfg.GetOwner().Login
 	}
-	_, err = h.svc.CreateGithubApp(r.Context(), opts)
+	_, err = h.svc.CreateApp(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -173,12 +184,12 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	app, err := h.svc.GetGithubApp(r.Context())
+	app, err := h.svc.GetApp(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := h.svc.DeleteGithubApp(r.Context()); err != nil {
+	if err := h.svc.DeleteApp(r.Context()); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -12,17 +12,7 @@ import (
 )
 
 type (
-	LogsService = Service
-
-	Service interface {
-		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
-		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
-		WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func())
-		internal.PutChunkService
-		Start(context.Context) error
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
 		run internal.Authorizer
@@ -51,9 +41,9 @@ type (
 	}
 )
 
-func NewService(opts Options) *service {
+func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
-	svc := service{
+	svc := Service{
 		Logger: opts.Logger,
 		run:    opts.RunAuthorizer,
 	}
@@ -85,19 +75,19 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
-func (s *service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func()) {
+func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (s *service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
+func (s *Service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
 	logs, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {
 		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
@@ -108,7 +98,7 @@ func (s *service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (
 }
 
 // PutChunk writes a chunk of logs for a phase
-func (s *service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) error {
+func (s *Service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) error {
 	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, opts.RunID)
 	if err != nil {
 		return err
@@ -123,9 +113,9 @@ func (s *service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) e
 	return nil
 }
 
-// tail logs for a phase. Offset specifies the number of bytes into the logs
+// Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error) {
+func (s *Service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error) {
 	subject, err := s.run.CanAccess(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err

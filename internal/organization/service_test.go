@@ -23,7 +23,7 @@ func TestAuthorize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := internal.AddSubjectToContext(context.Background(), tt.subject)
-			svc := &service{
+			svc := &Service{
 				Logger:                       logr.Discard(),
 				RestrictOrganizationCreation: tt.restrict,
 			}

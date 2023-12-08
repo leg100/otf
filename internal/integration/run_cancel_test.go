@@ -52,7 +52,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 	agent, _ := daemon.startAgent(t, ctx, org.Name, "", "", agent.Config{TerraformBinDir: bins})
 
 	// create workspace specifying that it use an external agent.
-	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:          internal.String("ws-1"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
@@ -62,7 +62,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 
 	// create a variable so that the fake bin knows the url of the temp http
 	// server
-	_, err = daemon.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
+	_, err = daemon.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
 		Key:      internal.String("URL"),
 		Value:    internal.String(srv.URL),
 		Category: variable.VariableCategoryPtr(variable.CategoryEnv),
@@ -76,7 +76,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 	require.Equal(t, "started", <-got)
 
 	// we can now send interrupt
-	err = daemon.Cancel(ctx, r.ID)
+	err = daemon.Runs.Cancel(ctx, r.ID)
 	require.NoError(t, err)
 
 	// fake bin has received interrupt

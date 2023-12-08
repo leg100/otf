@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,19 +28,16 @@ func TestRunDownload(t *testing.T) {
 type fakeCLIService struct {
 	run     *Run
 	tarball []byte
-
-	Service
-	configversion.ConfigurationVersionService
 }
 
 func newFakeCLI(run *Run, tarball []byte) *CLI {
 	return &CLI{
-		Service:                     &fakeCLIService{run: run, tarball: tarball},
-		ConfigurationVersionService: &fakeCLIService{run: run, tarball: tarball},
+		client:  &fakeCLIService{run: run, tarball: tarball},
+		configs: &fakeCLIService{run: run, tarball: tarball},
 	}
 }
 
-func (f *fakeCLIService) GetRun(context.Context, string) (*Run, error) {
+func (f *fakeCLIService) Get(context.Context, string) (*Run, error) {
 	return f.run, nil
 }
 

@@ -22,10 +22,6 @@ type (
 		Expiry   *time.Time
 	}
 
-	sessionService interface {
-		StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error
-	}
-
 	// sessionFactory constructs new sessions.
 	sessionFactory struct {
 		*factory
@@ -44,7 +40,7 @@ func (f *sessionFactory) NewSessionToken(username string, expiry time.Time) (str
 	return string(token), nil
 }
 
-func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error {
+func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error {
 	if opts.Username == nil {
 		return fmt.Errorf("missing username")
 	}

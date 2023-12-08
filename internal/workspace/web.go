@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -41,10 +42,41 @@ const (
 type (
 	webHandlers struct {
 		html.Renderer
-		team.TeamService
-		VCSProviderService
 
-		svc Service
+		teams        webTeamClient
+		vcsproviders webVCSProvidersClient
+		client       webClient
+	}
+
+	webTeamClient interface {
+		List(context.Context, string) ([]*team.Team, error)
+	}
+
+	webVCSProvidersClient interface {
+		Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error)
+		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
+
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+	}
+
+	// webClient provides web handlers with access to the workspace service
+	webClient interface {
+		Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
+		Get(ctx context.Context, workspaceID string) (*Workspace, error)
+		GetByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
+		Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
+		Delete(ctx context.Context, workspaceID string) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error)
+
+		AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error
+		RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error
+		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error)
+
+		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
+		SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error
+		UnsetPermission(ctx context.Context, workspaceID, teamID string) error
 	}
 
 	// WorkspacePage contains data shared by all workspace-based pages.
@@ -97,7 +129,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
+	workspaces, err := h.client.List(r.Context(), ListOptions{
 		Search:       params.Search,
 		Tags:         params.Tags,
 		Organization: params.Organization,
@@ -114,7 +146,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	// retrieve all tags and create map, with each entry determining whether
 	// listing is currently filtered by the tag or not.
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
-		return h.svc.ListTags(r.Context(), *params.Organization, ListTagsOptions{
+		return h.client.ListTags(r.Context(), *params.Organization, ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -190,7 +222,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.CreateWorkspace(r.Context(), CreateOptions{
+	ws, err := h.client.Create(r.Context(), CreateOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -214,12 +246,12 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.GetWorkspace(r.Context(), id)
+	ws, err := h.client.Get(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.svc.GetPolicy(r.Context(), id)
+	policy, err := h.client.GetPolicy(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -232,7 +264,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var provider *vcsprovider.VCSProvider
 	if ws.Connection != nil {
-		provider, err = h.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
+		provider, err = h.vcsproviders.Get(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -240,7 +272,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
-		return h.svc.ListTags(r.Context(), ws.Organization, ListTagsOptions{
+		return h.client.ListTags(r.Context(), ws.Organization, ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -300,7 +332,7 @@ func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ws, err := h.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.client.GetByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -316,13 +348,13 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := h.svc.GetWorkspace(r.Context(), workspaceID)
+	workspace, err := h.client.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	policy, err := h.svc.GetPolicy(r.Context(), workspaceID)
+	policy, err := h.client.GetPolicy(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -334,7 +366,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get teams for populating team permissions
-	teams, err := h.ListTeams(r.Context(), workspace.Organization)
+	teams, err := h.teams.List(r.Context(), workspace.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -362,7 +394,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var provider *vcsprovider.VCSProvider
 	if workspace.Connection != nil {
-		provider, err = h.GetVCSProvider(r.Context(), workspace.Connection.VCSProviderID)
+		provider, err = h.vcsproviders.Get(r.Context(), workspace.Connection.VCSProviderID)
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -370,7 +402,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
-		return h.svc.ListTags(r.Context(), workspace.Organization, ListTagsOptions{
+		return h.client.ListTags(r.Context(), workspace.Organization, ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -451,7 +483,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get workspace before updating to determine if it is connected or not.
-	ws, err := h.svc.GetWorkspace(r.Context(), params.WorkspaceID)
+	ws, err := h.client.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -494,7 +526,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		opts.AgentPoolID = &params.AgentPoolID
 	}
 
-	ws, err = h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
+	ws, err = h.client.Update(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -512,7 +544,7 @@ func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.DeleteWorkspace(r.Context(), workspaceID)
+	ws, err := h.client.Delete(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -528,7 +560,7 @@ func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.LockWorkspace(r.Context(), id, nil)
+	ws, err := h.client.Lock(r.Context(), id, nil)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -543,7 +575,7 @@ func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.UnlockWorkspace(r.Context(), workspaceID, nil, false)
+	ws, err := h.client.Unlock(r.Context(), workspaceID, nil, false)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -559,7 +591,7 @@ func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ws, err := h.svc.UnlockWorkspace(r.Context(), workspaceID, nil, true)
+	ws, err := h.client.Unlock(r.Context(), workspaceID, nil, true)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -575,12 +607,12 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	ws, err := h.svc.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.client.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	providers, err := h.ListVCSProviders(r.Context(), ws.Organization)
+	providers, err := h.vcsproviders.List(r.Context(), ws.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -607,12 +639,12 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ws, err := h.svc.GetWorkspace(r.Context(), params.WorkspaceID)
+	ws, err := h.client.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client, err := h.GetVCSClient(r.Context(), params.VCSProviderID)
+	client, err := h.vcsproviders.GetVCSClient(r.Context(), params.VCSProviderID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -647,7 +679,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
+	_, err := h.client.Update(r.Context(), params.WorkspaceID, UpdateOptions{
 		ConnectOptions: &ConnectOptions{
 			VCSProviderID: params.VCSProviderID,
 			RepoPath:      params.RepoPath,
@@ -669,7 +701,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
+	_, err = h.client.Update(r.Context(), workspaceID, UpdateOptions{
 		Disconnect: true,
 	})
 	if err != nil {
@@ -697,7 +729,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.svc.SetPermission(r.Context(), params.WorkspaceID, params.TeamID, role)
+	err = h.client.SetPermission(r.Context(), params.WorkspaceID, params.TeamID, role)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -716,7 +748,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := h.svc.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamID)
+	err := h.client.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

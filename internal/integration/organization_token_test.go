@@ -18,14 +18,14 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 
-	ot, token, err := daemon.CreateOrganizationToken(ctx, organization.CreateOrganizationTokenOptions{
+	ot, token, err := daemon.Organizations.CreateToken(ctx, organization.CreateOrganizationTokenOptions{
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, org.Name, ot.Organization)
 
 	apiClient, err := api.NewClient(api.Config{
-		Address: daemon.Hostname(),
+		Address: daemon.System.Hostname(),
 		Token:   string(token),
 	})
 	require.NoError(t, err)
@@ -37,20 +37,20 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 	daemon.createWorkspace(t, ctx, org)
 
 	wsClient := &workspace.Client{Client: apiClient}
-	got, err := wsClient.ListWorkspaces(ctx, workspace.ListOptions{
+	got, err := wsClient.List(ctx, workspace.ListOptions{
 		Organization: internal.String(org.Name),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, 3, len(got.Items))
 
 	// re-generate token
-	_, _, err = daemon.CreateOrganizationToken(ctx, organization.CreateOrganizationTokenOptions{
+	_, _, err = daemon.Organizations.CreateToken(ctx, organization.CreateOrganizationTokenOptions{
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
 
 	// access with previous token should now be refused
-	_, err = wsClient.ListWorkspaces(ctx, workspace.ListOptions{
+	_, err = wsClient.List(ctx, workspace.ListOptions{
 		Organization: internal.String(org.Name),
 	})
 	require.Equal(t, internal.ErrUnauthorized, err)

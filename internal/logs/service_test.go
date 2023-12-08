@@ -16,7 +16,7 @@ func TestTail(t *testing.T) {
 
 	t.Run("receive chunk event", func(t *testing.T) {
 		sub := make(chan pubsub.Event[internal.Chunk])
-		app := &service{
+		app := &Service{
 			chunkproxy: &fakeTailProxy{},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
@@ -45,7 +45,7 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		svc := &service{
+		svc := &Service{
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker: &fakeSubService{
 				stream: make(chan pubsub.Event[internal.Chunk]),
@@ -69,7 +69,7 @@ func TestTail(t *testing.T) {
 			Data:  []byte("\x02hello"),
 		}
 		sub := make(chan pubsub.Event[internal.Chunk])
-		svc := &service{
+		svc := &Service{
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
@@ -112,7 +112,7 @@ func TestTail(t *testing.T) {
 			Data:  []byte("\x02hello"),
 		}
 		sub := make(chan pubsub.Event[internal.Chunk])
-		svc := &service{
+		svc := &Service{
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
@@ -151,7 +151,7 @@ func TestTail(t *testing.T) {
 
 	t.Run("ignore chunk for other run", func(t *testing.T) {
 		sub := make(chan pubsub.Event[internal.Chunk])
-		svc := &service{
+		svc := &Service{
 			chunkproxy: &fakeTailProxy{},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),

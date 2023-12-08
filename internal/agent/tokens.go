@@ -41,13 +41,13 @@ func (a *agentToken) LogValue() slog.Value {
 }
 
 type tokenFactory struct {
-	tokens.TokensService
+	tokens *tokens.Service
 }
 
 // createJobToken constructs a job token
 func (f *tokenFactory) createJobToken(spec JobSpec) ([]byte, error) {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultJobTokenExpiry)
-	return f.NewToken(tokens.NewTokenOptions{
+	return f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: spec.String(),
 		Kind:    JobTokenKind,
 		Expiry:  &expiry,
@@ -69,7 +69,7 @@ func (f *tokenFactory) NewAgentToken(poolID string, opts CreateAgentTokenOptions
 		Description: opts.Description,
 		AgentPoolID: poolID,
 	}
-	token, err := f.NewToken(tokens.NewTokenOptions{
+	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: at.ID,
 		Kind:    AgentTokenKind,
 		Claims: map[string]string{

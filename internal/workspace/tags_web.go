@@ -26,7 +26,7 @@ func (h *webHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.AddTags(r.Context(), *params.WorkspaceID, []TagSpec{{Name: *params.TagName}})
+	err := h.client.AddTags(r.Context(), *params.WorkspaceID, []TagSpec{{Name: *params.TagName}})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -46,7 +46,7 @@ func (h *webHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.RemoveTags(r.Context(), *params.WorkspaceID, []TagSpec{{Name: *params.TagName}})
+	err := h.client.RemoveTags(r.Context(), *params.WorkspaceID, []TagSpec{{Name: *params.TagName}})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

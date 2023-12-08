@@ -34,7 +34,7 @@ func TestModuleE2E(t *testing.T) {
 		// publish module
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
 			screenshot(t),
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.ByQuery),
@@ -85,16 +85,16 @@ func TestModuleE2E(t *testing.T) {
 	// Now run terraform with some config that sources the module. First we need
 	// a workspace...
 	workspaceName := "module-test"
-	browser.Run(t, ctx, createWorkspace(t, svc.Hostname(), org.Name, workspaceName))
+	browser.Run(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, workspaceName))
 
 	// generate some terraform config that sources our module
-	root := newRootModule(t, svc.Hostname(), org.Name, workspaceName)
+	root := newRootModule(t, svc.System.Hostname(), org.Name, workspaceName)
 	config := fmt.Sprintf(`
 module "mod" {
   source  = "%s/%s/%s/%s"
   version = "1.0.0"
 }
-`, svc.Hostname(), org.Name, "mod", "aws")
+`, svc.System.Hostname(), org.Name, "mod", "aws")
 	err := os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
@@ -107,12 +107,12 @@ module "mod" {
 
 	// delete vcs provider and visit the module page; it should be no longer
 	// connected. Then delete the module.
-	_, err = svc.DeleteVCSProvider(ctx, provider.ID)
+	_, err = svc.VCSProviders.Delete(ctx, provider.ID)
 	require.NoError(t, err)
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
 			screenshot(t),
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.ByQuery),

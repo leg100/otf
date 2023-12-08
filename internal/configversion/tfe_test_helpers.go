@@ -3,7 +3,7 @@ package configversion
 import "context"
 
 type fakeConfigService struct {
-	ConfigurationVersionService
+	*Service
 }
 
 func (f *fakeConfigService) UploadConfig(context.Context, string, []byte) error {

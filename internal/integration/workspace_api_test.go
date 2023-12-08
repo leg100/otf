@@ -29,7 +29,7 @@ func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 	sv := svc.createStateVersion(t, ctx, nil)
 	_, token := svc.createToken(t, ctx, nil)
 
-	u := fmt.Sprintf("https://%s/api/v2/workspaces/%s?include=outputs", svc.Hostname(), sv.WorkspaceID)
+	u := fmt.Sprintf("https://%s/api/v2/workspaces/%s?include=outputs", svc.System.Hostname(), sv.WorkspaceID)
 	r, err := http.NewRequest("GET", u, nil)
 	require.NoError(t, err)
 	r.Header.Add("Authorization", "Bearer "+string(token))
@@ -74,7 +74,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	_, token := daemon.createToken(t, ctx, nil)
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: "https://" + daemon.Hostname(),
+		Address: "https://" + daemon.System.Hostname(),
 		Token:   string(token),
 	})
 	require.NoError(t, err)
@@ -99,10 +99,10 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	require.NoError(t, err)
 
 	// watch run events
-	runsSub, runsUnsub := daemon.WatchRuns(ctx)
+	runsSub, runsUnsub := daemon.Runs.Watch(ctx)
 	defer runsUnsub()
 
-	_, err = daemon.CreateRun(ctx, ws.ID, run.CreateOptions{})
+	_, err = daemon.Runs.Create(ctx, ws.ID, run.CreateOptions{})
 	require.NoError(t, err)
 
 	for event := range runsSub {

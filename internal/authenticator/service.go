@@ -16,13 +16,12 @@ type (
 		logr.Logger
 		html.Renderer
 
-		internal.HostnameService
-		tokens.TokensService
+		*internal.HostnameService
 
+		TokensService        *tokens.Service
 		OpaqueHandlerConfigs []OpaqueHandlerConfig
 		IDTokenHandlerConfig OIDCConfig
-
-		SkipTLSVerification bool
+		SkipTLSVerification  bool
 	}
 
 	service struct {

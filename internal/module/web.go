@@ -1,6 +1,7 @@
 package module
 
 import (
+	"context"
 	"errors"
 	"html/template"
 	"net/http"
@@ -28,10 +29,30 @@ type (
 	webHandlers struct {
 		internal.Signer
 		html.Renderer
-		vcsprovider.VCSProviderService
-		internal.HostnameService
 
-		svc Service
+		client       webModulesClient
+		vcsproviders vcsprovidersClient
+		system       webHostnameClient
+	}
+
+	webHostnameClient interface {
+		Hostname() string
+	}
+
+	// webModulesClient provides web handlers with access to modules
+	webModulesClient interface {
+		GetModuleByID(ctx context.Context, id string) (*Module, error)
+		GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error)
+		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
+		PublishModule(context.Context, PublishOptions) (*Module, error)
+		DeleteModule(ctx context.Context, id string) (*Module, error)
+	}
+
+	// vcsprovidersClient provides web handlers with access to vcs providers
+	vcsprovidersClient interface {
+		Get(context.Context, string) (*vcsprovider.VCSProvider, error)
+		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 	}
 
 	newModuleStep string
@@ -54,7 +75,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	modules, err := h.svc.ListModules(r.Context(), opts)
+	modules, err := h.client.ListModules(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,7 +107,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.svc.GetModuleByID(r.Context(), params.ID)
+	module, err := h.client.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,7 +124,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		modver = module.Latest()
 	}
 	if modver != nil {
-		tfmod, err = h.svc.GetModuleInfo(r.Context(), modver.ID)
+		tfmod, err = h.client.GetModuleInfo(r.Context(), modver.ID)
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -135,7 +156,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		TerraformModule:           tfmod,
 		Readme:                    readme,
 		CurrentVersion:            modver,
-		Hostname:                  h.Hostname(),
+		Hostname:                  h.system.Hostname(),
 		ModuleStatusPending:       ModuleStatusPending,
 		ModuleStatusNoVersionTags: ModuleStatusNoVersionTags,
 		ModuleStatusSetupFailed:   ModuleStatusSetupFailed,
@@ -170,7 +191,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providers, err := h.ListVCSProviders(r.Context(), org)
+	providers, err := h.vcsproviders.List(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -198,7 +219,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := h.GetVCSClient(r.Context(), params.VCSProviderID)
+	client, err := h.vcsproviders.GetVCSClient(r.Context(), params.VCSProviderID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -249,7 +270,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vcsprov, err := h.GetVCSProvider(r.Context(), params.VCSProviderID)
+	vcsprov, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -278,7 +299,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.svc.PublishModule(r.Context(), PublishOptions{
+	module, err := h.client.PublishModule(r.Context(), PublishOptions{
 		Repo:          params.Repo,
 		VCSProviderID: params.VCSProviderID,
 	})
@@ -301,7 +322,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleted, err := h.svc.DeleteModule(r.Context(), id)
+	deleted, err := h.client.DeleteModule(r.Context(), id)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -1,15 +1,14 @@
 package module
 
 import (
-	"context"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -156,109 +155,46 @@ func TestNewModule_Delete(t *testing.T) {
 }
 
 func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-
-	var svc fakeWebServices
+	var svc fakeService
 	for _, fn := range opts {
 		fn(&svc)
 	}
-
 	return &webHandlers{
-		Renderer:           renderer,
-		VCSProviderService: &svc,
-		HostnameService:    &svc,
-		svc:                &svc,
+		Renderer:     testutils.NewRenderer(t),
+		system:       &svc,
+		client:       &svc,
+		vcsproviders: &svc,
 	}
 }
 
-type testWebOption func(*fakeWebServices)
+type testWebOption func(*fakeService)
 
 func withMod(mod *Module) testWebOption {
-	return func(svc *fakeWebServices) {
+	return func(svc *fakeService) {
 		svc.mod = mod
 	}
 }
 
 func withTarball(tarball []byte) testWebOption {
-	return func(svc *fakeWebServices) {
+	return func(svc *fakeService) {
 		svc.tarball = tarball
 	}
 }
 
 func withVCSProviders(vcsprovs ...*vcsprovider.VCSProvider) testWebOption {
-	return func(svc *fakeWebServices) {
+	return func(svc *fakeService) {
 		svc.vcsprovs = vcsprovs
 	}
 }
 
 func withRepos(repos ...string) testWebOption {
-	return func(svc *fakeWebServices) {
+	return func(svc *fakeService) {
 		svc.repos = repos
 	}
 }
 
 func withHostname(hostname string) testWebOption {
-	return func(svc *fakeWebServices) {
+	return func(svc *fakeService) {
 		svc.hostname = hostname
 	}
-}
-
-type fakeWebServices struct {
-	mod      *Module
-	tarball  []byte
-	vcsprovs []*vcsprovider.VCSProvider
-	repos    []string
-	hostname string
-
-	Service
-	internal.HostnameService
-
-	vcsprovider.VCSProviderService
-}
-
-func (f *fakeWebServices) PublishModule(context.Context, PublishOptions) (*Module, error) {
-	return f.mod, nil
-}
-
-func (f *fakeWebServices) GetModuleByID(context.Context, string) (*Module, error) {
-	return f.mod, nil
-}
-
-func (f *fakeWebServices) DeleteModule(context.Context, string) (*Module, error) {
-	return f.mod, nil
-}
-
-func (f *fakeWebServices) ListModules(context.Context, ListModulesOptions) ([]*Module, error) {
-	return []*Module{f.mod}, nil
-}
-
-func (f *fakeWebServices) GetVCSProvider(context.Context, string) (*vcsprovider.VCSProvider, error) {
-	return f.vcsprovs[0], nil
-}
-
-func (f *fakeWebServices) ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
-	return f.vcsprovs, nil
-}
-
-func (f *fakeWebServices) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
-	return &fakeModulesCloudClient{repos: f.repos}, nil
-}
-
-func (f *fakeWebServices) GetModuleInfo(context.Context, string) (*TerraformModule, error) {
-	return unmarshalTerraformModule(f.tarball)
-}
-
-func (f *fakeWebServices) Hostname() string {
-	return f.hostname
-}
-
-type fakeModulesCloudClient struct {
-	repos []string
-
-	vcs.Client
-}
-
-func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
-	return f.repos, nil
 }

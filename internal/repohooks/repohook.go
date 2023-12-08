@@ -38,7 +38,7 @@ type (
 		cloudID       *string // cloud's webhook id
 
 		// for building endpoint URL
-		internal.HostnameService
+		*internal.HostnameService
 	}
 )
 

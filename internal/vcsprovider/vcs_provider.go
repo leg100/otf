@@ -34,7 +34,7 @@ type (
 
 	// factory produces VCS providers
 	factory struct {
-		github.GithubAppService
+		githubapps *github.Service
 
 		githubHostname      string
 		gitlabHostname      string
@@ -63,7 +63,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 		err   error
 	)
 	if opts.GithubAppInstallID != nil {
-		creds, err = f.GetInstallCredentials(ctx, *opts.GithubAppInstallID)
+		creds, err = f.githubapps.GetInstallCredentials(ctx, *opts.GithubAppInstallID)
 		if err != nil {
 			return nil, err
 		}

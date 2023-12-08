@@ -14,15 +14,15 @@ func TestIntegration_TeamUI(t *testing.T) {
 	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
-	_, err := daemon.CreateUser(ctx, "bob")
+	_, err := daemon.Users.Create(ctx, "bob")
 	require.NoError(t, err)
-	_, err = daemon.CreateUser(ctx, "alice")
+	_, err = daemon.Users.Create(ctx, "alice")
 	require.NoError(t, err)
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// go to teams listing
 			chromedp.Click(`//a[text()='teams']`),

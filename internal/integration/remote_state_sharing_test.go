@@ -20,7 +20,7 @@ func TestRemoteStateSharing(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 	// producer is the workspace sharing its state
-	producer, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	producer, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:              internal.String("producer"),
 		Organization:      internal.String(org.Name),
 		GlobalRemoteState: internal.Bool(true),
@@ -37,17 +37,17 @@ func TestRemoteStateSharing(t *testing.T) {
 	tarball, err := internal.Pack(producerRoot)
 	require.NoError(t, err)
 	producerCV := daemon.createConfigurationVersion(t, ctx, producer, nil)
-	err = daemon.UploadConfig(ctx, producerCV.ID, tarball)
+	err = daemon.Configs.UploadConfig(ctx, producerCV.ID, tarball)
 	require.NoError(t, err)
 	// listen to run events, and create run and apply
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 	_ = daemon.createRun(t, ctx, producer, producerCV)
 applied:
 	for event := range sub {
 		switch event.Payload.Status {
 		case run.RunPlanned:
-			err := daemon.Apply(ctx, event.Payload.ID)
+			err := daemon.Runs.Apply(ctx, event.Payload.ID)
 			require.NoError(t, err)
 		case run.RunApplied:
 			break applied
@@ -74,13 +74,13 @@ data "terraform_remote_state" "producer" {
 output "remote_foo" {
   value = data.terraform_remote_state.producer.outputs.foo
 }
-`, daemon.Hostname(), org.Name, producer.Name)
+`, daemon.System.Hostname(), org.Name, producer.Name)
 	err = os.WriteFile(filepath.Join(consumerRoot, "main.tf"), []byte(consumerConfig), 0o777)
 	require.NoError(t, err)
 	tarball, err = internal.Pack(consumerRoot)
 	require.NoError(t, err)
 	consumerCV := daemon.createConfigurationVersion(t, ctx, consumer, nil)
-	err = daemon.UploadConfig(ctx, consumerCV.ID, tarball)
+	err = daemon.Configs.UploadConfig(ctx, consumerCV.ID, tarball)
 	require.NoError(t, err)
 
 	// create run and apply
@@ -88,7 +88,7 @@ output "remote_foo" {
 	for event := range sub {
 		switch event.Payload.Status {
 		case run.RunPlanned:
-			err := daemon.Apply(ctx, event.Payload.ID)
+			err := daemon.Runs.Apply(ctx, event.Payload.ID)
 			require.NoError(t, err)
 		case run.RunApplied:
 			return

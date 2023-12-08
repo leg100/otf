@@ -19,7 +19,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -36,34 +35,38 @@ var ascii = regexp.MustCompile("[[:^ascii:]]")
 
 // operation performs the execution of a job
 type operation struct {
-	client
+	*daemonClient
 	*run.Run
 	logr.Logger
 
 	config        Config
 	job           *Job
-	canceled      bool // semaphore instructing op to stop
+	canceled      bool
 	ctx           context.Context
 	cancelfn      context.CancelFunc
 	out           io.Writer
 	terraformPath string
 	envs          []string
-	variables     []*variable.Variable // terraform variables
-	proc          *os.Process          // current or last process
-	downloader    releases.Downloader
+	variables     []*variable.Variable
+	proc          *os.Process
+	downloader    downloader
 	token         []byte
+	agentID       string
+	isPoolAgent   bool
 
 	*workdir
 }
 
 type newOperationOptions struct {
-	logger     logr.Logger
-	client     client
-	config     Config
-	job        *Job
-	downloader releases.Downloader
-	envs       []string
-	token      []byte
+	logger      logr.Logger
+	client      *daemonClient
+	config      Config
+	job         *Job
+	downloader  downloader
+	envs        []string
+	token       []byte
+	agentID     string
+	isPoolAgent bool
 }
 
 func newOperation(opts newOperationOptions) *operation {
@@ -71,15 +74,17 @@ func newOperation(opts newOperationOptions) *operation {
 	// canceled via its cancel() method.
 	ctx, cancelfn := context.WithCancel(context.Background())
 	return &operation{
-		Logger:     opts.logger.WithValues("job", opts.job),
-		client:     opts.client,
-		config:     opts.config,
-		job:        opts.job,
-		envs:       opts.envs,
-		downloader: opts.downloader,
-		token:      opts.token,
-		ctx:        ctx,
-		cancelfn:   cancelfn,
+		Logger:       opts.logger.WithValues("job", opts.job),
+		daemonClient: opts.client,
+		config:       opts.config,
+		job:          opts.job,
+		envs:         opts.envs,
+		downloader:   opts.downloader,
+		token:        opts.token,
+		ctx:          ctx,
+		cancelfn:     cancelfn,
+		agentID:      opts.agentID,
+		isPoolAgent:  opts.isPoolAgent,
 	}
 }
 
@@ -111,7 +116,7 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.finishJob(o.ctx, o.job.Spec, opts); err != nil {
+	if err := o.agents.finishJob(o.ctx, o.job.Spec, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }
@@ -119,23 +124,23 @@ func (o *operation) doAndFinish() {
 // do executes the job
 func (o *operation) do() error {
 	// if this is a pool agent using RPC to communicate with the server
-	// then use a new ac for this job, configured to authenticate using the
+	// then use a new client for this job, configured to authenticate using the
 	// job token and to retry requests upon encountering transient errors.
-	if ac, ok := o.client.(*rpcClient); ok {
-		jc, err := ac.NewJobClient(o.token, o.Logger)
+	if o.isPoolAgent {
+		jc, err := o.newJobClient(o.agentID, o.token, o.Logger)
 		if err != nil {
 			return fmt.Errorf("initializing job client: %w", err)
 		}
-		o.client = jc
+		o.daemonClient = jc
 	} else {
 		// this is a server agent: directly authenticate as job with services
 		o.ctx = internal.AddSubjectToContext(o.ctx, o.job)
 	}
 
 	// make token available to terraform CLI
-	o.envs = append(o.envs, internal.CredentialEnv(o.Hostname(), o.token))
+	o.envs = append(o.envs, internal.CredentialEnv(o.server.Hostname(), o.token))
 
-	run, err := o.GetRun(o.ctx, o.job.Spec.RunID)
+	run, err := o.runs.Get(o.ctx, o.job.Spec.RunID)
 	if err != nil {
 		return err
 	}
@@ -145,7 +150,7 @@ func (o *operation) do() error {
 	//
 	// TODO: add working directory to run.Run so we skip having to retrieve
 	// workspace.
-	ws, err := o.GetWorkspace(o.ctx, o.job.WorkspaceID)
+	ws, err := o.workspaces.Get(o.ctx, o.job.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retreiving workspace: %w", err)
 	}
@@ -156,7 +161,7 @@ func (o *operation) do() error {
 	defer wd.close()
 	o.workdir = wd
 	// retrieve variables and add them to the environment
-	variables, err := o.ListEffectiveVariables(o.ctx, run.ID)
+	variables, err := o.daemonClient.variables.ListEffectiveVariables(o.ctx, run.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving variables: %w", err)
 	}
@@ -172,7 +177,7 @@ func (o *operation) do() error {
 	writer := logs.NewPhaseWriter(o.ctx, logs.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
-		Writer: o,
+		Writer: o.logs,
 	})
 	defer writer.Close()
 	o.out = writer
@@ -187,7 +192,7 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "Debug mode enabled")
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(o.out, "External agent: %t\n", !o.config.server)
+		fmt.Fprintf(o.out, "External agent: %t\n", o.isPoolAgent)
 		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.config.Sandbox)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
@@ -361,7 +366,7 @@ func (o *operation) downloadTerraform(ctx context.Context) error {
 }
 
 func (o *operation) downloadConfig(ctx context.Context) error {
-	cv, err := o.DownloadConfig(ctx, o.ConfigurationVersionID)
+	cv, err := o.configs.DownloadConfig(ctx, o.ConfigurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -382,7 +387,7 @@ func (o *operation) deleteBackendConfig(ctx context.Context) error {
 // downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
 func (o *operation) downloadState(ctx context.Context) error {
-	statefile, err := o.DownloadCurrentState(ctx, o.WorkspaceID)
+	statefile, err := o.state.DownloadCurrent(ctx, o.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
@@ -398,7 +403,7 @@ func (o *operation) downloadState(ctx context.Context) error {
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
 func (o *operation) downloadLockFile(ctx context.Context) error {
-	lockFile, err := o.GetLockFile(ctx, o.ID)
+	lockFile, err := o.runs.GetLockFile(ctx, o.ID)
 	if err != nil {
 		return err
 	}
@@ -475,7 +480,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 		return err
 	}
 
-	if err := o.UploadPlanFile(ctx, o.ID, file, run.PlanFormatBinary); err != nil {
+	if err := o.runs.UploadPlanFile(ctx, o.ID, file, run.PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -487,7 +492,7 @@ func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := o.UploadPlanFile(ctx, o.ID, jsonFile, run.PlanFormatJSON); err != nil {
+	if err := o.runs.UploadPlanFile(ctx, o.ID, jsonFile, run.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -501,14 +506,14 @@ func (o *operation) uploadLockFile(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("reading lock file: %w", err)
 	}
-	if err := o.UploadLockFile(ctx, o.ID, lockFile); err != nil {
+	if err := o.runs.UploadLockFile(ctx, o.ID, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
 	}
 	return nil
 }
 
 func (o *operation) downloadPlanFile(ctx context.Context) error {
-	plan, err := o.GetPlanFile(ctx, o.ID, run.PlanFormatBinary)
+	plan, err := o.runs.GetPlanFile(ctx, o.ID, run.PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -527,7 +532,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 	if err := json.Unmarshal(statefile, &f); err != nil {
 		return err
 	}
-	_, err = o.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	_, err = o.state.Create(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: &o.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,

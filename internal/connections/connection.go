@@ -47,49 +47,37 @@ type (
 		RepoPath      string
 	}
 
-	ConnectionService Service
-
-	// Service manages connections between OTF resources and VCS repos
-	Service interface {
-		// Connect adds a connection between a VCS repo and an OTF resource. A
-		// webhook is created if one doesn't exist already.
-		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
-
-		// Disconnect removes a connection between a VCS repo and an OTF
-		// resource. If there are no more connections then its
-		// webhook is removed.
-		Disconnect(ctx context.Context, opts DisconnectOptions) error
-	}
-
 	Options struct {
 		logr.Logger
-		vcsprovider.VCSProviderService
-		repohooks.RepohookService
 		*sql.DB
+
+		VCSProviderService *vcsprovider.Service
+		RepoHooksService   *repohooks.Service
 	}
 
-	service struct {
+	Service struct {
 		logr.Logger
-		vcsprovider.Service
-		repohooks.RepohookService
 
 		*db
+
+		repohooks    *repohooks.Service
+		vcsproviders *vcsprovider.Service
 	}
 )
 
-func NewService(ctx context.Context, opts Options) *service {
-	return &service{
-		Logger:          opts.Logger,
-		Service:         opts.VCSProviderService,
-		RepohookService: opts.RepohookService,
-		db:              &db{opts.DB},
+func NewService(ctx context.Context, opts Options) *Service {
+	return &Service{
+		Logger:       opts.Logger,
+		vcsproviders: opts.VCSProviderService,
+		repohooks:    opts.RepoHooksService,
+		db:           &db{opts.DB},
 	}
 }
 
 // Connect an OTF resource to a VCS repo.
-func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
+func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	// check vcs provider is valid
-	provider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
+	provider, err := s.vcsproviders.Get(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
@@ -97,7 +85,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		// github app vcs provider does not require a repohook to be created
 		if provider.GithubApp == nil {
-			_, err := s.RepohookService.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
+			_, err := s.repohooks.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
 				VCSProviderID: opts.VCSProviderID,
 				RepoPath:      opts.RepoPath,
 			})
@@ -117,14 +105,14 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 }
 
 // Disconnect resource from repo
-func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
+func (s *Service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		if err := s.db.deleteConnection(ctx, opts); err != nil {
 			return err
 		}
 		// now that a connection has been deleted, also delete any repohooks that
 		// are no longer referenced by connections
-		if err := s.RepohookService.DeleteUnreferencedRepohooks(ctx); err != nil {
+		if err := s.repohooks.DeleteUnreferencedRepohooks(ctx); err != nil {
 			return err
 		}
 		return nil

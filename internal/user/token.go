@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -25,17 +24,8 @@ type (
 		Description string
 	}
 
-	userTokenService interface {
-		// CreateUserToken creates a user token.
-		CreateUserToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
-		// ListUserTokens lists API tokens for a user
-		ListUserTokens(ctx context.Context) ([]*UserToken, error)
-		// DeleteUserToken deletes a user token.
-		DeleteUserToken(ctx context.Context, tokenID string) error
-	}
-
 	userTokenFactory struct {
-		tokens.TokensService
+		tokens *tokens.Service
 	}
 )
 
@@ -46,7 +36,7 @@ func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOpt
 		Description: opts.Description,
 		Username:    username,
 	}
-	token, err := f.NewToken(tokens.NewTokenOptions{
+	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: ut.ID,
 		Kind:    UserTokenKind,
 	})

@@ -28,18 +28,22 @@ type (
 		getUsername(context.Context, *oauth2.Token) (string, error)
 	}
 
+	sessionStarter interface {
+		StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error
+	}
+
 	// OAuthClient performs the client role in an oauth handshake, requesting
 	// authorization from the user to access their account details on a particular
 	// cloud.
 	OAuthClient struct {
 		// extract username from token
 		tokenHandler
-		// for creating session
-		tokens.TokensService
 		// for retrieving OTF system hostname to construct redirect URLs
-		internal.HostnameService
+		*internal.HostnameService
 
 		OAuthConfig
+
+		sessions sessionStarter
 	}
 
 	// OAuthConfig is configuration for constructing an OAuth client
@@ -56,8 +60,8 @@ type (
 
 func newOAuthClient(
 	handler tokenHandler,
-	hostnameService internal.HostnameService,
-	tokensService tokens.TokensService,
+	hostnameService *internal.HostnameService,
+	tokensService sessionStarter,
 	cfg OAuthConfig,
 ) (*OAuthClient, error) {
 
@@ -84,7 +88,7 @@ func newOAuthClient(
 	return &OAuthClient{
 		tokenHandler:    handler,
 		HostnameService: hostnameService,
-		TokensService:   tokensService,
+		sessions:        tokensService,
 		OAuthConfig:     cfg,
 	}, nil
 }
@@ -158,7 +162,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
-	err = a.StartSession(w, r, tokens.StartSessionOptions{Username: &username})
+	err = a.sessions.StartSession(w, r, tokens.StartSessionOptions{Username: &username})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return

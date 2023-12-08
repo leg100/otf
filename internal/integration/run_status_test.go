@@ -20,7 +20,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 
 	// Create a workspace with auto-apply enabled
 	daemon, org, ctx := setup(t, nil)
-	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String(t.Name()),
 		Organization: internal.String(org.Name),
 		AutoApply:    internal.Bool(true),
@@ -28,7 +28,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// watch run events
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 
 	// directory for root module
@@ -90,7 +90,7 @@ output "cat_name" { value = random_pet.cat.id }
 			require.NoError(t, err)
 			tarball, err := internal.Pack(root)
 			require.NoError(t, err)
-			err = daemon.UploadConfig(ctx, cv.ID, tarball)
+			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
 			// create run and wait for it to reach wanted status

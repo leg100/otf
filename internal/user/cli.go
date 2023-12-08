@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
@@ -9,10 +10,15 @@ import (
 )
 
 type userCLI struct {
-	UserService
+	client userCLIClient
 }
 
-func NewUserCommand(api *otfapi.Client) *cobra.Command {
+type userCLIClient interface {
+	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
+	Delete(ctx context.Context, username string) error
+}
+
+func NewUserCommand(apiClient *otfapi.Client) *cobra.Command {
 	cli := &userCLI{}
 	cmd := &cobra.Command{
 		Use:   "users",
@@ -21,7 +27,7 @@ func NewUserCommand(api *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.UserService = &client{Client: api}
+			cli.client = &client{Client: apiClient}
 			return nil
 		},
 	}
@@ -40,7 +46,7 @@ func (a *userCLI) userNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			user, err := a.CreateUser(cmd.Context(), args[0])
+			user, err := a.client.Create(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -58,7 +64,7 @@ func (a *userCLI) userDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := a.DeleteUser(cmd.Context(), args[0]); err != nil {
+			if err := a.client.Delete(cmd.Context(), args[0]); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted user %s\n", args[0])
@@ -68,8 +74,17 @@ func (a *userCLI) userDeleteCommand() *cobra.Command {
 }
 
 type membershipCLI struct {
-	UserService
-	team.TeamService
+	client membershipCLIClient
+	teams  teamsCLIClient
+}
+
+type membershipCLIClient interface {
+	AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
+}
+
+type teamsCLIClient interface {
+	Get(ctx context.Context, organization, name string) (*team.Team, error)
 }
 
 func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
@@ -81,8 +96,8 @@ func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.UserService = &client{Client: apiclient}
-			cli.TeamService = &team.Client{Client: apiclient}
+			cli.client = &client{Client: apiclient}
+			cli.teams = &team.Client{Client: apiclient}
 			return nil
 		},
 	}
@@ -106,11 +121,11 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.GetTeam(cmd.Context(), organization, name)
+			team, err := a.teams.Get(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
-			if err := a.AddTeamMembership(cmd.Context(), team.ID, args); err != nil {
+			if err := a.client.AddTeamMembership(cmd.Context(), team.ID, args); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args, name)
@@ -139,11 +154,11 @@ func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.GetTeam(cmd.Context(), organization, name)
+			team, err := a.teams.Get(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
-			if err := a.RemoveTeamMembership(cmd.Context(), team.ID, args); err != nil {
+			if err := a.client.RemoveTeamMembership(cmd.Context(), team.ID, args); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args, name)

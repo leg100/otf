@@ -12,7 +12,7 @@ import (
 
 type (
 	api struct {
-		Service
+		*Service
 		*tfeapi.Responder
 	}
 )
@@ -37,7 +37,7 @@ func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.GetWorkspace(r.Context(), id)
+	ws, err := a.Get(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -53,7 +53,7 @@ func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.GetByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -69,7 +69,7 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListWorkspaces(r.Context(), params)
+	page, err := a.List(r.Context(), params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -91,7 +91,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.UpdateWorkspace(r.Context(), id, params)
+	ws, err := a.Update(r.Context(), id, params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -106,7 +106,7 @@ func (a *api) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.LockWorkspace(r.Context(), id, nil)
+	ws, err := a.Lock(r.Context(), id, nil)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -130,7 +130,7 @@ func (a *api) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 		return
 	}
 
-	ws, err := a.UnlockWorkspace(r.Context(), id, nil, force)
+	ws, err := a.Unlock(r.Context(), id, nil, force)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

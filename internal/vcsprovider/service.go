@@ -17,31 +17,7 @@ import (
 )
 
 type (
-	// Alias services so they don't conflict when nested together in struct
-	VCSProviderService Service
-
-	Service interface {
-		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
-		UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error)
-		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
-		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
-		ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error)
-		// ListVCSProvidersByGithubAppInstall lists VCS providers using the
-		// credentials of a particular github app installation.
-		ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error)
-		DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
-
-		// GetVCSClient combines retrieving a vcs provider and construct a cloud
-		// client from that provider.
-		//
-		// TODO: rename vcs provider to vcs client; the central purpose of the vcs
-		// provider is, after all, to construct a vcs client.
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
-
-		BeforeDeleteVCSProvider(hook func(context.Context, *VCSProvider) error)
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
 		site              internal.Authorizer
@@ -50,53 +26,53 @@ type (
 		web               *webHandlers
 		api               *tfe
 		beforeDeleteHooks []func(context.Context, *VCSProvider) error
+		githubapps        *github.Service
 
-		internal.HostnameService
-		github.GithubAppService
+		*internal.HostnameService
 		*factory
 	}
 
 	Options struct {
-		internal.HostnameService
+		*internal.HostnameService
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
-		github.GithubAppService
 		vcs.Subscriber
 
+		GithubAppService    *github.Service
 		GithubHostname      string
 		GitlabHostname      string
 		SkipTLSVerification bool
 	}
 )
 
-func NewService(opts Options) *service {
+func NewService(opts Options) *Service {
 	factory := factory{
-		GithubAppService:    opts.GithubAppService,
+		githubapps:          opts.GithubAppService,
 		githubHostname:      opts.GithubHostname,
 		gitlabHostname:      opts.GitlabHostname,
 		skipTLSVerification: opts.SkipTLSVerification,
 	}
-	svc := service{
-		Logger:           opts.Logger,
-		HostnameService:  opts.HostnameService,
-		GithubAppService: opts.GithubAppService,
-		site:             &internal.SiteAuthorizer{Logger: opts.Logger},
-		organization:     &organization.Authorizer{Logger: opts.Logger},
-		factory:          &factory,
+	svc := Service{
+		Logger:          opts.Logger,
+		HostnameService: opts.HostnameService,
+		githubapps:      opts.GithubAppService,
+		site:            &internal.SiteAuthorizer{Logger: opts.Logger},
+		organization:    &organization.Authorizer{Logger: opts.Logger},
+		factory:         &factory,
 		db: &pgdb{
 			DB:      opts.DB,
 			factory: &factory,
 		},
 	}
 	svc.web = &webHandlers{
-		Renderer:         opts.Renderer,
-		HostnameService:  opts.HostnameService,
-		GithubAppService: opts.GithubAppService,
-		GithubHostname:   opts.GithubHostname,
-		GitlabHostname:   opts.GitlabHostname,
-		svc:              &svc,
+		Renderer:        opts.Renderer,
+		HostnameService: opts.HostnameService,
+		GithubHostname:  opts.GithubHostname,
+		GitlabHostname:  opts.GitlabHostname,
+		client:          &svc,
+		githubApps:      opts.GithubAppService,
 	}
 	svc.api = &tfe{
 		Service:   &svc,
@@ -118,7 +94,7 @@ func NewService(opts Options) *service {
 		}
 		// and delete them
 		for _, prov := range providers {
-			if _, err = svc.DeleteVCSProvider(ctx, prov.ID); err != nil {
+			if _, err = svc.Delete(ctx, prov.ID); err != nil {
 				return
 			}
 		}
@@ -126,12 +102,12 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (a *service) AddHandlers(r *mux.Router) {
+func (a *Service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 	a.api.addHandlers(r)
 }
 
-func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
+func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -150,7 +126,7 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 	return provider, nil
 }
 
-func (a *service) UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error) {
+func (a *Service) Update(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error) {
 	var (
 		subject internal.Subject
 		before  VCSProvider
@@ -177,7 +153,7 @@ func (a *service) UpdateVCSProvider(ctx context.Context, id string, opts UpdateO
 	return after, nil
 }
 
-func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {
+func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
@@ -192,7 +168,7 @@ func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]
 	return providers, nil
 }
 
-func (a *service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
+func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, "")
 	if err != nil {
 		return nil, err
@@ -208,7 +184,7 @@ func (a *service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, erro
 }
 
 // ListVCSProvidersByGithubAppInstall is unauthenticated: only for internal use.
-func (a *service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
+func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -223,7 +199,7 @@ func (a *service) ListVCSProvidersByGithubAppInstall(ctx context.Context, instal
 	return providers, nil
 }
 
-func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *Service) Get(ctx context.Context, id string) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -241,15 +217,15 @@ func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, 
 	return provider, nil
 }
 
-func (a *service) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
-	provider, err := a.GetVCSProvider(ctx, providerID)
+func (a *Service) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+	provider, err := a.Get(ctx, providerID)
 	if err != nil {
 		return nil, err
 	}
 	return provider.NewClient()
 }
 
-func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *Service) Delete(ctx context.Context, id string) (*VCSProvider, error) {
 	var (
 		provider *VCSProvider
 		subject  internal.Subject
@@ -282,6 +258,6 @@ func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvide
 	return provider, nil
 }
 
-func (a *service) BeforeDeleteVCSProvider(hook func(context.Context, *VCSProvider) error) {
+func (a *Service) BeforeDeleteVCSProvider(hook func(context.Context, *VCSProvider) error) {
 	a.beforeDeleteHooks = append(a.beforeDeleteHooks, hook)
 }

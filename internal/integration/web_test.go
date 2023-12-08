@@ -17,20 +17,20 @@ func TestWeb(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 	user := userFromContext(t, ctx)
 
-	team, err := daemon.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
+	team, err := daemon.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("devops"),
 	})
 	require.NoError(t, err)
-	err = daemon.AddTeamMembership(ctx, team.ID, []string{user.Username})
+	err = daemon.Users.AddTeamMembership(ctx, team.ID, []string{user.Username})
 	require.NoError(t, err)
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		// create workspace
-		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.ByQuery),
@@ -47,11 +47,11 @@ func TestWeb(t *testing.T) {
 			matchText(t, "//div[@role='alert']", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", team.ID, "write"),
+		addWorkspacePermission(t, daemon.System.Hostname(), org.Name, "my-workspace", team.ID, "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.ByQuery),
@@ -61,7 +61,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.ByQuery),

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -20,30 +19,14 @@ const (
 )
 
 type (
-	ReleasesService = Service
-
-	Service interface {
-		// GetLatest returns the latest version of terraform along with the
-		// time when the latest version was last determined.
-		GetLatest(ctx context.Context) (string, time.Time, error)
-
-		Downloader
-	}
-
-	Downloader interface {
-		// Download a terraform release with the given version and log progress
-		// updates to logger. Once complete, the path to the release executable
-		// is returned.
-		Download(ctx context.Context, version string, w io.Writer) (string, error)
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 		*downloader
 		latestChecker
 
 		db *db
 	}
+
 	Options struct {
 		logr.Logger
 		*sql.DB
@@ -52,8 +35,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := &service{
+func NewService(opts Options) *Service {
+	svc := &Service{
 		Logger:        opts.Logger,
 		db:            &db{opts.DB},
 		latestChecker: latestChecker{latestEndpoint},
@@ -64,7 +47,7 @@ func NewService(opts Options) *service {
 
 // StartLatestChecker starts the latest checker go routine, checking the Hashicorp
 // API endpoint for a new latest version.
-func (s *service) StartLatestChecker(ctx context.Context) {
+func (s *Service) StartLatestChecker(ctx context.Context) {
 	check := func() {
 		err := func() error {
 			before, checkpoint, err := s.GetLatest(ctx)
@@ -115,7 +98,7 @@ func (s *service) StartLatestChecker(ctx context.Context) {
 // GetLatest returns the latest terraform version and the time when it was
 // fetched; if it has not yet been fetched then the default version is returned
 // instead along with zero time.
-func (s *service) GetLatest(ctx context.Context) (string, time.Time, error) {
+func (s *Service) GetLatest(ctx context.Context) (string, time.Time, error) {
 	latest, checkpoint, err := s.db.getLatest(ctx)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// no latest version has yet been persisted to the database so return

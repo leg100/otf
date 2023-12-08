@@ -10,30 +10,16 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
-	NotificationService = Service
-
-	Service interface {
-		CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error)
-		UpdateNotificationConfiguration(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error)
-		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
-		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
-		DeleteNotificationConfiguration(ctx context.Context, id string) error
-		WatchNotificationConfigurations(context.Context) (<-chan pubsub.Event[*Config], func())
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
-		workspace.WorkspaceService
-		internal.HostnameService // for including a link in the notification
 
-		workspace internal.Authorizer // authorize workspaces actions
-		db        *pgdb
-		api       *tfe
-		broker    *pubsub.Broker[*Config]
+		workspaceAuthorizer internal.Authorizer // authorize workspaces actions
+		db                  *pgdb
+		api                 *tfe
+		broker              *pubsub.Broker[*Config]
 	}
 
 	Options struct {
@@ -41,19 +27,16 @@ type (
 		*sql.Listener
 		*tfeapi.Responder
 		logr.Logger
+
 		WorkspaceAuthorizer internal.Authorizer
-		workspace.WorkspaceService
-		internal.HostnameService // for including a link in the notification
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := service{
-		Logger:           opts.Logger,
-		workspace:        opts.WorkspaceAuthorizer,
-		db:               &pgdb{opts.DB},
-		HostnameService:  opts.HostnameService,
-		WorkspaceService: opts.WorkspaceService,
+func NewService(opts Options) *Service {
+	svc := Service{
+		Logger:              opts.Logger,
+		workspaceAuthorizer: opts.WorkspaceAuthorizer,
+		db:                  &pgdb{opts.DB},
 	}
 	svc.api = &tfe{
 		Service:   &svc,
@@ -74,16 +57,16 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) WatchNotificationConfigurations(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.CreateNotificationConfigurationAction, workspaceID)
+func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {
+	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateNotificationConfigurationAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,10 +83,10 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 	return nc, nil
 }
 
-func (s *service) UpdateNotificationConfiguration(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error) {
+func (s *Service) Update(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error) {
 	var subject internal.Subject
 	updated, err := s.db.update(ctx, id, func(nc *Config) (err error) {
-		subject, err = s.workspace.CanAccess(ctx, rbac.UpdateNotificationConfigurationAction, nc.WorkspaceID)
+		subject, err = s.workspaceAuthorizer.CanAccess(ctx, rbac.UpdateNotificationConfigurationAction, nc.WorkspaceID)
 		if err != nil {
 			return err
 		}
@@ -117,13 +100,13 @@ func (s *service) UpdateNotificationConfiguration(ctx context.Context, id string
 	return updated, nil
 }
 
-func (s *service) GetNotificationConfiguration(ctx context.Context, id string) (*Config, error) {
+func (s *Service) Get(ctx context.Context, id string) (*Config, error) {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)
 		return nil, err
 	}
-	subject, err := s.workspace.CanAccess(ctx, rbac.GetNotificationConfigurationAction, nc.WorkspaceID)
+	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.GetNotificationConfigurationAction, nc.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +114,8 @@ func (s *service) GetNotificationConfiguration(ctx context.Context, id string) (
 	return nc, nil
 }
 
-func (s *service) ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListNotificationConfigurationsAction, workspaceID)
+func (s *Service) List(ctx context.Context, workspaceID string) ([]*Config, error) {
+	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.ListNotificationConfigurationsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +128,13 @@ func (s *service) ListNotificationConfigurations(ctx context.Context, workspaceI
 	return configs, nil
 }
 
-func (s *service) DeleteNotificationConfiguration(ctx context.Context, id string) error {
+func (s *Service) Delete(ctx context.Context, id string) error {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)
 		return err
 	}
-	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteNotificationConfigurationAction, nc.WorkspaceID)
+	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.DeleteNotificationConfigurationAction, nc.WorkspaceID)
 	if err != nil {
 		return err
 	}

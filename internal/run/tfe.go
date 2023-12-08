@@ -19,10 +19,11 @@ import (
 )
 
 type tfe struct {
-	Service
-	workspace.PermissionsService
+	*Service
 	internal.Signer
 	*tfeapi.Responder
+
+	workspaces *workspace.Service
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -85,7 +86,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		opts.Variables[i] = Variable{Key: from.Key, Value: from.Value}
 	}
 
-	run, err := a.CreateRun(r.Context(), params.Workspace.ID, opts)
+	run, err := a.Create(r.Context(), params.Workspace.ID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -106,7 +107,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := a.GetRun(r.Context(), id)
+	run, err := a.Get(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -157,7 +158,7 @@ func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts ListOptions) {
-	page, err := a.ListRuns(r.Context(), opts)
+	page, err := a.List(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -198,7 +199,7 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.DiscardRun(r.Context(), id); err != nil {
+	if err = a.Discard(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -228,7 +229,7 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.ForceCancelRun(r.Context(), id); err != nil {
+	if err := a.ForceCancel(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -247,7 +248,7 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := a.GetRun(r.Context(), internal.ConvertID(id, "run"))
+	run, err := a.Get(r.Context(), internal.ConvertID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -292,7 +293,7 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := a.GetRun(r.Context(), internal.ConvertID(id, "run"))
+	run, err := a.Get(r.Context(), internal.ConvertID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -322,7 +323,7 @@ func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
 	if ws.CurrentRun == nil {
 		return nil, nil
 	}
-	run, err := a.GetRun(ctx, ws.CurrentRun.ID)
+	run, err := a.Get(ctx, ws.CurrentRun.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +351,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	policy, err := a.GetPolicy(ctx, from.WorkspaceID)
+	policy, err := a.workspaces.GetPolicy(ctx, from.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}

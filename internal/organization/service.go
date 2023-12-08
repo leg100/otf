@@ -18,30 +18,7 @@ import (
 )
 
 type (
-	OrganizationService = Service
-
-	Service interface {
-		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
-		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
-		DeleteOrganization(ctx context.Context, name string) error
-		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
-		AfterCreateOrganization(hook func(context.Context, *Organization) error)
-		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
-
-		// organization tokens
-		CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		// GetOrganizationToken gets the organization token. If a token does not
-		// exist, then nil is returned without an error.
-		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
-		ListOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error)
-		DeleteOrganizationToken(ctx context.Context, organization string) error
-		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
-		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
-	}
-
-	service struct {
+	Service struct {
 		RestrictOrganizationCreation bool
 
 		internal.Authorizer // authorize access to org
@@ -61,13 +38,13 @@ type (
 
 	Options struct {
 		RestrictOrganizationCreation bool
+		TokensService                *tokens.Service
 
 		*sql.DB
 		*tfeapi.Responder
 		*sql.Listener
 		html.Renderer
 		logr.Logger
-		tokens.TokensService
 	}
 
 	// ListOptions represents the options for listing organizations.
@@ -76,19 +53,19 @@ type (
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := service{
+func NewService(opts Options) *Service {
+	svc := Service{
 		Authorizer:                   &Authorizer{opts.Logger},
 		Logger:                       opts.Logger,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
-		tokenFactory:                 &tokenFactory{TokensService: opts.TokensService},
+		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
 	svc.web = &web{
-		Renderer:                     opts.Renderer,
-		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
-		svc:                          &svc,
+		Renderer:         opts.Renderer,
+		RestrictCreation: opts.RestrictOrganizationCreation,
+		svc:              &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
@@ -121,21 +98,21 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 
-func (s *service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
+func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-// CreateOrganization creates an organization. Only users can create
+// Create creates an organization. Only users can create
 // organizations, or, if RestrictOrganizationCreation is true, then only the
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
-func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
+func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
 	creator, err := s.restrictOrganizationCreation(ctx)
 	if err != nil {
 		return nil, err
@@ -166,11 +143,11 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 	return org, nil
 }
 
-func (s *service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
+func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
+func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -189,14 +166,14 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Upda
 	return org, nil
 }
 
-// ListOrganizations lists organizations according to the subject. If the
+// List lists organizations according to the subject. If the
 // subject has site-wide permission to list organizations then all organizations
 // are listed. Otherwise:
 // Subject is a user: list their organization memberships
 // Subject is an agent: return its organization
 // Subject is an organization token: return its organization
 // Subject is a team: return its organization
-func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
+func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -207,7 +184,7 @@ func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*res
 	return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: subject.Organizations()})
 }
 
-func (s *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
+func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -224,7 +201,7 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 	return org, nil
 }
 
-func (s *service) DeleteOrganization(ctx context.Context, name string) error {
+func (s *Service) Delete(ctx context.Context, name string) error {
 	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
 		return err
@@ -251,24 +228,24 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 	return nil
 }
 
-func (s *service) BeforeDeleteOrganization(hook func(context.Context, *Organization) error) {
+func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organization) error) {
 	s.beforeDeleteHooks = append(s.beforeDeleteHooks, hook)
 }
 
-func (s *service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
+func (s *Service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
 	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
 
-	org, err := s.GetOrganization(ctx, organization)
+	org, err := s.Get(ctx, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
 	return defaultEntitlements(org.ID), nil
 }
 
-func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Subject, error) {
+func (s *Service) restrictOrganizationCreation(ctx context.Context) (internal.Subject, error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -280,9 +257,9 @@ func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Su
 	return subject, nil
 }
 
-// CreateOrganizationToken creates an organization token. If an organization
+// CreateToken creates an organization token. If an organization
 // token already exists it is replaced.
-func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
+func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
 	if err != nil {
 		return nil, nil, err
@@ -304,7 +281,7 @@ func (s *service) CreateOrganizationToken(ctx context.Context, opts CreateOrgani
 	return ot, token, nil
 }
 
-func (s *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
+func (s *Service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
 	ot, err := s.db.getOrganizationTokenByName(ctx, organization)
 	if err != nil {
 		s.Error(err, "retrieving organization token", "organization", organization)
@@ -314,7 +291,7 @@ func (s *service) GetOrganizationToken(ctx context.Context, organization string)
 	return ot, nil
 }
 
-func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+func (s *Service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
 	ot, err := s.db.getOrganizationTokenByID(ctx, tokenID)
 	if err != nil {
 		s.Error(err, "retrieving organization token", "token_id", tokenID)
@@ -324,7 +301,7 @@ func (s *service) getOrganizationTokenByID(ctx context.Context, tokenID string) 
 	return ot, nil
 }
 
-func (s *service) ListOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error) {
+func (s *Service) ListTokens(ctx context.Context, organization string) ([]*OrganizationToken, error) {
 	tokens, err := s.db.listOrganizationTokens(ctx, organization)
 	if err != nil {
 		s.Error(err, "listing organization tokens", "organization", organization)
@@ -334,7 +311,7 @@ func (s *service) ListOrganizationTokens(ctx context.Context, organization strin
 	return tokens, nil
 }
 
-func (s *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
+func (s *Service) DeleteToken(ctx context.Context, organization string) error {
 	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
 	if err != nil {
 		return err

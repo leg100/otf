@@ -7,30 +7,18 @@ import (
 	"strings"
 )
 
-type (
-	// HostnameService is registry of hostnames
-	HostnameService interface {
-		// Return the OTF hostname.
-		Hostname() string
-		// Set the OTF hostname.
-		SetHostname(string)
-		// Return OTF URL with the given path
-		URL(path string) string
-	}
-
-	hostnameService struct {
-		hostname string
-	}
-)
-
-func NewHostnameService(hostname string) *hostnameService {
-	return &hostnameService{hostname}
+type HostnameService struct {
+	hostname string
 }
 
-func (s *hostnameService) Hostname() string            { return s.hostname }
-func (s *hostnameService) SetHostname(hostname string) { s.hostname = hostname }
+func NewHostnameService(hostname string) *HostnameService {
+	return &HostnameService{hostname}
+}
 
-func (s *hostnameService) URL(path string) string {
+func (s *HostnameService) Hostname() string            { return s.hostname }
+func (s *HostnameService) SetHostname(hostname string) { s.hostname = hostname }
+
+func (s *HostnameService) URL(path string) string {
 	u := url.URL{
 		Scheme: "https",
 		Host:   s.Hostname(),

@@ -48,7 +48,7 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			agent, err := agent.NewRPC(logger, *agentConfig, clientConfig)
+			agent, err := agent.NewPoolDaemon(logger, *agentConfig, clientConfig)
 			if err != nil {
 				return fmt.Errorf("initializing agent: %w", err)
 			}

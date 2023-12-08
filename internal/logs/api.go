@@ -15,7 +15,7 @@ import (
 type api struct {
 	internal.Verifier // for verifying upload url
 
-	svc Service
+	svc *Service
 }
 
 func (a *api) addHandlers(r *mux.Router) {

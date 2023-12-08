@@ -23,30 +23,41 @@ type (
 	scheduler struct {
 		logr.Logger
 
-		WorkspaceService
-		RunService
+		workspaces workspaceClient
+		runs       runClient
 
 		queues map[string]eventHandler
 		queueFactory
 	}
 
+	workspaceClient interface {
+		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
+		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
+		Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error)
+		Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error)
+		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error)
+	}
+
+	runClient interface {
+		List(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
+		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
+		EnqueuePlan(ctx context.Context, runID string) (*run.Run, error)
+	}
+
 	Options struct {
 		logr.Logger
 
-		WorkspaceService
-		RunService
+		WorkspaceClient workspaceClient
+		RunClient       runClient
 	}
-
-	WorkspaceService workspace.Service
-	RunService       run.Service
 )
 
 func NewScheduler(opts Options) *scheduler {
 	return &scheduler{
-		Logger:           opts.Logger.WithValues("component", "scheduler"),
-		WorkspaceService: opts.WorkspaceService,
-		RunService:       opts.RunService,
-		queueFactory:     queueMaker{},
+		Logger:       opts.Logger.WithValues("component", "scheduler"),
+		workspaces:   opts.WorkspaceClient,
+		runs:         opts.RunClient,
+		queueFactory: queueMaker{},
 	}
 }
 
@@ -58,16 +69,16 @@ func (s *scheduler) Start(ctx context.Context) error {
 	s.queues = make(map[string]eventHandler)
 
 	// subscribe to workspace events
-	subWorkspaces, unsubWorkspaces := s.WatchWorkspaces(ctx)
+	subWorkspaces, unsubWorkspaces := s.workspaces.Watch(ctx)
 	defer unsubWorkspaces()
 
 	// subscribe to run events
-	subRuns, unsubRuns := s.WatchRuns(ctx)
+	subRuns, unsubRuns := s.runs.Watch(ctx)
 	defer unsubRuns()
 
 	// retrieve all existing workspaces
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return s.ListWorkspaces(ctx, workspace.ListOptions{
+		return s.workspaces.List(ctx, workspace.ListOptions{
 			PageOptions: opts,
 		})
 	})
@@ -76,7 +87,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 	// retrieve all incomplete runs
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
-		return s.ListRuns(ctx, run.ListOptions{
+		return s.runs.List(ctx, run.ListOptions{
 			Statuses:    run.IncompleteRun,
 			PageOptions: opts,
 		})
@@ -144,10 +155,10 @@ func (s *scheduler) handleWorkspaceEvent(ctx context.Context, event pubsub.Event
 	q, ok := s.queues[event.Payload.ID]
 	if !ok {
 		q = s.newQueue(queueOptions{
-			Logger:           s.Logger,
-			RunService:       s.RunService,
-			WorkspaceService: s.WorkspaceService,
-			Workspace:        event.Payload,
+			Logger:          s.Logger,
+			runClient:       s.runs,
+			workspaceClient: s.workspaces,
+			Workspace:       event.Payload,
 		})
 		s.queues[event.Payload.ID] = q
 	}

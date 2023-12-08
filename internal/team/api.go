@@ -12,7 +12,7 @@ import (
 
 type (
 	api struct {
-		TeamService
+		*Service
 		*tfeapi.Responder
 	}
 )
@@ -39,7 +39,7 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := a.CreateTeam(r.Context(), org, opts)
+	team, err := a.Create(r.Context(), org, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -56,7 +56,7 @@ func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	team, err := a.GetTeam(r.Context(), params.Organization, params.Team)
+	team, err := a.Get(r.Context(), params.Organization, params.Team)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -71,7 +71,7 @@ func (a *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.DeleteTeam(r.Context(), id); err != nil {
+	if err := a.Delete(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

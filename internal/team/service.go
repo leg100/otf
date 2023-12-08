@@ -20,21 +20,7 @@ import (
 var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
 
 type (
-	TeamService interface {
-		CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
-		GetTeam(ctx context.Context, organization, team string) (*Team, error)
-		GetTeamByID(ctx context.Context, teamID string) (*Team, error)
-		GetTeamByTokenID(ctx context.Context, teamTokenID string) (*Team, error)
-		ListTeams(ctx context.Context, organization string) ([]*Team, error)
-		UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
-		DeleteTeam(ctx context.Context, teamID string) error
-
-		AfterCreateTeam(hook func(context.Context, *Team) error)
-
-		teamTokenService
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
 		organization internal.Authorizer // authorizes org access
@@ -54,45 +40,45 @@ type (
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
-		internal.HostnameService
-		organization.OrganizationService
-		tokens.TokensService
 		logr.Logger
+
+		OrganizationService *organization.Service
+		TokensService       *tokens.Service
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := service{
+func NewService(opts Options) *Service {
+	svc := Service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		team:         &authorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB, opts.Logger},
 		teamTokenFactory: &teamTokenFactory{
-			TokensService: opts.TokensService,
+			tokens: opts.TokensService,
 		},
 	}
 	svc.web = &webHandlers{
-		Renderer:      opts.Renderer,
-		tokensService: opts.TokensService,
-		svc:           &svc,
+		Renderer: opts.Renderer,
+		tokens:   opts.TokensService,
+		teams:    &svc,
 	}
 	svc.tfeapi = &tfe{
-		TeamService: &svc,
-		Responder:   opts.Responder,
+		Service:   &svc,
+		Responder: opts.Responder,
 	}
 	svc.api = &api{
-		TeamService: &svc,
-		Responder:   opts.Responder,
+		Service:   &svc,
+		Responder: opts.Responder,
 	}
 
 	// Whenever an organization is created, also create an owners team. (The
 	// user package hooks into CreateTeam to add the creator as a member).
-	opts.AfterCreateOrganization(func(ctx context.Context, organization *organization.Organization) error {
+	opts.OrganizationService.AfterCreateOrganization(func(ctx context.Context, organization *organization.Organization) error {
 		// only an owner can create a team but there are no owners until an
 		// owners team is created, so in this particular instance authorization
 		// is skipped.
 		ctx = internal.AddSkipAuthz(ctx)
-		_, err := svc.CreateTeam(ctx, organization.Name, CreateTeamOptions{
+		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
 			Name: internal.String("owners"),
 		})
 		if err != nil {
@@ -102,7 +88,7 @@ func NewService(opts Options) *service {
 	})
 	// Register with auth middleware the team token kind and a means of
 	// retrieving team corresponding to token.
-	opts.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 
 	})
@@ -110,13 +96,13 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (a *service) AddHandlers(r *mux.Router) {
+func (a *Service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
 }
 
-func (a *service) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
+func (a *Service) Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -147,11 +133,11 @@ func (a *service) CreateTeam(ctx context.Context, organization string, opts Crea
 	return team, nil
 }
 
-func (a *service) AfterCreateTeam(hook func(context.Context, *Team) error) {
+func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *service) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) Update(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -175,8 +161,8 @@ func (a *service) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeam
 	return team, nil
 }
 
-// ListTeams lists teams in the organization.
-func (a *service) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
+// List lists teams in the organization.
+func (a *Service) List(ctx context.Context, organization string) ([]*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
@@ -192,7 +178,7 @@ func (a *service) ListTeams(ctx context.Context, organization string) ([]*Team, 
 	return teams, nil
 }
 
-func (a *service) GetTeam(ctx context.Context, organization, name string) (*Team, error) {
+func (a *Service) Get(ctx context.Context, organization, name string) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -209,7 +195,7 @@ func (a *service) GetTeam(ctx context.Context, organization, name string) (*Team
 	return team, nil
 }
 
-func (a *service) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
+func (a *Service) GetByID(ctx context.Context, teamID string) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -226,7 +212,7 @@ func (a *service) GetTeamByID(ctx context.Context, teamID string) (*Team, error)
 	return team, nil
 }
 
-func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
+func (a *Service) Delete(ctx context.Context, teamID string) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -253,7 +239,7 @@ func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 	return nil
 }
 
-func (a *service) GetTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
+func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
 	team, err := a.db.getTeamByTokenID(ctx, tokenID)
 	if err != nil {
 		a.Error(err, "retrieving team by team token ID", "token_id", tokenID)

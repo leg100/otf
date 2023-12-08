@@ -19,12 +19,12 @@ func TestStartRunUI(t *testing.T) {
 
 	// now we have a config version, start a run with the plan-and-apply
 	// operation
-	browser.Run(t, ctx, startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation))
+	browser.Run(t, ctx, startRunTasks(t, svc.System.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation))
 
 	// now destroy resources with the destroy-all operation
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace page
-		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
+		chromedp.Navigate(workspaceURL(svc.System.Hostname(), ws.Organization, ws.Name)),
 		screenshot(t, "workspace_page"),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`),

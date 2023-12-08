@@ -30,7 +30,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 	_, token := daemon.createToken(t, ctx, nil)
 
 	tfeClient, err := tfe.NewClient(&tfe.Config{
-		Address:           "https://" + daemon.Hostname(),
+		Address:           "https://" + daemon.System.Hostname(),
 		Token:             string(token),
 		RetryServerErrors: true,
 	})
@@ -39,7 +39,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 	// pull config from workspace's vcs repo
 	t.Run("create run using config from repo", func(t *testing.T) {
 		vcsProvider := daemon.createVCSProvider(t, ctx, org)
-		ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String("connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{
@@ -49,7 +49,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		sub, unsub := daemon.WatchRuns(ctx)
+		sub, unsub := daemon.Runs.Watch(ctx)
 		defer unsub()
 
 		created, err := tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
@@ -68,7 +68,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 			case run.RunPlanned:
 				// run should have planned two resources (defined in the config from the
 				// github repo)
-				planned, err := daemon.GetRun(ctx, created.ID)
+				planned, err := daemon.Runs.Get(ctx, created.ID)
 				require.NoError(t, err)
 
 				assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)

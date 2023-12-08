@@ -36,10 +36,10 @@ type (
 		IngressAttributes *IngressAttributes
 	}
 
-	// ConfigurationVersionCreateOptions represents the options for creating a
-	// configuration version. See jsonapi.ConfigurationVersionCreateOptions for more
+	// CreateOptions represents the options for creating a
+	// configuration version. See jsonapi.CreateOptions for more
 	// details.
-	ConfigurationVersionCreateOptions struct {
+	CreateOptions struct {
 		AutoQueueRuns *bool
 		Speculative   *bool
 		Source        Source
@@ -76,9 +76,9 @@ type (
 		Include *string `schema:"include"`
 	}
 
-	// ConfigurationVersionListOptions are options for paginating and filtering a
+	// ListOptions are options for paginating and filtering a
 	// list of configuration versions
-	ConfigurationVersionListOptions struct {
+	ListOptions struct {
 		// A list of relations to include
 		Include *string `schema:"include"`
 
@@ -108,7 +108,7 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID string, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            internal.NewID("cv"),
 		CreatedAt:     internal.CurrentTimestamp(nil),

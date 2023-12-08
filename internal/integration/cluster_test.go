@@ -28,7 +28,7 @@ func TestCluster(t *testing.T) {
 	otfd1, org, ctx := setup(t, &config{Config: daemon.Config{Database: connstr}})
 	otfd2, _, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
-	pool, err := otfd1.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+	pool, err := otfd1.Agents.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
 		Organization: org.Name,
 		Name:         "pool-1",
 	})
@@ -39,7 +39,7 @@ func TestCluster(t *testing.T) {
 	otfd2.startAgent(t, ctx, org.Name, pool.ID, "", agent.Config{Debug: true})
 
 	// create root module, setting otfd1 as hostname
-	root := newRootModule(t, otfd1.Hostname(), org.Name, "dev")
+	root := newRootModule(t, otfd1.System.Hostname(), org.Name, "dev")
 
 	// terraform init automatically creates a workspace named dev
 	otfd1.tfcli(t, ctx, "init", root)

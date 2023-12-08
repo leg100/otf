@@ -12,7 +12,7 @@ import (
 )
 
 type tfe struct {
-	*service
+	*Service
 	*tfeapi.Responder
 }
 
@@ -87,7 +87,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 		opts.AllowedWorkspaces[i] = aw.ID
 	}
 
-	pool, err := a.service.CreateAgentPool(r.Context(), opts)
+	pool, err := a.Service.CreateAgentPool(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -119,7 +119,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pool, err := a.service.updateAgentPool(r.Context(), poolID, opts)
+	pool, err := a.Service.updateAgentPool(r.Context(), poolID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -134,7 +134,7 @@ func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool, err := a.service.GetAgentPool(r.Context(), poolID)
+	pool, err := a.Service.GetAgentPool(r.Context(), poolID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -155,7 +155,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := a.service.listAgentPoolsByOrganization(r.Context(), organization, listPoolOptions{
+	pools, err := a.Service.listAgentPoolsByOrganization(r.Context(), organization, listPoolOptions{
 		NameSubstring:        params.Query,
 		AllowedWorkspaceName: params.AllowedWorkspacesName,
 	})
@@ -187,7 +187,7 @@ func (a *tfe) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.service.deleteAgentPool(r.Context(), poolID)
+	_, err = a.Service.deleteAgentPool(r.Context(), poolID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -229,7 +229,7 @@ func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, token, err := a.service.CreateAgentToken(r.Context(), poolID, CreateAgentTokenOptions{
+	at, token, err := a.Service.CreateAgentToken(r.Context(), poolID, CreateAgentTokenOptions{
 		Description: params.Description,
 	})
 	if err != nil {
@@ -246,7 +246,7 @@ func (a *tfe) getAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, err := a.service.GetAgentToken(r.Context(), tokenID)
+	at, err := a.Service.GetAgentToken(r.Context(), tokenID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -267,7 +267,7 @@ func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := a.service.ListAgentTokens(r.Context(), poolID)
+	pools, err := a.Service.ListAgentTokens(r.Context(), poolID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -296,7 +296,7 @@ func (a *tfe) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.service.DeleteAgentToken(r.Context(), tokenID)
+	_, err = a.Service.DeleteAgentToken(r.Context(), tokenID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

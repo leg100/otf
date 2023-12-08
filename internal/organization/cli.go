@@ -1,16 +1,42 @@
 package organization
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/cobra"
 )
 
-type CLI struct {
-	Service
-}
+type (
+	CLI struct {
+		cliService
+	}
+
+	// cliService provides the cli with access to organizations
+	cliService interface {
+		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
+		Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
+		Get(ctx context.Context, name string) (*Organization, error)
+		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
+		DeleteOrganization(ctx context.Context, name string) error
+		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
+		AfterCreateOrganization(hook func(context.Context, *Organization) error)
+		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
+
+		// organization tokens
+		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
+		// GetOrganizationToken gets the organization token. If a token does not
+		// exist, then nil is returned without an error.
+		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
+		DeleteToken(ctx context.Context, organization string) error
+		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
+		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
+	}
+)
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
 	cli := &CLI{}
@@ -21,7 +47,7 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{Client: client}
+			cli.cliService = &Client{Client: client}
 			return nil
 		},
 	}

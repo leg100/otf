@@ -3,34 +3,61 @@ package run
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// factory constructs runs
-type factory struct {
-	OrganizationService
-	WorkspaceService
-	ConfigurationVersionService
-	VCSProviderService
-	releases.ReleasesService
-}
+type (
+	// factory constructs runs
+	factory struct {
+		organizations factoryOrganizationClient
+		workspaces    factoryWorkspaceClient
+		configs       factoryConfigClient
+		vcs           factoryVCSClient
+		releases      factoryReleasesClient
+	}
+
+	factoryOrganizationClient interface {
+		Get(ctx context.Context, name string) (*organization.Organization, error)
+	}
+
+	factoryWorkspaceClient interface {
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+	}
+
+	factoryConfigClient interface {
+		Create(ctx context.Context, workspaceID string, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id string, config []byte) error
+	}
+
+	factoryVCSClient interface {
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+	}
+
+	factoryReleasesClient interface {
+		GetLatest(ctx context.Context) (string, time.Time, error)
+	}
+)
 
 // NewRun constructs a new run using the provided options.
 func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
-	ws, err := f.GetWorkspace(ctx, workspaceID)
+	ws, err := f.workspaces.Get(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	org, err := f.GetOrganization(ctx, ws.Organization)
+	org, err := f.organizations.Get(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
 	if ws.TerraformVersion == releases.LatestVersionString {
-		ws.TerraformVersion, _, err = f.GetLatest(ctx)
+		ws.TerraformVersion, _, err = f.releases.GetLatest(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -45,9 +72,9 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOpt
 	// 	(ii) connected: same behaviour as (a): vcs repo contents are retrieved.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
-		cv, err = f.GetConfigurationVersion(ctx, *opts.ConfigurationVersionID)
+		cv, err = f.configs.Get(ctx, *opts.ConfigurationVersionID)
 	} else if ws.Connection == nil {
-		cv, err = f.GetLatestConfigurationVersion(ctx, workspaceID)
+		cv, err = f.configs.GetLatest(ctx, workspaceID)
 	} else {
 		cv, err = f.createConfigVersionFromVCS(ctx, ws)
 	}
@@ -61,7 +88,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOpt
 // createConfigVersionFromVCS creates a config version from the vcs repo
 // connected to the workspace using the contents of the vcs repo.
 func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.Workspace) (*configversion.ConfigurationVersion, error) {
-	client, err := f.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	client, err := f.vcs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +111,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, fmt.Errorf("retrieving commit information: %s: %w", ref, err)
 	}
-	cv, err := f.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+	cv, err := f.configs.Create(ctx, ws.ID, configversion.CreateOptions{
 		IngressAttributes: &configversion.IngressAttributes{
 			Branch:          branch,
 			CommitSHA:       commit.SHA,
@@ -100,7 +127,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, err
 	}
-	if err := f.UploadConfig(ctx, cv.ID, tarball); err != nil {
+	if err := f.configs.UploadConfig(ctx, cv.ID, tarball); err != nil {
 		return nil, err
 	}
 	return cv, err

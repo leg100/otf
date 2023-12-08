@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
@@ -17,10 +18,29 @@ type (
 	Spawner struct {
 		logr.Logger
 
-		ConfigurationVersionService
-		WorkspaceService
-		VCSProviderService
-		RunService
+		configs    spawnerConfigClient
+		workspaces spawnerWorkspaceClient
+		vcs        spawnerVCSClient
+		runs       spawnerRunClient
+	}
+
+	spawnerWorkspaceClient interface {
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*workspace.Workspace, error)
+	}
+
+	spawnerConfigClient interface {
+		Create(ctx context.Context, workspaceID string, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id string, config []byte) error
+	}
+
+	spawnerVCSClient interface {
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+	}
+
+	spawnerRunClient interface {
+		Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
 	}
 )
 
@@ -51,7 +71,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		return nil
 	}
 
-	workspaces, err := s.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.RepoPath)
+	workspaces, err := s.workspaces.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.RepoPath)
 	if err != nil {
 		return err
 	}
@@ -114,7 +134,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	workspaces = workspaces[:n]
 
 	// fetch tarball
-	client, err := s.GetVCSClient(ctx, event.VCSProviderID)
+	client, err := s.vcs.GetVCSClient(ctx, event.VCSProviderID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +178,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 
 	// create a config version for each workspace and spawn run.
 	for _, ws := range workspaces {
-		cvOpts := configversion.ConfigurationVersionCreateOptions{
+		cvOpts := configversion.CreateOptions{
 			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
@@ -190,15 +210,15 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			cvOpts.Source = configversion.SourceGitlab
 			runOpts.Source = SourceGitlab
 		}
-		cv, err := s.CreateConfigurationVersion(ctx, ws.ID, cvOpts)
+		cv, err := s.configs.Create(ctx, ws.ID, cvOpts)
 		if err != nil {
 			return err
 		}
-		if err := s.UploadConfig(ctx, cv.ID, tarball); err != nil {
+		if err := s.configs.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
 		runOpts.ConfigurationVersionID = internal.String(cv.ID)
-		_, err = s.CreateRun(ctx, ws.ID, runOpts)
+		_, err = s.runs.Create(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err
 		}

@@ -18,7 +18,7 @@ func TestSession(t *testing.T) {
 		want := userFromContext(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
-		err := svc.StartSession(w, r, tokens.StartSessionOptions{
+		err := svc.Tokens.StartSession(w, r, tokens.StartSessionOptions{
 			Username: &want.Username,
 		})
 		require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestSession(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/app/protected", nil)
 			r.AddCookie(cookies[0])
-			svc.Middleware()(upstream).ServeHTTP(w, r)
+			svc.Tokens.Middleware()(upstream).ServeHTTP(w, r)
 			assert.Equal(t, 200, w.Code)
 		})
 	})

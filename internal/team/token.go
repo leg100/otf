@@ -32,18 +32,8 @@ type (
 		Expiry *time.Time
 	}
 
-	teamTokenService interface {
-		// CreateTeamToken creates a team token.
-		CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error)
-		// GetTeamToken gets the team token. If a token does not
-		// exist, then nil is returned without an error.
-		GetTeamToken(ctx context.Context, teamID string) (*Token, error)
-		// DeleteTeamToken deletes a team token.
-		DeleteTeamToken(ctx context.Context, tokenID string) error
-	}
-
 	teamTokenFactory struct {
-		tokens.TokensService
+		tokens *tokens.Service
 	}
 )
 
@@ -54,7 +44,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
 	}
-	token, err := f.NewToken(tokens.NewTokenOptions{
+	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
 		Subject: tt.ID,
 		Kind:    TeamTokenKind,
 		Expiry:  opts.Expiry,
@@ -76,7 +66,7 @@ func (t *Token) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (a *service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error) {
+func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error) {
 	_, err := a.team.CanAccess(ctx, rbac.CreateTeamTokenAction, opts.TeamID)
 	if err != nil {
 		return nil, nil, err
@@ -98,7 +88,7 @@ func (a *service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 	return tt, token, nil
 }
 
-func (a *service) GetTeamToken(ctx context.Context, teamID string) (*Token, error) {
+func (a *Service) GetTeamToken(ctx context.Context, teamID string) (*Token, error) {
 	_, err := a.team.CanAccess(ctx, rbac.GetTeamTokenAction, teamID)
 	if err != nil {
 		return nil, err
@@ -106,7 +96,7 @@ func (a *service) GetTeamToken(ctx context.Context, teamID string) (*Token, erro
 	return a.db.getTeamTokenByTeamID(ctx, teamID)
 }
 
-func (a *service) DeleteTeamToken(ctx context.Context, teamID string) error {
+func (a *Service) DeleteTeamToken(ctx context.Context, teamID string) error {
 	_, err := a.team.CanAccess(ctx, rbac.DeleteTeamTokenAction, teamID)
 	if err != nil {
 		return err

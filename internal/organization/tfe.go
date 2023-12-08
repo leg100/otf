@@ -13,7 +13,7 @@ import (
 )
 
 type tfe struct {
-	Service
+	*Service
 	*tfeapi.Responder
 }
 
@@ -43,7 +43,7 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.CreateOrganization(r.Context(), CreateOptions{
+	org, err := a.Create(r.Context(), CreateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
@@ -67,7 +67,7 @@ func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.GetOrganization(r.Context(), name)
+	org, err := a.Get(r.Context(), name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -83,7 +83,7 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListOrganizations(r.Context(), opts)
+	page, err := a.List(r.Context(), opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -109,7 +109,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.UpdateOrganization(r.Context(), name, UpdateOptions{
+	org, err := a.Update(r.Context(), name, UpdateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
@@ -133,7 +133,7 @@ func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.DeleteOrganization(r.Context(), name); err != nil {
+	if err := a.Delete(r.Context(), name); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -169,7 +169,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ot, token, err := a.CreateOrganizationToken(r.Context(), CreateOrganizationTokenOptions{
+	ot, token, err := a.CreateToken(r.Context(), CreateOrganizationTokenOptions{
 		Organization: org,
 		Expiry:       opts.ExpiredAt,
 	})
@@ -219,7 +219,7 @@ func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.DeleteOrganizationToken(r.Context(), org)
+	err = a.DeleteToken(r.Context(), org)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -244,7 +244,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !ok {
 		return nil, nil
 	}
-	org, err := a.GetOrganization(ctx, tfeOrganization.Name)
+	org, err := a.Get(ctx, tfeOrganization.Name)
 	if err != nil {
 		return nil, err
 	}

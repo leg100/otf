@@ -20,7 +20,7 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	)
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to organization
-		chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+		chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
 		// go to organization token page
 		chromedp.Click(`//span[@id='organization_tokens']/a`),
 		screenshot(t, "org_token_new"),

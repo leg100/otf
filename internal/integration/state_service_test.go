@@ -20,7 +20,7 @@ func TestIntegration_StateService(t *testing.T) {
 		file, err := os.ReadFile("./testdata/terraform.tfstate")
 		require.NoError(t, err)
 
-		_, err = svc.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+		_, err = svc.State.Create(ctx, state.CreateStateVersionOptions{
 			State:       file,
 			WorkspaceID: internal.String(ws.ID),
 			// serial matches that in ./testdata/terraform.tfstate
@@ -33,7 +33,7 @@ func TestIntegration_StateService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createStateVersion(t, ctx, nil)
 
-		got, err := svc.GetStateVersion(ctx, want.ID)
+		got, err := svc.State.Get(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -42,7 +42,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.GetStateVersion(ctx, "sv-99999")
+		_, err := svc.State.Get(ctx, "sv-99999")
 		require.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
@@ -54,7 +54,7 @@ func TestIntegration_StateService(t *testing.T) {
 		_ = svc.createStateVersion(t, ctx, ws)
 		want := svc.createStateVersion(t, ctx, ws)
 
-		got, err := svc.GetCurrentStateVersion(ctx, want.WorkspaceID)
+		got, err := svc.State.GetCurrent(ctx, want.WorkspaceID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -63,7 +63,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get current not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.GetCurrentStateVersion(ctx, "ws-99999")
+		_, err := svc.State.GetCurrent(ctx, "ws-99999")
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
@@ -73,7 +73,7 @@ func TestIntegration_StateService(t *testing.T) {
 		sv1 := svc.createStateVersion(t, ctx, ws)
 		sv2 := svc.createStateVersion(t, ctx, ws)
 
-		got, err := svc.ListStateVersions(ctx, ws.ID, resource.PageOptions{})
+		got, err := svc.State.List(ctx, ws.ID, resource.PageOptions{})
 		require.NoError(t, err)
 		assert.Contains(t, got.Items, sv1)
 		assert.Contains(t, got.Items, sv2)
@@ -84,7 +84,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("list not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.ListStateVersions(ctx, "ws-does-not-exist", resource.PageOptions{})
+		_, err := svc.State.List(ctx, "ws-does-not-exist", resource.PageOptions{})
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
@@ -94,14 +94,14 @@ func TestIntegration_StateService(t *testing.T) {
 		want := svc.createStateVersion(t, ctx, ws)
 		current := svc.createStateVersion(t, ctx, ws)
 
-		err := svc.DeleteStateVersion(ctx, want.ID)
+		err := svc.State.Delete(ctx, want.ID)
 		require.NoError(t, err)
 
-		_, err = svc.GetStateVersion(ctx, want.ID)
+		_, err = svc.State.Get(ctx, want.ID)
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 
 		t.Run("deleting current version not allowed", func(t *testing.T) {
-			err := svc.DeleteStateVersion(ctx, current.ID)
+			err := svc.State.Delete(ctx, current.ID)
 			assert.Equal(t, state.ErrCurrentVersionDeletionAttempt, err)
 		})
 	})

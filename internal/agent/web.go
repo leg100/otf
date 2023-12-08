@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -22,9 +23,30 @@ import (
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
 	html.Renderer
-	svc              Service
-	workspaceService workspacepkg.WorkspaceService
-	logger           logr.Logger
+
+	svc        webClient
+	workspaces *workspacepkg.Service
+	logger     logr.Logger
+}
+
+// webClient gives web handlers access to the agents service endpoints
+type webClient interface {
+	CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
+	GetAgentPool(ctx context.Context, poolID string) (*Pool, error)
+	updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
+	listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
+	deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
+
+	registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
+	listAgents(ctx context.Context) ([]*Agent, error)
+	listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
+	listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
+	listServerAgents(ctx context.Context) ([]*Agent, error)
+
+	CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+	GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
+	ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error)
+	DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
 }
 
 type (
@@ -220,7 +242,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	// fetch all workspaces in organization then distribute them among the three
 	// sets documented above.
 	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspacepkg.Workspace], error) {
-		return h.workspaceService.ListWorkspaces(r.Context(), workspacepkg.ListOptions{
+		return h.workspaces.List(r.Context(), workspacepkg.ListOptions{
 			Organization: &pool.Organization,
 		})
 	})
@@ -304,7 +326,7 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := h.workspaceService.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

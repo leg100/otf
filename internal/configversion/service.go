@@ -14,26 +14,7 @@ import (
 )
 
 type (
-	// namespaced for disambiguation from other services
-	ConfigurationVersionService = Service
-
-	Service interface {
-		CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-		GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
-		GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-		ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error)
-
-		// Upload handles verification and upload of the config tarball, updating
-		// the config version upon success or failure.
-		UploadConfig(ctx context.Context, id string, config []byte) error
-
-		// Download retrieves the config tarball for the given config version ID.
-		DownloadConfig(ctx context.Context, id string) ([]byte, error)
-
-		DeleteConfigurationVersion(ctx context.Context, cvID string) error
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 
 		workspace internal.Authorizer
@@ -57,8 +38,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *service {
-	svc := service{
+func NewService(opts Options) *Service {
+	svc := Service{
 		Logger: opts.Logger,
 	}
 
@@ -67,7 +48,7 @@ func NewService(opts Options) *service {
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache
 	svc.tfeapi = &tfe{
-		Service:       &svc,
+		tfeClient:     &svc,
 		Signer:        opts.Signer,
 		Responder:     opts.Responder,
 		maxConfigSize: opts.MaxConfigSize,
@@ -87,12 +68,12 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
+func (s *Service) AddHandlers(r *mux.Router) {
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 }
 
-func (s *service) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*ConfigurationVersion, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -111,13 +92,13 @@ func (s *service) CreateConfigurationVersion(ctx context.Context, workspaceID st
 	return cv, nil
 }
 
-func (s *service) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (s *Service) List(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	cvl, err := s.db.ListConfigurationVersions(ctx, workspaceID, ConfigurationVersionListOptions{PageOptions: opts.PageOptions})
+	cvl, err := s.db.ListConfigurationVersions(ctx, workspaceID, ListOptions{PageOptions: opts.PageOptions})
 	if err != nil {
 		s.Error(err, "listing configuration versions")
 		return nil, err
@@ -127,7 +108,7 @@ func (s *service) ListConfigurationVersions(ctx context.Context, workspaceID str
 	return cvl, nil
 }
 
-func (s *service) GetConfigurationVersion(ctx context.Context, cvID string) (*ConfigurationVersion, error) {
+func (s *Service) Get(ctx context.Context, cvID string) (*ConfigurationVersion, error) {
 	subject, err := s.canAccess(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
@@ -142,7 +123,7 @@ func (s *service) GetConfigurationVersion(ctx context.Context, cvID string) (*Co
 	return cv, nil
 }
 
-func (s *service) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error) {
+func (s *Service) GetLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -157,7 +138,7 @@ func (s *service) GetLatestConfigurationVersion(ctx context.Context, workspaceID
 	return cv, nil
 }
 
-func (s *service) DeleteConfigurationVersion(ctx context.Context, cvID string) error {
+func (s *Service) Delete(ctx context.Context, cvID string) error {
 	subject, err := s.canAccess(ctx, rbac.DeleteConfigurationVersionAction, cvID)
 	if err != nil {
 		return err
@@ -172,7 +153,7 @@ func (s *service) DeleteConfigurationVersion(ctx context.Context, cvID string) e
 	return nil
 }
 
-func (s *service) canAccess(ctx context.Context, action rbac.Action, cvID string) (internal.Subject, error) {
+func (s *Service) canAccess(ctx context.Context, action rbac.Action, cvID string) (internal.Subject, error) {
 	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		return nil, err

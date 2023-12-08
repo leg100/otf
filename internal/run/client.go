@@ -13,10 +13,6 @@ import (
 
 type Client struct {
 	*otfapi.Client
-	otfapi.Config
-
-	// Client does not implement all of service yet
-	Service
 }
 
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
@@ -93,7 +89,7 @@ func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page
 	return &list, nil
 }
 
-func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
+func (c *Client) Get(ctx context.Context, runID string) (*Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {

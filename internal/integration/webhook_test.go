@@ -34,8 +34,8 @@ func TestWebhook(t *testing.T) {
 
 	// create and connect first workspace
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.String()),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-1"),
+		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1", provider.String()),
 	})
 
 	// webhook should be registered with github
@@ -44,8 +44,8 @@ func TestWebhook(t *testing.T) {
 
 	// create and connect second workspace
 	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2", provider.String()),
+		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-2"),
+		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-2", provider.String()),
 	})
 
 	// second workspace re-uses same webhook on github
@@ -53,14 +53,14 @@ func TestWebhook(t *testing.T) {
 	require.Equal(t, github.WebhookUpdated, hook.Action)
 
 	// disconnect second workspace
-	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2"))
+	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-2"))
 
 	// first workspace is still connected, so webhook should still be configured
 	// on github
 	require.True(t, daemon.HasWebhook())
 
 	// disconnect first workspace
-	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"))
+	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1"))
 
 	// No more workspaces are connected to repo, so webhook should have been
 	// deleted
@@ -89,21 +89,21 @@ func TestWebhook_Purger(t *testing.T) {
 		{
 			name: "delete organization",
 			event: func(t *testing.T, org, _, _ string) {
-				err := daemon.DeleteOrganization(ctx, org)
+				err := daemon.Organizations.Delete(ctx, org)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete vcs provider",
 			event: func(t *testing.T, _, _, vcsProviderID string) {
-				_, err := daemon.DeleteVCSProvider(ctx, vcsProviderID)
+				_, err := daemon.VCSProviders.Delete(ctx, vcsProviderID)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete workspace",
 			event: func(t *testing.T, _, workspaceID, _ string) {
-				_, err := daemon.DeleteWorkspace(ctx, workspaceID)
+				_, err := daemon.Workspaces.Delete(ctx, workspaceID)
 				require.NoError(t, err)
 			},
 		},
@@ -114,7 +114,7 @@ func TestWebhook_Purger(t *testing.T) {
 			// workspace to create a webhook on github
 			org := daemon.createOrganization(t, ctx)
 			provider := daemon.createVCSProvider(t, ctx, org)
-			ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 				Name:         internal.String("workspace-1"),
 				Organization: &org.Name,
 				ConnectOptions: &workspace.ConnectOptions{

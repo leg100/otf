@@ -15,11 +15,11 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 
 	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)
-	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.ConfigurationVersionCreateOptions{
+	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{
 		Speculative: internal.Bool(true),
 	})
 	// watch run events
-	sub, unsub := daemon.WatchRuns(ctx)
+	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv)
@@ -34,7 +34,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 
 	// open browser, go to run, and click retry
 	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(runURL(daemon.Hostname(), r.ID)),
+		chromedp.Navigate(runURL(daemon.System.Hostname(), r.ID)),
 		// run should be in planned and finished state
 		chromedp.WaitVisible(`//a[text()='planned and finished']`),
 		screenshot(t, "run_page_planned_and_finished_state"),

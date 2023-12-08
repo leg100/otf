@@ -15,12 +15,12 @@ func TestIntegration_RunListUI(t *testing.T) {
 
 	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)
-	tfConfig := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
+	tfConfig := newRootModule(t, daemon.System.Hostname(), ws.Organization, ws.Name)
 
 	var runListingAfter []*cdp.Node
 	browser.Run(t, ctx, chromedp.Tasks{
 		// navigate to workspace page
-		chromedp.Navigate(workspaceURL(daemon.Hostname(), ws.Organization, ws.Name)),
+		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), ws.Organization, ws.Name)),
 		// navigate to runs page
 		chromedp.Click(`//a[text()='runs']`),
 		// should be no runs listed

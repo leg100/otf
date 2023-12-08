@@ -2,11 +2,11 @@ package run
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 
 	otfapi "github.com/leg100/otf/internal/api"
-
 	"github.com/leg100/otf/internal/configversion"
 
 	"github.com/leg100/otf/internal"
@@ -15,8 +15,16 @@ import (
 )
 
 type CLI struct {
-	Service
-	configversion.ConfigurationVersionService
+	client  cliClient
+	configs cliConfigsClient
+}
+
+type cliClient interface {
+	Get(ctx context.Context, runID string) (*Run, error)
+}
+
+type cliConfigsClient interface {
+	DownloadConfig(ctx context.Context, id string) ([]byte, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
@@ -28,8 +36,8 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.Service = &Client{Client: client}
-			cli.ConfigurationVersionService = &configversion.Client{Client: client}
+			cli.client = &Client{Client: client}
+			cli.configs = &configversion.Client{Client: client}
 			return nil
 		},
 	}
@@ -47,12 +55,12 @@ func (a *CLI) runDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			run, err := a.GetRun(cmd.Context(), args[0])
+			run, err := a.client.Get(cmd.Context(), args[0])
 			if err != nil {
 				return errors.Wrap(err, "retrieving run")
 			}
 
-			tarball, err := a.DownloadConfig(cmd.Context(), run.ConfigurationVersionID)
+			tarball, err := a.configs.DownloadConfig(cmd.Context(), run.ConfigurationVersionID)
 			if err != nil {
 				return errors.Wrap(err, "downloading tarball")
 			}

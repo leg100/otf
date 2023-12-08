@@ -13,7 +13,7 @@ import (
 )
 
 type api struct {
-	Service
+	*Service
 	*tfeapi.Responder
 	logr.Logger
 }
@@ -34,7 +34,7 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	page, err := a.ListRuns(r.Context(), params)
+	page, err := a.List(r.Context(), params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,7 +48,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	run, err := a.GetRun(r.Context(), id)
+	run, err := a.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

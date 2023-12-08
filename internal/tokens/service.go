@@ -1,8 +1,6 @@
 package tokens
 
 import (
-	"time"
-
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -10,18 +8,7 @@ import (
 )
 
 type (
-	TokensService interface {
-		Middleware() mux.MiddlewareFunc
-		NewToken(NewTokenOptions) ([]byte, error)
-		RegisterKind(Kind, SubjectGetter)
-		RegisterSiteToken(token string, siteAdmin internal.Subject)
-		RegisterUISubjectGetterOrCreator(fn UISubjectGetterOrCreator)
-		NewSessionToken(username string, expiry time.Time) (string, error)
-
-		sessionService
-	}
-
-	service struct {
+	Service struct {
 		logr.Logger
 		*factory
 		*registry
@@ -40,8 +27,8 @@ type (
 	}
 )
 
-func NewService(opts Options) (*service, error) {
-	svc := service{
+func NewService(opts Options) (*Service, error) {
+	svc := Service{
 		Logger: opts.Logger,
 		site:   &internal.SiteAuthorizer{Logger: opts.Logger},
 	}
@@ -64,4 +51,4 @@ func NewService(opts Options) (*service, error) {
 }
 
 // Middleware returns middleware for authenticating tokens
-func (a *service) Middleware() mux.MiddlewareFunc { return a.middleware }
+func (a *Service) Middleware() mux.MiddlewareFunc { return a.middleware }

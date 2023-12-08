@@ -21,7 +21,7 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// create some config and run terraform init
-	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
+	configPath := newRootModule(t, svc.System.Hostname(), org.Name, t.Name())
 	svc.tfcli(t, ctx, "init", configPath)
 
 	// Create user token expressly for terraform apply
@@ -34,7 +34,7 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 		[]string{tfpath, "-chdir=" + configPath, "apply", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
-		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.Hostname(), token))),
+		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()
@@ -50,7 +50,7 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	require.True(t, errors.As(<-tferr, &exitError))
 	require.Equal(t, 1, exitError.ExitCode())
 
-	runs, err := svc.ListRuns(ctx, run.ListOptions{Organization: &org.Name})
+	runs, err := svc.Runs.List(ctx, run.ListOptions{Organization: &org.Name})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(runs.Items))
 	require.Equal(t, run.RunDiscarded, runs.Items[0].Status)

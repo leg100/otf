@@ -20,42 +20,60 @@ type (
 	// Notifier relays run events onto interested parties
 	Notifier struct {
 		logr.Logger
-		workspace.WorkspaceService // for retrieving workspace name
-		internal.HostnameService   // for including a link in the notification
-		run.RunService
-		NotificationService
+
+		workspaces    notifierWorkspaceClient
+		runs          notifierRunClient
+		notifications notifierNotificationClient
+		system        notifierHostnameClient
 
 		*cache
 		db *pgdb
 	}
 
 	NotifierOptions struct {
+		RunClient          notifierRunClient
+		WorkspaceClient    notifierWorkspaceClient
+		NotificationClient notifierNotificationClient
+
 		logr.Logger
-		workspace.WorkspaceService // for retrieving workspace name
-		internal.HostnameService   // for including a link in the notification
-		run.RunService
-		NotificationService
+		*internal.HostnameService
 		*sql.DB
+	}
+
+	notifierWorkspaceClient interface {
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+	}
+
+	notifierRunClient interface {
+		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
+	}
+
+	notifierNotificationClient interface {
+		Watch(context.Context) (<-chan pubsub.Event[*Config], func())
+	}
+
+	notifierHostnameClient interface {
+		Hostname() string
 	}
 )
 
 func NewNotifier(opts NotifierOptions) *Notifier {
 	return &Notifier{
-		Logger:              opts.Logger.WithValues("component", "notifier"),
-		WorkspaceService:    opts.WorkspaceService,
-		HostnameService:     opts.HostnameService,
-		RunService:          opts.RunService,
-		NotificationService: opts.NotificationService,
-		db:                  &pgdb{opts.DB},
+		Logger:        opts.Logger.WithValues("component", "notifier"),
+		workspaces:    opts.WorkspaceClient,
+		system:        opts.HostnameService,
+		runs:          opts.RunClient,
+		notifications: opts.NotificationClient,
+		db:            &pgdb{opts.DB},
 	}
 }
 
 // Start the notifier daemon. Should be started in a go-routine.
 func (s *Notifier) Start(ctx context.Context) error {
 	// subscribe to both run events and notification config events
-	subRuns, unsubRuns := s.WatchRuns(ctx)
+	subRuns, unsubRuns := s.runs.Watch(ctx)
 	defer unsubRuns()
-	subConfigs, unsubConfigs := s.WatchNotificationConfigurations(ctx)
+	subConfigs, unsubConfigs := s.notifications.Watch(ctx)
 	defer unsubConfigs()
 
 	// populate cache with existing notification configs
@@ -138,7 +156,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 		// (b) add workspace info to run itself
 		if ws == nil {
 			var err error
-			ws, err = s.GetWorkspace(ctx, r.WorkspaceID)
+			ws, err = s.workspaces.Get(ctx, r.WorkspaceID)
 			if err != nil {
 				return err
 			}
@@ -153,7 +171,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,
-			hostname:  s.Hostname(),
+			hostname:  s.system.Hostname(),
 		}
 		s.V(3).Info("publishing notification", "notification", msg)
 		if err := client.Publish(ctx, msg); err != nil {

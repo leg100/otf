@@ -19,9 +19,36 @@ import (
 type (
 	web struct {
 		html.Renderer
-		workspace.Service
+		workspaces webWorkspaceClient
 
-		svc Service
+		variables webVariablesClient
+	}
+
+	// webVariablesClient provides web handlers with access to variables
+	webVariablesClient interface {
+		CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
+		GetWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
+		ListWorkspaceVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
+		listWorkspaceVariableSets(ctx context.Context, workspaceID string) ([]*VariableSet, error)
+		UpdateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+		DeleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
+
+		createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
+		updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error)
+		getVariableSet(ctx context.Context, setID string) (*VariableSet, error)
+		getVariableSetByVariableID(ctx context.Context, variableID string) (*VariableSet, error)
+		listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
+		deleteVariableSet(ctx context.Context, setID string) (*VariableSet, error)
+		createVariableSetVariable(ctx context.Context, setID string, opts CreateVariableOptions) (*Variable, error)
+		updateVariableSetVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*VariableSet, error)
+		deleteVariableSetVariable(ctx context.Context, variableID string) (*VariableSet, error)
+	}
+
+	// webWorkspaceClient provides web handlers with access to workspaces
+	webWorkspaceClient interface {
+		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
+		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
 	}
 
 	workspaceInfo struct {
@@ -91,7 +118,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,7 +147,7 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.CreateWorkspaceVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
+	variable, err := h.variables.CreateWorkspaceVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -145,17 +172,17 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := h.svc.ListWorkspaceVariables(r.Context(), workspaceID)
+	variables, err := h.variables.ListWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.GetPolicy(r.Context(), ws.ID)
+	policy, err := h.workspaces.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -165,7 +192,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sets, err := h.svc.listWorkspaceVariableSets(r.Context(), workspaceID)
+	sets, err := h.variables.listWorkspaceVariableSets(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -209,12 +236,12 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wv, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
+	wv, err := h.variables.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), wv.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), wv.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -240,7 +267,7 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wv, err := h.svc.UpdateWorkspaceVariable(r.Context(), params.VariableID, UpdateVariableOptions{
+	wv, err := h.variables.UpdateWorkspaceVariable(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -265,7 +292,7 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wv, err := h.svc.DeleteWorkspaceVariable(r.Context(), variableID)
+	wv, err := h.variables.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -282,7 +309,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sets, err := h.svc.listVariableSets(r.Context(), org)
+	sets, err := h.variables.listVariableSets(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -361,7 +388,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		workspaceIDs[i] = ws.ID
 	}
 
-	set, err := h.svc.createVariableSet(r.Context(), params.Organization, CreateVariableSetOptions{
+	set, err := h.variables.createVariableSet(r.Context(), params.Organization, CreateVariableSetOptions{
 		Name:        *params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -384,7 +411,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set, err := h.svc.getVariableSet(r.Context(), setID)
+	set, err := h.variables.getVariableSet(r.Context(), setID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -466,7 +493,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		workspaceIDs[i] = ws.ID
 	}
 
-	set, err := h.svc.updateVariableSet(r.Context(), params.SetID, UpdateVariableSetOptions{
+	set, err := h.variables.updateVariableSet(r.Context(), params.SetID, UpdateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -489,7 +516,7 @@ func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set, err := h.svc.deleteVariableSet(r.Context(), setID)
+	set, err := h.variables.deleteVariableSet(r.Context(), setID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -506,7 +533,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set, err := h.svc.getVariableSet(r.Context(), setID)
+	set, err := h.variables.getVariableSet(r.Context(), setID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -537,7 +564,7 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	variable, err := h.svc.createVariableSetVariable(r.Context(), params.SetID, CreateVariableOptions{
+	variable, err := h.variables.createVariableSetVariable(r.Context(), params.SetID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -562,7 +589,7 @@ func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set, err := h.svc.getVariableSetByVariableID(r.Context(), variableID)
+	set, err := h.variables.getVariableSetByVariableID(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -591,7 +618,7 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	set, err := h.svc.updateVariableSetVariable(r.Context(), params.VariableID, UpdateVariableOptions{
+	set, err := h.variables.updateVariableSetVariable(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -617,7 +644,7 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	set, err := h.svc.deleteVariableSetVariable(r.Context(), variableID)
+	set, err := h.variables.deleteVariableSetVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -631,7 +658,7 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspaceInfo, error) {
 	// retrieve names of all workspaces in org to show in dropdown widget
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return h.Service.ListWorkspaces(ctx, workspace.ListOptions{
+		return h.workspaces.List(ctx, workspace.ListOptions{
 			Organization: &org,
 			PageOptions:  opts,
 		})

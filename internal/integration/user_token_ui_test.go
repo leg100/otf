@@ -14,7 +14,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	svc, _, ctx := setup(t, nil)
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to profile
-		chromedp.Navigate("https://" + svc.Hostname() + "/app/profile"),
+		chromedp.Navigate("https://" + svc.System.Hostname() + "/app/profile"),
 		// go to user tokens
 		chromedp.Click(`//div[@id='user-tokens-link']/a`),
 		screenshot(t, "user_tokens"),

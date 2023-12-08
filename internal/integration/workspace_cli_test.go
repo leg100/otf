@@ -38,7 +38,7 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	// edit workspace via CLI
 	//
 	// create pool first so that one can be specified in the CLI command
-	pool, err := daemon.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+	pool, err := daemon.Agents.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
 		Organization: org.Name,
 		Name:         "pool-1",
 	})

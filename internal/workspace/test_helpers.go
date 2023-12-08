@@ -2,147 +2,112 @@ package workspace
 
 import (
 	"context"
-	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"github.com/stretchr/testify/require"
 )
 
-type (
-	fakeWebService struct {
-		workspaces []*Workspace
-		providers  []*vcsprovider.VCSProvider
-		repos      []string
-		policy     internal.WorkspacePolicy
-		teams      []*team.Team
-
-		Service
-
-		team.TeamService
-		VCSProviderService
-	}
-
-	fakeWebServiceOption func(*fakeWebService)
-)
-
-func withWorkspaces(workspaces ...*Workspace) fakeWebServiceOption {
-	return func(svc *fakeWebService) {
-		svc.workspaces = workspaces
-	}
+type FakeService struct {
+	Workspaces []*Workspace
+	Policy     internal.WorkspacePolicy
 }
 
-func withVCSProviders(providers ...*vcsprovider.VCSProvider) fakeWebServiceOption {
-	return func(svc *fakeWebService) {
-		svc.providers = providers
-	}
+func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+	return f.Workspaces, nil
 }
 
-func withRepos(repos ...string) fakeWebServiceOption {
-	return func(svc *fakeWebService) {
-		svc.repos = repos
-	}
+func (f *FakeService) Create(context.Context, CreateOptions) (*Workspace, error) {
+	return f.Workspaces[0], nil
 }
 
-func withPolicy(policy internal.WorkspacePolicy) fakeWebServiceOption {
-	return func(svc *fakeWebService) {
-		svc.policy = policy
-	}
+func (f *FakeService) Update(_ context.Context, _ string, opts UpdateOptions) (*Workspace, error) {
+	f.Workspaces[0].Update(opts)
+	return f.Workspaces[0], nil
 }
 
-func withTeams(teams ...*team.Team) fakeWebServiceOption {
-	return func(svc *fakeWebService) {
-		svc.teams = teams
-	}
+func (f *FakeService) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+	return resource.NewPage(f.Workspaces, opts.PageOptions, nil), nil
 }
 
-func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-
-	var svc fakeWebService
-	for _, fn := range opts {
-		fn(&svc)
-	}
-
-	return &webHandlers{
-		Renderer:           renderer,
-		TeamService:        &svc,
-		VCSProviderService: &svc,
-		svc:                &svc,
-	}
+func (f *FakeService) Get(context.Context, string) (*Workspace, error) {
+	return f.Workspaces[0], nil
 }
 
-func (f *fakeWebService) GetVCSProvider(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
-	return f.providers[0], nil
+func (f *FakeService) GetByName(context.Context, string, string) (*Workspace, error) {
+	return f.Workspaces[0], nil
 }
 
-func (f *fakeWebService) ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
-	return f.providers, nil
+func (f *FakeService) Delete(context.Context, string) (*Workspace, error) {
+	return f.Workspaces[0], nil
 }
 
-func (f *fakeWebService) UploadConfig(context.Context, string, []byte) error {
-	return nil
+func (f *FakeService) Lock(context.Context, string, *string) (*Workspace, error) {
+	return f.Workspaces[0], nil
 }
 
-func (f *fakeWebService) GetPolicy(context.Context, string) (internal.WorkspacePolicy, error) {
-	return f.policy, nil
+func (f *FakeService) Unlock(context.Context, string, *string, bool) (*Workspace, error) {
+	return f.Workspaces[0], nil
 }
 
-func (f *fakeWebService) ListTeams(context.Context, string) ([]*team.Team, error) {
-	return f.teams, nil
-}
-
-func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
-	return &fakeWebCloudClient{repos: f.repos}, nil
-}
-
-func (f *fakeWebService) CreateWorkspace(context.Context, CreateOptions) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
-	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
-}
-
-func (f *fakeWebService) GetWorkspace(context.Context, string) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) GetWorkspaceByName(context.Context, string, string) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) DeleteWorkspace(context.Context, string) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) LockWorkspace(context.Context, string, *string) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) UnlockWorkspace(context.Context, string, *string, bool) (*Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWebService) ListTags(context.Context, string, ListTagsOptions) (*resource.Page[*Tag], error) {
+func (f *FakeService) ListTags(context.Context, string, ListTagsOptions) (*resource.Page[*Tag], error) {
 	return nil, nil
 }
 
-type fakeWebCloudClient struct {
+func (f *FakeService) GetPolicy(context.Context, string) (internal.WorkspacePolicy, error) {
+	return f.Policy, nil
+}
+
+func (f *FakeService) AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+	return nil
+}
+
+func (f *FakeService) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+	return nil
+}
+
+func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
+	return nil
+}
+
+func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID string) error {
+	return nil
+}
+
+type fakeVCSProviderService struct {
+	providers []*vcsprovider.VCSProvider
+	repos     []string
+}
+
+func (f *fakeVCSProviderService) Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
+	return f.providers[0], nil
+}
+
+func (f *fakeVCSProviderService) List(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
+	return f.providers, nil
+}
+
+func (f *fakeVCSProviderService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+	return &fakeVCSClient{repos: f.repos}, nil
+}
+
+type fakeVCSClient struct {
 	repos []string
 
 	vcs.Client
 }
 
-func (f *fakeWebCloudClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
+func (f *fakeVCSClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
 	return f.repos, nil
+}
+
+type fakeTeamService struct {
+	teams []*team.Team
+}
+
+func (f *fakeTeamService) List(context.Context, string) ([]*team.Team, error) {
+	return f.teams, nil
 }
