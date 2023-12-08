@@ -35,15 +35,15 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Guest should be able to list teams
-	_, err = svc.Teams.ListTeams(guestCtx, org.Name)
+	_, err = svc.Teams.List(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to list providers
-	_, err = svc.VCSProviders.ListVCSProviders(guestCtx, org.Name)
+	_, err = svc.VCSProviders.List(guestCtx, org.Name)
 	require.NoError(t, err)
 
 	// Guest should be able to get a provider
 	provider := svc.createVCSProvider(t, ctx, org)
-	_, err = svc.VCSProviders.GetVCSProvider(guestCtx, provider.ID)
+	_, err = svc.VCSProviders.Get(guestCtx, provider.ID)
 	require.NoError(t, err)
 }

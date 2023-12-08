@@ -102,8 +102,6 @@ type (
 		stateVersionList *resource.Page[*Version]
 		state            []byte
 		workspace        *workspace.Workspace
-
-		Service
 	}
 
 	fakeCLIOption func(*fakeCLIService)
@@ -135,26 +133,26 @@ func withState(state []byte) fakeCLIOption {
 	}
 }
 
-func (f *fakeCLIService) ListStateVersions(context.Context, string, resource.PageOptions) (*resource.Page[*Version], error) {
+func (f *fakeCLIService) List(context.Context, string, resource.PageOptions) (*resource.Page[*Version], error) {
 	return f.stateVersionList, nil
 }
 
-func (f *fakeCLIService) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
+func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID string) (*Version, error) {
 	if f.stateVersion == nil {
 		return nil, internal.ErrResourceNotFound
 	}
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) DeleteStateVersion(ctx context.Context, svID string) error {
+func (f *fakeCLIService) Delete(ctx context.Context, svID string) error {
 	return nil
 }
 
-func (f *fakeCLIService) RollbackStateVersion(ctx context.Context, svID string) (*Version, error) {
+func (f *fakeCLIService) Rollback(ctx context.Context, svID string) (*Version, error) {
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) DownloadState(ctx context.Context, svID string) ([]byte, error) {
+func (f *fakeCLIService) Download(ctx context.Context, svID string) ([]byte, error) {
 	return f.state, nil
 }
 

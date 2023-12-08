@@ -107,7 +107,7 @@ module "mod" {
 
 	// delete vcs provider and visit the module page; it should be no longer
 	// connected. Then delete the module.
-	_, err = svc.VCSProviders.DeleteVCSProvider(ctx, provider.ID)
+	_, err = svc.VCSProviders.Delete(ctx, provider.ID)
 	require.NoError(t, err)
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{

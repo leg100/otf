@@ -42,7 +42,7 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	page, err := a.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
+	page, err := a.List(r.Context(), params.WorkspaceID, params.PageOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -57,7 +57,7 @@ func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := a.GetCurrentStateVersion(r.Context(), workspaceID)
+	sv, err := a.GetCurrent(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -72,7 +72,7 @@ func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.DeleteStateVersion(r.Context(), versionID); err != nil {
+	if err := a.Delete(r.Context(), versionID); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -85,7 +85,7 @@ func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	sv, err := a.RollbackStateVersion(r.Context(), versionID)
+	sv, err := a.Rollback(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.DownloadState(r.Context(), versionID)
+	resp, err := a.Download(r.Context(), versionID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

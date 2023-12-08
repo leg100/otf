@@ -61,11 +61,11 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) WatchNotificationConfigurations(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Config], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {
+func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {
 	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateNotificationConfigurationAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (s *Service) CreateNotificationConfiguration(ctx context.Context, workspace
 	return nc, nil
 }
 
-func (s *Service) UpdateNotificationConfiguration(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error) {
+func (s *Service) Update(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error) {
 	var subject internal.Subject
 	updated, err := s.db.update(ctx, id, func(nc *Config) (err error) {
 		subject, err = s.workspaceAuthorizer.CanAccess(ctx, rbac.UpdateNotificationConfigurationAction, nc.WorkspaceID)
@@ -100,7 +100,7 @@ func (s *Service) UpdateNotificationConfiguration(ctx context.Context, id string
 	return updated, nil
 }
 
-func (s *Service) GetNotificationConfiguration(ctx context.Context, id string) (*Config, error) {
+func (s *Service) Get(ctx context.Context, id string) (*Config, error) {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)
@@ -114,7 +114,7 @@ func (s *Service) GetNotificationConfiguration(ctx context.Context, id string) (
 	return nc, nil
 }
 
-func (s *Service) ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error) {
+func (s *Service) List(ctx context.Context, workspaceID string) ([]*Config, error) {
 	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.ListNotificationConfigurationsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (s *Service) ListNotificationConfigurations(ctx context.Context, workspaceI
 	return configs, nil
 }
 
-func (s *Service) DeleteNotificationConfiguration(ctx context.Context, id string) error {
+func (s *Service) Delete(ctx context.Context, id string) error {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)

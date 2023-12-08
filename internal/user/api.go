@@ -39,7 +39,7 @@ func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := a.CreateUser(r.Context(), opts.Username)
+	user, err := a.Create(r.Context(), opts.Username)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -54,7 +54,7 @@ func (a *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.DeleteUser(r.Context(), username); err != nil {
+	if err := a.Delete(r.Context(), username); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

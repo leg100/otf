@@ -52,7 +52,7 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 		opts.Triggers = append(opts.Triggers, Trigger(t))
 	}
 
-	nc, err := a.CreateNotificationConfiguration(r.Context(), workspaceID, opts)
+	nc, err := a.Create(r.Context(), workspaceID, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -68,7 +68,7 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	configs, err := a.ListNotificationConfigurations(r.Context(), workspaceID)
+	configs, err := a.List(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -89,7 +89,7 @@ func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nc, err := a.GetNotificationConfiguration(r.Context(), id)
+	nc, err := a.Get(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -119,7 +119,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 		opts.Triggers = append(opts.Triggers, Trigger(t))
 	}
 
-	updated, err := a.UpdateNotificationConfiguration(r.Context(), id, opts)
+	updated, err := a.Update(r.Context(), id, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -137,7 +137,7 @@ func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.DeleteNotificationConfiguration(r.Context(), id); err != nil {
+	if err := a.Delete(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

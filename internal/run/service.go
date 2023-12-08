@@ -151,10 +151,6 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
-	return s.broker.Subscribe(ctx)
-}
-
 func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
 	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
@@ -339,9 +335,13 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 	return run, nil
 }
 
-// WatchWithOptions provides authenticated access to a stream of run events,
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
+	return s.broker.Subscribe(ctx)
+}
+
+// watchWithOptions provides authenticated access to a stream of run events,
 // with the option to filter events.
-func (s *Service) WatchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
+func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions

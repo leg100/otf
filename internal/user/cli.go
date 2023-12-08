@@ -14,8 +14,8 @@ type userCLI struct {
 }
 
 type userCLIClient interface {
-	CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
-	DeleteUser(ctx context.Context, username string) error
+	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
+	Delete(ctx context.Context, username string) error
 }
 
 func NewUserCommand(apiClient *otfapi.Client) *cobra.Command {
@@ -46,7 +46,7 @@ func (a *userCLI) userNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			user, err := a.client.CreateUser(cmd.Context(), args[0])
+			user, err := a.client.Create(cmd.Context(), args[0])
 			if err != nil {
 				return err
 			}
@@ -64,7 +64,7 @@ func (a *userCLI) userDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := a.client.DeleteUser(cmd.Context(), args[0]); err != nil {
+			if err := a.client.Delete(cmd.Context(), args[0]); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted user %s\n", args[0])
@@ -84,7 +84,7 @@ type membershipCLIClient interface {
 }
 
 type teamsCLIClient interface {
-	GetTeam(ctx context.Context, organization, name string) (*team.Team, error)
+	Get(ctx context.Context, organization, name string) (*team.Team, error)
 }
 
 func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
@@ -121,7 +121,7 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.teams.GetTeam(cmd.Context(), organization, name)
+			team, err := a.teams.Get(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
@@ -154,7 +154,7 @@ func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.teams.GetTeam(cmd.Context(), organization, name)
+			team, err := a.teams.Get(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}

@@ -41,14 +41,12 @@ type (
 	Options struct {
 		logr.Logger
 		html.Renderer
-
-		WorkspaceAuthorizer internal.Authorizer
-		WorkspaceService    *workspace.Service
-
 		internal.Cache
 		*sql.DB
 		*tfeapi.Responder
 		*surl.Signer
+
+		WorkspaceService *workspace.Service
 	}
 
 	// StateVersionListOptions represents the options for listing state versions.
@@ -65,7 +63,7 @@ func NewService(opts Options) *Service {
 		Logger:    opts.Logger,
 		cache:     opts.Cache,
 		db:        db,
-		workspace: opts.WorkspaceAuthorizer,
+		workspace: opts.WorkspaceService,
 		factory:   &factory{db},
 	}
 	svc.web = &webHandlers{
@@ -73,10 +71,10 @@ func NewService(opts Options) *Service {
 		Service:  &svc,
 	}
 	svc.tfeapi = &tfe{
-		Service:    &svc,
-		workspaces: opts.WorkspaceService,
 		Responder:  opts.Responder,
 		Signer:     opts.Signer,
+		state:      &svc,
+		workspaces: opts.WorkspaceService,
 	}
 	svc.api = &api{
 		Service:   &svc,
@@ -95,7 +93,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
+func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	if opts.WorkspaceID == nil {
 		return nil, errors.New("workspace ID is required")
 	}
@@ -118,15 +116,15 @@ func (a *Service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 	return sv, nil
 }
 
-func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
-	v, err := a.GetCurrentStateVersion(ctx, workspaceID)
+func (a *Service) DownloadCurrent(ctx context.Context, workspaceID string) ([]byte, error) {
+	v, err := a.GetCurrent(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	return a.DownloadState(ctx, v.ID)
+	return a.Download(ctx, v.ID)
 }
 
-func (a *Service) ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (a *Service) List(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -141,7 +139,7 @@ func (a *Service) ListStateVersions(ctx context.Context, workspaceID string, opt
 	return svl, nil
 }
 
-func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
+func (a *Service) GetCurrent(ctx context.Context, workspaceID string) (*Version, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -161,8 +159,8 @@ func (a *Service) GetCurrentStateVersion(ctx context.Context, workspaceID string
 	return sv, nil
 }
 
-func (a *Service) GetStateVersion(ctx context.Context, versionID string) (*Version, error) {
-	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, versionID)
+func (a *Service) Get(ctx context.Context, versionID string) (*Version, error) {
+	subject, err := a.CanAccess(ctx, rbac.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +174,8 @@ func (a *Service) GetStateVersion(ctx context.Context, versionID string) (*Versi
 	return sv, nil
 }
 
-func (a *Service) DeleteStateVersion(ctx context.Context, versionID string) error {
-	subject, err := a.CanAccessStateVersion(ctx, rbac.DeleteStateVersionAction, versionID)
+func (a *Service) Delete(ctx context.Context, versionID string) error {
+	subject, err := a.CanAccess(ctx, rbac.DeleteStateVersionAction, versionID)
 	if err != nil {
 		return err
 	}
@@ -190,8 +188,8 @@ func (a *Service) DeleteStateVersion(ctx context.Context, versionID string) erro
 	return nil
 }
 
-func (a *Service) RollbackStateVersion(ctx context.Context, versionID string) (*Version, error) {
-	subject, err := a.CanAccessStateVersion(ctx, rbac.RollbackStateVersionAction, versionID)
+func (a *Service) Rollback(ctx context.Context, versionID string) (*Version, error) {
+	subject, err := a.CanAccess(ctx, rbac.RollbackStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +203,7 @@ func (a *Service) RollbackStateVersion(ctx context.Context, versionID string) (*
 	return sv, nil
 }
 
-func (a *Service) UploadState(ctx context.Context, svID string, state []byte) error {
+func (a *Service) Upload(ctx context.Context, svID string, state []byte) error {
 	var sv *Version
 	err := a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		var err error
@@ -230,8 +228,8 @@ func (a *Service) UploadState(ctx context.Context, svID string, state []byte) er
 	return nil
 }
 
-func (a *Service) DownloadState(ctx context.Context, svID string) ([]byte, error) {
-	subject, err := a.CanAccessStateVersion(ctx, rbac.DownloadStateAction, svID)
+func (a *Service) Download(ctx context.Context, svID string) ([]byte, error) {
+	subject, err := a.CanAccess(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -251,14 +249,14 @@ func (a *Service) DownloadState(ctx context.Context, svID string) ([]byte, error
 	return state, nil
 }
 
-func (a *Service) GetStateVersionOutput(ctx context.Context, outputID string) (*Output, error) {
+func (a *Service) GetOutput(ctx context.Context, outputID string) (*Output, error) {
 	out, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)
 		return nil, err
 	}
 
-	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionOutputAction, out.StateVersionID)
+	subject, err := a.CanAccess(ctx, rbac.GetStateVersionOutputAction, out.StateVersionID)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +265,7 @@ func (a *Service) GetStateVersionOutput(ctx context.Context, outputID string) (*
 	return out, nil
 }
 
-func (a *Service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (internal.Subject, error) {
+func (a *Service) CanAccess(ctx context.Context, action rbac.Action, svID string) (internal.Subject, error) {
 	sv, err := a.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

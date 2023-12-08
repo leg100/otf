@@ -69,7 +69,7 @@ func NewService(ctx context.Context, opts Options) *Service {
 }
 
 func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions) (uuid.UUID, error) {
-	vcsProvider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
+	vcsProvider, err := s.vcsproviders.Get(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
@@ -130,7 +130,7 @@ func (s *Service) DeleteUnreferencedRepohooks(ctx context.Context) error {
 }
 
 func (s *Service) deleteOrganizationRepohooks(ctx context.Context, org *organization.Organization) error {
-	providers, err := s.vcsproviders.ListVCSProviders(ctx, org.Name)
+	providers, err := s.vcsproviders.List(ctx, org.Name)
 	if err != nil {
 		return err
 	}

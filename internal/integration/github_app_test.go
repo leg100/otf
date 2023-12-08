@@ -176,7 +176,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}),
 		}
 		daemon, _, _ := setup(t, nil, handlers...)
-		_, err := daemon.GithubApp.CreateGithubApp(ctx, github.CreateAppOptions{
+		_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
 			AppID:      123,
 			Slug:       "otf-123",
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
@@ -219,7 +219,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	ctx = internal.AddSubjectToContext(ctx, &user.SiteAdmin)
 	// create an OTF daemon with a fake github backend, and serve up a repo and
 	// its contents via tarball.
-	_, err := daemon.GithubApp.CreateGithubApp(ctx, github.CreateAppOptions{
+	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
 		// any key will do, the stub github server won't actually authenticate it.
 		PrivateKey:    string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		Slug:          "test-app",
@@ -227,7 +227,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	provider, err := daemon.VCSProviders.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+	provider, err := daemon.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
 		Organization:       org.Name,
 		GithubAppInstallID: internal.Int64(42997659),
 	})

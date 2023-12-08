@@ -117,7 +117,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// create app
-	_, err := daemon.GithubApp.CreateGithubApp(ctx, github.CreateAppOptions{
+	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
 		AppID:      123,
 		Slug:       "otf-123",
 		PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),

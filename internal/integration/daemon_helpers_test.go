@@ -197,7 +197,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		org = s.createOrganization(t, ctx)
 	}
 
-	provider, err := s.VCSProviders.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+	provider, err := s.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
@@ -229,7 +229,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 func (s *testDaemon) createUser(t *testing.T, opts ...otfuser.NewUserOption) *otfuser.User {
 	t.Helper()
 
-	user, err := s.Users.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
+	user, err := s.Users.Create(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
@@ -266,7 +266,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.Teams.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
+	team, err := s.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
@@ -276,7 +276,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *team.Team {
 	t.Helper()
 
-	team, err := s.Teams.GetTeam(ctx, org, name)
+	team, err := s.Teams.Get(ctx, org, name)
 	require.NoError(t, err)
 	return team
 }
@@ -348,7 +348,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	file, err := os.ReadFile("./testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	sv, err := s.State.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	sv, err := s.State.Create(ctx, state.CreateStateVersionOptions{
 		State:       file,
 		WorkspaceID: internal.String(ws.ID),
 		// serial matches that in ./testdata/terraform.tfstate
@@ -361,7 +361,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID string) *state.Version {
 	t.Helper()
 
-	sv, err := s.State.GetCurrentStateVersion(ctx, wsID)
+	sv, err := s.State.GetCurrent(ctx, wsID)
 	require.NoError(t, err)
 	return sv
 }
@@ -375,7 +375,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *otfuse
 		ctx = internal.AddSubjectToContext(ctx, user)
 	}
 
-	ut, token, err := s.Users.CreateUserToken(ctx, otfuser.CreateUserTokenOptions{
+	ut, token, err := s.Users.CreateToken(ctx, otfuser.CreateUserTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)
@@ -389,7 +389,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	nc, err := s.Notifications.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+	nc, err := s.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 		DestinationType: notifications.DestinationGeneric,
 		Enabled:         internal.Bool(true),
 		Name:            internal.String(uuid.NewString()),

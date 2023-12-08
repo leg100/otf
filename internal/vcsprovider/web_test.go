@@ -104,15 +104,15 @@ type fakeService struct {
 	Service
 }
 
-func (f *fakeService) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
+func (f *fakeService) Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
 	return f.provider, nil
 }
 
-func (f *fakeService) ListVCSProviders(context.Context, string) ([]*VCSProvider, error) {
+func (f *fakeService) List(context.Context, string) ([]*VCSProvider, error) {
 	return []*VCSProvider{f.provider}, nil
 }
 
-func (f *fakeService) DeleteVCSProvider(context.Context, string) (*VCSProvider, error) {
+func (f *fakeService) Delete(context.Context, string) (*VCSProvider, error) {
 	return f.provider, nil
 }
 
@@ -123,7 +123,7 @@ type fakeGithubAppService struct {
 	*github.Service
 }
 
-func (f *fakeGithubAppService) GetGithubApp(context.Context) (*github.App, error) {
+func (f *fakeGithubAppService) GetApp(context.Context) (*github.App, error) {
 	return f.app, nil
 }
 

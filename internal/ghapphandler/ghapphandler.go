@@ -29,7 +29,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "github-app-event-handler"})
 	// retrieve github app config; if one hasn't been configured then return a
 	// 400
-	app, err := h.GithubApps.GetGithubApp(ctx)
+	app, err := h.GithubApps.GetApp(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

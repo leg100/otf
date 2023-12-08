@@ -77,7 +77,7 @@ func NewService(ctx context.Context, opts Options) *Service {
 // Connect an OTF resource to a VCS repo.
 func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	// check vcs provider is valid
-	provider, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
+	provider, err := s.vcsproviders.Get(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}

@@ -50,8 +50,8 @@ type (
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
-		GetVCSProvider(context.Context, string) (*vcsprovider.VCSProvider, error)
-		ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error)
+		Get(context.Context, string) (*vcsprovider.VCSProvider, error)
+		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
 		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 	}
 
@@ -191,7 +191,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providers, err := h.vcsproviders.ListVCSProviders(r.Context(), org)
+	providers, err := h.vcsproviders.List(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -270,7 +270,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vcsprov, err := h.vcsproviders.GetVCSProvider(r.Context(), params.VCSProviderID)
+	vcsprov, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

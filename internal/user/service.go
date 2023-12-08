@@ -109,7 +109,7 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterUISubjectGetterOrCreator(func(ctx context.Context, username string) (internal.Subject, error) {
 		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
-			user, err = svc.CreateUser(ctx, username)
+			user, err = svc.Create(ctx, username)
 		}
 		return user, err
 
@@ -124,7 +124,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
+func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, "")
 	if err != nil {
 		return nil, err
@@ -159,8 +159,8 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	return user, nil
 }
 
-// ListUsers lists all users.
-func (a *Service) ListUsers(ctx context.Context) ([]*User, error) {
+// List lists all users.
+func (a *Service) List(ctx context.Context) ([]*User, error) {
 	_, err := a.site.CanAccess(ctx, rbac.ListUsersAction, "")
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (a *Service) ListOrganizationUsers(ctx context.Context, organization string
 // needs either organization-wide authority to call this endpoint, or they need
 // to be a member of the team.
 func (a *Service) ListTeamUsers(ctx context.Context, teamID string) ([]*User, error) {
-	team, err := a.teams.GetTeamByID(ctx, teamID)
+	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID string) ([]*User, er
 	return members, nil
 }
 
-func (a *Service) DeleteUser(ctx context.Context, username string) error {
+func (a *Service) Delete(ctx context.Context, username string) error {
 	subject, err := a.site.CanAccess(ctx, rbac.DeleteUserAction, "")
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (a *Service) DeleteUser(ctx context.Context, username string) error {
 // AddTeamMembership adds users to a team. If a user does not exist then the
 // user is created first.
 func (a *Service) AddTeamMembership(ctx context.Context, teamID string, usernames []string) error {
-	team, err := a.teams.GetTeamByID(ctx, teamID)
+	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID string, username
 		for _, username := range usernames {
 			_, err := a.db.getUser(ctx, UserSpec{Username: &username})
 			if errors.Is(err, internal.ErrResourceNotFound) {
-				if _, err := a.CreateUser(ctx, username); err != nil {
+				if _, err := a.Create(ctx, username); err != nil {
 					return err
 				}
 			} else if err != nil {
@@ -263,7 +263,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID string, username
 
 // RemoveTeamMembership removes users from a team.
 func (a *Service) RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error {
-	team, err := a.teams.GetTeamByID(ctx, teamID)
+	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func (a *Service) SetSiteAdmins(ctx context.Context, usernames ...string) error 
 	for _, username := range usernames {
 		_, err := a.db.getUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
-			if _, err = a.CreateUser(ctx, username); err != nil {
+			if _, err = a.Create(ctx, username); err != nil {
 				return err
 			}
 		}
@@ -316,9 +316,9 @@ func (a *Service) SetSiteAdmins(ctx context.Context, usernames ...string) error 
 
 // User API token endpoints
 
-// CreateUserToken creates a user token. Only users can create a user token, and
+// CreateToken creates a user token. Only users can create a user token, and
 // they can only create a token for themselves.
-func (a *Service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
+func (a *Service) CreateToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -340,7 +340,7 @@ func (a *Service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptio
 	return ut, token, nil
 }
 
-func (a *Service) ListUserTokens(ctx context.Context) ([]*UserToken, error) {
+func (a *Service) ListTokens(ctx context.Context) ([]*UserToken, error) {
 	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -349,7 +349,7 @@ func (a *Service) ListUserTokens(ctx context.Context) ([]*UserToken, error) {
 	return a.db.listUserTokens(ctx, user.Username)
 }
 
-func (a *Service) DeleteUserToken(ctx context.Context, tokenID string) error {
+func (a *Service) DeleteToken(ctx context.Context, tokenID string) error {
 	user, err := UserFromContext(ctx)
 	if err != nil {
 		return err

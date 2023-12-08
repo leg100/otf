@@ -17,13 +17,13 @@ func TestIntegation_TeamService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 
-		team, err := svc.Teams.CreateTeam(ctx, org.Name, otfteam.CreateTeamOptions{
+		team, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
 			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := svc.Teams.CreateTeam(ctx, org.Name, otfteam.CreateTeamOptions{
+			_, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
 				Name: internal.String(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
@@ -34,7 +34,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
-		_, err := svc.Teams.UpdateTeam(ctx, team.ID, otfteam.UpdateTeamOptions{
+		_, err := svc.Teams.Update(ctx, team.ID, otfteam.UpdateTeamOptions{
 			OrganizationAccessOptions: otfteam.OrganizationAccessOptions{
 				ManageWorkspaces: internal.Bool(true),
 				ManageVCS:        internal.Bool(true),
@@ -43,7 +43,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.Teams.GetTeam(ctx, team.Organization, team.Name)
+		got, err := svc.Teams.Get(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
 		assert.True(t, got.OrganizationAccess().ManageWorkspaces)
@@ -55,7 +55,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
-		got, err := svc.Teams.GetTeam(ctx, team.Organization, team.Name)
+		got, err := svc.Teams.Get(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, team, got)
@@ -65,7 +65,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createTeam(t, ctx, nil)
 
-		got, err := svc.Teams.GetTeamByID(ctx, want.ID)
+		got, err := svc.Teams.GetByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -78,7 +78,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		team2 := svc.createTeam(t, ctx, org)
 		team3 := svc.createTeam(t, ctx, org)
 
-		got, err := svc.Teams.ListTeams(ctx, org.Name)
+		got, err := svc.Teams.List(ctx, org.Name)
 		require.NoError(t, err)
 
 		assert.Contains(t, got, team1)
@@ -109,7 +109,7 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
-		err := svc.Teams.DeleteTeam(ctx, team.ID)
+		err := svc.Teams.Delete(ctx, team.ID)
 		require.NoError(t, err)
 	})
 
@@ -117,10 +117,10 @@ func TestIntegation_TeamService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx) // creates owners team
 
-		owners, err := svc.Teams.GetTeam(ctx, org.Name, "owners")
+		owners, err := svc.Teams.Get(ctx, org.Name, "owners")
 		require.NoError(t, err)
 
-		err = svc.Teams.DeleteTeam(ctx, owners.ID)
+		err = svc.Teams.Delete(ctx, owners.ID)
 		assert.Equal(t, otfteam.ErrRemovingOwnersTeamNotPermitted, err)
 	})
 }

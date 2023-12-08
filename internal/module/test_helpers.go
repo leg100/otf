@@ -35,11 +35,11 @@ func (f *fakeService) ListModules(context.Context, ListModulesOptions) ([]*Modul
 	return []*Module{f.mod}, nil
 }
 
-func (f *fakeService) GetVCSProvider(context.Context, string) (*vcsprovider.VCSProvider, error) {
+func (f *fakeService) Get(context.Context, string) (*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs[0], nil
 }
 
-func (f *fakeService) ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeService) List(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs, nil
 }
 

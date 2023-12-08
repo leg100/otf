@@ -64,8 +64,8 @@ type (
 	}
 
 	stateClient interface {
-		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
+		Create(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
+		DownloadCurrent(ctx context.Context, workspaceID string) ([]byte, error)
 	}
 
 	logsClient interface {

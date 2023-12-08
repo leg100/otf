@@ -34,7 +34,7 @@ func TestIntegration_Organization(t *testing.T) {
 		})
 
 		t.Run("owners team should be created", func(t *testing.T) {
-			owners, err := svc.Teams.GetTeam(ctx, org.Name, "owners")
+			owners, err := svc.Teams.Get(ctx, org.Name, "owners")
 			require.NoError(t, err)
 
 			t.Run("creator should be a member", func(t *testing.T) {

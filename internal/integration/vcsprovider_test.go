@@ -17,7 +17,7 @@ func TestVCSProvider(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 
-		_, err := svc.VCSProviders.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+		_, err := svc.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
 			Organization: org.Name,
 			Token:        internal.String(uuid.NewString()),
 			Kind:         vcs.KindPtr(vcs.GithubKind),
@@ -29,7 +29,7 @@ func TestVCSProvider(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createVCSProvider(t, ctx, nil)
 
-		got, err := svc.VCSProviders.GetVCSProvider(ctx, want.ID)
+		got, err := svc.VCSProviders.Get(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -41,7 +41,7 @@ func TestVCSProvider(t *testing.T) {
 		provider2 := svc.createVCSProvider(t, ctx, org)
 		provider3 := svc.createVCSProvider(t, ctx, org)
 
-		got, err := svc.VCSProviders.ListVCSProviders(ctx, org.Name)
+		got, err := svc.VCSProviders.List(ctx, org.Name)
 		require.NoError(t, err)
 
 		assert.Contains(t, got, provider1)
@@ -53,7 +53,7 @@ func TestVCSProvider(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createVCSProvider(t, ctx, nil)
 
-		got, err := svc.VCSProviders.DeleteVCSProvider(ctx, want.ID)
+		got, err := svc.VCSProviders.Delete(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)

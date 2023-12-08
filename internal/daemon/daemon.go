@@ -268,14 +268,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSEventSubscriber: vcsEventBroker,
 	})
 	stateService := state.NewService(state.Options{
-		Logger:              logger,
-		DB:                  db,
-		WorkspaceAuthorizer: workspaceService,
-		WorkspaceService:    workspaceService,
-		Cache:               cache,
-		Renderer:            renderer,
-		Responder:           responder,
-		Signer:              signer,
+		Logger:           logger,
+		DB:               db,
+		WorkspaceService: workspaceService,
+		Cache:            cache,
+		Renderer:         renderer,
+		Responder:        responder,
+		Signer:           signer,
 	})
 	variableService := variable.NewService(variable.Options{
 		Logger:              logger,

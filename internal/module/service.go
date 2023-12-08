@@ -57,6 +57,7 @@ func NewService(opts Options) *Service {
 		connections:  opts.ConnectionsService,
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB},
+		vcsproviders: opts.VCSProviderService,
 	}
 	svc.api = &api{
 		svc:    &svc,
@@ -87,7 +88,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Module, error) {
-	vcsprov, err := s.vcsproviders.GetVCSProvider(ctx, opts.VCSProviderID)
+	vcsprov, err := s.vcsproviders.Get(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}

@@ -82,11 +82,11 @@ type fakeVCSProviderService struct {
 	repos     []string
 }
 
-func (f *fakeVCSProviderService) GetVCSProvider(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
 	return f.providers[0], nil
 }
 
-func (f *fakeVCSProviderService) ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) List(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
 	return f.providers, nil
 }
 
@@ -108,6 +108,6 @@ type fakeTeamService struct {
 	teams []*team.Team
 }
 
-func (f *fakeTeamService) ListTeams(context.Context, string) ([]*team.Team, error) {
+func (f *fakeTeamService) List(context.Context, string) ([]*team.Team, error) {
 	return f.teams, nil
 }

@@ -25,7 +25,7 @@ func TestService_Watch(t *testing.T) {
 	want := pubsub.Event[*Run]{Payload: &Run{}}
 	in <- want
 
-	got, err := svc.WatchWithOptions(context.Background(), WatchOptions{})
+	got, err := svc.watchWithOptions(context.Background(), WatchOptions{})
 	require.NoError(t, err)
 
 	assert.Equal(t, want, <-got)

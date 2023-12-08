@@ -17,9 +17,9 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)
 		ws := daemon.createWorkspace(t, ctx, org)
-		sub, unsub := daemon.Notifications.WatchNotificationConfigurations(ctx)
+		sub, unsub := daemon.Notifications.Watch(ctx)
 		defer unsub()
-		nc, err := daemon.Notifications.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		nc, err := daemon.Notifications.Create(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
 			Name:            internal.String("testing"),
@@ -34,7 +34,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		t.Run("name", func(t *testing.T) {
-			got, err := svc.Notifications.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
+			got, err := svc.Notifications.Update(ctx, nc.ID, notifications.UpdateConfigOptions{
 				Name: internal.String("new-name"),
 			})
 			require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		})
 
 		t.Run("disable", func(t *testing.T) {
-			got, err := svc.Notifications.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
+			got, err := svc.Notifications.Update(ctx, nc.ID, notifications.UpdateConfigOptions{
 				Enabled: internal.Bool(false),
 			})
 			require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		})
 
 		t.Run("url", func(t *testing.T) {
-			got, err := svc.Notifications.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
+			got, err := svc.Notifications.Update(ctx, nc.ID, notifications.UpdateConfigOptions{
 				URL: internal.String("http://otf.ninja/notifications"),
 			})
 			require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
 		nc3 := svc.createNotificationConfig(t, ctx, ws)
 
-		got, err := svc.Notifications.ListNotificationConfigurations(ctx, ws.ID)
+		got, err := svc.Notifications.List(ctx, ws.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, 3, len(got))
@@ -78,7 +78,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
-		got, err := svc.Notifications.GetNotificationConfiguration(ctx, nc.ID)
+		got, err := svc.Notifications.Get(ctx, nc.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, nc, got)
@@ -87,16 +87,16 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
-		sub, unsub := svc.Notifications.WatchNotificationConfigurations(ctx)
+		sub, unsub := svc.Notifications.Watch(ctx)
 		defer unsub()
 		nc := svc.createNotificationConfig(t, ctx, ws)
 		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
 
-		err := svc.Notifications.DeleteNotificationConfiguration(ctx, nc.ID)
+		err := svc.Notifications.Delete(ctx, nc.ID)
 		require.NoError(t, err)
 		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
 
-		_, err = svc.Notifications.GetNotificationConfiguration(ctx, nc.ID)
+		_, err = svc.Notifications.Get(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
 	})
 
@@ -105,7 +105,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
-		sub, unsub := svc.Notifications.WatchNotificationConfigurations(ctx)
+		sub, unsub := svc.Notifications.Watch(ctx)
 		defer unsub()
 
 		ws := svc.createWorkspace(t, ctx, org)

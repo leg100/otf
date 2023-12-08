@@ -112,15 +112,15 @@ type fakeService struct {
 	installs []*Installation
 }
 
-func (f *fakeService) CreateGithubApp(context.Context, CreateAppOptions) (*App, error) {
+func (f *fakeService) CreateApp(context.Context, CreateAppOptions) (*App, error) {
 	return f.app, nil
 }
 
-func (f *fakeService) GetGithubApp(context.Context) (*App, error) {
+func (f *fakeService) GetApp(context.Context) (*App, error) {
 	return f.app, nil
 }
 
-func (f *fakeService) DeleteGithubApp(context.Context) error {
+func (f *fakeService) DeleteApp(context.Context) error {
 	return nil
 }
 

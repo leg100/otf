@@ -94,7 +94,7 @@ func NewService(opts Options) *Service {
 		}
 		// and delete them
 		for _, prov := range providers {
-			if _, err = svc.DeleteVCSProvider(ctx, prov.ID); err != nil {
+			if _, err = svc.Delete(ctx, prov.ID); err != nil {
 				return
 			}
 		}
@@ -107,7 +107,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
+func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (a *Service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 	return provider, nil
 }
 
-func (a *Service) UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error) {
+func (a *Service) Update(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error) {
 	var (
 		subject internal.Subject
 		before  VCSProvider
@@ -153,7 +153,7 @@ func (a *Service) UpdateVCSProvider(ctx context.Context, id string, opts UpdateO
 	return after, nil
 }
 
-func (a *Service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {
+func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, instal
 	return providers, nil
 }
 
-func (a *Service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *Service) Get(ctx context.Context, id string) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -218,14 +218,14 @@ func (a *Service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, 
 }
 
 func (a *Service) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
-	provider, err := a.GetVCSProvider(ctx, providerID)
+	provider, err := a.Get(ctx, providerID)
 	if err != nil {
 		return nil, err
 	}
 	return provider.NewClient()
 }
 
-func (a *Service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *Service) Delete(ctx context.Context, id string) (*VCSProvider, error) {
 	var (
 		provider *VCSProvider
 		subject  internal.Subject

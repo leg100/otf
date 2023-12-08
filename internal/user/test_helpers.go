@@ -14,11 +14,11 @@ type fakeService struct {
 	*Service
 }
 
-func (f *fakeService) CreateUser(context.Context, string, ...NewUserOption) (*User, error) {
+func (f *fakeService) Create(context.Context, string, ...NewUserOption) (*User, error) {
 	return f.user, nil
 }
 
-func (f *fakeService) ListUsers(ctx context.Context) ([]*User, error) {
+func (f *fakeService) List(ctx context.Context) ([]*User, error) {
 	return []*User{f.user}, nil
 }
 
@@ -26,7 +26,7 @@ func (f *fakeService) ListTeamUsers(ctx context.Context, teamID string) ([]*User
 	return []*User{f.user}, nil
 }
 
-func (f *fakeService) DeleteUser(context.Context, string) error {
+func (f *fakeService) Delete(context.Context, string) error {
 	return nil
 }
 
@@ -38,15 +38,15 @@ func (f *fakeService) RemoveTeamMembership(context.Context, string, []string) er
 	return nil
 }
 
-func (f *fakeService) CreateUserToken(context.Context, CreateUserTokenOptions) (*UserToken, []byte, error) {
+func (f *fakeService) CreateToken(context.Context, CreateUserTokenOptions) (*UserToken, []byte, error) {
 	return nil, f.token, nil
 }
 
-func (f *fakeService) ListUserTokens(context.Context) ([]*UserToken, error) {
+func (f *fakeService) ListTokens(context.Context) ([]*UserToken, error) {
 	return []*UserToken{f.ut}, nil
 }
 
-func (f *fakeService) DeleteUserToken(context.Context, string) error {
+func (f *fakeService) DeleteToken(context.Context, string) error {
 	return nil
 }
 
@@ -54,10 +54,10 @@ type fakeTeamService struct {
 	team *team.Team
 }
 
-func (f *fakeTeamService) GetTeam(context.Context, string, string) (*team.Team, error) {
+func (f *fakeTeamService) Get(context.Context, string, string) (*team.Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeTeamService) GetTeamByID(context.Context, string) (*team.Team, error) {
+func (f *fakeTeamService) GetByID(context.Context, string) (*team.Team, error) {
 	return f.team, nil
 }

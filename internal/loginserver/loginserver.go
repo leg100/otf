@@ -37,7 +37,7 @@ type (
 	}
 
 	userTokensClient interface {
-		CreateUserToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
+		CreateToken(ctx context.Context, opts user.CreateUserTokenOptions) (*user.UserToken, []byte, error)
 	}
 
 	// Options for server constructor

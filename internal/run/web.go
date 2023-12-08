@@ -35,9 +35,9 @@ type (
 		ForceCancel(ctx context.Context, runID string) error
 		Apply(ctx context.Context, runID string) error
 		Discard(ctx context.Context, runID string) error
-		WatchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 
 		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
+		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
 
 	webWorkspaceClient interface {
@@ -328,7 +328,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := h.runs.WatchWithOptions(r.Context(), WatchOptions{
+	events, err := h.runs.watchWithOptions(r.Context(), WatchOptions{
 		WorkspaceID: internal.String(params.WorkspaceID),
 	})
 	if err != nil {

@@ -49,12 +49,12 @@ type (
 	}
 
 	webTeamClient interface {
-		ListTeams(context.Context, string) ([]*team.Team, error)
+		List(context.Context, string) ([]*team.Team, error)
 	}
 
 	webVCSProvidersClient interface {
-		GetVCSProvider(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error)
-		ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error)
+		Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error)
+		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
 
 		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 	}
@@ -264,7 +264,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var provider *vcsprovider.VCSProvider
 	if ws.Connection != nil {
-		provider, err = h.vcsproviders.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
+		provider, err = h.vcsproviders.Get(r.Context(), ws.Connection.VCSProviderID)
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -366,7 +366,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get teams for populating team permissions
-	teams, err := h.teams.ListTeams(r.Context(), workspace.Organization)
+	teams, err := h.teams.List(r.Context(), workspace.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -394,7 +394,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var provider *vcsprovider.VCSProvider
 	if workspace.Connection != nil {
-		provider, err = h.vcsproviders.GetVCSProvider(r.Context(), workspace.Connection.VCSProviderID)
+		provider, err = h.vcsproviders.Get(r.Context(), workspace.Connection.VCSProviderID)
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -612,7 +612,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	providers, err := h.vcsproviders.ListVCSProviders(r.Context(), ws.Organization)
+	providers, err := h.vcsproviders.List(r.Context(), ws.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

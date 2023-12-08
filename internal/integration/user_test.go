@@ -104,7 +104,7 @@ func TestUser(t *testing.T) {
 		// only admin can retrieve its own user account
 		admin := svc.getUser(t, adminCtx, otfuser.SiteAdminUsername)
 
-		got, err := svc.Users.ListUsers(adminCtx)
+		got, err := svc.Users.List(adminCtx)
 		require.NoError(t, err)
 
 		assert.Equal(t, 4, len(got))
@@ -150,7 +150,7 @@ func TestUser(t *testing.T) {
 		user := svc.createUser(t)
 
 		// only admin can delete user
-		err := svc.Users.DeleteUser(adminCtx, user.Username)
+		err := svc.Users.Delete(adminCtx, user.Username)
 		require.NoError(t, err)
 
 		_, err = svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String(user.Username)})
@@ -202,7 +202,7 @@ func TestUser(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		owner := userFromContext(t, ctx)
 
-		owners, err := svc.Teams.GetTeam(ctx, org.Name, "owners")
+		owners, err := svc.Teams.Get(ctx, org.Name, "owners")
 		require.NoError(t, err)
 		// add another owner
 		another := svc.createUser(t, otfuser.WithTeams(owners))

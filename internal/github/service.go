@@ -62,7 +62,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 }
 
-func (a *Service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
+func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.CreateGithubAppAction, "")
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (a *Service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*
 	return app, nil
 }
 
-func (a *Service) GetGithubApp(ctx context.Context) (*App, error) {
+func (a *Service) GetApp(ctx context.Context) (*App, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.GetGithubAppAction, "")
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (a *Service) GetGithubApp(ctx context.Context) (*App, error) {
 	return app, nil
 }
 
-func (a *Service) DeleteGithubApp(ctx context.Context) error {
+func (a *Service) DeleteApp(ctx context.Context) error {
 	subject, err := a.site.CanAccess(ctx, rbac.DeleteGithubAppAction, "")
 	if err != nil {
 		return err

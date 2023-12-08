@@ -14,9 +14,9 @@ func TestIntegration_TeamUI(t *testing.T) {
 	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
-	_, err := daemon.Users.CreateUser(ctx, "bob")
+	_, err := daemon.Users.Create(ctx, "bob")
 	require.NoError(t, err)
-	_, err = daemon.Users.CreateUser(ctx, "alice")
+	_, err = daemon.Users.Create(ctx, "alice")
 	require.NoError(t, err)
 
 	browser.Run(t, ctx, chromedp.Tasks{

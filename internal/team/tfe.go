@@ -61,7 +61,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	team, err := a.CreateTeam(r.Context(), org, opts)
+	team, err := a.Create(r.Context(), org, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	team, err := a.UpdateTeam(r.Context(), id, opts)
+	team, err := a.Update(r.Context(), id, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -115,7 +115,7 @@ func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teams, err := a.ListTeams(r.Context(), organization)
+	teams, err := a.List(r.Context(), organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -139,7 +139,7 @@ func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := a.GetTeam(r.Context(), *params.Organization, *params.Name)
+	team, err := a.Get(r.Context(), *params.Organization, *params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -154,7 +154,7 @@ func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	team, err := a.GetTeamByID(r.Context(), id)
+	team, err := a.GetByID(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -169,7 +169,7 @@ func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.DeleteTeam(r.Context(), id); err != nil {
+	if err := a.Delete(r.Context(), id); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

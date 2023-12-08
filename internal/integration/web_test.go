@@ -17,7 +17,7 @@ func TestWeb(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 	user := userFromContext(t, ctx)
 
-	team, err := daemon.Teams.CreateTeam(ctx, org.Name, team.CreateTeamOptions{
+	team, err := daemon.Teams.Create(ctx, org.Name, team.CreateTeamOptions{
 		Name: internal.String("devops"),
 	})
 	require.NoError(t, err)

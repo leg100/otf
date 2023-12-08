@@ -49,7 +49,7 @@ type (
 	}
 
 	notifierNotificationClient interface {
-		WatchNotificationConfigurations(context.Context) (<-chan pubsub.Event[*Config], func())
+		Watch(context.Context) (<-chan pubsub.Event[*Config], func())
 	}
 
 	notifierHostnameClient interface {
@@ -73,7 +73,7 @@ func (s *Notifier) Start(ctx context.Context) error {
 	// subscribe to both run events and notification config events
 	subRuns, unsubRuns := s.runs.Watch(ctx)
 	defer unsubRuns()
-	subConfigs, unsubConfigs := s.notifications.WatchNotificationConfigurations(ctx)
+	subConfigs, unsubConfigs := s.notifications.Watch(ctx)
 	defer unsubConfigs()
 
 	// populate cache with existing notification configs

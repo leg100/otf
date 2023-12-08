@@ -78,7 +78,7 @@ func NewService(opts Options) *Service {
 		// owners team is created, so in this particular instance authorization
 		// is skipped.
 		ctx = internal.AddSkipAuthz(ctx)
-		_, err := svc.CreateTeam(ctx, organization.Name, CreateTeamOptions{
+		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
 			Name: internal.String("owners"),
 		})
 		if err != nil {
@@ -102,7 +102,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
+func (a *Service) Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *Service) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) Update(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -161,8 +161,8 @@ func (a *Service) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeam
 	return team, nil
 }
 
-// ListTeams lists teams in the organization.
-func (a *Service) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
+// List lists teams in the organization.
+func (a *Service) List(ctx context.Context, organization string) ([]*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (a *Service) ListTeams(ctx context.Context, organization string) ([]*Team, 
 	return teams, nil
 }
 
-func (a *Service) GetTeam(ctx context.Context, organization, name string) (*Team, error) {
+func (a *Service) Get(ctx context.Context, organization, name string) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func (a *Service) GetTeam(ctx context.Context, organization, name string) (*Team
 	return team, nil
 }
 
-func (a *Service) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
+func (a *Service) GetByID(ctx context.Context, teamID string) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -212,7 +212,7 @@ func (a *Service) GetTeamByID(ctx context.Context, teamID string) (*Team, error)
 	return team, nil
 }
 
-func (a *Service) DeleteTeam(ctx context.Context, teamID string) error {
+func (a *Service) Delete(ctx context.Context, teamID string) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)

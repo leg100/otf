@@ -21,7 +21,7 @@ func TestUserToken(t *testing.T) {
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := internal.AddSubjectToContext(ctx, svc.createUser(t))
-		_, _, err := svc.Users.CreateUserToken(ctx, user.CreateUserTokenOptions{
+		_, _, err := svc.Users.CreateToken(ctx, user.CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestUserToken(t *testing.T) {
 		svc.createToken(t, ctx, nil)
 		svc.createToken(t, ctx, nil)
 
-		got, err := svc.Users.ListUserTokens(ctx)
+		got, err := svc.Users.ListTokens(ctx)
 		require.NoError(t, err)
 
 		assert.Equal(t, 3, len(got))
@@ -43,7 +43,7 @@ func TestUserToken(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		token, _ := svc.createToken(t, ctx, nil)
 
-		err := svc.Users.DeleteUserToken(ctx, token.ID)
+		err := svc.Users.DeleteToken(ctx, token.ID)
 		require.NoError(t, err)
 	})
 }

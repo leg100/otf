@@ -387,7 +387,7 @@ func (o *operation) deleteBackendConfig(ctx context.Context) error {
 // downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
 func (o *operation) downloadState(ctx context.Context) error {
-	statefile, err := o.state.DownloadCurrentState(ctx, o.WorkspaceID)
+	statefile, err := o.state.DownloadCurrent(ctx, o.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
@@ -532,7 +532,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 	if err := json.Unmarshal(statefile, &f); err != nil {
 		return err
 	}
-	_, err = o.state.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	_, err = o.state.Create(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: &o.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,
