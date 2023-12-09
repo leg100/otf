@@ -166,6 +166,14 @@ func TestAllocator_allocate(t *testing.T) {
 			wantJob:    nil,
 			wantAgents: map[string]*Agent{"agent-1": {ID: "agent-1", CurrentJobs: 0}},
 		},
+		{
+			name: "ignore running job",
+			job: &Job{
+				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:  JobRunning,
+				AgentID: internal.String("agent-1"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

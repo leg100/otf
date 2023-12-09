@@ -151,7 +151,8 @@ func (a *allocator) allocate(ctx context.Context) error {
 			a.agents[*job.AgentID].CurrentJobs--
 			continue
 		default:
-			return fmt.Errorf("unknown job status: %s", job.Status)
+			// job running; ignore
+			continue
 		}
 		// allocate job to available agent
 		var available []*Agent
