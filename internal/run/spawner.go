@@ -68,6 +68,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	switch event.Action {
 	case vcs.ActionCreated, vcs.ActionUpdated:
 	default:
+		logger.V(4).Info("ignoring vcs event: non-applicable action")
 		return nil
 	}
 
@@ -76,7 +77,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		return err
 	}
 	if len(workspaces) == 0 {
-		logger.V(9).Info("handling event: no connected workspaces found")
+		logger.V(4).Info("ignoring vcs event: no connected workspaces found")
 		return nil
 	}
 
@@ -129,6 +130,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 	if n == 0 {
 		// no workspaces survived the filter
+		logger.V(4).Info("ignoring vcs event: no matching triggers found")
 		return nil
 	}
 	workspaces = workspaces[:n]

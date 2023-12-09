@@ -3,15 +3,15 @@ package vcs
 import "errors"
 
 const (
-	EventTypePull EventType = iota + 1
-	EventTypePush
-	EventTypeTag
-	EventTypeInstallation // github-app installation
+	EventTypePull         EventType = "pull"
+	EventTypePush         EventType = "push"
+	EventTypeTag          EventType = "tag"
+	EventTypeInstallation EventType = "install" // github-app installation
 
-	ActionCreated Action = iota + 1
-	ActionDeleted
-	ActionMerged
-	ActionUpdated
+	ActionCreated Action = "created"
+	ActionDeleted Action = "deleted"
+	ActionMerged  Action = "merged"
+	ActionUpdated Action = "updated"
 )
 
 type (
@@ -55,18 +55,18 @@ type (
 		GithubAppInstallID *int64
 	}
 
-	EventType int
-	Action    int
+	EventType string
+	Action    string
 )
 
 func (e EventPayload) Validate() error {
 	if e.VCSKind == "" {
 		return errors.New("event missing vcs kind")
 	}
-	if e.Type == 0 {
+	if e.Type == "" {
 		return errors.New("event missing event type")
 	}
-	if e.Action == 0 {
+	if e.Action == "" {
 		return errors.New("event missing event action")
 	}
 	switch e.Type {

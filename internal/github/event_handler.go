@@ -3,6 +3,7 @@ package github
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/google/go-github/v55/github"
@@ -39,10 +40,14 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 	case *github.PushEvent:
 		// populate event with list of changed file paths
 		for _, c := range event.Commits {
-			to.Paths = c.Added
+			to.Paths = append(to.Paths, c.Added...)
 			to.Paths = append(to.Paths, c.Modified...)
 			to.Paths = append(to.Paths, c.Removed...)
 		}
+		// remove duplicate file paths
+		slices.Sort(to.Paths)
+		to.Paths = slices.Compact(to.Paths)
+
 		to.RepoPath = event.GetRepo().GetFullName()
 		to.CommitSHA = event.GetAfter()
 		to.CommitURL = event.GetHeadCommit().GetURL()

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/leg100/otf/internal/vcs"
@@ -12,7 +13,7 @@ import (
 )
 
 func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload {
-	event, err := handle(r, secret)
+	event, err := handleWithError(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -21,7 +22,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.Eve
 	return event
 }
 
-func handle(r *http.Request, secret string) (*vcs.EventPayload, error) {
+func handleWithError(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	if token := r.Header.Get("X-Gitlab-Token"); token != secret {
 		return nil, errors.New("token validation failed")
 	}
@@ -33,7 +34,12 @@ func handle(r *http.Request, secret string) (*vcs.EventPayload, error) {
 
 	rawEvent, err := gitlab.ParseWebhook(gitlab.HookEventType(r), payload)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing webhook: %w", err)
+	}
+
+	// convert gitlab event to an OTF event
+	to := vcs.EventPayload{
+		VCSKind: vcs.GitlabKind,
 	}
 
 	switch event := rawEvent.(type) {
@@ -42,24 +48,40 @@ func handle(r *http.Request, secret string) (*vcs.EventPayload, error) {
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &vcs.EventPayload{
-			Branch:        refParts[2],
-			CommitSHA:     event.After,
-			DefaultBranch: event.Project.DefaultBranch,
-		}, nil
+		to.Type = vcs.EventTypePush
+		to.Action = vcs.ActionCreated
+		to.Branch = refParts[2]
+		to.CommitSHA = event.After
+		to.CommitURL = event.Project.WebURL + "/commit/" + to.CommitSHA
+		to.DefaultBranch = event.Project.DefaultBranch
+		to.RepoPath = event.Project.PathWithNamespace
+		to.SenderUsername = event.UserUsername
+		to.SenderAvatarURL = event.UserAvatar
+		to.SenderHTMLURL = event.UserAvatar
+		// populate event with list of changed file paths
+		for _, c := range event.Commits {
+			to.Paths = append(to.Paths, c.Added...)
+			to.Paths = append(to.Paths, c.Modified...)
+			to.Paths = append(to.Paths, c.Removed...)
+		}
+		// remove duplicate file paths
+		slices.Sort(to.Paths)
+		to.Paths = slices.Compact(to.Paths)
 	case *gitlab.TagEvent:
 		refParts := strings.Split(event.Ref, "/")
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &vcs.EventPayload{
-			Tag: refParts[2],
-			// Action:     action,
-			CommitSHA:     event.After,
-			DefaultBranch: event.Project.DefaultBranch,
-		}, nil
-	case *gitlab.MergeEvent:
+		to.Tag = refParts[2]
+		// Action:     action,
+		to.CommitSHA = event.After
+		to.DefaultBranch = event.Project.DefaultBranch
+	default:
+		return nil, nil
 	}
 
-	return nil, nil
+	if err := to.Validate(); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+	return &to, nil
 }

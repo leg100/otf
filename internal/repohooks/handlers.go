@@ -72,7 +72,7 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
 	if !ok {
 		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "no event unmarshaler found for event", http.StatusNotFound)
 		return
 	}
 	if payload := cloudHandler(w, r, hook.secret); payload != nil {
@@ -80,5 +80,7 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 			EventHeader:  vcs.EventHeader{VCSProviderID: hook.vcsProviderID},
 			EventPayload: *payload,
 		})
+	} else {
+		h.V(2).Info("ignoring vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 	}
 }
