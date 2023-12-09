@@ -248,7 +248,11 @@ func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := a.Lock(r.Context(), id, nil)
 	if err != nil {
-		tfeapi.Error(w, err)
+		if errors.Is(err, ErrWorkspaceAlreadyLocked) {
+			http.Error(w, "", http.StatusConflict)
+		} else {
+			tfeapi.Error(w, err)
+		}
 		return
 	}
 
@@ -267,6 +271,35 @@ func (a *tfe) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	a.unlock(w, r, true)
+}
+
+func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
+	id, err := decode.Param("workspace_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ws, err := a.Unlock(r.Context(), id, nil, force)
+	if err != nil {
+		if errors.Is(err, ErrWorkspaceAlreadyUnlocked) || errors.Is(err, ErrWorkspaceLockedByRun) {
+			tfeapi.Error(w, &internal.HTTPError{
+				Code:    http.StatusConflict,
+				Message: err.Error(),
+			})
+		} else {
+			tfeapi.Error(w, err)
+		}
+		return
+	}
+
+	converted, err := a.convert(ws, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -362,28 +395,6 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	}
 
 	ws, err := a.Update(r.Context(), workspaceID, opts)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	converted, err := a.convert(ws, r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	a.Respond(w, r, converted, http.StatusOK)
-}
-
-func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.Param("workspace_id", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	ws, err := a.Unlock(r.Context(), id, nil, force)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

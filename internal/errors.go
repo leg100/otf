@@ -31,10 +31,6 @@ var (
 	// ErrEmptyValue is returned when a value is set to an empty string
 	ErrEmptyValue = errors.New("value cannot be empty")
 
-	// ErrUploadTooLarge is returned when a user attempts to upload data that
-	// is too large.
-	ErrUploadTooLarge = errors.New("upload is too large")
-
 	// ErrTimeout is returned when a request exceeds a timeout.
 	ErrTimeout = errors.New("request timed out")
 
@@ -56,26 +52,6 @@ var (
 	ErrStatusTimestampNotFound = errors.New("corresponding status timestamp not found")
 
 	ErrInvalidRepo = errors.New("repository path is invalid")
-)
-
-// Workspace errors
-var (
-	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
-	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
-	ErrWorkspaceLockedByRun           = errors.New("workspace is locked by Run")
-	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
-	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
-	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
-	ErrUnsupportedTerraformVersion    = errors.New("unsupported terraform version")
-)
-
-// Run errors
-var (
-	ErrRunDiscardNotAllowed     = errors.New("run was not paused for confirmation or priority; discard not allowed")
-	ErrRunCancelNotAllowed      = errors.New("run was not planning or applying; cancel not allowed")
-	ErrRunForceCancelNotAllowed = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
-	//
-	ErrPhaseAlreadyStarted = errors.New("phase already started")
 )
 
 type (

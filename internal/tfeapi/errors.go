@@ -9,18 +9,11 @@ import (
 )
 
 var codes = map[error]int{
-	internal.ErrResourceNotFound:         http.StatusNotFound,
-	internal.ErrAccessNotPermitted:       http.StatusForbidden,
-	internal.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
-	internal.ErrInvalidTerraformVersion:  http.StatusUnprocessableEntity,
-	internal.ErrResourceAlreadyExists:    http.StatusConflict,
-	internal.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
-	internal.ErrWorkspaceAlreadyUnlocked: http.StatusConflict,
-	internal.ErrWorkspaceLockedByRun:     http.StatusConflict,
-	internal.ErrRunDiscardNotAllowed:     http.StatusConflict,
-	internal.ErrRunCancelNotAllowed:      http.StatusConflict,
-	internal.ErrRunForceCancelNotAllowed: http.StatusConflict,
-	internal.ErrConflict:                 http.StatusConflict,
+	internal.ErrResourceNotFound:        http.StatusNotFound,
+	internal.ErrAccessNotPermitted:      http.StatusForbidden,
+	internal.ErrInvalidTerraformVersion: http.StatusUnprocessableEntity,
+	internal.ErrResourceAlreadyExists:   http.StatusConflict,
+	internal.ErrConflict:                http.StatusConflict,
 }
 
 func lookupHTTPCode(err error) int {

@@ -284,7 +284,7 @@ func (r *Run) Phase() internal.PhaseType {
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.Discardable() {
-		return internal.ErrRunDiscardNotAllowed
+		return ErrRunDiscardNotAllowed
 	}
 	r.updateStatus(RunDiscarded, nil)
 
@@ -321,11 +321,11 @@ func (r *Run) Cancel(isUser, force bool) error {
 	if force {
 		if isUser {
 			if !r.ForceCancelable() {
-				return internal.ErrRunForceCancelNotAllowed
+				return ErrRunForceCancelNotAllowed
 			}
 		} else {
 			// only a user can forceably cancel a run.
-			return internal.ErrRunForceCancelNotAllowed
+			return ErrRunForceCancelNotAllowed
 		}
 	}
 	var signal bool
@@ -357,7 +357,7 @@ func (r *Run) Cancel(isUser, force bool) error {
 	if signal {
 		if r.CancelSignaledAt != nil {
 			// cannot send cancel signal more than once.
-			return internal.ErrRunCancelNotAllowed
+			return ErrRunCancelNotAllowed
 		}
 		// set timestamp to indicate signal is to be sent, but do not set
 		// status to RunCanceled yet.
@@ -492,7 +492,7 @@ func (r *Run) Start() error {
 		r.updateStatus(RunApplying, nil)
 		r.Apply.UpdateStatus(PhaseRunning)
 	case RunPlanning, RunApplying:
-		return internal.ErrPhaseAlreadyStarted
+		return ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
 	}

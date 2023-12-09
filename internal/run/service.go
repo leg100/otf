@@ -291,7 +291,7 @@ func (s *Service) StartPhase(ctx context.Context, runID string, phase internal.P
 		// whereas the other agents receive this error which is a legitimate
 		// error condition and not something that should be reported to the
 		// user.
-		if !errors.Is(err, internal.ErrPhaseAlreadyStarted) {
+		if !errors.Is(err, ErrPhaseAlreadyStarted) {
 			s.Error(err, "starting "+string(phase), "id", runID)
 		}
 		return nil, err

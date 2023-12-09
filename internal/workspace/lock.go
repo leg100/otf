@@ -54,13 +54,13 @@ func (ws *Workspace) Enlock(id string, kind LockKind) error {
 		ws.Lock.id = id
 		return nil
 	}
-	return internal.ErrWorkspaceAlreadyLocked
+	return ErrWorkspaceAlreadyLocked
 }
 
 // Unlock the workspace.
 func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 	if ws.Lock == nil {
-		return internal.ErrWorkspaceAlreadyUnlocked
+		return ErrWorkspaceAlreadyUnlocked
 	}
 	if force {
 		ws.Lock = nil
@@ -79,9 +79,9 @@ func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 
 	// determine error message to return
 	if ws.Lock.LockKind == RunLock {
-		return internal.ErrWorkspaceLockedByRun
+		return ErrWorkspaceLockedByRun
 	}
-	return internal.ErrWorkspaceLockedByDifferentUser
+	return ErrWorkspaceLockedByDifferentUser
 }
 
 // lockButtonHelper helps the UI determine the button to display for

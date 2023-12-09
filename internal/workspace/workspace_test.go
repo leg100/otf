@@ -67,7 +67,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:     internal.String("my-org"),
 				TerraformVersion: internal.String("0.14.0"),
 			},
-			want: internal.ErrUnsupportedTerraformVersion,
+			want: ErrUnsupportedTerraformVersion,
 		},
 		{
 			name: "specifying both tags regex and trigger patterns",
@@ -203,7 +203,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				Name:             internal.String("my-workspace"),
 				TerraformVersion: internal.String("0.14.0"),
 			},
-			want: internal.ErrUnsupportedTerraformVersion,
+			want: ErrUnsupportedTerraformVersion,
 		},
 		{
 			name: "specifying both tags regex and trigger patterns",

@@ -28,14 +28,6 @@ const (
 )
 
 var (
-	ErrTagsRegexAndTriggerPatterns     = errors.New("cannot specify both tags-regex and trigger-patterns")
-	ErrTagsRegexAndAlwaysTrigger       = errors.New("cannot specify both tags-regex and always-trigger")
-	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
-	ErrInvalidTriggerPattern           = errors.New("invalid trigger glob pattern")
-	ErrInvalidTagsRegex                = errors.New("invalid vcs tags regular expression")
-	ErrAgentExecutionModeWithoutPool   = errors.New("agent execution mode requires agent pool ID")
-	ErrNonAgentExecutionModeWithPool   = errors.New("agent pool ID can only be specified with agent execution mode")
-
 	apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 )
 
@@ -524,7 +516,7 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	// integration tests.
 	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
 		if !slices.Contains(apiTestTerraformVersions, v) {
-			return internal.ErrUnsupportedTerraformVersion
+			return ErrUnsupportedTerraformVersion
 		}
 	}
 	ws.TerraformVersion = v

@@ -48,6 +48,7 @@ func NewService(opts Options) *Service {
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache
 	svc.tfeapi = &tfe{
+		Logger:        opts.Logger,
 		tfeClient:     &svc,
 		Signer:        opts.Signer,
 		Responder:     opts.Responder,
