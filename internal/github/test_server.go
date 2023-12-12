@@ -402,7 +402,7 @@ func SendEventRequest(t *testing.T, event GithubEvent, url, secret string, paylo
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
+	if !assert.Equal(t, http.StatusOK, res.StatusCode) {
 		response, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		t.Fatal(string(response))
