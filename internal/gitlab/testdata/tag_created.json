@@ -1,0 +1,68 @@
+{
+    "object_kind": "tag_push",
+    "event_name": "tag_push",
+    "before": "0000000000000000000000000000000000000000",
+    "after": "eea3783a079cd610b748e406610e78c7ce2f34e6",
+    "ref": "refs/tags/v3",
+    "ref_protected": false,
+    "checkout_sha": "eea3783a079cd610b748e406610e78c7ce2f34e6",
+    "message": "",
+    "user_id": 1464950,
+    "user_name": "Louis Garman",
+    "user_username": "leg100",
+    "user_email": "",
+    "user_avatar": "https://secure.gravatar.com/avatar/de3ca65d31c67b63a795b88c677bba5d?s=80&d=identicon",
+    "project_id": 42740942,
+    "project": {
+        "id": 42740942,
+        "name": "otf-workspaces",
+        "description": null,
+        "web_url": "https://gitlab.com/leg100/otf-workspaces",
+        "avatar_url": null,
+        "git_ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "git_http_url": "https://gitlab.com/leg100/otf-workspaces.git",
+        "namespace": "Louis Garman",
+        "visibility_level": 0,
+        "path_with_namespace": "leg100/otf-workspaces",
+        "default_branch": "master",
+        "ci_config_path": "",
+        "homepage": "https://gitlab.com/leg100/otf-workspaces",
+        "url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "http_url": "https://gitlab.com/leg100/otf-workspaces.git"
+    },
+    "commits": [
+        {
+            "id": "eea3783a079cd610b748e406610e78c7ce2f34e6",
+            "message": "wip\n",
+            "title": "wip",
+            "timestamp": "2023-12-09T10:59:43+00:00",
+            "url": "https://gitlab.com/leg100/otf-workspaces/-/commit/eea3783a079cd610b748e406610e78c7ce2f34e6",
+            "author": {
+                "name": "Louis Garman",
+                "email": "[REDACTED]"
+            },
+            "added": [
+
+            ],
+            "modified": [
+
+            ],
+            "removed": [
+
+            ]
+        }
+    ],
+    "total_commits_count": 1,
+    "push_options": {
+    },
+    "repository": {
+        "name": "otf-workspaces",
+        "url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "description": null,
+        "homepage": "https://gitlab.com/leg100/otf-workspaces",
+        "git_http_url": "https://gitlab.com/leg100/otf-workspaces.git",
+        "git_ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "visibility_level": 0
+    }
+}

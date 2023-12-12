@@ -2,6 +2,7 @@
 package ghapphandler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -34,12 +35,21 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	h.V(2).Info("received vcs event", "github_app", app)
+
 	// use github-specific handler to unmarshal event
-	payload := github.HandleEvent(w, r, app.WebhookSecret)
-	if payload == nil {
+	payload, err := github.HandleEvent(r, app.WebhookSecret)
+	// either ignore the event, return an error, or publish the event onwards
+	var ignore vcs.ErrIgnoreEvent
+	if errors.As(err, &ignore) {
+		h.V(2).Info("ignoring event: "+err.Error(), "github_app", app)
+		w.WriteHeader(http.StatusOK)
+		return
+	} else if err != nil {
+		h.Error(err, "handling vcs event", "github_app", app)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.V(2).Info("received vcs event", "type", "github-app", "repo", payload.RepoPath)
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
 	providers, err := h.VCSProviders.ListVCSProvidersByGithubAppInstall(ctx, *payload.GithubAppInstallID)
@@ -53,4 +63,5 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			EventPayload: *payload,
 		})
 	}
+	w.WriteHeader(http.StatusOK)
 }

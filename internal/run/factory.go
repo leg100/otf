@@ -63,13 +63,10 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOpt
 		}
 	}
 
-	// There are two possibilities for the ConfigurationVersionID value:
-	// (a) non-nil, in which case it is deemed to be a configuration version id
-	// and an existing config version with that ID is retrieved.
-	// (b) nil, in which it depends whether the workspace is connected to a vcs
-	// repo:
-	// 	(i) not connected: the latest config version is retrieved.
-	// 	(ii) connected: same behaviour as (a): vcs repo contents are retrieved.
+	// retrieve or create config: if a config version ID is specified then
+	// retrieve that; otherwise if the workspace is connected then the latest
+	// config is retrieved from the connected vcs repo, and if the workspace is
+	// not connected then the latest existing config is used.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
 		cv, err = f.configs.Get(ctx, *opts.ConfigurationVersionID)

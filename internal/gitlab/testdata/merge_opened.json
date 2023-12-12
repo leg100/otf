@@ -1,0 +1,139 @@
+{
+    "object_kind": "merge_request",
+    "event_type": "merge_request",
+    "user": {
+        "id": 1464950,
+        "name": "Louis Garman",
+        "username": "leg100",
+        "avatar_url": "https://secure.gravatar.com/avatar/de3ca65d31c67b63a795b88c677bba5d?s=80&d=identicon",
+        "email": "[REDACTED]"
+    },
+    "project": {
+        "id": 42740942,
+        "name": "otf-workspaces",
+        "description": null,
+        "web_url": "https://gitlab.com/leg100/otf-workspaces",
+        "avatar_url": null,
+        "git_ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "git_http_url": "https://gitlab.com/leg100/otf-workspaces.git",
+        "namespace": "Louis Garman",
+        "visibility_level": 0,
+        "path_with_namespace": "leg100/otf-workspaces",
+        "default_branch": "master",
+        "ci_config_path": "",
+        "homepage": "https://gitlab.com/leg100/otf-workspaces",
+        "url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "http_url": "https://gitlab.com/leg100/otf-workspaces.git"
+    },
+    "object_attributes": {
+        "assignee_id": null,
+        "author_id": 1464950,
+        "created_at": "2023-12-10 14:33:54 UTC",
+        "description": "",
+        "draft": false,
+        "head_pipeline_id": null,
+        "id": 269116914,
+        "iid": 1,
+        "last_edited_at": null,
+        "last_edited_by_id": null,
+        "merge_commit_sha": null,
+        "merge_error": null,
+        "merge_params": {
+            "force_remove_source_branch": "1"
+        },
+        "merge_status": "preparing",
+        "merge_user_id": null,
+        "merge_when_pipeline_succeeds": false,
+        "milestone_id": null,
+        "source_branch": "pr-1",
+        "source_project_id": 42740942,
+        "state_id": 1,
+        "target_branch": "master",
+        "target_project_id": 42740942,
+        "time_estimate": 0,
+        "title": "Pr 1",
+        "updated_at": "2023-12-10 14:33:54 UTC",
+        "updated_by_id": null,
+        "url": "https://gitlab.com/leg100/otf-workspaces/-/merge_requests/1",
+        "source": {
+            "id": 42740942,
+            "name": "otf-workspaces",
+            "description": null,
+            "web_url": "https://gitlab.com/leg100/otf-workspaces",
+            "avatar_url": null,
+            "git_ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+            "git_http_url": "https://gitlab.com/leg100/otf-workspaces.git",
+            "namespace": "Louis Garman",
+            "visibility_level": 0,
+            "path_with_namespace": "leg100/otf-workspaces",
+            "default_branch": "master",
+            "ci_config_path": "",
+            "homepage": "https://gitlab.com/leg100/otf-workspaces",
+            "url": "git@gitlab.com:leg100/otf-workspaces.git",
+            "ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+            "http_url": "https://gitlab.com/leg100/otf-workspaces.git"
+        },
+        "target": {
+            "id": 42740942,
+            "name": "otf-workspaces",
+            "description": null,
+            "web_url": "https://gitlab.com/leg100/otf-workspaces",
+            "avatar_url": null,
+            "git_ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+            "git_http_url": "https://gitlab.com/leg100/otf-workspaces.git",
+            "namespace": "Louis Garman",
+            "visibility_level": 0,
+            "path_with_namespace": "leg100/otf-workspaces",
+            "default_branch": "master",
+            "ci_config_path": "",
+            "homepage": "https://gitlab.com/leg100/otf-workspaces",
+            "url": "git@gitlab.com:leg100/otf-workspaces.git",
+            "ssh_url": "git@gitlab.com:leg100/otf-workspaces.git",
+            "http_url": "https://gitlab.com/leg100/otf-workspaces.git"
+        },
+        "last_commit": {
+            "id": "eea3783a079cd610b748e406610e78c7ce2f34e6",
+            "message": "wip\n",
+            "title": "wip",
+            "timestamp": "2023-12-09T10:59:43+00:00",
+            "url": "https://gitlab.com/leg100/otf-workspaces/-/commit/eea3783a079cd610b748e406610e78c7ce2f34e6",
+            "author": {
+                "name": "Louis Garman",
+                "email": "[REDACTED]"
+            }
+        },
+        "work_in_progress": false,
+        "total_time_spent": 0,
+        "time_change": 0,
+        "human_total_time_spent": null,
+        "human_time_change": null,
+        "human_time_estimate": null,
+        "assignee_ids": [
+
+        ],
+        "reviewer_ids": [
+
+        ],
+        "labels": [
+
+        ],
+        "state": "opened",
+        "blocking_discussions_resolved": true,
+        "first_contribution": true,
+        "detailed_merge_status": "broken_status",
+        "action": "open"
+    },
+    "labels": [
+
+    ],
+    "changes": {
+    },
+    "repository": {
+        "name": "otf-workspaces",
+        "url": "git@gitlab.com:leg100/otf-workspaces.git",
+        "description": null,
+        "homepage": "https://gitlab.com/leg100/otf-workspaces"
+    }
+}
+
