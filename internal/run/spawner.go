@@ -45,6 +45,7 @@ type (
 )
 
 func (s *Spawner) handle(event vcs.Event) {
+	// TODO: vcs.Event should implement slog.LogValue
 	logger := s.Logger.WithValues(
 		"sha", event.CommitSHA,
 		"type", event.Type,

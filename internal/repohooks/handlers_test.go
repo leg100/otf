@@ -30,8 +30,8 @@ func Test_repohookHandler(t *testing.T) {
 			hook: hook,
 		},
 	)
-	handler.cloudHandlers.Set(vcs.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.EventPayload {
-		return &vcs.EventPayload{}
+	handler.cloudHandlers.Set(vcs.GithubKind, func(*http.Request, string) (*vcs.EventPayload, error) {
+		return &vcs.EventPayload{}, nil
 	})
 
 	w := httptest.NewRecorder()

@@ -1,0 +1,84 @@
+{
+    "action": "created",
+    "installation": {
+        "id": 44960796,
+        "account": {
+            "login": "leg100",
+            "id": 75728,
+            "node_id": "MDQ6VXNlcjc1NzI4",
+            "avatar_url": "https://avatars.githubusercontent.com/u/75728?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/leg100",
+            "html_url": "https://github.com/leg100",
+            "followers_url": "https://api.github.com/users/leg100/followers",
+            "following_url": "https://api.github.com/users/leg100/following{/other_user}",
+            "gists_url": "https://api.github.com/users/leg100/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/leg100/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/leg100/subscriptions",
+            "organizations_url": "https://api.github.com/users/leg100/orgs",
+            "repos_url": "https://api.github.com/users/leg100/repos",
+            "events_url": "https://api.github.com/users/leg100/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/leg100/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "repository_selection": "all",
+        "access_tokens_url": "https://api.github.com/app/installations/44960796/access_tokens",
+        "repositories_url": "https://api.github.com/installation/repositories",
+        "html_url": "https://github.com/settings/installations/44960796",
+        "app_id": 684667,
+        "app_slug": "otf-hyjm",
+        "target_id": 75728,
+        "target_type": "User",
+        "permissions": {
+            "checks": "write",
+            "contents": "read",
+            "metadata": "read",
+            "statuses": "write",
+            "pull_requests": "write"
+        },
+        "events": [
+            "pull_request",
+            "push"
+        ],
+        "created_at": "2023-12-10T15:35:35.000Z",
+        "updated_at": "2023-12-10T15:35:35.000Z",
+        "single_file_name": null,
+        "has_multiple_single_files": false,
+        "single_file_paths": [
+
+        ],
+        "suspended_by": null,
+        "suspended_at": null
+    },
+    "repositories": [
+        {
+            "id": 590586738,
+            "node_id": "R_kgDOIzOjcg",
+            "name": "otf-workspaces",
+            "full_name": "leg100/otf-workspaces",
+            "private": true
+        }
+    ],
+    "requester": null,
+    "sender": {
+        "login": "leg100",
+        "id": 75728,
+        "node_id": "MDQ6VXNlcjc1NzI4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/75728?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/leg100",
+        "html_url": "https://github.com/leg100",
+        "followers_url": "https://api.github.com/users/leg100/followers",
+        "following_url": "https://api.github.com/users/leg100/following{/other_user}",
+        "gists_url": "https://api.github.com/users/leg100/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/leg100/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/leg100/subscriptions",
+        "organizations_url": "https://api.github.com/users/leg100/orgs",
+        "repos_url": "https://api.github.com/users/leg100/repos",
+        "events_url": "https://api.github.com/users/leg100/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/leg100/received_events",
+        "type": "User",
+        "site_admin": false
+    }
+}

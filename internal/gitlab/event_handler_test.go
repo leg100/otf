@@ -36,7 +36,83 @@ func TestEventHandler(t *testing.T) {
 				},
 				SenderUsername:  "jsmith",
 				SenderAvatarURL: "https://s.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=8://s.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=80",
-				SenderHTMLURL:   "https://s.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=8://s.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=80",
+				SenderHTMLURL:   "https://github.com/jsmith",
+			},
+		},
+		{
+			"open merge request",
+			"Merge Request Hook",
+			"./testdata/merge_opened.json",
+			&vcs.EventPayload{
+				VCSKind:           vcs.GitlabKind,
+				Type:              vcs.EventTypePull,
+				Action:            vcs.ActionCreated,
+				RepoPath:          "leg100/otf-workspaces",
+				Branch:            "pr-1",
+				DefaultBranch:     "master",
+				CommitSHA:         "eea3783a079cd610b748e406610e78c7ce2f34e6",
+				CommitURL:         "https://gitlab.com/leg100/otf-workspaces/-/commit/eea3783a079cd610b748e406610e78c7ce2f34e6",
+				PullRequestNumber: 1,
+				PullRequestURL:    "https://gitlab.com/leg100/otf-workspaces/-/merge_requests/1",
+				PullRequestTitle:  "Pr 1",
+				SenderUsername:    "leg100",
+				SenderAvatarURL:   "https://secure.gravatar.com/avatar/de3ca65d31c67b63a795b88c677bba5d?s=80&d=identicon",
+				SenderHTMLURL:     "https://github.com/leg100",
+			},
+		},
+		{
+			"update merge request",
+			"Merge Request Hook",
+			"./testdata/merge_updated.json",
+			&vcs.EventPayload{
+				VCSKind:           vcs.GitlabKind,
+				Type:              vcs.EventTypePull,
+				Action:            vcs.ActionUpdated,
+				RepoPath:          "leg100/otf-workspaces",
+				Branch:            "pr-1",
+				DefaultBranch:     "master",
+				CommitSHA:         "30c78003043f3a5d8f34eda6332ad11376b1d41b",
+				CommitURL:         "https://gitlab.com/leg100/otf-workspaces/-/commit/30c78003043f3a5d8f34eda6332ad11376b1d41b",
+				PullRequestNumber: 1,
+				PullRequestURL:    "https://gitlab.com/leg100/otf-workspaces/-/merge_requests/1",
+				PullRequestTitle:  "Pr 1",
+				SenderUsername:    "leg100",
+				SenderAvatarURL:   "https://secure.gravatar.com/avatar/de3ca65d31c67b63a795b88c677bba5d?s=80&d=identicon",
+				SenderHTMLURL:     "https://github.com/leg100",
+			},
+		},
+		{
+			"push tag",
+			"Tag Push Hook",
+			"./testdata/tag_created.json",
+			&vcs.EventPayload{
+				VCSKind:         vcs.GitlabKind,
+				Type:            vcs.EventTypeTag,
+				Action:          vcs.ActionCreated,
+				RepoPath:        "leg100/otf-workspaces",
+				Tag:             "v3",
+				DefaultBranch:   "master",
+				CommitSHA:       "eea3783a079cd610b748e406610e78c7ce2f34e6",
+				CommitURL:       "https://gitlab.com/leg100/otf-workspaces/-/commit/eea3783a079cd610b748e406610e78c7ce2f34e6",
+				SenderUsername:  "leg100",
+				SenderAvatarURL: "https://secure.gravatar.com/avatar/de3ca65d31c67b63a795b88c677bba5d?s=80&d=identicon",
+				SenderHTMLURL:   "https://github.com/leg100",
+			},
+		},
+		{
+			"push deleted tag",
+			"Tag Push Hook",
+			"./testdata/tag_deleted.json",
+			&vcs.EventPayload{
+				VCSKind:         vcs.GitlabKind,
+				Type:            vcs.EventTypeTag,
+				Action:          vcs.ActionDeleted,
+				RepoPath:        "leg100/otf-workspaces",
+				Tag:             "v3",
+				DefaultBranch:   "master",
+				SenderUsername:  "leg100",
+				SenderAvatarURL: "https://secure.gravatar.com/avatar/de3ca65d31c67b63a795b88c677bba5d?s=80&d=identicon",
+				SenderHTMLURL:   "https://github.com/leg100",
 			},
 		},
 	}
@@ -49,9 +125,11 @@ func TestEventHandler(t *testing.T) {
 			r := httptest.NewRequest("POST", "/", f)
 			r.Header.Add("Content-type", "application/json")
 			r.Header.Add("X-Gitlab-Event", tt.eventType)
+			r.Header.Add("X-Gitlab-Instance", "https://github.com")
 			w := httptest.NewRecorder()
-			got := HandleEvent(w, r, "")
-			assert.Equal(t, 204, w.Code, w.Body.String())
+			got, err := HandleEvent(r, "")
+			require.NoError(t, err)
+			assert.Equal(t, 200, w.Code, w.Body.String())
 			assert.Equal(t, tt.want, got)
 		})
 	}

@@ -10,34 +10,30 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload {
-	event, err := handleEventWithError(r, secret)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return nil
-	}
-	w.WriteHeader(http.StatusAccepted)
-	return event
-}
-
-func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, error) {
+func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	payload, err := github.ValidatePayload(r, []byte(secret))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("validating payload: %w", err)
 	}
-
 	raw, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing payload: %w", err)
 	}
 
 	// convert github event to an OTF event
-	to := vcs.EventPayload{
-		VCSKind: vcs.GithubKind,
-	}
-
+	to := vcs.EventPayload{VCSKind: vcs.GithubKind}
 	switch event := raw.(type) {
 	case *github.PushEvent:
+		to.RepoPath = event.GetRepo().GetFullName()
+		to.CommitSHA = event.GetAfter()
+		to.CommitURL = event.GetHeadCommit().GetURL()
+		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
+		to.SenderUsername = event.GetSender().GetLogin()
+		to.SenderAvatarURL = event.GetSender().GetAvatarURL()
+		to.SenderHTMLURL = event.GetSender().GetHTMLURL()
+		if install := event.GetInstallation(); install != nil {
+			to.GithubAppInstallID = install.ID
+		}
 		// populate event with list of changed file paths
 		for _, c := range event.Commits {
 			to.Paths = append(to.Paths, c.Added...)
@@ -47,47 +43,25 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 		// remove duplicate file paths
 		slices.Sort(to.Paths)
 		to.Paths = slices.Compact(to.Paths)
-
-		to.RepoPath = event.GetRepo().GetFullName()
-		to.CommitSHA = event.GetAfter()
-		to.CommitURL = event.GetHeadCommit().GetURL()
-		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
-
-		to.SenderUsername = event.GetSender().GetLogin()
-		to.SenderAvatarURL = event.GetSender().GetAvatarURL()
-		to.SenderHTMLURL = event.GetSender().GetHTMLURL()
-
-		if install := event.GetInstallation(); install != nil {
-			to.GithubAppInstallID = install.ID
-		}
-
-		// a github.PushEvent includes tag events but OTF categorises them as separate
-		// event types
-		parts := strings.Split(event.GetRef(), "/")
-		if len(parts) != 3 || parts[0] != "refs" {
-			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
-		}
-		switch parts[1] {
-		case "tags":
+		// differentiate between tag and branch pushes
+		if tag, found := strings.CutPrefix(event.GetRef(), "refs/tags/"); found {
 			to.Type = vcs.EventTypeTag
-
+			to.Tag = tag
+			// tags can be created or deleted
 			switch {
 			case event.GetCreated():
 				to.Action = vcs.ActionCreated
 			case event.GetDeleted():
 				to.Action = vcs.ActionDeleted
 			default:
-				return nil, fmt.Errorf("no action specified for tag event")
+				return nil, fmt.Errorf("no action found for tag event")
 			}
-
-			to.Tag = parts[2]
-
-		case "heads":
+		} else if branch, found := strings.CutPrefix(event.GetRef(), "refs/heads/"); found {
 			to.Type = vcs.EventTypePush
+			to.Branch = branch
+			// branch pushes are always a create
 			to.Action = vcs.ActionCreated
-			to.Branch = parts[2]
-
-		default:
+		} else {
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
 	case *github.PullRequestEvent:
@@ -118,7 +92,7 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 			to.Action = vcs.ActionUpdated
 		default:
 			// ignore other pull request events
-			return nil, nil
+			return nil, vcs.NewErrIgnoreEvent("unsupported action: %s", event.GetAction())
 		}
 
 		to.Branch = event.PullRequest.Head.GetRef()
@@ -131,16 +105,16 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 	case *github.InstallationEvent:
 		// ignore events other than uninstallation events
 		if event.GetAction() != "deleted" {
-			return nil, nil
+			return nil, vcs.NewErrIgnoreEvent("unsupported action: %s", event.GetAction())
 		}
 		to.Action = vcs.ActionDeleted
 		to.Type = vcs.EventTypeInstallation
 		to.GithubAppInstallID = event.GetInstallation().ID
 	default:
-		return nil, nil
+		return nil, vcs.NewErrIgnoreEvent("unsupported event: %T", raw)
 	}
 	if err := to.Validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed building OTF event: %w", err)
 	}
 	return &to, nil
 }

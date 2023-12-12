@@ -1,6 +1,7 @@
 package github
 
 import (
+	"errors"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -18,6 +19,7 @@ func TestEventHandler(t *testing.T) {
 		eventType string
 		body      string
 		want      *vcs.EventPayload
+		ignore    bool
 	}{
 		{
 			"push",
@@ -37,6 +39,7 @@ func TestEventHandler(t *testing.T) {
 				SenderAvatarURL: "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:   "https://github.com/leg100",
 			},
+			false,
 		},
 		{
 			"push from github app install",
@@ -57,6 +60,7 @@ func TestEventHandler(t *testing.T) {
 				SenderHTMLURL:      "https://github.com/leg100",
 				GithubAppInstallID: internal.Int64(42997659),
 			},
+			false,
 		},
 		{
 			"pull request opened",
@@ -78,6 +82,7 @@ func TestEventHandler(t *testing.T) {
 				SenderAvatarURL:   "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:     "https://github.com/leg100",
 			},
+			false,
 		},
 		{
 			"pull request updated",
@@ -99,6 +104,7 @@ func TestEventHandler(t *testing.T) {
 				SenderAvatarURL:   "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:     "https://github.com/leg100",
 			},
+			false,
 		},
 		{
 			"tag pushed",
@@ -117,6 +123,21 @@ func TestEventHandler(t *testing.T) {
 				SenderAvatarURL: "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:   "https://github.com/leg100",
 			},
+			false,
+		},
+		{
+			"ignore github app install created",
+			"installation",
+			"./testdata/github_app_install_created.json",
+			nil,
+			true,
+		},
+		{
+			"ignore github app pull edited",
+			"pull_request",
+			"./testdata/github_app_pull_edited.json",
+			nil,
+			true,
 		},
 	}
 	for _, tt := range tests {
@@ -129,9 +150,15 @@ func TestEventHandler(t *testing.T) {
 			r.Header.Add("Content-type", "application/json")
 			r.Header.Add(github.EventTypeHeader, tt.eventType)
 			w := httptest.NewRecorder()
-			got := HandleEvent(w, r, "")
-			assert.Equal(t, 202, w.Code, w.Body.String())
-			assert.Equal(t, tt.want, got)
+			got, err := HandleEvent(r, "")
+			if tt.ignore {
+				var ignore vcs.ErrIgnoreEvent
+				assert.True(t, errors.As(err, &ignore))
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, 200, w.Code, w.Body.String())
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }

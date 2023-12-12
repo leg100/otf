@@ -1,6 +1,9 @@
 package internal
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // ParseBranchRef parses a git ref expecting it to be a reference to a branch. If
 // it is not then false is returned, otherwise the branch name along with
@@ -26,4 +29,13 @@ func ParseRef(ref string) (string, bool) {
 		return parts[2], true
 	}
 	return "", false
+}
+
+// ParseTagRef parses the tag from a git reference with the format refs/tags/<tag>
+func ParseTagRef(ref string) (string, error) {
+	tag, found := strings.CutPrefix(ref, "refs/tags/")
+	if !found {
+		return "", fmt.Errorf("invalid tag reference: %s", ref)
+	}
+	return tag, nil
 }

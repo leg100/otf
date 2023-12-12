@@ -2,6 +2,7 @@ package repohooks
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"path"
 
@@ -29,11 +30,11 @@ type (
 		handlerDB
 	}
 
-	// EventUnmarshaler does two things:
-	// (a) handles incoming request (containing a VCS event) and sends appropriate response
-	// (b) unmarshals event from the request; if the event is irrelevant or
-	// invalid then nil is returned.
-	EventUnmarshaler func(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload
+	// EventUnmarshaler validates the request using the secret and unmarshals
+	// the event contained in the request body. If the request is to be ignored
+	// then the unmarshaler should return vcs.ErrIgnoreEvent, explaining why the
+	// event was ignored.
+	EventUnmarshaler func(r *http.Request, secret string) (*vcs.EventPayload, error)
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
@@ -69,18 +70,27 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 
+	// look up cloud-specific handler for event
 	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
 	if !ok {
 		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 		http.Error(w, "no event unmarshaler found for event", http.StatusNotFound)
 		return
 	}
-	if payload := cloudHandler(w, r, hook.secret); payload != nil {
-		h.Publish(vcs.Event{
-			EventHeader:  vcs.EventHeader{VCSProviderID: hook.vcsProviderID},
-			EventPayload: *payload,
-		})
-	} else {
-		h.V(2).Info("ignoring vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+	// handle event
+	payload, err := cloudHandler(r, hook.secret)
+	// either ignore the event, return an error, or publish the event onwards
+	var ignore vcs.ErrIgnoreEvent
+	if errors.As(err, &ignore) {
+		h.V(2).Info("ignoring event: "+err.Error(), "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		return
+	} else if err != nil {
+		h.Error(err, "handling vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	h.Publish(vcs.Event{
+		EventHeader:  vcs.EventHeader{VCSProviderID: hook.vcsProviderID},
+		EventPayload: *payload,
+	})
 }

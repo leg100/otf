@@ -1,18 +1,41 @@
 package vcs
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+type EventType string
 
 const (
 	EventTypePull         EventType = "pull"
 	EventTypePush         EventType = "push"
 	EventTypeTag          EventType = "tag"
 	EventTypeInstallation EventType = "install" // github-app installation
+)
 
+type Action string
+
+const (
 	ActionCreated Action = "created"
 	ActionDeleted Action = "deleted"
 	ActionMerged  Action = "merged"
 	ActionUpdated Action = "updated"
 )
+
+// ErrIgnoreEvent informs an upstream vcs provider why an event it sent is
+// ignored.
+type ErrIgnoreEvent struct {
+	Reason string
+}
+
+func NewErrIgnoreEvent(msg string, args ...any) ErrIgnoreEvent {
+	return ErrIgnoreEvent{Reason: fmt.Sprintf(msg, args...)}
+}
+
+func (e ErrIgnoreEvent) Error() string {
+	return e.Reason
+}
 
 type (
 	// Event is a VCS event received from a cloud, e.g. a commit event from
@@ -54,9 +77,6 @@ type (
 		// Only set if event is from a github app
 		GithubAppInstallID *int64
 	}
-
-	EventType string
-	Action    string
 )
 
 func (e EventPayload) Validate() error {

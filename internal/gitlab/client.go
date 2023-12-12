@@ -8,11 +8,13 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -34,28 +36,30 @@ type (
 
 func NewClient(cfg ClientOptions) (*Client, error) {
 	var (
-		client *gitlab.Client
-		err    error
+		client  *gitlab.Client
+		err     error
+		options = []gitlab.ClientOptionFunc{
+			gitlab.WithBaseURL(
+				(&url.URL{Scheme: "https", Host: cfg.Hostname}).String(),
+			),
+		}
 	)
-
-	baseURL := (&url.URL{Scheme: "https", Host: cfg.Hostname}).String()
-
-	// TODO: apply skipTLS option
-
-	if cfg.OAuthToken != nil {
-		client, err = gitlab.NewOAuthClient(cfg.OAuthToken.AccessToken, gitlab.WithBaseURL(baseURL))
-		if err != nil {
-			return nil, err
-		}
-	} else if cfg.PersonalToken != nil {
-		client, err = gitlab.NewClient(*cfg.PersonalToken, gitlab.WithBaseURL(baseURL))
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		return nil, fmt.Errorf("no credentials provided")
+	if cfg.SkipTLSVerification {
+		options = append(options, gitlab.WithHTTPClient(
+			&http.Client{Transport: otfhttp.InsecureTransport},
+		))
 	}
-
+	if cfg.OAuthToken != nil {
+		client, err = gitlab.NewOAuthClient(cfg.OAuthToken.AccessToken, options...)
+	} else if cfg.PersonalToken != nil {
+		client, err = gitlab.NewClient(*cfg.PersonalToken, options...)
+	} else {
+		// anonymous client
+		client, err = gitlab.NewClient("", options...)
+	}
+	if err != nil {
+		return nil, err
+	}
 	return &Client{client: client}, nil
 }
 
@@ -267,13 +271,32 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOption
 }
 
 func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
+	// unsupported
 	return nil
 }
 
 func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
-	return nil, nil
+	diffs, _, err := g.client.MergeRequests.ListMergeRequestDiffs(repo, pull, &gitlab.ListMergeRequestDiffsOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var changed []string
+	for _, diff := range diffs {
+		changed = append(changed, diff.OldPath)
+		changed = append(changed, diff.NewPath)
+	}
+	// remove duplicates
+	slices.Sort(changed)
+	return slices.Compact(changed), nil
 }
 
 func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, error) {
-	return vcs.Commit{}, nil
+	commit, _, err := g.client.Commits.GetCommit(repo, ref)
+	if err != nil {
+		return vcs.Commit{}, err
+	}
+	return vcs.Commit{
+		SHA: commit.ID,
+		URL: commit.WebURL,
+	}, nil
 }
