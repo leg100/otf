@@ -27,6 +27,8 @@ type (
 		workspace    internal.Authorizer
 		organization internal.Authorizer
 		runs         runClient
+
+		Secret []byte
 	}
 
 	Options struct {
@@ -38,6 +40,8 @@ type (
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
+
+		Secret []byte
 	}
 
 	runClient interface {
@@ -52,6 +56,7 @@ func NewService(opts Options) *Service {
 		workspace:    opts.WorkspaceAuthorizer,
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		runs:         opts.RunClient,
+		Secret:       opts.Secret,
 	}
 
 	svc.web = &web{
@@ -90,7 +95,21 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID string) ([]*
 	if err != nil {
 		return nil, err
 	}
-	return mergeVariables(sets, vars, run), nil
+
+	mergedVars := mergeVariables(sets, vars, run)
+
+	for _, variable := range mergedVars {
+		if !variable.Sensitive {
+			continue
+		}
+
+		err = variable.decryptValue(s.Secret)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return mergedVars, nil
 }
 
 func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
@@ -106,7 +125,7 @@ func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID strin
 			return err
 		}
 
-		v, err = newVariable(workspaceVars, opts)
+		v, err = newVariable(workspaceVars, opts, s.Secret)
 		if err != nil {
 			return err
 		}
@@ -150,7 +169,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID string
 
 		// update a copy of v
 		after = *before
-		if err := after.update(workspaceVariables, opts); err != nil {
+		if err := after.update(workspaceVariables, opts, s.Secret); err != nil {
 			return err
 		}
 
@@ -407,7 +426,7 @@ func (s *Service) createVariableSetVariable(ctx context.Context, setID string, o
 			return err
 		}
 
-		v, err = set.addVariable(organizationSets, opts)
+		v, err = set.addVariable(organizationSets, opts, s.Secret)
 		if err != nil {
 			return err
 		}
@@ -451,7 +470,7 @@ func (s *Service) updateVariableSetVariable(ctx context.Context, variableID stri
 
 		// make copy of variable before updating
 		before = *set.getVariable(variableID)
-		after, err = set.updateVariable(organizationSets, variableID, opts)
+		after, err = set.updateVariable(organizationSets, variableID, opts, s.Secret)
 		if err != nil {
 			return err
 		}

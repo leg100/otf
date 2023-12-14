@@ -284,6 +284,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
 		RunClient:           runService,
+		Secret:              cfg.Secret,
 	})
 
 	agentService := agent.NewService(agent.ServiceOptions{

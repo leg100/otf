@@ -9,6 +9,8 @@ import (
 	"io"
 )
 
+const EncryptPrefix = "encrypted_"
+
 // Encrypt plaintext using secret key. The returned string is
 // base64-url-encoded.
 func Encrypt(plaintext, secret []byte) (string, error) {

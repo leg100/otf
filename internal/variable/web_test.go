@@ -36,6 +36,8 @@ func TestVariable_UpdateHandler(t *testing.T) {
 				"hcl":       {"on"},
 			},
 			want: func(t *testing.T, got *Variable) {
+				_ = got.decryptValue(key)
+
 				assert.Equal(t, "new-key", got.Key)
 				assert.Equal(t, "new-value", got.Value)
 				assert.Equal(t, CategoryEnv, got.Category)
@@ -73,6 +75,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 				"value": {"evenmoretopsecret"},
 			},
 			want: func(t *testing.T, got *Variable) {
+				_ = got.decryptValue(key)
 				assert.Equal(t, "evenmoretopsecret", got.Value)
 			},
 		},
@@ -80,7 +83,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create existing variable for test to update
-			v, err := newVariable(nil, tt.existing)
+			v, err := newVariable(nil, tt.existing, key)
 			require.NoError(t, err)
 
 			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.updated.Encode()))

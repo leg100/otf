@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var key = []byte("AES256Key-32Characters1234567890")
+
 func TestVariable_Update(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -107,7 +109,7 @@ func TestVariable_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.opts.generateVersion = func() string { return "" }
 			got := tt.before
-			err := got.update(nil, tt.opts)
+			err := got.update(nil, tt.opts, key)
 			if tt.err {
 				assert.Error(t, err)
 			} else {
@@ -124,7 +126,7 @@ func TestWriteTerraformVariables(t *testing.T) {
 		Key:      internal.String("foo"),
 		Value:    internal.String("bar"),
 		Category: VariableCategoryPtr(CategoryTerraform),
-	})
+	}, key)
 	require.NoError(t, err)
 
 	v2, err := newVariable(nil, CreateVariableOptions{
@@ -136,21 +138,21 @@ func TestWriteTerraformVariables(t *testing.T) {
 `),
 		Category: VariableCategoryPtr(CategoryTerraform),
 		HCL:      internal.Bool(true),
-	})
+	}, key)
 	require.NoError(t, err)
 
 	v3, err := newVariable(nil, CreateVariableOptions{
 		Key:      internal.String("multiline-foo"),
 		Value:    internal.String("foo\nbar\nbaz"),
 		Category: VariableCategoryPtr(CategoryTerraform),
-	})
+	}, key)
 	require.NoError(t, err)
 
 	v4, err := newVariable(nil, CreateVariableOptions{
 		Key:      internal.String("multiline-foo-with-delimiter"),
 		Value:    internal.String("EOTfoo\nbar\nbaz"),
 		Category: VariableCategoryPtr(CategoryTerraform),
-	})
+	}, key)
 	require.NoError(t, err)
 
 	err = WriteTerraformVars(dir, []*Variable{v1, v2, v3, v4})

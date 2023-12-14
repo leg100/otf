@@ -77,7 +77,7 @@ type (
 	generateVersion func() string
 )
 
-func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
+func newVariable(collection []*Variable, opts CreateVariableOptions, key []byte) (*Variable, error) {
 	v := Variable{
 		ID: internal.NewID("var"),
 	}
@@ -99,10 +99,22 @@ func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable,
 	if err := v.setCategory(*opts.Category); err != nil {
 		return nil, err
 	}
-
+	if opts.Sensitive != nil {
+		v.Sensitive = *opts.Sensitive
+	}
 	// Optional fields
 	if opts.Value != nil {
-		if err := v.setValue(*opts.Value); err != nil {
+		value := *opts.Value
+		if v.Sensitive {
+			encrypted, err := internal.Encrypt([]byte(value), key)
+			if err != nil {
+				return nil, err
+			}
+
+			value = internal.EncryptPrefix + encrypted
+		}
+
+		if err := v.setValue(value); err != nil {
 			return nil, err
 		}
 	}
@@ -110,9 +122,6 @@ func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable,
 		if err := v.setDescription(*opts.Description); err != nil {
 			return nil, err
 		}
-	}
-	if opts.Sensitive != nil {
-		v.Sensitive = *opts.Sensitive
 	}
 	if opts.HCL != nil {
 		v.HCL = *opts.HCL
@@ -145,27 +154,29 @@ func (v *Variable) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) error {
+func (v *Variable) decryptValue(key []byte) error {
+	encryptedArr := strings.Split(v.Value, internal.EncryptPrefix)
+
+	// handle backward compatibility
+	if len(encryptedArr) == 1 {
+		return nil
+	}
+
+	decrypted, err := internal.Decrypt(encryptedArr[1], key)
+	if err != nil {
+		return err
+	}
+
+	v.Value = string(decrypted)
+	return nil
+}
+
+func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions, key []byte) error {
 	if opts.Key != nil {
 		if v.Sensitive {
 			return errors.New("changing the key of a sensitive variable is not allowed")
 		}
 		if err := v.setKey(*opts.Key); err != nil {
-			return err
-		}
-	}
-	if opts.Value != nil {
-		if err := v.setValue(*opts.Value); err != nil {
-			return err
-		}
-	}
-	if opts.Description != nil {
-		if err := v.setDescription(*opts.Description); err != nil {
-			return err
-		}
-	}
-	if opts.Category != nil {
-		if err := v.setCategory(*opts.Category); err != nil {
 			return err
 		}
 	}
@@ -181,6 +192,32 @@ func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) er
 			return err
 		}
 	}
+	if opts.Value != nil {
+		value := *opts.Value
+		if v.Sensitive && !strings.HasPrefix(value, internal.EncryptPrefix) {
+			encrypted, err := internal.Encrypt([]byte(value), key)
+			if err != nil {
+				return err
+			}
+
+			value = internal.EncryptPrefix + encrypted
+		}
+
+		if err := v.setValue(value); err != nil {
+			return err
+		}
+	}
+	if opts.Description != nil {
+		if err := v.setDescription(*opts.Description); err != nil {
+			return err
+		}
+	}
+	if opts.Category != nil {
+		if err := v.setCategory(*opts.Category); err != nil {
+			return err
+		}
+	}
+
 	// check for conflicts with other variables in collection
 	if err := v.checkConflicts(collection); err != nil {
 		return err

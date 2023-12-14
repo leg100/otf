@@ -55,8 +55,8 @@ func (s *VariableSet) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVariableOptions) (*Variable, error) {
-	v, err := newVariable(s.Variables, opts)
+func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVariableOptions, key []byte) (*Variable, error) {
+	v, err := newVariable(s.Variables, opts, key)
 	if err != nil {
 		return nil, err
 	}
@@ -66,12 +66,12 @@ func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVa
 	return v, nil
 }
 
-func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID string, opts UpdateVariableOptions, key []byte) (*Variable, error) {
 	v := s.getVariable(variableID)
 	if v == nil {
 		return nil, fmt.Errorf("cannot find variable %s in set", v.ID)
 	}
-	if err := v.update(s.Variables, opts); err != nil {
+	if err := v.update(s.Variables, opts, key); err != nil {
 		return nil, err
 	}
 	if err := s.checkGlobalConflicts(organizationSets); err != nil {
