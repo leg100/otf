@@ -63,7 +63,7 @@ func newRepohook(opts newRepohookOptions) (*hook, error) {
 		}
 		hook.secret = secret
 	}
-	hook.endpoint = opts.URL(path.Join(handlerPrefix, hook.id.String()))
+	hook.endpoint = opts.WebhookURL(path.Join(handlerPrefix, hook.id.String()))
 	return &hook, nil
 }
 

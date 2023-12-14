@@ -93,6 +93,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	hostnameService := internal.NewHostnameService(cfg.Host)
+	hostnameService.SetWebhookHostname(cfg.WebhookHost)
 
 	renderer, err := html.NewRenderer(cfg.DevMode)
 	if err != nil {
@@ -454,7 +455,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		listenAddress := ln.Addr().(*net.TCPAddr)
 		d.System.SetHostname(internal.NormalizeAddress(listenAddress))
 	}
+
 	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())
+	d.V(0).Info("set webhook hostname", "webhookHostname", d.System.WebhookHostname())
 
 	subsystems := []*Subsystem{
 		{

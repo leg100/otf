@@ -28,6 +28,7 @@ type Config struct {
 	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
 	SiteToken                    string
 	Host                         string
+	WebhookHost                  string
 	Address                      string
 	Database                     string
 	MaxConfigSize                int64
