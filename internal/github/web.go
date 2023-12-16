@@ -54,6 +54,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
+	// Github manifest documented here:
+	// https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest#implementing-the-github-app-manifest-flow
 	type (
 		hookAttrs struct {
 			URL string `json:"url"`
@@ -72,9 +74,9 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	)
 	m := manifest{
 		Name:        "otf-" + internal.GenerateRandomString(4),
-		URL:         h.WebhookURL(""),
+		URL:         h.URL(""),
 		SetupURL:    h.URL(paths.GithubApps()),
-		HookAttrs:   hookAttrs{URL: h.URL(AppEventsPath)},
+		HookAttrs:   hookAttrs{URL: h.WebhookURL(AppEventsPath)},
 		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},
