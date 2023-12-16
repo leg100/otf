@@ -114,8 +114,6 @@ It is highly advisable to set this flag in a production deployment.
 
 Sets the hostname that VCS providers can use to access the OTF webhooks.
 
-It is highly advisable to set this flag in a production deployment.
-
 ## `--log-format`
 
 * System: `otfd`, `otf-agent`

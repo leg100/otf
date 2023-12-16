@@ -72,7 +72,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	)
 	m := manifest{
 		Name:        "otf-" + internal.GenerateRandomString(4),
-		URL:         h.URL(""),
+		URL:         h.WebhookURL(""),
 		SetupURL:    h.URL(paths.GithubApps()),
 		HookAttrs:   hookAttrs{URL: h.URL(AppEventsPath)},
 		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),

@@ -7,6 +7,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHostnameService(t *testing.T) {
+	tests := []struct {
+		name                string
+		svc                 *HostnameService
+		wantHostname        string
+		wantWebhookHostname string
+	}{
+		{
+			"default",
+			NewHostnameService("localhost:8080"),
+			"localhost:8080",
+			"localhost:8080",
+		},
+		{
+			"set hostname",
+			func() *HostnameService {
+				svc := NewHostnameService("")
+				svc.SetHostname("otf.local")
+				return svc
+			}(),
+			"otf.local",
+			"otf.local",
+		},
+		{
+			"set webhook hostname",
+			func() *HostnameService {
+				svc := NewHostnameService("localhost:8080")
+				svc.SetWebhookHostname("otf.local")
+				return svc
+			}(),
+			"localhost:8080",
+			"otf.local",
+		},
+		{
+			"set both hostnames",
+			func() *HostnameService {
+				svc := NewHostnameService("localhost:8080")
+				svc.SetHostname("otf.local")
+				svc.SetWebhookHostname("webhooks.otf.local")
+				return svc
+			}(),
+			"otf.local",
+			"webhooks.otf.local",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantHostname, tt.svc.Hostname())
+			assert.Equal(t, tt.wantWebhookHostname, tt.svc.WebhookHostname())
+		})
+	}
+}
+
 func TestNormalizeAddress(t *testing.T) {
 	tests := []struct {
 		name string

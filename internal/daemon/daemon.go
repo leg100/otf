@@ -457,7 +457,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	}
 
 	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())
-	d.V(0).Info("set webhook hostname", "webhookHostname", d.System.WebhookHostname())
+	d.V(0).Info("set webhook hostname", "webhook_hostname", d.System.WebhookHostname())
 
 	subsystems := []*Subsystem{
 		{
