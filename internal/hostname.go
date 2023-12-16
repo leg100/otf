@@ -8,20 +8,39 @@ import (
 )
 
 type HostnameService struct {
-	hostname string
+	hostname        string
+	webhookHostname string
 }
 
 func NewHostnameService(hostname string) *HostnameService {
-	return &HostnameService{hostname}
+	return &HostnameService{hostname, hostname}
 }
 
-func (s *HostnameService) Hostname() string            { return s.hostname }
+func (s *HostnameService) Hostname() string { return s.hostname }
+func (s *HostnameService) WebhookHostname() string {
+	if s.webhookHostname == "" {
+		return s.hostname
+	}
+	return s.webhookHostname
+}
 func (s *HostnameService) SetHostname(hostname string) { s.hostname = hostname }
+func (s *HostnameService) SetWebhookHostname(webhookHostname string) {
+	s.webhookHostname = webhookHostname
+}
 
 func (s *HostnameService) URL(path string) string {
 	u := url.URL{
 		Scheme: "https",
 		Host:   s.Hostname(),
+		Path:   path,
+	}
+	return u.String()
+}
+
+func (s *HostnameService) WebhookURL(path string) string {
+	u := url.URL{
+		Scheme: "https",
+		Host:   s.WebhookHostname(),
 		Path:   path,
 	}
 	return u.String()

@@ -107,6 +107,13 @@ Github pull request.
 
 It is highly advisable to set this flag in a production deployment.
 
+## `--webhook-hostname`
+
+* System: `otfd`
+* Default: `localhost:8080` or `--address` if specified.
+
+Sets the hostname that VCS providers can use to access the OTF webhooks.
+
 ## `--log-format`
 
 * System: `otfd`, `otf-agent`
