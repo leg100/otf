@@ -398,6 +398,10 @@ CREATE TABLE IF NOT EXISTS runs (
     CONSTRAINT runs_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspaces(workspace_id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
+-- The only trivial way to idempotently add constraints is to first drop them.
+-- Doing so within a tx - which this migration should be - avoids any window in
+-- which the constraint is missing, but there is a performance penalty if there
+-- are a lot of workspaces.
 ALTER TABLE workspaces
     DROP CONSTRAINT IF EXISTS current_state_version_id_fk,
     DROP CONSTRAINT IF EXISTS latest_run_id_fk,
