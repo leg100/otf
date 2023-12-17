@@ -59,8 +59,8 @@ type (
 	}
 )
 
-// New constructs a new DB connection pool after migrating the schema to the
-// latest version.
+// New migrates the database to the latest schema and returns a pool of
+// connections.
 func New(ctx context.Context, opts Options) (*DB, error) {
 	// Migrate database. Tern is used for migrations, and uses pgx v5, whereas
 	// pgx v4 is used elsewhere, mainly because pggen is still on v4:
@@ -72,6 +72,8 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connecting to database for migrations: %w", err)
 	}
+	defer migrateConn.Close(ctx)
+
 	migrator, err := tern.NewMigrator(ctx, migrateConn, "public.schema_versions")
 	if err != nil {
 		return nil, fmt.Errorf("constructing database migrator: %w", err)
