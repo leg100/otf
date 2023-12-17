@@ -2,7 +2,9 @@ package sql
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"strconv"
 	"strings"
@@ -11,13 +13,28 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	pgxv5 "github.com/jackc/pgx/v5"
+	tern "github.com/jackc/tern/v2/migrate"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-const (
-	// max conns avail in a pgx pool
-	defaultMaxConnections = 10
+// max conns avail in a pgx pool
+const defaultMaxConnections = 10
+
+var (
+	//go:embed migrations/*
+	migrationsDir embed.FS
+	migrations    fs.FS
 )
+
+func init() {
+	// tern expects a fs without the migrations/ parent directory
+	m, err := fs.Sub(migrationsDir, "migrations")
+	if err != nil {
+		panic("could not find embedded database migrations directory")
+	}
+	migrations = m
+}
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
@@ -42,9 +59,34 @@ type (
 	}
 )
 
-// New constructs a new DB connection pool, and migrates the schema to the
+// New constructs a new DB connection pool after migrating the schema to the
 // latest version.
 func New(ctx context.Context, opts Options) (*DB, error) {
+	// Migrate database. Tern is used for migrations, and uses pgx v5, whereas
+	// pgx v4 is used elsewhere, mainly because pggen is still on v4:
+	//
+	// https://github.com/jschaf/pggen/issues/74
+	//
+	// Therefore a v5 connection is established purely for migrations
+	migrateConn, err := pgxv5.Connect(ctx, opts.ConnString)
+	if err != nil {
+		return nil, fmt.Errorf("connecting to database for migrations: %w", err)
+	}
+	migrator, err := tern.NewMigrator(ctx, migrateConn, "public.schema_versions")
+	if err != nil {
+		return nil, fmt.Errorf("constructing database migrator: %w", err)
+	}
+	if err := migrator.LoadMigrations(migrations); err != nil {
+		return nil, fmt.Errorf("loading database migrations: %w", err)
+	}
+	migrator.OnStart = func(seq int32, name, _, _ string) {
+		opts.Logger.V(0).Info("migrating database", "sequence", seq, "name", name)
+	}
+	if err := migrator.Migrate(ctx); err != nil {
+		return nil, fmt.Errorf("migrating database: %w", err)
+	}
+	// pgx v4 is used hereon in
+
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
 	// connections for session-level advisory locks and can easily exhaust this.
@@ -55,15 +97,9 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 
 	pool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("connecting to database: %w", err)
 	}
 	opts.Logger.Info("connected to database", "connstr", connString)
-
-	// goose gets upset with max_pool_conns parameter so pass it the unaltered
-	// connection string
-	if err := migrate(opts.Logger, opts.ConnString); err != nil {
-		return nil, err
-	}
 
 	return &DB{
 		Pool:   pool,

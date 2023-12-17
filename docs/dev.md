@@ -41,7 +41,7 @@ make doc-screenshots
 
 ## SQL migrations
 
-The database schema is migrated using [goose](https://github.com/pressly/goose). The SQL migration files are kept in the repo in `./sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
+The database schema is migrated using [tern](https://github.com/jackc/tern). The SQL migration files are kept in the repo in `./sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
 
 If you're developing a SQL migration you may want to migrate the database manually. Use the `make` tasks to assist you:
 

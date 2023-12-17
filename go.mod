@@ -5,7 +5,7 @@ go 1.21
 require (
 	cloud.google.com/go/pubsub v1.30.1
 	github.com/DataDog/jsonapi v0.8.3
-	github.com/Masterminds/sprig/v3 v3.2.2
+	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.7.0
@@ -35,15 +35,16 @@ require (
 	github.com/jackc/pgconn v1.12.0
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.0
+	github.com/jackc/pgx/v5 v5.5.1
+	github.com/jackc/tern/v2 v2.1.1
 	github.com/jaschaephraim/lrserver v0.0.0-20171129202958-50d19f603f71
 	github.com/leg100/surl v0.0.5
 	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/mitchellh/iochan v1.0.0
 	github.com/natefinch/atomic v1.0.1
 	github.com/pkg/errors v0.9.1
-	github.com/pressly/goose/v3 v3.5.3
 	github.com/prometheus/client_golang v1.14.0
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	github.com/xanzy/go-gitlab v0.95.0
@@ -61,7 +62,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.13.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.1.1 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/antchfx/xpath v1.2.3 // indirect
@@ -92,18 +93,17 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d // indirect
-	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/base58-go v0.2.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle v1.2.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
@@ -123,8 +123,8 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
-	github.com/shopspring/decimal v1.2.0 // indirect
-	github.com/spf13/cast v1.3.2-0.20200723214538-8d17101741c8 // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/spf13/cast v1.5.0 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
@@ -135,7 +135,6 @@ require (
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

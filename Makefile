@@ -4,6 +4,7 @@ RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 DBSTRING=postgres:///otf
+TERN_MIGRATIONS=./internal/sql/migrations
 LD_FLAGS = " \
     -s -w \
 	-X 'github.com/leg100/otf/internal.Version=$(VERSION)' \
@@ -139,29 +140,29 @@ sql: install-pggen
 	go fmt ./internal/sql/pggen
 
 # Install DB migration tool
-.PHONY: install-goose
-install-goose:
-	@sh -c "which goose > /dev/null || go install github.com/pressly/goose/v3/cmd/goose@latest"
+.PHONY: install-tern
+install-tern:
+	@sh -c "which tern > /dev/null || go install github.com/jackc/tern/v2@latest"
 
 # Migrate SQL schema to latest version
 .PHONY: migrate
-migrate: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
+migrate: install-tern
+	TERN_MIGRATIONS=$(TERN_MIGRATIONS) tern migrate
 
 # Redo SQL schema migration
 .PHONY: migrate-redo
-migrate-redo: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
+migrate-redo: install-tern
+	TERN_MIGRATIONS=$(TERN_MIGRATIONS) tern migrate --destination -+1
 
 # Rollback SQL schema by one version
 .PHONY: migrate-rollback
-migrate-rollback: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
+migrate-rollback: install-tern
+	TERN_MIGRATIONS=$(TERN_MIGRATIONS) tern migrate --destination -1
 
 # Get SQL schema migration status
 .PHONY: migrate-status
-migrate-status: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
+migrate-status: install-tern
+	TERN_MIGRATIONS=$(TERN_MIGRATIONS) tern status
 
 # Run docs server with live reload
 .PHONY: serve-docs
