@@ -81,8 +81,8 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	if err := migrator.LoadMigrations(migrations); err != nil {
 		return nil, fmt.Errorf("loading database migrations: %w", err)
 	}
-	migrator.OnStart = func(seq int32, name, _, _ string) {
-		opts.Logger.V(0).Info("migrating database", "sequence", seq, "name", name)
+	migrator.OnStart = func(_ int32, name, _, _ string) {
+		opts.Logger.V(0).Info("migrating database", "migration", name)
 	}
 	if err := migrator.Migrate(ctx); err != nil {
 		return nil, fmt.Errorf("migrating database: %w", err)
