@@ -362,10 +362,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	// (a) tags-regex
 	// (b) trigger-patterns
 	// (c) always-trigger=true
-	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
+	if (opts.ConnectOptions != nil && (opts.ConnectOptions.TagsRegex != nil && *opts.ConnectOptions.TagsRegex != "")) && opts.TriggerPatterns != nil {
 		return nil, ErrTagsRegexAndTriggerPatterns
 	}
-	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+	if (opts.ConnectOptions != nil && (opts.ConnectOptions.TagsRegex != nil && *opts.ConnectOptions.TagsRegex != "")) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
 		return nil, ErrTagsRegexAndAlwaysTrigger
 	}
 	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
