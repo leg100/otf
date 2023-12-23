@@ -410,7 +410,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 			updated = true
 		} else {
 			// modify existing connection
-			if opts.TagsRegex != nil {
+			if (opts.TagsRegex != nil && *opts.ConnectOptions.TagsRegex != "") {
 				if err := ws.setTagsRegex(*opts.TagsRegex); err != nil {
 					return nil, fmt.Errorf("invalid tags-regex: %w", err)
 				}
