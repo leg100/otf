@@ -29,7 +29,7 @@ var base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 // NewID constructs resource IDs, composed of:
 // (1) a symbol representing a resource type, e.g. "ws" for workspaces
 // (2) a hyphen
-// (3) a 16 string composed of random characters from the base58 alphabet
+// (3) a 16 character string composed of random characters from the base58 alphabet
 func NewID(rtype string) string {
 	return rtype + "-" + GenerateRandomStringFromAlphabet(16, base58)
 }
