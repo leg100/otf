@@ -11,9 +11,15 @@ const alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ01234567
 // GenerateRandomString generates a random string composed of alphanumeric
 // characters of length size.
 func GenerateRandomString(size int) string {
+	return GenerateRandomStringFromAlphabet(size, alphanumeric)
+}
+
+// GenerateRandomStringFromAlphabet generates a random string of a given size
+// using characters from the given alphabet.
+func GenerateRandomStringFromAlphabet(size int, alphabet string) string {
 	buf := make([]byte, size)
 	for i := 0; i < size; i++ {
-		buf[i] = alphanumeric[rand.Intn(len(alphanumeric))]
+		buf[i] = alphabet[rand.Intn(len(alphabet))]
 	}
 	return string(buf)
 }
