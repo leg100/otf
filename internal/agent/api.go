@@ -40,6 +40,9 @@ func (a *api) addHandlers(r *mux.Router) {
 
 	// agent tokens
 	r.HandleFunc("/agent-tokens/{pool_id}/create", a.createAgentToken).Methods("POST")
+
+	// agent pools
+	r.HandleFunc("/agent-pools/create", a.createAgentPool).Methods("POST")
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
@@ -148,4 +151,20 @@ func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+}
+
+// agent pools
+
+func (a *api) createAgentPool(w http.ResponseWriter, r *http.Request) {
+	var opts CreateAgentPoolOptions
+	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	pool, err := a.CreateAgentPool(r.Context(), opts)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, pool, http.StatusCreated)
 }

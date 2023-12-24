@@ -43,8 +43,8 @@ func TestRunError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// create workspace
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:          internal.String("ws-" + string(tt.mode)),
-				Organization:  internal.String(org.Name),
+				Name:          "ws-" + string(tt.mode),
+				Organization:  org.Name,
 				ExecutionMode: workspace.ExecutionModePtr(tt.mode),
 				AgentPoolID:   tt.poolID,
 			})

@@ -18,10 +18,22 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 
 	// create organization
 	org := daemon.createOrganization(t, ctx)
+
 	// create workspaces
-	ws1 := daemon.createWorkspace(t, ctx, org)
-	ws2 := daemon.createWorkspace(t, ctx, org)
-	ws3 := daemon.createWorkspace(t, ctx, org)
+	var (
+		ws1, ws2, ws3 workspace.Workspace
+	)
+	ws1out := daemon.otfcli(t, ctx, "workspaces", "new", "--name", "ws1", "--organization", org.Name)
+	err := json.Unmarshal([]byte(ws1out), &ws1)
+	require.NoError(t, err)
+
+	ws2out := daemon.otfcli(t, ctx, "workspaces", "new", "--name", "ws2", "--organization", org.Name)
+	err = json.Unmarshal([]byte(ws2out), &ws1)
+	require.NoError(t, err)
+
+	ws3out := daemon.otfcli(t, ctx, "workspaces", "new", "--name", "ws3", "--organization", org.Name)
+	err = json.Unmarshal([]byte(ws3out), &ws1)
+	require.NoError(t, err)
 
 	// list workspaces via CLI
 	out := daemon.otfcli(t, ctx, "workspaces", "list", "--organization", org.Name)
@@ -32,7 +44,7 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	// show workspace via CLI (outputs as JSON)
 	out = daemon.otfcli(t, ctx, "workspaces", "show", "--organization", org.Name, ws1.Name)
 	var got workspace.Workspace
-	err := json.Unmarshal([]byte(out), &got)
+	err = json.Unmarshal([]byte(out), &got)
 	require.NoError(t, err)
 
 	// edit workspace via CLI

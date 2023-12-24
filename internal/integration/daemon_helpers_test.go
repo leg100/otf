@@ -175,8 +175,8 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	}
 
 	ws, err := s.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:         internal.String("workspace-" + internal.GenerateRandomString(6)),
-		Organization: &org.Name,
+		Name:         "workspace-" + internal.GenerateRandomString(6),
+		Organization: org.Name,
 	})
 	require.NoError(t, err)
 	return ws

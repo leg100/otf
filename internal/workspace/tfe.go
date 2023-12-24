@@ -70,7 +70,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		GlobalRemoteState:          params.GlobalRemoteState,
 		MigrationEnvironment:       params.MigrationEnvironment,
 		Name:                       params.Name,
-		Organization:               params.Organization,
+		Organization:               *params.Organization,
 		QueueAllRuns:               params.QueueAllRuns,
 		SpeculativeEnabled:         params.SpeculativeEnabled,
 		SourceName:                 params.SourceName,

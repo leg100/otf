@@ -63,7 +63,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.AddCommand(state.NewCommand(a.client))
 	cmd.AddCommand(agent.NewAgentsCommand(a.client))
 
-	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
+	if err := cmdutil.SetFlagsFromEnvVariables(cmd.PersistentFlags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
 	}
 

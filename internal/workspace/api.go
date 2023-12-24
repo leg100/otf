@@ -20,6 +20,7 @@ type (
 func (a *api) addHandlers(r *mux.Router) {
 	r = r.PathPrefix(otfapi.DefaultBasePath).Subrouter()
 
+	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.getWorkspaceByName).Methods("GET")
 
@@ -28,6 +29,36 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", a.lockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", a.unlockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/actions/force-unlock", a.forceUnlockWorkspace).Methods("POST")
+}
+
+func (a *api) create(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		AgentPoolID   *string        `json:"agent_pool_id"`
+		ExecutionMode *ExecutionMode `json:"execution_mode"`
+		Name          string         `json:"name"`
+		Organization  string         `schema:"organization_name,required"`
+	}
+	if err := decode.Route(&params, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	ws, err := a.Create(r.Context(), CreateOptions{
+		AgentPoolID:   params.AgentPoolID,
+		ExecutionMode: params.ExecutionMode,
+		Name:          params.Name,
+		Organization:  params.Organization,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	a.Respond(w, r, ws, http.StatusOK)
 }
 
 func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {

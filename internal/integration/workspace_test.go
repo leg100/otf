@@ -27,15 +27,15 @@ func TestWorkspace(t *testing.T) {
 		defer unsub()
 
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String(uuid.NewString()),
-			Organization: internal.String(org.Name),
+			Name:         uuid.NewString(),
+			Organization: org.Name,
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:         internal.String(ws.Name),
-				Organization: internal.String(org.Name),
+				Name:         ws.Name,
+				Organization: org.Name,
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
@@ -50,8 +50,8 @@ func TestWorkspace(t *testing.T) {
 
 		vcsprov := daemon.createVCSProvider(t, ctx, org)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String(uuid.NewString()),
-			Organization: &org.Name,
+			Name:         uuid.NewString(),
+			Organization: org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      internal.String("test/dummy"),
 				VCSProviderID: &vcsprov.ID,
@@ -81,8 +81,8 @@ func TestWorkspace(t *testing.T) {
 
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 		ws, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String(uuid.NewString()),
-			Organization: &org.Name,
+			Name:         uuid.NewString(),
+			Organization: org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      internal.String("test/dummy"),
 				VCSProviderID: &vcsprov.ID,
@@ -174,8 +174,8 @@ func TestWorkspace(t *testing.T) {
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
 		wsTagged, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Organization: internal.String(org.Name),
-			Name:         internal.String("ws-tagged"),
+			Organization: org.Name,
+			Name:         "ws-tagged",
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
 		})
 		require.NoError(t, err)
@@ -265,14 +265,14 @@ func TestWorkspace(t *testing.T) {
 	t.Run("list by tag", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws1, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String(uuid.NewString()),
-			Organization: &org.Name,
+			Name:         uuid.NewString(),
+			Organization: org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}},
 		})
 		require.NoError(t, err)
 		ws2, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String(uuid.NewString()),
-			Organization: &org.Name,
+			Name:         uuid.NewString(),
+			Organization: org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
 		})
 		require.NoError(t, err)

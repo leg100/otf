@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -17,8 +16,8 @@ func TestLocal(t *testing.T) {
 
 	// create workspace with local execution mode
 	_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:          internal.String("local-ws"),
-		Organization:  internal.String(org.Name),
+		Name:          "local-ws",
+		Organization:  org.Name,
 		ExecutionMode: workspace.ExecutionModePtr(workspace.LocalExecutionMode),
 	})
 	require.NoError(t, err)

@@ -13,6 +13,19 @@ type Client struct {
 	*otfapi.Client
 }
 
+func (c *Client) Create(ctx context.Context, opts CreateOptions) (*Workspace, error) {
+	u := fmt.Sprintf("organizations/%s/workspaces", opts.Organization)
+	req, err := c.NewRequest("POST", u, &opts)
+	if err != nil {
+		return nil, err
+	}
+	var ws Workspace
+	if err := c.Do(ctx, req, &ws); err != nil {
+		return nil, err
+	}
+	return &ws, nil
+}
+
 func (c *Client) GetByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)

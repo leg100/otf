@@ -130,7 +130,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 			OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 		})
 		if err != nil {
-			return err
+			return sql.Error(err)
 		}
 		for _, workspaceID := range pool.AllowedWorkspaces {
 			_, err := q.InsertAgentPoolAllowedWorkspace(ctx, sql.String(pool.ID), sql.String(workspaceID))

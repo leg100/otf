@@ -113,14 +113,14 @@ func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], f
 }
 
 func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, error) {
-	ws, err := NewWorkspace(opts)
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, opts.Organization)
 	if err != nil {
-		s.Error(err, "constructing workspace")
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization)
+	ws, err := NewWorkspace(opts)
 	if err != nil {
+		s.Error(err, "constructing workspace")
 		return nil, err
 	}
 

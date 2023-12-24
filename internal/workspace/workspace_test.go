@@ -18,44 +18,45 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "default",
 			opts: CreateOptions{
-				Name:         internal.String("my-workspace"),
-				Organization: internal.String("my-org"),
+				Name:         "my-workspace",
+				Organization: "my-org",
 			},
 		},
 		{
 			name: "missing name",
 			opts: CreateOptions{
-				Organization: internal.String("my-org"),
+				Organization: "my-org",
 			},
 			want: internal.ErrRequiredName,
 		},
 		{
 			name: "missing organization",
 			opts: CreateOptions{
-				Name: internal.String("my-workspace"),
+				Name: "my-workspace",
 			},
 			want: internal.ErrRequiredOrg,
 		},
 		{
 			name: "invalid name",
 			opts: CreateOptions{
-				Name: internal.String("%*&^"),
+				Name:         "%*&^",
+				Organization: "acme",
 			},
 			want: internal.ErrInvalidName,
 		},
 		{
 			name: "specifying latest for terraform version",
 			opts: CreateOptions{
-				Name:             internal.String("my-workspace"),
-				Organization:     internal.String("my-org"),
+				Name:             "my-workspace",
+				Organization:     "my-org",
 				TerraformVersion: internal.String("latest"),
 			},
 		},
 		{
 			name: "bad terraform version",
 			opts: CreateOptions{
-				Name:             internal.String("my-workspace"),
-				Organization:     internal.String("my-org"),
+				Name:             "my-workspace",
+				Organization:     "my-org",
 				TerraformVersion: internal.String("1,2,0"),
 			},
 			want: internal.ErrInvalidTerraformVersion,
@@ -63,8 +64,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "unsupported terraform version",
 			opts: CreateOptions{
-				Name:             internal.String("my-workspace"),
-				Organization:     internal.String("my-org"),
+				Name:             "my-workspace",
+				Organization:     "my-org",
 				TerraformVersion: internal.String("0.14.0"),
 			},
 			want: ErrUnsupportedTerraformVersion,
@@ -72,8 +73,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "specifying both tags regex and trigger patterns",
 			opts: CreateOptions{
-				Name:            internal.String("my-workspace"),
-				Organization:    internal.String("my-org"),
+				Name:            "my-workspace",
+				Organization:    "my-org",
 				TriggerPatterns: []string{"/foo/**/*.tf"},
 				ConnectOptions: &ConnectOptions{
 					TagsRegex: internal.String("\\d+"),
@@ -84,8 +85,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "specifying both tags regex and always trigger",
 			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  internal.String("my-org"),
+				Name:          "my-workspace",
+				Organization:  "my-org",
 				AlwaysTrigger: internal.Bool(true),
 				ConnectOptions: &ConnectOptions{
 					TagsRegex: internal.String("\\d+"),
@@ -96,8 +97,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "specifying both trigger patterns and always trigger",
 			opts: CreateOptions{
-				Name:            internal.String("my-workspace"),
-				Organization:    internal.String("my-org"),
+				Name:            "my-workspace",
+				Organization:    "my-org",
 				AlwaysTrigger:   internal.Bool(true),
 				TriggerPatterns: []string{"/foo/**/*.tf"},
 			},
@@ -106,8 +107,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "invalid trigger pattern",
 			opts: CreateOptions{
-				Name:            internal.String("my-workspace"),
-				Organization:    internal.String("my-org"),
+				Name:            "my-workspace",
+				Organization:    "my-org",
 				TriggerPatterns: []string{"/foo/[**/*.tf"},
 			},
 			want: ErrInvalidTriggerPattern,
@@ -115,8 +116,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "invalid tags regex",
 			opts: CreateOptions{
-				Name:         internal.String("my-workspace"),
-				Organization: internal.String("my-org"),
+				Name:         "my-workspace",
+				Organization: "my-org",
 				ConnectOptions: &ConnectOptions{
 					RepoPath:      internal.String("leg100/otf"),
 					VCSProviderID: internal.String("vcs-123"),
@@ -128,8 +129,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "agent execution mode with agent pool ID",
 			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  internal.String("my-org"),
+				Name:          "my-workspace",
+				Organization:  "my-org",
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
 				AgentPoolID:   internal.String("apool-123"),
 			},
@@ -138,8 +139,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "agent execution mode without agent pool ID",
 			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  internal.String("my-org"),
+				Name:          "my-workspace",
+				Organization:  "my-org",
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
 			},
 			want: ErrAgentExecutionModeWithoutPool,
@@ -147,8 +148,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "default remote execution mode with agent pool ID",
 			opts: CreateOptions{
-				Name:         internal.String("my-workspace"),
-				Organization: internal.String("my-org"),
+				Name:         "my-workspace",
+				Organization: "my-org",
 				AgentPoolID:  internal.String("apool-123"),
 			},
 			want: ErrNonAgentExecutionModeWithPool,
@@ -156,8 +157,8 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "local execution mode with agent pool ID",
 			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  internal.String("my-org"),
+				Name:          "my-workspace",
+				Organization:  "my-org",
 				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
 				AgentPoolID:   internal.String("apool-123"),
 			},

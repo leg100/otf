@@ -2,13 +2,56 @@ package workspace
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"testing"
 
+	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCLI_create(t *testing.T) {
+	app := &CLI{
+		client: &FakeService{},
+	}
+
+	t.Run("defaults", func(t *testing.T) {
+		cmd := app.workspaceCreateCommand()
+		cmd.SetArgs([]string{"--name", "dev", "--organization", "acme-corp"})
+		buf := bytes.Buffer{}
+		cmd.SetOut(&buf)
+		require.NoError(t, cmd.Execute())
+
+		var want Workspace
+		err := json.Unmarshal(buf.Bytes(), &want)
+		require.NoError(t, err)
+		assert.Equal(t, want.Name, "dev")
+	})
+
+	t.Run("with agent execution mode", func(t *testing.T) {
+		cmd := app.workspaceCreateCommand()
+		cmd.SetArgs([]string{"--name", "dev", "--organization", "acme-corp", "--execution-mode", "agent", "--agent-pool-id", "pool-1"})
+		buf := bytes.Buffer{}
+		cmd.SetOut(&buf)
+		require.NoError(t, cmd.Execute())
+
+		var got Workspace
+		err := json.Unmarshal(buf.Bytes(), &got)
+		require.NoError(t, err)
+		assert.Equal(t, "dev", got.Name)
+		assert.Equal(t, AgentExecutionMode, got.ExecutionMode)
+		assert.Equal(t, internal.String("pool-1"), got.AgentPoolID)
+	})
+
+	t.Run("missing organization", func(t *testing.T) {
+		cmd := app.workspaceCreateCommand()
+		cmd.SetArgs([]string{"--name", "dev"})
+		err := cmd.Execute()
+		assert.EqualError(t, err, "required flag(s) \"organization\" not set")
+	})
+}
 
 func TestWorkspaceEdit(t *testing.T) {
 	ws := &Workspace{}

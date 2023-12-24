@@ -53,8 +53,8 @@ func TestIntegration_RunCancel(t *testing.T) {
 
 	// create workspace specifying that it use an external agent.
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-		Name:          internal.String("ws-1"),
-		Organization:  internal.String(org.Name),
+		Name:          "ws-1",
+		Organization:  org.Name,
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
 		AgentPoolID:   internal.String(*agent.AgentPoolID),
 	})

@@ -122,3 +122,16 @@ func (c *client) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpti
 	}
 	return nil
 }
+
+// agent pools
+func (c *client) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
+	req, err := c.NewRequest("POST", "agent-pools/create", &opts)
+	if err != nil {
+		return nil, err
+	}
+	var pool Pool
+	if err := c.Do(ctx, req, &pool); err != nil {
+		return nil, err
+	}
+	return &pool, nil
+}

@@ -16,6 +16,7 @@ type CLI struct {
 }
 
 type cliClient interface {
+	Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
 	List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 	GetByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
@@ -37,11 +38,56 @@ func NewCommand(apiClient *otfapi.Client) *cobra.Command {
 		},
 	}
 
+	cmd.AddCommand(cli.workspaceCreateCommand())
 	cmd.AddCommand(cli.workspaceListCommand())
 	cmd.AddCommand(cli.workspaceShowCommand())
 	cmd.AddCommand(cli.workspaceEditCommand())
 	cmd.AddCommand(cli.workspaceLockCommand())
 	cmd.AddCommand(cli.workspaceUnlockCommand())
+
+	return cmd
+}
+
+func (a *CLI) workspaceCreateCommand() *cobra.Command {
+	var (
+		opts   CreateOptions
+		mode   string
+		poolID string
+	)
+
+	cmd := &cobra.Command{
+		Use:           "new",
+		Short:         "Create a new workspace",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if mode != "" {
+				opts.ExecutionMode = (*ExecutionMode)(&mode)
+			}
+			if poolID != "" {
+				opts.AgentPoolID = &poolID
+			}
+			ws, err := a.client.Create(cmd.Context(), opts)
+			if err != nil {
+				return err
+			}
+			out, err := json.MarshalIndent(ws, "", "\t")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), string(out))
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVarP(&opts.Organization, "organization", "o", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
+
+	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Name of workspace")
+	cmd.MarkFlagRequired("name")
+
+	cmd.Flags().StringVarP(&mode, "execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
+	cmd.Flags().StringVar(&poolID, "agent-pool-id", "", "ID of the agent pool to use for runs. Required if execution-mode is set to agent.")
 
 	return cmd
 }

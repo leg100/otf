@@ -23,14 +23,14 @@ type (
 	// an organization or particular workspaces within the organization.
 	Pool struct {
 		// Unique system-wide ID
-		ID        string
-		Name      string
-		CreatedAt time.Time
+		ID        string    `jsonapi:"primary,agent-pools" json:"id"`
+		Name      string    `jsonapi:"attribute" json:"name"`
+		CreatedAt time.Time `jsonapi:"attribute" json:"created_at"`
 		// Pool belongs to an organization with this name.
-		Organization string
+		Organization string `jsonapi:"attribute" json:"organization"`
 		// Whether pool of agents is accessible to all workspaces in organization
 		// (true) or only those specified in AllowedWorkspaces (false).
-		OrganizationScoped bool
+		OrganizationScoped bool `jsonapi:"attribute" json:"organization_scoped"`
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
 		AllowedWorkspaces []string
@@ -40,9 +40,9 @@ type (
 	}
 
 	CreateAgentPoolOptions struct {
-		Name string `schema:"name,required"`
+		Name string `schema:"name,required" json:"name"`
 		// name of org
-		Organization string `schema:"organization_name,required"`
+		Organization string `schema:"organization_name,required" json:"organization"`
 		// defaults to true
 		OrganizationScoped *bool
 		// IDs of workspaces allowed to access the pool.

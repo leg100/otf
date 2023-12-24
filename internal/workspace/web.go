@@ -223,8 +223,8 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ws, err := h.client.Create(r.Context(), CreateOptions{
-		Name:         params.Name,
-		Organization: params.Organization,
+		Name:         *params.Name,
+		Organization: *params.Organization,
 	})
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "workspace already exists: "+*params.Name)

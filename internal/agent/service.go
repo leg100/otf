@@ -202,6 +202,7 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 		return nil, err
 	}
 	if err := s.db.createPool(ctx, pool); err != nil {
+		s.Error(err, "creating agent pool", "subject", subject)
 		return nil, err
 	}
 	s.V(0).Info("created agent pool", "subject", subject, "pool", pool)

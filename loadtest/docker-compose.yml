@@ -1,0 +1,124 @@
+services:
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    command: -c fsync=off -c max_connections=999
+    environment:
+     - POSTGRES_PASSWORD=postgres
+  # Terraform-based tests spawn `terraform`. These tests retrieve providers from
+  # the internet which can consume quite a lot of bandwidth and slow down the tests
+  # significantly. To cache these providers we use the squid caching
+  # proxy (http://www.squid-cache.org/).
+  #
+  # It is configured to use
+  # [SSL-bumping](https://wiki.squid-cache.org/Features/SslBump), which permits
+  # caching content transported via SSL (`terraform` retrieves providers only via
+  # SSL).
+  squid:
+    image: leg100/squid:0.2.2
+    ports:
+      - 3128
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zw1 localhost 3128"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    stop_signal: SIGINT
+    tty: true
+    volumes:
+      - ../internal/integration/fixtures:/etc/squid/certs
+  otfd:
+    build:
+      context: ../_build
+      dockerfile: ../Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      squid:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    hostname: otf.local
+    ports:
+      - 8080
+    healthcheck:
+      test: ["CMD-SHELL", "wget https://localhost:8080 -O /dev/null -q"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    environment:
+      - OTF_DATABASE=postgres://postgres:postgres@postgres/postgres?sslmode=disable
+      - OTF_SECRET=6b07b57377755b07cf61709780ee7484
+      - OTF_SITE_TOKEN=site-token
+      - OTF_SSL=true
+      - OTF_CERT_FILE=/fixtures/cert.pem
+      - OTF_KEY_FILE=/fixtures/key.pem
+      - OTF_LOG_HTTP_REQUESTS=false
+      - HTTPS_PROXY=squid:3128
+      - SSL_CERT_FILE=/fixtures/cert.pem
+      - OTF_HOSTNAME=otf.loadtest
+    volumes:
+      - ./../internal/integration/fixtures:/fixtures
+  setup:
+    image: hashicorp/terraform:1.6.6
+    depends_on:
+      otfd:
+        condition: service_healthy
+    environment:
+      - SSL_CERT_FILE=/fixtures/cert.pem
+    working_dir: /setup
+    volumes:
+      - ./../internal/integration/fixtures:/fixtures
+      - tokens:/tokens
+      - ./setup:/setup
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e
+        terraform init
+        terraform apply -auto-approve
+  agent:
+    image: otf-agent
+    build:
+      context: ../_build
+      dockerfile: ../Dockerfile.agent
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    environment:
+      - SSL_CERT_FILE=/fixtures/cert.pem
+      - OTF_TOKEN_FILE=/tokens/pool-token
+      - OTF_ADDRESS=otf.local:8080
+    volumes:
+      - ./../internal/integration/fixtures:/fixtures
+      - tokens:/tokens
+  tests:
+    image: hashicorp/terraform:1.6.6
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    environment:
+      - SSL_CERT_FILE=/fixtures/cert.pem
+      - TF_TOKEN_otf_local:8080=site-token
+      - TF_CLOUD_ORGANIZATION=loadtest
+      - TF_WORKSPACE=remote
+    working_dir: /config
+    volumes:
+      - ./../internal/integration/fixtures:/fixtures
+      - ./main.tf:/config/main.tf
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e
+        terraform init
+        terraform apply -auto-approve
+volumes:
+  tokens:

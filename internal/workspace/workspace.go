@@ -105,14 +105,14 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
-		AgentPoolID                *string
+		AgentPoolID                *string `json:"agent_pool_id"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
-		ExecutionMode              *ExecutionMode
+		ExecutionMode              *ExecutionMode `json:"execution_mode"`
 		GlobalRemoteState          *bool
 		MigrationEnvironment       *string
-		Name                       *string
+		Name                       string `json:"name"`
 		QueueAllRuns               *bool
 		SpeculativeEnabled         *bool
 		SourceName                 *string
@@ -123,13 +123,13 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
-		Organization               *string
+		Organization               string
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
 		AlwaysTrigger *bool
 
-		*ConnectOptions
+		ConnectOptions *ConnectOptions `json:"-"`
 	}
 
 	UpdateOptions struct {
@@ -179,24 +179,23 @@ type (
 
 func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	// required options
-	if err := resource.ValidateName(opts.Name); err != nil {
-		return nil, err
+	if opts.Name == "" {
+		return nil, internal.ErrRequiredName
 	}
-	if opts.Organization == nil {
+	if opts.Organization == "" {
 		return nil, internal.ErrRequiredOrg
 	}
-
 	ws := Workspace{
 		ID:                 internal.NewID("ws"),
+		Organization:       opts.Organization,
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
 		TerraformVersion:   releases.DefaultTerraformVersion,
 		SpeculativeEnabled: true,
-		Organization:       *opts.Organization,
 	}
-	if err := ws.setName(*opts.Name); err != nil {
+	if err := ws.setName(opts.Name); err != nil {
 		return nil, err
 	}
 	if _, err := ws.setExecutionModeAndAgentPoolID(opts.ExecutionMode, opts.AgentPoolID); err != nil {

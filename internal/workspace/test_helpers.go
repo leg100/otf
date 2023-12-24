@@ -20,8 +20,8 @@ func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID
 	return f.Workspaces, nil
 }
 
-func (f *FakeService) Create(context.Context, CreateOptions) (*Workspace, error) {
-	return f.Workspaces[0], nil
+func (f *FakeService) Create(_ context.Context, opts CreateOptions) (*Workspace, error) {
+	return NewWorkspace(opts)
 }
 
 func (f *FakeService) Update(_ context.Context, _ string, opts UpdateOptions) (*Workspace, error) {

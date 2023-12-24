@@ -167,14 +167,14 @@ type WorkspaceCreateOptions struct {
 	// The name of the workspace, which can only include letters, numbers, -,
 	// and _. This will be used as an identifier and must be unique in the
 	// organization.
-	Name *string `jsonapi:"attribute" json:"name"`
+	Name string `jsonapi:"attribute" json:"name"`
 
 	// DEPRECATED. Whether the workspace will use remote or local execution mode.
 	// Use ExecutionMode instead.
 	Operations *bool `jsonapi:"attribute" json:"operations,omitempty"`
 
 	// Organization the workspace belongs to. Required.
-	Organization *string `schema:"organization_name"`
+	Organization *string `schema:"organization_name,required"`
 
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.

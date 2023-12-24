@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -115,8 +114,8 @@ func TestWebhook_Purger(t *testing.T) {
 			org := daemon.createOrganization(t, ctx)
 			provider := daemon.createVCSProvider(t, ctx, org)
 			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-				Name:         internal.String("workspace-1"),
-				Organization: &org.Name,
+				Name:         "workspace-1",
+				Organization: org.Name,
 				ConnectOptions: &workspace.ConnectOptions{
 					VCSProviderID: &provider.ID,
 					RepoPath:      &repo,
