@@ -23,10 +23,15 @@ func GetID(s any) (string, bool) {
 	return f.String(), true
 }
 
-// NewID constructs resource IDs, which are composed of the resource type and a
-// random 16 character string, separated by a hyphen.
+// base58 alphabet
+var base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+// NewID constructs resource IDs, composed of:
+// (1) a symbol representing a resource type, e.g. "ws" for workspaces
+// (2) a hyphen
+// (3) a 16 character string composed of random characters from the base58 alphabet
 func NewID(rtype string) string {
-	return rtype + "-" + GenerateRandomString(16)
+	return rtype + "-" + GenerateRandomStringFromAlphabet(16, base58)
 }
 
 // ValidStringID checks if the given string pointer is non-nil and
