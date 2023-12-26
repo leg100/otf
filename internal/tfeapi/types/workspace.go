@@ -15,7 +15,6 @@ var (
 type Workspace struct {
 	ID                         string                `jsonapi:"primary,workspaces"`
 	Actions                    *WorkspaceActions     `jsonapi:"attribute" json:"actions"`
-	AgentPoolID                string                `jsonapi:"attribute" json:"agent-pool-id"`
 	AllowDestroyPlan           bool                  `jsonapi:"attribute" json:"allow-destroy-plan"`
 	AutoApply                  bool                  `jsonapi:"attribute" json:"auto-apply"`
 	CanQueueDestroyPlan        bool                  `jsonapi:"attribute" json:"can-queue-destroy-plan"`
@@ -50,6 +49,7 @@ type Workspace struct {
 	TagNames                   []string              `jsonapi:"attribute" json:"tag-names"`
 
 	// Relations
+	AgentPool    *AgentPool         `jsonapi:"relationship" json:"agent-pool"`
 	CurrentRun   *Run               `jsonapi:"relationship" json:"current-run"`
 	Organization *Organization      `jsonapi:"relationship" json:"organization"`
 	Outputs      []*WorkspaceOutput `jsonapi:"relationship" json:"outputs"`

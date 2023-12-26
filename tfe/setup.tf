@@ -1,6 +1,6 @@
 provider "tfe" {
   hostname = "otf.local:8080"
-  token    = "site-token"
+  token    = "abc"
 }
 
 resource "tfe_organization" "loadtest" {
@@ -36,5 +36,5 @@ resource "tfe_workspace_settings" "agent" {
 
 resource "local_file" "agent_token" {
   content  = tfe_agent_token.loadtest.token
-  filename = "/tokens/pool-token"
+  filename = "pool.token"
 }

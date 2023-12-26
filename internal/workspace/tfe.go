@@ -464,7 +464,9 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		Organization:               &types.Organization{Name: from.Organization},
 	}
 	if from.AgentPoolID != nil {
-		to.AgentPoolID = *from.AgentPoolID
+		to.AgentPool = &types.AgentPool{
+			ID: *from.AgentPoolID,
+		}
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true
