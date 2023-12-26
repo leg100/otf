@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/leg100/otf/compare/v0.2.4...v0.2.5) (2023-12-26)
+
+
+### Bug Fixes
+
+* use base58 alphabet for resource IDs ([#680](https://github.com/leg100/otf/issues/680)) ([1e7d7a2](https://github.com/leg100/otf/commit/1e7d7a2b2c350c17c29fb49ae0dfbbeb31b2942d))
+
 ## [0.2.4](https://github.com/leg100/otf/compare/v0.2.3...v0.2.4) (2023-12-16)
 
 
