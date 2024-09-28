@@ -39,10 +39,10 @@ require (
 	github.com/leg100/surl v0.0.5
 	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/mitchellh/iochan v1.0.0
-	github.com/natefinch/atomic v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.5.3
 	github.com/prometheus/client_golang v1.14.0
+	github.com/sdassow/atomic v0.0.1
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -139,10 +139,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+replace (
+	github.com/jaschaephraim/lrserver => github.com/sowiner/lrserver v0.0.0-20230123160823-795409868576
+	github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad
+)
+
 //replace github.com/leg100/go-tfe => ../go-tfe
-
-replace github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad
-
-replace github.com/jaschaephraim/lrserver => github.com/sowiner/lrserver v0.0.0-20230123160823-795409868576
-
-replace github.com/natefinch/atomic => github.com/sdassow/atomic v0.0.0-20220219102542-174b5d2a3ea6
