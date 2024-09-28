@@ -10,21 +10,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSetToken_Env(t *testing.T) {
+func TestCLI_getToken_Env(t *testing.T) {
 	t.Setenv("OTF_TOKEN", "mytoken")
 	got, err := (&CLI{}).getToken("localhost:8080")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }
 
-func TestSetToken_HostSpecificEnv(t *testing.T) {
+func TestCLI_getToken_HostSpecificEnv(t *testing.T) {
 	t.Setenv("TF_TOKEN_otf_dev", "mytoken")
 	got, err := (&CLI{}).getToken("otf.dev")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }
 
-func TestSetToken_CredentialStore(t *testing.T) {
+func TestCLI_getToken_CredentialStore(t *testing.T) {
+	// Unset any env vars that might have been set on the host machine otherwise
+	// they take precedence over the credential store in this test.
+	t.Setenv("TF_TOKEN_otf_dev", "")
+	t.Setenv("OTF_TOKEN", "")
+
 	store := CredentialsStore(filepath.Join(t.TempDir(), "creds.json"))
 	require.NoError(t, store.Save("otf.dev", "mytoken"))
 

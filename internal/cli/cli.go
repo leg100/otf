@@ -97,15 +97,11 @@ func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
 }
 
 func (a *CLI) getToken(address string) (string, error) {
-	if token, ok := os.LookupEnv(internal.CredentialEnvKey(address)); ok {
+	if token := os.Getenv(internal.CredentialEnvKey(address)); token != "" {
 		return token, nil
 	}
-	if token, ok := os.LookupEnv("OTF_TOKEN"); ok {
+	if token := os.Getenv("OTF_TOKEN"); token != "" {
 		return token, nil
 	}
-	token, err := a.creds.Load(address)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
+	return a.creds.Load(address)
 }

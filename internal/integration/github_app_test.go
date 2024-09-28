@@ -87,6 +87,9 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 					require.Equal(t, public, manifest.Public)
 					w.Write([]byte(`<html><body>success</body></html>`))
 				})
+				mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+					// ignore favicon requests
+				})
 				mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 					t.Fatalf("form submitted to wrong path: %s", r.URL.Path)
 				})

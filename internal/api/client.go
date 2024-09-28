@@ -349,5 +349,5 @@ func checkResponseCode(r *http.Response) error {
 			errs = append(errs, fmt.Sprintf("%s: %s", e.Title, e.Detail))
 		}
 	}
-	return fmt.Errorf(strings.Join(errs, "\n"))
+	return errors.New(strings.Join(errs, "\n"))
 }
