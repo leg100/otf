@@ -1,6 +1,3 @@
-*The OTF project has ceased to be. I no longer have the time nor resources to maintain a project of this complexity.*
-<hr>
-
 ![OTF logo](/readme_inkscape_logo.png)
 
 OTF is an open source alternative to Terraform Enterprise. Includes SSO, team management, agents, and no per-resource pricing.
