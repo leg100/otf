@@ -1,14 +1,13 @@
 package sql
 
 import (
+	"context"
 	"embed"
-	"fmt"
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/pressly/goose/v3"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v4"
+	tern "github.com/jackc/tern/v2/migrate"
 )
 
 var (
@@ -18,29 +17,13 @@ var (
 	migrations embed.FS
 )
 
-func migrate(logger logr.Logger, connStr string) error {
+func migrate(ctx context.Context, logger logr.Logger, conn *pgx.Conn) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	goose.SetLogger(&gooseLogger{logger})
-
-	goose.SetBaseFS(migrations)
-
-	goose.SetDialect("pgx")
-
-	db, err := goose.OpenDBWithDriver("pgx", connStr)
+	m, err := tern.NewMigrator(ctx, conn, "schema_version")
 	if err != nil {
-		return fmt.Errorf("connecting to db for migrations: %w", err)
+		return err
 	}
-	defer db.Close()
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("setting postgres dialect for migrations: %w", err)
-	}
-
-	if err := goose.Up(db, "migrations"); err != nil {
-		return fmt.Errorf("unable to migrate database: %w", err)
-	}
-
-	return nil
+	return m.Migrate(ctx)
 }

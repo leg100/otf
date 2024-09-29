@@ -59,9 +59,15 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 	opts.Logger.Info("connected to database", "connstr", connString)
 
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+
 	// goose gets upset with max_pool_conns parameter so pass it the unaltered
 	// connection string
-	if err := migrate(opts.Logger, opts.ConnString); err != nil {
+	if err := migrate(ctx, opts.Logger, conn.Conn()); err != nil {
 		return nil, err
 	}
 
