@@ -15,13 +15,17 @@ import (
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v55/github"
+	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/oauth2"
 )
+
+// maxRedirects is the number of HTTP 301 redirects an API request is permitted
+// to follow.
+const maxRedirects = 10
 
 type (
 	// Client is a wrapper around the upstream go-github client
@@ -181,9 +185,7 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repo
 // belonging to the user are listed; only the first page of repos is listed,
 // those that have most recently been pushed to.
 func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
-	var (
-		repos []*github.Repository
-	)
+	var repos []*github.Repository
 	if g.iat {
 		// Apps.ListRepos endpoint does not support ordering on the server-side,
 		// so instead we request *all* repos, page-by-page, and then sort
@@ -208,7 +210,7 @@ func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 		sort.Slice(repos, func(i, j int) bool { return repos[i].GetPushedAt().After(repos[j].GetPushedAt().Time) })
 	} else {
 		var err error
-		repos, _, err = g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
+		repos, _, err = g.client.Repositories.ListByAuthenticatedUser(ctx, &github.RepositoryListByAuthenticatedUserOptions{
 			ListOptions: github.ListOptions{PerPage: opts.PageSize},
 			// retrieve repositories in order of most recently pushed to
 			Sort: "pushed",
@@ -264,7 +266,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOpti
 		gopts.Ref = *opts.Ref
 	}
 
-	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &gopts, true)
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &gopts, maxRedirects)
 	if err != nil {
 		return nil, "", err
 	}
@@ -332,10 +334,10 @@ func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOption
 
 	hook, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
 		Events: events,
-		Config: map[string]any{
-			"url":          opts.Endpoint,
-			"secret":       opts.Secret,
-			"content_type": "json",
+		Config: &github.HookConfig{
+			URL:         &opts.Endpoint,
+			Secret:      &opts.Secret,
+			ContentType: internal.String("json"),
 		},
 		Active: internal.Bool(true),
 	})
@@ -368,10 +370,10 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWe
 
 	_, _, err = g.client.Repositories.EditHook(ctx, owner, name, intID, &github.Hook{
 		Events: events,
-		Config: map[string]any{
-			"url":          opts.Endpoint,
-			"secret":       opts.Secret,
-			"content_type": "json",
+		Config: &github.HookConfig{
+			URL:         &opts.Endpoint,
+			Secret:      &opts.Secret,
+			ContentType: internal.String("json"),
 		},
 		Active: internal.Bool(true),
 	})
@@ -410,21 +412,16 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 		}
 	}
 
-	// extracting OTF endpoint from github's config map is a bit of work...
-	rawEndpoint, ok := hook.Config["url"]
-	if !ok {
+	url := hook.Config.URL
+	if url == nil {
 		return vcs.Webhook{}, errors.New("missing url")
-	}
-	endpoint, ok := rawEndpoint.(string)
-	if !ok {
-		return vcs.Webhook{}, errors.New("url is not a string")
 	}
 
 	return vcs.Webhook{
 		ID:       strconv.FormatInt(hook.GetID(), 10),
 		Repo:     opts.Repo,
 		Events:   events,
-		Endpoint: endpoint,
+		Endpoint: *url,
 	}, nil
 }
 

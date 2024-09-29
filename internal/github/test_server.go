@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v41/github"
+	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,8 +167,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 				Hook: &github.Hook{
 					ID:     internal.Int64(123),
 					Events: opts.Events,
-					Config: map[string]any{
-						"url": opts.Config.URL,
+					Config: &github.HookConfig{
+						URL: &opts.Config.URL,
 					},
 				},
 				secret: opts.Config.Secret,
@@ -208,8 +208,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 					Hook: &github.Hook{
 						ID:     internal.Int64(123),
 						Events: opts.Events,
-						Config: map[string]any{
-							"url": opts.Config.URL,
+						Config: &github.HookConfig{
+							URL: &opts.Config.URL,
 						},
 					},
 					secret: opts.Config.Secret,
@@ -364,7 +364,7 @@ func (s *TestServer) SendEvent(t *testing.T, event GithubEvent, payload []byte) 
 	t.Helper()
 
 	require.True(t, s.HasWebhook())
-	SendEventRequest(t, event, s.testdb.webhook.Config["url"].(string), s.testdb.webhook.secret, payload)
+	SendEventRequest(t, event, *s.testdb.webhook.Config.URL, s.testdb.webhook.secret, payload)
 }
 
 // GetStatus retrieves a commit status event off the queue, timing out after 10

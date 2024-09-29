@@ -1,6 +1,6 @@
 package github
 
-import "github.com/google/go-github/v55/github"
+import "github.com/google/go-github/v65/github"
 
 type Installation struct {
 	*github.Installation

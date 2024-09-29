@@ -32,7 +32,7 @@ func TestClient_GetUser(t *testing.T) {
 func TestClient_GetRepository(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
 		fmt.Fprint(w, `{"path_with_namespace":"acme/terraform","default_branch":"master"}`)
 	})
@@ -61,7 +61,7 @@ func TestClient_ListRepositories(t *testing.T) {
 func TestClient_GetRepoTarball(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/repository/archive.tar.gz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/repository/archive.tar.gz", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
 		w.Write(testutils.ReadFile(t, "../testdata/gitlab.tar.gz"))
 	})
@@ -82,7 +82,7 @@ func TestClient_GetRepoTarball(t *testing.T) {
 func TestClient_CreateWebhook(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/hooks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/hooks", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "POST", r.Method)
 		fmt.Fprint(w, `{"id":1}`)
 	})
@@ -97,7 +97,7 @@ func TestClient_CreateWebhook(t *testing.T) {
 func TestClient_UpdateWebhook(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/hooks/1", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "PUT", r.Method)
 		fmt.Fprint(w, `{"id":1}`)
 	})
@@ -111,7 +111,7 @@ func TestClient_UpdateWebhook(t *testing.T) {
 func TestClient_GetWebhook(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/hooks/1", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
 		fmt.Fprint(w, `{"id":1}`)
 	})
@@ -126,7 +126,7 @@ func TestClient_GetWebhook(t *testing.T) {
 func TestClient_DeleteWebhook(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/hooks/1", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "DELETE", r.Method)
 		fmt.Fprint(w, `{"id":1}`)
 	})
@@ -141,7 +141,7 @@ func TestClient_DeleteWebhook(t *testing.T) {
 func TestClient_ListPullRequestFiles(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/merge_requests/1/diffs", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/merge_requests/1/diffs", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
 		fmt.Fprint(w, `[{"old_path":"main.tf","new_path":"main.tf"},{"old_path":"dev.tf","new_path":"prod.tf"}]`)
 	})
@@ -154,7 +154,7 @@ func TestClient_ListPullRequestFiles(t *testing.T) {
 func TestClient_GetCommit(t *testing.T) {
 	mux, client := setup(t)
 
-	mux.HandleFunc("/api/v4/projects/acme/terraform/repository/commits/abc123", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v4/projects/acme%2Fterraform/repository/commits/abc123", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET", r.Method)
 		fmt.Fprint(w, `{"id":"abc123","web_url":"https://gitlab.com/commits/abc123"}`)
 	})

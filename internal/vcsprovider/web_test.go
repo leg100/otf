@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	gogithub "github.com/google/go-github/v55/github"
+	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"

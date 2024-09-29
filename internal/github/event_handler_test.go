@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v55/github"
+	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"

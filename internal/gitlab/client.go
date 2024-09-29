@@ -291,7 +291,7 @@ func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int
 }
 
 func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, error) {
-	commit, _, err := g.client.Commits.GetCommit(repo, ref)
+	commit, _, err := g.client.Commits.GetCommit(repo, ref, &gitlab.GetCommitOptions{})
 	if err != nil {
 		return vcs.Commit{}, err
 	}

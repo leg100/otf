@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/go-github/v55/github"
+	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal/vcs"
 )
 

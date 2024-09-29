@@ -10,7 +10,7 @@ import (
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
-	gogithub "github.com/google/go-github/v55/github"
+	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
