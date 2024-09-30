@@ -3,15 +3,15 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
-	_, err := db.Conn(ctx).UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
+	err := db.Conn(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
 		WorkspaceID: sql.String(workspaceID),
 		TeamID:      sql.String(teamID),
 		Role:        sql.String(role.String()),

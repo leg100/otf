@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -100,7 +100,7 @@ func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID strin
 	}
 
 	var v *Variable
-	err = s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+	err = s.db.Lock(ctx, "variables", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		workspaceVars, err := s.ListWorkspaceVariables(ctx, workspaceID)
 		if err != nil {
 			return err
@@ -132,7 +132,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID string
 		before  *WorkspaceVariable
 		after   WorkspaceVariable
 	)
-	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		before, err = s.db.getWorkspaceVariable(ctx, variableID)
 		if err != nil {
 			return err
@@ -207,7 +207,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID string
 		subject internal.Subject
 		wv      *WorkspaceVariable
 	)
-	err := s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
 		wv, err = s.db.deleteWorkspaceVariable(ctx, variableID)
 		if err != nil {
 			return err
@@ -240,7 +240,7 @@ func (s *Service) createVariableSet(ctx context.Context, organization string, op
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		if err := s.db.createVariableSet(ctx, set); err != nil {
 			return err
 		}
@@ -265,7 +265,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID string, opts Upda
 		before  *VariableSet
 		after   VariableSet
 	)
-	err := s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		before, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
 			return err
@@ -391,7 +391,7 @@ func (s *Service) createVariableSetVariable(ctx context.Context, setID string, o
 		set     *VariableSet
 		v       *Variable
 	)
-	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		set, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
 			return err
@@ -434,7 +434,7 @@ func (s *Service) updateVariableSetVariable(ctx context.Context, variableID stri
 		before  Variable
 		after   *Variable
 	)
-	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		set, err = s.db.getVariableSetByVariableID(ctx, variableID)
 		if err != nil {
 			return err

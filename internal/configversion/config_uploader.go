@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type cvUploader struct {
-	q  pggen.Querier
+	q  *sqlc.Queries
 	id string
 }
 
-func newConfigUploader(q pggen.Querier, id string) *cvUploader {
+func newConfigUploader(q *sqlc.Queries, id string) *cvUploader {
 	return &cvUploader{
 		q:  q,
 		id: id,

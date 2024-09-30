@@ -19,7 +19,7 @@ WHERE agent_id = $1
 RETURNING agent_id, name, version, max_jobs, ip_address, last_ping_at, last_status_at, status, agent_pool_id
 `
 
-func (q *Queries) DeleteAgent(ctx context.Context, agentID string) (Agent, error) {
+func (q *Queries) DeleteAgent(ctx context.Context, agentID pgtype.Text) (Agent, error) {
 	row := q.db.QueryRow(ctx, deleteAgent, agentID)
 	var i Agent
 	err := row.Scan(
@@ -51,19 +51,19 @@ GROUP BY a.agent_id
 `
 
 type FindAgentByIDRow struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindAgentByID(ctx context.Context, agentID string) (FindAgentByIDRow, error) {
+func (q *Queries) FindAgentByID(ctx context.Context, agentID pgtype.Text) (FindAgentByIDRow, error) {
 	row := q.db.QueryRow(ctx, findAgentByID, agentID)
 	var i FindAgentByIDRow
 	err := row.Scan(
@@ -95,19 +95,19 @@ FOR UPDATE OF a
 `
 
 type FindAgentByIDForUpdateRow struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindAgentByIDForUpdate(ctx context.Context, agentID string) (FindAgentByIDForUpdateRow, error) {
+func (q *Queries) FindAgentByIDForUpdate(ctx context.Context, agentID pgtype.Text) (FindAgentByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findAgentByIDForUpdate, agentID)
 	var i FindAgentByIDForUpdateRow
 	err := row.Scan(
@@ -139,14 +139,14 @@ ORDER BY a.last_ping_at DESC
 `
 
 type FindAgentsRow struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 	CurrentJobs  int64
 }
@@ -198,19 +198,19 @@ ORDER BY last_ping_at DESC
 `
 
 type FindAgentsByOrganizationRow struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindAgentsByOrganization(ctx context.Context, organizationName string) ([]FindAgentsByOrganizationRow, error) {
+func (q *Queries) FindAgentsByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindAgentsByOrganizationRow, error) {
 	rows, err := q.db.Query(ctx, findAgentsByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -257,19 +257,19 @@ ORDER BY last_ping_at DESC
 `
 
 type FindAgentsByPoolIDRow struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindAgentsByPoolID(ctx context.Context, agentPoolID string) ([]FindAgentsByPoolIDRow, error) {
+func (q *Queries) FindAgentsByPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]FindAgentsByPoolIDRow, error) {
 	rows, err := q.db.Query(ctx, findAgentsByPoolID, agentPoolID)
 	if err != nil {
 		return nil, err
@@ -315,14 +315,14 @@ ORDER BY last_ping_at DESC
 `
 
 type FindServerAgentsRow struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 	CurrentJobs  int64
 }
@@ -383,14 +383,14 @@ INSERT INTO agents (
 `
 
 type InsertAgentParams struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 }
 
@@ -419,10 +419,10 @@ RETURNING agent_id, name, version, max_jobs, ip_address, last_ping_at, last_stat
 `
 
 type UpdateAgentParams struct {
-	Status       string
+	Status       pgtype.Text
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	AgentID      string
+	AgentID      pgtype.Text
 }
 
 func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent, error) {

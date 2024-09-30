@@ -3,9 +3,9 @@ package github
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -47,7 +47,7 @@ func (r AppRow) convert() *App {
 }
 
 func (db *pgdb) create(ctx context.Context, app *App) error {
-	_, err := db.Conn(ctx).InsertGithubApp(ctx, pggen.InsertGithubAppParams{
+	_, err := db.Conn(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
 		GithubAppID:   pgtype.Int8{Int: app.ID, Status: pgtype.Present},
 		WebhookSecret: sql.String(app.WebhookSecret),
 		PrivateKey:    sql.String(app.PrivateKey),
@@ -66,7 +66,7 @@ func (db *pgdb) get(ctx context.Context) (*App, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context) error {
-	return db.Lock(ctx, "github_apps", func(ctx context.Context, q pggen.Querier) error {
+	return db.Lock(ctx, "github_apps", func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := db.Conn(ctx).FindGithubApp(ctx)
 		if err != nil {
 			return sql.Error(err)

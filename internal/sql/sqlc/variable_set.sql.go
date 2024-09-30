@@ -8,7 +8,7 @@ package sqlc
 import (
 	"context"
 
-	"internal/variable/variable"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteVariableSetByID = `-- name: DeleteVariableSetByID :one
@@ -18,7 +18,7 @@ WHERE variable_set_id = $1
 RETURNING variable_set_id, global, name, description, organization_name
 `
 
-func (q *Queries) DeleteVariableSetByID(ctx context.Context, variableSetID string) (VariableSet, error) {
+func (q *Queries) DeleteVariableSetByID(ctx context.Context, variableSetID pgtype.Text) (VariableSet, error) {
 	row := q.db.QueryRow(ctx, deleteVariableSetByID, variableSetID)
 	var i VariableSet
 	err := row.Scan(
@@ -40,8 +40,8 @@ RETURNING variable_set_id, variable_id
 `
 
 type DeleteVariableSetVariableParams struct {
-	VariableSetID string
-	VariableID    string
+	VariableSetID pgtype.Text
+	VariableID    pgtype.Text
 }
 
 func (q *Queries) DeleteVariableSetVariable(ctx context.Context, arg DeleteVariableSetVariableParams) (VariableSetVariable, error) {
@@ -60,8 +60,8 @@ RETURNING variable_set_id, workspace_id
 `
 
 type DeleteVariableSetWorkspaceParams struct {
-	VariableSetID string
-	WorkspaceID   string
+	VariableSetID pgtype.Text
+	WorkspaceID   pgtype.Text
 }
 
 func (q *Queries) DeleteVariableSetWorkspace(ctx context.Context, arg DeleteVariableSetWorkspaceParams) (VariableSetWorkspace, error) {
@@ -77,7 +77,7 @@ FROM variable_set_workspaces
 WHERE variable_set_id = $1
 `
 
-func (q *Queries) DeleteVariableSetWorkspaces(ctx context.Context, variableSetID string) error {
+func (q *Queries) DeleteVariableSetWorkspaces(ctx context.Context, variableSetID pgtype.Text) error {
 	_, err := q.db.Exec(ctx, deleteVariableSetWorkspaces, variableSetID)
 	return err
 }
@@ -93,16 +93,16 @@ GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetBySetIDRow struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
-	Variables        []variable.VariableRow
-	WorkspaceIds     []string
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
+	Variables        []Variable
+	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetBySetID(ctx context.Context, variableSetID string) (FindVariableSetBySetIDRow, error) {
+func (q *Queries) FindVariableSetBySetID(ctx context.Context, variableSetID pgtype.Text) (FindVariableSetBySetIDRow, error) {
 	row := q.db.QueryRow(ctx, findVariableSetBySetID, variableSetID)
 	var i FindVariableSetBySetIDRow
 	err := row.Scan(
@@ -130,16 +130,16 @@ GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetByVariableIDRow struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
-	Variables        []variable.VariableRow
-	WorkspaceIds     []string
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
+	Variables        []Variable
+	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetByVariableID(ctx context.Context, variableID string) (FindVariableSetByVariableIDRow, error) {
+func (q *Queries) FindVariableSetByVariableID(ctx context.Context, variableID pgtype.Text) (FindVariableSetByVariableIDRow, error) {
 	row := q.db.QueryRow(ctx, findVariableSetByVariableID, variableID)
 	var i FindVariableSetByVariableIDRow
 	err := row.Scan(
@@ -168,16 +168,16 @@ FOR UPDATE OF vs
 `
 
 type FindVariableSetForUpdateRow struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
-	Variables        []variable.VariableRow
-	WorkspaceIds     []string
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
+	Variables        []Variable
+	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetForUpdate(ctx context.Context, variableSetID string) (FindVariableSetForUpdateRow, error) {
+func (q *Queries) FindVariableSetForUpdate(ctx context.Context, variableSetID pgtype.Text) (FindVariableSetForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findVariableSetForUpdate, variableSetID)
 	var i FindVariableSetForUpdateRow
 	err := row.Scan(
@@ -205,16 +205,16 @@ GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetsByOrganizationRow struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
-	Variables        []variable.VariableRow
-	WorkspaceIds     []string
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
+	Variables        []Variable
+	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, organizationName string) ([]FindVariableSetsByOrganizationRow, error) {
+func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindVariableSetsByOrganizationRow, error) {
 	rows, err := q.db.Query(ctx, findVariableSetsByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -266,16 +266,16 @@ GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetsByWorkspaceRow struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
-	Variables        []variable.VariableRow
-	WorkspaceIds     []string
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
+	Variables        []Variable
+	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetsByWorkspace(ctx context.Context, workspaceID string) ([]FindVariableSetsByWorkspaceRow, error) {
+func (q *Queries) FindVariableSetsByWorkspace(ctx context.Context, workspaceID pgtype.Text) ([]FindVariableSetsByWorkspaceRow, error) {
 	rows, err := q.db.Query(ctx, findVariableSetsByWorkspace, workspaceID)
 	if err != nil {
 		return nil, err
@@ -320,11 +320,11 @@ INSERT INTO variable_sets (
 `
 
 type InsertVariableSetParams struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 func (q *Queries) InsertVariableSet(ctx context.Context, arg InsertVariableSetParams) error {
@@ -349,8 +349,8 @@ INSERT INTO variable_set_variables (
 `
 
 type InsertVariableSetVariableParams struct {
-	VariableSetID string
-	VariableID    string
+	VariableSetID pgtype.Text
+	VariableID    pgtype.Text
 }
 
 func (q *Queries) InsertVariableSetVariable(ctx context.Context, arg InsertVariableSetVariableParams) error {
@@ -369,8 +369,8 @@ INSERT INTO variable_set_workspaces (
 `
 
 type InsertVariableSetWorkspaceParams struct {
-	VariableSetID string
-	WorkspaceID   string
+	VariableSetID pgtype.Text
+	WorkspaceID   pgtype.Text
 }
 
 func (q *Queries) InsertVariableSetWorkspace(ctx context.Context, arg InsertVariableSetWorkspaceParams) error {
@@ -389,20 +389,20 @@ RETURNING variable_set_id
 `
 
 type UpdateVariableSetByIDParams struct {
-	Global        bool
-	Name          string
-	Description   string
-	VariableSetID string
+	Global        pgtype.Bool
+	Name          pgtype.Text
+	Description   pgtype.Text
+	VariableSetID pgtype.Text
 }
 
-func (q *Queries) UpdateVariableSetByID(ctx context.Context, arg UpdateVariableSetByIDParams) (string, error) {
+func (q *Queries) UpdateVariableSetByID(ctx context.Context, arg UpdateVariableSetByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateVariableSetByID,
 		arg.Global,
 		arg.Name,
 		arg.Description,
 		arg.VariableSetID,
 	)
-	var variable_set_id string
+	var variable_set_id pgtype.Text
 	err := row.Scan(&variable_set_id)
 	return variable_set_id, err
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -82,7 +82,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// github app vcs provider does not require a repohook to be created
 		if provider.GithubApp == nil {
 			_, err := s.repohooks.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
@@ -106,7 +106,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 
 // Disconnect resource from repo
 func (s *Service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		if err := s.db.deleteConnection(ctx, opts); err != nil {
 			return err
 		}

@@ -3,12 +3,12 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -35,7 +35,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	q.FindTagsBatch(batch, pggen.FindTagsParams{
+	q.FindTagsBatch(batch, sqlc.FindTagsParams{
 		OrganizationName: sql.String(organization),
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
@@ -61,7 +61,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []string) error {
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		for _, tid := range tagIDs {
 			_, err := q.DeleteTag(ctx, sql.String(tid), sql.String(organization))
 			if err != nil {
@@ -74,7 +74,7 @@ func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []st
 }
 
 func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error {
-	_, err := db.Conn(ctx).InsertTag(ctx, pggen.InsertTagParams{
+	_, err := db.Conn(ctx).InsertTag(ctx, sqlc.InsertTagParams{
 		TagID:            sql.String(id),
 		Name:             sql.String(name),
 		OrganizationName: sql.String(organization),
@@ -121,7 +121,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	q.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
+	q.FindWorkspaceTagsBatch(batch, sqlc.FindWorkspaceTagsParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),

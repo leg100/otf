@@ -6,7 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type db struct {
@@ -14,7 +14,7 @@ type db struct {
 }
 
 func (db *db) updateLatestVersion(ctx context.Context, v string) error {
-	return db.Lock(ctx, "latest_terraform_version", func(ctx context.Context, q pggen.Querier) error {
+	return db.Lock(ctx, "latest_terraform_version", func(ctx context.Context, q *sqlc.Queries) error {
 		rows, err := q.FindLatestTerraformVersion(ctx)
 		if err != nil {
 			return err

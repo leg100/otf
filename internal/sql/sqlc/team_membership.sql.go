@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteTeamMembership = `-- name: DeleteTeamMembership :many
@@ -25,19 +27,19 @@ RETURNING tm.username
 `
 
 type DeleteTeamMembershipParams struct {
-	TeamID    string
-	Usernames []string
+	TeamID    pgtype.Text
+	Usernames []pgtype.Text
 }
 
-func (q *Queries) DeleteTeamMembership(ctx context.Context, arg DeleteTeamMembershipParams) ([]string, error) {
+func (q *Queries) DeleteTeamMembership(ctx context.Context, arg DeleteTeamMembershipParams) ([]pgtype.Text, error) {
 	rows, err := q.db.Query(ctx, deleteTeamMembership, arg.TeamID, arg.Usernames)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []pgtype.Text
 	for rows.Next() {
-		var username string
+		var username pgtype.Text
 		if err := rows.Scan(&username); err != nil {
 			return nil, err
 		}
@@ -62,19 +64,19 @@ RETURNING username
 `
 
 type InsertTeamMembershipParams struct {
-	TeamID    string
-	Usernames []string
+	TeamID    pgtype.Text
+	Usernames []pgtype.Text
 }
 
-func (q *Queries) InsertTeamMembership(ctx context.Context, arg InsertTeamMembershipParams) ([]string, error) {
+func (q *Queries) InsertTeamMembership(ctx context.Context, arg InsertTeamMembershipParams) ([]pgtype.Text, error) {
 	rows, err := q.db.Query(ctx, insertTeamMembership, arg.TeamID, arg.Usernames)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []pgtype.Text
 	for rows.Next() {
-		var username string
+		var username pgtype.Text
 		if err := rows.Scan(&username); err != nil {
 			return nil, err
 		}

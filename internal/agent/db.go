@@ -2,11 +2,12 @@ package agent
 
 import (
 	"context"
+	"net/netip"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // poolresult is the result of a database query for an agent pool
@@ -121,8 +122,8 @@ type db struct {
 // pools
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := db.Conn(ctx).InsertAgentPool(ctx, pggen.InsertAgentPoolParams{
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		_, err := db.Conn(ctx).InsertAgentPool(ctx, sqlc.InsertAgentPoolParams{
 			AgentPoolID:        sql.String(pool.ID),
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
@@ -147,7 +148,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 }
 
 func (db *db) updatePool(ctx context.Context, pool *Pool) error {
-	_, err := db.Conn(ctx).UpdateAgentPool(ctx, pggen.UpdateAgentPoolParams{
+	_, err := db.Conn(ctx).UpdateAgentPool(ctx, sqlc.UpdateAgentPoolParams{
 		PoolID:             sql.String(pool.ID),
 		Name:               sql.String(pool.Name),
 		OrganizationScoped: sql.Bool(pool.OrganizationScoped),
@@ -203,7 +204,7 @@ func (db *db) listPools(ctx context.Context) ([]*Pool, error) {
 }
 
 func (db *db) listPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
-	rows, err := db.Conn(ctx).FindAgentPoolsByOrganization(ctx, pggen.FindAgentPoolsByOrganizationParams{
+	rows, err := db.Conn(ctx).FindAgentPoolsByOrganization(ctx, sqlc.FindAgentPoolsByOrganizationParams{
 		OrganizationName:     sql.String(organization),
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),
 		AllowedWorkspaceName: sql.StringPtr(opts.AllowedWorkspaceName),
@@ -230,12 +231,12 @@ func (db *db) deleteAgentPool(ctx context.Context, poolID string) error {
 // agents
 
 func (db *db) createAgent(ctx context.Context, agent *Agent) error {
-	_, err := db.Conn(ctx).InsertAgent(ctx, pggen.InsertAgentParams{
+	_, err := db.Conn(ctx).InsertAgent(ctx, sqlc.InsertAgentParams{
 		AgentID:      sql.String(agent.ID),
 		Name:         sql.String(agent.Name),
 		Version:      sql.String(agent.Version),
 		MaxJobs:      sql.Int4(agent.MaxJobs),
-		IPAddress:    sql.Inet(agent.IPAddress),
+		IPAddress:    netip.PrefixFrom(agent.IPAddress, 32),
 		Status:       sql.String(string(agent.Status)),
 		LastPingAt:   sql.Timestamptz(agent.LastPingAt),
 		LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
@@ -245,7 +246,7 @@ func (db *db) createAgent(ctx context.Context, agent *Agent) error {
 }
 
 func (db *db) updateAgent(ctx context.Context, agentID string, fn func(*Agent) error) error {
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := q.FindAgentByIDForUpdate(ctx, sql.String(agentID))
 		if err != nil {
 			return err
@@ -254,7 +255,7 @@ func (db *db) updateAgent(ctx context.Context, agentID string, fn func(*Agent) e
 		if err := fn(agent); err != nil {
 			return err
 		}
-		_, err = q.UpdateAgent(ctx, pggen.UpdateAgentParams{
+		_, err = q.UpdateAgent(ctx, sqlc.UpdateAgentParams{
 			AgentID:      sql.String(agent.ID),
 			Status:       sql.String(string(agent.Status)),
 			LastPingAt:   sql.Timestamptz(agent.LastPingAt),
@@ -330,7 +331,7 @@ func (db *db) deleteAgent(ctx context.Context, agentID string) error {
 }
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
-	_, err := db.Conn(ctx).InsertJob(ctx, pggen.InsertJobParams{
+	_, err := db.Conn(ctx).InsertJob(ctx, sqlc.InsertJobParams{
 		RunID:  sql.String(job.Spec.RunID),
 		Phase:  sql.String(string(job.Spec.Phase)),
 		Status: sql.String(string(job.Status)),
@@ -379,7 +380,7 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 
 func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) (*Job, error) {
 	var job *Job
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := q.FindJobForUpdate(ctx, sql.String(spec.RunID), sql.String(string(spec.Phase)))
 		if err != nil {
 			return err
@@ -388,7 +389,7 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 		if err := fn(job); err != nil {
 			return err
 		}
-		_, err = q.UpdateJob(ctx, pggen.UpdateJobParams{
+		_, err = q.UpdateJob(ctx, sqlc.UpdateJobParams{
 			Status:   sql.String(string(job.Status)),
 			Signaled: sql.BoolPtr(job.Signaled),
 			AgentID:  sql.StringPtr(job.AgentID),
@@ -409,7 +410,7 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 // agent tokens
 
 func (db *db) createAgentToken(ctx context.Context, token *agentToken) error {
-	_, err := db.Conn(ctx).InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
+	_, err := db.Conn(ctx).InsertAgentToken(ctx, sqlc.InsertAgentTokenParams{
 		AgentTokenID: sql.String(token.ID),
 		Description:  sql.String(token.Description),
 		AgentPoolID:  sql.String(token.AgentPoolID),

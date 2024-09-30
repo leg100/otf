@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	tern "github.com/jackc/tern/v2/migrate"
 )
 

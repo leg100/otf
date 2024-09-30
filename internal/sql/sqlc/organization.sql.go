@@ -11,19 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countOrganizations = `-- name: CountOrganizations :one
-SELECT count(*)
-FROM organizations
-WHERE name LIKE ANY($1)
-`
-
-func (q *Queries) CountOrganizations(ctx context.Context, names string) (int64, error) {
-	row := q.db.QueryRow(ctx, countOrganizations, names)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const deleteOrganizationByName = `-- name: DeleteOrganizationByName :one
 DELETE
 FROM organizations
@@ -31,9 +18,9 @@ WHERE name = $1
 RETURNING organization_id
 `
 
-func (q *Queries) DeleteOrganizationByName(ctx context.Context, name string) (string, error) {
+func (q *Queries) DeleteOrganizationByName(ctx context.Context, name pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteOrganizationByName, name)
-	var organization_id string
+	var organization_id pgtype.Text
 	err := row.Scan(&organization_id)
 	return organization_id, err
 }
@@ -42,7 +29,7 @@ const findOrganizationByID = `-- name: FindOrganizationByID :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE organization_id = $1
 `
 
-func (q *Queries) FindOrganizationByID(ctx context.Context, organizationID string) (Organization, error) {
+func (q *Queries) FindOrganizationByID(ctx context.Context, organizationID pgtype.Text) (Organization, error) {
 	row := q.db.QueryRow(ctx, findOrganizationByID, organizationID)
 	var i Organization
 	err := row.Scan(
@@ -64,7 +51,7 @@ const findOrganizationByName = `-- name: FindOrganizationByName :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE name = $1
 `
 
-func (q *Queries) FindOrganizationByName(ctx context.Context, name string) (Organization, error) {
+func (q *Queries) FindOrganizationByName(ctx context.Context, name pgtype.Text) (Organization, error) {
 	row := q.db.QueryRow(ctx, findOrganizationByName, name)
 	var i Organization
 	err := row.Scan(
@@ -89,7 +76,7 @@ WHERE name = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, name string) (Organization, error) {
+func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, name pgtype.Text) (Organization, error) {
 	row := q.db.QueryRow(ctx, findOrganizationByNameForUpdate, name)
 	var i Organization
 	err := row.Scan(
@@ -113,56 +100,11 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
+func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, findOrganizationNameByWorkspaceID, workspaceID)
-	var organization_name string
+	var organization_name pgtype.Text
 	err := row.Scan(&organization_name)
 	return organization_name, err
-}
-
-const findOrganizations = `-- name: FindOrganizations :many
-SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled
-FROM organizations
-WHERE name LIKE ANY($1)
-ORDER BY updated_at DESC
-LIMIT $3 OFFSET $2
-`
-
-type FindOrganizationsParams struct {
-	Names  string
-	Offset int32
-	Limit  int32
-}
-
-func (q *Queries) FindOrganizations(ctx context.Context, arg FindOrganizationsParams) ([]Organization, error) {
-	rows, err := q.db.Query(ctx, findOrganizations, arg.Names, arg.Offset, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Organization
-	for rows.Next() {
-		var i Organization
-		if err := rows.Scan(
-			&i.OrganizationID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Name,
-			&i.SessionRemember,
-			&i.SessionTimeout,
-			&i.Email,
-			&i.CollaboratorAuthPolicy,
-			&i.AllowForceDeleteWorkspaces,
-			&i.CostEstimationEnabled,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const insertOrganization = `-- name: InsertOrganization :exec
@@ -192,16 +134,16 @@ INSERT INTO organizations (
 `
 
 type InsertOrganizationParams struct {
-	ID                         string
+	ID                         pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       string
+	Name                       pgtype.Text
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
-	CostEstimationEnabled      bool
+	CostEstimationEnabled      pgtype.Bool
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
-	AllowForceDeleteWorkspaces bool
+	AllowForceDeleteWorkspaces pgtype.Bool
 }
 
 func (q *Queries) InsertOrganization(ctx context.Context, arg InsertOrganizationParams) error {
@@ -236,18 +178,18 @@ RETURNING organization_id
 `
 
 type UpdateOrganizationByNameParams struct {
-	NewName                    string
+	NewName                    pgtype.Text
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
-	CostEstimationEnabled      bool
+	CostEstimationEnabled      pgtype.Bool
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
-	AllowForceDeleteWorkspaces bool
+	AllowForceDeleteWorkspaces pgtype.Bool
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       string
+	Name                       pgtype.Text
 }
 
-func (q *Queries) UpdateOrganizationByName(ctx context.Context, arg UpdateOrganizationByNameParams) (string, error) {
+func (q *Queries) UpdateOrganizationByName(ctx context.Context, arg UpdateOrganizationByNameParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateOrganizationByName,
 		arg.NewName,
 		arg.Email,
@@ -259,7 +201,7 @@ func (q *Queries) UpdateOrganizationByName(ctx context.Context, arg UpdateOrgani
 		arg.UpdatedAt,
 		arg.Name,
 	)
-	var organization_id string
+	var organization_id pgtype.Text
 	err := row.Scan(&organization_id)
 	return organization_id, err
 }

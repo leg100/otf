@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteWorkspacePermissionByID = `-- name: DeleteWorkspacePermissionByID :exec
@@ -17,8 +19,8 @@ AND team_id = $2
 `
 
 type DeleteWorkspacePermissionByIDParams struct {
-	WorkspaceID string
-	TeamID      string
+	WorkspaceID pgtype.Text
+	TeamID      pgtype.Text
 }
 
 func (q *Queries) DeleteWorkspacePermissionByID(ctx context.Context, arg DeleteWorkspacePermissionByIDParams) error {
@@ -32,7 +34,7 @@ FROM workspace_permissions
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID string) ([]WorkspacePermission, error) {
+func (q *Queries) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]WorkspacePermission, error) {
 	rows, err := q.db.Query(ctx, findWorkspacePermissionsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
@@ -65,9 +67,9 @@ INSERT INTO workspace_permissions (
 `
 
 type UpsertWorkspacePermissionParams struct {
-	WorkspaceID string
-	TeamID      string
-	Role        string
+	WorkspaceID pgtype.Text
+	TeamID      pgtype.Text
+	Role        pgtype.Text
 }
 
 func (q *Queries) UpsertWorkspacePermission(ctx context.Context, arg UpsertWorkspacePermissionParams) error {

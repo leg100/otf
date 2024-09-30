@@ -3,10 +3,10 @@ package vcsprovider
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -19,21 +19,21 @@ type (
 	}
 	// pgrow represents a database row for a vcs provider
 	pgrow struct {
-		VCSProviderID    pgtype.Text              `json:"vcs_provider_id"`
-		Token            pgtype.Text              `json:"token"`
-		CreatedAt        pgtype.Timestamptz       `json:"created_at"`
-		Name             pgtype.Text              `json:"name"`
-		VCSKind          pgtype.Text              `json:"vcs_kind"`
-		OrganizationName pgtype.Text              `json:"organization_name"`
-		GithubAppID      pgtype.Int8              `json:"github_app_id"`
-		GithubApp        *pggen.GithubApps        `json:"github_app"`
-		GithubAppInstall *pggen.GithubAppInstalls `json:"github_app_install"`
+		VCSProviderID    pgtype.Text            `json:"vcs_provider_id"`
+		Token            pgtype.Text            `json:"token"`
+		CreatedAt        pgtype.Timestamptz     `json:"created_at"`
+		Name             pgtype.Text            `json:"name"`
+		VCSKind          pgtype.Text            `json:"vcs_kind"`
+		OrganizationName pgtype.Text            `json:"organization_name"`
+		GithubAppID      pgtype.Int8            `json:"github_app_id"`
+		GithubApp        *sqlc.GithubApp        `json:"github_app"`
+		GithubAppInstall *sqlc.GithubAppInstall `json:"github_app_install"`
 	}
 )
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		params := pggen.InsertVCSProviderParams{
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		params := sqlc.InsertVCSProviderParams{
 			VCSProviderID:    sql.String(provider.ID),
 			Name:             sql.String(provider.Name),
 			VCSKind:          sql.String(string(provider.Kind)),
@@ -42,18 +42,15 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 			Token:            sql.StringPtr(provider.Token),
 		}
 		if provider.GithubApp != nil {
-			params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Present}
-		} else {
-			params.GithubAppID = pgtype.Int8{Status: pgtype.Null}
+			params.GithubAppID = pgtype.Int8{Int64: provider.GithubApp.AppCredentials.ID, Valid: true}
 		}
-		_, err := db.Conn(ctx).InsertVCSProvider(ctx, params)
-		if err != nil {
+		if err := db.Conn(ctx).InsertVCSProvider(ctx, params); err != nil {
 			return err
 		}
 		if provider.GithubApp != nil {
-			_, err := db.Conn(ctx).InsertGithubAppInstall(ctx, pggen.InsertGithubAppInstallParams{
-				GithubAppID:   pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Present},
-				InstallID:     pgtype.Int8{Int: provider.GithubApp.ID, Status: pgtype.Present},
+			err := db.Conn(ctx).InsertGithubAppInstall(ctx, sqlc.InsertGithubAppInstallParams{
+				GithubAppID:   pgtype.Int8{Int64: provider.GithubApp.AppCredentials.ID, Valid: true},
+				InstallID:     pgtype.Int8{Int64: provider.GithubApp.ID, Valid: true},
 				Username:      sql.StringPtr(provider.GithubApp.User),
 				Organization:  sql.StringPtr(provider.GithubApp.Organization),
 				VCSProviderID: sql.String(provider.ID),
@@ -69,7 +66,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 
 func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) error) error {
 	var provider *VCSProvider
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		row, err := q.FindVCSProviderForUpdate(ctx, sql.String(id))
 		if err != nil {
 			return sql.Error(err)
@@ -81,7 +78,7 @@ func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) err
 		if err := fn(provider); err != nil {
 			return err
 		}
-		_, err = q.UpdateVCSProvider(ctx, pggen.UpdateVCSProviderParams{
+		_, err = q.UpdateVCSProvider(ctx, sqlc.UpdateVCSProviderParams{
 			VCSProviderID: sql.String(id),
 			Token:         sql.StringPtr(provider.Token),
 			Name:          sql.String(provider.Name),
@@ -136,7 +133,7 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 
 func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
 	rows, err := db.Conn(ctx).FindVCSProvidersByGithubAppInstallID(ctx,
-		pgtype.Int8{Int: installID, Status: pgtype.Present},
+		installID,
 	)
 	if err != nil {
 		return nil, sql.Error(err)

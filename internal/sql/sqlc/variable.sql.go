@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteVariableByID = `-- name: DeleteVariableByID :one
@@ -16,7 +18,7 @@ WHERE variable_id = $1
 RETURNING variable_id, key, value, description, category, sensitive, hcl, version_id
 `
 
-func (q *Queries) DeleteVariableByID(ctx context.Context, variableID string) (Variable, error) {
+func (q *Queries) DeleteVariableByID(ctx context.Context, variableID pgtype.Text) (Variable, error) {
 	row := q.db.QueryRow(ctx, deleteVariableByID, variableID)
 	var i Variable
 	err := row.Scan(
@@ -38,7 +40,7 @@ FROM variables
 WHERE variable_id = $1
 `
 
-func (q *Queries) FindVariable(ctx context.Context, variableID string) (Variable, error) {
+func (q *Queries) FindVariable(ctx context.Context, variableID pgtype.Text) (Variable, error) {
 	row := q.db.QueryRow(ctx, findVariable, variableID)
 	var i Variable
 	err := row.Scan(
@@ -77,14 +79,14 @@ INSERT INTO variables (
 `
 
 type InsertVariableParams struct {
-	VariableID  string
-	Key         string
-	Value       string
-	Description string
-	Category    string
-	Sensitive   bool
-	Hcl         bool
-	VersionID   string
+	VariableID  pgtype.Text
+	Key         pgtype.Text
+	Value       pgtype.Text
+	Description pgtype.Text
+	Category    pgtype.Text
+	Sensitive   pgtype.Bool
+	Hcl         pgtype.Bool
+	VersionID   pgtype.Text
 }
 
 func (q *Queries) InsertVariable(ctx context.Context, arg InsertVariableParams) error {
@@ -116,17 +118,17 @@ RETURNING variable_id
 `
 
 type UpdateVariableByIDParams struct {
-	Key         string
-	Value       string
-	Description string
-	Category    string
-	Sensitive   bool
-	VersionID   string
-	Hcl         bool
-	VariableID  string
+	Key         pgtype.Text
+	Value       pgtype.Text
+	Description pgtype.Text
+	Category    pgtype.Text
+	Sensitive   pgtype.Bool
+	VersionID   pgtype.Text
+	Hcl         pgtype.Bool
+	VariableID  pgtype.Text
 }
 
-func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByIDParams) (string, error) {
+func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateVariableByID,
 		arg.Key,
 		arg.Value,
@@ -137,7 +139,7 @@ func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByID
 		arg.Hcl,
 		arg.VariableID,
 	)
-	var variable_id string
+	var variable_id pgtype.Text
 	err := row.Scan(&variable_id)
 	return variable_id, err
 }

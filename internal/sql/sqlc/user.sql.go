@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"internal/team/team"
 )
 
 const deleteUserByID = `-- name: DeleteUserByID :one
@@ -19,9 +18,9 @@ WHERE user_id = $1
 RETURNING user_id
 `
 
-func (q *Queries) DeleteUserByID(ctx context.Context, userID string) (string, error) {
+func (q *Queries) DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteUserByID, userID)
-	var user_id string
+	var user_id pgtype.Text
 	err := row.Scan(&user_id)
 	return user_id, err
 }
@@ -33,9 +32,9 @@ WHERE username = $1
 RETURNING user_id
 `
 
-func (q *Queries) DeleteUserByUsername(ctx context.Context, username string) (string, error) {
+func (q *Queries) DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteUserByUsername, username)
-	var user_id string
+	var user_id pgtype.Text
 	err := row.Scan(&user_id)
 	return user_id, err
 }
@@ -52,15 +51,15 @@ GROUP BY u.user_id
 `
 
 type FindUserByAuthenticationTokenIDRow struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
-	Teams     team.TeamRow
+	SiteAdmin pgtype.Bool
+	Teams     Team
 }
 
-func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenIDRow, error) {
+func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID pgtype.Text) (FindUserByAuthenticationTokenIDRow, error) {
 	row := q.db.QueryRow(ctx, findUserByAuthenticationTokenID, tokenID)
 	var i FindUserByAuthenticationTokenIDRow
 	err := row.Scan(
@@ -85,15 +84,15 @@ GROUP BY u.user_id
 `
 
 type FindUserByIDRow struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
-	Teams     team.TeamRow
+	SiteAdmin pgtype.Bool
+	Teams     Team
 }
 
-func (q *Queries) FindUserByID(ctx context.Context, userID string) (FindUserByIDRow, error) {
+func (q *Queries) FindUserByID(ctx context.Context, userID pgtype.Text) (FindUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, findUserByID, userID)
 	var i FindUserByIDRow
 	err := row.Scan(
@@ -118,15 +117,15 @@ GROUP BY u.user_id
 `
 
 type FindUserByUsernameRow struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
-	Teams     team.TeamRow
+	SiteAdmin pgtype.Bool
+	Teams     Team
 }
 
-func (q *Queries) FindUserByUsername(ctx context.Context, username string) (FindUserByUsernameRow, error) {
+func (q *Queries) FindUserByUsername(ctx context.Context, username pgtype.Text) (FindUserByUsernameRow, error) {
 	row := q.db.QueryRow(ctx, findUserByUsername, username)
 	var i FindUserByUsernameRow
 	err := row.Scan(
@@ -149,12 +148,12 @@ LEFT JOIN teams t USING (team_id)
 `
 
 type FindUsersRow struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
-	Teams     team.TeamRow
+	SiteAdmin pgtype.Bool
+	Teams     Team
 }
 
 func (q *Queries) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
@@ -195,15 +194,15 @@ GROUP BY u.user_id
 `
 
 type FindUsersByOrganizationRow struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
-	Teams     team.TeamRow
+	SiteAdmin pgtype.Bool
+	Teams     Team
 }
 
-func (q *Queries) FindUsersByOrganization(ctx context.Context, organizationName string) ([]FindUsersByOrganizationRow, error) {
+func (q *Queries) FindUsersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindUsersByOrganizationRow, error) {
 	rows, err := q.db.Query(ctx, findUsersByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -242,15 +241,15 @@ GROUP BY u.user_id
 `
 
 type FindUsersByTeamIDRow struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
-	Teams     team.TeamRow
+	SiteAdmin pgtype.Bool
+	Teams     Team
 }
 
-func (q *Queries) FindUsersByTeamID(ctx context.Context, teamID string) ([]FindUsersByTeamIDRow, error) {
+func (q *Queries) FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) ([]FindUsersByTeamIDRow, error) {
 	rows, err := q.db.Query(ctx, findUsersByTeamID, teamID)
 	if err != nil {
 		return nil, err
@@ -292,10 +291,10 @@ INSERT INTO users (
 `
 
 type InsertUserParams struct {
-	ID        string
+	ID        pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	Username  string
+	Username  pgtype.Text
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
@@ -315,15 +314,15 @@ WHERE site_admin = true
 RETURNING username
 `
 
-func (q *Queries) ResetUserSiteAdmins(ctx context.Context) ([]string, error) {
+func (q *Queries) ResetUserSiteAdmins(ctx context.Context) ([]pgtype.Text, error) {
 	rows, err := q.db.Query(ctx, resetUserSiteAdmins)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []pgtype.Text
 	for rows.Next() {
-		var username string
+		var username pgtype.Text
 		if err := rows.Scan(&username); err != nil {
 			return nil, err
 		}
@@ -342,15 +341,15 @@ WHERE username = ANY($1::text[])
 RETURNING username
 `
 
-func (q *Queries) UpdateUserSiteAdmins(ctx context.Context, usernames []string) ([]string, error) {
+func (q *Queries) UpdateUserSiteAdmins(ctx context.Context, usernames []pgtype.Text) ([]pgtype.Text, error) {
 	rows, err := q.db.Query(ctx, updateUserSiteAdmins, usernames)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []pgtype.Text
 	for rows.Next() {
-		var username string
+		var username pgtype.Text
 		if err := rows.Scan(&username); err != nil {
 			return nil, err
 		}

@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const insertApply = `-- name: InsertApply :exec
@@ -20,8 +22,8 @@ INSERT INTO applies (
 `
 
 type InsertApplyParams struct {
-	RunID  string
-	Status string
+	RunID  pgtype.Text
+	Status pgtype.Text
 }
 
 func (q *Queries) InsertApply(ctx context.Context, arg InsertApplyParams) error {
@@ -41,20 +43,20 @@ RETURNING run_id
 `
 
 type UpdateAppliedChangesByIDParams struct {
-	RunID        string
-	Additions    int32
-	Changes      int32
-	Destructions int32
+	RunID        pgtype.Text
+	Additions    pgtype.Int4
+	Changes      pgtype.Int4
+	Destructions pgtype.Int4
 }
 
-func (q *Queries) UpdateAppliedChangesByID(ctx context.Context, arg UpdateAppliedChangesByIDParams) (string, error) {
+func (q *Queries) UpdateAppliedChangesByID(ctx context.Context, arg UpdateAppliedChangesByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateAppliedChangesByID,
 		arg.RunID,
 		arg.Additions,
 		arg.Changes,
 		arg.Destructions,
 	)
-	var run_id string
+	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -67,13 +69,13 @@ RETURNING run_id
 `
 
 type UpdateApplyStatusByIDParams struct {
-	RunID  string
-	Status string
+	RunID  pgtype.Text
+	Status pgtype.Text
 }
 
-func (q *Queries) UpdateApplyStatusByID(ctx context.Context, arg UpdateApplyStatusByIDParams) (string, error) {
+func (q *Queries) UpdateApplyStatusByID(ctx context.Context, arg UpdateApplyStatusByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateApplyStatusByID, arg.RunID, arg.Status)
-	var run_id string
+	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err
 }

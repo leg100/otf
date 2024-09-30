@@ -9,8 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"internal/run/run"
-	"internal/sql/sqlc/sqlc"
 )
 
 const countRuns = `-- name: CountRuns :one
@@ -30,14 +28,14 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 `
 
 type CountRunsParams struct {
-	OrganizationNames string
-	WorkspaceIds      string
-	WorkspaceNames    string
-	Sources           string
-	Statuses          string
-	PlanOnly          bool
-	CommitSha         string
-	VcsUsername       string
+	OrganizationNames pgtype.Text
+	WorkspaceIds      pgtype.Text
+	WorkspaceNames    pgtype.Text
+	Sources           pgtype.Text
+	Statuses          pgtype.Text
+	PlanOnly          pgtype.Bool
+	CommitSha         pgtype.Text
+	VCSUsername       pgtype.Text
 }
 
 func (q *Queries) CountRuns(ctx context.Context, arg CountRunsParams) (int64, error) {
@@ -49,7 +47,7 @@ func (q *Queries) CountRuns(ctx context.Context, arg CountRunsParams) (int64, er
 		arg.Statuses,
 		arg.PlanOnly,
 		arg.CommitSha,
-		arg.VcsUsername,
+		arg.VCSUsername,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -63,9 +61,9 @@ WHERE run_id = $1
 RETURNING run_id
 `
 
-func (q *Queries) DeleteRunByID(ctx context.Context, runID string) (string, error) {
+func (q *Queries) DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteRunByID, runID)
-	var run_id string
+	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -101,58 +99,10 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (
-        SELECT array_agg(rst.status)::text[]
-        FROM run_status_timestamps rst
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM run_status_timestamps st
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_timestamps,
-    (
-        SELECT array_agg(rv.key)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_keys,
-    (
-        SELECT array_agg(rv.value)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_values,
+    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
+    array_agg(v.*)::"run_variables" AS run_variables,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM runs
 JOIN plans USING (run_id)
@@ -160,49 +110,50 @@ JOIN applies USING (run_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
+LEFT JOIN run_variables v USING (run_id)
+LEFT JOIN run_status_timestamps rst USING (run_id)
+LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
+LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE runs.run_id = $1
+GROUP BY runs.run_id
 `
 
 type FindRunByIDRow struct {
-	RunID                                string
+	RunID                                pgtype.Text
 	CreatedAt                            pgtype.Timestamptz
 	CancelSignaledAt                     pgtype.Timestamptz
-	IsDestroy                            bool
-	PositionInQueue                      int32
-	Refresh                              bool
-	RefreshOnly                          bool
-	Source                               string
-	Status                               string
-	PlanStatus                           string
-	ApplyStatus                          string
-	ReplaceAddrs                         []string
-	TargetAddrs                          []string
-	AutoApply                            bool
-	PlanResourceReport                   run.Report
-	PlanOutputReport                     run.Report
-	ApplyResourceReport                  run.Report
-	ConfigurationVersionID               string
-	WorkspaceID                          string
-	PlanOnly                             bool
+	IsDestroy                            pgtype.Bool
+	PositionInQueue                      pgtype.Int4
+	Refresh                              pgtype.Bool
+	RefreshOnly                          pgtype.Bool
+	Source                               pgtype.Text
+	Status                               pgtype.Text
+	PlanStatus                           pgtype.Text
+	ApplyStatus                          pgtype.Text
+	ReplaceAddrs                         []pgtype.Text
+	TargetAddrs                          []pgtype.Text
+	AutoApply                            pgtype.Bool
+	PlanResourceReport                   interface{}
+	PlanOutputReport                     interface{}
+	ApplyResourceReport                  interface{}
+	ConfigurationVersionID               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	PlanOnly                             pgtype.Bool
 	CreatedBy                            pgtype.Text
-	TerraformVersion                     string
-	AllowEmptyApply                      bool
-	ExecutionMode                        string
+	TerraformVersion                     pgtype.Text
+	AllowEmptyApply                      pgtype.Bool
+	ExecutionMode                        pgtype.Text
 	Latest                               bool
-	OrganizationName                     string
-	CostEstimationEnabled                bool
-	RunStatusTimestampStatuses           []string
-	RunStatusTimestampTimestamps         []pgtype.Timestamptz
-	PlanStatusTimestampStatuses          []string
-	PlanStatusTimestampTimestamps        []pgtype.Timestamptz
-	ApplyStatusTimestampStatuses         []string
-	ApplyStatusTimestampTimestamps       []pgtype.Timestamptz
-	RunVariableKeys                      []string
-	RunVariableValues                    []string
+	OrganizationName                     pgtype.Text
+	CostEstimationEnabled                pgtype.Bool
+	RunStatusTimestamps                  RunStatusTimestamp
+	PlanStatusTimestamps                 PhaseStatusTimestamp
+	ApplyStatusTimestamps                PhaseStatusTimestamp
+	RunVariables                         RunVariable
 	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
-func (q *Queries) FindRunByID(ctx context.Context, runID string) (FindRunByIDRow, error) {
+func (q *Queries) FindRunByID(ctx context.Context, runID pgtype.Text) (FindRunByIDRow, error) {
 	row := q.db.QueryRow(ctx, findRunByID, runID)
 	var i FindRunByIDRow
 	err := row.Scan(
@@ -233,28 +184,24 @@ func (q *Queries) FindRunByID(ctx context.Context, runID string) (FindRunByIDRow
 		&i.Latest,
 		&i.OrganizationName,
 		&i.CostEstimationEnabled,
-		&i.RunStatusTimestampStatuses,
-		&i.RunStatusTimestampTimestamps,
-		&i.PlanStatusTimestampStatuses,
-		&i.PlanStatusTimestampTimestamps,
-		&i.ApplyStatusTimestampStatuses,
-		&i.ApplyStatusTimestampTimestamps,
-		&i.RunVariableKeys,
-		&i.RunVariableValues,
+		&i.RunStatusTimestamps,
+		&i.PlanStatusTimestamps,
+		&i.ApplyStatusTimestamps,
+		&i.RunVariables,
 		&i.ConfigurationVersionIngressAttribute.Branch,
 		&i.ConfigurationVersionIngressAttribute.CommitSha,
 		&i.ConfigurationVersionIngressAttribute.Identifier,
 		&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 		&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 		&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-		&i.ConfigurationVersionIngressAttribute.CommitUrl,
+		&i.ConfigurationVersionIngressAttribute.CommitURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-		&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+		&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 		&i.ConfigurationVersionIngressAttribute.Tag,
 		&i.ConfigurationVersionIngressAttribute.SenderUsername,
-		&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-		&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+		&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+		&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 	)
 	return i, err
 }
@@ -290,58 +237,10 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (
-        SELECT array_agg(rst.status)::text[]
-        FROM run_status_timestamps rst
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM run_status_timestamps st
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_timestamps,
-    (
-        SELECT array_agg(rv.key)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_keys,
-    (
-        SELECT array_agg(rv.value)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_values,
+    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
+    array_agg(v.*)::"run_variables" AS run_variables,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM runs
 JOIN plans USING (run_id)
@@ -349,50 +248,51 @@ JOIN applies USING (run_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
+LEFT JOIN run_variables v USING (run_id)
+LEFT JOIN run_status_timestamps rst USING (run_id)
+LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
+LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE runs.run_id = $1
+GROUP BY runs.run_id
 FOR UPDATE OF runs, plans, applies
 `
 
 type FindRunByIDForUpdateRow struct {
-	RunID                                string
+	RunID                                pgtype.Text
 	CreatedAt                            pgtype.Timestamptz
 	CancelSignaledAt                     pgtype.Timestamptz
-	IsDestroy                            bool
-	PositionInQueue                      int32
-	Refresh                              bool
-	RefreshOnly                          bool
-	Source                               string
-	Status                               string
-	PlanStatus                           string
-	ApplyStatus                          string
-	ReplaceAddrs                         []string
-	TargetAddrs                          []string
-	AutoApply                            bool
-	PlanResourceReport                   run.Report
-	PlanOutputReport                     run.Report
-	ApplyResourceReport                  run.Report
-	ConfigurationVersionID               string
-	WorkspaceID                          string
-	PlanOnly                             bool
+	IsDestroy                            pgtype.Bool
+	PositionInQueue                      pgtype.Int4
+	Refresh                              pgtype.Bool
+	RefreshOnly                          pgtype.Bool
+	Source                               pgtype.Text
+	Status                               pgtype.Text
+	PlanStatus                           pgtype.Text
+	ApplyStatus                          pgtype.Text
+	ReplaceAddrs                         []pgtype.Text
+	TargetAddrs                          []pgtype.Text
+	AutoApply                            pgtype.Bool
+	PlanResourceReport                   interface{}
+	PlanOutputReport                     interface{}
+	ApplyResourceReport                  interface{}
+	ConfigurationVersionID               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	PlanOnly                             pgtype.Bool
 	CreatedBy                            pgtype.Text
-	TerraformVersion                     string
-	AllowEmptyApply                      bool
-	ExecutionMode                        string
+	TerraformVersion                     pgtype.Text
+	AllowEmptyApply                      pgtype.Bool
+	ExecutionMode                        pgtype.Text
 	Latest                               bool
-	OrganizationName                     string
-	CostEstimationEnabled                bool
-	RunStatusTimestampStatuses           []string
-	RunStatusTimestampTimestamps         []pgtype.Timestamptz
-	PlanStatusTimestampStatuses          []string
-	PlanStatusTimestampTimestamps        []pgtype.Timestamptz
-	ApplyStatusTimestampStatuses         []string
-	ApplyStatusTimestampTimestamps       []pgtype.Timestamptz
-	RunVariableKeys                      []string
-	RunVariableValues                    []string
+	OrganizationName                     pgtype.Text
+	CostEstimationEnabled                pgtype.Bool
+	RunStatusTimestamps                  RunStatusTimestamp
+	PlanStatusTimestamps                 PhaseStatusTimestamp
+	ApplyStatusTimestamps                PhaseStatusTimestamp
+	RunVariables                         RunVariable
 	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
-func (q *Queries) FindRunByIDForUpdate(ctx context.Context, runID string) (FindRunByIDForUpdateRow, error) {
+func (q *Queries) FindRunByIDForUpdate(ctx context.Context, runID pgtype.Text) (FindRunByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findRunByIDForUpdate, runID)
 	var i FindRunByIDForUpdateRow
 	err := row.Scan(
@@ -423,28 +323,24 @@ func (q *Queries) FindRunByIDForUpdate(ctx context.Context, runID string) (FindR
 		&i.Latest,
 		&i.OrganizationName,
 		&i.CostEstimationEnabled,
-		&i.RunStatusTimestampStatuses,
-		&i.RunStatusTimestampTimestamps,
-		&i.PlanStatusTimestampStatuses,
-		&i.PlanStatusTimestampTimestamps,
-		&i.ApplyStatusTimestampStatuses,
-		&i.ApplyStatusTimestampTimestamps,
-		&i.RunVariableKeys,
-		&i.RunVariableValues,
+		&i.RunStatusTimestamps,
+		&i.PlanStatusTimestamps,
+		&i.ApplyStatusTimestamps,
+		&i.RunVariables,
 		&i.ConfigurationVersionIngressAttribute.Branch,
 		&i.ConfigurationVersionIngressAttribute.CommitSha,
 		&i.ConfigurationVersionIngressAttribute.Identifier,
 		&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 		&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 		&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-		&i.ConfigurationVersionIngressAttribute.CommitUrl,
+		&i.ConfigurationVersionIngressAttribute.CommitURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-		&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+		&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 		&i.ConfigurationVersionIngressAttribute.Tag,
 		&i.ConfigurationVersionIngressAttribute.SenderUsername,
-		&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-		&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+		&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+		&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 	)
 	return i, err
 }
@@ -480,35 +376,9 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_timestamps,
     array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
     array_agg(v.*)::"run_variables" AS run_variables,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM runs
@@ -519,6 +389,8 @@ JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
 LEFT JOIN run_variables v USING (run_id)
 LEFT JOIN run_status_timestamps rst USING (run_id)
+LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
+LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE
     workspaces.organization_name LIKE ANY($1)
 AND workspaces.workspace_id      LIKE ANY($2)
@@ -528,57 +400,56 @@ AND runs.status                  LIKE ANY($5)
 AND runs.plan_only::text         LIKE ANY($6)
 AND (($7::text IS NULL) OR ia.commit_sha = $7)
 AND (($8::text IS NULL) OR ia.sender_username = $8)
+GROUP BY runs.run_id
 ORDER BY runs.created_at DESC
 LIMIT $10 OFFSET $9
 `
 
 type FindRunsParams struct {
-	OrganizationNames string
-	WorkspaceIds      string
-	WorkspaceNames    string
-	Sources           string
-	Statuses          string
-	PlanOnly          bool
-	CommitSha         string
-	VcsUsername       string
+	OrganizationNames pgtype.Text
+	WorkspaceIds      pgtype.Text
+	WorkspaceNames    pgtype.Text
+	Sources           pgtype.Text
+	Statuses          pgtype.Text
+	PlanOnly          pgtype.Bool
+	CommitSha         pgtype.Text
+	VCSUsername       pgtype.Text
 	Offset            int32
 	Limit             int32
 }
 
 type FindRunsRow struct {
-	RunID                                string
+	RunID                                pgtype.Text
 	CreatedAt                            pgtype.Timestamptz
 	CancelSignaledAt                     pgtype.Timestamptz
-	IsDestroy                            bool
-	PositionInQueue                      int32
-	Refresh                              bool
-	RefreshOnly                          bool
-	Source                               string
-	Status                               string
-	PlanStatus                           string
-	ApplyStatus                          string
-	ReplaceAddrs                         []string
-	TargetAddrs                          []string
-	AutoApply                            bool
-	PlanResourceReport                   run.Report
-	PlanOutputReport                     run.Report
-	ApplyResourceReport                  run.Report
-	ConfigurationVersionID               string
-	WorkspaceID                          string
-	PlanOnly                             bool
+	IsDestroy                            pgtype.Bool
+	PositionInQueue                      pgtype.Int4
+	Refresh                              pgtype.Bool
+	RefreshOnly                          pgtype.Bool
+	Source                               pgtype.Text
+	Status                               pgtype.Text
+	PlanStatus                           pgtype.Text
+	ApplyStatus                          pgtype.Text
+	ReplaceAddrs                         []pgtype.Text
+	TargetAddrs                          []pgtype.Text
+	AutoApply                            pgtype.Bool
+	PlanResourceReport                   interface{}
+	PlanOutputReport                     interface{}
+	ApplyResourceReport                  interface{}
+	ConfigurationVersionID               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	PlanOnly                             pgtype.Bool
 	CreatedBy                            pgtype.Text
-	TerraformVersion                     string
-	AllowEmptyApply                      bool
-	ExecutionMode                        string
+	TerraformVersion                     pgtype.Text
+	AllowEmptyApply                      pgtype.Bool
+	ExecutionMode                        pgtype.Text
 	Latest                               bool
-	OrganizationName                     string
-	CostEstimationEnabled                bool
-	PlanStatusTimestampStatuses          []string
-	PlanStatusTimestampTimestamps        []pgtype.Timestamptz
-	ApplyStatusTimestampStatuses         []string
-	ApplyStatusTimestampTimestamps       []pgtype.Timestamptz
-	RunStatusTimestamps                  sqlc.RunStatusTimestamp
-	RunVariables                         run.Variable
+	OrganizationName                     pgtype.Text
+	CostEstimationEnabled                pgtype.Bool
+	RunStatusTimestamps                  RunStatusTimestamp
+	PlanStatusTimestamps                 PhaseStatusTimestamp
+	ApplyStatusTimestamps                PhaseStatusTimestamp
+	RunVariables                         RunVariable
 	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
@@ -591,7 +462,7 @@ func (q *Queries) FindRuns(ctx context.Context, arg FindRunsParams) ([]FindRunsR
 		arg.Statuses,
 		arg.PlanOnly,
 		arg.CommitSha,
-		arg.VcsUsername,
+		arg.VCSUsername,
 		arg.Offset,
 		arg.Limit,
 	)
@@ -630,11 +501,9 @@ func (q *Queries) FindRuns(ctx context.Context, arg FindRunsParams) ([]FindRunsR
 			&i.Latest,
 			&i.OrganizationName,
 			&i.CostEstimationEnabled,
-			&i.PlanStatusTimestampStatuses,
-			&i.PlanStatusTimestampTimestamps,
-			&i.ApplyStatusTimestampStatuses,
-			&i.ApplyStatusTimestampTimestamps,
 			&i.RunStatusTimestamps,
+			&i.PlanStatusTimestamps,
+			&i.ApplyStatusTimestamps,
 			&i.RunVariables,
 			&i.ConfigurationVersionIngressAttribute.Branch,
 			&i.ConfigurationVersionIngressAttribute.CommitSha,
@@ -642,14 +511,14 @@ func (q *Queries) FindRuns(ctx context.Context, arg FindRunsParams) ([]FindRunsR
 			&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 			&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 			&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-			&i.ConfigurationVersionIngressAttribute.CommitUrl,
+			&i.ConfigurationVersionIngressAttribute.CommitURL,
 			&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-			&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+			&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 			&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 			&i.ConfigurationVersionIngressAttribute.Tag,
 			&i.ConfigurationVersionIngressAttribute.SenderUsername,
-			&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-			&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+			&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+			&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 		); err != nil {
 			return nil, err
 		}
@@ -667,7 +536,7 @@ FROM runs
 WHERE run_id = $1
 `
 
-func (q *Queries) GetLockFileByID(ctx context.Context, runID string) ([]byte, error) {
+func (q *Queries) GetLockFileByID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
 	row := q.db.QueryRow(ctx, getLockFileByID, runID)
 	var lock_file []byte
 	err := row.Scan(&lock_file)
@@ -715,23 +584,23 @@ INSERT INTO runs (
 `
 
 type InsertRunParams struct {
-	ID                     string
+	ID                     pgtype.Text
 	CreatedAt              pgtype.Timestamptz
-	IsDestroy              bool
-	PositionInQueue        int32
-	Refresh                bool
-	RefreshOnly            bool
-	Source                 string
-	Status                 string
-	ReplaceAddrs           []string
-	TargetAddrs            []string
-	AutoApply              bool
-	PlanOnly               bool
-	ConfigurationVersionID string
-	WorkspaceID            string
+	IsDestroy              pgtype.Bool
+	PositionInQueue        pgtype.Int4
+	Refresh                pgtype.Bool
+	RefreshOnly            pgtype.Bool
+	Source                 pgtype.Text
+	Status                 pgtype.Text
+	ReplaceAddrs           []pgtype.Text
+	TargetAddrs            []pgtype.Text
+	AutoApply              pgtype.Bool
+	PlanOnly               pgtype.Bool
+	ConfigurationVersionID pgtype.Text
+	WorkspaceID            pgtype.Text
 	CreatedBy              pgtype.Text
-	TerraformVersion       string
-	AllowEmptyApply        bool
+	TerraformVersion       pgtype.Text
+	AllowEmptyApply        pgtype.Bool
 }
 
 func (q *Queries) InsertRun(ctx context.Context, arg InsertRunParams) error {
@@ -770,8 +639,8 @@ INSERT INTO run_status_timestamps (
 `
 
 type InsertRunStatusTimestampParams struct {
-	ID        string
-	Status    string
+	ID        pgtype.Text
+	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
@@ -793,9 +662,9 @@ INSERT INTO run_variables (
 `
 
 type InsertRunVariableParams struct {
-	RunID string
-	Key   string
-	Value string
+	RunID pgtype.Text
+	Key   pgtype.Text
+	Value pgtype.Text
 }
 
 func (q *Queries) InsertRunVariable(ctx context.Context, arg InsertRunVariableParams) error {
@@ -812,12 +681,12 @@ RETURNING run_id
 
 type PutLockFileParams struct {
 	LockFile []byte
-	RunID    string
+	RunID    pgtype.Text
 }
 
-func (q *Queries) PutLockFile(ctx context.Context, arg PutLockFileParams) (string, error) {
+func (q *Queries) PutLockFile(ctx context.Context, arg PutLockFileParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, putLockFile, arg.LockFile, arg.RunID)
-	var run_id string
+	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -832,12 +701,12 @@ RETURNING run_id
 
 type UpdateCancelSignaledAtParams struct {
 	CancelSignaledAt pgtype.Timestamptz
-	ID               string
+	ID               pgtype.Text
 }
 
-func (q *Queries) UpdateCancelSignaledAt(ctx context.Context, arg UpdateCancelSignaledAtParams) (string, error) {
+func (q *Queries) UpdateCancelSignaledAt(ctx context.Context, arg UpdateCancelSignaledAtParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateCancelSignaledAt, arg.CancelSignaledAt, arg.ID)
-	var run_id string
+	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -851,13 +720,13 @@ RETURNING run_id
 `
 
 type UpdateRunStatusParams struct {
-	Status string
-	ID     string
+	Status pgtype.Text
+	ID     pgtype.Text
 }
 
-func (q *Queries) UpdateRunStatus(ctx context.Context, arg UpdateRunStatusParams) (string, error) {
+func (q *Queries) UpdateRunStatus(ctx context.Context, arg UpdateRunStatusParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateRunStatus, arg.Status, arg.ID)
-	var run_id string
+	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err
 }

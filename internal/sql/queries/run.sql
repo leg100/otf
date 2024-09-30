@@ -90,35 +90,9 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_timestamps,
     array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
     array_agg(v.*)::"run_variables" AS run_variables,
     sqlc.embed(configuration_version_ingress_attributes)
 FROM runs
@@ -129,6 +103,8 @@ JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
 LEFT JOIN run_variables v USING (run_id)
 LEFT JOIN run_status_timestamps rst USING (run_id)
+LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
+LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE
     workspaces.organization_name LIKE ANY(sqlc.arg('organization_names'))
 AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids'))
@@ -138,8 +114,8 @@ AND runs.status                  LIKE ANY(sqlc.arg('statuses'))
 AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only'))
 AND ((sqlc.arg('commit_sha')::text IS NULL) OR ia.commit_sha = sqlc.arg('commit_sha'))
 AND ((sqlc.arg('vcs_username')::text IS NULL) OR ia.sender_username = sqlc.arg('vcs_username'))
-ORDER BY runs.created_at DESC
 GROUP BY runs.run_id
+ORDER BY runs.created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset')
 ;
 
@@ -190,58 +166,10 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (
-        SELECT array_agg(rst.status)::text[]
-        FROM run_status_timestamps rst
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM run_status_timestamps st
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_timestamps,
-    (
-        SELECT array_agg(rv.key)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_keys,
-    (
-        SELECT array_agg(rv.value)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_values,
+    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
+    array_agg(v.*)::"run_variables" AS run_variables,
     sqlc.embed(configuration_version_ingress_attributes)
 FROM runs
 JOIN plans USING (run_id)
@@ -249,7 +177,12 @@ JOIN applies USING (run_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
+LEFT JOIN run_variables v USING (run_id)
+LEFT JOIN run_status_timestamps rst USING (run_id)
+LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
+LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE runs.run_id = sqlc.arg('run_id')
+GROUP BY runs.run_id
 ;
 
 -- name: FindRunByIDForUpdate :one
@@ -283,58 +216,10 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (
-        SELECT array_agg(rst.status)::text[]
-        FROM run_status_timestamps rst
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM run_status_timestamps st
-        WHERE st.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'plan'
-        GROUP BY run_id, phase
-    ) AS plan_status_timestamp_timestamps,
-    (
-        SELECT array_agg(st.status)::text[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_statuses,
-    (
-        SELECT array_agg(st.timestamp)::timestamptz[]
-        FROM phase_status_timestamps st
-        WHERE st.run_id = applies.run_id
-        AND   st.phase = 'apply'
-        GROUP BY run_id, phase
-    ) AS apply_status_timestamp_timestamps,
-    (
-        SELECT array_agg(rv.key)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_keys,
-    (
-        SELECT array_agg(rv.value)::text[]
-        FROM run_variables rv
-        WHERE rv.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variable_values,
+    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
+    array_agg(v.*)::"run_variables" AS run_variables,
     sqlc.embed(configuration_version_ingress_attributes)
 FROM runs
 JOIN plans USING (run_id)
@@ -342,7 +227,12 @@ JOIN applies USING (run_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
+LEFT JOIN run_variables v USING (run_id)
+LEFT JOIN run_status_timestamps rst USING (run_id)
+LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
+LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE runs.run_id = sqlc.arg('run_id')
+GROUP BY runs.run_id
 FOR UPDATE OF runs, plans, applies
 ;
 

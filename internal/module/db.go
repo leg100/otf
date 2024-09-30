@@ -4,11 +4,11 @@ import (
 	"context"
 	"sort"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -19,20 +19,20 @@ type (
 
 	// moduleRow is a row from a database query for modules.
 	moduleRow struct {
-		ModuleID         pgtype.Text            `json:"module_id"`
-		CreatedAt        pgtype.Timestamptz     `json:"created_at"`
-		UpdatedAt        pgtype.Timestamptz     `json:"updated_at"`
-		Name             pgtype.Text            `json:"name"`
-		Provider         pgtype.Text            `json:"provider"`
-		Status           pgtype.Text            `json:"status"`
-		OrganizationName pgtype.Text            `json:"organization_name"`
-		ModuleConnection *pggen.RepoConnections `json:"module_connection"`
-		Versions         []pggen.ModuleVersions `json:"versions"`
+		ModuleID         pgtype.Text           `json:"module_id"`
+		CreatedAt        pgtype.Timestamptz    `json:"created_at"`
+		UpdatedAt        pgtype.Timestamptz    `json:"updated_at"`
+		Name             pgtype.Text           `json:"name"`
+		Provider         pgtype.Text           `json:"provider"`
+		Status           pgtype.Text           `json:"status"`
+		OrganizationName pgtype.Text           `json:"organization_name"`
+		ModuleConnection *sqlc.RepoConnections `json:"module_connection"`
+		Versions         []sqlc.ModuleVersions `json:"versions"`
 	}
 )
 
 func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
-	_, err := db.Conn(ctx).InsertModule(ctx, pggen.InsertModuleParams{
+	_, err := db.Conn(ctx).InsertModule(ctx, sqlc.InsertModuleParams{
 		ID:               sql.String(mod.ID),
 		CreatedAt:        sql.Timestamptz(mod.CreatedAt),
 		UpdatedAt:        sql.Timestamptz(mod.UpdatedAt),
@@ -66,7 +66,7 @@ func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Mo
 }
 
 func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByName(ctx, pggen.FindModuleByNameParams{
+	row, err := db.Conn(ctx).FindModuleByName(ctx, sqlc.FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
 		OrganizationName: sql.String(opts.Organization),
@@ -102,7 +102,7 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 }
 
 func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion) error {
-	_, err := db.Conn(ctx).InsertModuleVersion(ctx, pggen.InsertModuleVersionParams{
+	_, err := db.Conn(ctx).InsertModuleVersion(ctx, sqlc.InsertModuleVersionParams{
 		ModuleVersionID: sql.String(version.ID),
 		Version:         sql.String(version.Version),
 		CreatedAt:       sql.Timestamptz(version.CreatedAt),
@@ -117,7 +117,7 @@ func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion)
 }
 
 func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) error {
-	_, err := db.Conn(ctx).UpdateModuleVersionStatusByID(ctx, pggen.UpdateModuleVersionStatusByIDParams{
+	_, err := db.Conn(ctx).UpdateModuleVersionStatusByID(ctx, sqlc.UpdateModuleVersionStatusByIDParams{
 		ModuleVersionID: sql.String(opts.ID),
 		Status:          sql.String(string(opts.Status)),
 		StatusError:     sql.String(opts.Error),
@@ -186,7 +186,7 @@ func (row moduleRow) toModule() *Module {
 	return module
 }
 
-type byVersion []pggen.ModuleVersions
+type byVersion []sqlc.ModuleVersions
 
 func (v byVersion) Len() int      { return len(v) }
 func (v byVersion) Swap(i, j int) { v[i], v[j] = v[j], v[i] }

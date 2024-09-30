@@ -18,9 +18,9 @@ WHERE team_id = $1
 RETURNING team_token_id
 `
 
-func (q *Queries) DeleteTeamTokenByID(ctx context.Context, teamID string) (string, error) {
+func (q *Queries) DeleteTeamTokenByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteTeamTokenByID, teamID)
-	var team_token_id string
+	var team_token_id pgtype.Text
 	err := row.Scan(&team_token_id)
 	return team_token_id, err
 }
@@ -31,7 +31,7 @@ FROM team_tokens
 WHERE team_id = $1
 `
 
-func (q *Queries) FindTeamTokensByID(ctx context.Context, teamID string) ([]TeamToken, error) {
+func (q *Queries) FindTeamTokensByID(ctx context.Context, teamID pgtype.Text) ([]TeamToken, error) {
 	rows, err := q.db.Query(ctx, findTeamTokensByID, teamID)
 	if err != nil {
 		return nil, err
@@ -75,9 +75,9 @@ INSERT INTO team_tokens (
 `
 
 type InsertTeamTokenParams struct {
-	TeamTokenID string
+	TeamTokenID pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	TeamID      string
+	TeamID      pgtype.Text
 	Expiry      pgtype.Timestamptz
 }
 

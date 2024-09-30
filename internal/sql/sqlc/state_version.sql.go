@@ -32,9 +32,9 @@ WHERE state_version_id = $1
 RETURNING state_version_id
 `
 
-func (q *Queries) DeleteStateVersionByID(ctx context.Context, stateVersionID string) (string, error) {
+func (q *Queries) DeleteStateVersionByID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteStateVersionByID, stateVersionID)
-	var state_version_id string
+	var state_version_id pgtype.Text
 	err := row.Scan(&state_version_id)
 	return state_version_id, err
 }
@@ -54,52 +54,25 @@ func (q *Queries) DiscardPendingStateVersionsByWorkspaceID(ctx context.Context, 
 const findCurrentStateVersionByWorkspaceID = `-- name: FindCurrentStateVersionByWorkspaceID :one
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions sv
 JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE w.workspace_id = $1
 GROUP BY sv.state_version_id
 `
 
 type FindCurrentStateVersionByWorkspaceIDRow struct {
-	StateVersionID               string
-	CreatedAt                    pgtype.Timestamptz
-	Serial                       int32
-	State                        []byte
-	WorkspaceID                  pgtype.Text
-	Status                       string
-	StateVersionOutputIds        []string
-	StateVersionOutputSensitives []bool
-	StateVersionOutputTypes      []string
-	StateVersionOutputValues     []string
-	StateVersionOutputNames      []string
+	StateVersionID      pgtype.Text
+	CreatedAt           pgtype.Timestamptz
+	Serial              pgtype.Int4
+	State               []byte
+	WorkspaceID         pgtype.Text
+	Status              pgtype.Text
+	StateVersionOutputs StateVersionOutput
 }
 
-func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID string) (FindCurrentStateVersionByWorkspaceIDRow, error) {
+func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindCurrentStateVersionByWorkspaceIDRow, error) {
 	row := q.db.QueryRow(ctx, findCurrentStateVersionByWorkspaceID, workspaceID)
 	var i FindCurrentStateVersionByWorkspaceIDRow
 	err := row.Scan(
@@ -109,11 +82,7 @@ func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, work
 		&i.State,
 		&i.WorkspaceID,
 		&i.Status,
-		&i.StateVersionOutputIds,
-		&i.StateVersionOutputSensitives,
-		&i.StateVersionOutputTypes,
-		&i.StateVersionOutputValues,
-		&i.StateVersionOutputNames,
+		&i.StateVersionOutputs,
 	)
 	return i, err
 }
@@ -121,51 +90,24 @@ func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, work
 const findStateVersionByID = `-- name: FindStateVersionByID :one
 SELECT
     state_versions.state_version_id, state_versions.created_at, state_versions.serial, state_versions.state, state_versions.workspace_id, state_versions.status,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE state_versions.state_version_id = $1
 GROUP BY state_versions.state_version_id
 `
 
 type FindStateVersionByIDRow struct {
-	StateVersionID               string
-	CreatedAt                    pgtype.Timestamptz
-	Serial                       int32
-	State                        []byte
-	WorkspaceID                  pgtype.Text
-	Status                       string
-	StateVersionOutputIds        []string
-	StateVersionOutputSensitives []bool
-	StateVersionOutputTypes      []string
-	StateVersionOutputValues     []string
-	StateVersionOutputNames      []string
+	StateVersionID      pgtype.Text
+	CreatedAt           pgtype.Timestamptz
+	Serial              pgtype.Int4
+	State               []byte
+	WorkspaceID         pgtype.Text
+	Status              pgtype.Text
+	StateVersionOutputs StateVersionOutput
 }
 
-func (q *Queries) FindStateVersionByID(ctx context.Context, id string) (FindStateVersionByIDRow, error) {
+func (q *Queries) FindStateVersionByID(ctx context.Context, id pgtype.Text) (FindStateVersionByIDRow, error) {
 	row := q.db.QueryRow(ctx, findStateVersionByID, id)
 	var i FindStateVersionByIDRow
 	err := row.Scan(
@@ -175,11 +117,7 @@ func (q *Queries) FindStateVersionByID(ctx context.Context, id string) (FindStat
 		&i.State,
 		&i.WorkspaceID,
 		&i.Status,
-		&i.StateVersionOutputIds,
-		&i.StateVersionOutputSensitives,
-		&i.StateVersionOutputTypes,
-		&i.StateVersionOutputValues,
-		&i.StateVersionOutputNames,
+		&i.StateVersionOutputs,
 	)
 	return i, err
 }
@@ -187,51 +125,25 @@ func (q *Queries) FindStateVersionByID(ctx context.Context, id string) (FindStat
 const findStateVersionByIDForUpdate = `-- name: FindStateVersionByIDForUpdate :one
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions sv
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.state_version_id = $1
+GROUP BY sv.state_version_id
 FOR UPDATE OF sv
 `
 
 type FindStateVersionByIDForUpdateRow struct {
-	StateVersionID               string
-	CreatedAt                    pgtype.Timestamptz
-	Serial                       int32
-	State                        []byte
-	WorkspaceID                  pgtype.Text
-	Status                       string
-	StateVersionOutputIds        []string
-	StateVersionOutputSensitives []bool
-	StateVersionOutputTypes      []string
-	StateVersionOutputValues     []string
-	StateVersionOutputNames      []string
+	StateVersionID      pgtype.Text
+	CreatedAt           pgtype.Timestamptz
+	Serial              pgtype.Int4
+	State               []byte
+	WorkspaceID         pgtype.Text
+	Status              pgtype.Text
+	StateVersionOutputs StateVersionOutput
 }
 
-func (q *Queries) FindStateVersionByIDForUpdate(ctx context.Context, id string) (FindStateVersionByIDForUpdateRow, error) {
+func (q *Queries) FindStateVersionByIDForUpdate(ctx context.Context, id pgtype.Text) (FindStateVersionByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findStateVersionByIDForUpdate, id)
 	var i FindStateVersionByIDForUpdateRow
 	err := row.Scan(
@@ -241,11 +153,7 @@ func (q *Queries) FindStateVersionByIDForUpdate(ctx context.Context, id string) 
 		&i.State,
 		&i.WorkspaceID,
 		&i.Status,
-		&i.StateVersionOutputIds,
-		&i.StateVersionOutputSensitives,
-		&i.StateVersionOutputTypes,
-		&i.StateVersionOutputValues,
-		&i.StateVersionOutputNames,
+		&i.StateVersionOutputs,
 	)
 	return i, err
 }
@@ -256,7 +164,7 @@ FROM state_versions
 WHERE state_version_id = $1
 `
 
-func (q *Queries) FindStateVersionStateByID(ctx context.Context, id string) ([]byte, error) {
+func (q *Queries) FindStateVersionStateByID(ctx context.Context, id pgtype.Text) ([]byte, error) {
 	row := q.db.QueryRow(ctx, findStateVersionStateByID, id)
 	var state []byte
 	err := row.Scan(&state)
@@ -266,32 +174,9 @@ func (q *Queries) FindStateVersionStateByID(ctx context.Context, id string) ([]b
 const findStateVersionsByWorkspaceID = `-- name: FindStateVersionsByWorkspaceID :many
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions sv
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.workspace_id = $1
 AND   sv.status = 'finalized'
 GROUP BY sv.state_version_id
@@ -307,17 +192,13 @@ type FindStateVersionsByWorkspaceIDParams struct {
 }
 
 type FindStateVersionsByWorkspaceIDRow struct {
-	StateVersionID               string
-	CreatedAt                    pgtype.Timestamptz
-	Serial                       int32
-	State                        []byte
-	WorkspaceID                  pgtype.Text
-	Status                       string
-	StateVersionOutputIds        []string
-	StateVersionOutputSensitives []bool
-	StateVersionOutputTypes      []string
-	StateVersionOutputValues     []string
-	StateVersionOutputNames      []string
+	StateVersionID      pgtype.Text
+	CreatedAt           pgtype.Timestamptz
+	Serial              pgtype.Int4
+	State               []byte
+	WorkspaceID         pgtype.Text
+	Status              pgtype.Text
+	StateVersionOutputs StateVersionOutput
 }
 
 func (q *Queries) FindStateVersionsByWorkspaceID(ctx context.Context, arg FindStateVersionsByWorkspaceIDParams) ([]FindStateVersionsByWorkspaceIDRow, error) {
@@ -336,11 +217,7 @@ func (q *Queries) FindStateVersionsByWorkspaceID(ctx context.Context, arg FindSt
 			&i.State,
 			&i.WorkspaceID,
 			&i.Status,
-			&i.StateVersionOutputIds,
-			&i.StateVersionOutputSensitives,
-			&i.StateVersionOutputTypes,
-			&i.StateVersionOutputValues,
-			&i.StateVersionOutputNames,
+			&i.StateVersionOutputs,
 		); err != nil {
 			return nil, err
 		}
@@ -371,11 +248,11 @@ INSERT INTO state_versions (
 `
 
 type InsertStateVersionParams struct {
-	ID          string
+	ID          pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	Serial      int32
+	Serial      pgtype.Int4
 	State       []byte
-	Status      string
+	Status      pgtype.Text
 	WorkspaceID pgtype.Text
 }
 
@@ -399,7 +276,7 @@ WHERE state_version_id = $2
 
 type UpdateStateParams struct {
 	State          []byte
-	StateVersionID string
+	StateVersionID pgtype.Text
 }
 
 func (q *Queries) UpdateState(ctx context.Context, arg UpdateStateParams) error {

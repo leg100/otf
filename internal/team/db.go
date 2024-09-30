@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // TeamRow represents the result of a database query for a team.
@@ -55,7 +55,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
-	_, err := db.Conn(ctx).InsertTeam(ctx, pggen.InsertTeamParams{
+	err := db.Conn(ctx).InsertTeam(ctx, sqlc.InsertTeamParams{
 		ID:                              sql.String(team.ID),
 		Name:                            sql.String(team.Name),
 		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
@@ -74,7 +74,7 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 
 func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
 	var team *Team
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
 
 		// retrieve team
@@ -89,7 +89,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 			return err
 		}
 		// persist update
-		_, err = q.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
+		_, err = q.UpdateTeamByID(ctx, sqlc.UpdateTeamByIDParams{
 			TeamID:                          sql.String(teamID),
 			Name:                            sql.String(team.Name),
 			Visibility:                      sql.String(team.Visibility),
@@ -159,7 +159,7 @@ func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
 //
 
 func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
-	_, err := db.Conn(ctx).InsertTeamToken(ctx, pggen.InsertTeamTokenParams{
+	_, err := db.Conn(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
 		TeamTokenID: sql.String(token.ID),
 		TeamID:      sql.String(token.TeamID),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),

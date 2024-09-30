@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -42,7 +42,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 
 	// not found; create instead
 
-	insertResult, err := q.InsertRepohook(ctx, pggen.InsertRepohookParams{
+	insertResult, err := q.InsertRepohook(ctx, sqlc.InsertRepohookParams{
 		RepohookID:    sql.UUID(hook.id),
 		Secret:        sql.String(hook.secret),
 		RepoPath:      sql.String(hook.repoPath),

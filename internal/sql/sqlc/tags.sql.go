@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countTags = `-- name: CountTags :one
@@ -15,7 +17,7 @@ FROM tags t
 WHERE t.organization_name = $1
 `
 
-func (q *Queries) CountTags(ctx context.Context, organizationName string) (int64, error) {
+func (q *Queries) CountTags(ctx context.Context, organizationName pgtype.Text) (int64, error) {
 	row := q.db.QueryRow(ctx, countTags, organizationName)
 	var count int64
 	err := row.Scan(&count)
@@ -28,7 +30,7 @@ FROM workspace_tags wt
 WHERE wt.workspace_id = $1
 `
 
-func (q *Queries) CountWorkspaceTags(ctx context.Context, workspaceID string) (int64, error) {
+func (q *Queries) CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (int64, error) {
 	row := q.db.QueryRow(ctx, countWorkspaceTags, workspaceID)
 	var count int64
 	err := row.Scan(&count)
@@ -44,13 +46,13 @@ RETURNING tag_id
 `
 
 type DeleteTagParams struct {
-	TagID            string
-	OrganizationName string
+	TagID            pgtype.Text
+	OrganizationName pgtype.Text
 }
 
-func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (string, error) {
+func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteTag, arg.TagID, arg.OrganizationName)
-	var tag_id string
+	var tag_id pgtype.Text
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -64,13 +66,13 @@ RETURNING tag_id
 `
 
 type DeleteWorkspaceTagParams struct {
-	WorkspaceID string
-	TagID       string
+	WorkspaceID pgtype.Text
+	TagID       pgtype.Text
 }
 
-func (q *Queries) DeleteWorkspaceTag(ctx context.Context, arg DeleteWorkspaceTagParams) (string, error) {
+func (q *Queries) DeleteWorkspaceTag(ctx context.Context, arg DeleteWorkspaceTagParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteWorkspaceTag, arg.WorkspaceID, arg.TagID)
-	var tag_id string
+	var tag_id pgtype.Text
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -89,14 +91,14 @@ AND   t.organization_name = $2
 `
 
 type FindTagByIDParams struct {
-	TagID            string
-	OrganizationName string
+	TagID            pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 type FindTagByIDRow struct {
-	TagID            string
-	Name             string
-	OrganizationName string
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 	InstanceCount    int64
 }
 
@@ -126,14 +128,14 @@ AND   t.organization_name = $2
 `
 
 type FindTagByNameParams struct {
-	Name             string
-	OrganizationName string
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 type FindTagByNameRow struct {
-	TagID            string
-	Name             string
-	OrganizationName string
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 	InstanceCount    int64
 }
 
@@ -164,15 +166,15 @@ OFFSET $2
 `
 
 type FindTagsParams struct {
-	OrganizationName string
+	OrganizationName pgtype.Text
 	Offset           int32
 	Limit            int32
 }
 
 type FindTagsRow struct {
-	TagID            string
-	Name             string
-	OrganizationName string
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 	InstanceCount    int64
 }
 
@@ -217,15 +219,15 @@ OFFSET $2
 `
 
 type FindWorkspaceTagsParams struct {
-	WorkspaceID string
+	WorkspaceID pgtype.Text
 	Offset      int32
 	Limit       int32
 }
 
 type FindWorkspaceTagsRow struct {
-	TagID            string
-	Name             string
-	OrganizationName string
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 	InstanceCount    int64
 }
 
@@ -267,9 +269,9 @@ INSERT INTO tags (
 `
 
 type InsertTagParams struct {
-	TagID            string
-	Name             string
-	OrganizationName string
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 func (q *Queries) InsertTag(ctx context.Context, arg InsertTagParams) error {
@@ -290,13 +292,13 @@ RETURNING tag_id
 `
 
 type InsertWorkspaceTagParams struct {
-	TagID       string
-	WorkspaceID string
+	TagID       pgtype.Text
+	WorkspaceID pgtype.Text
 }
 
-func (q *Queries) InsertWorkspaceTag(ctx context.Context, arg InsertWorkspaceTagParams) (string, error) {
+func (q *Queries) InsertWorkspaceTag(ctx context.Context, arg InsertWorkspaceTagParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, insertWorkspaceTag, arg.TagID, arg.WorkspaceID)
-	var tag_id string
+	var tag_id pgtype.Text
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -313,13 +315,13 @@ RETURNING tag_id
 `
 
 type InsertWorkspaceTagByNameParams struct {
-	WorkspaceID string
-	TagName     string
+	WorkspaceID pgtype.Text
+	TagName     pgtype.Text
 }
 
-func (q *Queries) InsertWorkspaceTagByName(ctx context.Context, arg InsertWorkspaceTagByNameParams) (string, error) {
+func (q *Queries) InsertWorkspaceTagByName(ctx context.Context, arg InsertWorkspaceTagByNameParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, insertWorkspaceTagByName, arg.WorkspaceID, arg.TagName)
-	var tag_id string
+	var tag_id pgtype.Text
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }

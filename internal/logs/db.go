@@ -7,7 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // pgdb is a logs database on postgres
@@ -23,7 +23,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 	if len(opts.Data) == 0 {
 		return "", fmt.Errorf("refusing to persist empty chunk")
 	}
-	id, err := db.Conn(ctx).InsertLogChunk(ctx, pggen.InsertLogChunkParams{
+	id, err := db.Conn(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
 		RunID:  sql.String(opts.RunID),
 		Phase:  sql.String(string(opts.Phase)),
 		Chunk:  opts.Data,

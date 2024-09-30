@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const insertIngressAttributes = `-- name: InsertIngressAttributes :exec
@@ -44,33 +46,33 @@ INSERT INTO ingress_attributes (
 `
 
 type InsertIngressAttributesParams struct {
-	Branch                 string
-	CommitSha              string
-	CommitUrl              string
-	PullRequestNumber      int32
-	PullRequestUrl         string
-	PullRequestTitle       string
-	SenderUsername         string
-	SenderAvatarUrl        string
-	SenderHtmlUrl          string
-	Identifier             string
-	Tag                    string
-	IsPullRequest          bool
-	OnDefaultBranch        bool
-	ConfigurationVersionID string
+	Branch                 pgtype.Text
+	CommitSha              pgtype.Text
+	CommitURL              pgtype.Text
+	PullRequestNumber      pgtype.Int4
+	PullRequestURL         pgtype.Text
+	PullRequestTitle       pgtype.Text
+	SenderUsername         pgtype.Text
+	SenderAvatarURL        pgtype.Text
+	SenderHtmlURL          pgtype.Text
+	Identifier             pgtype.Text
+	Tag                    pgtype.Text
+	IsPullRequest          pgtype.Bool
+	OnDefaultBranch        pgtype.Bool
+	ConfigurationVersionID pgtype.Text
 }
 
 func (q *Queries) InsertIngressAttributes(ctx context.Context, arg InsertIngressAttributesParams) error {
 	_, err := q.db.Exec(ctx, insertIngressAttributes,
 		arg.Branch,
 		arg.CommitSha,
-		arg.CommitUrl,
+		arg.CommitURL,
 		arg.PullRequestNumber,
-		arg.PullRequestUrl,
+		arg.PullRequestURL,
 		arg.PullRequestTitle,
 		arg.SenderUsername,
-		arg.SenderAvatarUrl,
-		arg.SenderHtmlUrl,
+		arg.SenderAvatarURL,
+		arg.SenderHtmlURL,
 		arg.Identifier,
 		arg.Tag,
 		arg.IsPullRequest,

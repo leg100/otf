@@ -18,7 +18,7 @@ WHERE github_app_id = $1
 RETURNING github_app_id, webhook_secret, private_key, slug, organization
 `
 
-func (q *Queries) DeleteGithubApp(ctx context.Context, githubAppID int64) (GithubApp, error) {
+func (q *Queries) DeleteGithubApp(ctx context.Context, githubAppID pgtype.Int8) (GithubApp, error) {
 	row := q.db.QueryRow(ctx, deleteGithubApp, githubAppID)
 	var i GithubApp
 	err := row.Scan(
@@ -66,10 +66,10 @@ INSERT INTO github_apps (
 `
 
 type InsertGithubAppParams struct {
-	GithubAppID   int64
-	WebhookSecret string
-	PrivateKey    string
-	Slug          string
+	GithubAppID   pgtype.Int8
+	WebhookSecret pgtype.Text
+	PrivateKey    pgtype.Text
+	Slug          pgtype.Text
 	Organization  pgtype.Text
 }
 
@@ -101,11 +101,11 @@ INSERT INTO github_app_installs (
 `
 
 type InsertGithubAppInstallParams struct {
-	GithubAppID   int64
-	InstallID     int64
+	GithubAppID   pgtype.Int8
+	InstallID     pgtype.Int8
 	Username      pgtype.Text
 	Organization  pgtype.Text
-	VcsProviderID string
+	VCSProviderID pgtype.Text
 }
 
 func (q *Queries) InsertGithubAppInstall(ctx context.Context, arg InsertGithubAppInstallParams) error {
@@ -114,7 +114,7 @@ func (q *Queries) InsertGithubAppInstall(ctx context.Context, arg InsertGithubAp
 		arg.InstallID,
 		arg.Username,
 		arg.Organization,
-		arg.VcsProviderID,
+		arg.VCSProviderID,
 	)
 	return err
 }

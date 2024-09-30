@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type pgdb struct {
@@ -17,8 +17,8 @@ type pgdb struct {
 }
 
 func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
-	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
+	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		_, err := q.InsertConfigurationVersion(ctx, sqlc.InsertConfigurationVersionParams{
 			ID:            sql.String(cv.ID),
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
 			AutoQueueRuns: sql.Bool(cv.AutoQueueRuns),
@@ -33,7 +33,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 
 		if cv.IngressAttributes != nil {
 			ia := cv.IngressAttributes
-			_, err := q.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
+			_, err := q.InsertIngressAttributes(ctx, sqlc.InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
 				CommitURL:              sql.String(ia.CommitURL),
@@ -63,7 +63,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 }
 
 func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
-	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// select ...for update
 		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
 		if err != nil {
@@ -81,7 +81,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn fu
 func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
-	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
+	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, sqlc.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
@@ -146,7 +146,7 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 	if err != nil {
 		return err
 	}
-	_, err = db.Conn(ctx).InsertConfigurationVersionStatusTimestamp(ctx, pggen.InsertConfigurationVersionStatusTimestampParams{
+	_, err = db.Conn(ctx).InsertConfigurationVersionStatusTimestamp(ctx, sqlc.InsertConfigurationVersionStatusTimestampParams{
 		ID:        sql.String(cv.ID),
 		Status:    sql.String(string(cv.Status)),
 		Timestamp: sql.Timestamptz(sts),
@@ -156,15 +156,15 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 
 // pgRow represents the result of a database query for a configuration version.
 type pgRow struct {
-	ConfigurationVersionID               pgtype.Text                                  `json:"configuration_version_id"`
-	CreatedAt                            pgtype.Timestamptz                           `json:"created_at"`
-	AutoQueueRuns                        pgtype.Bool                                  `json:"auto_queue_runs"`
-	Source                               pgtype.Text                                  `json:"source"`
-	Speculative                          pgtype.Bool                                  `json:"speculative"`
-	Status                               pgtype.Text                                  `json:"status"`
-	WorkspaceID                          pgtype.Text                                  `json:"workspace_id"`
-	ConfigurationVersionStatusTimestamps []pggen.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
-	IngressAttributes                    *pggen.IngressAttributes                     `json:"ingress_attributes"`
+	ConfigurationVersionID               pgtype.Text                                 `json:"configuration_version_id"`
+	CreatedAt                            pgtype.Timestamptz                          `json:"created_at"`
+	AutoQueueRuns                        pgtype.Bool                                 `json:"auto_queue_runs"`
+	Source                               pgtype.Text                                 `json:"source"`
+	Speculative                          pgtype.Bool                                 `json:"speculative"`
+	Status                               pgtype.Text                                 `json:"status"`
+	WorkspaceID                          pgtype.Text                                 `json:"workspace_id"`
+	ConfigurationVersionStatusTimestamps []sqlc.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
+	IngressAttributes                    *sqlc.IngressAttributes                     `json:"ingress_attributes"`
 }
 
 func (result pgRow) toConfigVersion() *ConfigurationVersion {
@@ -184,7 +184,7 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	return &cv
 }
 
-func NewIngressFromRow(row *pggen.IngressAttributes) *IngressAttributes {
+func NewIngressFromRow(row *sqlc.IngressAttributes) *IngressAttributes {
 	return &IngressAttributes{
 		Branch:            row.Branch.String,
 		CommitSHA:         row.CommitSHA.String,
@@ -202,7 +202,7 @@ func NewIngressFromRow(row *pggen.IngressAttributes) *IngressAttributes {
 	}
 }
 
-func unmarshalStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
+func unmarshalStatusTimestampRows(rows []sqlc.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
 	for _, ty := range rows {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),

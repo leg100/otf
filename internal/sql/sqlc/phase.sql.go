@@ -24,10 +24,10 @@ WHERE chunk_id = $1
 
 type FindLogChunkByIDRow struct {
 	ChunkID pgtype.Int4
-	RunID   string
-	Phase   string
+	RunID   pgtype.Text
+	Phase   pgtype.Text
 	Chunk   []byte
-	Offset  int32
+	Offset  pgtype.Int4
 }
 
 func (q *Queries) FindLogChunkByID(ctx context.Context, chunkID pgtype.Int4) (FindLogChunkByIDRow, error) {
@@ -57,8 +57,8 @@ GROUP BY run_id, phase
 `
 
 type FindLogsParams struct {
-	RunID string
-	Phase string
+	RunID pgtype.Text
+	Phase pgtype.Text
 }
 
 // FindLogs retrieves all the logs for the given run and phase.
@@ -85,10 +85,10 @@ RETURNING chunk_id
 `
 
 type InsertLogChunkParams struct {
-	RunID  string
-	Phase  string
+	RunID  pgtype.Text
+	Phase  pgtype.Text
 	Chunk  []byte
-	Offset int32
+	Offset pgtype.Int4
 }
 
 func (q *Queries) InsertLogChunk(ctx context.Context, arg InsertLogChunkParams) (pgtype.Int4, error) {
@@ -118,9 +118,9 @@ INSERT INTO phase_status_timestamps (
 `
 
 type InsertPhaseStatusTimestampParams struct {
-	RunID     string
-	Phase     string
-	Status    string
+	RunID     pgtype.Text
+	Phase     pgtype.Text
+	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 

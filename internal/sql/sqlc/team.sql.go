@@ -18,9 +18,9 @@ WHERE team_id = $1
 RETURNING team_id
 `
 
-func (q *Queries) DeleteTeamByID(ctx context.Context, teamID string) (string, error) {
+func (q *Queries) DeleteTeamByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteTeamByID, teamID)
-	var team_id string
+	var team_id pgtype.Text
 	err := row.Scan(&team_id)
 	return team_id, err
 }
@@ -31,7 +31,7 @@ FROM teams
 WHERE team_id = $1
 `
 
-func (q *Queries) FindTeamByID(ctx context.Context, teamID string) (Team, error) {
+func (q *Queries) FindTeamByID(ctx context.Context, teamID pgtype.Text) (Team, error) {
 	row := q.db.QueryRow(ctx, findTeamByID, teamID)
 	var i Team
 	err := row.Scan(
@@ -39,7 +39,7 @@ func (q *Queries) FindTeamByID(ctx context.Context, teamID string) (Team, error)
 		&i.Name,
 		&i.CreatedAt,
 		&i.PermissionManageWorkspaces,
-		&i.PermissionManageVcs,
+		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
 		&i.SsoTeamID,
@@ -58,7 +58,7 @@ WHERE team_id = $1
 FOR UPDATE OF t
 `
 
-func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, teamID string) (Team, error) {
+func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (Team, error) {
 	row := q.db.QueryRow(ctx, findTeamByIDForUpdate, teamID)
 	var i Team
 	err := row.Scan(
@@ -66,7 +66,7 @@ func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, teamID string) (Tea
 		&i.Name,
 		&i.CreatedAt,
 		&i.PermissionManageWorkspaces,
-		&i.PermissionManageVcs,
+		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
 		&i.SsoTeamID,
@@ -86,8 +86,8 @@ AND   organization_name = $2
 `
 
 type FindTeamByNameParams struct {
-	Name             string
-	OrganizationName string
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 func (q *Queries) FindTeamByName(ctx context.Context, arg FindTeamByNameParams) (Team, error) {
@@ -98,7 +98,7 @@ func (q *Queries) FindTeamByName(ctx context.Context, arg FindTeamByNameParams) 
 		&i.Name,
 		&i.CreatedAt,
 		&i.PermissionManageWorkspaces,
-		&i.PermissionManageVcs,
+		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
 		&i.SsoTeamID,
@@ -117,7 +117,7 @@ JOIN team_tokens tt USING (team_id)
 WHERE tt.team_token_id = $1
 `
 
-func (q *Queries) FindTeamByTokenID(ctx context.Context, tokenID string) (Team, error) {
+func (q *Queries) FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (Team, error) {
 	row := q.db.QueryRow(ctx, findTeamByTokenID, tokenID)
 	var i Team
 	err := row.Scan(
@@ -125,7 +125,7 @@ func (q *Queries) FindTeamByTokenID(ctx context.Context, tokenID string) (Team, 
 		&i.Name,
 		&i.CreatedAt,
 		&i.PermissionManageWorkspaces,
-		&i.PermissionManageVcs,
+		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
 		&i.SsoTeamID,
@@ -143,7 +143,7 @@ FROM teams
 WHERE organization_name = $1
 `
 
-func (q *Queries) FindTeamsByOrg(ctx context.Context, organizationName string) ([]Team, error) {
+func (q *Queries) FindTeamsByOrg(ctx context.Context, organizationName pgtype.Text) ([]Team, error) {
 	rows, err := q.db.Query(ctx, findTeamsByOrg, organizationName)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (q *Queries) FindTeamsByOrg(ctx context.Context, organizationName string) (
 			&i.Name,
 			&i.CreatedAt,
 			&i.PermissionManageWorkspaces,
-			&i.PermissionManageVcs,
+			&i.PermissionManageVCS,
 			&i.PermissionManageModules,
 			&i.OrganizationName,
 			&i.SsoTeamID,
@@ -207,18 +207,18 @@ INSERT INTO teams (
 `
 
 type InsertTeamParams struct {
-	ID                              string
-	Name                            string
+	ID                              pgtype.Text
+	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
-	OrganizationName                string
-	Visibility                      string
+	OrganizationName                pgtype.Text
+	Visibility                      pgtype.Text
 	SsoTeamID                       pgtype.Text
-	PermissionManageWorkspaces      bool
-	PermissionManageVcs             bool
-	PermissionManageModules         bool
-	PermissionManageProviders       bool
-	PermissionManagePolicies        bool
-	PermissionManagePolicyOverrides bool
+	PermissionManageWorkspaces      pgtype.Bool
+	PermissionManageVCS             pgtype.Bool
+	PermissionManageModules         pgtype.Bool
+	PermissionManageProviders       pgtype.Bool
+	PermissionManagePolicies        pgtype.Bool
+	PermissionManagePolicyOverrides pgtype.Bool
 }
 
 func (q *Queries) InsertTeam(ctx context.Context, arg InsertTeamParams) error {
@@ -230,7 +230,7 @@ func (q *Queries) InsertTeam(ctx context.Context, arg InsertTeamParams) error {
 		arg.Visibility,
 		arg.SsoTeamID,
 		arg.PermissionManageWorkspaces,
-		arg.PermissionManageVcs,
+		arg.PermissionManageVCS,
 		arg.PermissionManageModules,
 		arg.PermissionManageProviders,
 		arg.PermissionManagePolicies,
@@ -256,32 +256,32 @@ RETURNING team_id
 `
 
 type UpdateTeamByIDParams struct {
-	Name                            string
-	Visibility                      string
+	Name                            pgtype.Text
+	Visibility                      pgtype.Text
 	SsoTeamID                       pgtype.Text
-	PermissionManageWorkspaces      bool
-	PermissionManageVcs             bool
-	PermissionManageModules         bool
-	PermissionManageProviders       bool
-	PermissionManagePolicies        bool
-	PermissionManagePolicyOverrides bool
-	TeamID                          string
+	PermissionManageWorkspaces      pgtype.Bool
+	PermissionManageVCS             pgtype.Bool
+	PermissionManageModules         pgtype.Bool
+	PermissionManageProviders       pgtype.Bool
+	PermissionManagePolicies        pgtype.Bool
+	PermissionManagePolicyOverrides pgtype.Bool
+	TeamID                          pgtype.Text
 }
 
-func (q *Queries) UpdateTeamByID(ctx context.Context, arg UpdateTeamByIDParams) (string, error) {
+func (q *Queries) UpdateTeamByID(ctx context.Context, arg UpdateTeamByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateTeamByID,
 		arg.Name,
 		arg.Visibility,
 		arg.SsoTeamID,
 		arg.PermissionManageWorkspaces,
-		arg.PermissionManageVcs,
+		arg.PermissionManageVCS,
 		arg.PermissionManageModules,
 		arg.PermissionManageProviders,
 		arg.PermissionManagePolicies,
 		arg.PermissionManagePolicyOverrides,
 		arg.TeamID,
 	)
-	var team_id string
+	var team_id pgtype.Text
 	err := row.Scan(&team_id)
 	return team_id, err
 }

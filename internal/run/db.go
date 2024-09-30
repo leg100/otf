@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -24,38 +24,38 @@ type (
 
 	// pgresult is the result of a database query for a run.
 	pgresult struct {
-		RunID                  pgtype.Text                   `json:"run_id"`
-		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
-		CancelSignaledAt       pgtype.Timestamptz            `json:"cancel_signaled_at"`
-		IsDestroy              pgtype.Bool                   `json:"is_destroy"`
-		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
-		Refresh                pgtype.Bool                   `json:"refresh"`
-		RefreshOnly            pgtype.Bool                   `json:"refresh_only"`
-		Source                 pgtype.Text                   `json:"source"`
-		Status                 pgtype.Text                   `json:"status"`
-		PlanStatus             pgtype.Text                   `json:"plan_status"`
-		ApplyStatus            pgtype.Text                   `json:"apply_status"`
-		ReplaceAddrs           []string                      `json:"replace_addrs"`
-		TargetAddrs            []string                      `json:"target_addrs"`
-		AutoApply              pgtype.Bool                   `json:"auto_apply"`
-		PlanResourceReport     *pggen.Report                 `json:"plan_resource_report"`
-		PlanOutputReport       *pggen.Report                 `json:"plan_output_report"`
-		ApplyResourceReport    *pggen.Report                 `json:"apply_resource_report"`
-		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
-		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
-		PlanOnly               pgtype.Bool                   `json:"plan_only"`
-		CreatedBy              pgtype.Text                   `json:"created_by"`
-		TerraformVersion       pgtype.Text                   `json:"terraform_version"`
-		AllowEmptyApply        pgtype.Bool                   `json:"allow_empty_apply"`
-		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
-		Latest                 pgtype.Bool                   `json:"latest"`
-		OrganizationName       pgtype.Text                   `json:"organization_name"`
-		CostEstimationEnabled  pgtype.Bool                   `json:"cost_estimation_enabled"`
-		IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
-		RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
-		PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
-		ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
-		RunVariables           []pggen.RunVariables          `json:"run_variables"`
+		RunID                  pgtype.Text                  `json:"run_id"`
+		CreatedAt              pgtype.Timestamptz           `json:"created_at"`
+		CancelSignaledAt       pgtype.Timestamptz           `json:"cancel_signaled_at"`
+		IsDestroy              pgtype.Bool                  `json:"is_destroy"`
+		PositionInQueue        pgtype.Int4                  `json:"position_in_queue"`
+		Refresh                pgtype.Bool                  `json:"refresh"`
+		RefreshOnly            pgtype.Bool                  `json:"refresh_only"`
+		Source                 pgtype.Text                  `json:"source"`
+		Status                 pgtype.Text                  `json:"status"`
+		PlanStatus             pgtype.Text                  `json:"plan_status"`
+		ApplyStatus            pgtype.Text                  `json:"apply_status"`
+		ReplaceAddrs           []string                     `json:"replace_addrs"`
+		TargetAddrs            []string                     `json:"target_addrs"`
+		AutoApply              pgtype.Bool                  `json:"auto_apply"`
+		PlanResourceReport     *sqlc.Report                 `json:"plan_resource_report"`
+		PlanOutputReport       *sqlc.Report                 `json:"plan_output_report"`
+		ApplyResourceReport    *sqlc.Report                 `json:"apply_resource_report"`
+		ConfigurationVersionID pgtype.Text                  `json:"configuration_version_id"`
+		WorkspaceID            pgtype.Text                  `json:"workspace_id"`
+		PlanOnly               pgtype.Bool                  `json:"plan_only"`
+		CreatedBy              pgtype.Text                  `json:"created_by"`
+		TerraformVersion       pgtype.Text                  `json:"terraform_version"`
+		AllowEmptyApply        pgtype.Bool                  `json:"allow_empty_apply"`
+		ExecutionMode          pgtype.Text                  `json:"execution_mode"`
+		Latest                 pgtype.Bool                  `json:"latest"`
+		OrganizationName       pgtype.Text                  `json:"organization_name"`
+		CostEstimationEnabled  pgtype.Bool                  `json:"cost_estimation_enabled"`
+		IngressAttributes      *sqlc.IngressAttributes      `json:"ingress_attributes"`
+		RunStatusTimestamps    []sqlc.RunStatusTimestamps   `json:"run_status_timestamps"`
+		PlanStatusTimestamps   []sqlc.PhaseStatusTimestamps `json:"plan_status_timestamps"`
+		ApplyStatusTimestamps  []sqlc.PhaseStatusTimestamps `json:"apply_status_timestamps"`
+		RunVariables           []sqlc.RunVariables          `json:"run_variables"`
 	}
 )
 
@@ -151,8 +151,8 @@ func (result pgresult) toRun() *Run {
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
-	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := q.InsertRun(ctx, pggen.InsertRunParams{
+	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		_, err := q.InsertRun(ctx, sqlc.InsertRunParams{
 			ID:                     sql.String(run.ID),
 			CreatedAt:              sql.Timestamptz(run.CreatedAt),
 			IsDestroy:              sql.Bool(run.IsDestroy),
@@ -172,7 +172,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			CreatedBy:              sql.StringPtr(run.CreatedBy),
 		})
 		for _, v := range run.Variables {
-			_, err = q.InsertRunVariable(ctx, pggen.InsertRunVariableParams{
+			_, err = q.InsertRunVariable(ctx, sqlc.InsertRunVariableParams{
 				RunID: sql.String(run.ID),
 				Key:   sql.String(v.Key),
 				Value: sql.String(v.Value),
@@ -208,7 +208,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 // UpdateStatus updates the run status as well as its plan and/or apply.
 func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) error) (*Run, error) {
 	var run *Run
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// select ...for update
 		result, err := q.FindRunByIDForUpdate(ctx, sql.String(runID))
 		if err != nil {
@@ -272,7 +272,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 }
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, output Report) error {
-	_, err := db.Conn(ctx).UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
+	_, err := db.Conn(ctx).UpdatePlannedChangesByID(ctx, sqlc.UpdatePlannedChangesByIDParams{
 		RunID:                sql.String(runID),
 		ResourceAdditions:    sql.Int4(resource.Additions),
 		ResourceChanges:      sql.Int4(resource.Changes),
@@ -288,7 +288,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, ou
 }
 
 func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Report) error {
-	_, err := db.Conn(ctx).UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
+	_, err := db.Conn(ctx).UpdateAppliedChangesByID(ctx, sqlc.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    sql.Int4(report.Additions),
 		Changes:      sql.Int4(report.Changes),
@@ -327,7 +327,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 	if opts.PlanOnly != nil {
 		planOnly = strconv.FormatBool(*opts.PlanOnly)
 	}
-	q.FindRunsBatch(batch, pggen.FindRunsParams{
+	q.FindRunsBatch(batch, sqlc.FindRunsParams{
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
@@ -339,7 +339,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
-	q.CountRunsBatch(batch, pggen.CountRunsParams{
+	q.CountRunsBatch(batch, sqlc.CountRunsParams{
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
@@ -428,7 +428,7 @@ func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
 	if err != nil {
 		return err
 	}
-	_, err = db.Conn(ctx).InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
+	_, err = db.Conn(ctx).InsertRunStatusTimestamp(ctx, sqlc.InsertRunStatusTimestampParams{
 		ID:        sql.String(run.ID),
 		Status:    sql.String(string(run.Status)),
 		Timestamp: sql.Timestamptz(ts),
@@ -441,7 +441,7 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	if err != nil {
 		return err
 	}
-	_, err = db.Conn(ctx).InsertPhaseStatusTimestamp(ctx, pggen.InsertPhaseStatusTimestampParams{
+	_, err = db.Conn(ctx).InsertPhaseStatusTimestamp(ctx, sqlc.InsertPhaseStatusTimestampParams{
 		RunID:     sql.String(phase.RunID),
 		Phase:     sql.String(string(phase.PhaseType)),
 		Status:    sql.String(string(phase.Status)),

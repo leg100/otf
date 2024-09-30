@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const findStateVersionOutputByID = `-- name: FindStateVersionOutputByID :one
@@ -15,7 +17,7 @@ FROM state_version_outputs
 WHERE state_version_output_id = $1
 `
 
-func (q *Queries) FindStateVersionOutputByID(ctx context.Context, id string) (StateVersionOutput, error) {
+func (q *Queries) FindStateVersionOutputByID(ctx context.Context, id pgtype.Text) (StateVersionOutput, error) {
 	row := q.db.QueryRow(ctx, findStateVersionOutputByID, id)
 	var i StateVersionOutput
 	err := row.Scan(
@@ -48,12 +50,12 @@ INSERT INTO state_version_outputs (
 `
 
 type InsertStateVersionOutputParams struct {
-	ID             string
-	Name           string
-	Sensitive      bool
-	Type           string
+	ID             pgtype.Text
+	Name           pgtype.Text
+	Sensitive      pgtype.Bool
+	Type           pgtype.Text
 	Value          []byte
-	StateVersionID string
+	StateVersionID pgtype.Text
 }
 
 func (q *Queries) InsertStateVersionOutput(ctx context.Context, arg InsertStateVersionOutputParams) error {

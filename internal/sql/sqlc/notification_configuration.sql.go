@@ -17,9 +17,9 @@ WHERE notification_configuration_id = $1
 RETURNING notification_configuration_id
 `
 
-func (q *Queries) DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID string) (string, error) {
+func (q *Queries) DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteNotificationConfigurationByID, notificationConfigurationID)
-	var notification_configuration_id string
+	var notification_configuration_id pgtype.Text
 	err := row.Scan(&notification_configuration_id)
 	return notification_configuration_id, err
 }
@@ -43,7 +43,7 @@ func (q *Queries) FindAllNotificationConfigurations(ctx context.Context) ([]Noti
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Name,
-			&i.Url,
+			&i.URL,
 			&i.Triggers,
 			&i.DestinationType,
 			&i.WorkspaceID,
@@ -65,7 +65,7 @@ FROM notification_configurations
 WHERE notification_configuration_id = $1
 `
 
-func (q *Queries) FindNotificationConfiguration(ctx context.Context, notificationConfigurationID string) (NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfiguration(ctx context.Context, notificationConfigurationID pgtype.Text) (NotificationConfiguration, error) {
 	row := q.db.QueryRow(ctx, findNotificationConfiguration, notificationConfigurationID)
 	var i NotificationConfiguration
 	err := row.Scan(
@@ -73,7 +73,7 @@ func (q *Queries) FindNotificationConfiguration(ctx context.Context, notificatio
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Name,
-		&i.Url,
+		&i.URL,
 		&i.Triggers,
 		&i.DestinationType,
 		&i.WorkspaceID,
@@ -89,7 +89,7 @@ WHERE notification_configuration_id = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID string) (NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID pgtype.Text) (NotificationConfiguration, error) {
 	row := q.db.QueryRow(ctx, findNotificationConfigurationForUpdate, notificationConfigurationID)
 	var i NotificationConfiguration
 	err := row.Scan(
@@ -97,7 +97,7 @@ func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, no
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Name,
-		&i.Url,
+		&i.URL,
 		&i.Triggers,
 		&i.DestinationType,
 		&i.WorkspaceID,
@@ -112,7 +112,7 @@ FROM notification_configurations
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID string) ([]NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]NotificationConfiguration, error) {
 	rows, err := q.db.Query(ctx, findNotificationConfigurationsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Contex
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Name,
-			&i.Url,
+			&i.URL,
 			&i.Triggers,
 			&i.DestinationType,
 			&i.WorkspaceID,
@@ -167,15 +167,15 @@ INSERT INTO notification_configurations (
 `
 
 type InsertNotificationConfigurationParams struct {
-	NotificationConfigurationID string
+	NotificationConfigurationID pgtype.Text
 	CreatedAt                   pgtype.Timestamptz
 	UpdatedAt                   pgtype.Timestamptz
-	Name                        string
-	Url                         pgtype.Text
-	Triggers                    []string
-	DestinationType             string
-	Enabled                     bool
-	WorkspaceID                 string
+	Name                        pgtype.Text
+	URL                         pgtype.Text
+	Triggers                    []pgtype.Text
+	DestinationType             pgtype.Text
+	Enabled                     pgtype.Bool
+	WorkspaceID                 pgtype.Text
 }
 
 func (q *Queries) InsertNotificationConfiguration(ctx context.Context, arg InsertNotificationConfigurationParams) error {
@@ -184,7 +184,7 @@ func (q *Queries) InsertNotificationConfiguration(ctx context.Context, arg Inser
 		arg.CreatedAt,
 		arg.UpdatedAt,
 		arg.Name,
-		arg.Url,
+		arg.URL,
 		arg.Triggers,
 		arg.DestinationType,
 		arg.Enabled,
@@ -207,23 +207,23 @@ RETURNING notification_configuration_id
 
 type UpdateNotificationConfigurationByIDParams struct {
 	UpdatedAt                   pgtype.Timestamptz
-	Enabled                     bool
-	Name                        string
-	Triggers                    []string
-	Url                         pgtype.Text
-	NotificationConfigurationID string
+	Enabled                     pgtype.Bool
+	Name                        pgtype.Text
+	Triggers                    []pgtype.Text
+	URL                         pgtype.Text
+	NotificationConfigurationID pgtype.Text
 }
 
-func (q *Queries) UpdateNotificationConfigurationByID(ctx context.Context, arg UpdateNotificationConfigurationByIDParams) (string, error) {
+func (q *Queries) UpdateNotificationConfigurationByID(ctx context.Context, arg UpdateNotificationConfigurationByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateNotificationConfigurationByID,
 		arg.UpdatedAt,
 		arg.Enabled,
 		arg.Name,
 		arg.Triggers,
-		arg.Url,
+		arg.URL,
 		arg.NotificationConfigurationID,
 	)
-	var notification_configuration_id string
+	var notification_configuration_id pgtype.Text
 	err := row.Scan(&notification_configuration_id)
 	return notification_configuration_id, err
 }

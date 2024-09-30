@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/team"
 )
 
@@ -18,7 +18,7 @@ type dbresult struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	SiteAdmin pgtype.Bool        `json:"site_admin"`
-	Teams     []pggen.Teams      `json:"teams"`
+	Teams     []sqlc.Teams       `json:"teams"`
 }
 
 func (result dbresult) toUser() *User {
@@ -43,8 +43,8 @@ type pgdb struct {
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
-	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := q.InsertUser(ctx, pggen.InsertUserParams{
+	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		_, err := q.InsertUser(ctx, sqlc.InsertUserParams{
 			ID:        sql.String(user.ID),
 			Username:  sql.String(user.Username),
 			CreatedAt: sql.Timestamptz(user.CreatedAt),
@@ -164,7 +164,7 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 // is returned.
 func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promoted []string, demoted []string, err error) {
 	var resetted, updated []pgtype.Text
-	err = db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+	err = db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
 		// First demote any existing site admins...
 		resetted, err = q.ResetUserSiteAdmins(ctx)
 		if err != nil {
@@ -205,7 +205,7 @@ func pgtextSliceDiff(a, b []pgtype.Text) []string {
 //
 
 func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
-	_, err := db.Conn(ctx).InsertToken(ctx, pggen.InsertTokenParams{
+	_, err := db.Conn(ctx).InsertToken(ctx, sqlc.InsertTokenParams{
 		TokenID:     sql.String(token.ID),
 		Description: sql.String(token.Description),
 		Username:    sql.String(token.Username),

@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 const (
@@ -34,7 +34,7 @@ type (
 	}
 
 	genericConnection interface {
-		BeginFunc(ctx context.Context, f func(pgx.Tx) error) error
+		Begin(ctx context.Context) (pgx.Tx, error)
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
@@ -53,7 +53,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		return nil, err
 	}
 
-	pool, err := pgxpool.Connect(ctx, connString)
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,6 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 	defer conn.Release()
 
-	// goose gets upset with max_pool_conns parameter so pass it the unaltered
-	// connection string
 	if err := migrate(ctx, opts.Logger, conn.Conn()); err != nil {
 		return nil, err
 	}
@@ -78,16 +76,16 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 }
 
 // Conn provides pre-generated queries
-func (db *DB) Conn(ctx context.Context) *pggen.DBQuerier {
+func (db *DB) Conn(ctx context.Context) *sqlc.Queries {
 	if conn, ok := fromContext(ctx); ok {
-		return pggen.NewQuerier(conn)
+		return sqlc.New(conn)
 	}
-	return pggen.NewQuerier(db.Pool)
+	return sqlc.New(db.Pool)
 }
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(context.Context, pggen.Querier) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(context.Context, *sqlc.Queries) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -95,9 +93,9 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, pggen.Queri
 		conn = ctxConn
 	}
 
-	return conn.BeginFunc(ctx, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
-		return callback(ctx, pggen.NewQuerier(tx))
+		return callback(ctx, sqlc.New(tx))
 	})
 }
 
@@ -149,7 +147,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	})
 }
 
-func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, pggen.Querier) error) error {
+func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, *sqlc.Queries) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -157,13 +155,13 @@ func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, p
 		conn = ctxConn
 	}
 
-	return conn.BeginFunc(ctx, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
 		sql := fmt.Sprintf("LOCK TABLE %s IN EXCLUSIVE MODE", table)
 		if _, err := tx.Exec(ctx, sql); err != nil {
 			return err
 		}
-		return fn(ctx, pggen.NewQuerier(tx))
+		return fn(ctx, sqlc.New(tx))
 	})
 }
 

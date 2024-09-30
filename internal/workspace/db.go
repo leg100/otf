@@ -3,12 +3,12 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -19,41 +19,41 @@ type (
 
 	// pgresult represents the result of a database query for a workspace.
 	pgresult struct {
-		WorkspaceID                pgtype.Text            `json:"workspace_id"`
-		CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
-		UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-		AllowDestroyPlan           pgtype.Bool            `json:"allow_destroy_plan"`
-		AutoApply                  pgtype.Bool            `json:"auto_apply"`
-		CanQueueDestroyPlan        pgtype.Bool            `json:"can_queue_destroy_plan"`
-		Description                pgtype.Text            `json:"description"`
-		Environment                pgtype.Text            `json:"environment"`
-		ExecutionMode              pgtype.Text            `json:"execution_mode"`
-		GlobalRemoteState          pgtype.Bool            `json:"global_remote_state"`
-		MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
-		Name                       pgtype.Text            `json:"name"`
-		QueueAllRuns               pgtype.Bool            `json:"queue_all_runs"`
-		SpeculativeEnabled         pgtype.Bool            `json:"speculative_enabled"`
-		SourceName                 pgtype.Text            `json:"source_name"`
-		SourceURL                  pgtype.Text            `json:"source_url"`
-		StructuredRunOutputEnabled pgtype.Bool            `json:"structured_run_output_enabled"`
-		TerraformVersion           pgtype.Text            `json:"terraform_version"`
-		TriggerPrefixes            []string               `json:"trigger_prefixes"`
-		WorkingDirectory           pgtype.Text            `json:"working_directory"`
-		LockRunID                  pgtype.Text            `json:"lock_run_id"`
-		LatestRunID                pgtype.Text            `json:"latest_run_id"`
-		OrganizationName           pgtype.Text            `json:"organization_name"`
-		Branch                     pgtype.Text            `json:"branch"`
-		LockUsername               pgtype.Text            `json:"lock_username"`
-		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
-		TriggerPatterns            []string               `json:"trigger_patterns"`
-		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
-		AllowCLIApply              pgtype.Bool            `json:"allow_cli_apply"`
-		AgentPoolID                pgtype.Text            `json:"agent_pool_id"`
-		Tags                       []string               `json:"tags"`
-		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
-		UserLock                   *pggen.Users           `json:"user_lock"`
-		RunLock                    *pggen.Runs            `json:"run_lock"`
-		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
+		WorkspaceID                pgtype.Text          `json:"workspace_id"`
+		CreatedAt                  pgtype.Timestamptz   `json:"created_at"`
+		UpdatedAt                  pgtype.Timestamptz   `json:"updated_at"`
+		AllowDestroyPlan           pgtype.Bool          `json:"allow_destroy_plan"`
+		AutoApply                  pgtype.Bool          `json:"auto_apply"`
+		CanQueueDestroyPlan        pgtype.Bool          `json:"can_queue_destroy_plan"`
+		Description                pgtype.Text          `json:"description"`
+		Environment                pgtype.Text          `json:"environment"`
+		ExecutionMode              pgtype.Text          `json:"execution_mode"`
+		GlobalRemoteState          pgtype.Bool          `json:"global_remote_state"`
+		MigrationEnvironment       pgtype.Text          `json:"migration_environment"`
+		Name                       pgtype.Text          `json:"name"`
+		QueueAllRuns               pgtype.Bool          `json:"queue_all_runs"`
+		SpeculativeEnabled         pgtype.Bool          `json:"speculative_enabled"`
+		SourceName                 pgtype.Text          `json:"source_name"`
+		SourceURL                  pgtype.Text          `json:"source_url"`
+		StructuredRunOutputEnabled pgtype.Bool          `json:"structured_run_output_enabled"`
+		TerraformVersion           pgtype.Text          `json:"terraform_version"`
+		TriggerPrefixes            []pgtype.Text        `json:"trigger_prefixes"`
+		WorkingDirectory           pgtype.Text          `json:"working_directory"`
+		LockRunID                  pgtype.Text          `json:"lock_run_id"`
+		LatestRunID                pgtype.Text          `json:"latest_run_id"`
+		OrganizationName           pgtype.Text          `json:"organization_name"`
+		Branch                     pgtype.Text          `json:"branch"`
+		LockUsername               pgtype.Text          `json:"lock_username"`
+		CurrentStateVersionID      pgtype.Text          `json:"current_state_version_id"`
+		TriggerPatterns            []pgtype.Text        `json:"trigger_patterns"`
+		VCSTagsRegex               pgtype.Text          `json:"vcs_tags_regex"`
+		AllowCLIApply              pgtype.Bool          `json:"allow_cli_apply"`
+		AgentPoolID                pgtype.Text          `json:"agent_pool_id"`
+		Tags                       []pgtype.Text        `json:"tags"`
+		LatestRunStatus            pgtype.Text          `json:"latest_run_status"`
+		UserLock                   *sqlc.User           `json:"user_lock"`
+		RunLock                    *sqlc.Run            `json:"run_lock"`
+		WorkspaceConnection        *sqlc.RepoConnection `json:"workspace_connection"`
 	}
 )
 
@@ -77,13 +77,13 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		SourceName:                 r.SourceName.String,
 		SourceURL:                  r.SourceURL.String,
 		TerraformVersion:           r.TerraformVersion.String,
-		TriggerPrefixes:            r.TriggerPrefixes,
-		TriggerPatterns:            r.TriggerPatterns,
+		TriggerPrefixes:            sql.FromStringArray(r.TriggerPrefixes),
+		TriggerPatterns:            sql.FromStringArray(r.TriggerPatterns),
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
-		Tags:                       r.Tags,
+		Tags:                       sql.FromStringArray(r.Tags),
 	}
-	if r.AgentPoolID.Status == pgtype.Present {
+	if r.AgentPoolID.Valid {
 		ws.AgentPoolID = &r.AgentPoolID.String
 	}
 
@@ -94,12 +94,12 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 			Repo:          r.WorkspaceConnection.RepoPath.String,
 			Branch:        r.Branch.String,
 		}
-		if r.VCSTagsRegex.Status == pgtype.Present {
+		if r.VCSTagsRegex.Valid {
 			ws.Connection.TagsRegex = r.VCSTagsRegex.String
 		}
 	}
 
-	if r.LatestRunID.Status == pgtype.Present && r.LatestRunStatus.Status == pgtype.Present {
+	if r.LatestRunID.Valid && r.LatestRunStatus.Valid {
 		ws.LatestRun = &LatestRun{
 			ID:     r.LatestRunID.String,
 			Status: runStatus(r.LatestRunStatus.String),
@@ -123,7 +123,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	q := db.Conn(ctx)
-	params := pggen.InsertWorkspaceParams{
+	params := sqlc.InsertWorkspaceParams{
 		ID:                         sql.String(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
@@ -145,8 +145,8 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		SourceURL:                  sql.String(ws.SourceURL),
 		StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
 		TerraformVersion:           sql.String(ws.TerraformVersion),
-		TriggerPrefixes:            ws.TriggerPrefixes,
-		TriggerPatterns:            ws.TriggerPatterns,
+		TriggerPrefixes:            sql.StringArray(ws.TriggerPrefixes),
+		TriggerPatterns:            sql.StringArray(ws.TriggerPatterns),
 		VCSTagsRegex:               sql.StringPtr(nil),
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
@@ -156,13 +156,13 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		params.Branch = sql.String(ws.Connection.Branch)
 		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 	}
-	_, err := q.InsertWorkspace(ctx, params)
+	err := q.InsertWorkspace(ctx, params)
 	return sql.Error(err)
 }
 
 func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
 		// retrieve workspace
 		result, err := q.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
@@ -178,7 +178,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			return err
 		}
 		// persist update
-		params := pggen.UpdateWorkspaceByIDParams{
+		params := sqlc.UpdateWorkspaceByIDParams{
 			AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
 			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 			AllowCLIApply:              sql.Bool(false),
@@ -192,8 +192,8 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
 			StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
 			TerraformVersion:           sql.String(ws.TerraformVersion),
-			TriggerPrefixes:            ws.TriggerPrefixes,
-			TriggerPatterns:            ws.TriggerPatterns,
+			TriggerPrefixes:            sql.StringArray(ws.TriggerPrefixes),
+			TriggerPatterns:            sql.StringArray(ws.TriggerPatterns),
 			VCSTagsRegex:               sql.StringPtr(nil),
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
 			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
@@ -235,14 +235,14 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 		tags = opts.Tags
 	}
 
-	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
+	q.FindWorkspacesBatch(batch, sqlc.FindWorkspacesParams{
 		OrganizationNames: []string{organization},
 		Search:            sql.String(opts.Search),
-		Tags:              tags,
+		Tags:              sql.StringArray(tags),
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
-	q.CountWorkspacesBatch(batch, pggen.CountWorkspacesParams{
+	q.CountWorkspacesBatch(batch, sqlc.CountWorkspacesParams{
 		Search:            sql.String(opts.Search),
 		OrganizationNames: []string{organization},
 		Tags:              tags,
@@ -292,7 +292,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	q.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{
+	q.FindWorkspacesByUsernameBatch(batch, sqlc.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
 		Username:         sql.String(username),
 		Limit:            opts.GetLimit(),
@@ -334,7 +334,10 @@ func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error)
 
 func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindWorkspaceByName(ctx, sql.String(workspace), sql.String(organization))
+	result, err := q.FindWorkspaceByName(ctx, sqlc.FindWorkspaceByNameParams{
+		Name:             sql.String(workspace),
+		OrganizationName: sql.String(organization),
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -343,7 +346,7 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 
 func (db *pgdb) delete(ctx context.Context, workspaceID string) error {
 	q := db.Conn(ctx)
-	_, err := q.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
+	err := q.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)
 	}

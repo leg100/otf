@@ -18,9 +18,9 @@ WHERE agent_token_id = $1
 RETURNING agent_token_id
 `
 
-func (q *Queries) DeleteAgentTokenByID(ctx context.Context, agentTokenID string) (string, error) {
+func (q *Queries) DeleteAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteAgentTokenByID, agentTokenID)
-	var agent_token_id string
+	var agent_token_id pgtype.Text
 	err := row.Scan(&agent_token_id)
 	return agent_token_id, err
 }
@@ -31,7 +31,7 @@ FROM agent_tokens
 WHERE agent_token_id = $1
 `
 
-func (q *Queries) FindAgentTokenByID(ctx context.Context, agentTokenID string) (AgentToken, error) {
+func (q *Queries) FindAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (AgentToken, error) {
 	row := q.db.QueryRow(ctx, findAgentTokenByID, agentTokenID)
 	var i AgentToken
 	err := row.Scan(
@@ -50,7 +50,7 @@ WHERE agent_pool_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) FindAgentTokensByAgentPoolID(ctx context.Context, agentPoolID string) ([]AgentToken, error) {
+func (q *Queries) FindAgentTokensByAgentPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]AgentToken, error) {
 	rows, err := q.db.Query(ctx, findAgentTokensByAgentPoolID, agentPoolID)
 	if err != nil {
 		return nil, err
@@ -90,10 +90,10 @@ INSERT INTO agent_tokens (
 `
 
 type InsertAgentTokenParams struct {
-	AgentTokenID string
+	AgentTokenID pgtype.Text
 	CreatedAt    pgtype.Timestamptz
-	Description  string
-	AgentPoolID  string
+	Description  pgtype.Text
+	AgentPoolID  pgtype.Text
 }
 
 func (q *Queries) InsertAgentToken(ctx context.Context, arg InsertAgentTokenParams) error {

@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const findLatestTerraformVersion = `-- name: FindLatestTerraformVersion :many
@@ -44,7 +46,7 @@ INSERT INTO latest_terraform_version (
 )
 `
 
-func (q *Queries) InsertLatestTerraformVersion(ctx context.Context, version string) error {
+func (q *Queries) InsertLatestTerraformVersion(ctx context.Context, version pgtype.Text) error {
 	_, err := q.db.Exec(ctx, insertLatestTerraformVersion, version)
 	return err
 }
@@ -55,7 +57,7 @@ SET version = $1,
     checkpoint = current_timestamp
 `
 
-func (q *Queries) UpdateLatestTerraformVersion(ctx context.Context, version string) error {
+func (q *Queries) UpdateLatestTerraformVersion(ctx context.Context, version pgtype.Text) error {
 	_, err := q.db.Exec(ctx, updateLatestTerraformVersion, version)
 	return err
 }

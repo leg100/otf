@@ -18,9 +18,9 @@ WHERE organization_name = $1
 RETURNING organization_token_id
 `
 
-func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, organizationName string) (string, error) {
+func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, organizationName pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteOrganiationTokenByName, organizationName)
-	var organization_token_id string
+	var organization_token_id pgtype.Text
 	err := row.Scan(&organization_token_id)
 	return organization_token_id, err
 }
@@ -31,7 +31,7 @@ FROM organization_tokens
 WHERE organization_name = $1
 `
 
-func (q *Queries) FindOrganizationTokens(ctx context.Context, organizationName string) ([]OrganizationToken, error) {
+func (q *Queries) FindOrganizationTokens(ctx context.Context, organizationName pgtype.Text) ([]OrganizationToken, error) {
 	rows, err := q.db.Query(ctx, findOrganizationTokens, organizationName)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ FROM organization_tokens
 WHERE organization_token_id = $1
 `
 
-func (q *Queries) FindOrganizationTokensByID(ctx context.Context, organizationTokenID string) (OrganizationToken, error) {
+func (q *Queries) FindOrganizationTokensByID(ctx context.Context, organizationTokenID pgtype.Text) (OrganizationToken, error) {
 	row := q.db.QueryRow(ctx, findOrganizationTokensByID, organizationTokenID)
 	var i OrganizationToken
 	err := row.Scan(
@@ -80,7 +80,7 @@ FROM organization_tokens
 WHERE organization_name = $1
 `
 
-func (q *Queries) FindOrganizationTokensByName(ctx context.Context, organizationName string) (OrganizationToken, error) {
+func (q *Queries) FindOrganizationTokensByName(ctx context.Context, organizationName pgtype.Text) (OrganizationToken, error) {
 	row := q.db.QueryRow(ctx, findOrganizationTokensByName, organizationName)
 	var i OrganizationToken
 	err := row.Scan(
@@ -110,9 +110,9 @@ INSERT INTO organization_tokens (
 `
 
 type UpsertOrganizationTokenParams struct {
-	OrganizationTokenID string
+	OrganizationTokenID pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    string
+	OrganizationName    pgtype.Text
 	Expiry              pgtype.Timestamptz
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"net/netip"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -45,7 +46,7 @@ type Agent struct {
 	// Last time the status was updated
 	LastStatusAt time.Time `jsonapi:"attribute" json:"last-status-at"`
 	// IP address of agent
-	IPAddress net.IP `jsonapi:"attribute" json:"ip-address"`
+	IPAddress netip.Addr `jsonapi:"attribute" json:"ip-address"`
 	// ID of agent' pool. If nil then the agent is assumed to be a server agent
 	// (otfd).
 	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id"`

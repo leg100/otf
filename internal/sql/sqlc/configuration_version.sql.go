@@ -17,7 +17,7 @@ FROM configuration_versions
 WHERE configuration_versions.workspace_id = $1
 `
 
-func (q *Queries) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID string) (int64, error) {
+func (q *Queries) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int64, error) {
 	row := q.db.QueryRow(ctx, countConfigurationVersionsByWorkspaceID, workspaceID)
 	var count int64
 	err := row.Scan(&count)
@@ -31,9 +31,9 @@ WHERE configuration_version_id = $1
 RETURNING configuration_version_id
 `
 
-func (q *Queries) DeleteConfigurationVersionByID(ctx context.Context, id string) (string, error) {
+func (q *Queries) DeleteConfigurationVersionByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteConfigurationVersionByID, id)
-	var configuration_version_id string
+	var configuration_version_id pgtype.Text
 	err := row.Scan(&configuration_version_id)
 	return configuration_version_id, err
 }
@@ -47,7 +47,7 @@ AND   status                   = 'uploaded'
 
 // DownloadConfigurationVersion gets a configuration_version config
 // tarball.
-func (q *Queries) DownloadConfigurationVersion(ctx context.Context, configurationVersionID string) ([]byte, error) {
+func (q *Queries) DownloadConfigurationVersion(ctx context.Context, configurationVersionID pgtype.Text) ([]byte, error) {
 	row := q.db.QueryRow(ctx, downloadConfigurationVersion, configurationVersionID)
 	var config []byte
 	err := row.Scan(&config)
@@ -63,40 +63,30 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    (
-        SELECT array_agg(t.status)::text[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = cv.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_statuses,
-    (
-        SELECT array_agg(t.timestamp)::timestamptz[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = cv.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_timestamps,
+    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
+LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
 WHERE cv.configuration_version_id = $1
+GROUP BY cv.configuration_version_id
 `
 
 type FindConfigurationVersionByIDRow struct {
-	ConfigurationVersionID                        string
-	CreatedAt                                     pgtype.Timestamptz
-	AutoQueueRuns                                 bool
-	Source                                        string
-	Speculative                                   bool
-	Status                                        string
-	WorkspaceID                                   string
-	ConfigurationVersionStatusTimestampStatuses   []string
-	ConfigurationVersionStatusTimestampTimestamps []pgtype.Timestamptz
-	ConfigurationVersionIngressAttribute          ConfigurationVersionIngressAttribute
+	ConfigurationVersionID               pgtype.Text
+	CreatedAt                            pgtype.Timestamptz
+	AutoQueueRuns                        pgtype.Bool
+	Source                               pgtype.Text
+	Speculative                          pgtype.Bool
+	Status                               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	StatusTimestamps                     ConfigurationVersionStatusTimestamp
+	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
 // FindConfigurationVersionByID finds a configuration_version by its id.
-func (q *Queries) FindConfigurationVersionByID(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDRow, error) {
+func (q *Queries) FindConfigurationVersionByID(ctx context.Context, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDRow, error) {
 	row := q.db.QueryRow(ctx, findConfigurationVersionByID, configurationVersionID)
 	var i FindConfigurationVersionByIDRow
 	err := row.Scan(
@@ -107,22 +97,21 @@ func (q *Queries) FindConfigurationVersionByID(ctx context.Context, configuratio
 		&i.Speculative,
 		&i.Status,
 		&i.WorkspaceID,
-		&i.ConfigurationVersionStatusTimestampStatuses,
-		&i.ConfigurationVersionStatusTimestampTimestamps,
+		&i.StatusTimestamps,
 		&i.ConfigurationVersionIngressAttribute.Branch,
 		&i.ConfigurationVersionIngressAttribute.CommitSha,
 		&i.ConfigurationVersionIngressAttribute.Identifier,
 		&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 		&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 		&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-		&i.ConfigurationVersionIngressAttribute.CommitUrl,
+		&i.ConfigurationVersionIngressAttribute.CommitURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-		&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+		&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 		&i.ConfigurationVersionIngressAttribute.Tag,
 		&i.ConfigurationVersionIngressAttribute.SenderUsername,
-		&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-		&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+		&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+		&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 	)
 	return i, err
 }
@@ -136,40 +125,30 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    (
-        SELECT array_agg(t.status)::text[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = cv.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_statuses,
-    (
-        SELECT array_agg(t.timestamp)::timestamptz[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = cv.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_timestamps,
+    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
+LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
 WHERE cv.configuration_version_id = $1
+GROUP BY cv.configuration_version_id
 FOR UPDATE OF configuration_versions
 `
 
 type FindConfigurationVersionByIDForUpdateRow struct {
-	ConfigurationVersionID                        string
-	CreatedAt                                     pgtype.Timestamptz
-	AutoQueueRuns                                 bool
-	Source                                        string
-	Speculative                                   bool
-	Status                                        string
-	WorkspaceID                                   string
-	ConfigurationVersionStatusTimestampStatuses   []string
-	ConfigurationVersionStatusTimestampTimestamps []pgtype.Timestamptz
-	ConfigurationVersionIngressAttribute          ConfigurationVersionIngressAttribute
+	ConfigurationVersionID               pgtype.Text
+	CreatedAt                            pgtype.Timestamptz
+	AutoQueueRuns                        pgtype.Bool
+	Source                               pgtype.Text
+	Speculative                          pgtype.Bool
+	Status                               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	StatusTimestamps                     ConfigurationVersionStatusTimestamp
+	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
-func (q *Queries) FindConfigurationVersionByIDForUpdate(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDForUpdateRow, error) {
+func (q *Queries) FindConfigurationVersionByIDForUpdate(ctx context.Context, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findConfigurationVersionByIDForUpdate, configurationVersionID)
 	var i FindConfigurationVersionByIDForUpdateRow
 	err := row.Scan(
@@ -180,22 +159,21 @@ func (q *Queries) FindConfigurationVersionByIDForUpdate(ctx context.Context, con
 		&i.Speculative,
 		&i.Status,
 		&i.WorkspaceID,
-		&i.ConfigurationVersionStatusTimestampStatuses,
-		&i.ConfigurationVersionStatusTimestampTimestamps,
+		&i.StatusTimestamps,
 		&i.ConfigurationVersionIngressAttribute.Branch,
 		&i.ConfigurationVersionIngressAttribute.CommitSha,
 		&i.ConfigurationVersionIngressAttribute.Identifier,
 		&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 		&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 		&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-		&i.ConfigurationVersionIngressAttribute.CommitUrl,
+		&i.ConfigurationVersionIngressAttribute.CommitURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-		&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+		&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 		&i.ConfigurationVersionIngressAttribute.Tag,
 		&i.ConfigurationVersionIngressAttribute.SenderUsername,
-		&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-		&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+		&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+		&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 	)
 	return i, err
 }
@@ -209,40 +187,30 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    (
-        SELECT array_agg(t.status)::text[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = configuration_versions.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_statuses,
-    (
-        SELECT array_agg(t.timestamp)::timestamptz[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = configuration_versions.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_timestamps,
+    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
+LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
 WHERE cv.workspace_id = $1
+GROUP BY cv.configuration_version_id
 ORDER BY cv.created_at DESC
 `
 
 type FindConfigurationVersionLatestByWorkspaceIDRow struct {
-	ConfigurationVersionID                        string
-	CreatedAt                                     pgtype.Timestamptz
-	AutoQueueRuns                                 bool
-	Source                                        string
-	Speculative                                   bool
-	Status                                        string
-	WorkspaceID                                   string
-	ConfigurationVersionStatusTimestampStatuses   []string
-	ConfigurationVersionStatusTimestampTimestamps []pgtype.Timestamptz
-	ConfigurationVersionIngressAttribute          ConfigurationVersionIngressAttribute
+	ConfigurationVersionID               pgtype.Text
+	CreatedAt                            pgtype.Timestamptz
+	AutoQueueRuns                        pgtype.Bool
+	Source                               pgtype.Text
+	Speculative                          pgtype.Bool
+	Status                               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	StatusTimestamps                     ConfigurationVersionStatusTimestamp
+	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
-func (q *Queries) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, workspaceID string) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
+func (q *Queries) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
 	row := q.db.QueryRow(ctx, findConfigurationVersionLatestByWorkspaceID, workspaceID)
 	var i FindConfigurationVersionLatestByWorkspaceIDRow
 	err := row.Scan(
@@ -253,22 +221,21 @@ func (q *Queries) FindConfigurationVersionLatestByWorkspaceID(ctx context.Contex
 		&i.Speculative,
 		&i.Status,
 		&i.WorkspaceID,
-		&i.ConfigurationVersionStatusTimestampStatuses,
-		&i.ConfigurationVersionStatusTimestampTimestamps,
+		&i.StatusTimestamps,
 		&i.ConfigurationVersionIngressAttribute.Branch,
 		&i.ConfigurationVersionIngressAttribute.CommitSha,
 		&i.ConfigurationVersionIngressAttribute.Identifier,
 		&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 		&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 		&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-		&i.ConfigurationVersionIngressAttribute.CommitUrl,
+		&i.ConfigurationVersionIngressAttribute.CommitURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-		&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+		&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 		&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 		&i.ConfigurationVersionIngressAttribute.Tag,
 		&i.ConfigurationVersionIngressAttribute.SenderUsername,
-		&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-		&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+		&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+		&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 	)
 	return i, err
 }
@@ -282,44 +249,34 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    (
-        SELECT array_agg(t.status)::text[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = cv.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_statuses,
-    (
-        SELECT array_agg(t.timestamp)::timestamptz[]
-        FROM configuration_version_status_timestamps t
-        WHERE t.configuration_version_id = cv.configuration_version_id
-        GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamp_timestamps,
+    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
+LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
 WHERE workspaces.workspace_id = $1
+GROUP BY cv.configuration_version_id
 LIMIT $3
 OFFSET $2
 `
 
 type FindConfigurationVersionsByWorkspaceIDParams struct {
-	WorkspaceID string
+	WorkspaceID pgtype.Text
 	Offset      int32
 	Limit       int32
 }
 
 type FindConfigurationVersionsByWorkspaceIDRow struct {
-	ConfigurationVersionID                        string
-	CreatedAt                                     pgtype.Timestamptz
-	AutoQueueRuns                                 bool
-	Source                                        string
-	Speculative                                   bool
-	Status                                        string
-	WorkspaceID                                   string
-	ConfigurationVersionStatusTimestampStatuses   []string
-	ConfigurationVersionStatusTimestampTimestamps []pgtype.Timestamptz
-	ConfigurationVersionIngressAttribute          ConfigurationVersionIngressAttribute
+	ConfigurationVersionID               pgtype.Text
+	CreatedAt                            pgtype.Timestamptz
+	AutoQueueRuns                        pgtype.Bool
+	Source                               pgtype.Text
+	Speculative                          pgtype.Bool
+	Status                               pgtype.Text
+	WorkspaceID                          pgtype.Text
+	StatusTimestamps                     ConfigurationVersionStatusTimestamp
+	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
 
 // FindConfigurationVersions finds configuration_versions for a given workspace.
@@ -341,22 +298,21 @@ func (q *Queries) FindConfigurationVersionsByWorkspaceID(ctx context.Context, ar
 			&i.Speculative,
 			&i.Status,
 			&i.WorkspaceID,
-			&i.ConfigurationVersionStatusTimestampStatuses,
-			&i.ConfigurationVersionStatusTimestampTimestamps,
+			&i.StatusTimestamps,
 			&i.ConfigurationVersionIngressAttribute.Branch,
 			&i.ConfigurationVersionIngressAttribute.CommitSha,
 			&i.ConfigurationVersionIngressAttribute.Identifier,
 			&i.ConfigurationVersionIngressAttribute.IsPullRequest,
 			&i.ConfigurationVersionIngressAttribute.OnDefaultBranch,
 			&i.ConfigurationVersionIngressAttribute.ConfigurationVersionID,
-			&i.ConfigurationVersionIngressAttribute.CommitUrl,
+			&i.ConfigurationVersionIngressAttribute.CommitURL,
 			&i.ConfigurationVersionIngressAttribute.PullRequestNumber,
-			&i.ConfigurationVersionIngressAttribute.PullRequestUrl,
+			&i.ConfigurationVersionIngressAttribute.PullRequestURL,
 			&i.ConfigurationVersionIngressAttribute.PullRequestTitle,
 			&i.ConfigurationVersionIngressAttribute.Tag,
 			&i.ConfigurationVersionIngressAttribute.SenderUsername,
-			&i.ConfigurationVersionIngressAttribute.SenderAvatarUrl,
-			&i.ConfigurationVersionIngressAttribute.SenderHtmlUrl,
+			&i.ConfigurationVersionIngressAttribute.SenderAvatarURL,
+			&i.ConfigurationVersionIngressAttribute.SenderHtmlURL,
 		); err != nil {
 			return nil, err
 		}
@@ -389,13 +345,13 @@ INSERT INTO configuration_versions (
 `
 
 type InsertConfigurationVersionParams struct {
-	ID            string
+	ID            pgtype.Text
 	CreatedAt     pgtype.Timestamptz
-	AutoQueueRuns bool
-	Source        string
-	Speculative   bool
-	Status        string
-	WorkspaceID   string
+	AutoQueueRuns pgtype.Bool
+	Source        pgtype.Text
+	Speculative   pgtype.Bool
+	Status        pgtype.Text
+	WorkspaceID   pgtype.Text
 }
 
 func (q *Queries) InsertConfigurationVersion(ctx context.Context, arg InsertConfigurationVersionParams) error {
@@ -425,8 +381,8 @@ RETURNING configuration_version_id, status, timestamp
 `
 
 type InsertConfigurationVersionStatusTimestampParams struct {
-	ID        string
-	Status    string
+	ID        pgtype.Text
+	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
@@ -448,12 +404,12 @@ RETURNING configuration_version_id
 
 type UpdateConfigurationVersionConfigByIDParams struct {
 	Config []byte
-	ID     string
+	ID     pgtype.Text
 }
 
-func (q *Queries) UpdateConfigurationVersionConfigByID(ctx context.Context, arg UpdateConfigurationVersionConfigByIDParams) (string, error) {
+func (q *Queries) UpdateConfigurationVersionConfigByID(ctx context.Context, arg UpdateConfigurationVersionConfigByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateConfigurationVersionConfigByID, arg.Config, arg.ID)
-	var configuration_version_id string
+	var configuration_version_id pgtype.Text
 	err := row.Scan(&configuration_version_id)
 	return configuration_version_id, err
 }
@@ -466,9 +422,9 @@ WHERE configuration_version_id = $1
 RETURNING configuration_version_id
 `
 
-func (q *Queries) UpdateConfigurationVersionErroredByID(ctx context.Context, id string) (string, error) {
+func (q *Queries) UpdateConfigurationVersionErroredByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateConfigurationVersionErroredByID, id)
-	var configuration_version_id string
+	var configuration_version_id pgtype.Text
 	err := row.Scan(&configuration_version_id)
 	return configuration_version_id, err
 }

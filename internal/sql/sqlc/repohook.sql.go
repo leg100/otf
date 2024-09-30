@@ -23,10 +23,10 @@ func (q *Queries) DeleteRepohookByID(ctx context.Context, repohookID pgtype.UUID
 	var i Repohook
 	err := row.Scan(
 		&i.RepohookID,
-		&i.VcsID,
+		&i.VCSID,
 		&i.Secret,
 		&i.RepoPath,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 	)
 	return i, err
 }
@@ -46,11 +46,11 @@ WHERE w.repohook_id = $1
 
 type FindRepohookByIDRow struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	VcsProviderID string
-	Secret        string
-	RepoPath      string
-	VcsKind       string
+	VCSID         pgtype.Text
+	VCSProviderID pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
+	VCSKind       pgtype.Text
 }
 
 func (q *Queries) FindRepohookByID(ctx context.Context, repohookID pgtype.UUID) (FindRepohookByIDRow, error) {
@@ -58,11 +58,11 @@ func (q *Queries) FindRepohookByID(ctx context.Context, repohookID pgtype.UUID) 
 	var i FindRepohookByIDRow
 	err := row.Scan(
 		&i.RepohookID,
-		&i.VcsID,
-		&i.VcsProviderID,
+		&i.VCSID,
+		&i.VCSProviderID,
 		&i.Secret,
 		&i.RepoPath,
-		&i.VcsKind,
+		&i.VCSKind,
 	)
 	return i, err
 }
@@ -82,21 +82,21 @@ AND   w.vcs_provider_id = $2
 `
 
 type FindRepohookByRepoAndProviderParams struct {
-	RepoPath      string
-	VcsProviderID string
+	RepoPath      pgtype.Text
+	VCSProviderID pgtype.Text
 }
 
 type FindRepohookByRepoAndProviderRow struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	VcsProviderID string
-	Secret        string
-	RepoPath      string
-	VcsKind       string
+	VCSID         pgtype.Text
+	VCSProviderID pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
+	VCSKind       pgtype.Text
 }
 
 func (q *Queries) FindRepohookByRepoAndProvider(ctx context.Context, arg FindRepohookByRepoAndProviderParams) ([]FindRepohookByRepoAndProviderRow, error) {
-	rows, err := q.db.Query(ctx, findRepohookByRepoAndProvider, arg.RepoPath, arg.VcsProviderID)
+	rows, err := q.db.Query(ctx, findRepohookByRepoAndProvider, arg.RepoPath, arg.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -106,11 +106,11 @@ func (q *Queries) FindRepohookByRepoAndProvider(ctx context.Context, arg FindRep
 		var i FindRepohookByRepoAndProviderRow
 		if err := rows.Scan(
 			&i.RepohookID,
-			&i.VcsID,
-			&i.VcsProviderID,
+			&i.VCSID,
+			&i.VCSProviderID,
 			&i.Secret,
 			&i.RepoPath,
-			&i.VcsKind,
+			&i.VCSKind,
 		); err != nil {
 			return nil, err
 		}
@@ -136,11 +136,11 @@ JOIN vcs_providers v USING (vcs_provider_id)
 
 type FindRepohooksRow struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	VcsProviderID string
-	Secret        string
-	RepoPath      string
-	VcsKind       string
+	VCSID         pgtype.Text
+	VCSProviderID pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
+	VCSKind       pgtype.Text
 }
 
 func (q *Queries) FindRepohooks(ctx context.Context) ([]FindRepohooksRow, error) {
@@ -154,11 +154,11 @@ func (q *Queries) FindRepohooks(ctx context.Context) ([]FindRepohooksRow, error)
 		var i FindRepohooksRow
 		if err := rows.Scan(
 			&i.RepohookID,
-			&i.VcsID,
-			&i.VcsProviderID,
+			&i.VCSID,
+			&i.VCSProviderID,
 			&i.Secret,
 			&i.RepoPath,
-			&i.VcsKind,
+			&i.VCSKind,
 		); err != nil {
 			return nil, err
 		}
@@ -189,11 +189,11 @@ WHERE NOT EXISTS (
 
 type FindUnreferencedRepohooksRow struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	VcsProviderID string
-	Secret        string
-	RepoPath      string
-	VcsKind       string
+	VCSID         pgtype.Text
+	VCSProviderID pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
+	VCSKind       pgtype.Text
 }
 
 func (q *Queries) FindUnreferencedRepohooks(ctx context.Context) ([]FindUnreferencedRepohooksRow, error) {
@@ -207,11 +207,11 @@ func (q *Queries) FindUnreferencedRepohooks(ctx context.Context) ([]FindUnrefere
 		var i FindUnreferencedRepohooksRow
 		if err := rows.Scan(
 			&i.RepohookID,
-			&i.VcsID,
-			&i.VcsProviderID,
+			&i.VCSID,
+			&i.VCSProviderID,
 			&i.Secret,
 			&i.RepoPath,
-			&i.VcsKind,
+			&i.VCSKind,
 		); err != nil {
 			return nil, err
 		}
@@ -253,37 +253,37 @@ JOIN vcs_providers v USING (vcs_provider_id)
 
 type InsertRepohookParams struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	VcsProviderID string
-	Secret        string
-	RepoPath      string
+	VCSID         pgtype.Text
+	VCSProviderID pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
 }
 
 type InsertRepohookRow struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	VcsProviderID string
-	Secret        string
-	RepoPath      string
-	VcsKind       string
+	VCSID         pgtype.Text
+	VCSProviderID pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
+	VCSKind       pgtype.Text
 }
 
 func (q *Queries) InsertRepohook(ctx context.Context, arg InsertRepohookParams) (InsertRepohookRow, error) {
 	row := q.db.QueryRow(ctx, insertRepohook,
 		arg.RepohookID,
-		arg.VcsID,
-		arg.VcsProviderID,
+		arg.VCSID,
+		arg.VCSProviderID,
 		arg.Secret,
 		arg.RepoPath,
 	)
 	var i InsertRepohookRow
 	err := row.Scan(
 		&i.RepohookID,
-		&i.VcsID,
-		&i.VcsProviderID,
+		&i.VCSID,
+		&i.VCSProviderID,
 		&i.Secret,
 		&i.RepoPath,
-		&i.VcsKind,
+		&i.VCSKind,
 	)
 	return i, err
 }
@@ -296,19 +296,19 @@ RETURNING repohook_id, vcs_id, secret, repo_path, vcs_provider_id
 `
 
 type UpdateRepohookVCSIDParams struct {
-	VcsID      pgtype.Text
+	VCSID      pgtype.Text
 	RepohookID pgtype.UUID
 }
 
 func (q *Queries) UpdateRepohookVCSID(ctx context.Context, arg UpdateRepohookVCSIDParams) (Repohook, error) {
-	row := q.db.QueryRow(ctx, updateRepohookVCSID, arg.VcsID, arg.RepohookID)
+	row := q.db.QueryRow(ctx, updateRepohookVCSID, arg.VCSID, arg.RepohookID)
 	var i Repohook
 	err := row.Scan(
 		&i.RepohookID,
-		&i.VcsID,
+		&i.VCSID,
 		&i.Secret,
 		&i.RepoPath,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 	)
 	return i, err
 }

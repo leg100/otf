@@ -9,20 +9,57 @@ sql:
         out: "./internal/sql/sqlc"
         sql_package: "pgx/v5"
         overrides:
+          - db_type: "pg_catalog.bool"
+            go_type:
+              import: "github.com/jackc/pgx/v5/pgtype"
+              type: "Bool"
+          - db_type: "pg_catalog.int4"
+            go_type:
+              import: "github.com/jackc/pgx/v5/pgtype"
+              type: "Int4"
+          - db_type: "pg_catalog.int8"
+            go_type:
+              import: "github.com/jackc/pgx/v5/pgtype"
+              type: "Int8"
+          - db_type: "text"
+            go_type:
+              import: "github.com/jackc/pgx/v5/pgtype"
+              type: "Text"
           - db_type: "public.report"
-            go_type: "internal/run/run.Report"
-            nullable: true
+            go_type:
+              type: "Report"
           - db_type: "variables"
-            go_type: "internal/variable/variable.VariableRow"
+            go_type:
+              type: "Variable"
           - db_type: "run_variables"
-            go_type: "internal/run/run.Variable"
+            go_type:
+              type: "RunVariable"
           - db_type: "teams"
-            go_type: "internal/team/team.TeamRow"
+            go_type:
+              type: "Team"
           - db_type: "github_apps"
-            go_type: "internal/github/github.AppRow"
+            go_type:
+              type: "GithubApp"
           - db_type: "github_app_installs"
-            go_type: "internal/github/github.AppInstallRow"
+            go_type:
+              type: "GithubAppInstall"
           - db_type: "module_versions"
-            go_type: "internal/sql/sqlc/sqlc.ModuleVersion"
+            go_type:
+              type: "ModuleVersion"
           - db_type: "run_status_timestamps"
-            go_type: "internal/sql/sqlc/sqlc.RunStatusTimestamp"
+            go_type:
+              type: "RunStatusTimestamp"
+          - db_type: "phase_status_timestamps"
+            go_type:
+              type: "PhaseStatusTimestamp"
+          - db_type: "configuration_version_status_timestamps"
+            go_type:
+              type: "ConfigurationVersionStatusTimestamp"
+          - db_type: "state_version_outputs"
+            go_type:
+              type: "StateVersionOutput"
+        initialisms:
+          - "id"
+          - "vcs"
+          - "cli"
+          - "url"

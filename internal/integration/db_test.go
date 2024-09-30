@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,8 +53,8 @@ func TestTx(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = db.Tx(ctx, func(txCtx context.Context, q pggen.Querier) error {
-		_, err := q.InsertOrganization(txCtx, pggen.InsertOrganizationParams{
+	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
+		_, err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
 			ID:                         sql.String(org.ID),
 			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -79,7 +79,7 @@ func TestTx(t *testing.T) {
 		_, err = db.Conn(txCtx).FindOrganizationByID(txCtx, sql.String(org.ID))
 		assert.NoError(t, err)
 
-		err = db.Tx(txCtx, func(ctx context.Context, q pggen.Querier) error {
+		err = db.Tx(txCtx, func(ctx context.Context, q *sqlc.Queries) error {
 			// this should succeed because it is using a child tx via the
 			// querier
 			_, err = q.FindOrganizationByID(ctx, sql.String(org.ID))

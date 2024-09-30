@@ -29,32 +29,9 @@ AND status = 'pending';
 -- name: FindStateVersionsByWorkspaceID :many
 SELECT
     sv.*,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions sv
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.workspace_id = sqlc.arg('workspace_id')
 AND   sv.status = 'finalized'
 GROUP BY sv.state_version_id
@@ -73,32 +50,9 @@ AND status = 'finalized'
 -- name: FindStateVersionByID :one
 SELECT
     state_versions.*,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE state_versions.state_version_id = sqlc.arg('id')
 GROUP BY state_versions.state_version_id
 ;
@@ -106,66 +60,21 @@ GROUP BY state_versions.state_version_id
 -- name: FindStateVersionByIDForUpdate :one
 SELECT
     sv.*,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions sv
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.state_version_id = sqlc.arg('id')
+GROUP BY sv.state_version_id
 FOR UPDATE OF sv
 ;
 
 -- name: FindCurrentStateVersionByWorkspaceID :one
 SELECT
     sv.*,
-    (
-        SELECT array_agg(svo.state_version_output_id)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_ids,
-    (
-        SELECT array_agg(svo.sensitive)::bool[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_sensitives,
-    (
-        SELECT array_agg(svo.type)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_types,
-    (
-        SELECT array_agg(svo.value)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_values,
-    (
-        SELECT array_agg(svo.name)::text[]
-        FROM state_version_outputs svo
-        WHERE svo.state_version_id = sv.state_version_id
-    ) AS state_version_output_names
+    array_agg(svo.*)::"state_version_outputs" AS state_version_outputs
 FROM state_versions sv
 JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
+LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE w.workspace_id = sqlc.arg('workspace_id')
 GROUP BY sv.state_version_id
 ;

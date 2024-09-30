@@ -28,8 +28,8 @@ FROM workspaces
 
 type CountWorkspacesParams struct {
 	Search            pgtype.Text
-	OrganizationNames string
-	Tags              string
+	OrganizationNames pgtype.Text
+	Tags              pgtype.Text
 }
 
 func (q *Queries) CountWorkspaces(ctx context.Context, arg CountWorkspacesParams) (int64, error) {
@@ -51,8 +51,8 @@ AND   u.username          = $2
 `
 
 type CountWorkspacesByUsernameParams struct {
-	OrganizationName string
-	Username         string
+	OrganizationName pgtype.Text
+	Username         pgtype.Text
 }
 
 func (q *Queries) CountWorkspacesByUsername(ctx context.Context, arg CountWorkspacesByUsernameParams) (int64, error) {
@@ -68,7 +68,7 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) DeleteWorkspaceByID(ctx context.Context, workspaceID string) error {
+func (q *Queries) DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Text) error {
 	_, err := q.db.Exec(ctx, deleteWorkspaceByID, workspaceID)
 	return err
 }
@@ -90,43 +90,43 @@ GROUP BY w.workspace_id
 `
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
-	Tags                       []string
+	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VcsProviderID              pgtype.Text
+	VCSProviderID              pgtype.Text
 	RepoPath                   pgtype.Text
 }
 
-func (q *Queries) FindWorkspaceByID(ctx context.Context, id string) (FindWorkspaceByIDRow, error) {
+func (q *Queries) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (FindWorkspaceByIDRow, error) {
 	row := q.db.QueryRow(ctx, findWorkspaceByID, id)
 	var i FindWorkspaceByIDRow
 	err := row.Scan(
@@ -145,7 +145,7 @@ func (q *Queries) FindWorkspaceByID(ctx context.Context, id string) (FindWorkspa
 		&i.QueueAllRuns,
 		&i.SpeculativeEnabled,
 		&i.SourceName,
-		&i.SourceUrl,
+		&i.SourceURL,
 		&i.StructuredRunOutputEnabled,
 		&i.TerraformVersion,
 		&i.TriggerPrefixes,
@@ -157,12 +157,12 @@ func (q *Queries) FindWorkspaceByID(ctx context.Context, id string) (FindWorkspa
 		&i.LockUsername,
 		&i.CurrentStateVersionID,
 		&i.TriggerPatterns,
-		&i.VcsTagsRegex,
-		&i.AllowCliApply,
+		&i.VCSTagsRegex,
+		&i.AllowCLIApply,
 		&i.AgentPoolID,
 		&i.Tags,
 		&i.LatestRunStatus,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 		&i.RepoPath,
 	)
 	return i, err
@@ -184,43 +184,43 @@ FOR UPDATE OF w
 `
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
-	Tags                       []string
+	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VcsProviderID              pgtype.Text
+	VCSProviderID              pgtype.Text
 	RepoPath                   pgtype.Text
 }
 
-func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (FindWorkspaceByIDForUpdateRow, error) {
+func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Text) (FindWorkspaceByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findWorkspaceByIDForUpdate, id)
 	var i FindWorkspaceByIDForUpdateRow
 	err := row.Scan(
@@ -239,7 +239,7 @@ func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (Fi
 		&i.QueueAllRuns,
 		&i.SpeculativeEnabled,
 		&i.SourceName,
-		&i.SourceUrl,
+		&i.SourceURL,
 		&i.StructuredRunOutputEnabled,
 		&i.TerraformVersion,
 		&i.TriggerPrefixes,
@@ -251,12 +251,12 @@ func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (Fi
 		&i.LockUsername,
 		&i.CurrentStateVersionID,
 		&i.TriggerPatterns,
-		&i.VcsTagsRegex,
-		&i.AllowCliApply,
+		&i.VCSTagsRegex,
+		&i.AllowCLIApply,
 		&i.AgentPoolID,
 		&i.Tags,
 		&i.LatestRunStatus,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 		&i.RepoPath,
 	)
 	return i, err
@@ -279,44 +279,44 @@ GROUP BY w.workspace_id
 `
 
 type FindWorkspaceByNameParams struct {
-	Name             string
-	OrganizationName string
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
-	Tags                       []string
+	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VcsProviderID              pgtype.Text
+	VCSProviderID              pgtype.Text
 	RepoPath                   pgtype.Text
 }
 
@@ -339,7 +339,7 @@ func (q *Queries) FindWorkspaceByName(ctx context.Context, arg FindWorkspaceByNa
 		&i.QueueAllRuns,
 		&i.SpeculativeEnabled,
 		&i.SourceName,
-		&i.SourceUrl,
+		&i.SourceURL,
 		&i.StructuredRunOutputEnabled,
 		&i.TerraformVersion,
 		&i.TriggerPrefixes,
@@ -351,12 +351,12 @@ func (q *Queries) FindWorkspaceByName(ctx context.Context, arg FindWorkspaceByNa
 		&i.LockUsername,
 		&i.CurrentStateVersionID,
 		&i.TriggerPatterns,
-		&i.VcsTagsRegex,
-		&i.AllowCliApply,
+		&i.VCSTagsRegex,
+		&i.AllowCLIApply,
 		&i.AgentPoolID,
 		&i.Tags,
 		&i.LatestRunStatus,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 		&i.RepoPath,
 	)
 	return i, err
@@ -376,7 +376,7 @@ LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.
 WHERE w.name                LIKE '%' || $1 || '%'
 AND   w.organization_name   LIKE ANY($2)
 GROUP BY w.workspace_id, r.status
-HAVING array_agg(t.name) @> $3
+HAVING array_agg(t.name) @> $3::text[]
 ORDER BY w.updated_at DESC
 LIMIT $5
 OFFSET $4
@@ -384,46 +384,46 @@ OFFSET $4
 
 type FindWorkspacesParams struct {
 	Search            pgtype.Text
-	OrganizationNames string
-	Tags              string
+	OrganizationNames pgtype.Text
+	Tags              []pgtype.Text
 	Offset            int32
 	Limit             int32
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
-	Tags                       []string
+	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VcsProviderID              pgtype.Text
+	VCSProviderID              pgtype.Text
 	RepoPath                   pgtype.Text
 }
 
@@ -458,7 +458,7 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 			&i.QueueAllRuns,
 			&i.SpeculativeEnabled,
 			&i.SourceName,
-			&i.SourceUrl,
+			&i.SourceURL,
 			&i.StructuredRunOutputEnabled,
 			&i.TerraformVersion,
 			&i.TriggerPrefixes,
@@ -470,12 +470,12 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 			&i.LockUsername,
 			&i.CurrentStateVersionID,
 			&i.TriggerPatterns,
-			&i.VcsTagsRegex,
-			&i.AllowCliApply,
+			&i.VCSTagsRegex,
+			&i.AllowCLIApply,
 			&i.AgentPoolID,
 			&i.Tags,
 			&i.LatestRunStatus,
-			&i.VcsProviderID,
+			&i.VCSProviderID,
 			&i.RepoPath,
 		); err != nil {
 			return nil, err
@@ -507,49 +507,49 @@ GROUP BY w.workspace_id
 `
 
 type FindWorkspacesByConnectionParams struct {
-	VcsProviderID string
-	RepoPath      string
+	VCSProviderID pgtype.Text
+	RepoPath      pgtype.Text
 }
 
 type FindWorkspacesByConnectionRow struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
-	Tags                       []string
+	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VcsProviderID              string
-	RepoPath                   string
+	VCSProviderID              pgtype.Text
+	RepoPath                   pgtype.Text
 }
 
 func (q *Queries) FindWorkspacesByConnection(ctx context.Context, arg FindWorkspacesByConnectionParams) ([]FindWorkspacesByConnectionRow, error) {
-	rows, err := q.db.Query(ctx, findWorkspacesByConnection, arg.VcsProviderID, arg.RepoPath)
+	rows, err := q.db.Query(ctx, findWorkspacesByConnection, arg.VCSProviderID, arg.RepoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -573,7 +573,7 @@ func (q *Queries) FindWorkspacesByConnection(ctx context.Context, arg FindWorksp
 			&i.QueueAllRuns,
 			&i.SpeculativeEnabled,
 			&i.SourceName,
-			&i.SourceUrl,
+			&i.SourceURL,
 			&i.StructuredRunOutputEnabled,
 			&i.TerraformVersion,
 			&i.TriggerPrefixes,
@@ -585,12 +585,12 @@ func (q *Queries) FindWorkspacesByConnection(ctx context.Context, arg FindWorksp
 			&i.LockUsername,
 			&i.CurrentStateVersionID,
 			&i.TriggerPatterns,
-			&i.VcsTagsRegex,
-			&i.AllowCliApply,
+			&i.VCSTagsRegex,
+			&i.AllowCLIApply,
 			&i.AgentPoolID,
 			&i.Tags,
 			&i.LatestRunStatus,
-			&i.VcsProviderID,
+			&i.VCSProviderID,
 			&i.RepoPath,
 		); err != nil {
 			return nil, err
@@ -627,46 +627,46 @@ OFFSET $3
 `
 
 type FindWorkspacesByUsernameParams struct {
-	OrganizationName string
-	Username         string
+	OrganizationName pgtype.Text
+	Username         pgtype.Text
 	Offset           int32
 	Limit            int32
 }
 
 type FindWorkspacesByUsernameRow struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
-	Tags                       []string
+	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VcsProviderID              pgtype.Text
+	VCSProviderID              pgtype.Text
 	RepoPath                   pgtype.Text
 }
 
@@ -700,7 +700,7 @@ func (q *Queries) FindWorkspacesByUsername(ctx context.Context, arg FindWorkspac
 			&i.QueueAllRuns,
 			&i.SpeculativeEnabled,
 			&i.SourceName,
-			&i.SourceUrl,
+			&i.SourceURL,
 			&i.StructuredRunOutputEnabled,
 			&i.TerraformVersion,
 			&i.TriggerPrefixes,
@@ -712,12 +712,12 @@ func (q *Queries) FindWorkspacesByUsername(ctx context.Context, arg FindWorkspac
 			&i.LockUsername,
 			&i.CurrentStateVersionID,
 			&i.TriggerPatterns,
-			&i.VcsTagsRegex,
-			&i.AllowCliApply,
+			&i.VCSTagsRegex,
+			&i.AllowCLIApply,
 			&i.AgentPoolID,
 			&i.Tags,
 			&i.LatestRunStatus,
-			&i.VcsProviderID,
+			&i.VCSProviderID,
 			&i.RepoPath,
 		); err != nil {
 			return nil, err
@@ -789,32 +789,32 @@ INSERT INTO workspaces (
 `
 
 type InsertWorkspaceParams struct {
-	ID                         string
+	ID                         pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AgentPoolID                pgtype.Text
-	AllowCliApply              bool
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	Branch                     string
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	WorkingDirectory           string
-	OrganizationName           string
+	AllowCLIApply              pgtype.Bool
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	Branch                     pgtype.Text
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	WorkingDirectory           pgtype.Text
+	OrganizationName           pgtype.Text
 }
 
 func (q *Queries) InsertWorkspace(ctx context.Context, arg InsertWorkspaceParams) error {
@@ -823,7 +823,7 @@ func (q *Queries) InsertWorkspace(ctx context.Context, arg InsertWorkspaceParams
 		arg.CreatedAt,
 		arg.UpdatedAt,
 		arg.AgentPoolID,
-		arg.AllowCliApply,
+		arg.AllowCLIApply,
 		arg.AllowDestroyPlan,
 		arg.AutoApply,
 		arg.Branch,
@@ -837,12 +837,12 @@ func (q *Queries) InsertWorkspace(ctx context.Context, arg InsertWorkspaceParams
 		arg.QueueAllRuns,
 		arg.SpeculativeEnabled,
 		arg.SourceName,
-		arg.SourceUrl,
+		arg.SourceURL,
 		arg.StructuredRunOutputEnabled,
 		arg.TerraformVersion,
 		arg.TriggerPrefixes,
 		arg.TriggerPatterns,
-		arg.VcsTagsRegex,
+		arg.VCSTagsRegex,
 		arg.WorkingDirectory,
 		arg.OrganizationName,
 	)
@@ -876,31 +876,31 @@ RETURNING workspace_id
 
 type UpdateWorkspaceByIDParams struct {
 	AgentPoolID                pgtype.Text
-	AllowDestroyPlan           bool
-	AllowCliApply              bool
-	AutoApply                  bool
-	Branch                     string
-	Description                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AllowCLIApply              pgtype.Bool
+	AutoApply                  pgtype.Bool
+	Branch                     pgtype.Text
+	Description                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	WorkingDirectory           pgtype.Text
 	UpdatedAt                  pgtype.Timestamptz
-	ID                         string
+	ID                         pgtype.Text
 }
 
-func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceByIDParams) (string, error) {
+func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceByIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateWorkspaceByID,
 		arg.AgentPoolID,
 		arg.AllowDestroyPlan,
-		arg.AllowCliApply,
+		arg.AllowCLIApply,
 		arg.AutoApply,
 		arg.Branch,
 		arg.Description,
@@ -913,12 +913,12 @@ func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceBy
 		arg.TerraformVersion,
 		arg.TriggerPrefixes,
 		arg.TriggerPatterns,
-		arg.VcsTagsRegex,
+		arg.VCSTagsRegex,
 		arg.WorkingDirectory,
 		arg.UpdatedAt,
 		arg.ID,
 	)
-	var workspace_id string
+	var workspace_id pgtype.Text
 	err := row.Scan(&workspace_id)
 	return workspace_id, err
 }
@@ -932,12 +932,12 @@ RETURNING workspace_id
 
 type UpdateWorkspaceCurrentStateVersionIDParams struct {
 	StateVersionID pgtype.Text
-	WorkspaceID    string
+	WorkspaceID    pgtype.Text
 }
 
-func (q *Queries) UpdateWorkspaceCurrentStateVersionID(ctx context.Context, arg UpdateWorkspaceCurrentStateVersionIDParams) (string, error) {
+func (q *Queries) UpdateWorkspaceCurrentStateVersionID(ctx context.Context, arg UpdateWorkspaceCurrentStateVersionIDParams) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, updateWorkspaceCurrentStateVersionID, arg.StateVersionID, arg.WorkspaceID)
-	var workspace_id string
+	var workspace_id pgtype.Text
 	err := row.Scan(&workspace_id)
 	return workspace_id, err
 }
@@ -950,7 +950,7 @@ WHERE workspace_id = $2
 
 type UpdateWorkspaceLatestRunParams struct {
 	RunID       pgtype.Text
-	WorkspaceID string
+	WorkspaceID pgtype.Text
 }
 
 func (q *Queries) UpdateWorkspaceLatestRun(ctx context.Context, arg UpdateWorkspaceLatestRunParams) error {
@@ -969,7 +969,7 @@ WHERE workspace_id = $3
 type UpdateWorkspaceLockByIDParams struct {
 	Username    pgtype.Text
 	RunID       pgtype.Text
-	WorkspaceID string
+	WorkspaceID pgtype.Text
 }
 
 func (q *Queries) UpdateWorkspaceLockByID(ctx context.Context, arg UpdateWorkspaceLockByIDParams) error {

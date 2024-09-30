@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"internal/github/github"
 )
 
 const deleteVCSProviderByID = `-- name: DeleteVCSProviderByID :one
@@ -19,9 +18,9 @@ WHERE vcs_provider_id = $1
 RETURNING vcs_provider_id
 `
 
-func (q *Queries) DeleteVCSProviderByID(ctx context.Context, vcsProviderID string) (string, error) {
+func (q *Queries) DeleteVCSProviderByID(ctx context.Context, vcsProviderID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteVCSProviderByID, vcsProviderID)
-	var vcs_provider_id string
+	var vcs_provider_id pgtype.Text
 	err := row.Scan(&vcs_provider_id)
 	return vcs_provider_id, err
 }
@@ -37,26 +36,26 @@ WHERE v.vcs_provider_id = $1
 `
 
 type FindVCSProviderRow struct {
-	VcsProviderID    string
+	VCSProviderID    pgtype.Text
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
-	OrganizationName string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
+	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        github.AppRow
-	GithubAppInstall github.AppInstallRow
+	GithubApp        GithubApp
+	GithubAppInstall GithubAppInstall
 }
 
-func (q *Queries) FindVCSProvider(ctx context.Context, vcsProviderID string) (FindVCSProviderRow, error) {
+func (q *Queries) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderRow, error) {
 	row := q.db.QueryRow(ctx, findVCSProvider, vcsProviderID)
 	var i FindVCSProviderRow
 	err := row.Scan(
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 		&i.Token,
 		&i.CreatedAt,
 		&i.Name,
-		&i.VcsKind,
+		&i.VCSKind,
 		&i.OrganizationName,
 		&i.GithubAppID,
 		&i.GithubApp,
@@ -77,26 +76,26 @@ FOR UPDATE OF v
 `
 
 type FindVCSProviderForUpdateRow struct {
-	VcsProviderID    string
+	VCSProviderID    pgtype.Text
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
-	OrganizationName string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
+	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        github.AppRow
-	GithubAppInstall github.AppInstallRow
+	GithubApp        GithubApp
+	GithubAppInstall GithubAppInstall
 }
 
-func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID string) (FindVCSProviderForUpdateRow, error) {
+func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findVCSProviderForUpdate, vcsProviderID)
 	var i FindVCSProviderForUpdateRow
 	err := row.Scan(
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 		&i.Token,
 		&i.CreatedAt,
 		&i.Name,
-		&i.VcsKind,
+		&i.VCSKind,
 		&i.OrganizationName,
 		&i.GithubAppID,
 		&i.GithubApp,
@@ -115,15 +114,15 @@ LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USI
 `
 
 type FindVCSProvidersRow struct {
-	VcsProviderID    string
+	VCSProviderID    pgtype.Text
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
-	OrganizationName string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
+	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        github.AppRow
-	GithubAppInstall github.AppInstallRow
+	GithubApp        GithubApp
+	GithubAppInstall GithubAppInstall
 }
 
 func (q *Queries) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow, error) {
@@ -136,11 +135,11 @@ func (q *Queries) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow, 
 	for rows.Next() {
 		var i FindVCSProvidersRow
 		if err := rows.Scan(
-			&i.VcsProviderID,
+			&i.VCSProviderID,
 			&i.Token,
 			&i.CreatedAt,
 			&i.Name,
-			&i.VcsKind,
+			&i.VCSKind,
 			&i.OrganizationName,
 			&i.GithubAppID,
 			&i.GithubApp,
@@ -167,18 +166,18 @@ WHERE gi.install_id = $1
 `
 
 type FindVCSProvidersByGithubAppInstallIDRow struct {
-	VcsProviderID    string
+	VCSProviderID    pgtype.Text
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
-	OrganizationName string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
+	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        github.AppRow
-	GithubAppInstall github.AppInstallRow
+	GithubApp        GithubApp
+	GithubAppInstall GithubAppInstall
 }
 
-func (q *Queries) FindVCSProvidersByGithubAppInstallID(ctx context.Context, installID int64) ([]FindVCSProvidersByGithubAppInstallIDRow, error) {
+func (q *Queries) FindVCSProvidersByGithubAppInstallID(ctx context.Context, installID pgtype.Int8) ([]FindVCSProvidersByGithubAppInstallIDRow, error) {
 	rows, err := q.db.Query(ctx, findVCSProvidersByGithubAppInstallID, installID)
 	if err != nil {
 		return nil, err
@@ -188,11 +187,11 @@ func (q *Queries) FindVCSProvidersByGithubAppInstallID(ctx context.Context, inst
 	for rows.Next() {
 		var i FindVCSProvidersByGithubAppInstallIDRow
 		if err := rows.Scan(
-			&i.VcsProviderID,
+			&i.VCSProviderID,
 			&i.Token,
 			&i.CreatedAt,
 			&i.Name,
-			&i.VcsKind,
+			&i.VCSKind,
 			&i.OrganizationName,
 			&i.GithubAppID,
 			&i.GithubApp,
@@ -219,18 +218,18 @@ WHERE v.organization_name = $1
 `
 
 type FindVCSProvidersByOrganizationRow struct {
-	VcsProviderID    string
+	VCSProviderID    pgtype.Text
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
-	OrganizationName string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
+	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        github.AppRow
-	GithubAppInstall github.AppInstallRow
+	GithubApp        GithubApp
+	GithubAppInstall GithubAppInstall
 }
 
-func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, organizationName string) ([]FindVCSProvidersByOrganizationRow, error) {
+func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersByOrganizationRow, error) {
 	rows, err := q.db.Query(ctx, findVCSProvidersByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -240,11 +239,11 @@ func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, organizati
 	for rows.Next() {
 		var i FindVCSProvidersByOrganizationRow
 		if err := rows.Scan(
-			&i.VcsProviderID,
+			&i.VCSProviderID,
 			&i.Token,
 			&i.CreatedAt,
 			&i.Name,
-			&i.VcsKind,
+			&i.VCSKind,
 			&i.OrganizationName,
 			&i.GithubAppID,
 			&i.GithubApp,
@@ -281,21 +280,21 @@ INSERT INTO vcs_providers (
 `
 
 type InsertVCSProviderParams struct {
-	VcsProviderID    string
+	VCSProviderID    pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
 	Token            pgtype.Text
 	GithubAppID      pgtype.Int8
-	OrganizationName string
+	OrganizationName pgtype.Text
 }
 
 func (q *Queries) InsertVCSProvider(ctx context.Context, arg InsertVCSProviderParams) error {
 	_, err := q.db.Exec(ctx, insertVCSProvider,
-		arg.VcsProviderID,
+		arg.VCSProviderID,
 		arg.CreatedAt,
 		arg.Name,
-		arg.VcsKind,
+		arg.VCSKind,
 		arg.Token,
 		arg.GithubAppID,
 		arg.OrganizationName,
@@ -311,20 +310,20 @@ RETURNING vcs_provider_id, token, created_at, name, vcs_kind, organization_name,
 `
 
 type UpdateVCSProviderParams struct {
-	Name          string
+	Name          pgtype.Text
 	Token         pgtype.Text
-	VcsProviderID string
+	VCSProviderID pgtype.Text
 }
 
-func (q *Queries) UpdateVCSProvider(ctx context.Context, arg UpdateVCSProviderParams) (VcsProvider, error) {
-	row := q.db.QueryRow(ctx, updateVCSProvider, arg.Name, arg.Token, arg.VcsProviderID)
-	var i VcsProvider
+func (q *Queries) UpdateVCSProvider(ctx context.Context, arg UpdateVCSProviderParams) (VCSProvider, error) {
+	row := q.db.QueryRow(ctx, updateVCSProvider, arg.Name, arg.Token, arg.VCSProviderID)
+	var i VCSProvider
 	err := row.Scan(
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 		&i.Token,
 		&i.CreatedAt,
 		&i.Name,
-		&i.VcsKind,
+		&i.VCSKind,
 		&i.OrganizationName,
 		&i.GithubAppID,
 	)

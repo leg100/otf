@@ -25,7 +25,7 @@ func (q *Queries) DeleteModuleConnectionByID(ctx context.Context, moduleID pgtyp
 		&i.ModuleID,
 		&i.WorkspaceID,
 		&i.RepoPath,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 	)
 	return i, err
 }
@@ -44,7 +44,7 @@ func (q *Queries) DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID
 		&i.ModuleID,
 		&i.WorkspaceID,
 		&i.RepoPath,
-		&i.VcsProviderID,
+		&i.VCSProviderID,
 	)
 	return i, err
 }
@@ -64,15 +64,15 @@ INSERT INTO repo_connections (
 `
 
 type InsertRepoConnectionParams struct {
-	VcsProviderID string
-	RepoPath      string
+	VCSProviderID pgtype.Text
+	RepoPath      pgtype.Text
 	WorkspaceID   pgtype.Text
 	ModuleID      pgtype.Text
 }
 
 func (q *Queries) InsertRepoConnection(ctx context.Context, arg InsertRepoConnectionParams) error {
 	_, err := q.db.Exec(ctx, insertRepoConnection,
-		arg.VcsProviderID,
+		arg.VCSProviderID,
 		arg.RepoPath,
 		arg.WorkspaceID,
 		arg.ModuleID,

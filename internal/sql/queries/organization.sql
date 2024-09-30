@@ -42,7 +42,7 @@ WHERE name = sqlc.arg('name')
 FOR UPDATE
 ;
 
--- name: FindOrganizations :many
+-- name: FindOrganizations :batchmany
 SELECT *
 FROM organizations
 WHERE name LIKE ANY(sqlc.arg('names'))
@@ -50,7 +50,7 @@ ORDER BY updated_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset')
 ;
 
--- name: CountOrganizations :one
+-- name: CountOrganizations :batchmany
 SELECT count(*)
 FROM organizations
 WHERE name LIKE ANY(sqlc.arg('names'))

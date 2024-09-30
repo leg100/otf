@@ -18,9 +18,9 @@ WHERE token_id = $1
 RETURNING token_id
 `
 
-func (q *Queries) DeleteTokenByID(ctx context.Context, tokenID string) (string, error) {
+func (q *Queries) DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error) {
 	row := q.db.QueryRow(ctx, deleteTokenByID, tokenID)
-	var token_id string
+	var token_id pgtype.Text
 	err := row.Scan(&token_id)
 	return token_id, err
 }
@@ -31,7 +31,7 @@ FROM tokens
 WHERE token_id = $1
 `
 
-func (q *Queries) FindTokenByID(ctx context.Context, tokenID string) (Token, error) {
+func (q *Queries) FindTokenByID(ctx context.Context, tokenID pgtype.Text) (Token, error) {
 	row := q.db.QueryRow(ctx, findTokenByID, tokenID)
 	var i Token
 	err := row.Scan(
@@ -49,7 +49,7 @@ FROM tokens
 WHERE username = $1
 `
 
-func (q *Queries) FindTokensByUsername(ctx context.Context, username string) ([]Token, error) {
+func (q *Queries) FindTokensByUsername(ctx context.Context, username pgtype.Text) ([]Token, error) {
 	rows, err := q.db.Query(ctx, findTokensByUsername, username)
 	if err != nil {
 		return nil, err
@@ -89,10 +89,10 @@ INSERT INTO tokens (
 `
 
 type InsertTokenParams struct {
-	TokenID     string
+	TokenID     pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	Description string
-	Username    string
+	Description pgtype.Text
+	Username    pgtype.Text
 }
 
 func (q *Queries) InsertToken(ctx context.Context, arg InsertTokenParams) error {

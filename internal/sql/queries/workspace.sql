@@ -69,7 +69,7 @@ LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.
 WHERE w.name                LIKE '%' || sqlc.arg('search') || '%'
 AND   w.organization_name   LIKE ANY(sqlc.arg('organization_names'))
 GROUP BY w.workspace_id, r.status
-HAVING array_agg(t.name) @> sqlc.arg('tags')
+HAVING array_agg(t.name) @> sqlc.arg('tags')::text[]
 ORDER BY w.updated_at DESC
 LIMIT sqlc.arg('limit')
 OFFSET sqlc.arg('offset')

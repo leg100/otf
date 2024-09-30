@@ -3,10 +3,10 @@ package notifications
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -48,7 +48,7 @@ func (r pgresult) toNotificationConfiguration() *Config {
 }
 
 func (db *pgdb) create(ctx context.Context, nc *Config) error {
-	params := pggen.InsertNotificationConfigurationParams{
+	params := sqlc.InsertNotificationConfigurationParams{
 		NotificationConfigurationID: sql.String(nc.ID),
 		CreatedAt:                   sql.Timestamptz(nc.CreatedAt),
 		UpdatedAt:                   sql.Timestamptz(nc.UpdatedAt),
@@ -70,7 +70,7 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 
 func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) error) (*Config, error) {
 	var nc *Config
-	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := q.FindNotificationConfigurationForUpdate(ctx, sql.String(id))
 		if err != nil {
 			return sql.Error(err)
@@ -79,7 +79,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 		if err := updateFunc(nc); err != nil {
 			return sql.Error(err)
 		}
-		params := pggen.UpdateNotificationConfigurationByIDParams{
+		params := sqlc.UpdateNotificationConfigurationByIDParams{
 			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
 			Enabled:                     sql.Bool(nc.Enabled),
 			Name:                        sql.String(nc.Name),

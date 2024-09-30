@@ -8,478 +8,477 @@ import (
 	"net/netip"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"internal/run/run"
 )
 
 type Agent struct {
-	AgentID      string
-	Name         string
-	Version      string
-	MaxJobs      int32
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
 	IpAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	Status       string
+	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
 }
 
 type AgentPool struct {
-	AgentPoolID        string
-	Name               string
+	AgentPoolID        pgtype.Text
+	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
-	OrganizationName   string
-	OrganizationScoped bool
+	OrganizationName   pgtype.Text
+	OrganizationScoped pgtype.Bool
 }
 
 type AgentPoolAllowedWorkspace struct {
-	AgentPoolID string
-	WorkspaceID string
+	AgentPoolID pgtype.Text
+	WorkspaceID pgtype.Text
 }
 
 type AgentStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type AgentToken struct {
-	AgentTokenID string
+	AgentTokenID pgtype.Text
 	CreatedAt    pgtype.Timestamptz
-	Description  string
-	AgentPoolID  string
+	Description  pgtype.Text
+	AgentPoolID  pgtype.Text
 }
 
 type Apply struct {
-	RunID          string
-	Status         string
-	ResourceReport run.Report
+	RunID          pgtype.Text
+	Status         pgtype.Text
+	ResourceReport interface{}
 }
 
 type ConfigurationVersion struct {
-	ConfigurationVersionID string
+	ConfigurationVersionID pgtype.Text
 	CreatedAt              pgtype.Timestamptz
-	AutoQueueRuns          bool
-	Source                 string
-	Speculative            bool
-	Status                 string
+	AutoQueueRuns          pgtype.Bool
+	Source                 pgtype.Text
+	Speculative            pgtype.Bool
+	Status                 pgtype.Text
 	Config                 []byte
-	WorkspaceID            string
+	WorkspaceID            pgtype.Text
 }
 
 type ConfigurationVersionIngressAttribute struct {
-	Branch                 string
-	CommitSha              string
-	Identifier             string
-	IsPullRequest          bool
-	OnDefaultBranch        bool
-	ConfigurationVersionID string
-	CommitUrl              string
-	PullRequestNumber      int32
-	PullRequestUrl         string
-	PullRequestTitle       string
-	Tag                    string
-	SenderUsername         string
-	SenderAvatarUrl        string
-	SenderHtmlUrl          string
+	Branch                 pgtype.Text
+	CommitSha              pgtype.Text
+	Identifier             pgtype.Text
+	IsPullRequest          pgtype.Bool
+	OnDefaultBranch        pgtype.Bool
+	ConfigurationVersionID pgtype.Text
+	CommitURL              pgtype.Text
+	PullRequestNumber      pgtype.Int4
+	PullRequestURL         pgtype.Text
+	PullRequestTitle       pgtype.Text
+	Tag                    pgtype.Text
+	SenderUsername         pgtype.Text
+	SenderAvatarURL        pgtype.Text
+	SenderHtmlURL          pgtype.Text
 }
 
 type ConfigurationVersionStatusTimestamp struct {
-	ConfigurationVersionID string
-	Status                 string
+	ConfigurationVersionID pgtype.Text
+	Status                 pgtype.Text
 	Timestamp              pgtype.Timestamptz
 }
 
 type DestinationType struct {
-	Name string
+	Name pgtype.Text
 }
 
 type GithubApp struct {
-	GithubAppID   int64
-	WebhookSecret string
-	PrivateKey    string
-	Slug          string
+	GithubAppID   pgtype.Int8
+	WebhookSecret pgtype.Text
+	PrivateKey    pgtype.Text
+	Slug          pgtype.Text
 	Organization  pgtype.Text
 }
 
 type GithubAppInstall struct {
-	GithubAppID   int64
-	InstallID     int64
+	GithubAppID   pgtype.Int8
+	InstallID     pgtype.Int8
 	Username      pgtype.Text
 	Organization  pgtype.Text
-	VcsProviderID string
+	VCSProviderID pgtype.Text
 }
 
 type IngressAttribute struct {
-	Branch                 string
-	CommitSha              string
-	Identifier             string
-	IsPullRequest          bool
-	OnDefaultBranch        bool
-	ConfigurationVersionID string
-	CommitUrl              string
-	PullRequestNumber      int32
-	PullRequestUrl         string
-	PullRequestTitle       string
-	Tag                    string
-	SenderUsername         string
-	SenderAvatarUrl        string
-	SenderHtmlUrl          string
+	Branch                 pgtype.Text
+	CommitSha              pgtype.Text
+	Identifier             pgtype.Text
+	IsPullRequest          pgtype.Bool
+	OnDefaultBranch        pgtype.Bool
+	ConfigurationVersionID pgtype.Text
+	CommitURL              pgtype.Text
+	PullRequestNumber      pgtype.Int4
+	PullRequestURL         pgtype.Text
+	PullRequestTitle       pgtype.Text
+	Tag                    pgtype.Text
+	SenderUsername         pgtype.Text
+	SenderAvatarURL        pgtype.Text
+	SenderHtmlURL          pgtype.Text
 }
 
 type Job struct {
-	RunID    string
-	Phase    string
-	Status   string
+	RunID    pgtype.Text
+	Phase    pgtype.Text
+	Status   pgtype.Text
 	AgentID  pgtype.Text
 	Signaled pgtype.Bool
 }
 
 type JobPhase struct {
-	Phase string
+	Phase pgtype.Text
 }
 
 type JobStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type LatestTerraformVersion struct {
-	Version    string
+	Version    pgtype.Text
 	Checkpoint pgtype.Timestamptz
 }
 
 type Log struct {
-	RunID   string
-	Phase   string
+	RunID   pgtype.Text
+	Phase   pgtype.Text
 	ChunkID pgtype.Int4
 	Chunk   []byte
-	Offset  int32
+	Offset  pgtype.Int4
 }
 
 type Module struct {
-	ModuleID         string
+	ModuleID         pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
-	Name             string
-	Provider         string
-	Status           string
-	OrganizationName string
+	Name             pgtype.Text
+	Provider         pgtype.Text
+	Status           pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 type ModuleStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type ModuleTarball struct {
 	Tarball         []byte
-	ModuleVersionID string
+	ModuleVersionID pgtype.Text
 }
 
 type ModuleVersion struct {
-	ModuleVersionID string
-	Version         string
+	ModuleVersionID pgtype.Text
+	Version         pgtype.Text
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
-	Status          string
+	Status          pgtype.Text
 	StatusError     pgtype.Text
-	ModuleID        string
+	ModuleID        pgtype.Text
 }
 
 type ModuleVersionStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type NotificationConfiguration struct {
-	NotificationConfigurationID string
+	NotificationConfigurationID pgtype.Text
 	CreatedAt                   pgtype.Timestamptz
 	UpdatedAt                   pgtype.Timestamptz
-	Name                        string
-	Url                         pgtype.Text
-	Triggers                    []string
-	DestinationType             string
-	WorkspaceID                 string
-	Enabled                     bool
+	Name                        pgtype.Text
+	URL                         pgtype.Text
+	Triggers                    []pgtype.Text
+	DestinationType             pgtype.Text
+	WorkspaceID                 pgtype.Text
+	Enabled                     pgtype.Bool
 }
 
 type Organization struct {
-	OrganizationID             string
+	OrganizationID             pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       string
+	Name                       pgtype.Text
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
-	AllowForceDeleteWorkspaces bool
-	CostEstimationEnabled      bool
+	AllowForceDeleteWorkspaces pgtype.Bool
+	CostEstimationEnabled      pgtype.Bool
 }
 
 type OrganizationToken struct {
-	OrganizationTokenID string
+	OrganizationTokenID pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    string
+	OrganizationName    pgtype.Text
 	Expiry              pgtype.Timestamptz
 }
 
 type Phase struct {
-	Phase string
+	Phase pgtype.Text
 }
 
 type PhaseStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type PhaseStatusTimestamp struct {
-	RunID     string
-	Phase     string
-	Status    string
+	RunID     pgtype.Text
+	Phase     pgtype.Text
+	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
 type Plan struct {
-	RunID          string
-	Status         string
+	RunID          pgtype.Text
+	Status         pgtype.Text
 	PlanBin        []byte
 	PlanJson       []byte
-	ResourceReport run.Report
-	OutputReport   run.Report
+	ResourceReport interface{}
+	OutputReport   interface{}
 }
 
 type RegistrySession struct {
-	Token            string
+	Token            pgtype.Text
 	Expiry           pgtype.Timestamptz
-	OrganizationName string
+	OrganizationName pgtype.Text
 }
 
 type RepoConnection struct {
 	ModuleID      pgtype.Text
 	WorkspaceID   pgtype.Text
-	RepoPath      string
-	VcsProviderID string
+	RepoPath      pgtype.Text
+	VCSProviderID pgtype.Text
 }
 
 type Repohook struct {
 	RepohookID    pgtype.UUID
-	VcsID         pgtype.Text
-	Secret        string
-	RepoPath      string
-	VcsProviderID string
+	VCSID         pgtype.Text
+	Secret        pgtype.Text
+	RepoPath      pgtype.Text
+	VCSProviderID pgtype.Text
 }
 
 type Run struct {
-	RunID                  string
+	RunID                  pgtype.Text
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
-	IsDestroy              bool
-	PositionInQueue        int32
-	Refresh                bool
-	RefreshOnly            bool
-	ReplaceAddrs           []string
-	TargetAddrs            []string
+	IsDestroy              pgtype.Bool
+	PositionInQueue        pgtype.Int4
+	Refresh                pgtype.Bool
+	RefreshOnly            pgtype.Bool
+	ReplaceAddrs           []pgtype.Text
+	TargetAddrs            []pgtype.Text
 	LockFile               []byte
-	Status                 string
-	WorkspaceID            string
-	ConfigurationVersionID string
-	AutoApply              bool
-	PlanOnly               bool
+	Status                 pgtype.Text
+	WorkspaceID            pgtype.Text
+	ConfigurationVersionID pgtype.Text
+	AutoApply              pgtype.Bool
+	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
-	Source                 string
-	TerraformVersion       string
-	AllowEmptyApply        bool
+	Source                 pgtype.Text
+	TerraformVersion       pgtype.Text
+	AllowEmptyApply        pgtype.Bool
 }
 
 type RunStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type RunStatusTimestamp struct {
-	RunID     string
-	Status    string
+	RunID     pgtype.Text
+	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
 type RunVariable struct {
-	RunID string
-	Key   string
-	Value string
+	RunID pgtype.Text
+	Key   pgtype.Text
+	Value pgtype.Text
 }
 
 type SchemaVersion struct {
-	Version int32
+	Version pgtype.Int4
 }
 
 type Session struct {
-	Token     string
+	Token     pgtype.Text
 	CreatedAt pgtype.Timestamptz
-	Address   string
+	Address   pgtype.Text
 	Expiry    pgtype.Timestamptz
-	Username  string
+	Username  pgtype.Text
 }
 
 type StateVersion struct {
-	StateVersionID string
+	StateVersionID pgtype.Text
 	CreatedAt      pgtype.Timestamptz
-	Serial         int32
+	Serial         pgtype.Int4
 	State          []byte
 	WorkspaceID    pgtype.Text
-	Status         string
+	Status         pgtype.Text
 }
 
 type StateVersionOutput struct {
-	StateVersionOutputID string
-	Name                 string
-	Sensitive            bool
-	Type                 string
+	StateVersionOutputID pgtype.Text
+	Name                 pgtype.Text
+	Sensitive            pgtype.Bool
+	Type                 pgtype.Text
 	Value                []byte
-	StateVersionID       string
+	StateVersionID       pgtype.Text
 }
 
 type StateVersionStatus struct {
-	Status string
+	Status pgtype.Text
 }
 
 type Tag struct {
-	TagID            string
-	Name             string
-	OrganizationName string
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 type Team struct {
-	TeamID                          string
-	Name                            string
+	TeamID                          pgtype.Text
+	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
-	PermissionManageWorkspaces      bool
-	PermissionManageVcs             bool
-	PermissionManageModules         bool
-	OrganizationName                string
+	PermissionManageWorkspaces      pgtype.Bool
+	PermissionManageVCS             pgtype.Bool
+	PermissionManageModules         pgtype.Bool
+	OrganizationName                pgtype.Text
 	SsoTeamID                       pgtype.Text
-	Visibility                      string
-	PermissionManagePolicies        bool
-	PermissionManagePolicyOverrides bool
-	PermissionManageProviders       bool
+	Visibility                      pgtype.Text
+	PermissionManagePolicies        pgtype.Bool
+	PermissionManagePolicyOverrides pgtype.Bool
+	PermissionManageProviders       pgtype.Bool
 }
 
 type TeamMembership struct {
-	TeamID   string
-	Username string
+	TeamID   pgtype.Text
+	Username pgtype.Text
 }
 
 type TeamToken struct {
-	TeamTokenID string
+	TeamTokenID pgtype.Text
 	Description pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	TeamID      string
+	TeamID      pgtype.Text
 	Expiry      pgtype.Timestamptz
 }
 
 type Token struct {
-	TokenID     string
+	TokenID     pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	Description string
-	Username    string
+	Description pgtype.Text
+	Username    pgtype.Text
 }
 
 type User struct {
-	UserID    string
-	Username  string
+	UserID    pgtype.Text
+	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
-	SiteAdmin bool
+	SiteAdmin pgtype.Bool
 }
 
-type Variable struct {
-	VariableID  string
-	Key         string
-	Value       string
-	Description string
-	Category    string
-	Sensitive   bool
-	Hcl         bool
-	VersionID   string
+type VCSKind struct {
+	Name pgtype.Text
 }
 
-type VariableCategory struct {
-	Category string
-}
-
-type VariableSet struct {
-	VariableSetID    string
-	Global           bool
-	Name             string
-	Description      string
-	OrganizationName string
-}
-
-type VariableSetVariable struct {
-	VariableSetID string
-	VariableID    string
-}
-
-type VariableSetWorkspace struct {
-	VariableSetID string
-	WorkspaceID   string
-}
-
-type VcsKind struct {
-	Name string
-}
-
-type VcsProvider struct {
-	VcsProviderID    string
+type VCSProvider struct {
+	VCSProviderID    pgtype.Text
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
-	Name             string
-	VcsKind          string
-	OrganizationName string
+	Name             pgtype.Text
+	VCSKind          pgtype.Text
+	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
 }
 
+type Variable struct {
+	VariableID  pgtype.Text
+	Key         pgtype.Text
+	Value       pgtype.Text
+	Description pgtype.Text
+	Category    pgtype.Text
+	Sensitive   pgtype.Bool
+	Hcl         pgtype.Bool
+	VersionID   pgtype.Text
+}
+
+type VariableCategory struct {
+	Category pgtype.Text
+}
+
+type VariableSet struct {
+	VariableSetID    pgtype.Text
+	Global           pgtype.Bool
+	Name             pgtype.Text
+	Description      pgtype.Text
+	OrganizationName pgtype.Text
+}
+
+type VariableSetVariable struct {
+	VariableSetID pgtype.Text
+	VariableID    pgtype.Text
+}
+
+type VariableSetWorkspace struct {
+	VariableSetID pgtype.Text
+	WorkspaceID   pgtype.Text
+}
+
 type Workspace struct {
-	WorkspaceID                string
+	WorkspaceID                pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceUrl                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	WorkingDirectory           string
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           string
-	Branch                     string
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
 	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
-	TriggerPatterns            []string
-	VcsTagsRegex               pgtype.Text
-	AllowCliApply              bool
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
 }
 
 type WorkspacePermission struct {
-	WorkspaceID string
-	TeamID      string
-	Role        string
+	WorkspaceID pgtype.Text
+	TeamID      pgtype.Text
+	Role        pgtype.Text
 }
 
 type WorkspaceRole struct {
-	Role string
+	Role pgtype.Text
 }
 
 type WorkspaceTag struct {
-	TagID       string
-	WorkspaceID string
+	TagID       pgtype.Text
+	WorkspaceID pgtype.Text
 }
 
 type WorkspaceVariable struct {
-	WorkspaceID string
-	VariableID  string
+	WorkspaceID pgtype.Text
+	VariableID  pgtype.Text
 }
