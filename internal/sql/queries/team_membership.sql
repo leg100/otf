@@ -2,10 +2,10 @@
 WITH
     users AS (
         SELECT username
-        FROM unnest(pggen.arg('usernames')::text[]) t(username)
+        FROM unnest(sqlc.arg('usernames')::text[]) t(username)
     )
 INSERT INTO team_memberships (username, team_id)
-SELECT username, pggen.arg('team_id')
+SELECT username, sqlc.arg('team_id')
 FROM users
 RETURNING username
 ;
@@ -14,13 +14,13 @@ RETURNING username
 WITH
     users AS (
         SELECT username
-        FROM unnest(pggen.arg('usernames')::text[]) t(username)
+        FROM unnest(sqlc.arg('usernames')::text[]) t(username)
     )
 DELETE
 FROM team_memberships tm
 USING users
 WHERE
     tm.username = users.username AND
-    tm.team_id  = pggen.arg('team_id')
+    tm.team_id  = sqlc.arg('team_id')
 RETURNING tm.username
 ;

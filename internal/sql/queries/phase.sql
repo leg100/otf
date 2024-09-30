@@ -5,10 +5,10 @@ INSERT INTO phase_status_timestamps (
     status,
     timestamp
 ) VALUES (
-    pggen.arg('run_id'),
-    pggen.arg('phase'),
-    pggen.arg('status'),
-    pggen.arg('timestamp')
+    sqlc.arg('run_id'),
+    sqlc.arg('phase'),
+    sqlc.arg('status'),
+    sqlc.arg('timestamp')
 );
 
 -- name: InsertLogChunk :one
@@ -18,10 +18,10 @@ INSERT INTO logs (
     chunk,
     _offset
 ) VALUES (
-    pggen.arg('run_id'),
-    pggen.arg('phase'),
-    pggen.arg('chunk'),
-    pggen.arg('offset')
+    sqlc.arg('run_id'),
+    sqlc.arg('phase'),
+    sqlc.arg('chunk'),
+    sqlc.arg('offset')
 )
 RETURNING chunk_id
 ;
@@ -34,8 +34,8 @@ SELECT
 FROM (
     SELECT run_id, phase, chunk
     FROM logs
-    WHERE run_id = pggen.arg('run_id')
-    AND   phase  = pggen.arg('phase')
+    WHERE run_id = sqlc.arg('run_id')
+    AND   phase  = sqlc.arg('phase')
     ORDER BY chunk_id
 ) c
 GROUP BY run_id, phase
@@ -49,5 +49,5 @@ SELECT
     chunk,
     _offset AS offset
 FROM logs
-WHERE chunk_id = pggen.arg('chunk_id')
+WHERE chunk_id = sqlc.arg('chunk_id')
 ;

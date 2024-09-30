@@ -1,0 +1,28 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./internal/sql/queries"
+    schema: "./001_migrate_migrator.sql"
+    gen:
+      go:
+        package: "sqlc"
+        out: "./internal/sql/sqlc"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "public.report"
+            go_type: "internal/run/run.Report"
+            nullable: true
+          - db_type: "variables"
+            go_type: "internal/variable/variable.VariableRow"
+          - db_type: "run_variables"
+            go_type: "internal/run/run.Variable"
+          - db_type: "teams"
+            go_type: "internal/team/team.TeamRow"
+          - db_type: "github_apps"
+            go_type: "internal/github/github.AppRow"
+          - db_type: "github_app_installs"
+            go_type: "internal/github/github.AppInstallRow"
+          - db_type: "module_versions"
+            go_type: "internal/sql/sqlc/sqlc.ModuleVersion"
+          - db_type: "run_status_timestamps"
+            go_type: "internal/sql/sqlc/sqlc.RunStatusTimestamp"

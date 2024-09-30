@@ -15,18 +15,18 @@ INSERT INTO ingress_attributes (
     on_default_branch,
     configuration_version_id
 ) VALUES (
-    pggen.arg('branch'),
-    pggen.arg('commit_sha'),
-    pggen.arg('commit_url'),
-    pggen.arg('pull_request_number'),
-    pggen.arg('pull_request_url'),
-    pggen.arg('pull_request_title'),
-    pggen.arg('sender_username'),
-    pggen.arg('sender_avatar_url'),
-    pggen.arg('sender_html_url'),
-    pggen.arg('identifier'),
-    pggen.arg('tag'),
-    pggen.arg('is_pull_request'),
-    pggen.arg('on_default_branch'),
-    pggen.arg('configuration_version_id')
+    sqlc.arg('branch'),
+    sqlc.arg('commit_sha'),
+    sqlc.arg('commit_url'),
+    sqlc.arg('pull_request_number'),
+    sqlc.arg('pull_request_url'),
+    sqlc.arg('pull_request_title'),
+    sqlc.arg('sender_username'),
+    sqlc.arg('sender_avatar_url'),
+    sqlc.arg('sender_html_url'),
+    sqlc.arg('identifier'),
+    sqlc.arg('tag'),
+    sqlc.arg('is_pull_request'),
+    sqlc.arg('on_default_branch'),
+    sqlc.arg('configuration_version_id')
 );

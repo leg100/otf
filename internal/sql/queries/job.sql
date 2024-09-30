@@ -4,9 +4,9 @@ INSERT INTO jobs (
     phase,
     status
 ) VALUES (
-    pggen.arg('run_id'),
-    pggen.arg('phase'),
-    pggen.arg('status')
+    sqlc.arg('run_id'),
+    sqlc.arg('phase'),
+    sqlc.arg('status')
 );
 
 -- name: FindJobs :many
@@ -37,8 +37,8 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE run_id = pggen.arg('run_id')
-AND   phase = pggen.arg('phase')
+WHERE j.run_id = sqlc.arg('run_id')
+AND   phase = sqlc.arg('phase')
 ;
 
 -- name: FindJobForUpdate :one
@@ -54,8 +54,8 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE run_id = pggen.arg('run_id')
-AND   phase = pggen.arg('phase')
+WHERE j.run_id = sqlc.arg('run_id')
+AND   phase = sqlc.arg('phase')
 FOR UPDATE OF j
 ;
 
@@ -72,7 +72,7 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE j.agent_id = pggen.arg('agent_id')
+WHERE j.agent_id = sqlc.arg('agent_id')
 AND   j.status = 'allocated';
 
 -- Find signaled jobs and then immediately update signal with null.
@@ -83,7 +83,7 @@ SET signaled = NULL
 FROM runs r, workspaces w
 WHERE j.run_id = r.run_id
 AND   r.workspace_id = w.workspace_id
-AND   j.agent_id = pggen.arg('agent_id')
+AND   j.agent_id = sqlc.arg('agent_id')
 AND   j.status = 'running'
 AND   j.signaled IS NOT NULL
 RETURNING
@@ -99,9 +99,9 @@ RETURNING
 
 -- name: UpdateJob :one
 UPDATE jobs
-SET status   = pggen.arg('status'),
-    signaled = pggen.arg('signaled'),
-    agent_id = pggen.arg('agent_id')
-WHERE run_id = pggen.arg('run_id')
-AND   phase = pggen.arg('phase')
+SET status   = sqlc.arg('status'),
+    signaled = sqlc.arg('signaled'),
+    agent_id = sqlc.arg('agent_id')
+WHERE run_id = sqlc.arg('run_id')
+AND   phase = sqlc.arg('phase')
 RETURNING *;

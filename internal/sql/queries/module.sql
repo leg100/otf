@@ -8,13 +8,13 @@ INSERT INTO modules (
     status,
     organization_name
 ) VALUES (
-    pggen.arg('id'),
-    pggen.arg('created_at'),
-    pggen.arg('updated_at'),
-    pggen.arg('name'),
-    pggen.arg('provider'),
-    pggen.arg('status'),
-    pggen.arg('organization_name')
+    sqlc.arg('id'),
+    sqlc.arg('created_at'),
+    sqlc.arg('updated_at'),
+    sqlc.arg('name'),
+    sqlc.arg('provider'),
+    sqlc.arg('status'),
+    sqlc.arg('organization_name')
 );
 
 -- name: InsertModuleVersion :one
@@ -26,12 +26,12 @@ INSERT INTO module_versions (
     module_id,
     status
 ) VALUES (
-    pggen.arg('module_version_id'),
-    pggen.arg('version'),
-    pggen.arg('created_at'),
-    pggen.arg('updated_at'),
-    pggen.arg('module_id'),
-    pggen.arg('status')
+    sqlc.arg('module_version_id'),
+    sqlc.arg('version'),
+    sqlc.arg('created_at'),
+    sqlc.arg('updated_at'),
+    sqlc.arg('module_id'),
+    sqlc.arg('status')
 )
 RETURNING *;
 
@@ -44,15 +44,14 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"repo_connections" AS module_connection,
-    (
-        SELECT array_agg(v.*) AS versions
-        FROM module_versions v
-        WHERE v.module_id = m.module_id
-    ) AS versions
+    r.vcs_provider_id,
+    r.repo_path,
+    array_agg(v.*)::"module_versions" AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
-WHERE m.organization_name = pggen.arg('organization_name')
+LEFT JOIN module_versions v USING (module_id)
+WHERE m.organization_name = sqlc.arg('organization_name')
+GROUP BY m.module_id
 ;
 
 -- name: FindModuleByName :one
@@ -64,17 +63,15 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"repo_connections" AS module_connection,
-    (
-        SELECT array_agg(v.*) AS versions
-        FROM module_versions v
-        WHERE v.module_id = m.module_id
-    ) AS versions
+    r.vcs_provider_id,
+    r.repo_path,
+    array_agg(v.*)::"module_versions" AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
-WHERE m.organization_name = pggen.arg('organization_name')
-AND   m.name = pggen.arg('name')
-AND   m.provider = pggen.arg('provider')
+WHERE m.organization_name = sqlc.arg('organization_name')
+AND   m.name = sqlc.arg('name')
+AND   m.provider = sqlc.arg('provider')
+GROUP BY m.module_id
 ;
 
 -- name: FindModuleByID :one
@@ -86,15 +83,14 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"repo_connections" AS module_connection,
-    (
-        SELECT array_agg(v.*) AS versions
-        FROM module_versions v
-        WHERE v.module_id = m.module_id
-    ) AS versions
+    r.vcs_provider_id,
+    r.repo_path,
+    array_agg(v.*)::"module_versions" AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
-WHERE m.module_id = pggen.arg('id')
+LEFT JOIN module_versions v USING (module_id)
+WHERE m.module_id = sqlc.arg('id')
+GROUP BY m.module_id
 ;
 
 -- name: FindModuleByConnection :one
@@ -106,16 +102,15 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"repo_connections" AS module_connection,
-    (
-        SELECT array_agg(v.*) AS versions
-        FROM module_versions v
-        WHERE v.module_id = m.module_id
-    ) AS versions
+    r.vcs_provider_id,
+    r.repo_path,
+    array_agg(v.*)::"module_versions" AS module_versions
 FROM modules m
 JOIN repo_connections r USING (module_id)
-WHERE r.vcs_provider_id = pggen.arg('vcs_provider_id')
-AND   r.repo_path = pggen.arg('repo_path')
+LEFT JOIN module_versions v USING (module_id)
+WHERE r.vcs_provider_id = sqlc.arg('vcs_provider_id')
+AND   r.repo_path = sqlc.arg('repo_path')
+GROUP BY m.module_id
 ;
 
 -- name: FindModuleByModuleVersionID :one
@@ -127,22 +122,20 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"repo_connections" AS module_connection,
-    (
-        SELECT array_agg(v.*) AS versions
-        FROM module_versions v
-        WHERE v.module_id = m.module_id
-    ) AS versions
+    r.vcs_provider_id,
+    r.repo_path,
+    array_agg(v.*)::"module_versions" AS module_versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
 LEFT JOIN repo_connections r USING (module_id)
-WHERE mv.module_version_id = pggen.arg('module_version_id')
+WHERE mv.module_version_id = sqlc.arg('module_version_id')
+GROUP BY m.module_id
 ;
 
 -- name: UpdateModuleStatusByID :one
 UPDATE modules
-SET status = pggen.arg('status')
-WHERE module_id = pggen.arg('module_id')
+SET status = sqlc.arg('status')
+WHERE module_id = sqlc.arg('module_id')
 RETURNING module_id
 ;
 
@@ -151,36 +144,36 @@ INSERT INTO module_tarballs (
     tarball,
     module_version_id
 ) VALUES (
-    pggen.arg('tarball'),
-    pggen.arg('module_version_id')
+    sqlc.arg('tarball'),
+    sqlc.arg('module_version_id')
 )
 RETURNING module_version_id;
 
 -- name: FindModuleTarball :one
 SELECT tarball
 FROM module_tarballs
-WHERE module_version_id = pggen.arg('module_version_id')
+WHERE module_version_id = sqlc.arg('module_version_id')
 ;
 
 -- name: UpdateModuleVersionStatusByID :one
 UPDATE module_versions
 SET
-    status = pggen.arg('status'),
-    status_error = pggen.arg('status_error')
-WHERE module_version_id = pggen.arg('module_version_id')
+    status = sqlc.arg('status'),
+    status_error = sqlc.arg('status_error')
+WHERE module_version_id = sqlc.arg('module_version_id')
 RETURNING *
 ;
 
 -- name: DeleteModuleByID :one
 DELETE
 FROM modules
-WHERE module_id = pggen.arg('module_id')
+WHERE module_id = sqlc.arg('module_id')
 RETURNING module_id
 ;
 
 -- name: DeleteModuleVersionByID :one
 DELETE
 FROM module_versions
-WHERE module_version_id = pggen.arg('module_version_id')
+WHERE module_version_id = sqlc.arg('module_version_id')
 RETURNING module_version_id
 ;

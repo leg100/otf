@@ -4,18 +4,18 @@ INSERT INTO workspace_permissions (
     team_id,
     role
 ) VALUES (
-    pggen.arg('workspace_id'),
-    pggen.arg('team_id'),
-    pggen.arg('role')
-) ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = pggen.arg('role');
+    sqlc.arg('workspace_id'),
+    sqlc.arg('team_id'),
+    sqlc.arg('role')
+) ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = sqlc.arg('role');
 
 -- name: FindWorkspacePermissionsByWorkspaceID :many
 SELECT *
 FROM workspace_permissions
-WHERE workspace_id = pggen.arg('workspace_id');
+WHERE workspace_id = sqlc.arg('workspace_id');
 
 -- name: DeleteWorkspacePermissionByID :exec
 DELETE
 FROM workspace_permissions
-WHERE workspace_id = pggen.arg('workspace_id')
-AND team_id = pggen.arg('team_id');
+WHERE workspace_id = sqlc.arg('workspace_id')
+AND team_id = sqlc.arg('team_id');

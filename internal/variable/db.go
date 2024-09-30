@@ -14,7 +14,7 @@ type (
 		*sql.DB // provides access to generated SQL queries
 	}
 
-	variableRow struct {
+	VariableRow struct {
 		VariableID  pgtype.Text `json:"variable_id"`
 		Key         pgtype.Text `json:"key"`
 		Value       pgtype.Text `json:"value"`
@@ -25,7 +25,7 @@ type (
 		VersionID   pgtype.Text `json:"version_id"`
 	}
 
-	variableSetRow struct {
+	VariableSetRow struct {
 		VariableSetID    pgtype.Text       `json:"variable_set_id"`
 		Global           pgtype.Bool       `json:"global"`
 		Name             pgtype.Text       `json:"name"`
@@ -36,7 +36,7 @@ type (
 	}
 )
 
-func (row variableRow) convert() *Variable {
+func (row VariableRow) convert() *Variable {
 	return &Variable{
 		ID:          row.VariableID.String,
 		Key:         row.Key.String,
@@ -49,7 +49,7 @@ func (row variableRow) convert() *Variable {
 	}
 }
 
-func (row variableSetRow) convert() *VariableSet {
+func (row VariableSetRow) convert() *VariableSet {
 	set := &VariableSet{
 		ID:           row.VariableSetID.String,
 		Global:       row.Global.Bool,
@@ -59,7 +59,7 @@ func (row variableSetRow) convert() *VariableSet {
 	}
 	set.Variables = make([]*Variable, len(row.Variables))
 	for i, v := range row.Variables {
-		set.Variables[i] = variableRow(v).convert()
+		set.Variables[i] = VariableRow(v).convert()
 	}
 	set.Workspaces = row.WorkspaceIds
 	return set
@@ -84,7 +84,7 @@ func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID string)
 
 	variables := make([]*Variable, len(rows))
 	for i, row := range rows {
-		variables[i] = variableRow(row).convert()
+		variables[i] = VariableRow(row).convert()
 	}
 	return variables, nil
 }
@@ -97,7 +97,7 @@ func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID string) (*
 
 	return &WorkspaceVariable{
 		WorkspaceID: row.WorkspaceID.String,
-		Variable:    variableRow(*row.Variable).convert(),
+		Variable:    VariableRow(*row.Variable).convert(),
 	}, nil
 }
 
@@ -109,7 +109,7 @@ func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID string)
 
 	return &WorkspaceVariable{
 		WorkspaceID: row.WorkspaceID.String,
-		Variable:    variableRow(*row.Variable).convert(),
+		Variable:    VariableRow(*row.Variable).convert(),
 	}, nil
 }
 
@@ -156,7 +156,7 @@ func (pdb *pgdb) getVariableSet(ctx context.Context, setID string) (*VariableSet
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return variableSetRow(row).convert(), nil
+	return VariableSetRow(row).convert(), nil
 }
 
 func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID string) (*VariableSet, error) {
@@ -164,7 +164,7 @@ func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID stri
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return variableSetRow(row).convert(), nil
+	return VariableSetRow(row).convert(), nil
 }
 
 func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
@@ -175,7 +175,7 @@ func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*
 
 	sets := make([]*VariableSet, len(rows))
 	for i, row := range rows {
-		sets[i] = variableSetRow(row).convert()
+		sets[i] = VariableSetRow(row).convert()
 	}
 	return sets, nil
 }
@@ -188,7 +188,7 @@ func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID st
 
 	sets := make([]*VariableSet, len(rows))
 	for i, row := range rows {
-		sets[i] = variableSetRow(row).convert()
+		sets[i] = VariableSetRow(row).convert()
 	}
 	return sets, nil
 }

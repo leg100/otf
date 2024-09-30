@@ -169,6 +169,8 @@ func (row moduleRow) toModule() *Module {
 		}
 	}
 	// versions are always maintained in descending order
+	//
+	// TODO: this invariant should be part of a constructor
 	sort.Sort(byVersion(row.Versions))
 	for i := len(row.Versions) - 1; i >= 0; i-- {
 		module.Versions = append(module.Versions, ModuleVersion{

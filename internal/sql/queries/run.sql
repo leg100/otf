@@ -18,23 +18,23 @@ INSERT INTO runs (
     terraform_version,
     allow_empty_apply
 ) VALUES (
-    pggen.arg('id'),
-    pggen.arg('created_at'),
-    pggen.arg('is_destroy'),
-    pggen.arg('position_in_queue'),
-    pggen.arg('refresh'),
-    pggen.arg('refresh_only'),
-    pggen.arg('source'),
-    pggen.arg('status'),
-    pggen.arg('replace_addrs'),
-    pggen.arg('target_addrs'),
-    pggen.arg('auto_apply'),
-    pggen.arg('plan_only'),
-    pggen.arg('configuration_version_id'),
-    pggen.arg('workspace_id'),
-    pggen.arg('created_by'),
-    pggen.arg('terraform_version'),
-    pggen.arg('allow_empty_apply')
+    sqlc.arg('id'),
+    sqlc.arg('created_at'),
+    sqlc.arg('is_destroy'),
+    sqlc.arg('position_in_queue'),
+    sqlc.arg('refresh'),
+    sqlc.arg('refresh_only'),
+    sqlc.arg('source'),
+    sqlc.arg('status'),
+    sqlc.arg('replace_addrs'),
+    sqlc.arg('target_addrs'),
+    sqlc.arg('auto_apply'),
+    sqlc.arg('plan_only'),
+    sqlc.arg('configuration_version_id'),
+    sqlc.arg('workspace_id'),
+    sqlc.arg('created_by'),
+    sqlc.arg('terraform_version'),
+    sqlc.arg('allow_empty_apply')
 );
 
 -- name: InsertRunStatusTimestamp :exec
@@ -43,9 +43,9 @@ INSERT INTO run_status_timestamps (
     status,
     timestamp
 ) VALUES (
-    pggen.arg('id'),
-    pggen.arg('status'),
-    pggen.arg('timestamp')
+    sqlc.arg('id'),
+    sqlc.arg('status'),
+    sqlc.arg('timestamp')
 );
 
 -- name: InsertRunVariable :exec
@@ -54,9 +54,9 @@ INSERT INTO run_variables (
     key,
     value
 ) VALUES (
-    pggen.arg('run_id'),
-    pggen.arg('key'),
-    pggen.arg('value')
+    sqlc.arg('run_id'),
+    sqlc.arg('key'),
+    sqlc.arg('value')
 );
 
 -- name: FindRuns :many
@@ -90,50 +90,57 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
-        SELECT array_agg(rst.*) AS run_status_timestamps
-        FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamps,
-    (
-        SELECT array_agg(st.*) AS phase_status_timestamps
+        SELECT array_agg(st.status)::text[]
         FROM phase_status_timestamps st
-        WHERE st.run_id = plans.run_id
+        WHERE st.run_id = applies.run_id
         AND   st.phase = 'plan'
         GROUP BY run_id, phase
-    ) AS plan_status_timestamps,
+    ) AS plan_status_timestamp_statuses,
     (
-        SELECT array_agg(st.*) AS phase_status_timestamps
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'plan'
+        GROUP BY run_id, phase
+    ) AS plan_status_timestamp_timestamps,
+    (
+        SELECT array_agg(st.status)::text[]
         FROM phase_status_timestamps st
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps,
+    ) AS apply_status_timestamp_statuses,
     (
-        SELECT array_agg(v.*) AS run_variables
-        FROM run_variables v
-        WHERE v.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_variables
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'apply'
+        GROUP BY run_id, phase
+    ) AS apply_status_timestamp_timestamps,
+    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
+    array_agg(v.*)::"run_variables" AS run_variables,
+    sqlc.embed(configuration_version_ingress_attributes)
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
-JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
+LEFT JOIN run_variables v USING (run_id)
+LEFT JOIN run_status_timestamps rst USING (run_id)
 WHERE
-    workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
-AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
-AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
-AND runs.source                  LIKE ANY(pggen.arg('sources'))
-AND runs.status                  LIKE ANY(pggen.arg('statuses'))
-AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
-AND ((pggen.arg('commit_sha')::text IS NULL) OR ia.commit_sha = pggen.arg('commit_sha'))
-AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg('vcs_username'))
+    workspaces.organization_name LIKE ANY(sqlc.arg('organization_names'))
+AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids'))
+AND workspaces.name              LIKE ANY(sqlc.arg('workspace_names'))
+AND runs.source                  LIKE ANY(sqlc.arg('sources'))
+AND runs.status                  LIKE ANY(sqlc.arg('statuses'))
+AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only'))
+AND ((sqlc.arg('commit_sha')::text IS NULL) OR ia.commit_sha = sqlc.arg('commit_sha'))
+AND ((sqlc.arg('vcs_username')::text IS NULL) OR ia.sender_username = sqlc.arg('vcs_username'))
 ORDER BY runs.created_at DESC
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
+GROUP BY runs.run_id
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset')
 ;
 
 -- name: CountRuns :one
@@ -142,14 +149,14 @@ FROM runs
 JOIN workspaces USING(workspace_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 WHERE
-    workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
-AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
-AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
-AND runs.source                  LIKE ANY(pggen.arg('sources'))
-AND runs.status                  LIKE ANY(pggen.arg('statuses'))
-AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
-AND ((pggen.arg('commit_sha')::text IS NULL) OR ia.commit_sha = pggen.arg('commit_sha'))
-AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg('vcs_username'))
+    workspaces.organization_name LIKE ANY(sqlc.arg('organization_names'))
+AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids'))
+AND workspaces.name              LIKE ANY(sqlc.arg('workspace_names'))
+AND runs.source                  LIKE ANY(sqlc.arg('sources'))
+AND runs.status                  LIKE ANY(sqlc.arg('statuses'))
+AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only'))
+AND ((sqlc.arg('commit_sha')::text IS NULL) OR ia.commit_sha = sqlc.arg('commit_sha'))
+AND ((sqlc.arg('vcs_username')::text IS NULL) OR ia.sender_username = sqlc.arg('vcs_username'))
 ;
 
 -- name: FindRunByID :one
@@ -183,40 +190,66 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
-        SELECT array_agg(rst.*) AS run_status_timestamps
+        SELECT array_agg(rst.status)::text[]
         FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
+        WHERE st.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_status_timestamps,
+    ) AS run_status_timestamp_statuses,
     (
-        SELECT array_agg(st.*) AS phase_status_timestamps
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM run_status_timestamps st
+        WHERE st.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamp_timestamps,
+    (
+        SELECT array_agg(st.status)::text[]
         FROM phase_status_timestamps st
-        WHERE st.run_id = plans.run_id
+        WHERE st.run_id = applies.run_id
         AND   st.phase = 'plan'
         GROUP BY run_id, phase
-    ) AS plan_status_timestamps,
+    ) AS plan_status_timestamp_statuses,
     (
-        SELECT array_agg(st.*) AS phase_status_timestamps
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'plan'
+        GROUP BY run_id, phase
+    ) AS plan_status_timestamp_timestamps,
+    (
+        SELECT array_agg(st.status)::text[]
         FROM phase_status_timestamps st
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps,
+    ) AS apply_status_timestamp_statuses,
     (
-        SELECT array_agg(v.*) AS run_variables
-        FROM run_variables v
-        WHERE v.run_id = runs.run_id
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'apply'
+        GROUP BY run_id, phase
+    ) AS apply_status_timestamp_timestamps,
+    (
+        SELECT array_agg(rv.key)::text[]
+        FROM run_variables rv
+        WHERE rv.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_variables
+    ) AS run_variable_keys,
+    (
+        SELECT array_agg(rv.value)::text[]
+        FROM run_variables rv
+        WHERE rv.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variable_values,
+    sqlc.embed(configuration_version_ingress_attributes)
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
-JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
-WHERE runs.run_id = pggen.arg('run_id')
+WHERE runs.run_id = sqlc.arg('run_id')
 ;
 
 -- name: FindRunByIDForUpdate :one
@@ -250,75 +283,101 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
-        SELECT array_agg(rst.*) AS run_status_timestamps
+        SELECT array_agg(rst.status)::text[]
         FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
+        WHERE st.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_status_timestamps,
+    ) AS run_status_timestamp_statuses,
     (
-        SELECT array_agg(st.*) AS phase_status_timestamps
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM run_status_timestamps st
+        WHERE st.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamp_timestamps,
+    (
+        SELECT array_agg(st.status)::text[]
         FROM phase_status_timestamps st
-        WHERE st.run_id = plans.run_id
+        WHERE st.run_id = applies.run_id
         AND   st.phase = 'plan'
         GROUP BY run_id, phase
-    ) AS plan_status_timestamps,
+    ) AS plan_status_timestamp_statuses,
     (
-        SELECT array_agg(st.*) AS phase_status_timestamps
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'plan'
+        GROUP BY run_id, phase
+    ) AS plan_status_timestamp_timestamps,
+    (
+        SELECT array_agg(st.status)::text[]
         FROM phase_status_timestamps st
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps,
+    ) AS apply_status_timestamp_statuses,
     (
-        SELECT array_agg(v.*) AS run_variables
-        FROM run_variables v
-        WHERE v.run_id = runs.run_id
+        SELECT array_agg(st.timestamp)::timestamptz[]
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'apply'
+        GROUP BY run_id, phase
+    ) AS apply_status_timestamp_timestamps,
+    (
+        SELECT array_agg(rv.key)::text[]
+        FROM run_variables rv
+        WHERE rv.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_variables
+    ) AS run_variable_keys,
+    (
+        SELECT array_agg(rv.value)::text[]
+        FROM run_variables rv
+        WHERE rv.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variable_values,
+    sqlc.embed(configuration_version_ingress_attributes)
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
-JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+JOIN configuration_version_ingress_attributes USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
-WHERE runs.run_id = pggen.arg('run_id')
+WHERE runs.run_id = sqlc.arg('run_id')
 FOR UPDATE OF runs, plans, applies
 ;
 
 -- name: PutLockFile :one
 UPDATE runs
-SET lock_file = pggen.arg('lock_file')
-WHERE run_id = pggen.arg('run_id')
+SET lock_file = sqlc.arg('lock_file')
+WHERE run_id = sqlc.arg('run_id')
 RETURNING run_id
 ;
 
 -- name: GetLockFileByID :one
 SELECT lock_file
 FROM runs
-WHERE run_id = pggen.arg('run_id')
+WHERE run_id = sqlc.arg('run_id')
 ;
 
 -- name: UpdateRunStatus :one
 UPDATE runs
 SET
-    status = pggen.arg('status')
-WHERE run_id = pggen.arg('id')
+    status = sqlc.arg('status')
+WHERE run_id = sqlc.arg('id')
 RETURNING run_id
 ;
 
 -- name: UpdateCancelSignaledAt :one
 UPDATE runs
 SET
-    cancel_signaled_at = pggen.arg('cancel_signaled_at')
-WHERE run_id = pggen.arg('id')
+    cancel_signaled_at = sqlc.arg('cancel_signaled_at')
+WHERE run_id = sqlc.arg('id')
 RETURNING run_id
 ;
 
 -- name: DeleteRunByID :one
 DELETE
 FROM runs
-WHERE run_id = pggen.arg('run_id')
+WHERE run_id = sqlc.arg('run_id')
 RETURNING run_id
 ;

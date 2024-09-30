@@ -14,17 +14,26 @@ type (
 		*sql.DB // provides access to generated SQL queries
 	}
 
-	// row represents a database row for a github app
-	row struct {
+	// AppRow represents a database AppRow for a github app
+	AppRow struct {
 		GithubAppID   pgtype.Int8 `json:"github_app_id"`
 		WebhookSecret pgtype.Text `json:"webhook_secret"`
 		PrivateKey    pgtype.Text `json:"private_key"`
 		Slug          pgtype.Text `json:"slug"`
 		Organization  pgtype.Text `json:"organization"`
 	}
+
+	// AppInstallRow is a database row for a github app install
+	AppInstallRow struct {
+		GithubAppID   pgtype.Int8 `json:"github_app_id"`
+		InstallID     pgtype.Int8 `json:"install_id"`
+		Username      pgtype.Text `json:"username"`
+		Organization  pgtype.Text `json:"organization"`
+		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	}
 )
 
-func (r row) convert() *App {
+func (r AppRow) convert() *App {
 	app := &App{
 		ID:            r.GithubAppID.Int,
 		Slug:          r.Slug.String,
@@ -53,7 +62,7 @@ func (db *pgdb) get(ctx context.Context) (*App, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return row(result).convert(), nil
+	return AppRow(result).convert(), nil
 }
 
 func (db *pgdb) delete(ctx context.Context) error {

@@ -5,94 +5,76 @@ INSERT INTO users (
     updated_at,
     username
 ) VALUES (
-    pggen.arg('id'),
-    pggen.arg('created_at'),
-    pggen.arg('updated_at'),
-    pggen.arg('username')
+    sqlc.arg('id'),
+    sqlc.arg('created_at'),
+    sqlc.arg('updated_at'),
+    sqlc.arg('username')
 );
 
 -- name: FindUsers :many
-SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
+SELECT
+    u.*,
+    array_agg(t.*)::"teams" AS teams
 FROM users u
+LEFT JOIN teams t USING (team_id)
 ;
 
 -- name: FindUsersByOrganization :many
 SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
+    array_agg(t.*)::"teams" AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
-WHERE t.organization_name = pggen.arg('organization_name')
+WHERE t.organization_name = sqlc.arg('organization_name')
 GROUP BY u.user_id
 ;
 
 -- name: FindUsersByTeamID :many
 SELECT
     u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
+    array_agg(t.*)::"teams" AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
-WHERE t.team_id = pggen.arg('team_id')
+WHERE t.team_id = sqlc.arg('team_id')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByID :one
-SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
+SELECT
+    u.*,
+    array_agg(t.*)::"teams" AS teams
 FROM users u
-WHERE u.user_id = pggen.arg('user_id')
+LEFT JOIN teams t USING (team_id)
+WHERE u.user_id = sqlc.arg('user_id')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByUsername :one
-SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
+SELECT
+    u.*,
+    array_agg(t.*)::"teams" AS teams
 FROM users u
-WHERE u.username = pggen.arg('username')
+LEFT JOIN teams t USING (team_id)
+WHERE u.username = sqlc.arg('username')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByAuthenticationTokenID :one
-SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
+SELECT
+    u.*,
+    array_agg(tt.*)::"teams" AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
-WHERE t.token_id = pggen.arg('token_id')
+LEFT JOIN teams tt USING (team_id)
+WHERE t.token_id = sqlc.arg('token_id')
+GROUP BY u.user_id
 ;
 
 -- name: UpdateUserSiteAdmins :many
 UPDATE users
 SET site_admin = true
-WHERE username = ANY(pggen.arg('usernames')::text[])
+WHERE username = ANY(sqlc.arg('usernames')::text[])
 RETURNING username
 ;
 
@@ -106,13 +88,13 @@ RETURNING username
 -- name: DeleteUserByID :one
 DELETE
 FROM users
-WHERE user_id = pggen.arg('user_id')
+WHERE user_id = sqlc.arg('user_id')
 RETURNING user_id
 ;
 
 -- name: DeleteUserByUsername :one
 DELETE
 FROM users
-WHERE username = pggen.arg('username')
+WHERE username = sqlc.arg('username')
 RETURNING user_id
 ;
