@@ -28,7 +28,7 @@ func (q *Queries) DeleteVariableByID(ctx context.Context, variableID pgtype.Text
 		&i.Description,
 		&i.Category,
 		&i.Sensitive,
-		&i.Hcl,
+		&i.HCL,
 		&i.VersionID,
 	)
 	return i, err
@@ -50,7 +50,7 @@ func (q *Queries) FindVariable(ctx context.Context, variableID pgtype.Text) (Var
 		&i.Description,
 		&i.Category,
 		&i.Sensitive,
-		&i.Hcl,
+		&i.HCL,
 		&i.VersionID,
 	)
 	return i, err
@@ -85,7 +85,7 @@ type InsertVariableParams struct {
 	Description pgtype.Text
 	Category    pgtype.Text
 	Sensitive   pgtype.Bool
-	Hcl         pgtype.Bool
+	HCL         pgtype.Bool
 	VersionID   pgtype.Text
 }
 
@@ -97,7 +97,7 @@ func (q *Queries) InsertVariable(ctx context.Context, arg InsertVariableParams) 
 		arg.Description,
 		arg.Category,
 		arg.Sensitive,
-		arg.Hcl,
+		arg.HCL,
 		arg.VersionID,
 	)
 	return err
@@ -124,7 +124,7 @@ type UpdateVariableByIDParams struct {
 	Category    pgtype.Text
 	Sensitive   pgtype.Bool
 	VersionID   pgtype.Text
-	Hcl         pgtype.Bool
+	HCL         pgtype.Bool
 	VariableID  pgtype.Text
 }
 
@@ -136,7 +136,7 @@ func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByID
 		arg.Category,
 		arg.Sensitive,
 		arg.VersionID,
-		arg.Hcl,
+		arg.HCL,
 		arg.VariableID,
 	)
 	var variable_id pgtype.Text

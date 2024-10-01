@@ -84,12 +84,12 @@ RETURNING run_id
 `
 
 type UpdatePlanJSONByIDParams struct {
-	PlanJson []byte
+	PlanJSON []byte
 	RunID    pgtype.Text
 }
 
 func (q *Queries) UpdatePlanJSONByID(ctx context.Context, arg UpdatePlanJSONByIDParams) (pgtype.Text, error) {
-	row := q.db.QueryRow(ctx, updatePlanJSONByID, arg.PlanJson, arg.RunID)
+	row := q.db.QueryRow(ctx, updatePlanJSONByID, arg.PlanJSON, arg.RunID)
 	var run_id pgtype.Text
 	err := row.Scan(&run_id)
 	return run_id, err

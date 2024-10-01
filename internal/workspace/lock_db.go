@@ -26,13 +26,13 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		}
 		// persist to db
 		params := sqlc.UpdateWorkspaceLockByIDParams{
-			WorkspaceID: pgtype.Text{String: ws.ID, Status: pgtype.Present},
+			WorkspaceID: pgtype.Text{String: ws.ID},
 		}
 		if ws.Lock != nil {
 			if ws.Lock.LockKind == RunLock {
-				params.RunID = pgtype.Text{String: ws.Lock.id, Status: pgtype.Present}
+				params.RunID = pgtype.Text{String: ws.Lock.id}
 			} else if ws.Lock.LockKind == UserLock {
-				params.Username = pgtype.Text{String: ws.Lock.id, Status: pgtype.Present}
+				params.Username = pgtype.Text{String: ws.Lock.id}
 			} else {
 				return ErrWorkspaceInvalidLock
 			}

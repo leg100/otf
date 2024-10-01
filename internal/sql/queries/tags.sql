@@ -43,8 +43,8 @@ SELECT
     ) AS instance_count
 FROM tags t
 WHERE t.organization_name = sqlc.arg('organization_name')
-LIMIT sqlc.arg('limit')
-OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: FindWorkspaceTags :many
@@ -58,8 +58,8 @@ SELECT
 FROM workspace_tags wt
 JOIN tags t USING (tag_id)
 WHERE wt.workspace_id = sqlc.arg('workspace_id')
-LIMIT sqlc.arg('limit')
-OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: FindTagByName :one

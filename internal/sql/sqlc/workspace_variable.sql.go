@@ -33,7 +33,7 @@ func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, variableID pg
 const findWorkspaceVariableByVariableID = `-- name: FindWorkspaceVariableByVariableID :one
 SELECT
     workspace_id,
-    v.variable_id, v.key, v.value, v.description, v.category, v.sensitive, v.hcl, v.version_id
+    v::"variables" AS variable
 FROM workspace_variables
 JOIN variables v USING (variable_id)
 WHERE v.variable_id = $1
@@ -41,30 +41,13 @@ WHERE v.variable_id = $1
 
 type FindWorkspaceVariableByVariableIDRow struct {
 	WorkspaceID pgtype.Text
-	VariableID  pgtype.Text
-	Key         pgtype.Text
-	Value       pgtype.Text
-	Description pgtype.Text
-	Category    pgtype.Text
-	Sensitive   pgtype.Bool
-	Hcl         pgtype.Bool
-	VersionID   pgtype.Text
+	Variable    Variable
 }
 
 func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, variableID pgtype.Text) (FindWorkspaceVariableByVariableIDRow, error) {
 	row := q.db.QueryRow(ctx, findWorkspaceVariableByVariableID, variableID)
 	var i FindWorkspaceVariableByVariableIDRow
-	err := row.Scan(
-		&i.WorkspaceID,
-		&i.VariableID,
-		&i.Key,
-		&i.Value,
-		&i.Description,
-		&i.Category,
-		&i.Sensitive,
-		&i.Hcl,
-		&i.VersionID,
-	)
+	err := row.Scan(&i.WorkspaceID, &i.Variable)
 	return i, err
 }
 
@@ -91,7 +74,7 @@ func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, works
 			&i.Description,
 			&i.Category,
 			&i.Sensitive,
-			&i.Hcl,
+			&i.HCL,
 			&i.VersionID,
 		); err != nil {
 			return nil, err

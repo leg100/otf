@@ -27,7 +27,7 @@ func (q *Queries) DeleteAgent(ctx context.Context, agentID pgtype.Text) (Agent, 
 		&i.Name,
 		&i.Version,
 		&i.MaxJobs,
-		&i.IpAddress,
+		&i.IPAddress,
 		&i.LastPingAt,
 		&i.LastStatusAt,
 		&i.Status,
@@ -55,7 +55,7 @@ type FindAgentByIDRow struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -71,7 +71,7 @@ func (q *Queries) FindAgentByID(ctx context.Context, agentID pgtype.Text) (FindA
 		&i.Name,
 		&i.Version,
 		&i.MaxJobs,
-		&i.IpAddress,
+		&i.IPAddress,
 		&i.LastPingAt,
 		&i.LastStatusAt,
 		&i.Status,
@@ -99,7 +99,7 @@ type FindAgentByIDForUpdateRow struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -115,7 +115,7 @@ func (q *Queries) FindAgentByIDForUpdate(ctx context.Context, agentID pgtype.Tex
 		&i.Name,
 		&i.Version,
 		&i.MaxJobs,
-		&i.IpAddress,
+		&i.IPAddress,
 		&i.LastPingAt,
 		&i.LastStatusAt,
 		&i.Status,
@@ -143,7 +143,7 @@ type FindAgentsRow struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -165,7 +165,7 @@ func (q *Queries) FindAgents(ctx context.Context) ([]FindAgentsRow, error) {
 			&i.Name,
 			&i.Version,
 			&i.MaxJobs,
-			&i.IpAddress,
+			&i.IPAddress,
 			&i.LastPingAt,
 			&i.LastStatusAt,
 			&i.Status,
@@ -202,7 +202,7 @@ type FindAgentsByOrganizationRow struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -224,7 +224,7 @@ func (q *Queries) FindAgentsByOrganization(ctx context.Context, organizationName
 			&i.Name,
 			&i.Version,
 			&i.MaxJobs,
-			&i.IpAddress,
+			&i.IPAddress,
 			&i.LastPingAt,
 			&i.LastStatusAt,
 			&i.Status,
@@ -261,7 +261,7 @@ type FindAgentsByPoolIDRow struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -283,7 +283,7 @@ func (q *Queries) FindAgentsByPoolID(ctx context.Context, agentPoolID pgtype.Tex
 			&i.Name,
 			&i.Version,
 			&i.MaxJobs,
-			&i.IpAddress,
+			&i.IPAddress,
 			&i.LastPingAt,
 			&i.LastStatusAt,
 			&i.Status,
@@ -319,7 +319,7 @@ type FindServerAgentsRow struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -341,7 +341,7 @@ func (q *Queries) FindServerAgents(ctx context.Context) ([]FindServerAgentsRow, 
 			&i.Name,
 			&i.Version,
 			&i.MaxJobs,
-			&i.IpAddress,
+			&i.IPAddress,
 			&i.LastPingAt,
 			&i.LastStatusAt,
 			&i.Status,
@@ -387,7 +387,7 @@ type InsertAgentParams struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -400,7 +400,7 @@ func (q *Queries) InsertAgent(ctx context.Context, arg InsertAgentParams) error 
 		arg.Name,
 		arg.Version,
 		arg.MaxJobs,
-		arg.IpAddress,
+		arg.IPAddress,
 		arg.LastPingAt,
 		arg.LastStatusAt,
 		arg.Status,
@@ -438,7 +438,7 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 		&i.Name,
 		&i.Version,
 		&i.MaxJobs,
-		&i.IpAddress,
+		&i.IPAddress,
 		&i.LastPingAt,
 		&i.LastStatusAt,
 		&i.Status,

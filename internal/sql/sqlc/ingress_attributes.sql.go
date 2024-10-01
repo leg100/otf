@@ -47,14 +47,14 @@ INSERT INTO ingress_attributes (
 
 type InsertIngressAttributesParams struct {
 	Branch                 pgtype.Text
-	CommitSha              pgtype.Text
+	CommitSHA              pgtype.Text
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
 	PullRequestTitle       pgtype.Text
 	SenderUsername         pgtype.Text
 	SenderAvatarURL        pgtype.Text
-	SenderHtmlURL          pgtype.Text
+	SenderHTMLURL          pgtype.Text
 	Identifier             pgtype.Text
 	Tag                    pgtype.Text
 	IsPullRequest          pgtype.Bool
@@ -65,14 +65,14 @@ type InsertIngressAttributesParams struct {
 func (q *Queries) InsertIngressAttributes(ctx context.Context, arg InsertIngressAttributesParams) error {
 	_, err := q.db.Exec(ctx, insertIngressAttributes,
 		arg.Branch,
-		arg.CommitSha,
+		arg.CommitSHA,
 		arg.CommitURL,
 		arg.PullRequestNumber,
 		arg.PullRequestURL,
 		arg.PullRequestTitle,
 		arg.SenderUsername,
 		arg.SenderAvatarURL,
-		arg.SenderHtmlURL,
+		arg.SenderHTMLURL,
 		arg.Identifier,
 		arg.Tag,
 		arg.IsPullRequest,

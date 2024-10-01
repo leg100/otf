@@ -16,7 +16,7 @@ WHERE workspace_id = sqlc.arg('workspace_id');
 -- name: FindWorkspaceVariableByVariableID :one
 SELECT
     workspace_id,
-    v.*
+    v::"variables" AS variable
 FROM workspace_variables
 JOIN variables v USING (variable_id)
 WHERE v.variable_id = sqlc.arg('variable_id');

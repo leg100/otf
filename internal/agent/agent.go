@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net"
 	"net/netip"
 	"time"
 
@@ -61,7 +60,7 @@ type registerAgentOptions struct {
 	Concurrency int `json:"concurrency"`
 	// IPAddress of agent. Optional. Not sent over the wire; instead the server
 	// handler is responsible for determing client's IP address.
-	IPAddress net.IP `json:"-"`
+	IPAddress *netip.Addr `json:"-"`
 	// ID of agent's pool. If unset then the agent is assumed to be a server
 	// agent (which does not belong to a pool).
 	AgentPoolID *string `json:"-"`
@@ -88,13 +87,13 @@ func (f *registrar) register(ctx context.Context, opts registerAgentOptions) (*A
 		return nil, err
 	}
 	if opts.IPAddress != nil {
-		agent.IPAddress = opts.IPAddress
+		agent.IPAddress = *opts.IPAddress
 	} else {
 		// IP address not provided: try to get local IP address used for
-		// outbound comms, and if that fails, use 127.0.0.1
+		// outbound comms, and if that fails, use localhost
 		ip, err := internal.GetOutboundIP()
 		if err != nil {
-			ip = net.IPv4(127, 0, 0, 1)
+			ip = netip.IPv6Loopback()
 		}
 		agent.IPAddress = ip
 	}

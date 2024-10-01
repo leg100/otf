@@ -32,7 +32,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 	if err != nil {
 		return "", sql.Error(err)
 	}
-	return strconv.Itoa(int(id.Int)), nil
+	return strconv.Itoa(int(id.Int32)), nil
 }
 
 func (db *pgdb) getChunk(ctx context.Context, chunkID string) (internal.Chunk, error) {
@@ -49,12 +49,15 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID string) (internal.Chunk, e
 		RunID:  chunk.RunID.String,
 		Phase:  internal.PhaseType(chunk.Phase.String),
 		Data:   chunk.Chunk,
-		Offset: int(chunk.Offset.Int),
+		Offset: int(chunk.Offset.Int32),
 	}, nil
 }
 
 func (db *pgdb) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
-	data, err := db.Conn(ctx).FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
+	data, err := db.Conn(ctx).FindLogs(ctx, sqlc.FindLogsParams{
+		RunID: sql.String(runID),
+		Phase: sql.String(string(phase)),
+	})
 	if err != nil {
 		// Don't consider no rows an error because logs may not have been
 		// uploaded yet.

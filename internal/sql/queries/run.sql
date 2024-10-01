@@ -75,9 +75,9 @@ SELECT
     runs.replace_addrs,
     runs.target_addrs,
     runs.auto_apply,
-    plans.resource_report AS plan_resource_report,
-    plans.output_report AS plan_output_report,
-    applies.resource_report AS apply_resource_report,
+    plans.resource_report::"report" AS plan_resource_report,
+    plans.output_report::"report" AS plan_output_report,
+    applies.resource_report::"report" AS apply_resource_report,
     runs.configuration_version_id,
     runs.workspace_id,
     runs.plan_only,
@@ -93,8 +93,8 @@ SELECT
     array_agg(rst.*)::"run_status_timestamps[]" AS run_status_timestamps,
     array_agg(pst.*)::"phase_status_timestamps[]" AS plan_status_timestamps,
     array_agg(pst.*)::"phase_status_timestamps[]" AS apply_status_timestamps,
-    array_agg(v.*)::"run_variables" AS run_variables,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(v.*)::"run_variables[]" AS run_variables,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -106,17 +106,18 @@ LEFT JOIN run_status_timestamps rst USING (run_id)
 LEFT JOIN phase_status_timestamps pst ON pst.run_id = runs.run_id AND pst.phase = 'plan'
 LEFT JOIN phase_status_timestamps ast ON ast.run_id = runs.run_id AND ast.phase = 'apply'
 WHERE
-    workspaces.organization_name LIKE ANY(sqlc.arg('organization_names'))
-AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids'))
-AND workspaces.name              LIKE ANY(sqlc.arg('workspace_names'))
-AND runs.source                  LIKE ANY(sqlc.arg('sources'))
-AND runs.status                  LIKE ANY(sqlc.arg('statuses'))
-AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only'))
+    workspaces.organization_name LIKE ANY(sqlc.arg('organization_names')::text[])
+AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids')::text[])
+AND workspaces.name              LIKE ANY(sqlc.arg('workspace_names')::text[])
+AND runs.source                  LIKE ANY(sqlc.arg('sources')::text[])
+AND runs.status                  LIKE ANY(sqlc.arg('statuses')::text[])
+AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only')::text[])
 AND ((sqlc.arg('commit_sha')::text IS NULL) OR ia.commit_sha = sqlc.arg('commit_sha'))
 AND ((sqlc.arg('vcs_username')::text IS NULL) OR ia.sender_username = sqlc.arg('vcs_username'))
 GROUP BY runs.run_id
 ORDER BY runs.created_at DESC
-LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: CountRuns :one
@@ -125,12 +126,12 @@ FROM runs
 JOIN workspaces USING(workspace_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 WHERE
-    workspaces.organization_name LIKE ANY(sqlc.arg('organization_names'))
-AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids'))
-AND workspaces.name              LIKE ANY(sqlc.arg('workspace_names'))
-AND runs.source                  LIKE ANY(sqlc.arg('sources'))
-AND runs.status                  LIKE ANY(sqlc.arg('statuses'))
-AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only'))
+    workspaces.organization_name LIKE ANY(sqlc.arg('organization_names')::text[])
+AND workspaces.workspace_id      LIKE ANY(sqlc.arg('workspace_ids')::text[])
+AND workspaces.name              LIKE ANY(sqlc.arg('workspace_names')::text[])
+AND runs.source                  LIKE ANY(sqlc.arg('sources')::text[])
+AND runs.status                  LIKE ANY(sqlc.arg('statuses')::text[])
+AND runs.plan_only::text         LIKE ANY(sqlc.arg('plan_only')::text[])
 AND ((sqlc.arg('commit_sha')::text IS NULL) OR ia.commit_sha = sqlc.arg('commit_sha'))
 AND ((sqlc.arg('vcs_username')::text IS NULL) OR ia.sender_username = sqlc.arg('vcs_username'))
 ;
@@ -151,9 +152,9 @@ SELECT
     runs.replace_addrs,
     runs.target_addrs,
     runs.auto_apply,
-    plans.resource_report AS plan_resource_report,
-    plans.output_report AS plan_output_report,
-    applies.resource_report AS apply_resource_report,
+    plans.resource_report::"report" AS plan_resource_report,
+    plans.output_report::"report" AS plan_output_report,
+    applies.resource_report::"report" AS apply_resource_report,
     runs.configuration_version_id,
     runs.workspace_id,
     runs.plan_only,
@@ -166,11 +167,11 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
-    array_agg(v.*)::"run_variables" AS run_variables,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(rst.*)::"run_status_timestamps[]" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS apply_status_timestamps,
+    array_agg(v.*)::"run_variables[]" AS run_variables,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -201,9 +202,9 @@ SELECT
     runs.replace_addrs,
     runs.target_addrs,
     runs.auto_apply,
-    plans.resource_report AS plan_resource_report,
-    plans.output_report AS plan_output_report,
-    applies.resource_report AS apply_resource_report,
+    plans.resource_report::"report" AS plan_resource_report,
+    plans.output_report::"report" AS plan_output_report,
+    applies.resource_report::"report" AS apply_resource_report,
     runs.configuration_version_id,
     runs.workspace_id,
     runs.plan_only,
@@ -216,11 +217,11 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
-    array_agg(v.*)::"run_variables" AS run_variables,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(rst.*)::"run_status_timestamps[]" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS apply_status_timestamps,
+    array_agg(v.*)::"run_variables[]" AS run_variables,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)

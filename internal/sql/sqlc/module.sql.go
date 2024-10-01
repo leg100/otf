@@ -50,7 +50,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions" AS module_versions
+    array_agg(v.*)::"module_versions[]" AS module_versions
 FROM modules m
 JOIN repo_connections r USING (module_id)
 LEFT JOIN module_versions v USING (module_id)
@@ -74,7 +74,7 @@ type FindModuleByConnectionRow struct {
 	OrganizationName pgtype.Text
 	VCSProviderID    pgtype.Text
 	RepoPath         pgtype.Text
-	ModuleVersions   ModuleVersion
+	ModuleVersions   []ModuleVersion
 }
 
 func (q *Queries) FindModuleByConnection(ctx context.Context, arg FindModuleByConnectionParams) (FindModuleByConnectionRow, error) {
@@ -106,7 +106,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions" AS module_versions
+    array_agg(v.*)::"module_versions[]" AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 LEFT JOIN module_versions v USING (module_id)
@@ -124,7 +124,7 @@ type FindModuleByIDRow struct {
 	OrganizationName pgtype.Text
 	VCSProviderID    pgtype.Text
 	RepoPath         pgtype.Text
-	ModuleVersions   ModuleVersion
+	ModuleVersions   []ModuleVersion
 }
 
 func (q *Queries) FindModuleByID(ctx context.Context, id pgtype.Text) (FindModuleByIDRow, error) {
@@ -156,7 +156,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions" AS module_versions
+    array_agg(v.*)::"module_versions[]" AS module_versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
 LEFT JOIN repo_connections r USING (module_id)
@@ -174,7 +174,7 @@ type FindModuleByModuleVersionIDRow struct {
 	OrganizationName pgtype.Text
 	VCSProviderID    pgtype.Text
 	RepoPath         pgtype.Text
-	ModuleVersions   ModuleVersion
+	ModuleVersions   []ModuleVersion
 }
 
 func (q *Queries) FindModuleByModuleVersionID(ctx context.Context, moduleVersionID pgtype.Text) (FindModuleByModuleVersionIDRow, error) {
@@ -206,7 +206,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions" AS module_versions
+    array_agg(v.*)::"module_versions[]" AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
@@ -231,7 +231,7 @@ type FindModuleByNameRow struct {
 	OrganizationName pgtype.Text
 	VCSProviderID    pgtype.Text
 	RepoPath         pgtype.Text
-	ModuleVersions   ModuleVersion
+	ModuleVersions   []ModuleVersion
 }
 
 func (q *Queries) FindModuleByName(ctx context.Context, arg FindModuleByNameParams) (FindModuleByNameRow, error) {
@@ -392,7 +392,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions" AS module_versions
+    array_agg(v.*)::"module_versions[]" AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 LEFT JOIN module_versions v USING (module_id)
@@ -410,7 +410,7 @@ type ListModulesByOrganizationRow struct {
 	OrganizationName pgtype.Text
 	VCSProviderID    pgtype.Text
 	RepoPath         pgtype.Text
-	ModuleVersions   ModuleVersion
+	ModuleVersions   []ModuleVersion
 }
 
 func (q *Queries) ListModulesByOrganization(ctx context.Context, organizationName pgtype.Text) ([]ListModulesByOrganizationRow, error) {

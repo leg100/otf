@@ -16,15 +16,15 @@ type (
 	}
 
 	pgresult struct {
-		NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
-		CreatedAt                   pgtype.Timestamptz `json:"created_at"`
-		UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
-		Name                        pgtype.Text        `json:"name"`
-		URL                         pgtype.Text        `json:"url"`
-		Triggers                    []string           `json:"triggers"`
-		DestinationType             pgtype.Text        `json:"destination_type"`
-		WorkspaceID                 pgtype.Text        `json:"workspace_id"`
-		Enabled                     pgtype.Bool        `json:"enabled"`
+		NotificationConfigurationID pgtype.Text
+		CreatedAt                   pgtype.Timestamptz
+		UpdatedAt                   pgtype.Timestamptz
+		Name                        pgtype.Text
+		URL                         pgtype.Text
+		Triggers                    []pgtype.Text
+		DestinationType             pgtype.Text
+		WorkspaceID                 pgtype.Text
+		Enabled                     pgtype.Bool
 	}
 )
 
@@ -39,9 +39,9 @@ func (r pgresult) toNotificationConfiguration() *Config {
 		WorkspaceID:     r.WorkspaceID.String,
 	}
 	for _, t := range r.Triggers {
-		nc.Triggers = append(nc.Triggers, Trigger(t))
+		nc.Triggers = append(nc.Triggers, Trigger(t.String))
 	}
-	if r.URL.Status == pgtype.Present {
+	if r.URL.Valid {
 		nc.URL = &r.URL.String
 	}
 	return nc
@@ -59,12 +59,12 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 		WorkspaceID:                 sql.String(nc.WorkspaceID),
 	}
 	for _, t := range nc.Triggers {
-		params.Triggers = append(params.Triggers, string(t))
+		params.Triggers = append(params.Triggers, sql.String(string(t)))
 	}
 	if nc.URL != nil {
 		params.URL = sql.String(*nc.URL)
 	}
-	_, err := db.Conn(ctx).InsertNotificationConfiguration(ctx, params)
+	err := db.Conn(ctx).InsertNotificationConfiguration(ctx, params)
 	return sql.Error(err)
 }
 
@@ -87,7 +87,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 			NotificationConfigurationID: sql.String(nc.ID),
 		}
 		for _, t := range nc.Triggers {
-			params.Triggers = append(params.Triggers, string(t))
+			params.Triggers = append(params.Triggers, sql.String(string(t)))
 		}
 		if nc.URL != nil {
 			params.URL = sql.String(*nc.URL)

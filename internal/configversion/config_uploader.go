@@ -30,7 +30,10 @@ func (u *cvUploader) SetErrored(ctx context.Context) error {
 
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
 	// TODO: add status timestamp
-	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, config, sql.String(u.id))
+	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, sqlc.UpdateConfigurationVersionConfigByIDParams{
+		ID:     sql.String(u.id),
+		Config: config,
+	})
 	if err != nil {
 		return ConfigurationErrored, err
 	}

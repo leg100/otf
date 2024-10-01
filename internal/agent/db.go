@@ -12,13 +12,13 @@ import (
 
 // poolresult is the result of a database query for an agent pool
 type poolresult struct {
-	AgentPoolID         pgtype.Text        `json:"agent_pool_id"`
-	Name                pgtype.Text        `json:"name"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	OrganizationName    pgtype.Text        `json:"organization_name"`
-	OrganizationScoped  pgtype.Bool        `json:"organization_scoped"`
-	WorkspaceIds        []string           `json:"workspace_ids"`
-	AllowedWorkspaceIds []string           `json:"allowed_workspace_ids"`
+	AgentPoolID         pgtype.Text
+	Name                pgtype.Text
+	CreatedAt           pgtype.Timestamptz
+	OrganizationName    pgtype.Text
+	OrganizationScoped  pgtype.Bool
+	WorkspaceIds        []pgtype.Text
+	AllowedWorkspaceIds []pgtype.Text
 }
 
 func (r poolresult) toPool() *Pool {
@@ -28,23 +28,23 @@ func (r poolresult) toPool() *Pool {
 		CreatedAt:          r.CreatedAt.Time.UTC(),
 		Organization:       r.OrganizationName.String,
 		OrganizationScoped: r.OrganizationScoped.Bool,
-		AssignedWorkspaces: r.WorkspaceIds,
-		AllowedWorkspaces:  r.AllowedWorkspaceIds,
+		AssignedWorkspaces: sql.FromStringArray(r.WorkspaceIds),
+		AllowedWorkspaces:  sql.FromStringArray(r.AllowedWorkspaceIds),
 	}
 }
 
 // agentresult is the result of a database query for an agent
 type agentresult struct {
-	AgentID      pgtype.Text        `json:"agent_id"`
-	Name         pgtype.Text        `json:"name"`
-	Version      pgtype.Text        `json:"version"`
-	MaxJobs      pgtype.Int4        `json:"max_jobs"`
-	IPAddress    pgtype.Inet        `json:"ip_address"`
-	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
-	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
-	Status       pgtype.Text        `json:"status"`
-	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
-	CurrentJobs  pgtype.Int8        `json:"current_jobs"`
+	AgentID      pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
+	IPAddress    netip.Addr
+	LastPingAt   pgtype.Timestamptz
+	LastStatusAt pgtype.Timestamptz
+	Status       pgtype.Text
+	AgentPoolID  pgtype.Text
+	CurrentJobs  int64
 }
 
 func (r agentresult) toAgent() *Agent {
@@ -52,14 +52,14 @@ func (r agentresult) toAgent() *Agent {
 		ID:           r.AgentID.String,
 		Name:         r.Name.String,
 		Version:      r.Version.String,
-		MaxJobs:      int(r.MaxJobs.Int),
-		CurrentJobs:  int(r.CurrentJobs.Int),
-		IPAddress:    r.IPAddress.IPNet.IP,
+		MaxJobs:      int(r.MaxJobs.Int32),
+		CurrentJobs:  int(r.CurrentJobs),
+		IPAddress:    r.IPAddress,
 		LastPingAt:   r.LastPingAt.Time.UTC(),
 		LastStatusAt: r.LastStatusAt.Time.UTC(),
 		Status:       AgentStatus(r.Status.String),
 	}
-	if r.AgentPoolID.Status == pgtype.Present {
+	if r.AgentPoolID.Valid {
 		agent.AgentPoolID = &r.AgentPoolID.String
 	}
 	return agent
@@ -87,13 +87,13 @@ func (r jobresult) toJob() *Job {
 		WorkspaceID:  r.WorkspaceID.String,
 		Organization: r.OrganizationName.String,
 	}
-	if r.AgentID.Status == pgtype.Present {
+	if r.AgentID.Valid {
 		job.AgentID = &r.AgentID.String
 	}
-	if r.AgentPoolID.Status == pgtype.Present {
+	if r.AgentPoolID.Valid {
 		job.AgentPoolID = &r.AgentPoolID.String
 	}
-	if r.Signaled.Status == pgtype.Present {
+	if r.Signaled.Valid {
 		job.Signaled = &r.Signaled.Bool
 	}
 	return job
@@ -123,7 +123,7 @@ type db struct {
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		_, err := db.Conn(ctx).InsertAgentPool(ctx, sqlc.InsertAgentPoolParams{
+		err := db.Conn(ctx).InsertAgentPool(ctx, sqlc.InsertAgentPoolParams{
 			AgentPoolID:        sql.String(pool.ID),
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
@@ -134,7 +134,10 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 			return err
 		}
 		for _, workspaceID := range pool.AllowedWorkspaces {
-			_, err := q.InsertAgentPoolAllowedWorkspace(ctx, sql.String(pool.ID), sql.String(workspaceID))
+			err := q.InsertAgentPoolAllowedWorkspace(ctx, sqlc.InsertAgentPoolAllowedWorkspaceParams{
+				PoolID:      sql.String(pool.ID),
+				WorkspaceID: sql.String(workspaceID),
+			})
 			if err != nil {
 				return err
 			}
@@ -160,7 +163,10 @@ func (db *db) updatePool(ctx context.Context, pool *Pool) error {
 }
 
 func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID string) error {
-	_, err := db.Conn(ctx).InsertAgentPoolAllowedWorkspace(ctx, sql.String(poolID), sql.String(workspaceID))
+	err := db.Conn(ctx).InsertAgentPoolAllowedWorkspace(ctx, sqlc.InsertAgentPoolAllowedWorkspaceParams{
+		PoolID:      sql.String(poolID),
+		WorkspaceID: sql.String(workspaceID),
+	})
 	if err != nil {
 		return err
 	}
@@ -168,7 +174,10 @@ func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspac
 }
 
 func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID string) error {
-	_, err := db.Conn(ctx).DeleteAgentPoolAllowedWorkspace(ctx, sql.String(poolID), sql.String(workspaceID))
+	err := db.Conn(ctx).DeleteAgentPoolAllowedWorkspace(ctx, sqlc.DeleteAgentPoolAllowedWorkspaceParams{
+		PoolID:      sql.String(poolID),
+		WorkspaceID: sql.String(workspaceID),
+	})
 	if err != nil {
 		return err
 	}
@@ -231,12 +240,12 @@ func (db *db) deleteAgentPool(ctx context.Context, poolID string) error {
 // agents
 
 func (db *db) createAgent(ctx context.Context, agent *Agent) error {
-	_, err := db.Conn(ctx).InsertAgent(ctx, sqlc.InsertAgentParams{
+	err := db.Conn(ctx).InsertAgent(ctx, sqlc.InsertAgentParams{
 		AgentID:      sql.String(agent.ID),
 		Name:         sql.String(agent.Name),
 		Version:      sql.String(agent.Version),
 		MaxJobs:      sql.Int4(agent.MaxJobs),
-		IPAddress:    netip.PrefixFrom(agent.IPAddress, 32),
+		IPAddress:    agent.IPAddress,
 		Status:       sql.String(string(agent.Status)),
 		LastPingAt:   sql.Timestamptz(agent.LastPingAt),
 		LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
@@ -331,7 +340,7 @@ func (db *db) deleteAgent(ctx context.Context, agentID string) error {
 }
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
-	_, err := db.Conn(ctx).InsertJob(ctx, sqlc.InsertJobParams{
+	err := db.Conn(ctx).InsertJob(ctx, sqlc.InsertJobParams{
 		RunID:  sql.String(job.Spec.RunID),
 		Phase:  sql.String(string(job.Spec.Phase)),
 		Status: sql.String(string(job.Status)),
@@ -359,7 +368,10 @@ func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID string) (
 }
 
 func (db *db) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
-	result, err := db.Conn(ctx).FindJob(ctx, sql.String(spec.RunID), sql.String(string(spec.Phase)))
+	result, err := db.Conn(ctx).FindJob(ctx, sqlc.FindJobParams{
+		RunID: sql.String(spec.RunID),
+		Phase: sql.String(string(spec.Phase)),
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -381,7 +393,10 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) (*Job, error) {
 	var job *Job
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindJobForUpdate(ctx, sql.String(spec.RunID), sql.String(string(spec.Phase)))
+		result, err := q.FindJobForUpdate(ctx, sqlc.FindJobForUpdateParams{
+			RunID: sql.String(spec.RunID),
+			Phase: sql.String(string(spec.Phase)),
+		})
 		if err != nil {
 			return err
 		}
@@ -410,13 +425,12 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 // agent tokens
 
 func (db *db) createAgentToken(ctx context.Context, token *agentToken) error {
-	_, err := db.Conn(ctx).InsertAgentToken(ctx, sqlc.InsertAgentTokenParams{
+	return db.Conn(ctx).InsertAgentToken(ctx, sqlc.InsertAgentTokenParams{
 		AgentTokenID: sql.String(token.ID),
 		Description:  sql.String(token.Description),
 		AgentPoolID:  sql.String(token.AgentPoolID),
 		CreatedAt:    sql.Timestamptz(token.CreatedAt.UTC()),
 	})
-	return err
 }
 
 func (db *db) getAgentTokenByID(ctx context.Context, id string) (*agentToken, error) {

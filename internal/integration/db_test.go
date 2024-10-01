@@ -54,7 +54,7 @@ func TestTx(t *testing.T) {
 	require.NoError(t, err)
 
 	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
-		_, err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
+		err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
 			ID:                         sql.String(org.ID),
 			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),

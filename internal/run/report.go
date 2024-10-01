@@ -19,9 +19,9 @@ func reportFromDB(row *sqlc.Report) *Report {
 		return nil
 	}
 	return &Report{
-		Additions:    int(row.Additions.Int),
-		Changes:      int(row.Changes.Int),
-		Destructions: int(row.Destructions.Int),
+		Additions:    int(row.Additions),
+		Changes:      int(row.Changes),
+		Destructions: int(row.Destructions),
 	}
 }
 

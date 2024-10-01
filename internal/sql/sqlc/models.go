@@ -15,7 +15,7 @@ type Agent struct {
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
-	IpAddress    netip.Addr
+	IPAddress    netip.Addr
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
@@ -65,7 +65,7 @@ type ConfigurationVersion struct {
 
 type ConfigurationVersionIngressAttribute struct {
 	Branch                 pgtype.Text
-	CommitSha              pgtype.Text
+	CommitSHA              pgtype.Text
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
@@ -77,7 +77,7 @@ type ConfigurationVersionIngressAttribute struct {
 	Tag                    pgtype.Text
 	SenderUsername         pgtype.Text
 	SenderAvatarURL        pgtype.Text
-	SenderHtmlURL          pgtype.Text
+	SenderHTMLURL          pgtype.Text
 }
 
 type ConfigurationVersionStatusTimestamp struct {
@@ -108,7 +108,7 @@ type GithubAppInstall struct {
 
 type IngressAttribute struct {
 	Branch                 pgtype.Text
-	CommitSha              pgtype.Text
+	CommitSHA              pgtype.Text
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
@@ -120,7 +120,7 @@ type IngressAttribute struct {
 	Tag                    pgtype.Text
 	SenderUsername         pgtype.Text
 	SenderAvatarURL        pgtype.Text
-	SenderHtmlURL          pgtype.Text
+	SenderHTMLURL          pgtype.Text
 }
 
 type Job struct {
@@ -236,7 +236,7 @@ type Plan struct {
 	RunID          pgtype.Text
 	Status         pgtype.Text
 	PlanBin        []byte
-	PlanJson       []byte
+	PlanJSON       []byte
 	ResourceReport interface{}
 	OutputReport   interface{}
 }
@@ -404,7 +404,7 @@ type Variable struct {
 	Description pgtype.Text
 	Category    pgtype.Text
 	Sensitive   pgtype.Bool
-	Hcl         pgtype.Bool
+	HCL         pgtype.Bool
 	VersionID   pgtype.Text
 }
 

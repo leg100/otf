@@ -50,9 +50,8 @@ type (
 		AgentPoolID                pgtype.Text
 		Tags                       []pgtype.Text
 		LatestRunStatus            pgtype.Text
-		UserLock                   *sqlc.User
-		RunLock                    *sqlc.Run
-		WorkspaceConnection        *sqlc.RepoConnection
+		VCSProviderID              pgtype.Text
+		RepoPath                   pgtype.Text
 	}
 )
 
@@ -86,11 +85,11 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.AgentPoolID = &r.AgentPoolID.String
 	}
 
-	if r.WorkspaceConnection != nil {
+	if r.VCSProviderID.Valid && r.RepoPath.Valid {
 		ws.Connection = &Connection{
 			AllowCLIApply: r.AllowCLIApply.Bool,
-			VCSProviderID: r.WorkspaceConnection.VCSProviderID.String,
-			Repo:          r.WorkspaceConnection.RepoPath.String,
+			VCSProviderID: r.VCSProviderID.String,
+			Repo:          r.RepoPath.String,
 			Branch:        r.Branch.String,
 		}
 		if r.VCSTagsRegex.Valid {
@@ -105,14 +104,14 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.UserLock != nil {
+	if r.LockUsername.Valid {
 		ws.Lock = &Lock{
-			id:       r.UserLock.Username.String,
+			id:       r.LockUsername.String,
 			LockKind: UserLock,
 		}
-	} else if r.RunLock != nil {
+	} else if r.LockRunID.Valid {
 		ws.Lock = &Lock{
-			id:       r.RunLock.RunID.String,
+			id:       r.LockRunID.String,
 			LockKind: RunLock,
 		}
 	}

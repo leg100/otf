@@ -591,7 +591,10 @@ func (s *Service) createApplyReport(ctx context.Context, runID string) (Report, 
 }
 
 func (s *Service) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
-	data, err := s.db.Conn(ctx).FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
+	data, err := s.db.Conn(ctx).FindLogs(ctx, sqlc.FindLogsParams{
+		RunID: sql.String(runID),
+		Phase: sql.String(string(phase)),
+	})
 	if err != nil {
 		// Don't consider no rows an error because logs may not have been
 		// uploaded yet.

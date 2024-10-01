@@ -19,20 +19,21 @@ type (
 
 	// moduleRow is a row from a database query for modules.
 	moduleRow struct {
-		ModuleID         pgtype.Text           `json:"module_id"`
-		CreatedAt        pgtype.Timestamptz    `json:"created_at"`
-		UpdatedAt        pgtype.Timestamptz    `json:"updated_at"`
-		Name             pgtype.Text           `json:"name"`
-		Provider         pgtype.Text           `json:"provider"`
-		Status           pgtype.Text           `json:"status"`
-		OrganizationName pgtype.Text           `json:"organization_name"`
-		ModuleConnection *sqlc.RepoConnections `json:"module_connection"`
-		Versions         []sqlc.ModuleVersions `json:"versions"`
+		ModuleID         pgtype.Text
+		CreatedAt        pgtype.Timestamptz
+		UpdatedAt        pgtype.Timestamptz
+		Name             pgtype.Text
+		Provider         pgtype.Text
+		Status           pgtype.Text
+		OrganizationName pgtype.Text
+		VCSProviderID    pgtype.Text
+		RepoPath         pgtype.Text
+		ModuleVersions   []sqlc.ModuleVersion
 	}
 )
 
 func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
-	_, err := db.Conn(ctx).InsertModule(ctx, sqlc.InsertModuleParams{
+	err := db.Conn(ctx).InsertModule(ctx, sqlc.InsertModuleParams{
 		ID:               sql.String(mod.ID),
 		CreatedAt:        sql.Timestamptz(mod.CreatedAt),
 		UpdatedAt:        sql.Timestamptz(mod.UpdatedAt),
@@ -45,7 +46,10 @@ func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
 }
 
 func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID string, status ModuleStatus) error {
-	_, err := db.Conn(ctx).UpdateModuleStatusByID(ctx, sql.String(string(status)), sql.String(moduleID))
+	_, err := db.Conn(ctx).UpdateModuleStatusByID(ctx, sqlc.UpdateModuleStatusByIDParams{
+		Status:   sql.String(string(status)),
+		ModuleID: sql.String(moduleID),
+	})
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -88,7 +92,10 @@ func (db *pgdb) getModuleByID(ctx context.Context, id string) (*Module, error) {
 }
 
 func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByConnection(ctx, sql.String(vcsProviderID), sql.String(repoPath))
+	row, err := db.Conn(ctx).FindModuleByConnection(ctx, sqlc.FindModuleByConnectionParams{
+		VCSProviderID: sql.String(vcsProviderID),
+		RepoPath:      sql.String(repoPath),
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -139,7 +146,10 @@ func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID string) error
 }
 
 func (db *pgdb) saveTarball(ctx context.Context, versionID string, tarball []byte) error {
-	_, err := db.Conn(ctx).InsertModuleTarball(ctx, tarball, sql.String(versionID))
+	_, err := db.Conn(ctx).InsertModuleTarball(ctx, sqlc.InsertModuleTarballParams{
+		Tarball:         tarball,
+		ModuleVersionID: sql.String(versionID),
+	})
 	return sql.Error(err)
 }
 
@@ -162,31 +172,31 @@ func (row moduleRow) toModule() *Module {
 		Status:       ModuleStatus(row.Status.String),
 		Organization: row.OrganizationName.String,
 	}
-	if row.ModuleConnection != nil {
+	if row.VCSProviderID.Valid && row.RepoPath.Valid {
 		module.Connection = &connections.Connection{
-			VCSProviderID: row.ModuleConnection.VCSProviderID.String,
-			Repo:          row.ModuleConnection.RepoPath.String,
+			VCSProviderID: row.VCSProviderID.String,
+			Repo:          row.RepoPath.String,
 		}
 	}
 	// versions are always maintained in descending order
 	//
 	// TODO: this invariant should be part of a constructor
-	sort.Sort(byVersion(row.Versions))
-	for i := len(row.Versions) - 1; i >= 0; i-- {
+	sort.Sort(byVersion(row.ModuleVersions))
+	for i := len(row.ModuleVersions) - 1; i >= 0; i-- {
 		module.Versions = append(module.Versions, ModuleVersion{
-			ID:          row.Versions[i].ModuleVersionID.String,
-			Version:     row.Versions[i].Version.String,
-			CreatedAt:   row.Versions[i].CreatedAt.Time.UTC(),
-			UpdatedAt:   row.Versions[i].UpdatedAt.Time.UTC(),
-			ModuleID:    row.Versions[i].ModuleID.String,
-			Status:      ModuleVersionStatus(row.Versions[i].Status.String),
-			StatusError: row.Versions[i].StatusError.String,
+			ID:          row.ModuleVersions[i].ModuleVersionID.String,
+			Version:     row.ModuleVersions[i].Version.String,
+			CreatedAt:   row.ModuleVersions[i].CreatedAt.Time.UTC(),
+			UpdatedAt:   row.ModuleVersions[i].UpdatedAt.Time.UTC(),
+			ModuleID:    row.ModuleVersions[i].ModuleID.String,
+			Status:      ModuleVersionStatus(row.ModuleVersions[i].Status.String),
+			StatusError: row.ModuleVersions[i].StatusError.String,
 		})
 	}
 	return module
 }
 
-type byVersion []sqlc.ModuleVersions
+type byVersion []sqlc.ModuleVersion
 
 func (v byVersion) Len() int      { return len(v) }
 func (v byVersion) Swap(i, j int) { v[i], v[j] = v[j], v[i] }

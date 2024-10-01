@@ -13,6 +13,10 @@ sql:
             go_type:
               import: "github.com/jackc/pgx/v5/pgtype"
               type: "Bool"
+          - db_type: "bool"
+            go_type:
+              import: "github.com/jackc/pgx/v5/pgtype"
+              type: "Bool"
           - db_type: "pg_catalog.int4"
             go_type:
               import: "github.com/jackc/pgx/v5/pgtype"
@@ -25,15 +29,20 @@ sql:
             go_type:
               import: "github.com/jackc/pgx/v5/pgtype"
               type: "Text"
-          - db_type: "public.report"
+          - db_type: "report"
             go_type:
               type: "Report"
+              pointer: true
           - db_type: "variables"
             go_type:
               type: "Variable"
-          - db_type: "run_variables"
+          - db_type: "ingress_attributes"
             go_type:
-              type: "RunVariable"
+              type: "IngressAttribute"
+              pointer: true
+          - db_type: "run_variables[]"
+            go_type:
+              type: "[]RunVariable"
           - db_type: "teams"
             go_type:
               type: "Team"
@@ -48,9 +57,9 @@ sql:
             go_type:
               type: "GithubAppInstall"
               pointer: true
-          - db_type: "module_versions"
+          - db_type: "module_versions[]"
             go_type:
-              type: "ModuleVersion"
+              type: "[]ModuleVersion"
           - db_type: "run_status_timestamps[]"
             go_type:
               type: "[]RunStatusTimestamp"
@@ -60,12 +69,17 @@ sql:
           - db_type: "configuration_version_status_timestamps[]"
             go_type:
               type: "[]ConfigurationVersionStatusTimestamp"
-          - db_type: "state_version_outputs"
+          - db_type: "state_version_outputs[]"
             go_type:
-              type: "StateVersionOutput"
+              type: "[]StateVersionOutput"
         initialisms:
           - "id"
           - "vcs"
           - "cli"
           - "url"
           - "sso"
+          - "sha"
+          - "html"
+          - "json"
+          - "hcl"
+          - "ip"

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
@@ -106,13 +105,15 @@ func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID string, state [
 
 func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	q := db.Conn(ctx)
-	batch := &pgx.Batch{}
 
 	rows, err := q.FindStateVersionsByWorkspaceID(ctx, sqlc.FindStateVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	count, err := q.CountStateVersionsByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {

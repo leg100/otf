@@ -161,14 +161,14 @@ SELECT
     ) AS instance_count
 FROM tags t
 WHERE t.organization_name = $1
-LIMIT $3
-OFFSET $2
+LIMIT $3::int
+OFFSET $2::int
 `
 
 type FindTagsParams struct {
 	OrganizationName pgtype.Text
-	Offset           int32
-	Limit            int32
+	Offset           pgtype.Int4
+	Limit            pgtype.Int4
 }
 
 type FindTagsRow struct {
@@ -214,14 +214,14 @@ SELECT
 FROM workspace_tags wt
 JOIN tags t USING (tag_id)
 WHERE wt.workspace_id = $1
-LIMIT $3
-OFFSET $2
+LIMIT $3::int
+OFFSET $2::int
 `
 
 type FindWorkspaceTagsParams struct {
 	WorkspaceID pgtype.Text
-	Offset      int32
-	Limit       int32
+	Offset      pgtype.Int4
+	Limit       pgtype.Int4
 }
 
 type FindWorkspaceTagsRow struct {

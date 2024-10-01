@@ -41,16 +41,17 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
-JOIN configuration_version_ingress_attributes USING (configuration_version_id)
+LEFT JOIN ingress_attributes ia USING (configuration_version_id)
 LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
 WHERE workspaces.workspace_id = sqlc.arg('workspace_id')
 GROUP BY cv.configuration_version_id
-LIMIT sqlc.arg('limit')
-OFFSET sqlc.arg('offset');
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
+;
 
 -- name: CountConfigurationVersionsByWorkspaceID :one
 SELECT count(*)
@@ -69,8 +70,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
@@ -88,8 +89,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
@@ -108,8 +109,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps" AS status_timestamps,
-    sqlc.embed(configuration_version_ingress_attributes)
+    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
+    ia::"ingress_attributes" AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
