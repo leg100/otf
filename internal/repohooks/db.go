@@ -32,7 +32,10 @@ type (
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindRepohookByRepoAndProvider(ctx, sql.String(hook.repoPath), sql.String(hook.vcsProviderID))
+	result, err := q.FindRepohookByRepoAndProvider(ctx, sqlc.FindRepohookByRepoAndProviderParams{
+		RepoPath:      sql.String(hook.repoPath),
+		VCSProviderID: sql.String(hook.vcsProviderID),
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -100,7 +103,10 @@ func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
 	q := db.Conn(ctx)
-	_, err := q.UpdateRepohookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
+	_, err := q.UpdateRepohookVCSID(ctx, sqlc.UpdateRepohookVCSIDParams{
+		VCSID:      sql.String(cloudID),
+		RepohookID: sql.UUID(id),
+	})
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -126,7 +132,7 @@ func (db *db) fromRow(row hookRow) (*hook, error) {
 		cloud:           vcs.Kind(row.VCSKind.String),
 		HostnameService: db.HostnameService,
 	}
-	if row.VCSID.Status == pgtype.Present {
+	if row.VCSID.Valid {
 		opts.cloudID = internal.String(row.VCSID.String)
 	}
 	return newRepohook(opts)

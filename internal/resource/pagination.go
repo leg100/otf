@@ -117,14 +117,14 @@ func newPagination(opts PageOptions, count int64) *Pagination {
 }
 
 // GetOffset calculates the offset for use in SQL queries.
-func (o PageOptions) GetOffset() pgtype.Int8 {
+func (o PageOptions) GetOffset() pgtype.Int4 {
 	o = o.normalize()
-	return sql.Int8((o.PageNumber - 1) * o.PageSize)
+	return sql.Int4((o.PageNumber - 1) * o.PageSize)
 }
 
 // GetLimit calculates the limit for use in SQL queries.
-func (o PageOptions) GetLimit() pgtype.Int8 {
-	return sql.Int8(o.normalize().PageSize)
+func (o PageOptions) GetLimit() pgtype.Int4 {
+	return sql.Int4(o.normalize().PageSize)
 }
 
 // normalize page number and size

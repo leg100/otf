@@ -14,14 +14,15 @@ INSERT INTO users (
 -- name: FindUsers :many
 SELECT
     u.*,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 LEFT JOIN teams t USING (team_id)
 ;
 
 -- name: FindUsersByOrganization :many
-SELECT u.*,
-    array_agg(t.*)::"teams" AS teams
+SELECT
+    u.*,
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -32,7 +33,7 @@ GROUP BY u.user_id
 -- name: FindUsersByTeamID :many
 SELECT
     u.*,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -43,7 +44,7 @@ GROUP BY u.user_id
 -- name: FindUserByID :one
 SELECT
     u.*,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 LEFT JOIN teams t USING (team_id)
 WHERE u.user_id = sqlc.arg('user_id')
@@ -53,7 +54,7 @@ GROUP BY u.user_id
 -- name: FindUserByUsername :one
 SELECT
     u.*,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 LEFT JOIN teams t USING (team_id)
 WHERE u.username = sqlc.arg('username')
@@ -63,7 +64,7 @@ GROUP BY u.user_id
 -- name: FindUserByAuthenticationTokenID :one
 SELECT
     u.*,
-    array_agg(tt.*)::"teams" AS teams
+    array_agg(tt.*)::"teams[]" AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
 LEFT JOIN teams tt USING (team_id)

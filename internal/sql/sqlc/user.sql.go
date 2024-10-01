@@ -42,7 +42,7 @@ func (q *Queries) DeleteUserByUsername(ctx context.Context, username pgtype.Text
 const findUserByAuthenticationTokenID = `-- name: FindUserByAuthenticationTokenID :one
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(tt.*)::"teams" AS teams
+    array_agg(tt.*)::"teams[]" AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
 LEFT JOIN teams tt USING (team_id)
@@ -56,7 +56,7 @@ type FindUserByAuthenticationTokenIDRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     Team
+	Teams     []Team
 }
 
 func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID pgtype.Text) (FindUserByAuthenticationTokenIDRow, error) {
@@ -76,7 +76,7 @@ func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID p
 const findUserByID = `-- name: FindUserByID :one
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 LEFT JOIN teams t USING (team_id)
 WHERE u.user_id = $1
@@ -89,7 +89,7 @@ type FindUserByIDRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     Team
+	Teams     []Team
 }
 
 func (q *Queries) FindUserByID(ctx context.Context, userID pgtype.Text) (FindUserByIDRow, error) {
@@ -109,7 +109,7 @@ func (q *Queries) FindUserByID(ctx context.Context, userID pgtype.Text) (FindUse
 const findUserByUsername = `-- name: FindUserByUsername :one
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 LEFT JOIN teams t USING (team_id)
 WHERE u.username = $1
@@ -122,7 +122,7 @@ type FindUserByUsernameRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     Team
+	Teams     []Team
 }
 
 func (q *Queries) FindUserByUsername(ctx context.Context, username pgtype.Text) (FindUserByUsernameRow, error) {
@@ -142,7 +142,7 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username pgtype.Text) 
 const findUsers = `-- name: FindUsers :many
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 LEFT JOIN teams t USING (team_id)
 `
@@ -153,7 +153,7 @@ type FindUsersRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     Team
+	Teams     []Team
 }
 
 func (q *Queries) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
@@ -184,8 +184,9 @@ func (q *Queries) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
 }
 
 const findUsersByOrganization = `-- name: FindUsersByOrganization :many
-SELECT u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::"teams" AS teams
+SELECT
+    u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -199,7 +200,7 @@ type FindUsersByOrganizationRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     Team
+	Teams     []Team
 }
 
 func (q *Queries) FindUsersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindUsersByOrganizationRow, error) {
@@ -232,7 +233,7 @@ func (q *Queries) FindUsersByOrganization(ctx context.Context, organizationName 
 const findUsersByTeamID = `-- name: FindUsersByTeamID :many
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::"teams" AS teams
+    array_agg(t.*)::"teams[]" AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -246,7 +247,7 @@ type FindUsersByTeamIDRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     Team
+	Teams     []Team
 }
 
 func (q *Queries) FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) ([]FindUsersByTeamIDRow, error) {

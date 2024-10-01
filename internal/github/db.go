@@ -35,20 +35,20 @@ type (
 
 func (r AppRow) convert() *App {
 	app := &App{
-		ID:            r.GithubAppID.Int,
+		ID:            r.GithubAppID.Int64,
 		Slug:          r.Slug.String,
 		WebhookSecret: r.WebhookSecret.String,
 		PrivateKey:    r.PrivateKey.String,
 	}
-	if r.Organization.Status == pgtype.Present {
+	if r.Organization.Valid {
 		app.Organization = &r.Organization.String
 	}
 	return app
 }
 
 func (db *pgdb) create(ctx context.Context, app *App) error {
-	_, err := db.Conn(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
-		GithubAppID:   pgtype.Int8{Int: app.ID, Status: pgtype.Present},
+	err := db.Conn(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
+		GithubAppID:   pgtype.Int8{Int64: app.ID},
 		WebhookSecret: sql.String(app.WebhookSecret),
 		PrivateKey:    sql.String(app.PrivateKey),
 		Slug:          sql.String(app.Slug),

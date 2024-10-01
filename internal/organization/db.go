@@ -3,7 +3,6 @@ package organization
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
@@ -123,22 +122,15 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 		opts.names = []string{"%"} // return all organizations
 	}
 
-	batch := &pgx.Batch{}
-	batch.
-		q.FindOrganizationsBatch(batch, sqlc.FindOrganizationsParams{
-		Names:  opts.names,
+	rows, err := q.FindOrganizations(ctx, sqlc.FindOrganizationsParams{
+		Names:  sql.StringArray(opts.names),
 		Limit:  opts.GetLimit(),
 		Offset: opts.GetOffset(),
 	})
-	q.CountOrganizationsBatch(batch, opts.names)
-	results := db.SendBatch(ctx, batch)
-	defer results.Close()
-
-	rows, err := q.FindOrganizationsScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountOrganizationsScan(results)
+	count, err := q.CountOrganizations(ctx, sql.StringArray(opts.names))
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +139,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 	for i, r := range rows {
 		items[i] = row(r).toOrganization()
 	}
-	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {

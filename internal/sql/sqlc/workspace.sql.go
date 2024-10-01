@@ -20,7 +20,7 @@ WITH
         WHERE w.name              LIKE '%' || $1 || '%'
         AND   w.organization_name LIKE ANY($2)
         GROUP BY w.workspace_id
-        HAVING array_agg(t.name) @> $3
+        HAVING array_agg(t.name) @> $3::text[]
     )
 SELECT count(*)
 FROM workspaces
@@ -29,7 +29,7 @@ FROM workspaces
 type CountWorkspacesParams struct {
 	Search            pgtype.Text
 	OrganizationNames pgtype.Text
-	Tags              pgtype.Text
+	Tags              []pgtype.Text
 }
 
 func (q *Queries) CountWorkspaces(ctx context.Context, arg CountWorkspacesParams) (int64, error) {
@@ -378,16 +378,16 @@ AND   w.organization_name   LIKE ANY($2)
 GROUP BY w.workspace_id, r.status
 HAVING array_agg(t.name) @> $3::text[]
 ORDER BY w.updated_at DESC
-LIMIT $5
-OFFSET $4
+LIMIT $5::int
+OFFSET $4::int
 `
 
 type FindWorkspacesParams struct {
 	Search            pgtype.Text
 	OrganizationNames pgtype.Text
 	Tags              []pgtype.Text
-	Offset            int32
-	Limit             int32
+	Offset            pgtype.Int4
+	Limit             pgtype.Int4
 }
 
 type FindWorkspacesRow struct {
@@ -622,15 +622,15 @@ WHERE w.organization_name  = $1
 AND   u.username           = $2
 GROUP BY w.workspace_id
 ORDER BY w.updated_at DESC
-LIMIT $4
-OFFSET $3
+LIMIT $4::int
+OFFSET $3::int
 `
 
 type FindWorkspacesByUsernameParams struct {
 	OrganizationName pgtype.Text
 	Username         pgtype.Text
-	Offset           int32
-	Limit            int32
+	Offset           pgtype.Int4
+	Limit            pgtype.Int4
 }
 
 type FindWorkspacesByUsernameRow struct {

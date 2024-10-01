@@ -90,9 +90,9 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
+    array_agg(rst.*)::"run_status_timestamps[]" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS apply_status_timestamps,
     array_agg(v.*)::"run_variables" AS run_variables,
     sqlc.embed(configuration_version_ingress_attributes)
 FROM runs

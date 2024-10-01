@@ -37,24 +37,29 @@ sql:
           - db_type: "teams"
             go_type:
               type: "Team"
+          - db_type: "teams[]"
+            go_type:
+              type: "[]Team"
           - db_type: "github_apps"
             go_type:
               type: "GithubApp"
+              pointer: true
           - db_type: "github_app_installs"
             go_type:
               type: "GithubAppInstall"
+              pointer: true
           - db_type: "module_versions"
             go_type:
               type: "ModuleVersion"
-          - db_type: "run_status_timestamps"
+          - db_type: "run_status_timestamps[]"
             go_type:
-              type: "RunStatusTimestamp"
-          - db_type: "phase_status_timestamps"
+              type: "[]RunStatusTimestamp"
+          - db_type: "phase_status_timestamps[]"
             go_type:
-              type: "PhaseStatusTimestamp"
-          - db_type: "configuration_version_status_timestamps"
+              type: "[]PhaseStatusTimestamp"
+          - db_type: "configuration_version_status_timestamps[]"
             go_type:
-              type: "ConfigurationVersionStatusTimestamp"
+              type: "[]ConfigurationVersionStatusTimestamp"
           - db_type: "state_version_outputs"
             go_type:
               type: "StateVersionOutput"
@@ -63,3 +68,4 @@ sql:
           - "vcs"
           - "cli"
           - "url"
+          - "sso"

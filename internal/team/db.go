@@ -12,18 +12,18 @@ import (
 
 // TeamRow represents the result of a database query for a team.
 type TeamRow struct {
-	TeamID                          pgtype.Text        `json:"team_id"`
-	Name                            pgtype.Text        `json:"name"`
-	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
-	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
-	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
-	OrganizationName                pgtype.Text        `json:"organization_name"`
-	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
-	Visibility                      pgtype.Text        `json:"visibility"`
-	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
-	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
-	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
+	TeamID                          pgtype.Text
+	Name                            pgtype.Text
+	CreatedAt                       pgtype.Timestamptz
+	PermissionManageWorkspaces      pgtype.Bool
+	PermissionManageVCS             pgtype.Bool
+	PermissionManageModules         pgtype.Bool
+	OrganizationName                pgtype.Text
+	SSOTeamID                       pgtype.Text
+	Visibility                      pgtype.Text
+	PermissionManagePolicies        pgtype.Bool
+	PermissionManagePolicyOverrides pgtype.Bool
+	PermissionManageProviders       pgtype.Bool
 }
 
 func (row TeamRow) ToTeam() *Team {
@@ -42,7 +42,7 @@ func (row TeamRow) ToTeam() *Team {
 			ManagePolicyOverrides: row.PermissionManagePolicyOverrides.Bool,
 		},
 	}
-	if row.SSOTeamID.Status == pgtype.Present {
+	if row.SSOTeamID.Valid {
 		to.SSOTeamID = &row.SSOTeamID.String
 	}
 	return &to
@@ -110,7 +110,10 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 }
 
 func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {
-	result, err := db.Conn(ctx).FindTeamByName(ctx, sql.String(name), sql.String(organization))
+	result, err := db.Conn(ctx).FindTeamByName(ctx, sqlc.FindTeamByNameParams{
+		Name:             sql.String(name),
+		OrganizationName: sql.String(organization),
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -159,7 +162,7 @@ func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
 //
 
 func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
-	_, err := db.Conn(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
+	err := db.Conn(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
 		TeamTokenID: sql.String(token.ID),
 		TeamID:      sql.String(token.TeamID),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
@@ -182,7 +185,7 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID string) (*Token
 		CreatedAt: result[0].CreatedAt.Time.UTC(),
 		TeamID:    result[0].TeamID.String,
 	}
-	if result[0].Expiry.Status == pgtype.Present {
+	if result[0].Expiry.Valid {
 		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
 	}
 	return ot, nil

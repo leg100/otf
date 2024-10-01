@@ -71,8 +71,8 @@ AND   w.organization_name   LIKE ANY(sqlc.arg('organization_names'))
 GROUP BY w.workspace_id, r.status
 HAVING array_agg(t.name) @> sqlc.arg('tags')::text[]
 ORDER BY w.updated_at DESC
-LIMIT sqlc.arg('limit')
-OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: CountWorkspaces :one
@@ -84,7 +84,7 @@ WITH
         WHERE w.name              LIKE '%' || sqlc.arg('search') || '%'
         AND   w.organization_name LIKE ANY(sqlc.arg('organization_names'))
         GROUP BY w.workspace_id
-        HAVING array_agg(t.name) @> sqlc.arg('tags')
+        HAVING array_agg(t.name) @> sqlc.arg('tags')::text[]
     )
 SELECT count(*)
 FROM workspaces
@@ -127,8 +127,8 @@ WHERE w.organization_name  = sqlc.arg('organization_name')
 AND   u.username           = sqlc.arg('username')
 GROUP BY w.workspace_id
 ORDER BY w.updated_at DESC
-LIMIT sqlc.arg('limit')
-OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: CountWorkspacesByUsername :one

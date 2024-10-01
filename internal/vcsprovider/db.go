@@ -17,17 +17,17 @@ type (
 		*sql.DB
 		*factory
 	}
-	// pgrow represents a database row for a vcs provider
-	pgrow struct {
-		VCSProviderID    pgtype.Text            `json:"vcs_provider_id"`
-		Token            pgtype.Text            `json:"token"`
-		CreatedAt        pgtype.Timestamptz     `json:"created_at"`
-		Name             pgtype.Text            `json:"name"`
-		VCSKind          pgtype.Text            `json:"vcs_kind"`
-		OrganizationName pgtype.Text            `json:"organization_name"`
-		GithubAppID      pgtype.Int8            `json:"github_app_id"`
-		GithubApp        *sqlc.GithubApp        `json:"github_app"`
-		GithubAppInstall *sqlc.GithubAppInstall `json:"github_app_install"`
+	// pgRow represents a database row for a vcs provider
+	pgRow struct {
+		VCSProviderID    pgtype.Text
+		Token            pgtype.Text
+		CreatedAt        pgtype.Timestamptz
+		Name             pgtype.Text
+		VCSKind          pgtype.Text
+		OrganizationName pgtype.Text
+		GithubAppID      pgtype.Int8
+		GithubApp        *sqlc.GithubApp
+		GithubAppInstall *sqlc.GithubAppInstall
 	}
 )
 
@@ -71,7 +71,7 @@ func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) err
 		if err != nil {
 			return sql.Error(err)
 		}
-		provider, err = db.toProvider(ctx, pgrow(row))
+		provider, err = db.toProvider(ctx, pgRow(row))
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return db.toProvider(ctx, pgrow(row))
+	return db.toProvider(ctx, pgRow(row))
 }
 
 func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
@@ -106,7 +106,7 @@ func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
 	}
 	providers := make([]*VCSProvider, len(rows))
 	for i, r := range rows {
-		provider, err := db.toProvider(ctx, pgrow(r))
+		provider, err := db.toProvider(ctx, pgRow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +122,7 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 	}
 	providers := make([]*VCSProvider, len(rows))
 	for i, r := range rows {
-		provider, err := db.toProvider(ctx, pgrow(r))
+		provider, err := db.toProvider(ctx, pgRow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -133,14 +133,14 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 
 func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
 	rows, err := db.Conn(ctx).FindVCSProvidersByGithubAppInstallID(ctx,
-		installID,
+		sql.Int8(int(installID)),
 	)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	providers := make([]*VCSProvider, len(rows))
 	for i, r := range rows {
-		provider, err := db.toProvider(ctx, pgrow(r))
+		provider, err := db.toProvider(ctx, pgRow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -158,13 +158,13 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 }
 
 // unmarshal a vcs provider row from the database.
-func (db *pgdb) toProvider(ctx context.Context, row pgrow) (*VCSProvider, error) {
+func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error) {
 	opts := CreateOptions{
 		Organization: row.OrganizationName.String,
 		Name:         row.Name.String,
 		// GithubAppService: db.Git
 	}
-	if row.Token.Status == pgtype.Present {
+	if row.Token.Valid {
 		opts.Token = &row.Token.String
 		kind := vcs.Kind(row.VCSKind.String)
 		opts.Kind = &kind
@@ -172,16 +172,16 @@ func (db *pgdb) toProvider(ctx context.Context, row pgrow) (*VCSProvider, error)
 	var creds *github.InstallCredentials
 	if row.GithubApp != nil {
 		creds = &github.InstallCredentials{
-			ID: row.GithubAppInstall.InstallID.Int,
+			ID: row.GithubAppInstall.InstallID.Int64,
 			AppCredentials: github.AppCredentials{
-				ID:         row.GithubApp.GithubAppID.Int,
+				ID:         row.GithubApp.GithubAppID.Int64,
 				PrivateKey: row.GithubApp.PrivateKey.String,
 			},
 		}
-		if row.GithubAppInstall.Username.Status == pgtype.Present {
+		if row.GithubAppInstall.Username.Valid {
 			creds.User = &row.GithubAppInstall.Username.String
 		}
-		if row.GithubAppInstall.Organization.Status == pgtype.Present {
+		if row.GithubAppInstall.Organization.Valid {
 			creds.Organization = &row.GithubAppInstall.Organization.String
 		}
 	}

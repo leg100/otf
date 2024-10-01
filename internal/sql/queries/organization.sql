@@ -42,18 +42,18 @@ WHERE name = sqlc.arg('name')
 FOR UPDATE
 ;
 
--- name: FindOrganizations :batchmany
+-- name: FindOrganizations :many
 SELECT *
 FROM organizations
-WHERE name LIKE ANY(sqlc.arg('names'))
+WHERE name LIKE ANY(sqlc.arg('names')::text[])
 ORDER BY updated_at DESC
-LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int OFFSET sqlc.arg('offset')::int
 ;
 
--- name: CountOrganizations :batchmany
+-- name: CountOrganizations :one
 SELECT count(*)
 FROM organizations
-WHERE name LIKE ANY(sqlc.arg('names'))
+WHERE name LIKE ANY(sqlc.arg('names')::text[])
 ;
 
 -- name: UpdateOrganizationByName :one

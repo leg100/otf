@@ -146,9 +146,9 @@ type FindRunByIDRow struct {
 	Latest                               bool
 	OrganizationName                     pgtype.Text
 	CostEstimationEnabled                pgtype.Bool
-	RunStatusTimestamps                  RunStatusTimestamp
-	PlanStatusTimestamps                 PhaseStatusTimestamp
-	ApplyStatusTimestamps                PhaseStatusTimestamp
+	RunStatusTimestamps                  interface{}
+	PlanStatusTimestamps                 interface{}
+	ApplyStatusTimestamps                interface{}
 	RunVariables                         RunVariable
 	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
@@ -285,9 +285,9 @@ type FindRunByIDForUpdateRow struct {
 	Latest                               bool
 	OrganizationName                     pgtype.Text
 	CostEstimationEnabled                pgtype.Bool
-	RunStatusTimestamps                  RunStatusTimestamp
-	PlanStatusTimestamps                 PhaseStatusTimestamp
-	ApplyStatusTimestamps                PhaseStatusTimestamp
+	RunStatusTimestamps                  interface{}
+	PlanStatusTimestamps                 interface{}
+	ApplyStatusTimestamps                interface{}
 	RunVariables                         RunVariable
 	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }
@@ -376,9 +376,9 @@ SELECT
     END AS latest,
     workspaces.organization_name,
     organizations.cost_estimation_enabled,
-    array_agg(rst.*)::"run_status_timestamps" AS run_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS plan_status_timestamps,
-    array_agg(pst.*)::"phase_status_timestamps" AS apply_status_timestamps,
+    array_agg(rst.*)::"run_status_timestamps[]" AS run_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS plan_status_timestamps,
+    array_agg(pst.*)::"phase_status_timestamps[]" AS apply_status_timestamps,
     array_agg(v.*)::"run_variables" AS run_variables,
     configuration_version_ingress_attributes.branch, configuration_version_ingress_attributes.commit_sha, configuration_version_ingress_attributes.identifier, configuration_version_ingress_attributes.is_pull_request, configuration_version_ingress_attributes.on_default_branch, configuration_version_ingress_attributes.configuration_version_id, configuration_version_ingress_attributes.commit_url, configuration_version_ingress_attributes.pull_request_number, configuration_version_ingress_attributes.pull_request_url, configuration_version_ingress_attributes.pull_request_title, configuration_version_ingress_attributes.tag, configuration_version_ingress_attributes.sender_username, configuration_version_ingress_attributes.sender_avatar_url, configuration_version_ingress_attributes.sender_html_url
 FROM runs
@@ -446,9 +446,9 @@ type FindRunsRow struct {
 	Latest                               bool
 	OrganizationName                     pgtype.Text
 	CostEstimationEnabled                pgtype.Bool
-	RunStatusTimestamps                  RunStatusTimestamp
-	PlanStatusTimestamps                 PhaseStatusTimestamp
-	ApplyStatusTimestamps                PhaseStatusTimestamp
+	RunStatusTimestamps                  []RunStatusTimestamp
+	PlanStatusTimestamps                 []PhaseStatusTimestamp
+	ApplyStatusTimestamps                []PhaseStatusTimestamp
 	RunVariables                         RunVariable
 	ConfigurationVersionIngressAttribute ConfigurationVersionIngressAttribute
 }

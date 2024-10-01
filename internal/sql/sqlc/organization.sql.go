@@ -11,6 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countOrganizations = `-- name: CountOrganizations :one
+SELECT count(*)
+FROM organizations
+WHERE name LIKE ANY($1::text[])
+`
+
+func (q *Queries) CountOrganizations(ctx context.Context, names []pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countOrganizations, names)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteOrganizationByName = `-- name: DeleteOrganizationByName :one
 DELETE
 FROM organizations
@@ -105,6 +118,51 @@ func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, workspa
 	var organization_name pgtype.Text
 	err := row.Scan(&organization_name)
 	return organization_name, err
+}
+
+const findOrganizations = `-- name: FindOrganizations :many
+SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled
+FROM organizations
+WHERE name LIKE ANY($1::text[])
+ORDER BY updated_at DESC
+LIMIT $3::int OFFSET $2::int
+`
+
+type FindOrganizationsParams struct {
+	Names  []pgtype.Text
+	Offset pgtype.Int4
+	Limit  pgtype.Int4
+}
+
+func (q *Queries) FindOrganizations(ctx context.Context, arg FindOrganizationsParams) ([]Organization, error) {
+	rows, err := q.db.Query(ctx, findOrganizations, arg.Names, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Organization
+	for rows.Next() {
+		var i Organization
+		if err := rows.Scan(
+			&i.OrganizationID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.SessionRemember,
+			&i.SessionTimeout,
+			&i.Email,
+			&i.CollaboratorAuthPolicy,
+			&i.AllowForceDeleteWorkspaces,
+			&i.CostEstimationEnabled,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertOrganization = `-- name: InsertOrganization :exec

@@ -348,7 +348,7 @@ type Team struct {
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
 	OrganizationName                pgtype.Text
-	SsoTeamID                       pgtype.Text
+	SSOTeamID                       pgtype.Text
 	Visibility                      pgtype.Text
 	PermissionManagePolicies        pgtype.Bool
 	PermissionManagePolicyOverrides pgtype.Bool

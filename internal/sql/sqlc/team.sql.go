@@ -42,7 +42,7 @@ func (q *Queries) FindTeamByID(ctx context.Context, teamID pgtype.Text) (Team, e
 		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
-		&i.SsoTeamID,
+		&i.SSOTeamID,
 		&i.Visibility,
 		&i.PermissionManagePolicies,
 		&i.PermissionManagePolicyOverrides,
@@ -69,7 +69,7 @@ func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text)
 		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
-		&i.SsoTeamID,
+		&i.SSOTeamID,
 		&i.Visibility,
 		&i.PermissionManagePolicies,
 		&i.PermissionManagePolicyOverrides,
@@ -101,7 +101,7 @@ func (q *Queries) FindTeamByName(ctx context.Context, arg FindTeamByNameParams) 
 		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
-		&i.SsoTeamID,
+		&i.SSOTeamID,
 		&i.Visibility,
 		&i.PermissionManagePolicies,
 		&i.PermissionManagePolicyOverrides,
@@ -128,7 +128,7 @@ func (q *Queries) FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (T
 		&i.PermissionManageVCS,
 		&i.PermissionManageModules,
 		&i.OrganizationName,
-		&i.SsoTeamID,
+		&i.SSOTeamID,
 		&i.Visibility,
 		&i.PermissionManagePolicies,
 		&i.PermissionManagePolicyOverrides,
@@ -160,7 +160,7 @@ func (q *Queries) FindTeamsByOrg(ctx context.Context, organizationName pgtype.Te
 			&i.PermissionManageVCS,
 			&i.PermissionManageModules,
 			&i.OrganizationName,
-			&i.SsoTeamID,
+			&i.SSOTeamID,
 			&i.Visibility,
 			&i.PermissionManagePolicies,
 			&i.PermissionManagePolicyOverrides,
@@ -212,7 +212,7 @@ type InsertTeamParams struct {
 	CreatedAt                       pgtype.Timestamptz
 	OrganizationName                pgtype.Text
 	Visibility                      pgtype.Text
-	SsoTeamID                       pgtype.Text
+	SSOTeamID                       pgtype.Text
 	PermissionManageWorkspaces      pgtype.Bool
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
@@ -228,7 +228,7 @@ func (q *Queries) InsertTeam(ctx context.Context, arg InsertTeamParams) error {
 		arg.CreatedAt,
 		arg.OrganizationName,
 		arg.Visibility,
-		arg.SsoTeamID,
+		arg.SSOTeamID,
 		arg.PermissionManageWorkspaces,
 		arg.PermissionManageVCS,
 		arg.PermissionManageModules,
@@ -258,7 +258,7 @@ RETURNING team_id
 type UpdateTeamByIDParams struct {
 	Name                            pgtype.Text
 	Visibility                      pgtype.Text
-	SsoTeamID                       pgtype.Text
+	SSOTeamID                       pgtype.Text
 	PermissionManageWorkspaces      pgtype.Bool
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
@@ -272,7 +272,7 @@ func (q *Queries) UpdateTeamByID(ctx context.Context, arg UpdateTeamByIDParams) 
 	row := q.db.QueryRow(ctx, updateTeamByID,
 		arg.Name,
 		arg.Visibility,
-		arg.SsoTeamID,
+		arg.SSOTeamID,
 		arg.PermissionManageWorkspaces,
 		arg.PermissionManageVCS,
 		arg.PermissionManageModules,

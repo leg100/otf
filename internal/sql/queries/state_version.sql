@@ -36,8 +36,8 @@ WHERE sv.workspace_id = sqlc.arg('workspace_id')
 AND   sv.status = 'finalized'
 GROUP BY sv.state_version_id
 ORDER BY created_at DESC
-LIMIT sqlc.arg('limit')
-OFFSET sqlc.arg('offset')
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: CountStateVersionsByWorkspaceID :one

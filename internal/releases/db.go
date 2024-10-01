@@ -20,12 +20,12 @@ func (db *db) updateLatestVersion(ctx context.Context, v string) error {
 			return err
 		}
 		if len(rows) == 0 {
-			_, err = q.InsertLatestTerraformVersion(ctx, sql.String(v))
+			err = q.InsertLatestTerraformVersion(ctx, sql.String(v))
 			if err != nil {
 				return err
 			}
 		} else {
-			_, err = q.UpdateLatestTerraformVersion(ctx, sql.String(v))
+			err = q.UpdateLatestTerraformVersion(ctx, sql.String(v))
 			if err != nil {
 				return err
 			}

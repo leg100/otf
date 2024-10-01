@@ -181,14 +181,14 @@ WHERE sv.workspace_id = $1
 AND   sv.status = 'finalized'
 GROUP BY sv.state_version_id
 ORDER BY created_at DESC
-LIMIT $3
-OFFSET $2
+LIMIT $3::int
+OFFSET $2::int
 `
 
 type FindStateVersionsByWorkspaceIDParams struct {
 	WorkspaceID pgtype.Text
-	Offset      int32
-	Limit       int32
+	Offset      pgtype.Int4
+	Limit       pgtype.Int4
 }
 
 type FindStateVersionsByWorkspaceIDRow struct {

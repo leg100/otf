@@ -43,8 +43,8 @@ type FindVCSProviderRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        GithubApp
-	GithubAppInstall GithubAppInstall
+	GithubApp        *GithubApp
+	GithubAppInstall *GithubAppInstall
 }
 
 func (q *Queries) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderRow, error) {
@@ -83,8 +83,8 @@ type FindVCSProviderForUpdateRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        GithubApp
-	GithubAppInstall GithubAppInstall
+	GithubApp        *GithubApp
+	GithubAppInstall *GithubAppInstall
 }
 
 func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderForUpdateRow, error) {
@@ -121,8 +121,8 @@ type FindVCSProvidersRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        GithubApp
-	GithubAppInstall GithubAppInstall
+	GithubApp        *GithubApp
+	GithubAppInstall *GithubAppInstall
 }
 
 func (q *Queries) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow, error) {
@@ -173,8 +173,8 @@ type FindVCSProvidersByGithubAppInstallIDRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        GithubApp
-	GithubAppInstall GithubAppInstall
+	GithubApp        *GithubApp
+	GithubAppInstall *GithubAppInstall
 }
 
 func (q *Queries) FindVCSProvidersByGithubAppInstallID(ctx context.Context, installID pgtype.Int8) ([]FindVCSProvidersByGithubAppInstallIDRow, error) {
@@ -225,8 +225,8 @@ type FindVCSProvidersByOrganizationRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-	GithubApp        GithubApp
-	GithubAppInstall GithubAppInstall
+	GithubApp        *GithubApp
+	GithubAppInstall *GithubAppInstall
 }
 
 func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersByOrganizationRow, error) {

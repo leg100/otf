@@ -13,12 +13,12 @@ import (
 
 // dbresult represents the result of a database query for a user.
 type dbresult struct {
-	UserID    pgtype.Text        `json:"user_id"`
-	Username  pgtype.Text        `json:"username"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SiteAdmin pgtype.Bool        `json:"site_admin"`
-	Teams     []sqlc.Teams       `json:"teams"`
+	UserID    pgtype.Text
+	Username  pgtype.Text
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+	SiteAdmin pgtype.Bool
+	Teams     []sqlc.Team
 }
 
 func (result dbresult) toUser() *User {
@@ -44,7 +44,7 @@ type pgdb struct {
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		_, err := q.InsertUser(ctx, sqlc.InsertUserParams{
+		err := q.InsertUser(ctx, sqlc.InsertUserParams{
 			ID:        sql.String(user.ID),
 			Username:  sql.String(user.Username),
 			CreatedAt: sql.Timestamptz(user.CreatedAt),
@@ -54,7 +54,10 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 			return sql.Error(err)
 		}
 		for _, team := range user.Teams {
-			_, err = q.InsertTeamMembership(ctx, []string{user.Username}, sql.String(team.ID))
+			_, err = q.InsertTeamMembership(ctx, sqlc.InsertTeamMembershipParams{
+				TeamID:    sql.String(team.ID),
+				Usernames: sql.StringArray([]string{user.Username}),
+			})
 			if err != nil {
 				return sql.Error(err)
 			}
@@ -126,7 +129,10 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 }
 
 func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
-	_, err := db.Conn(ctx).InsertTeamMembership(ctx, usernames, sql.String(teamID))
+	_, err := db.Conn(ctx).InsertTeamMembership(ctx, sqlc.InsertTeamMembershipParams{
+		Usernames: sql.StringArray(usernames),
+		TeamID:    sql.String(teamID),
+	})
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -134,7 +140,10 @@ func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames 
 }
 
 func (db *pgdb) removeTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
-	_, err := db.Conn(ctx).DeleteTeamMembership(ctx, usernames, sql.String(teamID))
+	_, err := db.Conn(ctx).DeleteTeamMembership(ctx, sqlc.DeleteTeamMembershipParams{
+		Usernames: sql.StringArray(usernames),
+		TeamID:    sql.String(teamID),
+	})
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -172,7 +181,7 @@ func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promote
 		}
 		// ...then promote any specified usernames
 		if len(usernames) > 0 {
-			updated, err = q.UpdateUserSiteAdmins(ctx, usernames)
+			updated, err = q.UpdateUserSiteAdmins(ctx, sql.StringArray(usernames))
 			if err != nil {
 				return err
 			}
@@ -205,7 +214,7 @@ func pgtextSliceDiff(a, b []pgtype.Text) []string {
 //
 
 func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
-	_, err := db.Conn(ctx).InsertToken(ctx, sqlc.InsertTokenParams{
+	err := db.Conn(ctx).InsertToken(ctx, sqlc.InsertTokenParams{
 		TokenID:     sql.String(token.ID),
 		Description: sql.String(token.Description),
 		Username:    sql.String(token.Username),
