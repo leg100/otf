@@ -357,7 +357,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 		Offset:            opts.GetOffset(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("querying runs: %w", err)
 	}
 	count, err := q.CountRuns(ctx, sqlc.CountRunsParams{
 		OrganizationNames: sql.StringArray([]string{organization}),
@@ -370,7 +370,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 		PlanOnly:          sql.StringArray([]string{planOnly}),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("counting runs: %w", err)
 	}
 
 	items := make([]*Run, len(rows))

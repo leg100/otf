@@ -2,7 +2,7 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "./internal/sql/queries"
-    schema: "./001_migrate_migrator.sql"
+    schema: "./internal/sql/migrations"
     gen:
       go:
         package: "sqlc"
@@ -40,9 +40,9 @@ sql:
             go_type:
               type: "IngressAttribute"
               pointer: true
-          - db_type: "run_variables[]"
+          - db_type: "run_variables"
             go_type:
-              type: "[]RunVariable"
+              type: "RunVariable"
           - db_type: "teams"
             go_type:
               type: "Team"
@@ -60,12 +60,12 @@ sql:
           - db_type: "module_versions[]"
             go_type:
               type: "[]ModuleVersion"
-          - db_type: "run_status_timestamps[]"
+          - db_type: "run_status_timestamps"
             go_type:
-              type: "[]RunStatusTimestamp"
-          - db_type: "phase_status_timestamps[]"
+              type: "RunStatusTimestamp"
+          - db_type: "phase_status_timestamps"
             go_type:
-              type: "[]PhaseStatusTimestamp"
+              type: "PhaseStatusTimestamp"
           - db_type: "configuration_version_status_timestamps[]"
             go_type:
               type: "[]ConfigurationVersionStatusTimestamp"

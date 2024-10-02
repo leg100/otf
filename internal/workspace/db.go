@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
@@ -238,22 +239,22 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	}
 
 	rows, err := q.FindWorkspaces(ctx, sqlc.FindWorkspacesParams{
-		OrganizationNames: sql.String(organization),
+		OrganizationNames: sql.StringArray([]string{organization}),
 		Search:            sql.String(opts.Search),
 		Tags:              sql.StringArray(tags),
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("querying workspaces: %w")
 	}
 	count, err := q.CountWorkspaces(ctx, sqlc.CountWorkspacesParams{
 		Search:            sql.String(opts.Search),
-		OrganizationNames: sql.String(organization),
+		OrganizationNames: sql.StringArray([]string{organization}),
 		Tags:              sql.StringArray(tags),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("counting workspaces: %w")
 	}
 
 	items := make([]*Workspace, len(rows))

@@ -18,7 +18,7 @@ WITH
         FROM workspaces w
         LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
         WHERE w.name              LIKE '%' || $1 || '%'
-        AND   w.organization_name LIKE ANY($2)
+        AND   w.organization_name LIKE ANY($2::text[])
         GROUP BY w.workspace_id
         HAVING array_agg(t.name) @> $3::text[]
     )
@@ -28,7 +28,7 @@ FROM workspaces
 
 type CountWorkspacesParams struct {
 	Search            pgtype.Text
-	OrganizationNames pgtype.Text
+	OrganizationNames []pgtype.Text
 	Tags              []pgtype.Text
 }
 
@@ -374,8 +374,8 @@ LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.name                LIKE '%' || $1 || '%'
-AND   w.organization_name   LIKE ANY($2)
-GROUP BY w.workspace_id, r.status
+AND   w.organization_name   LIKE ANY($2::text[])
+GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path
 HAVING array_agg(t.name) @> $3::text[]
 ORDER BY w.updated_at DESC
 LIMIT $5::int
@@ -384,7 +384,7 @@ OFFSET $4::int
 
 type FindWorkspacesParams struct {
 	Search            pgtype.Text
-	OrganizationNames pgtype.Text
+	OrganizationNames []pgtype.Text
 	Tags              []pgtype.Text
 	Offset            pgtype.Int4
 	Limit             pgtype.Int4

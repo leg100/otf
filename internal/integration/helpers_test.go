@@ -12,8 +12,6 @@ import (
 )
 
 func integrationTest(t *testing.T) {
-	// An integration test can take a while to run so it be run in parallel to
-	// other integration tests
 	t.Parallel()
 
 	// Skip long-running integration tests if user has passed -short flag
