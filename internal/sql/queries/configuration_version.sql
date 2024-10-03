@@ -41,8 +41,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
-    ia::"ingress_attributes" AS ingress_attributes
+    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING (configuration_version_id)
@@ -70,8 +70,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
-    ia::"ingress_attributes" AS ingress_attributes
+    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
@@ -89,8 +89,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
-    ia::"ingress_attributes" AS ingress_attributes
+    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)
@@ -109,8 +109,8 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::"configuration_version_status_timestamps[]" AS status_timestamps,
-    ia::"ingress_attributes" AS ingress_attributes
+    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 JOIN configuration_version_ingress_attributes USING (configuration_version_id)

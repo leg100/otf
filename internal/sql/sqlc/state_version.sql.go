@@ -54,7 +54,7 @@ func (q *Queries) DiscardPendingStateVersionsByWorkspaceID(ctx context.Context, 
 const findCurrentStateVersionByWorkspaceID = `-- name: FindCurrentStateVersionByWorkspaceID :one
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions sv
 JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
 LEFT JOIN state_version_outputs svo USING (state_version_id)
@@ -90,7 +90,7 @@ func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, work
 const findStateVersionByID = `-- name: FindStateVersionByID :one
 SELECT
     state_versions.state_version_id, state_versions.created_at, state_versions.serial, state_versions.state, state_versions.workspace_id, state_versions.status,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions
 LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE state_versions.state_version_id = $1
@@ -125,7 +125,7 @@ func (q *Queries) FindStateVersionByID(ctx context.Context, id pgtype.Text) (Fin
 const findStateVersionByIDForUpdate = `-- name: FindStateVersionByIDForUpdate :one
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions sv
 LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.state_version_id = $1
@@ -174,7 +174,7 @@ func (q *Queries) FindStateVersionStateByID(ctx context.Context, id pgtype.Text)
 const findStateVersionsByWorkspaceID = `-- name: FindStateVersionsByWorkspaceID :many
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions sv
 LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.workspace_id = $1

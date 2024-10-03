@@ -46,9 +46,6 @@ sql:
           - db_type: "teams"
             go_type:
               type: "Team"
-          - db_type: "teams[]"
-            go_type:
-              type: "[]Team"
           - db_type: "github_apps"
             go_type:
               type: "GithubApp"
@@ -57,21 +54,21 @@ sql:
             go_type:
               type: "GithubAppInstall"
               pointer: true
-          - db_type: "module_versions[]"
+          - db_type: "module_versions"
             go_type:
-              type: "[]ModuleVersion"
+              type: "ModuleVersion"
           - db_type: "run_status_timestamps"
             go_type:
               type: "RunStatusTimestamp"
           - db_type: "phase_status_timestamps"
             go_type:
               type: "PhaseStatusTimestamp"
-          - db_type: "configuration_version_status_timestamps[]"
+          - db_type: "configuration_version_status_timestamps"
             go_type:
-              type: "[]ConfigurationVersionStatusTimestamp"
-          - db_type: "state_version_outputs[]"
+              type: "ConfigurationVersionStatusTimestamp"
+          - db_type: "state_version_outputs"
             go_type:
-              type: "[]StateVersionOutput"
+              type: "StateVersionOutput"
         initialisms:
           - "id"
           - "vcs"

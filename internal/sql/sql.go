@@ -1,7 +1,7 @@
-/*
-Package sql implements persistent storage using the postgres database.
-*/
+// Package sql implements persistent storage using the postgres database.
 package sql
+
+//go:generate go run generate_types.go
 
 import (
 	"time"

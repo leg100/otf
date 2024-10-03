@@ -365,14 +365,19 @@ func (q *Queries) FindWorkspaceByName(ctx context.Context, arg FindWorkspaceByNa
 const findWorkspaces = `-- name: FindWorkspaces :many
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON wt.workspace_id = w.workspace_id
 WHERE w.name                LIKE '%' || $1 || '%'
 AND   w.organization_name   LIKE ANY($2::text[])
 GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path

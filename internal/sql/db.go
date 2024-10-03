@@ -53,7 +53,23 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		return nil, err
 	}
 
-	pool, err := pgxpool.New(ctx, connString)
+	cfg, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		for _, t := range tableTypes {
+			dt, err := conn.LoadType(ctx, t)
+			if err != nil {
+				return fmt.Errorf("loading postgres type %s: %w", t, err)
+			}
+			conn.TypeMap().RegisterType(dt)
+		}
+		return nil
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}

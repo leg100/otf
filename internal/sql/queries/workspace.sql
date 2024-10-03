@@ -58,14 +58,19 @@ INSERT INTO workspaces (
 -- name: FindWorkspaces :many
 SELECT
     w.*,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON wt.workspace_id = w.workspace_id
 WHERE w.name                LIKE '%' || sqlc.arg('search') || '%'
 AND   w.organization_name   LIKE ANY(sqlc.arg('organization_names')::text[])
 GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path

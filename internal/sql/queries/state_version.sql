@@ -29,7 +29,7 @@ AND status = 'pending';
 -- name: FindStateVersionsByWorkspaceID :many
 SELECT
     sv.*,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions sv
 LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.workspace_id = sqlc.arg('workspace_id')
@@ -50,7 +50,7 @@ AND status = 'finalized'
 -- name: FindStateVersionByID :one
 SELECT
     state_versions.*,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions
 LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE state_versions.state_version_id = sqlc.arg('id')
@@ -60,7 +60,7 @@ GROUP BY state_versions.state_version_id
 -- name: FindStateVersionByIDForUpdate :one
 SELECT
     sv.*,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions sv
 LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.state_version_id = sqlc.arg('id')
@@ -71,7 +71,7 @@ FOR UPDATE OF sv
 -- name: FindCurrentStateVersionByWorkspaceID :one
 SELECT
     sv.*,
-    array_agg(svo.*)::"state_version_outputs[]" AS state_version_outputs
+    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
 FROM state_versions sv
 JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
 LEFT JOIN state_version_outputs svo USING (state_version_id)

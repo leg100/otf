@@ -50,7 +50,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions[]" AS module_versions
+    array_agg(v.*)::module_versions[] AS module_versions
 FROM modules m
 JOIN repo_connections r USING (module_id)
 LEFT JOIN module_versions v USING (module_id)
@@ -106,7 +106,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions[]" AS module_versions
+    array_agg(v.*)::module_versions[] AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 LEFT JOIN module_versions v USING (module_id)
@@ -156,7 +156,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions[]" AS module_versions
+    array_agg(v.*)::module_versions[] AS module_versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
 LEFT JOIN repo_connections r USING (module_id)
@@ -206,7 +206,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions[]" AS module_versions
+    array_agg(v.*)::module_versions[] AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
@@ -392,7 +392,7 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::"module_versions[]" AS module_versions
+    array_agg(v.*)::module_versions[] AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 LEFT JOIN module_versions v USING (module_id)
