@@ -74,8 +74,14 @@ func (q *Queries) DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Te
 }
 
 const findWorkspaceByID = `-- name: FindWorkspaceByID :one
-SELECT w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
-    array_agg(t.name)::text[] AS tags,
+SELECT
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -84,9 +90,7 @@ LEFT JOIN users ul ON w.lock_username = ul.username
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = $1
-GROUP BY w.workspace_id
 `
 
 type FindWorkspaceByIDRow struct {
@@ -169,17 +173,21 @@ func (q *Queries) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (FindWo
 }
 
 const findWorkspaceByIDForUpdate = `-- name: FindWorkspaceByIDForUpdate :one
-SELECT w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
-    array_agg(t.name)::text[] AS tags,
+SELECT
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = $1
-GROUP BY w.workspace_id
 FOR UPDATE OF w
 `
 
@@ -265,7 +273,12 @@ func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Text
 const findWorkspaceByName = `-- name: FindWorkspaceByName :one
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -275,7 +288,6 @@ LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.name              = $1
 AND   w.organization_name = $2
-GROUP BY w.workspace_id
 `
 
 type FindWorkspaceByNameParams struct {
@@ -370,6 +382,7 @@ SELECT
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
+        GROUP BY wt.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
@@ -496,7 +509,12 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 const findWorkspacesByConnection = `-- name: FindWorkspacesByConnection :many
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -504,11 +522,9 @@ FROM workspaces w
 LEFT JOIN users ul ON w.lock_username = ul.username
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE rc.vcs_provider_id = $1
 AND   rc.repo_path = $2
-GROUP BY w.workspace_id
 `
 
 type FindWorkspacesByConnectionParams struct {
@@ -611,7 +627,12 @@ func (q *Queries) FindWorkspacesByConnection(ctx context.Context, arg FindWorksp
 const findWorkspacesByUsername = `-- name: FindWorkspacesByUsername :many
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -619,13 +640,11 @@ FROM workspaces w
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u ON tm.username = u.username
 WHERE w.organization_name  = $1
 AND   u.username           = $2
-GROUP BY w.workspace_id
 ORDER BY w.updated_at DESC
 LIMIT $4::int
 OFFSET $3::int

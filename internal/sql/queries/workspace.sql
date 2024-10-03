@@ -63,6 +63,7 @@ SELECT
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
+        GROUP BY wt.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
@@ -98,7 +99,12 @@ FROM workspaces
 -- name: FindWorkspacesByConnection :many
 SELECT
     w.*,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -106,17 +112,20 @@ FROM workspaces w
 LEFT JOIN users ul ON w.lock_username = ul.username
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE rc.vcs_provider_id = sqlc.arg('vcs_provider_id')
 AND   rc.repo_path = sqlc.arg('repo_path')
-GROUP BY w.workspace_id
 ;
 
 -- name: FindWorkspacesByUsername :many
 SELECT
     w.*,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -124,13 +133,11 @@ FROM workspaces w
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u ON tm.username = u.username
 WHERE w.organization_name  = sqlc.arg('organization_name')
 AND   u.username           = sqlc.arg('username')
-GROUP BY w.workspace_id
 ORDER BY w.updated_at DESC
 LIMIT sqlc.arg('limit')::int
 OFFSET sqlc.arg('offset')::int
@@ -150,7 +157,12 @@ AND   u.username          = sqlc.arg('username')
 -- name: FindWorkspaceByName :one
 SELECT
     w.*,
-    array_agg(t.name)::text[] AS tags,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -160,12 +172,17 @@ LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.name              = sqlc.arg('name')
 AND   w.organization_name = sqlc.arg('organization_name')
-GROUP BY w.workspace_id
 ;
 
 -- name: FindWorkspaceByID :one
-SELECT w.*,
-    array_agg(t.name)::text[] AS tags,
+SELECT
+    w.*,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
@@ -174,23 +191,25 @@ LEFT JOIN users ul ON w.lock_username = ul.username
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = sqlc.arg('id')
-GROUP BY w.workspace_id
 ;
 
 -- name: FindWorkspaceByIDForUpdate :one
-SELECT w.*,
-    array_agg(t.name)::text[] AS tags,
+SELECT
+    w.*,
+    (
+        SELECT array_agg(name)::text[]
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = sqlc.arg('id')
-GROUP BY w.workspace_id
 FOR UPDATE OF w;
 
 -- name: UpdateWorkspaceByID :one

@@ -251,6 +251,7 @@ FROM variable_sets vs
 LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
 JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vsw.workspace_id = $1
+GROUP BY vs.variable_set_id
 UNION
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,

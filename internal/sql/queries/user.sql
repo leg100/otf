@@ -16,7 +16,9 @@ SELECT
     u.*,
     array_agg(t.*)::teams[] AS teams
 FROM users u
+LEFT JOIN team_memberships tm USING (username)
 LEFT JOIN teams t USING (team_id)
+GROUP BY u.user_id
 ;
 
 -- name: FindUsersByOrganization :many
@@ -46,6 +48,7 @@ SELECT
     u.*,
     array_agg(t.*)::teams[] AS teams
 FROM users u
+LEFT JOIN team_memberships tm USING (username)
 LEFT JOIN teams t USING (team_id)
 WHERE u.user_id = sqlc.arg('user_id')
 GROUP BY u.user_id
@@ -67,6 +70,7 @@ SELECT
     array_agg(tt.*)::teams[] AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
+LEFT JOIN team_memberships tm USING (username)
 LEFT JOIN teams tt USING (team_id)
 WHERE t.token_id = sqlc.arg('token_id')
 GROUP BY u.user_id

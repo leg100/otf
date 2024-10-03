@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
@@ -110,7 +111,7 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 func Error(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
-	case NoRowsInResultError(err):
+	case errors.Is(err, pgx.ErrNoRows):
 		return internal.ErrResourceNotFound
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {

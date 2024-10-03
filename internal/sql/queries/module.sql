@@ -46,12 +46,17 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::module_versions[] AS module_versions
+    versions.module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
-LEFT JOIN module_versions v USING (module_id)
+LEFT JOIN (
+    SELECT
+        v.module_id,
+        array_agg(v.*)::module_versions[] AS module_versions
+    FROM module_versions v
+    GROUP BY v.module_id
+) AS versions USING (module_id)
 WHERE m.organization_name = sqlc.arg('organization_name')
-GROUP BY m.module_id
 ;
 
 -- name: FindModuleByName :one
