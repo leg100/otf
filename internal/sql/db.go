@@ -39,21 +39,14 @@ type (
 // New migrates the database to the latest migration version, and then
 // constructs and returns a connection pool.
 func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error) {
-	// TODO: move connection code into migrate routing
-	conn, err := pgx.Connect(ctx, connString)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close(ctx)
-
-	if err := migrate(ctx, logger, conn); err != nil {
-		return nil, fmt.Errorf("migrating database schema: %w", err)
+	if err := migrate(ctx, connString); err != nil {
+		return nil, fmt.Errorf("migrating database: %w", err)
 	}
 
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
 	// connections for session-level advisory locks and can easily exhaust this.
-	connString, err = setDefaultMaxConnections(connString, defaultMaxConnections)
+	connString, err := setDefaultMaxConnections(connString, defaultMaxConnections)
 	if err != nil {
 		return nil, err
 	}
