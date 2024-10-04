@@ -16,67 +16,111 @@ INSERT INTO variable_sets (
 -- name: FindVariableSetsByOrganization :many
 SELECT
     vs.*,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
-LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
-LEFT JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE organization_name = sqlc.arg('organization_name')
-GROUP BY vs.variable_set_id;
+;
 
 -- name: FindVariableSetsByWorkspace :many
 SELECT
     vs.*,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
-LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
 JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vsw.workspace_id = sqlc.arg('workspace_id')
-GROUP BY vs.variable_set_id
 UNION
 SELECT
     vs.*,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
 JOIN (organizations o JOIN workspaces w ON o.name = w.organization_name) ON o.name = vs.organization_name
-LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
-JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vs.global IS true
 AND w.workspace_id = sqlc.arg('workspace_id')
-GROUP BY vs.variable_set_id;
+;
 
 -- name: FindVariableSetBySetID :one
 SELECT
-    *,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    vs.*,
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
 WHERE vs.variable_set_id = sqlc.arg('variable_set_id')
-GROUP BY vs.variable_set_id;
+;
 
 -- name: FindVariableSetByVariableID :one
 SELECT
     vs.*,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
 JOIN variable_set_variables vsv USING (variable_set_id)
-LEFT JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vsv.variable_id = sqlc.arg('variable_id')
-GROUP BY vs.variable_set_id;
+;
 
 -- name: FindVariableSetForUpdate :one
 SELECT
     vs.*,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
-JOIN variable_set_variables vsv USING (variable_set_id)
-LEFT JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vs.variable_set_id = sqlc.arg('variable_set_id')
-GROUP BY vs.variable_set_id
 FOR UPDATE OF vs;
 
 -- name: UpdateVariableSetByID :one

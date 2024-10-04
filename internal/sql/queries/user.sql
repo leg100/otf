@@ -14,17 +14,26 @@ INSERT INTO users (
 -- name: FindUsers :many
 SELECT
     u.*,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
-LEFT JOIN team_memberships tm USING (username)
-LEFT JOIN teams t USING (team_id)
-GROUP BY u.user_id
 ;
 
 -- name: FindUsersByOrganization :many
 SELECT
     u.*,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -35,7 +44,13 @@ GROUP BY u.user_id
 -- name: FindUsersByTeamID :many
 SELECT
     u.*,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -46,35 +61,44 @@ GROUP BY u.user_id
 -- name: FindUserByID :one
 SELECT
     u.*,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
-LEFT JOIN team_memberships tm USING (username)
-LEFT JOIN teams t USING (team_id)
 WHERE u.user_id = sqlc.arg('user_id')
-GROUP BY u.user_id
 ;
 
 -- name: FindUserByUsername :one
 SELECT
     u.*,
-    array_remove(array_agg(t.*), NULL)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
-LEFT JOIN team_memberships tm USING (username)
-LEFT JOIN teams t USING (team_id)
 WHERE u.username = sqlc.arg('username')
-GROUP BY u.user_id
 ;
 
 -- name: FindUserByAuthenticationTokenID :one
 SELECT
     u.*,
-    array_agg(tt.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
-LEFT JOIN team_memberships tm ON u.username = tm.username
-LEFT JOIN teams tt USING (team_id)
 WHERE t.token_id = sqlc.arg('token_id')
-GROUP BY u.user_id
 ;
 
 -- name: UpdateUserSiteAdmins :many

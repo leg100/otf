@@ -43,6 +43,9 @@ func StringPtr(s *string) pgtype.Text {
 
 // StringArray converts a go-string slice into a postgres text array
 func StringArray(ss []string) []pgtype.Text {
+	if ss == nil {
+		return nil
+	}
 	p := make([]pgtype.Text, len(ss))
 	for i, s := range ss {
 		p[i] = pgtype.Text{String: s, Valid: true}
@@ -52,6 +55,9 @@ func StringArray(ss []string) []pgtype.Text {
 
 // FromStringArray converts a postgres text array into a go string slice.
 func FromStringArray(pta []pgtype.Text) []string {
+	if pta == nil {
+		return nil
+	}
 	ss := make([]string, len(pta))
 	for i, t := range pta {
 		ss[i] = t.String

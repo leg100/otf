@@ -63,23 +63,6 @@ type ConfigurationVersion struct {
 	WorkspaceID            pgtype.Text
 }
 
-type ConfigurationVersionIngressAttribute struct {
-	Branch                 pgtype.Text
-	CommitSHA              pgtype.Text
-	Identifier             pgtype.Text
-	IsPullRequest          pgtype.Bool
-	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID pgtype.Text
-	CommitURL              pgtype.Text
-	PullRequestNumber      pgtype.Int4
-	PullRequestURL         pgtype.Text
-	PullRequestTitle       pgtype.Text
-	Tag                    pgtype.Text
-	SenderUsername         pgtype.Text
-	SenderAvatarURL        pgtype.Text
-	SenderHTMLURL          pgtype.Text
-}
-
 type ConfigurationVersionStatusTimestamp struct {
 	ConfigurationVersionID pgtype.Text
 	Status                 pgtype.Text

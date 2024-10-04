@@ -84,12 +84,20 @@ func (q *Queries) DeleteVariableSetWorkspaces(ctx context.Context, variableSetID
 
 const findVariableSetBySetID = `-- name: FindVariableSetBySetID :one
 SELECT
-    variable_set_id, global, name, description, organization_name,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
 WHERE vs.variable_set_id = $1
-GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetBySetIDRow struct {
@@ -120,13 +128,20 @@ func (q *Queries) FindVariableSetBySetID(ctx context.Context, variableSetID pgty
 const findVariableSetByVariableID = `-- name: FindVariableSetByVariableID :one
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
 JOIN variable_set_variables vsv USING (variable_set_id)
-LEFT JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vsv.variable_id = $1
-GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetByVariableIDRow struct {
@@ -157,13 +172,19 @@ func (q *Queries) FindVariableSetByVariableID(ctx context.Context, variableID pg
 const findVariableSetForUpdate = `-- name: FindVariableSetForUpdate :one
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
-JOIN variable_set_variables vsv USING (variable_set_id)
-LEFT JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vs.variable_set_id = $1
-GROUP BY vs.variable_set_id
 FOR UPDATE OF vs
 `
 
@@ -195,13 +216,19 @@ func (q *Queries) FindVariableSetForUpdate(ctx context.Context, variableSetID pg
 const findVariableSetsByOrganization = `-- name: FindVariableSetsByOrganization :many
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
-LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
-LEFT JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE organization_name = $1
-GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetsByOrganizationRow struct {
@@ -245,25 +272,38 @@ func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, organizati
 const findVariableSetsByWorkspace = `-- name: FindVariableSetsByWorkspace :many
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
-LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
 JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vsw.workspace_id = $1
-GROUP BY vs.variable_set_id
 UNION
 SELECT
     vs.variable_set_id, vs.global, vs.name, vs.description, vs.organization_name,
-    array_agg(v.*)::variables[] AS variables,
-    array_agg(vsw.workspace_id)::text[] AS workspace_ids
+    (
+        SELECT array_agg(v.*)::variables[]
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id)::text[]
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+    ) AS workspace_ids
 FROM variable_sets vs
 JOIN (organizations o JOIN workspaces w ON o.name = w.organization_name) ON o.name = vs.organization_name
-LEFT JOIN (variable_set_variables vsv JOIN variables v USING (variable_id)) USING (variable_set_id)
-JOIN variable_set_workspaces vsw USING (variable_set_id)
 WHERE vs.global IS true
 AND w.workspace_id = $1
-GROUP BY vs.variable_set_id
 `
 
 type FindVariableSetsByWorkspaceRow struct {

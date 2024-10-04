@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/netip"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -50,7 +50,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// determine ip address from connection source address
-	ip, err := netip.ParseAddr(r.RemoteAddr)
+	ip, err := internal.ParseAddr(r.RemoteAddr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

@@ -195,7 +195,7 @@ func (d *daemon) Start(ctx context.Context) error {
 		Concurrency: d.config.Concurrency,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("registering agent: %w", err)
 	}
 	d.poolLogger.Info("registered successfully", "agent", agent)
 	// send registered agent to channel, letting caller know agent has

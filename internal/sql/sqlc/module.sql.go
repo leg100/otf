@@ -50,13 +50,16 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::module_versions[] AS module_versions
+    (
+        SELECT array_agg(v.*)::module_versions[]
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+        GROUP BY v.module_id
+    ) AS module_versions
 FROM modules m
 JOIN repo_connections r USING (module_id)
-LEFT JOIN module_versions v USING (module_id)
 WHERE r.vcs_provider_id = $1
 AND   r.repo_path = $2
-GROUP BY m.module_id
 `
 
 type FindModuleByConnectionParams struct {
@@ -106,12 +109,15 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::module_versions[] AS module_versions
+    (
+        SELECT array_agg(v.*)::module_versions[]
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+        GROUP BY v.module_id
+    ) AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
-LEFT JOIN module_versions v USING (module_id)
 WHERE m.module_id = $1
-GROUP BY m.module_id
 `
 
 type FindModuleByIDRow struct {
@@ -156,12 +162,16 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::module_versions[] AS module_versions
+    (
+        SELECT array_agg(v.*)::module_versions[]
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+        GROUP BY v.module_id
+    ) AS module_versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
 LEFT JOIN repo_connections r USING (module_id)
 WHERE mv.module_version_id = $1
-GROUP BY m.module_id
 `
 
 type FindModuleByModuleVersionIDRow struct {
@@ -206,13 +216,17 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    array_agg(v.*)::module_versions[] AS module_versions
+    (
+        SELECT array_agg(v.*)::module_versions[]
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+        GROUP BY v.module_id
+    ) AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
 AND   m.name = $2
 AND   m.provider = $3
-GROUP BY m.module_id
 `
 
 type FindModuleByNameParams struct {
@@ -392,16 +406,14 @@ SELECT
     m.organization_name,
     r.vcs_provider_id,
     r.repo_path,
-    versions.module_versions
+    (
+        SELECT array_agg(v.*)::module_versions[]
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+        GROUP BY v.module_id
+    ) AS module_versions
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
-LEFT JOIN (
-    SELECT
-        v.module_id,
-        array_agg(v.*)::module_versions[] AS module_versions
-    FROM module_versions v
-    GROUP BY v.module_id
-) AS versions USING (module_id)
 WHERE m.organization_name = $1
 `
 

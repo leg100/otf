@@ -42,13 +42,16 @@ func (q *Queries) DeleteUserByUsername(ctx context.Context, username pgtype.Text
 const findUserByAuthenticationTokenID = `-- name: FindUserByAuthenticationTokenID :one
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(tt.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
-LEFT JOIN team_memberships tm ON u.username = tm.username
-LEFT JOIN teams tt USING (team_id)
 WHERE t.token_id = $1
-GROUP BY u.user_id
 `
 
 type FindUserByAuthenticationTokenIDRow struct {
@@ -77,12 +80,15 @@ func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID p
 const findUserByID = `-- name: FindUserByID :one
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
-LEFT JOIN team_memberships tm USING (username)
-LEFT JOIN teams t USING (team_id)
 WHERE u.user_id = $1
-GROUP BY u.user_id
 `
 
 type FindUserByIDRow struct {
@@ -111,12 +117,15 @@ func (q *Queries) FindUserByID(ctx context.Context, userID pgtype.Text) (FindUse
 const findUserByUsername = `-- name: FindUserByUsername :one
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_remove(array_agg(t.*), NULL)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
-LEFT JOIN team_memberships tm USING (username)
-LEFT JOIN teams t USING (team_id)
 WHERE u.username = $1
-GROUP BY u.user_id
 `
 
 type FindUserByUsernameRow struct {
@@ -145,11 +154,14 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username pgtype.Text) 
 const findUsers = `-- name: FindUsers :many
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
-LEFT JOIN team_memberships tm USING (username)
-LEFT JOIN teams t USING (team_id)
-GROUP BY u.user_id
 `
 
 type FindUsersRow struct {
@@ -191,7 +203,13 @@ func (q *Queries) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
 const findUsersByOrganization = `-- name: FindUsersByOrganization :many
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
@@ -238,7 +256,13 @@ func (q *Queries) FindUsersByOrganization(ctx context.Context, organizationName 
 const findUsersByTeamID = `-- name: FindUsersByTeamID :many
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
-    array_agg(t.*)::teams[] AS teams
+    (
+        SELECT array_agg(t.*)::teams[]
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.username = u.username
+        GROUP BY tm.username
+    ) AS teams
 FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)

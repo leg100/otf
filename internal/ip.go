@@ -15,5 +15,15 @@ func GetOutboundIP() (netip.Addr, error) {
 	}
 	defer conn.Close()
 
-	return netip.ParseAddr(conn.LocalAddr().String())
+	return ParseAddr(conn.LocalAddr().String())
+}
+
+// ParseAddr parses the address from an endpoint string of the form
+// "<ip>:<port>"
+func ParseAddr(endpoint string) (netip.Addr, error) {
+	ap, err := netip.ParseAddrPort(endpoint)
+	if err != nil {
+		return netip.Addr{}, nil
+	}
+	return ap.Addr(), nil
 }

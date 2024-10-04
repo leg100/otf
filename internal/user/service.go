@@ -150,7 +150,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 	user, err := a.db.getUser(ctx, spec)
 	if err != nil {
-		a.V(9).Info("retrieving user", "spec", spec, "subject", subject)
+		a.Error(err, "retrieving user", "spec", spec, "subject", subject)
 		return nil, err
 	}
 
