@@ -141,7 +141,6 @@ LEFT JOIN (
     GROUP BY run_id
 ) AS ast ON ast.run_id = runs.run_id
 WHERE runs.run_id = $1
-GROUP BY runs.run_id
 `
 
 type FindRunByIDRow struct {
@@ -260,6 +259,7 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
+JOIN (configuration_versions cv LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 LEFT JOIN (
     SELECT
         run_id,
@@ -291,7 +291,6 @@ LEFT JOIN (
     GROUP BY run_id
 ) AS ast ON ast.run_id = runs.run_id
 WHERE runs.run_id = $1
-GROUP BY runs.run_id
 FOR UPDATE OF runs, plans, applies
 `
 

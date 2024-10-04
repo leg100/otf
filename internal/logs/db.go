@@ -2,9 +2,11 @@ package logs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -61,7 +63,7 @@ func (db *pgdb) getLogs(ctx context.Context, runID string, phase internal.PhaseT
 	if err != nil {
 		// Don't consider no rows an error because logs may not have been
 		// uploaded yet.
-		if sql.NoRowsInResultError(err) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, sql.Error(err)

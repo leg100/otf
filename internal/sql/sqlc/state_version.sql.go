@@ -125,11 +125,14 @@ func (q *Queries) FindStateVersionByID(ctx context.Context, id pgtype.Text) (Fin
 const findStateVersionByIDForUpdate = `-- name: FindStateVersionByIDForUpdate :one
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
-    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
 FROM state_versions sv
-LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.state_version_id = $1
-GROUP BY sv.state_version_id
 FOR UPDATE OF sv
 `
 

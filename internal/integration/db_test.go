@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -96,7 +97,7 @@ func TestTx(t *testing.T) {
 
 		// this should fail because it is using a different ctx
 		_, err = db.Conn(ctx).FindOrganizationByID(txCtx, sql.String(org.ID))
-		assert.True(t, sql.NoRowsInResultError(err))
+		assert.ErrorIs(t, err, pgx.ErrNoRows)
 
 		return nil
 	})

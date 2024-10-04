@@ -155,24 +155,24 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, "retrieving run: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, "retrieving workspace: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Get existing logs thus far received for each phase.
 	planLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	applyLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -41,14 +41,17 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    (
+        SELECT array_agg(cst.*)::configuration_version_status_timestamps[]
+        FROM configuration_version_status_timestamps cst
+        WHERE cst.configuration_version_id = cv.configuration_version_id
+        GROUP BY cst.configuration_version_id
+    ) AS status_timestamps,
     ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING (configuration_version_id)
-LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
 WHERE workspaces.workspace_id = sqlc.arg('workspace_id')
-GROUP BY cv.configuration_version_id
 LIMIT sqlc.arg('limit')::int
 OFFSET sqlc.arg('offset')::int
 ;
@@ -70,14 +73,17 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    (
+        SELECT array_agg(cst.*)::configuration_version_status_timestamps[]
+        FROM configuration_version_status_timestamps cst
+        WHERE cst.configuration_version_id = cv.configuration_version_id
+        GROUP BY cst.configuration_version_id
+    ) AS status_timestamps,
     ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
-JOIN configuration_version_ingress_attributes USING (configuration_version_id)
-LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
+LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.configuration_version_id = sqlc.arg('configuration_version_id')
-GROUP BY cv.configuration_version_id
 ;
 
 -- name: FindConfigurationVersionLatestByWorkspaceID :one
@@ -89,14 +95,17 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    (
+        SELECT array_agg(cst.*)::configuration_version_status_timestamps[]
+        FROM configuration_version_status_timestamps cst
+        WHERE cst.configuration_version_id = cv.configuration_version_id
+        GROUP BY cst.configuration_version_id
+    ) AS status_timestamps,
     ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
-JOIN configuration_version_ingress_attributes USING (configuration_version_id)
-LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
+LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.workspace_id = sqlc.arg('workspace_id')
-GROUP BY cv.configuration_version_id
 ORDER BY cv.created_at DESC
 ;
 
@@ -109,15 +118,18 @@ SELECT
     cv.speculative,
     cv.status,
     cv.workspace_id,
-    array_agg(st.*)::configuration_version_status_timestamps[] AS status_timestamps,
+    (
+        SELECT array_agg(cst.*)::configuration_version_status_timestamps[]
+        FROM configuration_version_status_timestamps cst
+        WHERE cst.configuration_version_id = cv.configuration_version_id
+        GROUP BY cst.configuration_version_id
+    ) AS status_timestamps,
     ia::ingress_attributes AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
-JOIN configuration_version_ingress_attributes USING (configuration_version_id)
-LEFT JOIN configuration_version_status_timestamps st USING (configuration_version_id)
+LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.configuration_version_id = sqlc.arg('configuration_version_id')
-GROUP BY cv.configuration_version_id
-FOR UPDATE OF configuration_versions;
+FOR UPDATE OF cv;
 
 -- DownloadConfigurationVersion gets a configuration_version config
 -- tarball.

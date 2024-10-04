@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html"
@@ -598,7 +599,7 @@ func (s *Service) getLogs(ctx context.Context, runID string, phase internal.Phas
 	if err != nil {
 		// Don't consider no rows an error because logs may not have been
 		// uploaded yet.
-		if sql.NoRowsInResultError(err) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, sql.Error(err)
