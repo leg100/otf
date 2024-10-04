@@ -39,7 +39,7 @@ type (
 // New migrates the database to the latest migration version, and then
 // constructs and returns a connection pool.
 func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error) {
-	if err := migrate(ctx, connString); err != nil {
+	if err := migrate(ctx, logger, connString); err != nil {
 		return nil, fmt.Errorf("migrating database: %w", err)
 	}
 

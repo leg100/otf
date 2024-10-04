@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
 	tern "github.com/jackc/tern/v2/migrate"
 )
@@ -13,7 +14,7 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-func migrate(ctx context.Context, connString string) error {
+func migrate(ctx context.Context, logger logr.Logger, connString string) error {
 	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
 		return err
@@ -31,8 +32,17 @@ func migrate(ctx context.Context, connString string) error {
 	if err := m.LoadMigrations(subtree); err != nil {
 		return fmt.Errorf("loading database migrations: %w", err)
 	}
+	from, err := m.GetCurrentVersion(ctx)
+	if err != nil {
+		return fmt.Errorf("retreiving current database migration version")
+	}
 	if err := m.Migrate(ctx); err != nil {
 		return err
+	}
+	if from == int32(len(m.Migrations)) {
+		logger.Info("database schema up to date", "version", len(m.Migrations))
+	} else {
+		logger.Info("migrated database schema", "from", from, "to", len(m.Migrations))
 	}
 	return nil
 }

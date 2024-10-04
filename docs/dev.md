@@ -41,7 +41,7 @@ make doc-screenshots
 
 ## SQL migrations
 
-The database schema is migrated using [goose](https://github.com/pressly/goose). The SQL migration files are kept in the repo in `./sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
+The database schema is migrated using [tern](https://github.com/jackc/tern). The SQL migration files are kept in the repo in `./internal/sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
 
 If you're developing a SQL migration you may want to migrate the database manually. Use the `make` tasks to assist you:
 
@@ -52,9 +52,9 @@ If you're developing a SQL migration you may want to migrate the database manual
 
 ## SQL queries
 
-SQL queries are handwritten in `./sql/queries` and turned into Go using [pggen](https://github.com/jschaf/pggen).
+SQL queries are handwritten in `./internal/sql/queries` and turned into Go using [sqlc](https://github.com/sqlc-dev/sqlc).
 
-After you make changes to the queries run the following make task to invoke `pggen`:
+After you make changes to the queries run the following make task to invoke `sqlc`:
 
 * `make sql`
 

@@ -108,44 +108,24 @@ install-pre-commit:
 	pre-commit install
 
 # Install sql code generator
-.PHONY: install-pggen
-install-pggen:
-	@sh -c "which pggen > /dev/null || go install github.com/leg100/pggen/cmd/pggen@latest"
+.PHONY: install-sqlc
+install-sqlc:
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
 # Generate sql code
 .PHONY: sql
-sql: install-pggen
-	pggen gen go \
-		--postgres-connection $(DBSTRING) \
-		--query-glob 'internal/sql/queries/*.sql' \
-		--output-dir ./internal/sql/pggen \
-		--go-type 'text=github.com/jackc/pgtype.Text' \
-		--go-type 'int4=github.com/jackc/pgtype.Int4' \
-		--go-type 'int8=github.com/jackc/pgtype.Int8' \
-		--go-type 'bool=github.com/jackc/pgtype.Bool' \
-		--go-type 'bytea=[]byte' \
-		--acronym url \
-		--acronym cli \
-		--acronym sha \
-		--acronym json \
-		--acronym vcs \
-		--acronym html \
-		--acronym http \
-		--acronym tls \
-		--acronym sso \
-		--acronym hcl \
-		--acronym ip
-	goimports -w ./internal/sql/pggen
-	go fmt ./internal/sql/pggen
+sql:
+	sqlc generate
 
 # Install DB migration tool
 .PHONY: install-goose
 install-goose:
-	@sh -c "which goose > /dev/null || go install github.com/pressly/goose/v3/cmd/goose@latest"
+	go install github.com/jackc/tern@latest"
 
 # Migrate SQL schema to latest version
 .PHONY: migrate
-migrate: install-goose
+migrate:
+	tern
 	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
 
 # Redo SQL schema migration
