@@ -48,7 +48,7 @@ func (r AppRow) convert() *App {
 
 func (db *pgdb) create(ctx context.Context, app *App) error {
 	err := db.Conn(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
-		GithubAppID:   pgtype.Int8{Int64: app.ID},
+		GithubAppID:   pgtype.Int8{Int64: app.ID, Valid: true},
 		WebhookSecret: sql.String(app.WebhookSecret),
 		PrivateKey:    sql.String(app.PrivateKey),
 		Slug:          sql.String(app.Slug),

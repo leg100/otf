@@ -29,12 +29,15 @@ AND status = 'pending';
 -- name: FindStateVersionsByWorkspaceID :many
 SELECT
     sv.*,
-    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
 FROM state_versions sv
-LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE sv.workspace_id = sqlc.arg('workspace_id')
 AND   sv.status = 'finalized'
-GROUP BY sv.state_version_id
 ORDER BY created_at DESC
 LIMIT sqlc.arg('limit')::int
 OFFSET sqlc.arg('offset')::int
@@ -49,12 +52,15 @@ AND status = 'finalized'
 
 -- name: FindStateVersionByID :one
 SELECT
-    state_versions.*,
-    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
-FROM state_versions
-LEFT JOIN state_version_outputs svo USING (state_version_id)
-WHERE state_versions.state_version_id = sqlc.arg('id')
-GROUP BY state_versions.state_version_id
+    sv.*,
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+WHERE sv.state_version_id = sqlc.arg('id')
 ;
 
 -- name: FindStateVersionByIDForUpdate :one
@@ -74,12 +80,15 @@ FOR UPDATE OF sv
 -- name: FindCurrentStateVersionByWorkspaceID :one
 SELECT
     sv.*,
-    array_agg(svo.*)::state_version_outputs[] AS state_version_outputs
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
 FROM state_versions sv
 JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
-LEFT JOIN state_version_outputs svo USING (state_version_id)
 WHERE w.workspace_id = sqlc.arg('workspace_id')
-GROUP BY sv.state_version_id
 ;
 
 -- name: FindStateVersionStateByID :one
