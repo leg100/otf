@@ -105,12 +105,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 	logger.Info("started cache", "max_size", cfg.CacheConfig.Size, "ttl", cfg.CacheConfig.TTL)
 
-	db, err := sql.New(ctx, sql.Options{
-		Logger:     logger,
-		ConnString: cfg.Database,
-	})
+	db, err := sql.New(ctx, logger, cfg.Database)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating database pool: %w", err)
 	}
 
 	// listener listens to database events

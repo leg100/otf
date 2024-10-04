@@ -27,12 +27,6 @@ type (
 		logr.Logger
 	}
 
-	// Options for constructing a DB
-	Options struct {
-		Logger     logr.Logger
-		ConnString string
-	}
-
 	genericConnection interface {
 		Begin(ctx context.Context) (pgx.Tx, error)
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
@@ -42,13 +36,24 @@ type (
 	}
 )
 
-// New constructs a new DB connection pool, and migrates the schema to the
-// latest version.
-func New(ctx context.Context, opts Options) (*DB, error) {
+// New migrates the database to the latest migration version, and then
+// constructs and returns a connection pool.
+func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error) {
+	// TODO: move connection code into migrate routing
+	conn, err := pgx.Connect(ctx, connString)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+
+	if err := migrate(ctx, logger, conn); err != nil {
+		return nil, fmt.Errorf("migrating database schema: %w", err)
+	}
+
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
 	// connections for session-level advisory locks and can easily exhaust this.
-	connString, err := setDefaultMaxConnections(opts.ConnString, defaultMaxConnections)
+	connString, err = setDefaultMaxConnections(connString, defaultMaxConnections)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +63,8 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		return nil, err
 	}
 
+	// Register table types with pgx, so that it can scan nested tables when
+	// querying.
 	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		for _, t := range tableTypes {
 			dt, err := conn.LoadType(ctx, t)
@@ -73,25 +80,15 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts.Logger.Info("connected to database", "connstr", connString)
 
-	conn, err := pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
+	logger.Info("connected to database", "connstr", connString)
 
-	if err := migrate(ctx, opts.Logger, conn.Conn()); err != nil {
-		return nil, err
-	}
-
-	return &DB{
-		Pool:   pool,
-		Logger: opts.Logger,
-	}, nil
+	return &DB{Pool: pool, Logger: logger}, nil
 }
 
 // Conn provides pre-generated queries
+//
+// TODO: rename to reflect role
 func (db *DB) Conn(ctx context.Context) *sqlc.Queries {
 	if conn, ok := fromContext(ctx); ok {
 		return sqlc.New(conn)

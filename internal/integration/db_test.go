@@ -22,10 +22,7 @@ func TestWaitAndLock(t *testing.T) {
 	integrationTest(t)
 
 	ctx := context.Background()
-	db, err := sql.New(ctx, sql.Options{
-		Logger:     logr.Discard(),
-		ConnString: sql.NewTestDB(t),
-	})
+	db, err := sql.New(ctx, logr.Discard(), sql.NewTestDB(t))
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
@@ -42,10 +39,7 @@ func TestTx(t *testing.T) {
 	integrationTest(t)
 
 	ctx := context.Background()
-	db, err := sql.New(ctx, sql.Options{
-		Logger:     logr.Discard(),
-		ConnString: sql.NewTestDB(t),
-	})
+	db, err := sql.New(ctx, logr.Discard(), sql.NewTestDB(t))
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 

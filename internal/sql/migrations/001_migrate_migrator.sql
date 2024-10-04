@@ -3180,9 +3180,3 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
-CREATE VIEW configuration_version_ingress_attributes AS (
-    SELECT ia.*
-    FROM configuration_versions
-    JOIN ingress_attributes ia USING (configuration_version_id)
-);

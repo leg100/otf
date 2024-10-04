@@ -79,7 +79,7 @@ postgres:
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
-	go list ./... | grep -v pggen | xargs staticcheck
+	go list ./... | grep -v github.com/leg100/otf/internal/sql/sqlc | xargs staticcheck
 
 # Run go fmt against code
 .PHONY: fmt
