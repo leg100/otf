@@ -118,30 +118,9 @@ sql:
 	sqlc generate
 
 # Install DB migration tool
-.PHONY: install-goose
-install-goose:
-	go install github.com/jackc/tern@latest"
-
-# Migrate SQL schema to latest version
-.PHONY: migrate
-migrate:
-	tern
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
-
-# Redo SQL schema migration
-.PHONY: migrate-redo
-migrate-redo: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
-
-# Rollback SQL schema by one version
-.PHONY: migrate-rollback
-migrate-rollback: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
-
-# Get SQL schema migration status
-.PHONY: migrate-status
-migrate-status: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
+.PHONY: install-migrator
+install-migrator:
+	go install github.com/jackc/tern@latest
 
 # Run docs server with live reload
 .PHONY: serve-docs

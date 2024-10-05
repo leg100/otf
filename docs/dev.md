@@ -43,13 +43,6 @@ make doc-screenshots
 
 The database schema is migrated using [tern](https://github.com/jackc/tern). The SQL migration files are kept in the repo in `./internal/sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
 
-If you're developing a SQL migration you may want to migrate the database manually. Use the `make` tasks to assist you:
-
-* `make migrate`
-* `make migrate-redo`
-* `make migrate-rollback`
-* `make migrate-status`
-
 ## SQL queries
 
 SQL queries are handwritten in `./internal/sql/queries` and turned into Go using [sqlc](https://github.com/sqlc-dev/sqlc).
