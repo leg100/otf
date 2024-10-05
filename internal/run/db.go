@@ -289,7 +289,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 }
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, output Report) error {
-	_, err := db.Conn(ctx).UpdatePlannedChangesByID(ctx, sqlc.UpdatePlannedChangesByIDParams{
+	_, err := db.Querier(ctx).UpdatePlannedChangesByID(ctx, sqlc.UpdatePlannedChangesByIDParams{
 		RunID:                sql.String(runID),
 		ResourceAdditions:    sql.Int4(resource.Additions),
 		ResourceChanges:      sql.Int4(resource.Changes),
@@ -305,7 +305,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, ou
 }
 
 func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Report) error {
-	_, err := db.Conn(ctx).UpdateAppliedChangesByID(ctx, sqlc.UpdateAppliedChangesByIDParams{
+	_, err := db.Querier(ctx).UpdateAppliedChangesByID(ctx, sqlc.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    sql.Int4(report.Additions),
 		Changes:      sql.Int4(report.Changes),
@@ -318,7 +318,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Repo
 }
 
 func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 
 	organization := "%"
 	if opts.Organization != nil {
@@ -382,7 +382,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 
 // GetRun retrieves a run using the get options
 func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
-	result, err := db.Conn(ctx).FindRunByID(ctx, sql.String(runID))
+	result, err := db.Querier(ctx).FindRunByID(ctx, sql.String(runID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -391,7 +391,7 @@ func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
 
 // SetPlanFile writes a plan file to the db
 func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, format PlanFormat) error {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	switch format {
 	case PlanFormatBinary:
 		_, err := q.UpdatePlanBinByID(ctx, sqlc.UpdatePlanBinByIDParams{
@@ -412,7 +412,7 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, form
 
 // GetPlanFile retrieves a plan file for the run
 func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	switch format {
 	case PlanFormatBinary:
 		return q.GetPlanBinByID(ctx, sql.String(runID))
@@ -425,12 +425,12 @@ func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format PlanFormat
 
 // GetLockFile retrieves the lock file for the run
 func (db *pgdb) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
-	return db.Conn(ctx).GetLockFileByID(ctx, sql.String(runID))
+	return db.Querier(ctx).GetLockFileByID(ctx, sql.String(runID))
 }
 
 // SetLockFile sets the lock file for the run
 func (db *pgdb) SetLockFile(ctx context.Context, runID string, lockFile []byte) error {
-	_, err := db.Conn(ctx).PutLockFile(ctx, sqlc.PutLockFileParams{
+	_, err := db.Querier(ctx).PutLockFile(ctx, sqlc.PutLockFileParams{
 		LockFile: lockFile,
 		RunID:    sql.String(runID),
 	})
@@ -439,7 +439,7 @@ func (db *pgdb) SetLockFile(ctx context.Context, runID string, lockFile []byte) 
 
 // DeleteRun deletes a run from the DB
 func (db *pgdb) DeleteRun(ctx context.Context, id string) error {
-	_, err := db.Conn(ctx).DeleteRunByID(ctx, sql.String(id))
+	_, err := db.Querier(ctx).DeleteRunByID(ctx, sql.String(id))
 	return err
 }
 
@@ -448,7 +448,7 @@ func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
 	if err != nil {
 		return err
 	}
-	err = db.Conn(ctx).InsertRunStatusTimestamp(ctx, sqlc.InsertRunStatusTimestampParams{
+	err = db.Querier(ctx).InsertRunStatusTimestamp(ctx, sqlc.InsertRunStatusTimestampParams{
 		ID:        sql.String(run.ID),
 		Status:    sql.String(string(run.Status)),
 		Timestamp: sql.Timestamptz(ts),
@@ -461,7 +461,7 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	if err != nil {
 		return err
 	}
-	err = db.Conn(ctx).InsertPhaseStatusTimestamp(ctx, sqlc.InsertPhaseStatusTimestampParams{
+	err = db.Querier(ctx).InsertPhaseStatusTimestamp(ctx, sqlc.InsertPhaseStatusTimestampParams{
 		RunID:     sql.String(phase.RunID),
 		Phase:     sql.String(string(phase.PhaseType)),
 		Status:    sql.String(string(phase.Status)),

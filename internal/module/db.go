@@ -33,7 +33,7 @@ type (
 )
 
 func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
-	err := db.Conn(ctx).InsertModule(ctx, sqlc.InsertModuleParams{
+	err := db.Querier(ctx).InsertModule(ctx, sqlc.InsertModuleParams{
 		ID:               sql.String(mod.ID),
 		CreatedAt:        sql.Timestamptz(mod.CreatedAt),
 		UpdatedAt:        sql.Timestamptz(mod.UpdatedAt),
@@ -46,7 +46,7 @@ func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
 }
 
 func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID string, status ModuleStatus) error {
-	_, err := db.Conn(ctx).UpdateModuleStatusByID(ctx, sqlc.UpdateModuleStatusByIDParams{
+	_, err := db.Querier(ctx).UpdateModuleStatusByID(ctx, sqlc.UpdateModuleStatusByIDParams{
 		Status:   sql.String(string(status)),
 		ModuleID: sql.String(moduleID),
 	})
@@ -57,7 +57,7 @@ func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID string, status 
 }
 
 func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	rows, err := db.Conn(ctx).ListModulesByOrganization(ctx, sql.String(opts.Organization))
+	rows, err := db.Querier(ctx).ListModulesByOrganization(ctx, sql.String(opts.Organization))
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Mo
 }
 
 func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByName(ctx, sqlc.FindModuleByNameParams{
+	row, err := db.Querier(ctx).FindModuleByName(ctx, sqlc.FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
 		OrganizationName: sql.String(opts.Organization),
@@ -83,7 +83,7 @@ func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, 
 }
 
 func (db *pgdb) getModuleByID(ctx context.Context, id string) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByID(ctx, sql.String(id))
+	row, err := db.Querier(ctx).FindModuleByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -92,7 +92,7 @@ func (db *pgdb) getModuleByID(ctx context.Context, id string) (*Module, error) {
 }
 
 func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByConnection(ctx, sqlc.FindModuleByConnectionParams{
+	row, err := db.Querier(ctx).FindModuleByConnection(ctx, sqlc.FindModuleByConnectionParams{
 		VCSProviderID: sql.String(vcsProviderID),
 		RepoPath:      sql.String(repoPath),
 	})
@@ -104,12 +104,12 @@ func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID, repoPa
 }
 
 func (db *pgdb) delete(ctx context.Context, id string) error {
-	_, err := db.Conn(ctx).DeleteModuleByID(ctx, sql.String(id))
+	_, err := db.Querier(ctx).DeleteModuleByID(ctx, sql.String(id))
 	return sql.Error(err)
 }
 
 func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion) error {
-	_, err := db.Conn(ctx).InsertModuleVersion(ctx, sqlc.InsertModuleVersionParams{
+	_, err := db.Querier(ctx).InsertModuleVersion(ctx, sqlc.InsertModuleVersionParams{
 		ModuleVersionID: sql.String(version.ID),
 		Version:         sql.String(version.Version),
 		CreatedAt:       sql.Timestamptz(version.CreatedAt),
@@ -124,7 +124,7 @@ func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion)
 }
 
 func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) error {
-	_, err := db.Conn(ctx).UpdateModuleVersionStatusByID(ctx, sqlc.UpdateModuleVersionStatusByIDParams{
+	_, err := db.Querier(ctx).UpdateModuleVersionStatusByID(ctx, sqlc.UpdateModuleVersionStatusByIDParams{
 		ModuleVersionID: sql.String(opts.ID),
 		Status:          sql.String(string(opts.Status)),
 		StatusError:     sql.String(opts.Error),
@@ -133,7 +133,7 @@ func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModule
 }
 
 func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID string) (*Module, error) {
-	row, err := db.Conn(ctx).FindModuleByModuleVersionID(ctx, sql.String(versionID))
+	row, err := db.Querier(ctx).FindModuleByModuleVersionID(ctx, sql.String(versionID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -141,12 +141,12 @@ func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID string) (*Mo
 }
 
 func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID string) error {
-	_, err := db.Conn(ctx).DeleteModuleVersionByID(ctx, sql.String(versionID))
+	_, err := db.Querier(ctx).DeleteModuleVersionByID(ctx, sql.String(versionID))
 	return sql.Error(err)
 }
 
 func (db *pgdb) saveTarball(ctx context.Context, versionID string, tarball []byte) error {
-	_, err := db.Conn(ctx).InsertModuleTarball(ctx, sqlc.InsertModuleTarballParams{
+	_, err := db.Querier(ctx).InsertModuleTarball(ctx, sqlc.InsertModuleTarballParams{
 		Tarball:         tarball,
 		ModuleVersionID: sql.String(versionID),
 	})
@@ -154,7 +154,7 @@ func (db *pgdb) saveTarball(ctx context.Context, versionID string, tarball []byt
 }
 
 func (db *pgdb) getTarball(ctx context.Context, versionID string) ([]byte, error) {
-	tarball, err := db.Conn(ctx).FindModuleTarball(ctx, sql.String(versionID))
+	tarball, err := db.Querier(ctx).FindModuleTarball(ctx, sql.String(versionID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

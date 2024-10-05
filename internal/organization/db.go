@@ -67,7 +67,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
-	err := db.Conn(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
+	err := db.Querier(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
 		ID:                         sql.String(org.ID),
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -117,7 +117,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 }
 
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	if opts.names == nil {
 		opts.names = []string{"%"} // return all organizations
 	}
@@ -143,7 +143,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
-	r, err := db.Conn(ctx).FindOrganizationByName(ctx, sql.String(name))
+	r, err := db.Querier(ctx).FindOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -151,7 +151,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
-	r, err := db.Conn(ctx).FindOrganizationByID(ctx, sql.String(id))
+	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -159,7 +159,7 @@ func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context, name string) error {
-	_, err := db.Conn(ctx).DeleteOrganizationByName(ctx, sql.String(name))
+	_, err := db.Querier(ctx).DeleteOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -191,7 +191,7 @@ func (result tokenRow) toToken() *OrganizationToken {
 }
 
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
-	err := db.Conn(ctx).UpsertOrganizationToken(ctx, sqlc.UpsertOrganizationTokenParams{
+	err := db.Querier(ctx).UpsertOrganizationToken(ctx, sqlc.UpsertOrganizationTokenParams{
 		OrganizationTokenID: sql.String(token.ID),
 		OrganizationName:    sql.String(token.Organization),
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
@@ -201,7 +201,7 @@ func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *Organization
 }
 
 func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization string) (*OrganizationToken, error) {
-	result, err := db.Conn(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
+	result, err := db.Querier(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -209,7 +209,7 @@ func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization str
 }
 
 func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error) {
-	result, err := db.Conn(ctx).FindOrganizationTokens(ctx, sql.String(organization))
+	result, err := db.Querier(ctx).FindOrganizationTokens(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -221,7 +221,7 @@ func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string)
 }
 
 func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
-	result, err := db.Conn(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID))
+	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -237,7 +237,7 @@ func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID string) (*
 }
 
 func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {
-	_, err := db.Conn(ctx).DeleteOrganiationTokenByName(ctx, sql.String(organization))
+	_, err := db.Querier(ctx).DeleteOrganiationTokenByName(ctx, sql.String(organization))
 	if err != nil {
 		return sql.Error(err)
 	}

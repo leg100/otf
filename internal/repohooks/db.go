@@ -31,7 +31,7 @@ type (
 // getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	result, err := q.FindRepohookByRepoAndProvider(ctx, sqlc.FindRepohookByRepoAndProviderParams{
 		RepoPath:      sql.String(hook.repoPath),
 		VCSProviderID: sql.String(hook.vcsProviderID),
@@ -59,7 +59,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 }
 
 func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	result, err := q.FindRepohookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -68,7 +68,7 @@ func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 }
 
 func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	result, err := q.FindRepohooks(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -85,7 +85,7 @@ func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 }
 
 func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	result, err := q.FindUnreferencedRepohooks(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -102,7 +102,7 @@ func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 }
 
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	_, err := q.UpdateRepohookVCSID(ctx, sqlc.UpdateRepohookVCSIDParams{
 		VCSID:      sql.String(cloudID),
 		RepohookID: sql.UUID(id),
@@ -114,7 +114,7 @@ func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID strin
 }
 
 func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	_, err := q.DeleteRepohookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return sql.Error(err)

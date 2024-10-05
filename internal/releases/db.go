@@ -35,7 +35,7 @@ func (db *db) updateLatestVersion(ctx context.Context, v string) error {
 }
 
 func (db *db) getLatest(ctx context.Context) (string, time.Time, error) {
-	rows, err := db.Conn(ctx).FindLatestTerraformVersion(ctx)
+	rows, err := db.Querier(ctx).FindLatestTerraformVersion(ctx)
 	if err != nil {
 		return "", time.Time{}, err
 	}

@@ -78,7 +78,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn fu
 }
 
 func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	rows, err := q.FindConfigurationVersionsByWorkspaceID(ctx, sqlc.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
@@ -100,7 +100,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 }
 
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	if opts.ID != nil {
 		result, err := q.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
@@ -119,7 +119,7 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 }
 
 func (db *pgdb) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	cfg, err := db.Conn(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
+	cfg, err := db.Querier(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -127,7 +127,7 @@ func (db *pgdb) GetConfig(ctx context.Context, id string) ([]byte, error) {
 }
 
 func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id string) error {
-	_, err := db.Conn(ctx).DeleteConfigurationVersionByID(ctx, sql.String(id))
+	_, err := db.Querier(ctx).DeleteConfigurationVersionByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -139,7 +139,7 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 	if err != nil {
 		return err
 	}
-	_, err = db.Conn(ctx).InsertConfigurationVersionStatusTimestamp(ctx, sqlc.InsertConfigurationVersionStatusTimestampParams{
+	_, err = db.Querier(ctx).InsertConfigurationVersionStatusTimestamp(ctx, sqlc.InsertConfigurationVersionStatusTimestampParams{
 		ID:        sql.String(cv.ID),
 		Status:    sql.String(string(cv.Status)),
 		Timestamp: sql.Timestamptz(sts),

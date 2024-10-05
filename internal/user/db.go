@@ -67,7 +67,7 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 }
 
 func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
-	result, err := db.Conn(ctx).FindUsers(ctx)
+	result, err := db.Querier(ctx).FindUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 }
 
 func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
-	result, err := db.Conn(ctx).FindUsersByOrganization(ctx, sql.String(organization))
+	result, err := db.Querier(ctx).FindUsersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) 
 }
 
 func (db *pgdb) listTeamUsers(ctx context.Context, teamID string) ([]*User, error) {
-	result, err := db.Conn(ctx).FindUsersByTeamID(ctx, sql.String(teamID))
+	result, err := db.Querier(ctx).FindUsersByTeamID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
 	}
@@ -106,19 +106,19 @@ func (db *pgdb) listTeamUsers(ctx context.Context, teamID string) ([]*User, erro
 // getUser retrieves a user from the DB, along with its sessions.
 func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
-		result, err := db.Conn(ctx).FindUserByID(ctx, sql.String(*spec.UserID))
+		result, err := db.Querier(ctx).FindUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {
 			return nil, err
 		}
 		return dbresult(result).toUser(), nil
 	} else if spec.Username != nil {
-		result, err := db.Conn(ctx).FindUserByUsername(ctx, sql.String(*spec.Username))
+		result, err := db.Querier(ctx).FindUserByUsername(ctx, sql.String(*spec.Username))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return dbresult(result).toUser(), nil
 	} else if spec.AuthenticationTokenID != nil {
-		result, err := db.Conn(ctx).FindUserByAuthenticationTokenID(ctx, sql.String(*spec.AuthenticationTokenID))
+		result, err := db.Querier(ctx).FindUserByAuthenticationTokenID(ctx, sql.String(*spec.AuthenticationTokenID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -129,7 +129,7 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 }
 
 func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
-	_, err := db.Conn(ctx).InsertTeamMembership(ctx, sqlc.InsertTeamMembershipParams{
+	_, err := db.Querier(ctx).InsertTeamMembership(ctx, sqlc.InsertTeamMembershipParams{
 		Usernames: sql.StringArray(usernames),
 		TeamID:    sql.String(teamID),
 	})
@@ -140,7 +140,7 @@ func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames 
 }
 
 func (db *pgdb) removeTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
-	_, err := db.Conn(ctx).DeleteTeamMembership(ctx, sqlc.DeleteTeamMembershipParams{
+	_, err := db.Querier(ctx).DeleteTeamMembership(ctx, sqlc.DeleteTeamMembershipParams{
 		Usernames: sql.StringArray(usernames),
 		TeamID:    sql.String(teamID),
 	})
@@ -153,12 +153,12 @@ func (db *pgdb) removeTeamMembership(ctx context.Context, teamID string, usernam
 // DeleteUser deletes a user from the DB.
 func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	if spec.UserID != nil {
-		_, err := db.Conn(ctx).DeleteUserByID(ctx, sql.String(*spec.UserID))
+		_, err := db.Querier(ctx).DeleteUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {
 			return sql.Error(err)
 		}
 	} else if spec.Username != nil {
-		_, err := db.Conn(ctx).DeleteUserByUsername(ctx, sql.String(*spec.Username))
+		_, err := db.Querier(ctx).DeleteUserByUsername(ctx, sql.String(*spec.Username))
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -214,7 +214,7 @@ func pgtextSliceDiff(a, b []pgtype.Text) []string {
 //
 
 func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
-	err := db.Conn(ctx).InsertToken(ctx, sqlc.InsertTokenParams{
+	err := db.Querier(ctx).InsertToken(ctx, sqlc.InsertTokenParams{
 		TokenID:     sql.String(token.ID),
 		Description: sql.String(token.Description),
 		Username:    sql.String(token.Username),
@@ -224,7 +224,7 @@ func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
 }
 
 func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserToken, error) {
-	result, err := db.Conn(ctx).FindTokensByUsername(ctx, sql.String(username))
+	result, err := db.Querier(ctx).FindTokensByUsername(ctx, sql.String(username))
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserTok
 }
 
 func (db *pgdb) getUserToken(ctx context.Context, id string) (*UserToken, error) {
-	row, err := db.Conn(ctx).FindTokenByID(ctx, sql.String(id))
+	row, err := db.Querier(ctx).FindTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -254,7 +254,7 @@ func (db *pgdb) getUserToken(ctx context.Context, id string) (*UserToken, error)
 }
 
 func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
-	_, err := db.Conn(ctx).DeleteTokenByID(ctx, sql.String(id))
+	_, err := db.Querier(ctx).DeleteTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}

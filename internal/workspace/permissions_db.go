@@ -10,7 +10,7 @@ import (
 )
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
-	err := db.Conn(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
+	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
 		WorkspaceID: sql.String(workspaceID),
 		TeamID:      sql.String(teamID),
 		Role:        sql.String(role.String()),
@@ -22,7 +22,7 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID 
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 
 	// Retrieve not only permissions but the workspace too, so that:
 	// (1) we ensure that workspace exists and return not found if not
@@ -56,7 +56,7 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (int
 
 // TODO: rename team param to teamID if indeed it is the team ID.
 func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
-	err := db.Conn(ctx).DeleteWorkspacePermissionByID(ctx, sqlc.DeleteWorkspacePermissionByIDParams{
+	err := db.Querier(ctx).DeleteWorkspacePermissionByID(ctx, sqlc.DeleteWorkspacePermissionByIDParams{
 		WorkspaceID: sql.String(workspaceID),
 		TeamID:      sql.String(team),
 	})

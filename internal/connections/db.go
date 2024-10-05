@@ -15,7 +15,7 @@ type (
 )
 
 func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	params := sqlc.InsertRepoConnectionParams{
 		VCSProviderID: sql.String(opts.VCSProviderID),
 		RepoPath:      sql.String(opts.RepoPath),
@@ -37,7 +37,7 @@ func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 }
 
 func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	switch opts.ConnectionType {
 	case WorkspaceConnection:
 		_, err = q.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))

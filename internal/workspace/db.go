@@ -120,7 +120,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 }
 
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	params := sqlc.InsertWorkspaceParams{
 		ID:                         sql.String(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
@@ -210,7 +210,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 
 // setCurrentRun sets the ID of the current run for the specified workspace.
 func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 
 	err := q.UpdateWorkspaceLatestRun(ctx, sqlc.UpdateWorkspaceLatestRunParams{
 		RunID:       sql.String(runID),
@@ -224,7 +224,7 @@ func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID string) (*
 }
 
 func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 
 	// Organization name filter is optional - if not provided use a % which in
 	// SQL means match any organization.
@@ -268,7 +268,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 }
 
 func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspacesByConnection(ctx, sqlc.FindWorkspacesByConnectionParams{
 		VCSProviderID: sql.String(vcsProviderID),
@@ -290,7 +290,7 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath st
 }
 
 func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspacesByUsername(ctx, sqlc.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
@@ -322,7 +322,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 }
 
 func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	result, err := q.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -331,7 +331,7 @@ func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error)
 }
 
 func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	result, err := q.FindWorkspaceByName(ctx, sqlc.FindWorkspaceByNameParams{
 		Name:             sql.String(workspace),
 		OrganizationName: sql.String(organization),
@@ -343,7 +343,7 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 }
 
 func (db *pgdb) delete(ctx context.Context, workspaceID string) error {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	err := q.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)

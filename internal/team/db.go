@@ -55,7 +55,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
-	err := db.Conn(ctx).InsertTeam(ctx, sqlc.InsertTeamParams{
+	err := db.Querier(ctx).InsertTeam(ctx, sqlc.InsertTeamParams{
 		ID:                              sql.String(team.ID),
 		Name:                            sql.String(team.Name),
 		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
@@ -110,7 +110,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 }
 
 func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {
-	result, err := db.Conn(ctx).FindTeamByName(ctx, sqlc.FindTeamByNameParams{
+	result, err := db.Querier(ctx).FindTeamByName(ctx, sqlc.FindTeamByNameParams{
 		Name:             sql.String(name),
 		OrganizationName: sql.String(organization),
 	})
@@ -121,7 +121,7 @@ func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, 
 }
 
 func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
-	result, err := db.Conn(ctx).FindTeamByID(ctx, sql.String(id))
+	result, err := db.Querier(ctx).FindTeamByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -129,7 +129,7 @@ func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
 }
 
 func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
-	result, err := db.Conn(ctx).FindTeamByTokenID(ctx, sql.String(tokenID))
+	result, err := db.Querier(ctx).FindTeamByTokenID(ctx, sql.String(tokenID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -137,7 +137,7 @@ func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID string) (*Team, er
 }
 
 func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, error) {
-	result, err := db.Conn(ctx).FindTeamsByOrg(ctx, sql.String(organization))
+	result, err := db.Querier(ctx).FindTeamsByOrg(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, er
 }
 
 func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
-	_, err := db.Conn(ctx).DeleteTeamByID(ctx, sql.String(teamID))
+	_, err := db.Querier(ctx).DeleteTeamByID(ctx, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -162,7 +162,7 @@ func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
 //
 
 func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
-	err := db.Conn(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
+	err := db.Querier(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
 		TeamTokenID: sql.String(token.ID),
 		TeamID:      sql.String(token.TeamID),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
@@ -173,7 +173,7 @@ func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
 
 func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID string) (*Token, error) {
 	// query only returns 0 or 1 tokens
-	result, err := db.Conn(ctx).FindTeamTokensByID(ctx, sql.String(teamID))
+	result, err := db.Querier(ctx).FindTeamTokensByID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID string) (*Token
 }
 
 func (db *pgdb) deleteTeamToken(ctx context.Context, team string) error {
-	_, err := db.Conn(ctx).DeleteTeamTokenByID(ctx, sql.String(team))
+	_, err := db.Querier(ctx).DeleteTeamTokenByID(ctx, sql.String(team))
 	if err != nil {
 		return sql.Error(err)
 	}

@@ -79,10 +79,8 @@ func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error
 	return &DB{Pool: pool, Logger: logger}, nil
 }
 
-// Conn provides pre-generated queries
-//
-// TODO: rename to reflect role
-func (db *DB) Conn(ctx context.Context) *sqlc.Queries {
+// Querier provides pre-generated queries
+func (db *DB) Querier(ctx context.Context) *sqlc.Queries {
 	if conn, ok := fromContext(ctx); ok {
 		return sqlc.New(conn)
 	}
@@ -103,29 +101,6 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, *sqlc.Queri
 		ctx = newContext(ctx, tx)
 		return callback(ctx, sqlc.New(tx))
 	})
-}
-
-// Exec acquires a connection from the pool and executes the given SQL. If the
-// context contains a transaction then that is used.
-func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-	if conn, ok := fromContext(ctx); ok {
-		return conn.Exec(ctx, sql, args...)
-	}
-	return db.Pool.Exec(ctx, sql, args...)
-}
-
-func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
-	if conn, ok := fromContext(ctx); ok {
-		return conn.QueryRow(ctx, sql, args...)
-	}
-	return db.Pool.QueryRow(ctx, sql, args...)
-}
-
-func (db *DB) SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults {
-	if conn, ok := fromContext(ctx); ok {
-		return conn.SendBatch(ctx, b)
-	}
-	return db.Pool.SendBatch(ctx, b)
 }
 
 // WaitAndLock obtains an exclusive session-level advisory lock. If another

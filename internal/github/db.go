@@ -47,7 +47,7 @@ func (r AppRow) convert() *App {
 }
 
 func (db *pgdb) create(ctx context.Context, app *App) error {
-	err := db.Conn(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
+	err := db.Querier(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
 		GithubAppID:   pgtype.Int8{Int64: app.ID, Valid: true},
 		WebhookSecret: sql.String(app.WebhookSecret),
 		PrivateKey:    sql.String(app.PrivateKey),
@@ -58,7 +58,7 @@ func (db *pgdb) create(ctx context.Context, app *App) error {
 }
 
 func (db *pgdb) get(ctx context.Context) (*App, error) {
-	result, err := db.Conn(ctx).FindGithubApp(ctx)
+	result, err := db.Querier(ctx).FindGithubApp(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -67,11 +67,11 @@ func (db *pgdb) get(ctx context.Context) (*App, error) {
 
 func (db *pgdb) delete(ctx context.Context) error {
 	return db.Lock(ctx, "github_apps", func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := db.Conn(ctx).FindGithubApp(ctx)
+		result, err := db.Querier(ctx).FindGithubApp(ctx)
 		if err != nil {
 			return sql.Error(err)
 		}
-		_, err = db.Conn(ctx).DeleteGithubApp(ctx, result.GithubAppID)
+		_, err = db.Querier(ctx).DeleteGithubApp(ctx, result.GithubAppID)
 		if err != nil {
 			return sql.Error(err)
 		}

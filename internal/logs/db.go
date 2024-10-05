@@ -25,7 +25,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 	if len(opts.Data) == 0 {
 		return "", fmt.Errorf("refusing to persist empty chunk")
 	}
-	id, err := db.Conn(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
+	id, err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
 		RunID:  sql.String(opts.RunID),
 		Phase:  sql.String(string(opts.Phase)),
 		Chunk:  opts.Data,
@@ -42,7 +42,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID string) (internal.Chunk, e
 	if err != nil {
 		return internal.Chunk{}, err
 	}
-	chunk, err := db.Conn(ctx).FindLogChunkByID(ctx, sql.Int4(id))
+	chunk, err := db.Querier(ctx).FindLogChunkByID(ctx, sql.Int4(id))
 	if err != nil {
 		return internal.Chunk{}, sql.Error(err)
 	}
@@ -56,7 +56,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID string) (internal.Chunk, e
 }
 
 func (db *pgdb) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
-	data, err := db.Conn(ctx).FindLogs(ctx, sqlc.FindLogsParams{
+	data, err := db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
 		RunID: sql.String(runID),
 		Phase: sql.String(string(phase)),
 	})

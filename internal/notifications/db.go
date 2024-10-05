@@ -64,7 +64,7 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 	if nc.URL != nil {
 		params.URL = sql.String(*nc.URL)
 	}
-	err := db.Conn(ctx).InsertNotificationConfiguration(ctx, params)
+	err := db.Querier(ctx).InsertNotificationConfiguration(ctx, params)
 	return sql.Error(err)
 }
 
@@ -99,7 +99,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 }
 
 func (db *pgdb) list(ctx context.Context, workspaceID string) ([]*Config, error) {
-	results, err := db.Conn(ctx).FindNotificationConfigurationsByWorkspaceID(ctx, sql.String(workspaceID))
+	results, err := db.Querier(ctx).FindNotificationConfigurationsByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -112,7 +112,7 @@ func (db *pgdb) list(ctx context.Context, workspaceID string) ([]*Config, error)
 }
 
 func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
-	results, err := db.Conn(ctx).FindAllNotificationConfigurations(ctx)
+	results, err := db.Querier(ctx).FindAllNotificationConfigurations(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -125,7 +125,7 @@ func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
 }
 
 func (db *pgdb) get(ctx context.Context, id string) (*Config, error) {
-	row, err := db.Conn(ctx).FindNotificationConfiguration(ctx, sql.String(id))
+	row, err := db.Querier(ctx).FindNotificationConfiguration(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -133,7 +133,7 @@ func (db *pgdb) get(ctx context.Context, id string) (*Config, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context, id string) error {
-	_, err := db.Conn(ctx).DeleteNotificationConfigurationByID(ctx, sql.String(id))
+	_, err := db.Querier(ctx).DeleteNotificationConfigurationByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}
