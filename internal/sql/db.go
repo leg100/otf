@@ -14,10 +14,8 @@ import (
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
-const (
-	// max conns avail in a pgx pool
-	defaultMaxConnections = 10
-)
+// max conns avail in a pgx pool
+const defaultMaxConnections = 10
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
