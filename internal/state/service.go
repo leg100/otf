@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/leg100/surl"
@@ -205,7 +205,7 @@ func (a *Service) Rollback(ctx context.Context, versionID string) (*Version, err
 
 func (a *Service) Upload(ctx context.Context, svID string, state []byte) error {
 	var sv *Version
-	err := a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err := a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
 		sv, err = a.db.getVersionForUpdate(ctx, svID)
 		if err != nil {

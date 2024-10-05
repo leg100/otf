@@ -8,16 +8,14 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
-const (
-	// max conns avail in a pgx pool
-	defaultMaxConnections = 10
-)
+// max conns avail in a pgx pool
+const defaultMaxConnections = 10
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
@@ -27,14 +25,8 @@ type (
 		logr.Logger
 	}
 
-	// Options for constructing a DB
-	Options struct {
-		Logger     logr.Logger
-		ConnString string
-	}
-
 	genericConnection interface {
-		BeginFunc(ctx context.Context, f func(pgx.Tx) error) error
+		Begin(ctx context.Context) (pgx.Tx, error)
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
@@ -42,46 +34,60 @@ type (
 	}
 )
 
-// New constructs a new DB connection pool, and migrates the schema to the
-// latest version.
-func New(ctx context.Context, opts Options) (*DB, error) {
+// New migrates the database to the latest migration version, and then
+// constructs and returns a connection pool.
+func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error) {
+	if err := migrate(ctx, logger, connString); err != nil {
+		return nil, fmt.Errorf("migrating database: %w", err)
+	}
+
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
 	// connections for session-level advisory locks and can easily exhaust this.
-	connString, err := setDefaultMaxConnections(opts.ConnString, defaultMaxConnections)
+	connString, err := setDefaultMaxConnections(connString, defaultMaxConnections)
 	if err != nil {
 		return nil, err
 	}
 
-	pool, err := pgxpool.Connect(ctx, connString)
+	cfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, err
 	}
-	opts.Logger.Info("connected to database", "connstr", connString)
 
-	// goose gets upset with max_pool_conns parameter so pass it the unaltered
-	// connection string
-	if err := migrate(opts.Logger, opts.ConnString); err != nil {
+	// Register table types with pgx, so that it can scan nested tables when
+	// querying.
+	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		for _, t := range tableTypes {
+			dt, err := conn.LoadType(ctx, t)
+			if err != nil {
+				return fmt.Errorf("loading postgres type %s: %w", t, err)
+			}
+			conn.TypeMap().RegisterType(dt)
+		}
+		return nil
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
 		return nil, err
 	}
 
-	return &DB{
-		Pool:   pool,
-		Logger: opts.Logger,
-	}, nil
+	logger.Info("connected to database", "connstr", connString)
+
+	return &DB{Pool: pool, Logger: logger}, nil
 }
 
-// Conn provides pre-generated queries
-func (db *DB) Conn(ctx context.Context) *pggen.DBQuerier {
+// Querier provides pre-generated queries
+func (db *DB) Querier(ctx context.Context) *sqlc.Queries {
 	if conn, ok := fromContext(ctx); ok {
-		return pggen.NewQuerier(conn)
+		return sqlc.New(conn)
 	}
-	return pggen.NewQuerier(db.Pool)
+	return sqlc.New(db.Pool)
 }
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(context.Context, pggen.Querier) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(context.Context, *sqlc.Queries) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -89,33 +95,10 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, pggen.Queri
 		conn = ctxConn
 	}
 
-	return conn.BeginFunc(ctx, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
-		return callback(ctx, pggen.NewQuerier(tx))
+		return callback(ctx, sqlc.New(tx))
 	})
-}
-
-// Exec acquires a connection from the pool and executes the given SQL. If the
-// context contains a transaction then that is used.
-func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-	if conn, ok := fromContext(ctx); ok {
-		return conn.Exec(ctx, sql, args...)
-	}
-	return db.Pool.Exec(ctx, sql, args...)
-}
-
-func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
-	if conn, ok := fromContext(ctx); ok {
-		return conn.QueryRow(ctx, sql, args...)
-	}
-	return db.Pool.QueryRow(ctx, sql, args...)
-}
-
-func (db *DB) SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults {
-	if conn, ok := fromContext(ctx); ok {
-		return conn.SendBatch(ctx, b)
-	}
-	return db.Pool.SendBatch(ctx, b)
 }
 
 // WaitAndLock obtains an exclusive session-level advisory lock. If another
@@ -143,7 +126,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	})
 }
 
-func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, pggen.Querier) error) error {
+func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, *sqlc.Queries) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -151,13 +134,13 @@ func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, p
 		conn = ctxConn
 	}
 
-	return conn.BeginFunc(ctx, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
 		sql := fmt.Sprintf("LOCK TABLE %s IN EXCLUSIVE MODE", table)
 		if _, err := tx.Exec(ctx, sql); err != nil {
 			return err
 		}
-		return fn(ctx, pggen.NewQuerier(tx))
+		return fn(ctx, sqlc.New(tx))
 	})
 }
 

@@ -5,32 +5,32 @@ INSERT INTO organization_tokens (
     organization_name,
     expiry
 ) VALUES (
-    pggen.arg('organization_token_id'),
-    pggen.arg('created_at'),
-    pggen.arg('organization_name'),
-    pggen.arg('expiry')
+    sqlc.arg('organization_token_id'),
+    sqlc.arg('created_at'),
+    sqlc.arg('organization_name'),
+    sqlc.arg('expiry')
 ) ON CONFLICT (organization_name) DO UPDATE
-  SET created_at            = pggen.arg('created_at'),
-      organization_token_id = pggen.arg('organization_token_id'),
-      expiry                = pggen.arg('expiry');
+  SET created_at            = sqlc.arg('created_at'),
+      organization_token_id = sqlc.arg('organization_token_id'),
+      expiry                = sqlc.arg('expiry');
 
 -- name: FindOrganizationTokens :many
 SELECT *
 FROM organization_tokens
-WHERE organization_name = pggen.arg('organization_name');
+WHERE organization_name = sqlc.arg('organization_name');
 
 -- name: FindOrganizationTokensByName :one
 SELECT *
 FROM organization_tokens
-WHERE organization_name = pggen.arg('organization_name');
+WHERE organization_name = sqlc.arg('organization_name');
 
 -- name: FindOrganizationTokensByID :one
 SELECT *
 FROM organization_tokens
-WHERE organization_token_id = pggen.arg('organization_token_id');
+WHERE organization_token_id = sqlc.arg('organization_token_id');
 
 -- name: DeleteOrganiationTokenByName :one
 DELETE
 FROM organization_tokens
-WHERE organization_name = pggen.arg('organization_name')
+WHERE organization_name = sqlc.arg('organization_name')
 RETURNING organization_token_id;

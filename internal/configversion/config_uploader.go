@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type cvUploader struct {
-	q  pggen.Querier
+	q  *sqlc.Queries
 	id string
 }
 
-func newConfigUploader(q pggen.Querier, id string) *cvUploader {
+func newConfigUploader(q *sqlc.Queries, id string) *cvUploader {
 	return &cvUploader{
 		q:  q,
 		id: id,
@@ -30,7 +30,10 @@ func (u *cvUploader) SetErrored(ctx context.Context) error {
 
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
 	// TODO: add status timestamp
-	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, config, sql.String(u.id))
+	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, sqlc.UpdateConfigurationVersionConfigByIDParams{
+		ID:     sql.String(u.id),
+		Config: config,
+	})
 	if err != nil {
 		return ConfigurationErrored, err
 	}

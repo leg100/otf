@@ -7,16 +7,16 @@ INSERT INTO state_version_outputs (
     value,
     state_version_id
 ) VALUES (
-    pggen.arg('id'),
-    pggen.arg('name'),
-    pggen.arg('sensitive'),
-    pggen.arg('type'),
-    pggen.arg('value'),
-    pggen.arg('state_version_id')
+    sqlc.arg('id'),
+    sqlc.arg('name'),
+    sqlc.arg('sensitive'),
+    sqlc.arg('type'),
+    sqlc.arg('value'),
+    sqlc.arg('state_version_id')
 );
 
 -- name: FindStateVersionOutputByID :one
 SELECT *
 FROM state_version_outputs
-WHERE state_version_output_id = pggen.arg('id')
+WHERE state_version_output_id = sqlc.arg('id')
 ;

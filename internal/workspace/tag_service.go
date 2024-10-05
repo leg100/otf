@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -59,7 +59,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs 
 		return err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
 		for _, wid := range workspaceIDs {
 			_, err := s.CanAccess(ctx, rbac.TagWorkspacesAction, wid)
 			if err != nil {
@@ -110,7 +110,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 		return fmt.Errorf("workspace not found; %s; %w", workspaceID, err)
 	}
 
-	err = s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) (err error) {
+	err = s.db.Lock(ctx, "tags", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err
@@ -168,7 +168,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 	// (i) if specified by name, create new tag if it does not exist and get its ID.
 	// (ii) add tag to workspace
 	var added []string
-	err := s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Lock(ctx, "tags", func(ctx context.Context, q *sqlc.Queries) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return fmt.Errorf("invalid tag: %w", err)

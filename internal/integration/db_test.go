@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,10 +22,7 @@ func TestWaitAndLock(t *testing.T) {
 	integrationTest(t)
 
 	ctx := context.Background()
-	db, err := sql.New(ctx, sql.Options{
-		Logger:     logr.Discard(),
-		ConnString: sql.NewTestDB(t),
-	})
+	db, err := sql.New(ctx, logr.Discard(), sql.NewTestDB(t))
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
@@ -41,10 +39,7 @@ func TestTx(t *testing.T) {
 	integrationTest(t)
 
 	ctx := context.Background()
-	db, err := sql.New(ctx, sql.Options{
-		Logger:     logr.Discard(),
-		ConnString: sql.NewTestDB(t),
-	})
+	db, err := sql.New(ctx, logr.Discard(), sql.NewTestDB(t))
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
@@ -53,8 +48,8 @@ func TestTx(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = db.Tx(ctx, func(txCtx context.Context, q pggen.Querier) error {
-		_, err := q.InsertOrganization(txCtx, pggen.InsertOrganizationParams{
+	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
+		err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
 			ID:                         sql.String(org.ID),
 			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -76,10 +71,10 @@ func TestTx(t *testing.T) {
 		assert.NoError(t, err)
 
 		// this should succeed because it is using the same ctx from the same tx
-		_, err = db.Conn(txCtx).FindOrganizationByID(txCtx, sql.String(org.ID))
+		_, err = db.Querier(txCtx).FindOrganizationByID(txCtx, sql.String(org.ID))
 		assert.NoError(t, err)
 
-		err = db.Tx(txCtx, func(ctx context.Context, q pggen.Querier) error {
+		err = db.Tx(txCtx, func(ctx context.Context, q *sqlc.Queries) error {
 			// this should succeed because it is using a child tx via the
 			// querier
 			_, err = q.FindOrganizationByID(ctx, sql.String(org.ID))
@@ -87,7 +82,7 @@ func TestTx(t *testing.T) {
 
 			// this should succeed because it is using a child tx via the
 			// context
-			_, err = db.Conn(ctx).FindOrganizationByID(ctx, sql.String(org.ID))
+			_, err = db.Querier(ctx).FindOrganizationByID(ctx, sql.String(org.ID))
 			assert.NoError(t, err)
 
 			return nil
@@ -95,8 +90,8 @@ func TestTx(t *testing.T) {
 		require.NoError(t, err)
 
 		// this should fail because it is using a different ctx
-		_, err = db.Conn(ctx).FindOrganizationByID(txCtx, sql.String(org.ID))
-		assert.True(t, sql.NoRowsInResultError(err))
+		_, err = db.Querier(ctx).FindOrganizationByID(txCtx, sql.String(org.ID))
+		assert.ErrorIs(t, err, pgx.ErrNoRows)
 
 		return nil
 	})

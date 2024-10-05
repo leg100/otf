@@ -5,27 +5,27 @@ INSERT INTO tokens (
     description,
     username
 ) VALUES (
-    pggen.arg('token_id'),
-    pggen.arg('created_at'),
-    pggen.arg('description'),
-    pggen.arg('username')
+    sqlc.arg('token_id'),
+    sqlc.arg('created_at'),
+    sqlc.arg('description'),
+    sqlc.arg('username')
 );
 
 -- name: FindTokensByUsername :many
 SELECT *
 FROM tokens
-WHERE username = pggen.arg('username')
+WHERE username = sqlc.arg('username')
 ;
 
 -- name: FindTokenByID :one
 SELECT *
 FROM tokens
-WHERE token_id = pggen.arg('token_id')
+WHERE token_id = sqlc.arg('token_id')
 ;
 
 -- name: DeleteTokenByID :one
 DELETE
 FROM tokens
-WHERE token_id = pggen.arg('token_id')
+WHERE token_id = sqlc.arg('token_id')
 RETURNING token_id
 ;

@@ -1,46 +1,48 @@
 package sql
 
 import (
+	"context"
 	"embed"
 	"fmt"
-	"sync"
+	"io/fs"
 
 	"github.com/go-logr/logr"
-	"github.com/pressly/goose/v3"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v5"
+	tern "github.com/jackc/tern/v2/migrate"
 )
 
-var (
-	mu sync.Mutex
+//go:embed migrations/*.sql
+var migrations embed.FS
 
-	//go:embed migrations/*.sql
-	migrations embed.FS
-)
-
-func migrate(logger logr.Logger, connStr string) error {
-	mu.Lock()
-	defer mu.Unlock()
-
-	goose.SetLogger(&gooseLogger{logger})
-
-	goose.SetBaseFS(migrations)
-
-	goose.SetDialect("pgx")
-
-	db, err := goose.OpenDBWithDriver("pgx", connStr)
+func migrate(ctx context.Context, logger logr.Logger, connString string) error {
+	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
-		return fmt.Errorf("connecting to db for migrations: %w", err)
+		return err
 	}
-	defer db.Close()
+	defer conn.Close(ctx)
 
-	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("setting postgres dialect for migrations: %w", err)
+	m, err := tern.NewMigrator(ctx, conn, "schema_version")
+	if err != nil {
+		return fmt.Errorf("constructing database migrator: %w", err)
 	}
-
-	if err := goose.Up(db, "migrations"); err != nil {
-		return fmt.Errorf("unable to migrate database: %w", err)
+	subtree, err := fs.Sub(migrations, "migrations")
+	if err != nil {
+		return fmt.Errorf("retrieving database migrations subtree: %w", err)
 	}
-
+	if err := m.LoadMigrations(subtree); err != nil {
+		return fmt.Errorf("loading database migrations: %w", err)
+	}
+	from, err := m.GetCurrentVersion(ctx)
+	if err != nil {
+		return fmt.Errorf("retreiving current database migration version")
+	}
+	if err := m.Migrate(ctx); err != nil {
+		return err
+	}
+	if from == int32(len(m.Migrations)) {
+		logger.Info("database schema up to date", "version", len(m.Migrations))
+	} else {
+		logger.Info("migrated database schema", "from", from, "to", len(m.Migrations))
+	}
 	return nil
 }

@@ -6,11 +6,11 @@ INSERT INTO github_apps (
     slug,
     organization
 ) VALUES (
-    pggen.arg('github_app_id'),
-    pggen.arg('webhook_secret'),
-    pggen.arg('private_key'),
-    pggen.arg('slug'),
-    pggen.arg('organization')
+    sqlc.arg('github_app_id'),
+    sqlc.arg('webhook_secret'),
+    sqlc.arg('private_key'),
+    sqlc.arg('slug'),
+    sqlc.arg('organization')
 );
 
 -- name: FindGithubApp :one
@@ -20,7 +20,7 @@ FROM github_apps;
 -- name: DeleteGithubApp :one
 DELETE
 FROM github_apps
-WHERE github_app_id = pggen.arg('github_app_id')
+WHERE github_app_id = sqlc.arg('github_app_id')
 RETURNING *;
 
 -- name: InsertGithubAppInstall :exec
@@ -31,9 +31,9 @@ INSERT INTO github_app_installs (
     organization,
     vcs_provider_id
 ) VALUES (
-    pggen.arg('github_app_id'),
-    pggen.arg('install_id'),
-    pggen.arg('username'),
-    pggen.arg('organization'),
-    pggen.arg('vcs_provider_id')
+    sqlc.arg('github_app_id'),
+    sqlc.arg('install_id'),
+    sqlc.arg('username'),
+    sqlc.arg('organization'),
+    sqlc.arg('vcs_provider_id')
 );

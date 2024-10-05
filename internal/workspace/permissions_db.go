@@ -3,15 +3,14 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
-	_, err := db.Conn(ctx).UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
+	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
 		WorkspaceID: sql.String(workspaceID),
 		TeamID:      sql.String(teamID),
 		Role:        sql.String(role.String()),
@@ -23,22 +22,16 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID 
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error) {
-	q := db.Conn(ctx)
-	batch := &pgx.Batch{}
+	q := db.Querier(ctx)
 
 	// Retrieve not only permissions but the workspace too, so that:
 	// (1) we ensure that workspace exists and return not found if not
 	// (2) we retrieve the name of the organization, which is part of a policy
-	q.FindWorkspaceByIDBatch(batch, sql.String(workspaceID))
-	q.FindWorkspacePermissionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
-	results := db.SendBatch(ctx, batch)
-	defer results.Close()
-
-	ws, err := q.FindWorkspaceByIDScan(results)
+	ws, err := q.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return internal.WorkspacePolicy{}, sql.Error(err)
 	}
-	perms, err := q.FindWorkspacePermissionsByWorkspaceIDScan(results)
+	perms, err := q.FindWorkspacePermissionsByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return internal.WorkspacePolicy{}, sql.Error(err)
 	}
@@ -61,8 +54,12 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (int
 	return policy, nil
 }
 
+// TODO: rename team param to teamID if indeed it is the team ID.
 func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
-	_, err := db.Conn(ctx).DeleteWorkspacePermissionByID(ctx, sql.String(workspaceID), sql.String(team))
+	err := db.Querier(ctx).DeleteWorkspacePermissionByID(ctx, sqlc.DeleteWorkspacePermissionByIDParams{
+		WorkspaceID: sql.String(workspaceID),
+		TeamID:      sql.String(team),
+	})
 	if err != nil {
 		return sql.Error(err)
 	}

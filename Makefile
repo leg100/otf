@@ -79,7 +79,7 @@ postgres:
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
-	go list ./... | grep -v pggen | xargs staticcheck
+	go list ./... | grep -v github.com/leg100/otf/internal/sql/sqlc | xargs staticcheck
 
 # Run go fmt against code
 .PHONY: fmt
@@ -108,60 +108,19 @@ install-pre-commit:
 	pre-commit install
 
 # Install sql code generator
-.PHONY: install-pggen
-install-pggen:
-	@sh -c "which pggen > /dev/null || go install github.com/leg100/pggen/cmd/pggen@latest"
+.PHONY: install-sqlc
+install-sqlc:
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
 # Generate sql code
 .PHONY: sql
-sql: install-pggen
-	pggen gen go \
-		--postgres-connection $(DBSTRING) \
-		--query-glob 'internal/sql/queries/*.sql' \
-		--output-dir ./internal/sql/pggen \
-		--go-type 'text=github.com/jackc/pgtype.Text' \
-		--go-type 'int4=github.com/jackc/pgtype.Int4' \
-		--go-type 'int8=github.com/jackc/pgtype.Int8' \
-		--go-type 'bool=github.com/jackc/pgtype.Bool' \
-		--go-type 'bytea=[]byte' \
-		--acronym url \
-		--acronym cli \
-		--acronym sha \
-		--acronym json \
-		--acronym vcs \
-		--acronym html \
-		--acronym http \
-		--acronym tls \
-		--acronym sso \
-		--acronym hcl \
-		--acronym ip
-	goimports -w ./internal/sql/pggen
-	go fmt ./internal/sql/pggen
+sql:
+	sqlc generate
 
 # Install DB migration tool
-.PHONY: install-goose
-install-goose:
-	@sh -c "which goose > /dev/null || go install github.com/pressly/goose/v3/cmd/goose@latest"
-
-# Migrate SQL schema to latest version
-.PHONY: migrate
-migrate: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
-
-# Redo SQL schema migration
-.PHONY: migrate-redo
-migrate-redo: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
-
-# Rollback SQL schema by one version
-.PHONY: migrate-rollback
-migrate-rollback: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
-
-# Get SQL schema migration status
-.PHONY: migrate-status
-migrate-status: install-goose
-	GOOSE_DBSTRING=$(DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
+.PHONY: install-migrator
+install-migrator:
+	go install github.com/jackc/tern@latest
 
 # Run docs server with live reload
 .PHONY: serve-docs

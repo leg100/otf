@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -113,7 +113,7 @@ func (a *Service) Create(ctx context.Context, organization string, opts CreateTe
 		return nil, err
 	}
 
-	err = a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err = a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		if err := a.db.createTeam(ctx, team); err != nil {
 			return err
 		}

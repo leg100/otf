@@ -3,7 +3,7 @@ package state
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -30,7 +30,7 @@ func (row outputRow) toOutput() *Output {
 }
 
 func (db *pgdb) getOutput(ctx context.Context, outputID string) (*Output, error) {
-	result, err := db.Conn(ctx).FindStateVersionOutputByID(ctx, sql.String(outputID))
+	result, err := db.Querier(ctx).FindStateVersionOutputByID(ctx, sql.String(outputID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

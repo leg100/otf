@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type fakeDB struct {
@@ -12,7 +12,7 @@ type fakeDB struct {
 	version *Version // returned by getVersion
 }
 
-func (f *fakeDB) Tx(ctx context.Context, fn func(context.Context, pggen.Querier) error) error {
+func (f *fakeDB) Tx(ctx context.Context, fn func(context.Context, *sqlc.Queries) error) error {
 	return fn(ctx, nil)
 }
 

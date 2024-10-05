@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -16,8 +15,8 @@ type (
 )
 
 func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
-	q := db.Conn(ctx)
-	params := pggen.InsertRepoConnectionParams{
+	q := db.Querier(ctx)
+	params := sqlc.InsertRepoConnectionParams{
 		VCSProviderID: sql.String(opts.VCSProviderID),
 		RepoPath:      sql.String(opts.RepoPath),
 	}
@@ -25,22 +24,20 @@ func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 	switch opts.ConnectionType {
 	case WorkspaceConnection:
 		params.WorkspaceID = sql.String(opts.ResourceID)
-		params.ModuleID = pgtype.Text{Status: pgtype.Null}
 	case ModuleConnection:
 		params.ModuleID = sql.String(opts.ResourceID)
-		params.WorkspaceID = pgtype.Text{Status: pgtype.Null}
 	default:
 		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
 
-	if _, err := q.InsertRepoConnection(ctx, params); err != nil {
+	if err := q.InsertRepoConnection(ctx, params); err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
 func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err error) {
-	q := db.Conn(ctx)
+	q := db.Querier(ctx)
 	switch opts.ConnectionType {
 	case WorkspaceConnection:
 		_, err = q.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))

@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
@@ -150,7 +150,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 	user, err := a.db.getUser(ctx, spec)
 	if err != nil {
-		a.V(9).Info("retrieving user", "spec", spec, "subject", subject)
+		a.Error(err, "retrieving user", "spec", spec, "subject", subject)
 		return nil, err
 	}
 
@@ -234,7 +234,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID string, username
 		return err
 	}
 
-	err = a.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+	err = a.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
 		// Check each username: if user does not exist then create user.
 		for _, username := range usernames {
 			_, err := a.db.getUser(ctx, UserSpec{Username: &username})

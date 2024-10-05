@@ -7,11 +7,11 @@ WITH inserted AS (
         secret,
         repo_path
     ) VALUES (
-        pggen.arg('repohook_id'),
-        pggen.arg('vcs_id'),
-        pggen.arg('vcs_provider_id'),
-        pggen.arg('secret'),
-        pggen.arg('repo_path')
+        sqlc.arg('repohook_id'),
+        sqlc.arg('vcs_id'),
+        sqlc.arg('vcs_provider_id'),
+        sqlc.arg('secret'),
+        sqlc.arg('repo_path')
     )
     RETURNING *
 )
@@ -27,8 +27,8 @@ JOIN vcs_providers v USING (vcs_provider_id);
 
 -- name: UpdateRepohookVCSID :one
 UPDATE repohooks
-SET vcs_id = pggen.arg('vcs_id')
-WHERE repohook_id = pggen.arg('repohook_id')
+SET vcs_id = sqlc.arg('vcs_id')
+WHERE repohook_id = sqlc.arg('repohook_id')
 RETURNING *;
 
 -- name: FindRepohooks :many
@@ -52,7 +52,7 @@ SELECT
     v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
-WHERE w.repohook_id = pggen.arg('repohook_id');
+WHERE w.repohook_id = sqlc.arg('repohook_id');
 
 -- name: FindRepohookByRepoAndProvider :many
 SELECT
@@ -64,8 +64,8 @@ SELECT
     v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
-WHERE repo_path = pggen.arg('repo_path')
-AND   vcs_provider_id = pggen.arg('vcs_provider_id');
+WHERE repo_path = sqlc.arg('repo_path')
+AND   w.vcs_provider_id = sqlc.arg('vcs_provider_id');
 
 -- name: FindUnreferencedRepohooks :many
 SELECT
@@ -86,5 +86,5 @@ WHERE NOT EXISTS (
 -- name: DeleteRepohookByID :one
 DELETE
 FROM repohooks
-WHERE repohook_id = pggen.arg('repohook_id')
+WHERE repohook_id = sqlc.arg('repohook_id')
 RETURNING *;

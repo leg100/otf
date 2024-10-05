@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html"
@@ -16,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -232,7 +233,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
 func (s *Service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
-	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
 		if err != nil {
 			return err
@@ -313,7 +314,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 		}
 	}
 	var run *Run
-	err := s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
+	err := s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
 		var autoapply bool
 		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 			autoapply, err = run.Finish(phase, opts)
@@ -384,7 +385,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 
 // Apply enqueues an apply for the run.
 func (s *Service) Apply(ctx context.Context, runID string) error {
-	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
 		if err != nil {
 			return err
@@ -434,7 +435,7 @@ func (s *Service) Discard(ctx context.Context, runID string) error {
 }
 
 func (s *Service) Cancel(ctx context.Context, runID string) error {
-	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 		if err != nil {
 			return err
@@ -470,7 +471,7 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 
 // ForceCancel forcefully cancels a run.
 func (s *Service) ForceCancel(ctx context.Context, runID string) error {
-	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
 		if err != nil {
 			return err
@@ -591,11 +592,14 @@ func (s *Service) createApplyReport(ctx context.Context, runID string) (Report, 
 }
 
 func (s *Service) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
-	data, err := s.db.Conn(ctx).FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
+	data, err := s.db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
+		RunID: sql.String(runID),
+		Phase: sql.String(string(phase)),
+	})
 	if err != nil {
 		// Don't consider no rows an error because logs may not have been
 		// uploaded yet.
-		if sql.NoRowsInResultError(err) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, sql.Error(err)

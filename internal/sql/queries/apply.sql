@@ -3,24 +3,24 @@ INSERT INTO applies (
     run_id,
     status
 ) VALUES (
-    pggen.arg('run_id'),
-    pggen.arg('status')
+    $1,
+    $2
 );
 
 -- name: UpdateAppliedChangesByID :one
 UPDATE applies
 SET resource_report = (
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
+    sqlc.arg(additions)::int,
+    sqlc.arg(changes)::int,
+    sqlc.arg(destructions)::int
 )
-WHERE run_id = pggen.arg('run_id')
+WHERE run_id = $1
 RETURNING run_id
 ;
 
 -- name: UpdateApplyStatusByID :one
 UPDATE applies
-SET status = pggen.arg('status')
-WHERE run_id = pggen.arg('run_id')
+SET status = $2
+WHERE run_id = $1
 RETURNING run_id
 ;

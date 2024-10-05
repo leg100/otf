@@ -3,7 +3,7 @@ package run
 import (
 	"fmt"
 
-	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // Report reports a summary of additions, changes, and deletions of
@@ -14,14 +14,14 @@ type Report struct {
 	Destructions int `json:"destructions"`
 }
 
-func reportFromDB(row *pggen.Report) *Report {
+func reportFromDB(row *sqlc.Report) *Report {
 	if row == nil {
 		return nil
 	}
 	return &Report{
-		Additions:    int(row.Additions.Int),
-		Changes:      int(row.Changes.Int),
-		Destructions: int(row.Destructions.Int),
+		Additions:    int(row.Additions),
+		Changes:      int(row.Changes),
+		Destructions: int(row.Destructions),
 	}
 }
 

@@ -9,39 +9,39 @@ INSERT INTO variables (
     hcl,
     version_id
 ) VALUES (
-    pggen.arg('variable_id'),
-    pggen.arg('key'),
-    pggen.arg('value'),
-    pggen.arg('description'),
-    pggen.arg('category'),
-    pggen.arg('sensitive'),
-    pggen.arg('hcl'),
-    pggen.arg('version_id')
+    sqlc.arg('variable_id'),
+    sqlc.arg('key'),
+    sqlc.arg('value'),
+    sqlc.arg('description'),
+    sqlc.arg('category'),
+    sqlc.arg('sensitive'),
+    sqlc.arg('hcl'),
+    sqlc.arg('version_id')
 );
 
 -- name: FindVariable :one
 SELECT *
 FROM variables
-WHERE variable_id = pggen.arg('variable_id')
+WHERE variable_id = sqlc.arg('variable_id')
 ;
 
 -- name: UpdateVariableByID :one
 UPDATE variables
 SET
-    key = pggen.arg('key'),
-    value = pggen.arg('value'),
-    description = pggen.arg('description'),
-    category = pggen.arg('category'),
-    sensitive = pggen.arg('sensitive'),
-    version_id = pggen.arg('version_id'),
-    hcl = pggen.arg('hcl')
-WHERE variable_id = pggen.arg('variable_id')
+    key = sqlc.arg('key'),
+    value = sqlc.arg('value'),
+    description = sqlc.arg('description'),
+    category = sqlc.arg('category'),
+    sensitive = sqlc.arg('sensitive'),
+    version_id = sqlc.arg('version_id'),
+    hcl = sqlc.arg('hcl')
+WHERE variable_id = sqlc.arg('variable_id')
 RETURNING variable_id
 ;
 
 -- name: DeleteVariableByID :one
 DELETE
 FROM variables
-WHERE variable_id = pggen.arg('variable_id')
+WHERE variable_id = sqlc.arg('variable_id')
 RETURNING *
 ;

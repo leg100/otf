@@ -5,20 +5,20 @@ INSERT INTO repo_connections (
     workspace_id,
     module_id
 ) VALUES (
-    pggen.arg('vcs_provider_id'),
-    pggen.arg('repo_path'),
-    pggen.arg('workspace_id'),
-    pggen.arg('module_id')
+    sqlc.arg('vcs_provider_id'),
+    sqlc.arg('repo_path'),
+    sqlc.arg('workspace_id'),
+    sqlc.arg('module_id')
 );
 
 -- name: DeleteWorkspaceConnectionByID :one
 DELETE
 FROM repo_connections
-WHERE workspace_id = pggen.arg('workspace_id')
+WHERE workspace_id = sqlc.arg('workspace_id')
 RETURNING *;
 
 -- name: DeleteModuleConnectionByID :one
 DELETE
 FROM repo_connections
-WHERE module_id = pggen.arg('module_id')
+WHERE module_id = sqlc.arg('module_id')
 RETURNING *;

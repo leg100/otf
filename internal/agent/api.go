@@ -3,10 +3,10 @@ package agent
 import (
 	"encoding/json"
 	"errors"
-	"net"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -50,7 +50,12 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// determine ip address from connection source address
-	opts.IPAddress = net.ParseIP(r.RemoteAddr)
+	ip, err := internal.ParseAddr(r.RemoteAddr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	opts.IPAddress = &ip
 
 	agent, err := a.Service.registerAgent(r.Context(), opts)
 	if err != nil {
