@@ -1,5 +1,11 @@
 //go:build ignore
 
+//
+// This go generation script generates a list of postgres table types. It parses
+// the sqlc.yaml config file, inferring from the list of overridden types the
+// list of postgres table types, and then writes them out to a go string slice,
+// adding both the singular and array forms of the table.
+
 package main
 
 import (
@@ -7,12 +13,21 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
 
 const sqlcConfigPath = "../../sqlc.yaml"
+
+var ignoreBuiltinTypes = []string{
+	"pg_catalog.bool",
+	"bool",
+	"pg_catalog.int4",
+	"pg_catalog.int8",
+	"text",
+}
 
 type sqlcConfig struct {
 	SQL []struct {
@@ -36,11 +51,16 @@ func main() {
 		log.Fatal("Error unmarshaling sqlc config file: ", err.Error())
 	}
 	if len(cfg.SQL) != 1 {
-		log.Fatal("Error, was expecting only one sqlc engine")
+		log.Fatalf("Error, was expecting only one sqlc engine, but found %d", len(cfg.SQL))
 	}
 	var types []string
 	for _, override := range cfg.SQL[0].Gen.Go.Overrides {
+		// Ignore overrides of built-in types like int, bool, etc.
+		if slices.Contains(ignoreBuiltinTypes, override.DbType) {
+			continue
+		}
 		types = append(types, override.DbType)
+		// Add array form, too.
 		types = append(types, fmt.Sprintf("%s[]", override.DbType))
 	}
 	tmpl, err := template.New("types.go.tmpl").ParseFiles("types.go.tmpl")

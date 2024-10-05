@@ -3,5 +3,5 @@
 package sql
 
 var tableTypes = []string{
-{{ range . }}    "{{ . }}",
+{{ range . }}{{ "\t" }}"{{ . }}",
 {{ end -}} }
