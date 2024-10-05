@@ -15,14 +15,17 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// Create global variable set in browser
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
+			_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+require.NoError(t, err)
 			// go to variable sets
-			chromedp.Click(`//a[text()='variable sets']`), waitLoaded,
+			err := page.Locator(`//a[text()='variable sets']`).Click()
+require.NoError(t, err) waitLoaded,
 			// click new variable set button
-			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery), waitLoaded,
+			err := page.Locator(`button#new-variable-set-button`).Click()
+require.NoError(t, err) waitLoaded,
 			// enter name
 			chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("global-1"),
@@ -32,11 +35,13 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			// global radio button should be set by default
 			chromedp.WaitVisible(`input#global:checked`, chromedp.ByQuery),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-set-button']`), waitLoaded,
+			err := page.Locator(`//button[@id='save-variable-set-button']`).Click()
+require.NoError(t, err) waitLoaded,
 			// confirm variable set added
 			matchText(t, "//div[@role='alert']", "added variable set: global-1"),
 			// add a variable
-			chromedp.Click(`//button[@id='add-variable-button']`), waitLoaded,
+			err := page.Locator(`//button[@id='add-variable-button']`).Click()
+require.NoError(t, err) waitLoaded,
 			// enter key
 			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("foo"),
@@ -44,9 +49,11 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("bar"),
 			// select terraform variable category
-			chromedp.Click("input#terraform", chromedp.ByQuery),
+			err := page.Locator("input#terraform").Click()
+require.NoError(t, err)
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`), waitLoaded,
+			err := page.Locator(`//button[@id='save-variable-button']`).Click()
+require.NoError(t, err) waitLoaded,
 			// confirm variable added
 			matchText(t, "//div[@role='alert']", "added variable: foo"),
 		},
@@ -57,15 +64,18 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	ws3 := svc.createWorkspace(t, ctx, org)
 
 	// Create workspace-scoped variable set in browser, and add a variable.
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
+			_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+require.NoError(t, err)
 			// go to variable sets
-			chromedp.Click(`//a[text()='variable sets']`),
+			err := page.Locator(`//a[text()='variable sets']`).Click()
+require.NoError(t, err)
 			// click new variable set button and wait for alpine to load on new
 			// variable page
-			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery),
+			err := page.Locator(`button#new-variable-set-button`).Click()
+require.NoError(t, err)
 			waitLoaded,
 			// enter name
 			chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
@@ -74,26 +84,31 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			chromedp.Focus("textarea#description", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("variable set scoped to specific workspaces"),
 			// select workspace scope
-			chromedp.Click(`input#workspace-scoped`, chromedp.ByQuery),
+			err := page.Locator(`input#workspace-scoped`).Click()
+require.NoError(t, err)
 			// focus 'select workspace' input text box
-			chromedp.Click(`input#workspace-input`, chromedp.ByQuery),
+			err := page.Locator(`input#workspace-input`).Click()
+require.NoError(t, err)
 			// that should reveal dropdown menu of three workspaces
 			chromedp.WaitVisible(`//div[@x-ref='panel']`),
 			chromedp.WaitVisible(fmt.Sprintf(`//div[@x-ref='panel']/button[text()='%s']`, ws1.Name)),
 			chromedp.WaitVisible(fmt.Sprintf(`//div[@x-ref='panel']/button[text()='%s']`, ws2.Name)),
 			chromedp.WaitVisible(fmt.Sprintf(`//div[@x-ref='panel']/button[text()='%s']`, ws3.Name)),
 			// select ws1
-			chromedp.Click(fmt.Sprintf(`//div[@x-ref='panel']/button[text()='%s']`, ws1.Name)),
+			err := page.Locator(fmt.Sprintf(`//div[@x-ref='panel']/button[text()='%s']`, ws1.Name)).Click()
+			require.NoError(t, err)
 			// that should add ws1 to a list of workspaces
 			chromedp.WaitVisible(fmt.Sprintf(`//div[@id='existing-workspaces']//span[text()='%s']`, ws1.Name)),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-set-button']`),
+			err := page.Locator(`//button[@id='save-variable-set-button']`).Click()
+require.NoError(t, err)
 			// confirm variable set added
 			matchText(t, "//div[@role='alert']", "added variable set: workspace-scoped-1"),
 			// list of workspaces should be persisted, and include ws1
 			chromedp.WaitVisible(fmt.Sprintf(`//div[@id='existing-workspaces']//span[text()='%s']`, ws1.Name)),
 			// add a variable
-			chromedp.Click(`//button[@id='add-variable-button']`),
+			err := page.Locator(`//button[@id='add-variable-button']`).Click()
+require.NoError(t, err)
 			// enter key
 			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("foo"),
@@ -101,14 +116,18 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("baz"),
 			// select terraform variable category
-			chromedp.Click("input#terraform", chromedp.ByQuery),
+			err := page.Locator("input#terraform").Click()
+require.NoError(t, err)
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`),
+			err := page.Locator(`//button[@id='save-variable-button']`).Click()
+require.NoError(t, err)
 			// confirm variable added
 			matchText(t, "//div[@role='alert']", "added variable: foo"),
 			// go to variables page for workspace ws1
-			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, ws1.Name)),
-			chromedp.Click(`//a[text()='variables']`),
+			_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, ws1.Name))
+require.NoError(t, err)
+			err := page.Locator(`//a[text()='variables']`).Click()
+require.NoError(t, err)
 			// page should list 2 variable sets, one global, one
 			// workspace-scoped
 			chromedp.WaitVisible(`//span[text()='Variable Sets (2)']`),

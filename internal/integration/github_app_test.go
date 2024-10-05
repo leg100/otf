@@ -104,14 +104,17 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			daemon, _, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
 			tasks := chromedp.Tasks{
 				// go to site settings page
-				chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/admin"),
-				screenshot(t, "site_settings"),
+				_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
+require.NoError(t, err)
+				//screenshot(t, "site_settings"),
 				// go to github app page
-				chromedp.Click("//a[text()='GitHub app']"),
-				screenshot(t, "empty_github_app_page"),
+				err := page.Locator("//a[text()='GitHub app']").Click()
+require.NoError(t, err)
+				//screenshot(t, "empty_github_app_page"),
 				// go to page for creating a new github app
-				chromedp.Click("//a[@id='new-github-app-link']"),
-				screenshot(t, "new_github_app"),
+				err := page.Locator("//a[@id='new-github-app-link']").Click()
+require.NoError(t, err)
+				//screenshot(t, "new_github_app"),
 			}
 			if tt.public {
 				tasks = append(tasks, chromedp.Click(`//input[@type='checkbox' and @id='public']`))
@@ -122,7 +125,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}
 			tasks = append(tasks, chromedp.Click(`//button[text()='Create']`))
 			tasks = append(tasks, chromedp.WaitVisible(`//body[text()='success']`))
-			browser.Run(t, ctx, tasks)
+			page := browser.New(t, ctx)
 		})
 	}
 
@@ -149,7 +152,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}),
 		}
 		daemon, _, _ := setup(t, nil, handlers...)
-		browser.Run(t, ctx, chromedp.Tasks{
+		page := browser.New(t, ctx)
 			// go to the exchange code endpoint
 			chromedp.Navigate((&url.URL{
 				Scheme:   "https",
@@ -158,7 +161,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				RawQuery: "code=anything",
 			}).String()),
 			chromedp.WaitVisible(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`),
-			screenshot(t, "github_app_created"),
+			//screenshot(t, "github_app_created"),
 		})
 	})
 
@@ -185,10 +188,11 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		})
 		require.NoError(t, err)
-		browser.Run(t, ctx, chromedp.Tasks{
-			chromedp.Navigate(daemon.System.URL("/app/github-apps")),
+		page := browser.New(t, ctx)
+			_, err = page.Goto(daemon.System.URL("/app/github-apps"))
+require.NoError(t, err)
 			chromedp.WaitVisible(`//div[@id='installations']//a[contains(text(), "user/leg100")]`),
-			screenshot(t, "github_app_install_list"),
+			//screenshot(t, "github_app_install_list"),
 		})
 	})
 }

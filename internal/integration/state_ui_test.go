@@ -37,8 +37,9 @@ applied:
 		}
 	}
 
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name)),
+	page := browser.New(t, ctx)
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
+require.NoError(t, err)
 		matchRegex(t, `//label[@id='resources-label']`, `Resources \(1\)`),
 		matchRegex(t, `//label[@id='outputs-label']`, `Outputs \(0\)`),
 		matchText(t, `//table[@id='resources-table']/tbody/tr/td[1]`, `test`),

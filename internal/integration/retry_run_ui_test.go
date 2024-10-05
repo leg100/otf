@@ -33,20 +33,22 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	}
 
 	// open browser, go to run, and click retry
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(runURL(daemon.System.Hostname(), r.ID)),
+	page := browser.New(t, ctx)
+		_, err = page.Goto(runURL(daemon.System.Hostname(), r.ID))
+require.NoError(t, err)
 		// run should be in planned and finished state
 		chromedp.WaitVisible(`//a[text()='planned and finished']`),
-		screenshot(t, "run_page_planned_and_finished_state"),
+		//screenshot(t, "run_page_planned_and_finished_state"),
 		// click retry button
-		chromedp.Click(`//button[text()='retry run']`),
-		screenshot(t),
+		err := page.Locator(`//button[text()='retry run']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
-		screenshot(t),
+		//screenshot(t),
 		chromedp.WaitVisible(`//span[@id='plan-status' and text()='finished']`),
 		// confirm retry button re-appears
 		chromedp.WaitVisible(`//button[text()='retry run']`),
-		screenshot(t),
+		//screenshot(t),
 	})
 }

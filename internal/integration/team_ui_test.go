@@ -19,17 +19,20 @@ func TestIntegration_TeamUI(t *testing.T) {
 	_, err = daemon.Users.Create(ctx, "alice")
 	require.NoError(t, err)
 
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
-			screenshot(t),
+			_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to teams listing
-			chromedp.Click(`//a[text()='teams']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='teams']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// go to owners team page
-			chromedp.Click(`//div[@id='item-team-owners']`),
-			screenshot(t, "owners_team_page"),
+			err := page.Locator(`//div[@id='item-team-owners']`).Click()
+require.NoError(t, err)
+			//screenshot(t, "owners_team_page"),
 			// set focus to search box
 			chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
 			input.InsertText(""),
@@ -38,15 +41,16 @@ func TestIntegration_TeamUI(t *testing.T) {
 			chromedp.WaitVisible(`//div[@x-ref='searchdrop']//button[text()='alice']`),
 			// select bob as new team member
 			input.InsertText("bob"),
-			screenshot(t),
+			//screenshot(t),
 			// submit
 			chromedp.Submit(`//input[@x-ref='input-search']`),
-			screenshot(t),
+			//screenshot(t),
 			// confirm bob added
 			matchText(t, "//div[@role='alert']", "added team member: bob"),
 			// remove bob from team
-			chromedp.Click(`//div[@id='item-user-bob']//button[@id='remove-member-button']`),
-			screenshot(t),
+			err := page.Locator(`//div[@id='item-user-bob']//button[@id='remove-member-button']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm bob removed
 			matchText(t, "//div[@role='alert']", "removed team member: bob"),
 			// now demonstrate specifying a username that doesn't belong to an
@@ -57,7 +61,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 			matchRegex(t, `//div[@x-ref='searchdrop']//button`, `Create:.*sarah`),
 			// submit
 			chromedp.Submit(`//input[@x-ref='input-search']`),
-			screenshot(t),
+			//screenshot(t),
 			// confirm sarah added
 			matchText(t, "//div[@role='alert']", "added team member: sarah"),
 		},

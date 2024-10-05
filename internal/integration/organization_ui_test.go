@@ -16,31 +16,36 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
 
 	// test creating/updating/deleting
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to the list of organizations
-		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/organizations"),
+		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
+require.NoError(t, err)
 		// add an org
-		chromedp.Click("#new-organization-button", chromedp.ByQuery),
+		err := page.Locator("#new-organization-button").Click()
+require.NoError(t, err)
 		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("acme-corp"),
-		screenshot(t, "new_org_enter_name"),
+		//screenshot(t, "new_org_enter_name"),
 		chromedp.Submit("input#name", chromedp.ByQuery),
-		screenshot(t, "new_org_created"),
+		//screenshot(t, "new_org_created"),
 		matchText(t, "//div[@role='alert']", "created organization: acme-corp"),
 		// go to organization settings
-		chromedp.Click("#settings > a", chromedp.ByQuery),
-		screenshot(t),
+		err := page.Locator("#settings > a").Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// change organization name
 		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.Clear("input#name", chromedp.ByQuery),
 		input.InsertText("super-duper-org"),
-		screenshot(t),
-		chromedp.Click(`//button[text()='Update organization name']`),
-		screenshot(t),
+		//screenshot(t),
+		err := page.Locator(`//button[text()='Update organization name']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		matchText(t, "//div[@role='alert']", "updated organization"),
 		// delete the organization
-		chromedp.Click(`//button[@id='delete-organization-button']`),
-		screenshot(t),
+		err := page.Locator(`//button[@id='delete-organization-button']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		matchText(t, "//div[@role='alert']", "deleted organization: super-duper-org"),
 	})
 
@@ -53,13 +58,15 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		pageTwoWidgets []*cdp.Node
 	)
 	// open browser
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to the list of organizations
-		chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/organizations"),
+		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
+require.NoError(t, err)
 		// should be 100 orgs listed on page one
 		chromedp.Nodes(`.widget`, &pageOneWidgets, chromedp.NodeVisible),
 		// go to page two
-		chromedp.Click(`#next-page-link`, chromedp.ByQuery),
+		err := page.Locator(`#next-page-link`).Click()
+require.NoError(t, err)
 		// should be one org listed
 		chromedp.Nodes(`.widget`, &pageTwoWidgets, chromedp.NodeVisible),
 	})

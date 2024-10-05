@@ -26,7 +26,7 @@ func TestWritePermissionE2E(t *testing.T) {
 
 	// Open browser, create workspace and assign write permissions to the
 	// engineer's team.
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
 		addWorkspacePermission(t, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write"),
 	})

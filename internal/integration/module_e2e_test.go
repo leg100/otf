@@ -30,27 +30,33 @@ func TestModuleE2E(t *testing.T) {
 	provider := svc.createVCSProvider(t, ctx, org)
 
 	var moduleURL string // captures url for module page
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// publish module
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
-			screenshot(t),
+			_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to modules
-			chromedp.Click("#modules > a", chromedp.ByQuery),
-			screenshot(t, "modules_list"),
+			err := page.Locator("#modules > a").Click()
+require.NoError(t, err)
+			//screenshot(t, "modules_list"),
 			// click publish button
-			chromedp.Click(`//button[text()='Publish']`),
-			screenshot(t, "modules_select_provider"),
+			err := page.Locator(`//button[text()='Publish']`).Click()
+require.NoError(t, err)
+			//screenshot(t, "modules_select_provider"),
 			// select provider
-			chromedp.Click(`//button[text()='connect']`),
-			screenshot(t, "modules_select_repo"),
+			err := page.Locator(`//button[text()='connect']`).Click()
+require.NoError(t, err)
+			//screenshot(t, "modules_select_repo"),
 			// connect to first repo in list (there should only be one)
-			chromedp.Click(`//div[@id='content-list']//button[text()='connect']`),
-			screenshot(t, "modules_confirm"),
+			err := page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
+require.NoError(t, err)
+			//screenshot(t, "modules_confirm"),
 			// confirm module details
-			chromedp.Click(`//button[text()='connect']`),
-			screenshot(t, "newly_created_module_page"),
+			err := page.Locator(`//button[text()='connect']`).Click()
+require.NoError(t, err)
+			//screenshot(t, "newly_created_module_page"),
 			// flash message indicates success
 			matchText(t, `//div[@role='alert']`, `published module: mod`),
 			// capture module url so we can visit it later
@@ -74,18 +80,19 @@ func TestModuleE2E(t *testing.T) {
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 
 	// v1.0.0 should appear as latest module on workspace
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to module
-		chromedp.Navigate(moduleURL),
-		screenshot(t),
+		_, err = page.Goto(moduleURL)
+require.NoError(t, err)
+		//screenshot(t),
 		reloadUntilVisible(`//select[@id="version"]/option[@selected]`),
-		screenshot(t),
+		//screenshot(t),
 	})
 
 	// Now run terraform with some config that sources the module. First we need
 	// a workspace...
 	workspaceName := "module-test"
-	browser.Run(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, workspaceName))
+	browser.New(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, workspaceName))
 
 	// generate some terraform config that sources our module
 	root := newRootModule(t, svc.System.Hostname(), org.Name, workspaceName)
@@ -109,19 +116,23 @@ module "mod" {
 	// connected. Then delete the module.
 	_, err = svc.VCSProviders.Delete(ctx, provider.ID)
 	require.NoError(t, err)
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
-			screenshot(t),
+			_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to modules
-			chromedp.Click("#modules > a", chromedp.ByQuery),
+			err := page.Locator("#modules > a").Click()
+require.NoError(t, err)
 			// select existing module
-			chromedp.Click(`.widget`, chromedp.ByQuery),
+			err := page.Locator(`.widget`).Click()
+require.NoError(t, err)
 			// confirm no longer connected
 			chromedp.WaitNotPresent(`//span[@id='vcs-repo']`),
 			// delete module
-			chromedp.Click(`//button[text()='Delete module']`),
+			err := page.Locator(`//button[text()='Delete module']`).Click()
+require.NoError(t, err)
 			// flash message indicates success
 			matchText(t, `//div[@role='alert']`, `deleted module: mod`),
 		},

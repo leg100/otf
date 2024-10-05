@@ -27,45 +27,56 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// create a vcs provider with a github personal access token
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to org
-		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
-		screenshot(t, "organization_main_menu"),
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
+		//screenshot(t, "organization_main_menu"),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
-		screenshot(t, "vcs_providers_list"),
+		err := page.Locator("#vcs_providers > a").Click()
+require.NoError(t, err)
+		//screenshot(t, "vcs_providers_list"),
 		// click 'New Github VCS Provider' button
-		chromedp.Click(`//button[text()='New Github VCS Provider (Personal Token)']`),
-		screenshot(t, "new_github_vcs_provider_form"),
+		err := page.Locator(`//button[text()='New Github VCS Provider (Personal Token)']`).Click()
+require.NoError(t, err)
+		//screenshot(t, "new_github_vcs_provider_form"),
 		// enter fake github token
 		chromedp.Focus("textarea#token", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("fake-github-personal-token"),
 		// submit form to create provider
 		chromedp.Submit("textarea#token", chromedp.ByQuery),
 		matchText(t, "//div[@role='alert']", `created provider: github \(token\)`),
-		screenshot(t, "vcs_provider_created_github_pat_provider"),
+		//screenshot(t, "vcs_provider_created_github_pat_provider"),
 		// edit provider
-		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		err := page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+require.NoError(t, err) waitLoaded,
 		// give it a name
 		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText("my-token"),
-		chromedp.Click(`//button[text()='Update']`),
+		err := page.Locator(`//button[text()='Update']`).Click()
+require.NoError(t, err)
 		matchText(t, "//div[@role='alert']", "updated provider: my-token"),
 		// change token
-		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		err := page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+require.NoError(t, err) waitLoaded,
 		chromedp.Focus("textarea#token", chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText("my-updated-fake-github-personal-token"),
-		chromedp.Click(`//button[text()='Update']`),
+		err := page.Locator(`//button[text()='Update']`).Click()
+require.NoError(t, err)
 		matchText(t, "//div[@role='alert']", "updated provider: my-token"),
 		// clear name
-		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		err := page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+require.NoError(t, err) waitLoaded,
 		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
 		chromedp.Clear("input#name", chromedp.ByQuery),
-		chromedp.Click(`//button[text()='Update']`),
+		err := page.Locator(`//button[text()='Update']`).Click()
+require.NoError(t, err)
 		matchText(t, "//div[@role='alert']", `updated provider: github \(token\)`),
 		// delete token
-		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
-		chromedp.Click(`//button[@id='delete-vcs-provider-button']`),
+		err := page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+require.NoError(t, err) waitLoaded,
+		err := page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
+require.NoError(t, err)
 		matchText(t, "//div[@role='alert']", `deleted provider: github \(token\)`),
 	})
 }
@@ -125,17 +136,21 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// create github app vcs provider via UI.
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to org
-		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
-		screenshot(t, "vcs_provider_list_including_github_app"),
+		err := page.Locator("#vcs_providers > a").Click()
+require.NoError(t, err)
+		//screenshot(t, "vcs_provider_list_including_github_app"),
 		// click button for creating a new vcs provider with a github app
-		chromedp.Click(`//button[text()='New Github VCS Provider (App)']`),
+		err := page.Locator(`//button[text()='New Github VCS Provider (App)']`).Click()
+require.NoError(t, err)
 		// one github app installation should be listed
 		chromedp.WaitEnabled(`//select[@id='select-install-id']/option[text()='user/leg100']`),
-		chromedp.Click(`//button[text()='Create']`),
+		err := page.Locator(`//button[text()='Create']`).Click()
+require.NoError(t, err)
 		matchText(t, "//div[@role='alert']", `created provider: github \(app\)`),
 	})
 }

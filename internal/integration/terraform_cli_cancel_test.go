@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	expect "github.com/google/goexpect"
+	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
@@ -53,12 +53,12 @@ data "http" "wait" {
 
 	// Invoke terraform apply
 	_, token := svc.createToken(t, ctx, nil)
-	e, tferr, err := expect.SpawnWithArgs(
+	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "-chdir=" + config, "apply", "-no-color"},
 		time.Minute,
-		expect.PartialMatch(true),
-		expect.Tee(out),
-		expect.SetEnv(
+		goexpect.PartialMatch(true),
+		goexpect.Tee(out),
+		goexpect.SetEnv(
 			append(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token)),
 		),
 	)
@@ -73,10 +73,10 @@ data "http" "wait" {
 	e.SendSignal(os.Interrupt)
 
 	// Confirm canceling run
-	e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "Do you want to cancel the remote operation?"},
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
-		&expect.BExp{R: "The remote operation was successfully cancelled."},
+	e.ExpectBatch([]goexpect.Batcher{
+		&goexpect.BExp{R: "Do you want to cancel the remote operation?"},
+		&goexpect.BExp{R: "Enter a value:"}, &goexpect.BSnd{S: "yes\n"},
+		&goexpect.BExp{R: "The remote operation was successfully cancelled."},
 	}, time.Minute)
 	// Terraform should return with exit code 0
 	require.NoError(t, <-tferr, string(testutils.ReadFile(t, out.Name())))

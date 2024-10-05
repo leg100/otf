@@ -18,35 +18,40 @@ func TestVariableE2E(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// Create variable in browser
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace")),
-			screenshot(t),
+			_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to variables
-			chromedp.Click(`//a[text()='variables']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='variables']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// click add variable button
-			chromedp.Click(`//button[text()='Add variable']`),
-			screenshot(t),
+			err := page.Locator(`//button[text()='Add variable']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// enter key
 			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("foo"),
-			screenshot(t),
+			//screenshot(t),
 			// enter value
 			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("bar"),
-			screenshot(t),
+			//screenshot(t),
 			// select terraform variable category
-			chromedp.Click("input#terraform", chromedp.ByQuery),
-			screenshot(t),
+			err := page.Locator("input#terraform").Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`),
-			screenshot(t),
+			err := page.Locator(`//button[@id='save-variable-button']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm variable added
 			matchText(t, "//div[@role='alert']", "added variable: foo"),
-			screenshot(t),
+			//screenshot(t),
 		},
 	})
 
@@ -72,44 +77,52 @@ output "foo" {
 	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace")),
-			screenshot(t),
+			_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to variables
-			chromedp.Click(`//a[text()='variables']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='variables']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// edit variable
-			chromedp.Click(`//a[text()='foo']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='foo']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// make it a 'sensitive' variable
-			chromedp.Click("input#sensitive", chromedp.ByQuery),
-			screenshot(t),
+			err := page.Locator("input#sensitive").Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`),
-			screenshot(t),
+			err := page.Locator(`//button[@id='save-variable-button']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm variable updated
 			chromedp.WaitVisible(`//div[@role='alert'][contains(text(),"updated variable: foo")]`),
-			screenshot(t),
+			//screenshot(t),
 			// confirm value is hidden (because it is sensitive)
 			chromedp.WaitVisible(`//table[@id='variables-table']/tbody/tr/td[2]/span[text()="hidden"]`),
 			// edit variable again
-			chromedp.Click(`//a[text()='foo']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='foo']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// update value
 			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("topsecret"),
-			screenshot(t, "variables_entering_top_secret"),
+			//screenshot(t, "variables_entering_top_secret"),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`),
-			screenshot(t),
+			err := page.Locator(`//button[@id='save-variable-button']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm variable updated
 			chromedp.WaitVisible(`//div[@role='alert'][contains(text(),"updated variable: foo")]`),
-			screenshot(t),
+			//screenshot(t),
 			// delete variable
-			chromedp.Click(`//button[@id='delete-variable-button']`),
-			screenshot(t),
+			err := page.Locator(`//button[@id='delete-variable-button']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm variable deleted
 			chromedp.WaitVisible(`//div[@role='alert'][contains(text(),"deleted variable: foo")]`),
 		},

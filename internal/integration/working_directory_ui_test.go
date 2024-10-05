@@ -19,22 +19,25 @@ func TestWorkingDirectory(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// create workspace and set working directory
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace")),
-			screenshot(t),
+			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace"))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to workspace settings
-			chromedp.Click(`//a[text()='settings']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// enter working directory
 			chromedp.Focus("input#working_directory", chromedp.NodeVisible),
 			input.InsertText("subdir"),
-			screenshot(t),
+			//screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save changes']`),
-			screenshot(t),
+			err := page.Locator(`//button[text()='Save changes']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm workspace updated
 			matchText(t, "//div[@role='alert']", "updated workspace"),
 		},

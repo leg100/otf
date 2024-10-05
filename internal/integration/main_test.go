@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
+	"github.com/playwright-community/playwright-go"
 )
 
 var (
@@ -29,6 +30,10 @@ var (
 
 	// pool of web browsers
 	browser *testbrowser.Pool
+
+	// Setup playwright browser expectations with a timeout to wait for expected
+	// condition.
+	expect = playwright.NewPlaywrightAssertions(5000)
 )
 
 func TestMain(m *testing.M) {

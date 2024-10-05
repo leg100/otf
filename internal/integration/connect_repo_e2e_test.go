@@ -26,7 +26,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// create vcs provider for authenticating to github backend
 	provider := daemon.createVCSProvider(t, ctx, org)
 
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-test-workspace"),
 		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "my-test-workspace", provider.String()),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
@@ -43,10 +43,11 @@ func TestConnectRepoE2E(t *testing.T) {
 	daemon.SendEvent(t, github.PushEvent, push)
 
 	// commit-triggered run should appear as latest run on workspace
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to workspace
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace")),
-		screenshot(t),
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
+require.NoError(t, err)
+		//screenshot(t),
 		// branch should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`),
 		// commit should match that of push event
@@ -55,7 +56,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`),
 		// because run was triggered from github, the github icon should be visible.
 		chromedp.WaitVisible(`//div[@class='widget']//img[@id='run-trigger-github']`),
-		screenshot(t),
+		//screenshot(t),
 	})
 
 	// github should receive three pending status updates followed by a final
@@ -70,38 +71,46 @@ func TestConnectRepoE2E(t *testing.T) {
 
 	// Clean up after ourselves by disconnecting the workspace and deleting the
 	// workspace and vcs provider
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to workspace
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace")),
-		screenshot(t),
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
+require.NoError(t, err)
+		//screenshot(t),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
-		screenshot(t),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// click disconnect button
-		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`),
-		screenshot(t),
+		err := page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// confirm disconnected
 		matchText(t, "//div[@role='alert']", "disconnected workspace from repo"),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
-		screenshot(t),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// delete workspace
-		chromedp.Click(`//button[@id='delete-workspace-button']`),
-		screenshot(t),
+		err := page.Locator(`//button[@id='delete-workspace-button']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// confirm deletion
 		matchText(t, "//div[@role='alert']", "deleted workspace: my-test-workspace"),
 		//
 		// delete vcs provider
 		//
 		// go to org
-		chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
-		screenshot(t),
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
+		//screenshot(t),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
-		screenshot(t),
+		err := page.Locator("#vcs_providers > a").Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// click delete button for one and only vcs provider
-		chromedp.Click(`//button[text()='delete']`),
-		screenshot(t),
+		err := page.Locator(`//button[text()='delete']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		matchText(t, "//div[@role='alert']", `deleted provider: github \(token\)`),
 	})
 }

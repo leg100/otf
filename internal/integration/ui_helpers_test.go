@@ -53,14 +53,18 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	t.Helper()
 
 	return chromedp.Tasks{
-		chromedp.Navigate(organizationURL(hostname, org)),
-		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
+		_, err = page.Goto(organizationURL(hostname, org))
+require.NoError(t, err)
+		err := page.Locator("#menu-item-workspaces > a").Click()
+require.NoError(t, err)
 		waitLoaded,
-		chromedp.Click("#new-workspace-button", chromedp.ByQuery),
+		err := page.Locator("#new-workspace-button").Click()
+require.NoError(t, err)
 		waitLoaded,
 		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText(name),
-		chromedp.Click("#create-workspace-button", chromedp.ByQuery),
+		err := page.Locator("#create-workspace-button").Click()
+require.NoError(t, err)
 		waitLoaded,
 		matchText(t, "//div[@role='alert']", "created workspace: "+name),
 	}
@@ -97,7 +101,7 @@ func matchRegex(t *testing.T, selector, regex string, opts ...chromedp.QueryOpti
 
 // screenshot takes a screenshot of a browser and saves it to disk, using the
 // test name and a counter to uniquely name the file.
-func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
+func //screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 	t.Helper()
 
 	return func(ctx context.Context) error {
@@ -182,10 +186,12 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, teamID, 
 
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspaceURL(hostname, org, workspaceName)),
-		screenshot(t),
+		_, err = page.Goto(workspaceURL(hostname, org, workspaceName))
+require.NoError(t, err)
+		//screenshot(t),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
 		// confirm builtin admin role for owners team
 		matchText(t, "#permissions-owners td:first-child", "owners", chromedp.ByQuery),
 		matchText(t, "#permissions-owners td:last-child", "admin", chromedp.ByQuery),
@@ -203,9 +209,10 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, teamID, 
 			}
 			return nil
 		}),
-		screenshot(t, "workspace_permissions"),
-		chromedp.Click("#permissions-add-button", chromedp.ByQuery),
-		screenshot(t),
+		//screenshot(t, "workspace_permissions"),
+		err := page.Locator("#permissions-add-button").Click()
+require.NoError(t, err)
+		//screenshot(t),
 		matchText(t, "//div[@role='alert']", "updated workspace permissions"),
 	}
 }
@@ -216,28 +223,30 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 
 	return []chromedp.Action{
 		// go to workspace page
-		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
-		screenshot(t, "connected_workspace_main_page"),
+		_, err = page.Goto(workspaceURL(hostname, organization, workspaceName))
+require.NoError(t, err)
+		//screenshot(t, "connected_workspace_main_page"),
 		// select operation for run
 		chromedp.SetValue(`//select[@id="start-run-operation"]`, string(op)),
-		screenshot(t, "run_page_started"),
+		//screenshot(t, "run_page_started"),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
-		screenshot(t),
+		//screenshot(t),
 		chromedp.WaitVisible(`//span[@id='plan-status' and text()='finished']`),
-		screenshot(t),
+		//screenshot(t),
 		// wait for run to enter planned state
 		chromedp.WaitVisible(`//div[@class='widget']//a[text()='planned']`),
-		screenshot(t),
+		//screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
-		screenshot(t, "run_page_planned_state"),
+		//screenshot(t, "run_page_planned_state"),
 		// run widget should show discard button
 		chromedp.WaitVisible(`//button[@id='run-discard-button']`),
-		screenshot(t),
+		//screenshot(t),
 		// click 'apply' button once it becomes visible
-		chromedp.Click(`//button[text()='apply']`),
-		screenshot(t),
+		err := page.Locator(`//button[text()='apply']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),
 		chromedp.WaitVisible(`//span[@id='apply-status' and text()='finished']`),
@@ -253,7 +262,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		matchRegex(t, `//span[@id='running-time-plan']`, `\d+(s|ms)`),
 		// apply should show running time
 		matchRegex(t, `//span[@id='running-time-apply']`, `\d+(s|ms)`),
-		screenshot(t),
+		//screenshot(t),
 	}
 }
 
@@ -262,20 +271,25 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name, provider string) c
 
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspaceURL(hostname, org, name)),
-		screenshot(t, "workspace_main_page"),
+		_, err = page.Goto(workspaceURL(hostname, org, name))
+require.NoError(t, err)
+		//screenshot(t, "workspace_main_page"),
 		// navigate to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
-		screenshot(t, "workspace_settings"),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
+		//screenshot(t, "workspace_settings"),
 		// click connect button
-		chromedp.Click(`//button[@id='list-workspace-vcs-providers-button']`),
-		screenshot(t, "workspace_vcs_providers_list"),
+		err := page.Locator(`//button[@id='list-workspace-vcs-providers-button']`).Click()
+require.NoError(t, err)
+		//screenshot(t, "workspace_vcs_providers_list"),
 		// select provider
-		chromedp.Click(`div.widget`, chromedp.ByQuery),
-		screenshot(t, "workspace_vcs_repo_list"),
+		err := page.Locator(`div.widget`).Click()
+require.NoError(t, err)
+		//screenshot(t, "workspace_vcs_repo_list"),
 		// connect to first repo in list (there should only be one)
-		chromedp.Click(`//div[@id='content-list']//button[text()='connect']`),
-		screenshot(t),
+		err := page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// confirm connected
 		matchText(t, "//div[@role='alert']", "connected workspace to repo"),
 	}
@@ -286,14 +300,17 @@ func disconnectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp
 
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspaceURL(hostname, org, name)),
-		screenshot(t),
+		_, err = page.Goto(workspaceURL(hostname, org, name))
+require.NoError(t, err)
+		//screenshot(t),
 		// navigate to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
-		screenshot(t),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// click disconnect button
-		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`),
-		screenshot(t),
+		err := page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// confirm disconnected
 		matchText(t, "//div[@role='alert']", "disconnected workspace from repo"),
 	}

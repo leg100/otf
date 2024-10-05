@@ -18,11 +18,13 @@ func TestIntegration_RunListUI(t *testing.T) {
 	tfConfig := newRootModule(t, daemon.System.Hostname(), ws.Organization, ws.Name)
 
 	var runListingAfter []*cdp.Node
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// navigate to workspace page
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), ws.Organization, ws.Name)),
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), ws.Organization, ws.Name))
+require.NoError(t, err)
 		// navigate to runs page
-		chromedp.Click(`//a[text()='runs']`),
+		err := page.Locator(`//a[text()='runs']`).Click()
+require.NoError(t, err)
 		// should be no runs listed
 		matchText(t, `//div[@id='content-list']`, `No items currently exist.`),
 		chromedp.ActionFunc(func(context.Context) error {

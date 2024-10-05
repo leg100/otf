@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	expect "github.com/google/goexpect"
+	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
@@ -30,20 +30,20 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	tfpath := svc.downloadTerraform(t, ctx, nil)
 
 	// Invoke terraform apply
-	e, tferr, err := expect.SpawnWithArgs(
+	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "-chdir=" + configPath, "apply", "-no-color"},
 		time.Minute,
-		expect.PartialMatch(true),
-		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token))),
+		goexpect.PartialMatch(true),
+		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()
 
 	// Discard run
-	e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: fmt.Sprintf(`Do you want to perform these actions in workspace "%s"`, t.Name())},
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "no\n"},
-		&expect.BExp{R: "Error: Apply discarded."},
+	e.ExpectBatch([]goexpect.Batcher{
+		&goexpect.BExp{R: fmt.Sprintf(`Do you want to perform these actions in workspace "%s"`, t.Name())},
+		&goexpect.BExp{R: "Enter a value:"}, &goexpect.BSnd{S: "no\n"},
+		&goexpect.BExp{R: "Error: Apply discarded."},
 	}, time.Minute)
 
 	var exitError *exec.ExitError

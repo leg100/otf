@@ -24,13 +24,15 @@ func TestGithubLogin(t *testing.T) {
 	username := "bobby"
 	svc, _, _ := setup(t, &cfg, github.WithUser(&username))
 
-	browser.Run(t, nil, chromedp.Tasks{
+	browser.New(t, nil, chromedp.Tasks{
 		// go to login page
-		chromedp.Navigate("https://" + svc.System.Hostname() + "/login"),
-		screenshot(t, "github_login_button"),
+		_, err = page.Goto("https://" + svc.System.Hostname() + "/login")
+require.NoError(t, err)
+		//screenshot(t, "github_login_button"),
 		// login
-		chromedp.Click("a#login-button-github", chromedp.ByQuery),
-		screenshot(t),
+		err := page.Locator("a#login-button-github").Click()
+require.NoError(t, err)
+		//screenshot(t),
 		// check login confirmation message
 		matchText(t, `#content > p`, `You are logged in as bobby`, chromedp.ByQuery),
 	})

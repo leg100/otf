@@ -14,21 +14,25 @@ func TestAutoApply(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// create workspace and enable auto-apply
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, svc.System.Hostname(), org.Name, t.Name()),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, t.Name())),
-			screenshot(t),
+			_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, t.Name()))
+require.NoError(t, err)
+			//screenshot(t),
 			// go to workspace settings
-			chromedp.Click(`//a[text()='settings']`),
-			screenshot(t),
+			err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// enable auto-apply
-			chromedp.Click(`//input[@name='auto_apply' and @value='true']`),
-			screenshot(t),
+			err := page.Locator(`//input[@name='auto_apply' and @value='true']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save changes']`),
-			screenshot(t),
+			err := page.Locator(`//button[text()='Save changes']`).Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// confirm workspace updated
 			matchText(t, "//div[@role='alert']", "updated workspace"),
 		},

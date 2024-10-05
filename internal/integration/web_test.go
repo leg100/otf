@@ -24,25 +24,29 @@ func TestWeb(t *testing.T) {
 	err = daemon.Users.AddTeamMembership(ctx, team.ID, []string{user.Username})
 	require.NoError(t, err)
 
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// create workspace
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
-			screenshot(t),
+			_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
+			//screenshot(t),
 			// list teams
-			chromedp.Click("#teams > a", chromedp.ByQuery),
-			screenshot(t),
+			err := page.Locator("#teams > a").Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// select devops team
-			chromedp.Click("#item-team-devops", chromedp.ByQuery),
-			screenshot(t),
+			err := page.Locator("#item-team-devops").Click()
+require.NoError(t, err)
+			//screenshot(t),
 			// tick checkbox for workspace manager role
-			chromedp.Click("#manage_workspaces", chromedp.ByQuery),
+			err := page.Locator("#manage_workspaces").Click()
+require.NoError(t, err)
 			// submit form
 			chromedp.Submit("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
-			screenshot(t, "team_permissions_added_workspace_manager"),
+			//screenshot(t, "team_permissions_added_workspace_manager"),
 			// confirm permissions updated
 			matchText(t, "//div[@role='alert']", "team permissions updated"),
 		},
@@ -51,23 +55,28 @@ func TestWeb(t *testing.T) {
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
-			screenshot(t),
+			_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
+			//screenshot(t),
 			// list users
-			chromedp.Click("#users > a", chromedp.ByQuery),
-			screenshot(t),
+			err := page.Locator("#users > a").Click()
+require.NoError(t, err)
+			//screenshot(t),
 			matchText(t, fmt.Sprintf("#item-user-%s #username", user.Username), user.Username, chromedp.ByQuery),
 		},
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(daemon.System.Hostname(), org.Name)),
-			screenshot(t),
+			_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
+			//screenshot(t),
 			// list teams
-			chromedp.Click("#teams > a", chromedp.ByQuery),
+			err := page.Locator("#teams > a").Click()
+require.NoError(t, err)
 			// select owners team
-			chromedp.Click("#item-team-owners", chromedp.ByQuery),
-			screenshot(t),
+			err := page.Locator("#item-team-owners").Click()
+require.NoError(t, err)
+			//screenshot(t),
 			matchText(t, fmt.Sprintf("#item-user-%s #username", user.Username), user.Username, chromedp.ByQuery),
 		},
 	})

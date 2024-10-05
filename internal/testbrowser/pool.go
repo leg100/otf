@@ -9,12 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/tokens"
 	otfuser "github.com/leg100/otf/internal/user"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,14 +22,22 @@ var poolSize = runtime.GOMAXPROCS(0)
 
 // Pool of browsers
 type Pool struct {
-	pool chan *browser
+	// browser shared by pool of contexts
+	browser playwright.Browser
+	// pool of contexts, with isolated cookie store, data dir, etc
+	pool chan playwright.BrowserContext
 	// service for creating new session in browser
 	tokens *tokens.Service
-	// allocator of browsers
-	allocator context.Context
 }
 
 func NewPool(secret []byte) (*Pool, func(), error) {
+	err := playwright.Install(&playwright.RunOptions{
+		Browsers: []string{"chromium"},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	tokensService, err := tokens.NewService(tokens.Options{Secret: secret})
 	if err != nil {
 		return nil, nil, err
@@ -48,19 +54,18 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		}
 	}
 
-	allocator, cancelAllocator := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", headless),
-			chromedp.Flag("hide-scrollbars", true),
-			chromedp.Flag("mute-audio", true),
-			chromedp.Flag("ignore-certificate-errors", true),
-			chromedp.Flag("disable-gpu", true),
-		)...)
+	pw, err := playwright.Run()
+	if err != nil {
+		return nil, nil, err
+	}
+	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+		Headless: &headless,
+	})
 
 	p := Pool{
-		pool:      make(chan *browser, poolSize),
-		tokens:    tokensService,
-		allocator: allocator,
+		pool:    make(chan playwright.BrowserContext, poolSize),
+		tokens:  tokensService,
+		browser: browser,
 	}
 	for i := 0; i < poolSize; i++ {
 		p.pool <- nil
@@ -70,63 +75,67 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 	cleanup := func() {
 		for i := 0; i < poolSize; i++ {
 			if b := <-p.pool; b != nil {
-				b.cancel()
+				// TODO: handle error
+				_ = b.Close()
 			}
 		}
-		cancelAllocator()
+		// TODO: handle error
+		_ = browser.Close()
 	}
 
 	return &p, cleanup, nil
 }
 
-func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Action) {
+// New requests a page from the browser pool.
+func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 	t.Helper()
 
-	b := <-p.pool
-	if b == nil {
-		b = newBrowser(t, p.allocator)
+	browserCtx := <-p.pool
+	if browserCtx == nil {
+		ctx, err := p.browser.NewContext()
+		require.NoError(t, err)
+		browserCtx = ctx
 	}
-	// return browser back to pool after this method finishes
-	defer func() { p.pool <- b }()
+	// Return browser context back to pool after this method finishes
+	defer func() { p.pool <- browserCtx }()
 
-	// create a dedicated tab for test
-	tab, cancel := chromedp.NewContext(b.ctx)
-	defer cancel()
-
-	// click OK on any browser javascript dialog boxes that pop up
-	chromedp.ListenTarget(tab, func(ev any) {
-		switch ev.(type) {
-		case *page.EventJavascriptDialogOpening:
-			go func() {
-				err := chromedp.Run(tab, page.HandleJavaScriptDialog(true))
-				require.NoError(t, err)
-			}()
-		}
+	err := browserCtx.GrantPermissions([]string{
+		"clipboard-read",
+		"clipboard-write",
 	})
-
-	// because browser is being re-used, cookies are cleared and a new session
-	// is created for the calling user.
-	resetAction := chromedp.ActionFunc(func(c context.Context) error {
-		if err := network.ClearBrowserCookies().Do(c); err != nil {
-			return err
-		}
-		if user != nil {
-			user, err := otfuser.UserFromContext(user)
-			if err != nil {
-				return err
-			}
-			token, err := p.tokens.NewSessionToken(user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
-			if err != nil {
-				return err
-			}
-			err = network.SetCookie("session", token).WithDomain("127.0.0.1").Do(c)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	actions = append(chromedp.Tasks{resetAction}, actions...)
-	err := chromedp.Run(tab, actions...)
 	require.NoError(t, err)
+
+	// Because context is being re-used, cookies are cleared and a new session
+	// is created for the calling user.
+	err = browserCtx.ClearCookies()
+	require.NoError(t, err)
+
+	// Create a browser page (tab) for test
+	page, err := browserCtx.NewPage()
+	require.NoError(t, err)
+
+	// Click OK on any browser javascript dialog boxes that pop up
+	page.OnDialog(func(dialog playwright.Dialog) {
+		dialog.Accept()
+	})
+
+	// Populate cookie jar with session token if user is specified.
+	if user != nil {
+		user, err := otfuser.UserFromContext(user)
+		require.NoError(t, err)
+
+		token, err := p.tokens.NewSessionToken(user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
+		require.NoError(t, err)
+
+		err = browserCtx.AddCookies([]playwright.OptionalCookie{
+			{
+				Name:   "session",
+				Value:  token,
+				Domain: internal.String("127.0.0.1"),
+			},
+		})
+		require.NoError(t, err)
+	}
+
+	return page
 }

@@ -12,24 +12,29 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	integrationTest(t)
 
 	svc, _, ctx := setup(t, nil)
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := page := browser.New(t, ctx)
 		// go to profile
-		chromedp.Navigate("https://" + svc.System.Hostname() + "/app/profile"),
+		_, err = page.Goto("https://" + svc.System.Hostname() + "/app/profile")
+require.NoError(t, err)
 		// go to user tokens
-		chromedp.Click(`//div[@id='user-tokens-link']/a`),
-		screenshot(t, "user_tokens"),
+		err := page.Locator(`//div[@id='user-tokens-link']/a`).Click()
+require.NoError(t, err)
+		////screenshot(t, "user_tokens"),
 		// go to new token
-		chromedp.Click(`//button[@id='new-user-token-button']`),
+		err := page.Locator(`//button[@id='new-user-token-button']`).Click()
+require.NoError(t, err)
 		// enter description for new token and submit
 		chromedp.Focus("textarea#description", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("my new token"),
-		screenshot(t, "user_token_enter_description"),
-		chromedp.Click(`//button[text()='Create token']`),
-		screenshot(t, "user_token_created"),
+		//screenshot(t, "user_token_enter_description"),
+		err := page.Locator(`//button[text()='Create token']`).Click()
+require.NoError(t, err)
+		//screenshot(t, "user_token_created"),
 		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
 		// delete the token
-		chromedp.Click(`//button[text()='delete']`),
-		screenshot(t),
+		err := page.Locator(`//button[text()='delete']`).Click()
+require.NoError(t, err)
+		//screenshot(t),
 		matchText(t, "//div[@role='alert']", "Deleted token"),
 	})
 }

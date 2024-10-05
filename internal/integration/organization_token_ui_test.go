@@ -18,25 +18,30 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 		createdTokenID     string
 		regeneratedTokenID string
 	)
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// go to organization
-		chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
+		_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+require.NoError(t, err)
 		// go to organization token page
-		chromedp.Click(`//span[@id='organization_tokens']/a`),
-		screenshot(t, "org_token_new"),
+		err := page.Locator(`//span[@id='organization_tokens']/a`).Click()
+require.NoError(t, err)
+		//screenshot(t, "org_token_new"),
 		// create new token
-		chromedp.Click(`//button[text()='Create organization token']`),
-		screenshot(t, "org_token_created"),
+		err := page.Locator(`//button[text()='Create organization token']`).Click()
+require.NoError(t, err)
+		//screenshot(t, "org_token_created"),
 		// check for JWT in flash msg
 		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
 		// token widget should be visible
 		chromedp.WaitVisible(`//div[@class='widget']//span[text()='Token']`),
 		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &createdTokenID),
 		// regenerate token
-		chromedp.Click(`//button[text()='regenerate']`),
+		err := page.Locator(`//button[text()='regenerate']`).Click()
+require.NoError(t, err)
 		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &regeneratedTokenID),
 		// delete token
-		chromedp.Click(`//button[text()='delete']`),
+		err := page.Locator(`//button[text()='delete']`).Click()
+require.NoError(t, err)
 		// flash msg declaring token is deleted
 		matchText(t, "//div[@role='alert']", `Deleted organization token`),
 	})

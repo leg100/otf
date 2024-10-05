@@ -33,7 +33,7 @@ func TestWebhook(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	// create and connect first workspace
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-1"),
 		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1", provider.String()),
 	})

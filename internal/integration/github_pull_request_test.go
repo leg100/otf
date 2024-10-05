@@ -56,15 +56,16 @@ func TestGithubPullRequest(t *testing.T) {
 		daemon.SendEvent(t, github.PullRequest, pull)
 
 		// commit-triggered run should appear as latest run on workspace
-		browser.Run(t, ctx, chromedp.Tasks{
+		page := browser.New(t, ctx)
 			// go to runs
-			chromedp.Navigate(runsURL(daemon.System.Hostname(), ws.ID)),
-			screenshot(t),
+			_, err = page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
+require.NoError(t, err)
+			//screenshot(t),
 			// should be one run widget with info matching the pull request
 			chromedp.WaitVisible(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`),
 			chromedp.WaitVisible(`//div[@class='widget']//a[@id='vcs-username' and text()='@leg100']`),
 			chromedp.WaitVisible(fmt.Sprintf(`//div[@class='widget']//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit)),
-			screenshot(t),
+			//screenshot(t),
 		})
 
 		// github should receive several pending status updates followed by a final

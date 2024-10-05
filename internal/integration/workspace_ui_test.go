@@ -26,11 +26,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	// demonstrate listing and searching
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-1"),
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-12"),
 		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-2"),
-		chromedp.Navigate(workspacesURL(daemon.System.Hostname(), org.Name)),
+		_, err = page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
+require.NoError(t, err)
 		// search for 'workspace-1' which should produce two results
 		chromedp.Focus(`input[type="search"]`, chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("workspace-1"),
@@ -44,30 +45,37 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.WaitVisible(`//*[@id="item-workspace-workspace-2"]`),
 	})
 	// demonstrate setting vcs trigger patterns
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1", provider.String()),
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+require.NoError(t, err)
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
 		// default should be set to always trigger runs
 		chromedp.WaitVisible(`input#vcs-triggers-always:checked`, chromedp.ByQuery),
 		// select trigger patterns strategy
-		chromedp.Click(`input#vcs-triggers-patterns`, chromedp.ByQuery),
+		err := page.Locator(`input#vcs-triggers-patterns`).Click()
+require.NoError(t, err)
 		// add glob patterns
 		chromedp.Focus(`#new_path`, chromedp.NodeVisible),
 		input.InsertText(`/foo/*.tf`),
-		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
+		err := page.Locator(`button#add-pattern`).Click()
+require.NoError(t, err)
 		input.InsertText(`/bar/*.tf`),
-		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
+		err := page.Locator(`button#add-pattern`).Click()
+require.NoError(t, err)
 		input.InsertText(`/baz/*.tf`),
-		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
-		screenshot(t, "workspace_edit_trigger_patterns"),
+		err := page.Locator(`button#add-pattern`).Click()
+require.NoError(t, err)
+		//screenshot(t, "workspace_edit_trigger_patterns"),
 		// check patterns are listed
 		matchText(t, `span#trigger-pattern-1`, `/foo/\*.tf`, chromedp.ByQuery),
 		matchText(t, `span#trigger-pattern-2`, `/bar/\*.tf`, chromedp.ByQuery),
 		matchText(t, `span#trigger-pattern-3`, `/baz/\*.tf`, chromedp.ByQuery),
 		// delete glob pattern
-		chromedp.Click(`button#delete-pattern-2`, chromedp.ByQuery),
+		err := page.Locator(`button#delete-pattern-2`).Click()
+require.NoError(t, err)
 		// check pattern is removed from list
 		matchText(t, `span#trigger-pattern-1`, `/foo/\*.tf`, chromedp.ByQuery),
 		matchText(t, `span#trigger-pattern-2`, `/baz/\*.tf`, chromedp.ByQuery),
@@ -84,16 +92,20 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.Contains(t, ws.TriggerPatterns, "/baz/*.tf")
 
 	// set vcs trigger to use tag regex
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
+	page := browser.New(t, ctx)
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+require.NoError(t, err)
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
 		// trigger patterns strategy should be set
 		chromedp.WaitVisible(`input#vcs-triggers-patterns:checked`, chromedp.ByQuery),
 		// select tag trigger strategy
-		chromedp.Click(`input#vcs-triggers-tag`, chromedp.ByQuery),
+		err := page.Locator(`input#vcs-triggers-tag`).Click()
+require.NoError(t, err)
 		// select tag prefix pattern
-		chromedp.Click(`input#tags-regex-prefix`, chromedp.ByQuery),
+		err := page.Locator(`input#tags-regex-prefix`).Click()
+require.NoError(t, err)
 		// submit
 		chromedp.Submit(`//button[text()='Save changes']`),
 		// confirm updated
@@ -110,10 +122,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.Equal(t, `\d+\.\d+\.\d+$`, ws.Connection.TagsRegex)
 
 	// set vcs branch
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
+	page := browser.New(t, ctx)
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+require.NoError(t, err)
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
 		// tag regex strategy should be set
 		chromedp.WaitVisible(`input#vcs-triggers-tag:checked`, chromedp.ByQuery),
 		// set vcs branch
@@ -130,12 +144,15 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.Equal(t, "dev", ws.Connection.Branch)
 
 	// permit applies from the CLI
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
+	page := browser.New(t, ctx)
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+require.NoError(t, err)
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err)
 		// allow applies from the CLI
-		chromedp.Click(`input#allow-cli-apply`, chromedp.ByQuery),
+		err := page.Locator(`input#allow-cli-apply`).Click()
+require.NoError(t, err)
 		chromedp.Submit(`//button[text()='Save changes']`),
 		matchText(t, "//div[@role='alert']", "updated workspace"),
 		// checkbox should be checked
@@ -147,10 +164,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.Equal(t, true, ws.Connection.AllowCLIApply)
 
 	// set description
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1")),
+	page := browser.New(t, ctx)
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+require.NoError(t, err)
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`), waitLoaded,
+		err := page.Locator(`//a[text()='settings']`).Click()
+require.NoError(t, err) waitLoaded,
 		// enter a description
 		chromedp.Focus(`textarea#description`, chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText(`my big fat workspace`),

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
-	expect "github.com/google/goexpect"
+	goexpect "github.com/google/goexpect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,13 +33,13 @@ func TestTerraformLogin(t *testing.T) {
 
 	tfpath := svc.downloadTerraform(t, ctx, nil)
 
-	e, tferr, err := expect.SpawnWithArgs(
+	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "login", svc.System.Hostname()},
 		time.Minute,
-		expect.PartialMatch(true),
+		goexpect.PartialMatch(true),
 		// expect.Verbose(testing.Verbose()),
-		expect.Tee(out),
-		expect.SetEnv(
+		goexpect.Tee(out),
+		goexpect.SetEnv(
 			append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
 		),
 	)
@@ -51,13 +51,15 @@ func TestTerraformLogin(t *testing.T) {
 	e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
 	u, _, _ := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
 
-	browser.Run(t, ctx, chromedp.Tasks{
+	page := browser.New(t, ctx)
 		// navigate to auth url captured from terraform login output
-		chromedp.Navigate(strings.TrimSpace(u)),
-		screenshot(t, "terraform_login_consent"),
+		_, err = page.Goto(strings.TrimSpace(u))
+require.NoError(t, err)
+		//screenshot(t, "terraform_login_consent"),
 		// give consent
-		chromedp.Click(`//button[text()='Accept']`),
-		screenshot(t, "terraform_login_flow_complete"),
+		err := page.Locator(`//button[text()='Accept']`).Click()
+require.NoError(t, err)
+		//screenshot(t, "terraform_login_flow_complete"),
 		matchText(t, `//body/p`, `The login server has returned an authentication code to Terraform.`),
 	})
 
