@@ -43,10 +43,8 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	// click retry button
 	err = page.Locator(`//button[text()='retry run']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// confirm plan begins and ends
 	expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`))
-	//screenshot(t),
 
 	err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeVisible()
 	require.NoError(t, err)
@@ -54,5 +52,4 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	// confirm retry button re-appears
 	err = expect.Locator(page.Locator(`//button[text()='retry run']`)).ToBeVisible()
 	require.NoError(t, err)
-	//screenshot(t),
 }

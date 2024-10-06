@@ -1,3 +1,4 @@
+// Package testbrowser provides browsers for e2e tests
 package testbrowser
 
 import (

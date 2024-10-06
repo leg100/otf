@@ -59,7 +59,6 @@ func TestGithubPullRequest(t *testing.T) {
 		// go to runs
 		_, err = page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
 		require.NoError(t, err)
-		//screenshot(t),
 		// should be one run widget with info matching the pull request
 		err = expect.Locator(page.Locator(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`)).ToBeVisible()
 		require.NoError(t, err)
@@ -67,7 +66,6 @@ func TestGithubPullRequest(t *testing.T) {
 		require.NoError(t, err)
 		err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@class='widget']//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit))).ToBeVisible()
 		require.NoError(t, err)
-		//screenshot(t),
 
 		// github should receive several pending status updates followed by a final
 		// update with details of planned resources

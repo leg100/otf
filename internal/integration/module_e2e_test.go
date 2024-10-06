@@ -37,7 +37,6 @@ func TestModuleE2E(t *testing.T) {
 	// go to org
 	_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// go to modules
 	err = page.Locator("#modules > a").Click()
@@ -73,8 +72,13 @@ func TestModuleE2E(t *testing.T) {
 
 	// confirm versions are populated
 	err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.1']`)).ToBeEnabled()
+	require.NoError(t, err)
+
 	err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.2']`)).ToBeEnabled()
+	require.NoError(t, err)
+
 	err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.1.0']`)).ToBeEnabled()
+	require.NoError(t, err)
 
 	// should show vcs repo source
 	err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToHaveText(regexp.MustCompile(`.*/terraform-aws-mod`))
@@ -93,10 +97,8 @@ func TestModuleE2E(t *testing.T) {
 	// go to module
 	_, err = page.Goto(moduleURL)
 	require.NoError(t, err)
-	//screenshot(t),
 
 	reloadUntilEnabled(t, page, `//select[@id="version"]/option[@selected]`)
-	//screenshot(t),
 
 	// Now run terraform with some config that sources the module. First we need
 	// a workspace...
@@ -129,7 +131,6 @@ module "mod" {
 	// go to org
 	_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// go to modules
 	err = page.Locator("#modules > a").Click()

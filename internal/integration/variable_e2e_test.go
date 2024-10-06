@@ -23,40 +23,32 @@ func TestVariableE2E(t *testing.T) {
 	// go to workspace
 	_, err := page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to variables
 	err = page.Locator(`//a[text()='variables']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// click add variable button
 	err = page.Locator(`//button[text()='Add variable']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// enter key
 	err = page.Locator("input#key").Fill("foo")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// enter value
 	err = page.Locator("textarea#value").Fill("bar")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// select terraform variable category
 	err = page.Locator("input#terraform").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// submit form
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm variable added
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable: foo")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// write some terraform config that declares and outputs the variable
 	root := newRootModule(t, svc.System.Hostname(), org.Name, "my-test-workspace")
@@ -84,28 +76,22 @@ output "foo" {
 	// go to workspace
 	_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to variables
 	err = page.Locator(`//a[text()='variables']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// edit variable
 	err = page.Locator(`//a[text()='foo']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// make it a 'sensitive' variable
 	err = page.Locator("input#sensitive").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// submit form
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm variable updated
 	err = expect.Locator(page.GetByRole("alert")).ToContainText("updated variable: foo")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm value is hidden (because it is sensitive)
 	err = expect.Locator(page.Locator(`//table[@id='variables-table']/tbody/tr/td[2]/span[text()="hidden"]`)).ToBeVisible()
@@ -113,7 +99,6 @@ output "foo" {
 	// edit variable again
 	err = page.Locator(`//a[text()='foo']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// update value
 	err = page.Locator("textarea#value").Fill("topsecret")
@@ -123,17 +108,14 @@ output "foo" {
 	// submit form
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm variable updated
 	err = expect.Locator(page.GetByRole("alert")).ToContainText("updated variable: foo")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// delete variable
 	err = page.Locator(`//button[@id='delete-variable-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm variable deleted
 	err = expect.Locator(page.GetByRole("alert")).ToContainText("deleted variable: foo")

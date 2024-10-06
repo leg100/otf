@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -34,13 +35,13 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	//screenshot(t, "user_token_created"),
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+	require.NoError(t, err)
 
 	// delete the token
 	err = page.Locator(`//button[text()='delete']`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t),
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("Deleted token")
 	require.NoError(t, err)
 }

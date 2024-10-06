@@ -40,12 +40,11 @@ func TestAgentPoolsUI(t *testing.T) {
 	// go to list of agent pools
 	err = page.Locator("#agent_pools > a").Click()
 	require.NoError(t, err)
-	////screenshot(t),
 
 	// expose new agent pool form
 	err = page.Locator("#new-pool-details").Click()
 	require.NoError(t, err)
-	// //screenshot(t, "new_agent_pool"),
+	screenshot(t, page, "new_agent_pool")
 	//
 
 	// enter name for new agent pool
@@ -90,7 +89,8 @@ func TestAgentPoolsUI(t *testing.T) {
 	err = page.Locator(`//button[text()='Save changes']`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t, "agent_pool_granted_workspace"),
+	screenshot(t, page, "agent_pool_granted_workspace")
+
 	// ws1 should still appear in list of granted workspaces
 	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name))).ToBeVisible()
 	require.NoError(t, err)
@@ -189,7 +189,6 @@ func TestAgentPoolsUI(t *testing.T) {
 	err = page.Locator(`//button[@id="delete-agent-token-button"]`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t),
 	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`Deleted token: token-1`)
 	require.NoError(t, err)
 
@@ -216,6 +215,8 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	// confirm execution mode change has persisted
 	err = expect.Locator(page.Locator(`input#remote:checked`)).ToBeVisible()
+	require.NoError(t, err)
+
 	// go to agent pool
 	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
 	require.NoError(t, err)
@@ -223,7 +224,6 @@ func TestAgentPoolsUI(t *testing.T) {
 	// delete the pool
 	err = page.Locator(`//button[@id="delete-agent-pool-button"]`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`Deleted agent pool: pool-1`)
 	require.NoError(t, err)

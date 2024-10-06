@@ -40,26 +40,22 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	// go to organization settings
 	err = page.Locator("#settings > a").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// change organization name
 	err = page.Locator("input#name").Clear()
 	require.NoError(t, err)
 	err = page.Locator("input#name").Fill("super-duper-org")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	err = page.Locator(`//button[text()='Update organization name']`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t),
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated organization")
 	require.NoError(t, err)
 
 	// delete the organization
 	err = page.Locator(`//button[@id='delete-organization-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("deleted organization: super-duper-org")
 	require.NoError(t, err)

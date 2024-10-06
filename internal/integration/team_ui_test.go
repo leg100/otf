@@ -23,11 +23,9 @@ func TestIntegration_TeamUI(t *testing.T) {
 	// go to org
 	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to teams listing
 	err = page.Locator(`//a[text()='teams']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to owners team page
 	err = page.Locator(`//div[@id='item-team-owners']`).Click()
 	require.NoError(t, err)
@@ -47,12 +45,11 @@ func TestIntegration_TeamUI(t *testing.T) {
 
 	// select bob as new team member
 	err = page.Locator(`//input[@x-ref='input-search']`).Fill("bob")
-	//screenshot(t),
+	require.NoError(t, err)
 
 	// submit
 	err = page.Locator(`//input[@x-ref='input-search']`).Press(`Enter`)
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm bob added
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added team member: bob")
@@ -61,7 +58,6 @@ func TestIntegration_TeamUI(t *testing.T) {
 	// remove bob from team
 	err = page.Locator(`//div[@id='item-user-bob']//button[@id='remove-member-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm bob removed
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed team member: bob")
@@ -79,7 +75,6 @@ func TestIntegration_TeamUI(t *testing.T) {
 	// submit
 	err = page.Locator(`//input[@x-ref='input-search']`).Press(`Enter`)
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm sarah added
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added team member: sarah")

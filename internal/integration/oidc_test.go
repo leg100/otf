@@ -39,7 +39,6 @@ func TestIntegration_OIDC(t *testing.T) {
 	err = page.Locator("a#login-button-google").Click()
 	require.NoError(t, err)
 	page.Pause()
-	//screenshot(t),
 
 	// check login confirmation message
 	err = expect.Locator(page.Locator("#content > p")).ToHaveText("You are logged in as bobby")

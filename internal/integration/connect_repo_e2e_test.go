@@ -46,7 +46,6 @@ func TestConnectRepoE2E(t *testing.T) {
 	// go to workspace
 	_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
 	require.NoError(t, err)
-	//screenshot(t),
 	// branch should match that of push event
 	err = expect.Locator(page.Locator(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`)).ToBeVisible()
 	require.NoError(t, err)
@@ -59,7 +58,6 @@ func TestConnectRepoE2E(t *testing.T) {
 	// because run was triggered from github, the github icon should be visible.
 	err = expect.Locator(page.Locator(`//div[@class='widget']//img[@id='run-trigger-github']`)).ToBeVisible()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// github should receive three pending status updates followed by a final
 	// update with details of planned resources
@@ -77,26 +75,21 @@ func TestConnectRepoE2E(t *testing.T) {
 	// go to workspace
 	_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// click disconnect button
 	err = page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// confirm disconnected
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("disconnected workspace from repo")
 	require.NoError(t, err)
 	// go to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// delete workspace
 	err = page.Locator(`//button[@id='delete-workspace-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// confirm deletion
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("deleted workspace: my-test-workspace")
 	require.NoError(t, err)
@@ -106,15 +99,12 @@ func TestConnectRepoE2E(t *testing.T) {
 	// go to org
 	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to vcs providers
 	err = page.Locator("#vcs_providers > a").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// click delete button for one and only vcs provider
 	err = page.Locator(`//button[text()='delete']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
 	require.NoError(t, err)
 }

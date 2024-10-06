@@ -80,7 +80,6 @@ resource "null_resource" "tags_e2e" {}
 	// remove bar tag
 	err = page.Locator(`//button[@id='button-remove-tag-bar']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed tag: bar")
 	require.NoError(t, err)
 
@@ -90,7 +89,6 @@ resource "null_resource" "tags_e2e" {}
 
 	err = page.Locator(`//input[@x-ref='input-search']`).Press("Enter")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("created tag: baz")
 
@@ -98,15 +96,12 @@ resource "null_resource" "tags_e2e" {}
 	// go to workspace listing
 	err = page.Locator(`//span[@id='content-header-title']//a[text()='workspaces']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// filter by tag foo
 	err = page.Locator(`//label[@for='workspace-tag-filter-foo']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// filter by tag bar
 	err = page.Locator(`//label[@for='workspace-tag-filter-baz']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// confirm workspace listing contains tagged workspace
 	err = expect.Locator(page.Locator(`//div[@id='content-list']/div[@id='item-workspace-tagged']`)).ToBeVisible()
 	require.NoError(t, err)

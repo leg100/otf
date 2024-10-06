@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sync"
 	"testing"
 	"time"
 
@@ -12,12 +11,6 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
-)
-
-var (
-	// map test name to a count of number of screenshots taken
-	screenshotRecord map[string]int
-	screenshotMutex  sync.Mutex
 )
 
 // createWorkspace creates a workspace via the UI
@@ -81,7 +74,6 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 	// go to workspace
 	_, err := page.Goto(workspaceURL(hostname, org, workspaceName))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// go to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
@@ -115,7 +107,6 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 	err = page.Locator("#permissions-add-button").Click()
 	require.NoError(t, err)
 
-	//screenshot(t),
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace permissions")
 	require.NoError(t, err)
 }
@@ -145,15 +136,12 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	err := expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']`)).ToContainText("Initializing the backend")
 	require.NoError(t, err)
 
-	//screenshot(t),
 	err = expect.Locator(page.Locator(`//span[@id='plan-status']`)).ToHaveText("finished")
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// wait for run to enter planned or planned and finished state
 	err = expect.Locator(page.Locator(`//div[@class='widget']/div/span/a`)).ToHaveText(regexp.MustCompile(`planned|planned and finished`))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// run widget should show plan summary
 	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[1]`)).ToHaveText(regexp.MustCompile(`\+[0-9]+`))
@@ -175,13 +163,11 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	// run widget should show discard button if run is applyable
 	err = expect.Locator(page.Locator(`//button[@id='run-discard-button']`)).ToBeVisible()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// click 'apply' button
 	opts := playwright.PageGetByRoleOptions{Name: "apply"}
 	err = page.GetByRole("button", opts).First().Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm apply begins and ends
 	expect.Locator(page.Locator(`//*[@id='tailed-apply-logs']`)).ToContainText("Initializing the backend")
@@ -217,7 +203,6 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	// apply should show running time
 	err = expect.Locator(page.Locator(`//span[@id='running-time-apply']`)).ToHaveText(regexp.MustCompile(`\d+(s|ms)`))
 	require.NoError(t, err)
-	//screenshot(t),
 }
 
 func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, name, provider string) {
@@ -246,7 +231,6 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, na
 	// connect to first repo in list (there should only be one)
 	err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm connected
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("connected workspace to repo")
@@ -259,17 +243,14 @@ func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org,
 	// go to workspace
 	_, err := page.Goto(workspaceURL(hostname, org, name))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// navigate to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// click disconnect button
 	err = page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// confirm disconnected
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("disconnected workspace from repo")

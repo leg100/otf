@@ -34,7 +34,6 @@ func TestGithubLogin(t *testing.T) {
 	// login
 	err = page.Locator("a#login-button-github").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// check login confirmation message
 	err = expect.Locator(page.Locator(`#content > p`)).ToHaveText(`You are logged in as bobby`)

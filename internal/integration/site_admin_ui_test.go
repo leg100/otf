@@ -29,7 +29,6 @@ func TestSiteAdminUI(t *testing.T) {
 
 	err = page.Locator(".footer-site-login > a").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// enter token
 	err = page.Locator("input#token").Fill("abc123")

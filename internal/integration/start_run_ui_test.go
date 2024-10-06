@@ -31,12 +31,10 @@ func TestStartRunUI(t *testing.T) {
 	// navigate to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// click 'queue destroy plan' button
 	err = page.Locator(`//button[@id='queue-destroy-plan-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	planWithOptionalApply(t, page, svc.System.Hostname(), ws.Organization, ws.Name, true)
 }

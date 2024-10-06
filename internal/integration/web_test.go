@@ -30,15 +30,12 @@ func TestWeb(t *testing.T) {
 	// go to org
 	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 	// list teams
 	err = page.Locator("#teams > a").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// select devops team
 	err = page.Locator("#item-team-devops").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// tick checkbox for workspace manager role
 	err = page.Locator("#manage_workspaces").Click()
 	require.NoError(t, err)
@@ -56,12 +53,10 @@ func TestWeb(t *testing.T) {
 	// go to org
 	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// list users
 	err = page.Locator("#users > a").Click()
 	require.NoError(t, err)
-	//screenshot(t),
 
 	err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
 	require.NoError(t, err)
@@ -71,7 +66,6 @@ func TestWeb(t *testing.T) {
 	// go to org
 	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 	require.NoError(t, err)
-	//screenshot(t),
 
 	// list teams
 	err = page.Locator("#teams > a").Click()
@@ -81,7 +75,6 @@ func TestWeb(t *testing.T) {
 	err = page.Locator("#item-team-owners").Click()
 	require.NoError(t, err)
 
-	//screenshot(t),
 	err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
 	require.NoError(t, err)
 }

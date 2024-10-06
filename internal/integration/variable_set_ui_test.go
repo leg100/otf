@@ -37,6 +37,8 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 
 	// global radio button should be set by default
 	err = expect.Locator(page.Locator(`input#global:checked`)).ToBeVisible()
+	require.NoError(t, err)
+
 	// submit form
 	err = page.Locator(`//button[@id='save-variable-set-button']`).Click()
 	require.NoError(t, err)

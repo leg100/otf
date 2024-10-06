@@ -65,6 +65,8 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	// default should be set to always trigger runs
 	err = expect.Locator(page.Locator(`input#vcs-triggers-always:checked`)).ToBeVisible()
+	require.NoError(t, err)
+
 	// select trigger patterns strategy
 	err = page.Locator(`input#vcs-triggers-patterns`).Click()
 	require.NoError(t, err)

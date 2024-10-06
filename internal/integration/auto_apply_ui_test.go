@@ -18,19 +18,15 @@ func TestAutoApply(t *testing.T) {
 	// go to workspace
 	_, err := page.Goto(workspaceURL(svc.System.Hostname(), org.Name, t.Name()))
 	require.NoError(t, err)
-	//screenshot(t),
 	// go to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// enable auto-apply
 	err = page.Locator(`//input[@name='auto_apply' and @value='true']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// submit form
 	err = page.Locator(`//button[text()='Save changes']`).Click()
 	require.NoError(t, err)
-	//screenshot(t),
 	// confirm workspace updated
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
