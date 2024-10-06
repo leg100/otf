@@ -1,17 +1,14 @@
 package integration
 
 import (
-	"context"
-	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -48,82 +45,32 @@ func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name str
 
 // screenshot takes a screenshot of a browser and saves it to disk, using the
 // test name and a counter to uniquely name the file.
-func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
+func screenshot(t *testing.T, page playwright.Page, path string) {
 	t.Helper()
 
-	return func(ctx context.Context) error {
-		// disable screenshots if headless mode is disabled - screenshots are
-		// most likely unnecessary if the developer is using headless mode to
-		// view the browser; and, depending on the developer's monitor, the
-		// viewport in the screenshots is different to that when headless mode
-		// is enabled, but we want the viewport to be consistent because
-		// screenshots are also used in the documentation!
-		if headless, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
-			if headless == "false" {
-				return nil
-			}
+	// disable screenshots if headless mode is disabled - screenshots are
+	// most likely unnecessary if the developer is using headless mode to
+	// view the browser; and, depending on the developer's monitor, the
+	// viewport in the screenshots is different to that when headless mode
+	// is enabled, but we want the viewport to be consistent because
+	// screenshots are also used in the documentation!
+	if headless, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
+		if headless == "false" {
+			return
 		}
-
-		screenshotMutex.Lock()
-		defer screenshotMutex.Unlock()
-
-		// increment counter
-		if screenshotRecord == nil {
-			screenshotRecord = make(map[string]int)
-		}
-		counter, ok := screenshotRecord[t.Name()]
-		if !ok {
-			screenshotRecord[t.Name()] = 0
-		}
-		screenshotRecord[t.Name()]++
-
-		// take screenshot
-		var image []byte
-		err := chromedp.WaitVisible(`body`, chromedp.ByQuery).Do(ctx)
-		if err != nil {
-			return fmt.Errorf("waiting for body to be visible before capturing screenshot: %w", err)
-		}
-		err = chromedp.CaptureScreenshot(&image).Do(ctx)
-		if err != nil {
-			return fmt.Errorf("caputuring screenshot: %w", err)
-		}
-
-		// save image to disk
-		fname := path.Join("screenshots", fmt.Sprintf("%s_%02d.png", t.Name(), counter))
-		err = os.MkdirAll(filepath.Dir(fname), 0o755)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(fname, image, 0o644)
-		if err != nil {
-			return err
-		}
-
-		//
-		// additionally, save the screenshot image in the docs directory too,
-		// but only if a path is specified AND the relevant env var is
-		// specified.
-		//
-		if len(docPath) == 0 {
-			return nil
-		}
-		if docScreenshots, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
-			return nil
-		} else if docScreenshots != "true" {
-			return nil
-		}
-
-		fname = path.Join("..", "..", "docs", "images", docPath[0]+".png")
-		err = os.MkdirAll(filepath.Dir(fname), 0o755)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(fname, image, 0o644)
-		if err != nil {
-			return err
-		}
-		return nil
 	}
+	if docScreenshots, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
+		return
+	} else if docScreenshots != "true" {
+		return
+	}
+
+	path = filepath.Join("..", "..", "docs", "images", path+".png")
+
+	_, err := page.Screenshot(playwright.PageScreenshotOptions{
+		Path: internal.String(path),
+	})
+	require.NoError(t, err)
 }
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
