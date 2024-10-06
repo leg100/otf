@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/chromedp/chromedp"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,19 +56,31 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
 	require.NoError(t, err)
 	//screenshot(t),
+
 	// select operation for run
-	chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only"),
-		//screenshot(t),
-		// confirm plan begins and ends
-		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
-		//screenshot(t),
-		chromedp.WaitReady(`//span[@id='plan-status' and text()='finished']`),
-		//screenshot(t),
-		// wait for run to enter planned-and-finished state
-		chromedp.WaitReady(`//*[text()='planned and finished']`),
-		//screenshot(t),
-		// run widget should show plan summary
-		err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
+	selectValues := []string{"plan-only"}
+	_, err = page.Locator(`//select[@id="start-run-operation"]`).SelectOption(playwright.SelectOptionValues{
+		Values: &selectValues,
+	})
+	require.NoError(t, err)
+	//screenshot(t),
+
+	// confirm plan begins and ends
+	err = expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`)).ToBeAttached()
+	require.NoError(t, err)
+	//screenshot(t),
+
+	err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeAttached()
+	require.NoError(t, err)
+	//screenshot(t),
+
+	// wait for run to enter planned-and-finished state
+	err = expect.Locator(page.Locator(`//*[text()='planned and finished']`)).ToBeAttached()
+	require.NoError(t, err)
+	//screenshot(t),
+
+	// run widget should show plan summary
+	err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
 	require.NoError(t, err)
 	//screenshot(t),
 }

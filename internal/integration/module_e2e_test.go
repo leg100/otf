@@ -94,13 +94,14 @@ func TestModuleE2E(t *testing.T) {
 	_, err = page.Goto(moduleURL)
 	require.NoError(t, err)
 	//screenshot(t),
-	reloadUntilVisible(`//select[@id="version"]/option[@selected]`),
-		//screenshot(t),
 
-		// Now run terraform with some config that sources the module. First we need
-		// a workspace...
-		workspaceName := "module-test"
-	browser.New(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, workspaceName))
+	reloadUntilVisible(t, page, `//select[@id="version"]/option[@selected]`)
+	//screenshot(t),
+
+	// Now run terraform with some config that sources the module. First we need
+	// a workspace...
+	workspaceName := "module-test"
+	createWorkspace(t, page, svc.System.Hostname(), org.Name, workspaceName)
 
 	// generate some terraform config that sources our module
 	root := newRootModule(t, svc.System.Hostname(), org.Name, workspaceName)

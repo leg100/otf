@@ -7,13 +7,10 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
@@ -24,28 +21,6 @@ var (
 	// map test name to a count of number of screenshots taken
 	screenshotRecord map[string]int
 	screenshotMutex  sync.Mutex
-
-	// waitLoaded waits for a page to be fully loaded - this is important for
-	// the OTF UI, because the execution alpine.js is deferred and once it
-	// executes it meddles with the DOM, and only once that has finished should
-	// actions such as chromedp.Click be invoked. Otherwise the dreaded "-32000
-	// node not found" error arises.
-	waitLoaded = chromedp.ActionFunc(func(ctx context.Context) error {
-		ch := make(chan struct{})
-		lctx, cancel := context.WithCancel(ctx)
-		chromedp.ListenTarget(lctx, func(ev interface{}) {
-			if _, ok := ev.(*page.EventLoadEventFired); ok {
-				cancel()
-				close(ch)
-			}
-		})
-		select {
-		case <-ch:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	})
 )
 
 // createWorkspace creates a workspace via the UI
@@ -69,27 +44,6 @@ func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name str
 
 	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("created workspace: " + name)
 	require.NoError(t, err)
-}
-
-// matchRegex is a custom chromedp Task that extracts text content using the
-// selector and asserts that it matches the regular expression.
-func matchRegex(t *testing.T, selector, regex string, opts ...chromedp.QueryOption) chromedp.ActionFunc {
-	t.Helper()
-
-	return func(ctx context.Context) error {
-		var got string
-		opts := append(opts, chromedp.NodeVisible)
-		if err := chromedp.WaitReady(selector, opts...).Do(ctx); err != nil {
-			return fmt.Errorf("matchRegex: waiting for %s: %w", selector, err)
-		}
-		if err := chromedp.Text(selector, &got, opts...).Do(ctx); err != nil {
-			return fmt.Errorf("matching selector %s with regex %s: %w", selector, regex, err)
-		}
-		if !regexp.MustCompile(regex).MatchString(strings.TrimSpace(got)) {
-			return fmt.Errorf("regex %s does not match %s", regex, got)
-		}
-		return nil
-	}
 }
 
 // screenshot takes a screenshot of a browser and saves it to disk, using the
@@ -194,21 +148,24 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 	require.NoError(t, err)
 
 	// assign role to team
-	chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role),
-		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, teamID),
-		// scroll to bottom so that permissions are visible in screenshot
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
-			if err != nil {
-				return err
-			}
-			if exp != nil {
-				return exp
-			}
-			return nil
-		}),
-		//screenshot(t, "workspace_permissions"),
-		err := page.Locator("#permissions-add-button").Click()
+	selectValues := []string{string(role)}
+	_, err = page.Locator(`//select[@id="permissions-add-select-role"]`).SelectOption(playwright.SelectOptionValues{
+		Values: &selectValues,
+	})
+	require.NoError(t, err)
+
+	selectValues = []string{string(teamID)}
+	_, err = page.Locator(`//select[@id="permissions-add-select-team"]`).SelectOption(playwright.SelectOptionValues{
+		Values: &selectValues,
+	})
+	require.NoError(t, err)
+
+	// scroll to bottom so that permissions are visible in screenshot
+	err = page.Locator("#permissions-add-button").ScrollIntoViewIfNeeded()
+	require.NoError(t, err)
+	//screenshot(t, "workspace_permissions"),
+
+	err = page.Locator("#permissions-add-button").Click()
 	require.NoError(t, err)
 
 	//screenshot(t),
@@ -226,8 +183,11 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 	//screenshot(t, "connected_workspace_main_page"),
 
 	// select operation for run
-	err = page.Locator(`//select[@id="start-run-operation"]`).
-		require.NoError(t, err)
+	selectValues := []string{string(op)}
+	_, err = page.Locator(`//select[@id="start-run-operation"]`).SelectOption(playwright.SelectOptionValues{
+		Values: &selectValues,
+	})
+	require.NoError(t, err)
 	//screenshot(t, "run_page_started"),
 
 	// confirm plan begins and ends
@@ -347,7 +307,7 @@ func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org,
 }
 
 func reloadUntilVisible(t *testing.T, page playwright.Page, sel string) {
-	for {
+	for range 10 {
 		visible, err := page.Locator(sel).IsVisible()
 		require.NoError(t, err)
 
@@ -360,4 +320,5 @@ func reloadUntilVisible(t *testing.T, page playwright.Page, sel string) {
 		_, err = page.Reload()
 		require.NoError(t, err)
 	}
+	t.Fatalf("timed out waiting for dom node %s to be visible", sel)
 }

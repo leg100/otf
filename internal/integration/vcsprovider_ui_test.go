@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/daemon"
@@ -47,13 +46,15 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// submit form to create provider
-	chromedp.Submit("textarea#token", chromedp.ByQuery),
-		err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`created provider: github \(token\)`)
+	err = page.Locator("textarea#token").Press("Enter")
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`created provider: github \(token\)`)
 	require.NoError(t, err)
 
 	//screenshot(t, "vcs_provider_created_github_pat_provider"),
 	// edit provider
-	err := page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
 	require.NoError(t, err)
 
 	// give it a name
