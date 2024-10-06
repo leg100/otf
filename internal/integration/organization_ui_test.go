@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,8 +29,14 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	//screenshot(t, "new_org_enter_name"),
 	// screenshot(t, "new_org_created"),
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("created organization: acme-corp")
+	err = page.Locator("input#name").Press("Enter")
 	require.NoError(t, err)
+
+	err = page.GetByRole("alert").Filter(playwright.LocatorFilterOptions{
+		HasText: "created organization: acme-corp",
+	}).Click()
+	require.NoError(t, err)
+
 	// go to organization settings
 	err = page.Locator("#settings > a").Click()
 	require.NoError(t, err)
@@ -46,7 +53,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	require.NoError(t, err)
 
 	//screenshot(t),
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated organization")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated organization")
 	require.NoError(t, err)
 
 	// delete the organization
@@ -54,7 +61,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t),
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("deleted organization: super-duper-org")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("deleted organization: super-duper-org")
 	require.NoError(t, err)
 
 	// test listing orgs...first create 101 orgs

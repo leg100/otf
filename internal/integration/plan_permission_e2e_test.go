@@ -1,10 +1,9 @@
 package integration
 
 import (
-	"regexp"
 	"testing"
 
-	"github.com/playwright-community/playwright-go"
+	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,36 +50,5 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	}
 
 	// Now demonstrate engineer can start a plan via the UI.
-	//
-	// go to workspace page
-	_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace"))
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// select operation for run
-	selectValues := []string{"plan-only"}
-	_, err = page.Locator(`//select[@id="start-run-operation"]`).SelectOption(playwright.SelectOptionValues{
-		Values: &selectValues,
-	})
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// confirm plan begins and ends
-	err = expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`)).ToBeAttached()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeAttached()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// wait for run to enter planned-and-finished state
-	err = expect.Locator(page.Locator(`//*[text()='planned and finished']`)).ToBeAttached()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// run widget should show plan summary
-	err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
-	require.NoError(t, err)
-	//screenshot(t),
+	startRunTasks(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", run.PlanOnlyOperation, false)
 }

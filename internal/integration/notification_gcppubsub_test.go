@@ -42,7 +42,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	require.NoError(t, err)
 	received := make(chan *pubsub.Message)
 	go func() {
-		sub.Receive(ctx, func(_ context.Context, m *pubsub.Message) {
+		_ = sub.Receive(ctx, func(_ context.Context, m *pubsub.Message) {
 			received <- m
 		})
 	}()

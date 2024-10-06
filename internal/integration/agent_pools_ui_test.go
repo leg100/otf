@@ -66,9 +66,6 @@ func TestAgentPoolsUI(t *testing.T) {
 	assert.Equal(t, pubsub.CreatedEvent, created.Type)
 	assert.Equal(t, "pool-1", created.Payload.Name)
 
-	// capture agent token
-	var agentToken string
-
 	// grant and assign workspace to agent pool, and create agent token.
 	//
 	// go back to agent pool
@@ -148,18 +145,23 @@ func TestAgentPoolsUI(t *testing.T) {
 	// expect flash message confirming token creation
 	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
 	require.NoError(t, err)
+
 	// click clipboard icon to copy token into clipboard
 	err = page.Locator(`//div[@role='alert']//img[@id='clipboard-icon']`).Click()
 	require.NoError(t, err)
 
-	_, err = page.Evaluate(`window.navigator.clipboard.readText()`, &agentToken)
-	//return p.WithAwaitPromise(true)
-	// clipboard should contained agent token (base64 encoded JWT) and no white
+	// read token from clipboard
+	clipboardContents, err := page.EvaluateHandle(`window.navigator.clipboard.readText()`)
+	require.NoError(t, err)
+	token := clipboardContents.String()
+
+	// token should be a base64 encoded JWT with no trailing/leading white
 	// space.
-	assert.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, agentToken)
+	require.NotEmpty(t, token)
+	require.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, token)
 
 	// start agent up, configured to use token.
-	registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", agentToken, agent.Config{})
+	registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, agent.Config{})
 
 	// go back to agent pool
 	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)

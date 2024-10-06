@@ -31,13 +31,6 @@ type Pool struct {
 }
 
 func NewPool(secret []byte) (*Pool, func(), error) {
-	err := playwright.Install(&playwright.RunOptions{
-		Browsers: []string{"chromium"},
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-
 	tokensService, err := tokens.NewService(tokens.Options{Secret: secret})
 	if err != nil {
 		return nil, nil, err
@@ -61,6 +54,9 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless: &headless,
 	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("launching chromium: %w", err)
+	}
 
 	p := Pool{
 		pool:    make(chan playwright.BrowserContext, poolSize),
@@ -92,7 +88,9 @@ func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 
 	browserCtx := <-p.pool
 	if browserCtx == nil {
-		ctx, err := p.browser.NewContext()
+		ctx, err := p.browser.NewContext(playwright.BrowserNewContextOptions{
+			IgnoreHttpsErrors: internal.Bool(true),
+		})
 		require.NoError(t, err)
 		browserCtx = ctx
 	}
@@ -136,6 +134,7 @@ func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 				Name:   "session",
 				Value:  token,
 				Domain: internal.String("127.0.0.1"),
+				Path:   internal.String("/"),
 			},
 		})
 		require.NoError(t, err)

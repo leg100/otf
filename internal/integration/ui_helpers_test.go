@@ -42,7 +42,7 @@ func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name str
 	err = page.Locator("#create-workspace-button").Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("created workspace: " + name)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("created workspace: " + name)
 	require.NoError(t, err)
 }
 
@@ -169,12 +169,12 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 	require.NoError(t, err)
 
 	//screenshot(t),
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace permissions")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace permissions")
 	require.NoError(t, err)
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, op run.Operation) {
+func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, op run.Operation, apply bool) {
 	t.Helper()
 
 	// go to workspace page
@@ -190,46 +190,69 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 	require.NoError(t, err)
 	//screenshot(t, "run_page_started"),
 
+	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
+}
+
+func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, apply bool) {
 	// confirm plan begins and ends
-	err = expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`)).ToBeAttached()
+	err := expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']`)).ToContainText("Initializing the backend")
+	require.NoError(t, err)
+
+	//screenshot(t),
+	err = expect.Locator(page.Locator(`//span[@id='plan-status']`)).ToHaveText("finished")
 	require.NoError(t, err)
 	//screenshot(t),
 
-	err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeVisible()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// wait for run to enter planned state
-	err = expect.Locator(page.Locator(`//div[@class='widget']//a[text()='planned']`)).ToBeVisible()
+	// wait for run to enter planned or planned and finished state
+	err = expect.Locator(page.Locator(`//div[@class='widget']/div/span/a`)).ToHaveText(regexp.MustCompile(`planned|planned and finished`))
 	require.NoError(t, err)
 	//screenshot(t),
 
 	// run widget should show plan summary
-	err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
+	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[1]`)).ToHaveText(regexp.MustCompile(`\+[0-9]+`))
 	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[2]`)).ToHaveText(regexp.MustCompile(`\~[0-9]+`))
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[3]`)).ToHaveText(regexp.MustCompile(`\-[0-9]+`))
+	require.NoError(t, err)
+
 	//screenshot(t, "run_page_planned_state"),
 
-	// run widget should show discard button
+	if !apply {
+		// not applying, nothing more to be done.
+		return
+	}
+
+	// run widget should show discard button if run is applyable
 	err = expect.Locator(page.Locator(`//button[@id='run-discard-button']`)).ToBeVisible()
 	require.NoError(t, err)
 	//screenshot(t),
 
-	// click 'apply' button once it becomes visible
-	err = page.Locator(`//button[text()='apply']`).Click()
+	// click 'apply' button
+	opts := playwright.PageGetByRoleOptions{Name: "apply"}
+	err = page.GetByRole("button", opts).First().Click()
 	require.NoError(t, err)
 	//screenshot(t),
 
 	// confirm apply begins and ends
-	expect.Locator(page.Locator(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`)).ToBeAttached()
-	err = expect.Locator(page.Locator(`//span[@id='apply-status' and text()='finished']`)).ToBeVisible()
+	expect.Locator(page.Locator(`//*[@id='tailed-apply-logs']`)).ToContainText("Initializing the backend")
+	err = expect.Locator(page.Locator(`//span[@id='apply-status']`)).ToHaveText("finished")
 	require.NoError(t, err)
 
 	// confirm run ends in applied state
-	err = expect.Locator(page.Locator(`//div[@class='widget']//a[text()='applied']`)).ToBeVisible()
+	err = expect.Locator(page.Locator(`//div[@class='widget']/div/span/a`)).ToHaveText("applied")
 	require.NoError(t, err)
 
 	// run widget should show apply summary
-	err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
+	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[1]`)).ToHaveText(regexp.MustCompile(`\+[0-9]+`))
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[2]`)).ToHaveText(regexp.MustCompile(`\~[0-9]+`))
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[3]`)).ToHaveText(regexp.MustCompile(`\-[0-9]+`))
 	require.NoError(t, err)
 
 	// because run was triggered from the UI, the UI icon should be visible.
@@ -279,7 +302,7 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, na
 	//screenshot(t),
 
 	// confirm connected
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("connected workspace to repo")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("connected workspace to repo")
 	require.NoError(t, err)
 }
 
@@ -302,13 +325,15 @@ func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org,
 	//screenshot(t),
 
 	// confirm disconnected
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("disconnected workspace from repo")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("disconnected workspace from repo")
 	require.NoError(t, err)
 }
 
-func reloadUntilVisible(t *testing.T, page playwright.Page, sel string) {
+func reloadUntilEnabled(t *testing.T, page playwright.Page, sel string) {
+	t.Helper()
+
 	for range 10 {
-		visible, err := page.Locator(sel).IsVisible()
+		visible, err := page.Locator(sel).IsEnabled()
 		require.NoError(t, err)
 
 		if visible {

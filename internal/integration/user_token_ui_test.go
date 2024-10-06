@@ -34,13 +34,13 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	//screenshot(t, "user_token_created"),
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`)
 
 	// delete the token
 	err = page.Locator(`//button[text()='delete']`).Click()
 	require.NoError(t, err)
 
 	//screenshot(t),
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("Deleted token")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("Deleted token")
 	require.NoError(t, err)
 }

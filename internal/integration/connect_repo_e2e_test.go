@@ -31,7 +31,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace", provider.String())
 	// we can now start a run via the web ui, which'll retrieve the tarball from
 	// the fake github server
-	startRunTasks(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation)
+	startRunTasks(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation, true)
 
 	// Now we test the webhook functionality by sending an event to the daemon
 	// (which would usually be triggered by a git push to github). The event
@@ -87,7 +87,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t),
 	// confirm disconnected
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("disconnected workspace from repo")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("disconnected workspace from repo")
 	require.NoError(t, err)
 	// go to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
@@ -98,7 +98,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t),
 	// confirm deletion
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("deleted workspace: my-test-workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("deleted workspace: my-test-workspace")
 	require.NoError(t, err)
 	//
 	// delete vcs provider
@@ -115,6 +115,6 @@ func TestConnectRepoE2E(t *testing.T) {
 	err = page.Locator(`//button[text()='delete']`).Click()
 	require.NoError(t, err)
 	//screenshot(t),
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`deleted provider: github \(token\)`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
 	require.NoError(t, err)
 }

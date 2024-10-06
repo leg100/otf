@@ -27,7 +27,7 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	//screenshot(t, "org_token_created"),
 
 	// check for JWT in flash msg
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
 	require.NoError(t, err)
 
 	// token widget should be visible
@@ -35,11 +35,11 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// check token begins with `ot-`
-	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@class='identifier']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
 	require.NoError(t, err)
 
 	// capture token for comparison
-	token, err := page.Locator(`//div[@class='widget']//span[@class='identifier']`).TextContent()
+	token, err := page.Locator(`//div[@class='widget']//span[@x-ref='content']`).TextContent()
 	require.NoError(t, err)
 
 	// regenerate token
@@ -47,11 +47,11 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// check regenerated token does not match original token
-	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@class='identifier']`)).Not().ToHaveText(token)
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).Not().ToHaveText(token)
 	require.NoError(t, err)
 
 	// check regenerated token begins with `ot-`
-	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@class='identifier']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
 	require.NoError(t, err)
 
 	// delete token
@@ -59,6 +59,6 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// flash msg declaring token is deleted
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`Deleted organization token`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Deleted organization token`)
 	require.NoError(t, err)
 }

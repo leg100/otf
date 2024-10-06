@@ -54,7 +54,7 @@ func TestVariableE2E(t *testing.T) {
 	//screenshot(t),
 
 	// confirm variable added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added variable: foo")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable: foo")
 	require.NoError(t, err)
 	//screenshot(t),
 
@@ -101,10 +101,12 @@ output "foo" {
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()
 	require.NoError(t, err)
 	//screenshot(t),
+
 	// confirm variable updated
-	err = expect.Locator(page.Locator(`//div[@role='alert'][contains(text(),"updated variable: foo")]`)).ToBeVisible()
+	err = expect.Locator(page.GetByRole("alert")).ToContainText("updated variable: foo")
 	require.NoError(t, err)
 	//screenshot(t),
+
 	// confirm value is hidden (because it is sensitive)
 	err = expect.Locator(page.Locator(`//table[@id='variables-table']/tbody/tr/td[2]/span[text()="hidden"]`)).ToBeVisible()
 	require.NoError(t, err)
@@ -122,15 +124,18 @@ output "foo" {
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()
 	require.NoError(t, err)
 	//screenshot(t),
+
 	// confirm variable updated
-	err = expect.Locator(page.Locator(`//div[@role='alert'][contains(text(),"updated variable: foo")]`)).ToBeVisible()
+	err = expect.Locator(page.GetByRole("alert")).ToContainText("updated variable: foo")
 	require.NoError(t, err)
 	//screenshot(t),
+
 	// delete variable
 	err = page.Locator(`//button[@id='delete-variable-button']`).Click()
 	require.NoError(t, err)
 	//screenshot(t),
+
 	// confirm variable deleted
-	err = expect.Locator(page.Locator(`//div[@role='alert'][contains(text(),"deleted variable: foo")]`)).ToBeVisible()
+	err = expect.Locator(page.GetByRole("alert")).ToContainText("deleted variable: foo")
 	require.NoError(t, err)
 }

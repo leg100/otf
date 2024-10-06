@@ -55,7 +55,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 	//screenshot(t),
 
 	// confirm bob added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added team member: bob")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added team member: bob")
 	require.NoError(t, err)
 
 	// remove bob from team
@@ -64,7 +64,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 	//screenshot(t),
 
 	// confirm bob removed
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("removed team member: bob")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed team member: bob")
 	require.NoError(t, err)
 
 	// now demonstrate specifying a username that doesn't belong to an
@@ -82,6 +82,6 @@ func TestIntegration_TeamUI(t *testing.T) {
 	//screenshot(t),
 
 	// confirm sarah added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added team member: sarah")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added team member: sarah")
 	require.NoError(t, err)
 }

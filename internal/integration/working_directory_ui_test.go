@@ -41,7 +41,7 @@ func TestWorkingDirectory(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t),
 	// confirm workspace updated
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
 
 	// create root module along with a sub-directory containing the config we're

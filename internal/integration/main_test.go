@@ -119,11 +119,23 @@ func doMain(m *testing.M) (int, error) {
 		return 0, fmt.Errorf("making dedicated home directory: %w", err)
 	}
 	defer os.RemoveAll(homeDir)
+
+	oldHome := os.Getenv("HOME")
 	unset, err = setenv("HOME", homeDir)
 	if err != nil {
 		return 0, err
 	}
 	defer unset()
+
+	// Playwright installs its drivers and browsers in
+	// $HOME/.cache/ms-playwright, but we've set a new $HOME, so set the
+	// relevant environment variable pointing at that directory in the original
+	// home.
+	err = os.Symlink(path.Join(oldHome, ".cache"), path.Join(os.Getenv("HOME"), ".cache"))
+	if err != nil {
+		return 0, err
+	}
+	//unset, err = setenv("PLAYWRIGHT_DRIVER_PATH", path.Join(oldHome, ".cache", "ms-playwright"))
 
 	// Instruct terraform CLI to skip checks for new versions.
 	unset, err = setenv("CHECKPOINT_DISABLE", "true")
@@ -150,7 +162,7 @@ func doMain(m *testing.M) (int, error) {
 	// Setup pool of browsers
 	pool, cleanup, err := testbrowser.NewPool(sharedSecret)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("creating browser pool: %w", err)
 	}
 	defer cleanup()
 	browser = pool

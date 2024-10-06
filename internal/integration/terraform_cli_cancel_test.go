@@ -70,7 +70,8 @@ data "http" "wait" {
 	require.NoError(t, err)
 
 	// Send Ctrl-C now that terraform apply is in-flow.
-	e.SendSignal(os.Interrupt)
+	err = e.SendSignal(os.Interrupt)
+	require.NoError(t, err)
 
 	// Confirm canceling run
 	e.ExpectBatch([]goexpect.Batcher{

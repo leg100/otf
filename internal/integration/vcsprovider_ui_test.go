@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,10 +47,12 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// submit form to create provider
-	err = page.Locator("textarea#token").Press("Enter")
+	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
+		HasText: "Create",
+	}).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`created provider: github \(token\)`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (token)`)
 	require.NoError(t, err)
 
 	//screenshot(t, "vcs_provider_created_github_pat_provider"),
@@ -63,7 +66,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 
 	err = page.Locator(`//button[text()='Update']`).Click()
 	require.NoError(t, err)
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated provider: my-token")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
 	require.NoError(t, err)
 	// change token
 	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
@@ -75,7 +78,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	err = page.Locator(`//button[text()='Update']`).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated provider: my-token")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
 	require.NoError(t, err)
 
 	// clear name
@@ -88,7 +91,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	err = page.Locator(`//button[text()='Update']`).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`updated provider: github \(token\)`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: github (token)`)
 	require.NoError(t, err)
 
 	// delete token
@@ -98,7 +101,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`deleted provider: github \(token\)`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
 	require.NoError(t, err)
 }
 
@@ -169,16 +172,18 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 
 	//screenshot(t, "vcs_provider_list_including_github_app"),
 	// click button for creating a new vcs provider with a github app
-	err = page.Locator(`//button[text()='New Github VCS Provider (App)']`).Click()
+	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
+		HasText: "New Github VCS Provider (App)",
+	}).Click()
 	require.NoError(t, err)
 
 	// one github app installation should be listed
-	err = expect.Locator(page.Locator(`//select[@id='select-install-id']/option[text()='user/leg100']`)).ToBeVisible()
+	err = expect.Locator(page.Locator(`//select[@id='select-install-id']/option[text()='user/leg100']`)).ToBeAttached()
 	require.NoError(t, err)
 
-	err = page.Locator(`//button[text()='Create']`).Click()
+	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "Create"}).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`created provider: github \(app\)`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (app)`)
 	require.NoError(t, err)
 }

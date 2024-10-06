@@ -42,7 +42,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm variable set added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added variable set: global-1")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable set: global-1")
 	require.NoError(t, err)
 
 	// add a variable
@@ -64,7 +64,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()
 	require.NoError(t, err)
 	// confirm variable added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added variable: foo")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable: foo")
 	require.NoError(t, err)
 
 	ws1 := svc.createWorkspace(t, ctx, org)
@@ -128,7 +128,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm variable set added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added variable set: workspace-scoped-1")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable set: workspace-scoped-1")
 	require.NoError(t, err)
 
 	// list of workspaces should be persisted, and include ws1
@@ -156,7 +156,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm variable added
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added variable: foo")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable: foo")
 	require.NoError(t, err)
 
 	// go to variables page for workspace ws1

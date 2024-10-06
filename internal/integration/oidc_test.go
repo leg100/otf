@@ -12,7 +12,7 @@ import (
 func TestIntegration_OIDC(t *testing.T) {
 	integrationTest(t)
 
-	// Start daemon with a stub github server populated with a user.
+	// Start daemon configured to use a google OIDC test stub.
 	cfg := config{
 		Config: daemon.Config{
 			OIDC: authenticator.OIDCConfig{
@@ -38,6 +38,7 @@ func TestIntegration_OIDC(t *testing.T) {
 	// login
 	err = page.Locator("a#login-button-google").Click()
 	require.NoError(t, err)
+	page.Pause()
 	//screenshot(t),
 
 	// check login confirmation message

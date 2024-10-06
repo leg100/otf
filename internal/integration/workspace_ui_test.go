@@ -91,13 +91,13 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	//screenshot(t, "workspace_edit_trigger_patterns"),
 
 	// check patterns are listed
-	err = expect.Locator(page.Locator(`span#trigger-pattern-1`)).ToHaveText(`/foo/\*.tf`)
+	err = expect.Locator(page.Locator(`span#trigger-pattern-1`)).ToHaveText(`/foo/*.tf`)
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`span#trigger-pattern-2`)).ToHaveText(`/bar/\*.tf`)
+	err = expect.Locator(page.Locator(`span#trigger-pattern-2`)).ToHaveText(`/bar/*.tf`)
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`span#trigger-pattern-3`)).ToHaveText(`/baz/\*.tf`)
+	err = expect.Locator(page.Locator(`span#trigger-pattern-3`)).ToHaveText(`/baz/*.tf`)
 	require.NoError(t, err)
 
 	// delete glob pattern
@@ -105,10 +105,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// check pattern is removed from list
-	err = expect.Locator(page.Locator(`span#trigger-pattern-1`)).ToHaveText(`/foo/\*.tf`)
+	err = expect.Locator(page.Locator(`span#trigger-pattern-1`)).ToHaveText(`/foo/*.tf`)
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`span#trigger-pattern-2`)).ToHaveText(`/baz/\*.tf`)
+	err = expect.Locator(page.Locator(`span#trigger-pattern-2`)).ToHaveText(`/baz/*.tf`)
 	require.NoError(t, err)
 
 	// submit
@@ -116,7 +116,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm updated
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
 
 	// check UI has correctly updated the workspace resource
@@ -151,7 +151,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm updated
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
 
 	// tag prefix pattern should be set
@@ -190,7 +190,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm updated
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
 
 	// check UI has correctly updated the workspace resource
@@ -213,7 +213,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	err = page.GetByRole("button").GetByText("Save changes").Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
 
 	// checkbox should be checked
@@ -241,7 +241,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// confirm updated
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("updated workspace")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
 	require.NoError(t, err)
 
 	// confirm updated description shows up

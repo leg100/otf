@@ -81,18 +81,18 @@ resource "null_resource" "tags_e2e" {}
 	err = page.Locator(`//button[@id='button-remove-tag-bar']`).Click()
 	require.NoError(t, err)
 	//screenshot(t),
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("removed tag: bar")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed tag: bar")
 	require.NoError(t, err)
 
 	// add new tag
 	err = page.Locator(`//input[@x-ref='input-search']`).Fill("baz")
 	require.NoError(t, err)
 
-	err = page.Locator(`//button[form='search-dropdown']`).Click()
+	err = page.Locator(`//input[@x-ref='input-search']`).Press("Enter")
 	require.NoError(t, err)
 	//screenshot(t),
 
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("created tag: baz")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("created tag: baz")
 
 	require.NoError(t, err)
 	// go to workspace listing

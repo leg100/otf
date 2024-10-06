@@ -38,6 +38,8 @@ jobs:
           # to create a webhook on a github repo
           OAUTH_CLIENT_GITHUB_TOKEN: ${{ secrets.GO_TFE_OAUTH_CLIENT_GITHUB_TOKEN }}
           GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
+      - name: Install e2e dependencies
+        run: go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium --with-deps
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}

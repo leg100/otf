@@ -45,14 +45,22 @@ func TestTerraformLogin(t *testing.T) {
 	require.NoError(t, err)
 	defer e.Close()
 
-	e.Expect(regexp.MustCompile(`Enter a value:`), -1)
-	e.Send("yes\n")
-	e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
-	u, _, _ := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
+	_, _, err = e.Expect(regexp.MustCompile(`Enter a value:`), -1)
+	require.NoError(t, err)
+
+	err = e.Send("yes\n")
+	require.NoError(t, err)
+
+	_, _, err = e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
+	require.NoError(t, err)
+
+	url, _, err := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
+	require.NoError(t, err)
 
 	page := browser.New(t, ctx)
+
 	// navigate to auth url captured from terraform login output
-	_, err = page.Goto(strings.TrimSpace(u))
+	_, err = page.Goto(strings.TrimSpace(url))
 	require.NoError(t, err)
 	//screenshot(t, "terraform_login_consent"),
 
@@ -61,10 +69,8 @@ func TestTerraformLogin(t *testing.T) {
 	require.NoError(t, err)
 
 	//screenshot(t, "terraform_login_flow_complete"),
-	err = expect.Locator(page.Locator(`//body/p`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
+	err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
 	require.NoError(t, err)
-
-	e.Expect(regexp.MustCompile(`Success! Terraform has obtained and saved an API token.`), -1)
 
 	err = <-tferr
 	if !assert.NoError(t, err) || t.Failed() {

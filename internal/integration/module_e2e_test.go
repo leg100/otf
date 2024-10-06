@@ -95,7 +95,7 @@ func TestModuleE2E(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t),
 
-	reloadUntilVisible(t, page, `//select[@id="version"]/option[@selected]`)
+	reloadUntilEnabled(t, page, `//select[@id="version"]/option[@selected]`)
 	//screenshot(t),
 
 	// Now run terraform with some config that sources the module. First we need

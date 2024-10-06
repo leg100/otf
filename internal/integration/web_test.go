@@ -47,7 +47,7 @@ func TestWeb(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t, "team_permissions_added_workspace_manager"),
 	// confirm permissions updated
-	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("team permissions updated")
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
 	require.NoError(t, err)
 	// add write permission on workspace to devops team
 	addWorkspacePermission(t, page, daemon.System.Hostname(), org.Name, "my-workspace", team.ID, "write")

@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/leg100/otf/internal/run"
@@ -22,7 +21,7 @@ func TestStartRunUI(t *testing.T) {
 	// operation
 	page := browser.New(t, ctx)
 
-	startRunTasks(t, page, svc.System.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation)
+	startRunTasks(t, page, svc.System.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation, true)
 
 	// now destroy resources with the destroy-all operation
 	// go to workspace page
@@ -39,48 +38,5 @@ func TestStartRunUI(t *testing.T) {
 	require.NoError(t, err)
 	//screenshot(t),
 
-	// confirm plan begins and ends
-	err = expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`)).ToBeVisible()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeAttached()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// wait for run to enter planned state
-	err = expect.Locator(page.Locator(`//div[@class='widget']//a[text()='planned']`)).ToBeAttached()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// run widget should show plan summary
-	err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// run widget should show discard button
-	err = expect.Locator(page.Locator(`//button[@id='run-discard-button']`)).ToBeVisible()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// click 'confirm & apply' button once it becomes visible
-	err = page.Locator(`//button[text()='apply']`).Click()
-	require.NoError(t, err)
-	//screenshot(t),
-
-	// confirm apply begins and ends
-	err = expect.Locator(page.Locator(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`)).ToBeAttached()
-	require.NoError(t, err)
-
-	err = expect.Locator(page.Locator(`//span[@id='apply-status' and text()='finished']`)).ToBeAttached()
-	require.NoError(t, err)
-
-	// confirm run ends in applied state
-	err = expect.Locator(page.Locator(`//div[@class='widget']//a[text()='applied']`)).ToBeAttached()
-	require.NoError(t, err)
-
-	// run widget should show apply summary
-	err = expect.Locator(page.Locator(`//div[@class='widget']//div[@id='resource-summary']`)).ToHaveText(regexp.MustCompile(`\+[0-9]+ \~[0-9]+ \-[0-9]+`))
-	require.NoError(t, err)
-	//screenshot(t),
+	planWithOptionalApply(t, page, svc.System.Hostname(), ws.Organization, ws.Name, true)
 }
