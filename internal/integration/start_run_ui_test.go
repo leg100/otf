@@ -27,7 +27,7 @@ func TestStartRunUI(t *testing.T) {
 	// go to workspace page
 	_, err := page.Goto(workspaceURL(svc.System.Hostname(), ws.Organization, ws.Name))
 	require.NoError(t, err)
-	//screenshot(t, "workspace_page"),
+	screenshot(t, page, "workspace_page")
 	// navigate to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)

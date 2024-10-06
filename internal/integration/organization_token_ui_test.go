@@ -20,11 +20,11 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	// go to organization token page
 	err = page.Locator(`//span[@id='organization_tokens']/a`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "org_token_new"),
+	screenshot(t, page, "org_token_new")
 	// create new token
 	err = page.Locator(`//button[text()='Create organization token']`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "org_token_created"),
+	screenshot(t, page, "org_token_created")
 
 	// check for JWT in flash msg
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))

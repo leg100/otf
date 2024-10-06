@@ -90,7 +90,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	err = page.Locator(`button#add-pattern`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t, "workspace_edit_trigger_patterns"),
+	screenshot(t, page, "workspace_edit_trigger_patterns")
 
 	// check patterns are listed
 	err = expect.Locator(page.Locator(`span#trigger-pattern-1`)).ToHaveText(`/foo/*.tf`)

@@ -62,13 +62,13 @@ func TestTerraformLogin(t *testing.T) {
 	// navigate to auth url captured from terraform login output
 	_, err = page.Goto(strings.TrimSpace(url))
 	require.NoError(t, err)
-	//screenshot(t, "terraform_login_consent"),
+	screenshot(t, page, "terraform_login_consent")
 
 	// give consent
 	err = page.Locator(`//button[text()='Accept']`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t, "terraform_login_flow_complete"),
+	screenshot(t, page, "terraform_login_flow_complete")
 	err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
 	require.NoError(t, err)
 

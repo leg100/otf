@@ -102,7 +102,7 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 	// scroll to bottom so that permissions are visible in screenshot
 	err = page.Locator("#permissions-add-button").ScrollIntoViewIfNeeded()
 	require.NoError(t, err)
-	//screenshot(t, "workspace_permissions"),
+	screenshot(t, page, "workspace_permissions")
 
 	err = page.Locator("#permissions-add-button").Click()
 	require.NoError(t, err)
@@ -118,7 +118,8 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 	// go to workspace page
 	_, err := page.Goto(workspaceURL(hostname, organization, workspaceName))
 	require.NoError(t, err)
-	//screenshot(t, "connected_workspace_main_page"),
+
+	screenshot(t, page, "connected_workspace_main_page")
 
 	// select operation for run
 	selectValues := []string{string(op)}
@@ -126,7 +127,8 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 		Values: &selectValues,
 	})
 	require.NoError(t, err)
-	//screenshot(t, "run_page_started"),
+
+	screenshot(t, page, "run_page_started")
 
 	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
 }
@@ -153,7 +155,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	err = expect.Locator(page.Locator(`//div[@id='resource-summary']/span[3]`)).ToHaveText(regexp.MustCompile(`\-[0-9]+`))
 	require.NoError(t, err)
 
-	//screenshot(t, "run_page_planned_state"),
+	screenshot(t, page, "run_page_planned_state")
 
 	if !apply {
 		// not applying, nothing more to be done.
@@ -211,22 +213,22 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, na
 	// go to workspace
 	_, err := page.Goto(workspaceURL(hostname, org, name))
 	require.NoError(t, err)
-	//screenshot(t, "workspace_main_page"),
+	screenshot(t, page, "workspace_main_page")
 
 	// navigate to workspace settings
 	err = page.Locator(`//a[text()='settings']`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "workspace_settings"),
+	screenshot(t, page, "workspace_settings")
 
 	// click connect button
 	err = page.Locator(`//button[@id='list-workspace-vcs-providers-button']`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "workspace_vcs_providers_list"),
+	screenshot(t, page, "workspace_vcs_providers_list")
 
 	// select provider
 	err = page.Locator(`div.widget`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "workspace_vcs_repo_list"),
+	screenshot(t, page, "workspace_vcs_repo_list")
 
 	// connect to first repo in list (there should only be one)
 	err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()

@@ -21,7 +21,7 @@ func TestSiteAdminUI(t *testing.T) {
 	// login as site admin
 	_, err := page.Goto("https://" + daemon.System.Hostname() + "/login")
 	require.NoError(t, err)
-	//screenshot(t, "no_authenticators_site_admin_login"),
+	screenshot(t, page, "no_authenticators_site_admin_login")
 
 	// use the link in the bottom right corner
 	err = expect.Locator(page.Locator(".footer-site-login")).ToHaveText("site admin")
@@ -33,12 +33,12 @@ func TestSiteAdminUI(t *testing.T) {
 	// enter token
 	err = page.Locator("input#token").Fill("abc123")
 	require.NoError(t, err)
-	//screenshot(t, "site_admin_login_enter_token"),
+	screenshot(t, page, "site_admin_login_enter_token")
 
 	// submit
 	err = page.GetByRole("button").GetByText("Login").Click()
 	require.NoError(t, err)
-	//screenshot(t, "site_admin_profile"),
+	screenshot(t, page, "site_admin_profile")
 
 	err = expect.Locator(page.Locator("#content > p")).ToHaveText("You are logged in as site-admin")
 	require.NoError(t, err)

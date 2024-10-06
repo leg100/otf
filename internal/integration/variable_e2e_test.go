@@ -103,7 +103,7 @@ output "foo" {
 	// update value
 	err = page.Locator("textarea#value").Fill("topsecret")
 	require.NoError(t, err)
-	//screenshot(t, "variables_entering_top_secret"),
+	screenshot(t, page, "variables_entering_top_secret")
 
 	// submit form
 	err = page.Locator(`//button[@id='save-variable-button']`).Click()

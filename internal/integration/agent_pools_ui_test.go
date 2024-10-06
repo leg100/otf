@@ -54,7 +54,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	// submit form
 	err = page.Locator(`//button[text()='Create agent pool']`).Click()
 	require.NoError(t, err)
-	////screenshot(t, "created_agent_pool"),
+	screenshot(t, page, "created_agent_pool")
 
 	// expect flash message confirming pool creation
 	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`created agent pool: pool-1`)
@@ -76,7 +76,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	err = page.Locator(`input#workspace-input`).Fill(ws1.Name)
 	require.NoError(t, err)
-	//screenshot(t, "agent_pool_grant_workspace_form"),
+	screenshot(t, page, "agent_pool_grant_workspace_form")
 
 	err = page.Locator(fmt.Sprintf(`//button[@id='%s']`, ws1.ID)).Click()
 	require.NoError(t, err)
@@ -109,7 +109,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	err = page.Locator(`//a[@id='agent-pools-link']`).ScrollIntoViewIfNeeded()
 	require.NoError(t, err)
-	//screenshot(t, "workspace_select_agent_execution_mode"),
+	screenshot(t, page, "workspace_select_agent_execution_mode")
 
 	// save changes to workspace
 	err = page.Locator(`//button[text()='Save changes']`).Click()
@@ -123,7 +123,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
 	require.NoError(t, err)
 
-	//screenshot(t, "agent_pool_workspace_granted_and_assigned"),
+	screenshot(t, page, "agent_pool_workspace_granted_and_assigned")
 	// confirm workspace is now listed under 'Granted & Assigned'
 	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='granted-and-assigned-workspaces']//a[text()='%s']`, ws1.Name))).ToBeVisible()
 	require.NoError(t, err)
@@ -131,7 +131,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	// create agent token
 	err = page.Locator("#new-token-details").Click()
 	require.NoError(t, err)
-	//screenshot(t, "agent_pool_open_new_token_form"),
+	screenshot(t, page, "agent_pool_open_new_token_form")
 
 	// enter description for new agent token
 	err = page.Locator("input#new-token-description").Fill("token-1")
@@ -140,7 +140,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	// submit form
 	err = page.Locator(`//button[text()='Create token']`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "agent_pool_token_created"),
+	screenshot(t, page, "agent_pool_token_created")
 
 	// expect flash message confirming token creation
 	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
@@ -173,7 +173,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID))).ToBeVisible()
 	require.NoError(t, err)
-	//screenshot(t, "agent_pool_with_idle_agent"),
+	screenshot(t, page, "agent_pool_with_idle_agent")
 
 	// shut agent down and wait for it to exit
 	shutdownAgent()

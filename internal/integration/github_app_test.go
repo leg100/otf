@@ -105,17 +105,17 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			// go to site settings page
 			_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
 			require.NoError(t, err)
-			//screenshot(t, "site_settings"),
+			screenshot(t, page, "site_settings")
 
 			// go to github app page
 			err = page.Locator("//a[text()='GitHub app']").Click()
 			require.NoError(t, err)
 
-			//screenshot(t, "empty_github_app_page"),
+			screenshot(t, page, "empty_github_app_page")
 			// go to page for creating a new github app
 			err = page.Locator("//a[@id='new-github-app-link']").Click()
 			require.NoError(t, err)
-			//screenshot(t, "new_github_app"),
+			screenshot(t, page, "new_github_app")
 
 			if tt.public {
 				err = page.Locator(`//input[@type='checkbox' and @id='public']`).Click()
@@ -171,7 +171,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 
 		err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
 		require.NoError(t, err)
-		//screenshot(t, "github_app_created"),
+		screenshot(t, page, "github_app_created")
 	})
 
 	// demonstrate the listing of github installations
@@ -205,7 +205,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 
 		err = expect.Locator(page.Locator(`//div[@id='installations']//a[contains(text(), "user/leg100")]`)).ToBeVisible()
 		require.NoError(t, err)
-		//screenshot(t, "github_app_install_list"),
+		screenshot(t, page, "github_app_install_list")
 	})
 }
 

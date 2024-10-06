@@ -29,7 +29,7 @@ func TestGithubLogin(t *testing.T) {
 	// go to login page
 	_, err := page.Goto("https://" + svc.System.Hostname() + "/login")
 	require.NoError(t, err)
-	//screenshot(t, "github_login_button"),
+	screenshot(t, page, "github_login_button")
 
 	// login
 	err = page.Locator("a#login-button-github").Click()

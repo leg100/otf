@@ -26,7 +26,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 
 	err = page.Locator("input#name").Fill("acme-corp")
 	require.NoError(t, err)
-	//screenshot(t, "new_org_enter_name"),
+	screenshot(t, page, "new_org_enter_name")
 	// screenshot(t, "new_org_created"),
 
 	err = page.Locator("input#name").Press("Enter")

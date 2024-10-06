@@ -33,7 +33,7 @@ func TestIntegration_OIDC(t *testing.T) {
 	// go to login page
 	_, err := page.Goto("https://" + svc.System.Hostname() + "/login")
 	require.NoError(t, err)
-	//screenshot(t, "oidc_login_button"),
+	screenshot(t, page, "oidc_login_button")
 
 	// login
 	err = page.Locator("a#login-button-google").Click()

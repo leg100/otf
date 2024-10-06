@@ -39,7 +39,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	// run should be in planned and finished state
 	err = expect.Locator(page.Locator(`//a[text()='planned and finished']`)).ToBeVisible()
 	require.NoError(t, err)
-	//screenshot(t, "run_page_planned_and_finished_state"),
+	screenshot(t, page, "run_page_planned_and_finished_state")
 	// click retry button
 	err = page.Locator(`//button[text()='retry run']`).Click()
 	require.NoError(t, err)

@@ -42,7 +42,7 @@ func TestWeb(t *testing.T) {
 	// submit form
 	err = page.GetByRole("button").GetByText("Save changes").Click()
 	require.NoError(t, err)
-	//screenshot(t, "team_permissions_added_workspace_manager"),
+	screenshot(t, page, "team_permissions_added_workspace_manager")
 	// confirm permissions updated
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
 	require.NoError(t, err)

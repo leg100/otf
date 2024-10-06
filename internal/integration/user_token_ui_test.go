@@ -21,7 +21,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	err = page.Locator(`//div[@id='user-tokens-link']/a`).Click()
 	require.NoError(t, err)
 
-	////screenshot(t, "user_tokens"),
+	screenshot(t, page, "user_tokens")
 	// go to new token
 	err = page.Locator(`//button[@id='new-user-token-button']`).Click()
 	require.NoError(t, err)
@@ -29,12 +29,12 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	// enter description for new token and submit
 	err = page.Locator("textarea#description").Fill("my new token")
 	require.NoError(t, err)
-	//screenshot(t, "user_token_enter_description"),
+	screenshot(t, page, "user_token_enter_description")
 
 	err = page.Locator(`//button[text()='Create token']`).Click()
 	require.NoError(t, err)
 
-	//screenshot(t, "user_token_created"),
+	screenshot(t, page, "user_token_created")
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
 	require.NoError(t, err)
 

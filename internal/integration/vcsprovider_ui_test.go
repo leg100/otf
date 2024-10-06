@@ -32,15 +32,15 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 	require.NoError(t, err)
 
-	//screenshot(t, "organization_main_menu"),
+	screenshot(t, page, "organization_main_menu")
 	// go to vcs providers
 	err = page.Locator("#vcs_providers > a").Click()
 	require.NoError(t, err)
-	//screenshot(t, "vcs_providers_list"),
+	screenshot(t, page, "vcs_providers_list")
 	// click 'New Github VCS Provider' button
 	err = page.Locator(`//button[text()='New Github VCS Provider (Personal Token)']`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "new_github_vcs_provider_form"),
+	screenshot(t, page, "new_github_vcs_provider_form")
 
 	// enter fake github token
 	err = page.Locator("textarea#token").Fill("fake-github-personal-token")
@@ -55,7 +55,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (token)`)
 	require.NoError(t, err)
 
-	//screenshot(t, "vcs_provider_created_github_pat_provider"),
+	screenshot(t, page, "vcs_provider_created_github_pat_provider")
 	// edit provider
 	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
 	require.NoError(t, err)
@@ -170,7 +170,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	err = page.Locator("#vcs_providers > a").Click()
 	require.NoError(t, err)
 
-	//screenshot(t, "vcs_provider_list_including_github_app"),
+	screenshot(t, page, "vcs_provider_list_including_github_app")
 	// click button for creating a new vcs provider with a github app
 	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
 		HasText: "New Github VCS Provider (App)",

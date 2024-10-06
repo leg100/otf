@@ -29,7 +29,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 	// go to owners team page
 	err = page.Locator(`//div[@id='item-team-owners']`).Click()
 	require.NoError(t, err)
-	//screenshot(t, "owners_team_page"),
+	screenshot(t, page, "owners_team_page")
 
 	// set focus to search box
 	err = page.Locator(`//input[@x-ref='input-search']`).Fill("")
