@@ -113,6 +113,10 @@ func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 	// Create a browser page (tab) for test
 	page, err := browserCtx.NewPage()
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := page.Close()
+		require.NoError(t, err)
+	})
 
 	// Click OK on any browser javascript dialog boxes that pop up
 	page.OnDialog(func(dialog playwright.Dialog) {

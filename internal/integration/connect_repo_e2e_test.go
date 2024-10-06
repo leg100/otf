@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
@@ -27,12 +26,12 @@ func TestConnectRepoE2E(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	page := browser.New(t, ctx)
-		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-test-workspace"),
-		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "my-test-workspace", provider.String()),
-		// we can now start a run via the web ui, which'll retrieve the tarball from
-		// the fake github server
-		startRunTasks(t, daemon.System.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation),
-	})
+
+	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace")
+	connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace", provider.String())
+	// we can now start a run via the web ui, which'll retrieve the tarball from
+	// the fake github server
+	startRunTasks(t, page, daemon.System.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation)
 
 	// Now we test the webhook functionality by sending an event to the daemon
 	// (which would usually be triggered by a git push to github). The event
@@ -43,21 +42,24 @@ func TestConnectRepoE2E(t *testing.T) {
 	daemon.SendEvent(t, github.PushEvent, push)
 
 	// commit-triggered run should appear as latest run on workspace
-	page := browser.New(t, ctx)
-		// go to workspace
-		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
-require.NoError(t, err)
-		//screenshot(t),
-		// branch should match that of push event
-		chromedp.WaitVisible(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`),
-		// commit should match that of push event
-		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='commit-sha-abbrev' and text()='42d6fc7']`),
-		// user should match that of push event
-		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`),
-		// because run was triggered from github, the github icon should be visible.
-		chromedp.WaitVisible(`//div[@class='widget']//img[@id='run-trigger-github']`),
-		//screenshot(t),
-	})
+	//
+	// go to workspace
+	_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
+	require.NoError(t, err)
+	//screenshot(t),
+	// branch should match that of push event
+	err = expect.Locator(page.Locator(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`)).ToBeVisible()
+	require.NoError(t, err)
+	// commit should match that of push event
+	err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='commit-sha-abbrev' and text()='42d6fc7']`)).ToBeVisible()
+	require.NoError(t, err)
+	// user should match that of push event
+	err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
+	require.NoError(t, err)
+	// because run was triggered from github, the github icon should be visible.
+	err = expect.Locator(page.Locator(`//div[@class='widget']//img[@id='run-trigger-github']`)).ToBeVisible()
+	require.NoError(t, err)
+	//screenshot(t),
 
 	// github should receive three pending status updates followed by a final
 	// update with details of planned resources
@@ -71,46 +73,48 @@ require.NoError(t, err)
 
 	// Clean up after ourselves by disconnecting the workspace and deleting the
 	// workspace and vcs provider
-	page := browser.New(t, ctx)
-		// go to workspace
-		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
-require.NoError(t, err)
-		//screenshot(t),
-		// go to workspace settings
-		err := page.Locator(`//a[text()='settings']`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		// click disconnect button
-		err := page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		// confirm disconnected
-		matchText(t, "//div[@role='alert']", "disconnected workspace from repo"),
-		// go to workspace settings
-		err := page.Locator(`//a[text()='settings']`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		// delete workspace
-		err := page.Locator(`//button[@id='delete-workspace-button']`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		// confirm deletion
-		matchText(t, "//div[@role='alert']", "deleted workspace: my-test-workspace"),
-		//
-		// delete vcs provider
-		//
-		// go to org
-		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-require.NoError(t, err)
-		//screenshot(t),
-		// go to vcs providers
-		err := page.Locator("#vcs_providers > a").Click()
-require.NoError(t, err)
-		//screenshot(t),
-		// click delete button for one and only vcs provider
-		err := page.Locator(`//button[text()='delete']`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		matchText(t, "//div[@role='alert']", `deleted provider: github \(token\)`),
-	})
+	//
+	// go to workspace
+	_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
+	require.NoError(t, err)
+	//screenshot(t),
+	// go to workspace settings
+	err = page.Locator(`//a[text()='settings']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	// click disconnect button
+	err = page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	// confirm disconnected
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("disconnected workspace from repo")
+	require.NoError(t, err)
+	// go to workspace settings
+	err = page.Locator(`//a[text()='settings']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	// delete workspace
+	err = page.Locator(`//button[@id='delete-workspace-button']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	// confirm deletion
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("deleted workspace: my-test-workspace")
+	require.NoError(t, err)
+	//
+	// delete vcs provider
+	//
+	// go to org
+	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+	require.NoError(t, err)
+	//screenshot(t),
+	// go to vcs providers
+	err = page.Locator("#vcs_providers > a").Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	// click delete button for one and only vcs provider
+	err = page.Locator(`//button[text()='delete']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`deleted provider: github \(token\)`)
+	require.NoError(t, err)
 }

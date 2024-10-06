@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
@@ -57,16 +56,18 @@ func TestGithubPullRequest(t *testing.T) {
 
 		// commit-triggered run should appear as latest run on workspace
 		page := browser.New(t, ctx)
-			// go to runs
-			_, err = page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
-require.NoError(t, err)
-			//screenshot(t),
-			// should be one run widget with info matching the pull request
-			chromedp.WaitVisible(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`),
-			chromedp.WaitVisible(`//div[@class='widget']//a[@id='vcs-username' and text()='@leg100']`),
-			chromedp.WaitVisible(fmt.Sprintf(`//div[@class='widget']//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit)),
-			//screenshot(t),
-		})
+		// go to runs
+		_, err = page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
+		require.NoError(t, err)
+		//screenshot(t),
+		// should be one run widget with info matching the pull request
+		err = expect.Locator(page.Locator(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`)).ToBeVisible()
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//div[@class='widget']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@class='widget']//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit))).ToBeVisible()
+		require.NoError(t, err)
+		//screenshot(t),
 
 		// github should receive several pending status updates followed by a final
 		// update with details of planned resources

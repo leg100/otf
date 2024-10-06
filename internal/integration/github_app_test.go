@@ -8,8 +8,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/daemon"
@@ -102,30 +100,38 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}(t, tt.path, tt.public)
 
 			daemon, _, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
-			tasks := chromedp.Tasks{
-				// go to site settings page
-				_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
-require.NoError(t, err)
-				//screenshot(t, "site_settings"),
-				// go to github app page
-				err := page.Locator("//a[text()='GitHub app']").Click()
-require.NoError(t, err)
-				//screenshot(t, "empty_github_app_page"),
-				// go to page for creating a new github app
-				err := page.Locator("//a[@id='new-github-app-link']").Click()
-require.NoError(t, err)
-				//screenshot(t, "new_github_app"),
-			}
-			if tt.public {
-				tasks = append(tasks, chromedp.Click(`//input[@type='checkbox' and @id='public']`))
-			}
-			if tt.organization != "" {
-				tasks = append(tasks, chromedp.Focus(`//input[@id="organization"]`, chromedp.NodeVisible))
-				tasks = append(tasks, input.InsertText(tt.organization))
-			}
-			tasks = append(tasks, chromedp.Click(`//button[text()='Create']`))
-			tasks = append(tasks, chromedp.WaitVisible(`//body[text()='success']`))
+
 			page := browser.New(t, ctx)
+			// go to site settings page
+			_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
+			require.NoError(t, err)
+			//screenshot(t, "site_settings"),
+
+			// go to github app page
+			err = page.Locator("//a[text()='GitHub app']").Click()
+			require.NoError(t, err)
+
+			//screenshot(t, "empty_github_app_page"),
+			// go to page for creating a new github app
+			err = page.Locator("//a[@id='new-github-app-link']").Click()
+			require.NoError(t, err)
+			//screenshot(t, "new_github_app"),
+
+			if tt.public {
+				err = page.Locator(`//input[@type='checkbox' and @id='public']`).Click()
+				require.NoError(t, err)
+			}
+
+			if tt.organization != "" {
+				err = page.Locator(`//input[@id="organization"]`).Fill(tt.organization)
+				require.NoError(t, err)
+			}
+
+			err = page.Locator(`//button[text()='Create']`).Click()
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator(`//body[text()='success']`)).ToBeVisible()
+			require.NoError(t, err)
 		})
 	}
 
@@ -153,16 +159,19 @@ require.NoError(t, err)
 		}
 		daemon, _, _ := setup(t, nil, handlers...)
 		page := browser.New(t, ctx)
-			// go to the exchange code endpoint
-			chromedp.Navigate((&url.URL{
-				Scheme:   "https",
-				Host:     daemon.System.Hostname(),
-				Path:     "/app/github-apps/exchange-code",
-				RawQuery: "code=anything",
-			}).String()),
-			chromedp.WaitVisible(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`),
-			//screenshot(t, "github_app_created"),
-		})
+		// go to the exchange code endpoint
+		//
+		_, err := page.Goto((&url.URL{
+			Scheme:   "https",
+			Host:     daemon.System.Hostname(),
+			Path:     "/app/github-apps/exchange-code",
+			RawQuery: "code=anything",
+		}).String())
+		require.NoError(t, err)
+
+		err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
+		require.NoError(t, err)
+		//screenshot(t, "github_app_created"),
 	})
 
 	// demonstrate the listing of github installations
@@ -188,12 +197,15 @@ require.NoError(t, err)
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		})
 		require.NoError(t, err)
+
 		page := browser.New(t, ctx)
-			_, err = page.Goto(daemon.System.URL("/app/github-apps"))
-require.NoError(t, err)
-			chromedp.WaitVisible(`//div[@id='installations']//a[contains(text(), "user/leg100")]`),
-			//screenshot(t, "github_app_install_list"),
-		})
+
+		_, err = page.Goto(daemon.System.URL("/app/github-apps"))
+		require.NoError(t, err)
+
+		err = expect.Locator(page.Locator(`//div[@id='installations']//a[contains(text(), "user/leg100")]`)).ToBeVisible()
+		require.NoError(t, err)
+		//screenshot(t, "github_app_install_list"),
 	})
 }
 

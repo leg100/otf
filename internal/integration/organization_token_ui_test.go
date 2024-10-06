@@ -1,11 +1,10 @@
 package integration
 
 import (
-	"strings"
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_OrganizationTokenUI demonstrates managing organization tokens via the UI.
@@ -14,38 +13,52 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 
 	svc, org, ctx := setup(t, nil)
 
-	var (
-		createdTokenID     string
-		regeneratedTokenID string
-	)
 	page := browser.New(t, ctx)
-		// go to organization
-		_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
-require.NoError(t, err)
-		// go to organization token page
-		err := page.Locator(`//span[@id='organization_tokens']/a`).Click()
-require.NoError(t, err)
-		//screenshot(t, "org_token_new"),
-		// create new token
-		err := page.Locator(`//button[text()='Create organization token']`).Click()
-require.NoError(t, err)
-		//screenshot(t, "org_token_created"),
-		// check for JWT in flash msg
-		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
-		// token widget should be visible
-		chromedp.WaitVisible(`//div[@class='widget']//span[text()='Token']`),
-		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &createdTokenID),
-		// regenerate token
-		err := page.Locator(`//button[text()='regenerate']`).Click()
-require.NoError(t, err)
-		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &regeneratedTokenID),
-		// delete token
-		err := page.Locator(`//button[text()='delete']`).Click()
-require.NoError(t, err)
-		// flash msg declaring token is deleted
-		matchText(t, "//div[@role='alert']", `Deleted organization token`),
-	})
-	assert.True(t, strings.HasPrefix(createdTokenID, "ot-"))
-	assert.True(t, strings.HasPrefix(regeneratedTokenID, "ot-"))
-	assert.NotEqual(t, createdTokenID, regeneratedTokenID)
+	// go to organization
+	_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+	require.NoError(t, err)
+	// go to organization token page
+	err = page.Locator(`//span[@id='organization_tokens']/a`).Click()
+	require.NoError(t, err)
+	//screenshot(t, "org_token_new"),
+	// create new token
+	err = page.Locator(`//button[text()='Create organization token']`).Click()
+	require.NoError(t, err)
+	//screenshot(t, "org_token_created"),
+
+	// check for JWT in flash msg
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+	require.NoError(t, err)
+
+	// token widget should be visible
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[text()='Token']`)).ToBeVisible()
+	require.NoError(t, err)
+
+	// check token begins with `ot-`
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@class='identifier']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+	require.NoError(t, err)
+
+	// capture token for comparison
+	token, err := page.Locator(`//div[@class='widget']//span[@class='identifier']`).TextContent()
+	require.NoError(t, err)
+
+	// regenerate token
+	err = page.Locator(`//button[text()='regenerate']`).Click()
+	require.NoError(t, err)
+
+	// check regenerated token does not match original token
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@class='identifier']`)).Not().ToHaveText(token)
+	require.NoError(t, err)
+
+	// check regenerated token begins with `ot-`
+	err = expect.Locator(page.Locator(`//div[@class='widget']//span[@class='identifier']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+	require.NoError(t, err)
+
+	// delete token
+	err = page.Locator(`//button[text()='delete']`).Click()
+	require.NoError(t, err)
+
+	// flash msg declaring token is deleted
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText(`Deleted organization token`)
+	require.NoError(t, err)
 }

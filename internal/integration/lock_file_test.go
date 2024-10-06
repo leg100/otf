@@ -20,7 +20,8 @@ func TestLockFile(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// in a browser, create workspace
-	browser.New(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"))
+	page := browser.New(t, ctx)
+	createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
 
 	// create root module with only a variable and no resources - this should
 	// result in *no* lock file being created.

@@ -1,10 +1,9 @@
 package integration
 
 import (
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,50 +19,69 @@ func TestIntegration_TeamUI(t *testing.T) {
 	require.NoError(t, err)
 
 	page := browser.New(t, ctx)
-		chromedp.Tasks{
-			// go to org
-			_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-require.NoError(t, err)
-			//screenshot(t),
-			// go to teams listing
-			err := page.Locator(`//a[text()='teams']`).Click()
-require.NoError(t, err)
-			//screenshot(t),
-			// go to owners team page
-			err := page.Locator(`//div[@id='item-team-owners']`).Click()
-require.NoError(t, err)
-			//screenshot(t, "owners_team_page"),
-			// set focus to search box
-			chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
-			input.InsertText(""),
-			// should trigger dropdown box showing both alice and bob
-			chromedp.WaitVisible(`//div[@x-ref='searchdrop']//button[text()='bob']`),
-			chromedp.WaitVisible(`//div[@x-ref='searchdrop']//button[text()='alice']`),
-			// select bob as new team member
-			input.InsertText("bob"),
-			//screenshot(t),
-			// submit
-			chromedp.Submit(`//input[@x-ref='input-search']`),
-			//screenshot(t),
-			// confirm bob added
-			matchText(t, "//div[@role='alert']", "added team member: bob"),
-			// remove bob from team
-			err := page.Locator(`//div[@id='item-user-bob']//button[@id='remove-member-button']`).Click()
-require.NoError(t, err)
-			//screenshot(t),
-			// confirm bob removed
-			matchText(t, "//div[@role='alert']", "removed team member: bob"),
-			// now demonstrate specifying a username that doesn't belong to an
-			// existing user. The dropdown box should prompt to create the user
-			// and add them to the team.
-			chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
-			input.InsertText("sarah"),
-			matchRegex(t, `//div[@x-ref='searchdrop']//button`, `Create:.*sarah`),
-			// submit
-			chromedp.Submit(`//input[@x-ref='input-search']`),
-			//screenshot(t),
-			// confirm sarah added
-			matchText(t, "//div[@role='alert']", "added team member: sarah"),
-		},
-	})
+
+	// go to org
+	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+	require.NoError(t, err)
+	//screenshot(t),
+	// go to teams listing
+	err = page.Locator(`//a[text()='teams']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+	// go to owners team page
+	err = page.Locator(`//div[@id='item-team-owners']`).Click()
+	require.NoError(t, err)
+	//screenshot(t, "owners_team_page"),
+
+	// set focus to search box
+	err = page.Locator(`//input[@x-ref='input-search']`).Fill("")
+	require.NoError(t, err)
+	// input.InsertText(""),
+
+	// should trigger dropdown box showing both alice and bob
+	err = expect.Locator(page.Locator(`//div[@x-ref='searchdrop']//button[text()='bob']`)).ToBeVisible()
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//div[@x-ref='searchdrop']//button[text()='alice']`)).ToBeVisible()
+	require.NoError(t, err)
+
+	// select bob as new team member
+	err = page.Locator(`//input[@x-ref='input-search']`).Fill("bob")
+	//screenshot(t),
+
+	// submit
+	err = page.Locator(`//input[@x-ref='input-search']`).Press(`Enter`)
+	require.NoError(t, err)
+	//screenshot(t),
+
+	// confirm bob added
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added team member: bob")
+	require.NoError(t, err)
+
+	// remove bob from team
+	err = page.Locator(`//div[@id='item-user-bob']//button[@id='remove-member-button']`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+
+	// confirm bob removed
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("removed team member: bob")
+	require.NoError(t, err)
+
+	// now demonstrate specifying a username that doesn't belong to an
+	// existing user. The dropdown box should prompt to create the user
+	// and add them to the team.
+	err = page.Locator(`//input[@x-ref='input-search']`).Fill("sarah")
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//div[@x-ref='searchdrop']//button`)).ToHaveText(regexp.MustCompile(`Create:.*sarah`))
+	require.NoError(t, err)
+
+	// submit
+	err = page.Locator(`//input[@x-ref='input-search']`).Press(`Enter`)
+	require.NoError(t, err)
+	//screenshot(t),
+
+	// confirm sarah added
+	err = expect.Locator(page.Locator("//div[@role='alert']")).ToHaveText("added team member: sarah")
+	require.NoError(t, err)
 }

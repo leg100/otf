@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,9 +26,9 @@ func TestWritePermissionE2E(t *testing.T) {
 	// Open browser, create workspace and assign write permissions to the
 	// engineer's team.
 	page := browser.New(t, ctx)
-		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write"),
-	})
+
+	createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
+	addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write")
 
 	// As engineer, run terraform init
 	_ = svc.tfcli(t, engineerCtx, "init", config)

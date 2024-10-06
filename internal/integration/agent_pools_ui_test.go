@@ -2,16 +2,14 @@ package integration
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestAgentPoolsUI demonstrates managing agent pools and tokens via the UI.
@@ -45,8 +43,8 @@ func TestAgentPoolsUI(t *testing.T) {
 	////screenshot(t),
 
 	// expose new agent pool form
-	err := page.Locator("#new-pool-details").Click()
-require.NoError(t, err)
+	err = page.Locator("#new-pool-details").Click()
+	require.NoError(t, err)
 	// //screenshot(t, "new_agent_pool"),
 	//
 
@@ -55,12 +53,12 @@ require.NoError(t, err)
 	require.NoError(t, err)
 
 	// submit form
-	err := page.Locator(`//button[text()='Create agent pool']`).Click()
+	err = page.Locator(`//button[text()='Create agent pool']`).Click()
 	require.NoError(t, err)
 	////screenshot(t, "created_agent_pool"),
 
 	// expect flash message confirming pool creation
-	err := expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`created agent pool: pool-1`)
+	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`created agent pool: pool-1`)
 	require.NoError(t, err)
 
 	// confirm pool was created
@@ -72,68 +70,90 @@ require.NoError(t, err)
 	var agentToken string
 
 	// grant and assign workspace to agent pool, and create agent token.
-	page := browser.New(t, ctx)
-		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
-require.NoError(t, err)
-		// grant access to specific workspace
-		err := page.Locator(`input#workspaces-specific`).Click()
-require.NoError(t, err)
-		chromedp.Focus(`input#workspace-input`, chromedp.ByQuery, chromedp.NodeVisible),
-		//screenshot(t, "agent_pool_grant_workspace_form"),
-		input.InsertText(ws1.Name),
+	//
+	// go back to agent pool
+	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+	require.NoError(t, err)
+	// grant access to specific workspace
+	err = page.Locator(`input#workspaces-specific`).Click()
+	require.NoError(t, err)
 
-		err := page.Locator(fmt.Sprintf(`//button[@id='%s']`, ws1.ID)).Click()
-		require.NoError(t, err)
+	err = page.Locator(`input#workspace-input`).Fill(ws1.Name)
+	require.NoError(t, err)
+	//screenshot(t, "agent_pool_grant_workspace_form"),
 
-		// ws1 should appear in list of granted workspaces
-		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name)),
-		// submit
-		chromedp.Submit(`//button[text()='Save changes']`),
-		//screenshot(t, "agent_pool_granted_workspace"),
-		// ws1 should still appear in list of granted workspaces
-		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name)),
-		// go to workspaces
-		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
-require.NoError(t, err)
-		// go to workspace settings
-		err := page.Locator(`//a[text()='settings']`).Click()
-require.NoError(t, err)
-		// select agent execution mode radio button
-		err := page.Locator(`//input[@id='agent']`).Click()
-require.NoError(t, err)
-		chromedp.ScrollIntoView(`//a[@id='agent-pools-link']`),
-		//screenshot(t, "workspace_select_agent_execution_mode"),
-		// save changes to workspace
-		chromedp.Submit(`//button[text()='Save changes']`),
-		// confirm execution mode change has persisted
-		chromedp.WaitVisible(`input#agent:checked`, chromedp.ByQuery),
-		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
-require.NoError(t, err)
-		//screenshot(t, "agent_pool_workspace_granted_and_assigned"),
-		// confirm workspace is now listed under 'Granted & Assigned'
-		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='granted-and-assigned-workspaces']//a[text()='%s']`, ws1.Name)),
-		// create agent token
-		err := page.Locator("#new-token-details").Click()
-require.NoError(t, err)
-		//screenshot(t, "agent_pool_open_new_token_form"),
-		// enter description for new agent token
-		chromedp.Focus("input#new-token-description", chromedp.NodeVisible, chromedp.ByQuery),
-		input.InsertText("token-1"),
-		// submit form
-		err := page.Locator(`//button[text()='Create token']`).Click()
-require.NoError(t, err)
-		//screenshot(t, "agent_pool_token_created"),
-		// expect flash message confirming token creation
-		matchRegex(t, `//div[@role='alert']`, `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
-		// click clipboard icon to copy token into clipboard
-		err := page.Locator(`//div[@role='alert']//img[@id='clipboard-icon']`).Click()
-require.NoError(t, err)
-		chromedp.Evaluate(`window.navigator.clipboard.readText()`, &agentToken, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
-			return p.WithAwaitPromise(true)
-		}),
-	})
+	err = page.Locator(fmt.Sprintf(`//button[@id='%s']`, ws1.ID)).Click()
+	require.NoError(t, err)
+
+	// ws1 should appear in list of granted workspaces
+	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name))).ToBeVisible()
+	require.NoError(t, err)
+
+	// submit
+	err = page.Locator(`//button[text()='Save changes']`).Click()
+	require.NoError(t, err)
+
+	//screenshot(t, "agent_pool_granted_workspace"),
+	// ws1 should still appear in list of granted workspaces
+	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name))).ToBeVisible()
+	require.NoError(t, err)
+
+	// go to workspaces
+	_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+	require.NoError(t, err)
+
+	// go to workspace settings
+	err = page.Locator(`//a[text()='settings']`).Click()
+	require.NoError(t, err)
+
+	// select agent execution mode radio button
+	err = page.Locator(`//input[@id='agent']`).Click()
+	require.NoError(t, err)
+
+	err = page.Locator(`//a[@id='agent-pools-link']`).ScrollIntoViewIfNeeded()
+	require.NoError(t, err)
+	//screenshot(t, "workspace_select_agent_execution_mode"),
+
+	// save changes to workspace
+	err = page.Locator(`//button[text()='Save changes']`).Click()
+	require.NoError(t, err)
+
+	// confirm execution mode change has persisted
+	err = expect.Locator(page.Locator(`input#agent:checked`)).ToBeVisible()
+	require.NoError(t, err)
+
+	// go back to agent pool
+	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+	require.NoError(t, err)
+
+	//screenshot(t, "agent_pool_workspace_granted_and_assigned"),
+	// confirm workspace is now listed under 'Granted & Assigned'
+	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='granted-and-assigned-workspaces']//a[text()='%s']`, ws1.Name))).ToBeVisible()
+	require.NoError(t, err)
+
+	// create agent token
+	err = page.Locator("#new-token-details").Click()
+	require.NoError(t, err)
+	//screenshot(t, "agent_pool_open_new_token_form"),
+
+	// enter description for new agent token
+	err = page.Locator("input#new-token-description").Fill("token-1")
+	require.NoError(t, err)
+
+	// submit form
+	err = page.Locator(`//button[text()='Create token']`).Click()
+	require.NoError(t, err)
+	//screenshot(t, "agent_pool_token_created"),
+
+	// expect flash message confirming token creation
+	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+	require.NoError(t, err)
+	// click clipboard icon to copy token into clipboard
+	err = page.Locator(`//div[@role='alert']//img[@id='clipboard-icon']`).Click()
+	require.NoError(t, err)
+
+	_, err = page.Evaluate(`window.navigator.clipboard.readText()`, &agentToken)
+	//return p.WithAwaitPromise(true)
 	// clipboard should contained agent token (base64 encoded JWT) and no white
 	// space.
 	assert.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, agentToken)
@@ -141,15 +161,17 @@ require.NoError(t, err)
 	// start agent up, configured to use token.
 	registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", agentToken, agent.Config{})
 
-	page := browser.New(t, ctx)
-		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
-require.NoError(t, err)
-		// confirm agent is listed
-		chromedp.ScrollIntoView(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID)),
-		chromedp.WaitVisible(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID)),
-		//screenshot(t, "agent_pool_with_idle_agent"),
-	})
+	// go back to agent pool
+	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+	require.NoError(t, err)
+
+	// confirm agent is listed
+	err = page.Locator(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID)).ScrollIntoViewIfNeeded()
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID))).ToBeVisible()
+	require.NoError(t, err)
+	//screenshot(t, "agent_pool_with_idle_agent"),
 
 	// shut agent down and wait for it to exit
 	shutdownAgent()
@@ -157,40 +179,52 @@ require.NoError(t, err)
 		return event.Payload.Status == agent.AgentExited
 	})
 
-	page := browser.New(t, ctx)
-		// go to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
-require.NoError(t, err)
-		// delete the token
-		err := page.Locator(`//button[@id="delete-agent-token-button"]`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		matchText(t, `//div[@role='alert']`, `Deleted token: token-1`),
-		// confirm user is notified that they must unassign pool from workspace
-		// before pool can be deleted
-		chromedp.WaitVisible(fmt.Sprintf(`//ul[@id='unassign-workspaces-before-deletion']/a[text()='%s']`, ws1.Name)),
-		// go to workspace
-		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
-require.NoError(t, err)
-		// go to workspace settings
-		err := page.Locator(`//a[text()='settings']`).Click()
-require.NoError(t, err)
-		// switch execution mode from agent to remote
-		err := page.Locator(`//input[@id='remote']`).Click()
-require.NoError(t, err)
-		// save changes to workspace
-		chromedp.Submit(`//button[text()='Save changes']`),
-		// confirm execution mode change has persisted
-		chromedp.WaitVisible(`input#remote:checked`, chromedp.ByQuery),
-		// go to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
-require.NoError(t, err)
-		// delete the pool
-		err := page.Locator(`//button[@id="delete-agent-pool-button"]`).Click()
-require.NoError(t, err)
-		//screenshot(t),
-		matchText(t, `//div[@role='alert']`, `Deleted agent pool: pool-1`),
-	})
+	// go to agent pool
+	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+	require.NoError(t, err)
+
+	// delete the token
+	err = page.Locator(`//button[@id="delete-agent-token-button"]`).Click()
+	require.NoError(t, err)
+
+	//screenshot(t),
+	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`Deleted token: token-1`)
+	require.NoError(t, err)
+
+	// confirm user is notified that they must unassign pool from workspace
+	// before pool can be deleted
+	err = expect.Locator(page.Locator(fmt.Sprintf(`//ul[@id='unassign-workspaces-before-deletion']/a[text()='%s']`, ws1.Name))).ToBeVisible()
+	require.NoError(t, err)
+
+	// go to workspace
+	_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
+	require.NoError(t, err)
+
+	// go to workspace settings
+	err = page.Locator(`//a[text()='settings']`).Click()
+	require.NoError(t, err)
+
+	// switch execution mode from agent to remote
+	err = page.Locator(`//input[@id='remote']`).Click()
+	require.NoError(t, err)
+
+	// save changes to workspace
+	err = page.Locator(`//button[text()='Save changes']`).Click()
+	require.NoError(t, err)
+
+	// confirm execution mode change has persisted
+	err = expect.Locator(page.Locator(`input#remote:checked`)).ToBeVisible()
+	// go to agent pool
+	_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+	require.NoError(t, err)
+
+	// delete the pool
+	err = page.Locator(`//button[@id="delete-agent-pool-button"]`).Click()
+	require.NoError(t, err)
+	//screenshot(t),
+
+	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`Deleted agent pool: pool-1`)
+	require.NoError(t, err)
 
 	// confirm pool was deleted
 	testutils.Wait(t, poolsSub, func(event pubsub.Event[*agent.Pool]) bool {

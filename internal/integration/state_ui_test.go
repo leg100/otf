@@ -1,9 +1,9 @@
 package integration
 
 import (
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
 )
@@ -38,13 +38,25 @@ applied:
 	}
 
 	page := browser.New(t, ctx)
-		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
-require.NoError(t, err)
-		matchRegex(t, `//label[@id='resources-label']`, `Resources \(1\)`),
-		matchRegex(t, `//label[@id='outputs-label']`, `Outputs \(0\)`),
-		matchText(t, `//table[@id='resources-table']/tbody/tr/td[1]`, `test`),
-		matchText(t, `//table[@id='resources-table']/tbody/tr/td[2]`, `hashicorp/null`),
-		matchText(t, `//table[@id='resources-table']/tbody/tr/td[3]`, `null_resource`),
-		matchText(t, `//table[@id='resources-table']/tbody/tr/td[4]`, `root`),
-	})
+
+	_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//label[@id='resources-label']`)).ToHaveText(regexp.MustCompile(`Resources \(1\)`))
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//label[@id='outputs-label']`)).ToHaveText(regexp.MustCompile(`Outputs \(0\)`))
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//table[@id='resources-table']/tbody/tr/td[1]`)).ToHaveText(`test`)
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//table[@id='resources-table']/tbody/tr/td[2]`)).ToHaveText(`hashicorp/null`)
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//table[@id='resources-table']/tbody/tr/td[3]`)).ToHaveText(`null_resource`)
+	require.NoError(t, err)
+
+	err = expect.Locator(page.Locator(`//table[@id='resources-table']/tbody/tr/td[4]`)).ToHaveText(`root`)
+	require.NoError(t, err)
 }

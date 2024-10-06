@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/vcs"
@@ -34,33 +33,30 @@ func TestWebhook(t *testing.T) {
 
 	// create and connect first workspace
 	page := browser.New(t, ctx)
-		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-1"),
-		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1", provider.String()),
-	})
+	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "workspace-1")
+	connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1", provider.String())
 
 	// webhook should be registered with github
 	hook := <-daemon.WebhookEvents
 	require.Equal(t, github.WebhookCreated, hook.Action)
 
 	// create and connect second workspace
-	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.System.Hostname(), org.Name, "workspace-2"),
-		connectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-2", provider.String()),
-	})
+	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "workspace-2")
+	connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-2", provider.String())
 
 	// second workspace re-uses same webhook on github
 	hook = <-daemon.WebhookEvents
 	require.Equal(t, github.WebhookUpdated, hook.Action)
 
 	// disconnect second workspace
-	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-2"))
+	disconnectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-2")
 
 	// first workspace is still connected, so webhook should still be configured
 	// on github
 	require.True(t, daemon.HasWebhook())
 
 	// disconnect first workspace
-	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.System.Hostname(), org.Name, "workspace-1"))
+	disconnectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1")
 
 	// No more workspaces are connected to repo, so webhook should have been
 	// deleted
