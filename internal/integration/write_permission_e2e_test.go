@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/chromedp/chromedp"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,9 +26,9 @@ func TestWritePermissionE2E(t *testing.T) {
 
 	// Open browser, create workspace and assign write permissions to the
 	// engineer's team.
-	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write"),
+	browser.New(t, ctx, func(page playwright.Page) {
+		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
+		addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "write")
 	})
 
 	// As engineer, run terraform init

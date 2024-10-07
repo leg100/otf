@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,38 +31,58 @@ func TestModuleE2E(t *testing.T) {
 	provider := svc.createVCSProvider(t, ctx, org)
 
 	var moduleURL string // captures url for module page
-	browser.Run(t, ctx, chromedp.Tasks{
+
+	browser.New(t, ctx, func(page playwright.Page) {
 		// publish module
-		chromedp.Tasks{
-			// go to org
-			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
-			screenshot(t),
-			// go to modules
-			chromedp.Click("#modules > a", chromedp.ByQuery),
-			screenshot(t, "modules_list"),
-			// click publish button
-			chromedp.Click(`//button[text()='Publish']`),
-			screenshot(t, "modules_select_provider"),
-			// select provider
-			chromedp.Click(`//button[text()='connect']`),
-			screenshot(t, "modules_select_repo"),
-			// connect to first repo in list (there should only be one)
-			chromedp.Click(`//div[@id='content-list']//button[text()='connect']`),
-			screenshot(t, "modules_confirm"),
-			// confirm module details
-			chromedp.Click(`//button[text()='connect']`),
-			screenshot(t, "newly_created_module_page"),
-			// flash message indicates success
-			matchText(t, `//div[@role='alert']`, `published module: mod`),
-			// capture module url so we can visit it later
-			chromedp.Location(&moduleURL),
-			// confirm versions are populated
-			chromedp.WaitEnabled(`//select[@id='version']/option[text()='0.0.1']`),
-			chromedp.WaitEnabled(`//select[@id='version']/option[text()='0.0.2']`),
-			chromedp.WaitEnabled(`//select[@id='version']/option[text()='0.1.0']`),
-			// should show vcs repo source
-			matchRegex(t, `//span[@id='vcs-repo']`, `.*/terraform-aws-mod`),
-		},
+		// go to org
+		_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		require.NoError(t, err)
+
+		// go to modules
+		err = page.Locator("#modules > a").Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_list")
+
+		// click publish button
+		err = page.Locator(`//button[text()='Publish']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_select_provider")
+
+		// select provider
+		err = page.Locator(`//button[text()='connect']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_select_repo")
+
+		// connect to first repo in list (there should only be one)
+		err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_confirm")
+
+		// confirm module details
+		err = page.Locator(`//button[text()='connect']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "newly_created_module_page")
+
+		// flash message indicates success
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`published module: mod`)
+		require.NoError(t, err)
+
+		// capture module url so we can visit it later
+		moduleURL = page.URL()
+
+		// confirm versions are populated
+		err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.1']`)).ToBeEnabled()
+		require.NoError(t, err)
+
+		err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.2']`)).ToBeEnabled()
+		require.NoError(t, err)
+
+		err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.1.0']`)).ToBeEnabled()
+		require.NoError(t, err)
+
+		// should show vcs repo source
+		err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToHaveText(regexp.MustCompile(`.*/terraform-aws-mod`))
+		require.NoError(t, err)
 	})
 
 	// Now we test the webhook functionality by sending an event to the daemon
@@ -73,19 +94,19 @@ func TestModuleE2E(t *testing.T) {
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 
-	// v1.0.0 should appear as latest module on workspace
-	browser.Run(t, ctx, chromedp.Tasks{
-		// go to module
-		chromedp.Navigate(moduleURL),
-		screenshot(t),
-		reloadUntilVisible(`//select[@id="version"]/option[@selected]`),
-		screenshot(t),
-	})
-
-	// Now run terraform with some config that sources the module. First we need
-	// a workspace...
 	workspaceName := "module-test"
-	browser.Run(t, ctx, createWorkspace(t, svc.System.Hostname(), org.Name, workspaceName))
+	browser.New(t, ctx, func(page playwright.Page) {
+		// v1.0.0 should appear as latest module on workspace
+		// go to module
+		_, err := page.Goto(moduleURL)
+		require.NoError(t, err)
+
+		reloadUntilEnabled(t, page, `//select[@id="version"]/option[@selected]`)
+
+		// Now run terraform with some config that sources the module. First we need
+		// a workspace...
+		createWorkspace(t, page, svc.System.Hostname(), org.Name, workspaceName)
+	})
 
 	// generate some terraform config that sources our module
 	root := newRootModule(t, svc.System.Hostname(), org.Name, workspaceName)
@@ -109,21 +130,30 @@ module "mod" {
 	// connected. Then delete the module.
 	_, err = svc.VCSProviders.Delete(ctx, provider.ID)
 	require.NoError(t, err)
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Tasks{
-			// go to org
-			chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
-			screenshot(t),
-			// go to modules
-			chromedp.Click("#modules > a", chromedp.ByQuery),
-			// select existing module
-			chromedp.Click(`.widget`, chromedp.ByQuery),
-			// confirm no longer connected
-			chromedp.WaitNotPresent(`//span[@id='vcs-repo']`),
-			// delete module
-			chromedp.Click(`//button[text()='Delete module']`),
-			// flash message indicates success
-			matchText(t, `//div[@role='alert']`, `deleted module: mod`),
-		},
+
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to org
+		_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		require.NoError(t, err)
+
+		// go to modules
+		err = page.Locator("#modules > a").Click()
+		require.NoError(t, err)
+
+		// select existing module
+		err = page.Locator(`.widget`).Click()
+		require.NoError(t, err)
+
+		// confirm no longer connected
+		err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToBeHidden()
+		require.NoError(t, err)
+
+		// delete module
+		err = page.Locator(`//button[text()='Delete module']`).Click()
+		require.NoError(t, err)
+
+		// flash message indicates success
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted module: mod`)
+		require.NoError(t, err)
 	})
 }

@@ -3,7 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal/run"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,9 +28,9 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Open tab and create a workspace and assign plan role to the
 	// engineer's team.
-	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, svc.System.Hostname(), org.Name, "my-test-workspace"),
-		addWorkspacePermission(t, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "plan"),
+	browser.New(t, ctx, func(page playwright.Page) {
+		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
+		addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "plan")
 	})
 
 	// As engineer, run terraform init, and plan. This should succeed because
@@ -51,23 +52,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	}
 
 	// Now demonstrate engineer can start a plan via the UI.
-	browser.Run(t, engineerCtx, chromedp.Tasks{
-		// go to workspace page
-		chromedp.Navigate(workspaceURL(svc.System.Hostname(), org.Name, "my-test-workspace")),
-		screenshot(t),
-		// select operation for run
-		chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only"),
-		screenshot(t),
-		// confirm plan begins and ends
-		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
-		screenshot(t),
-		chromedp.WaitReady(`//span[@id='plan-status' and text()='finished']`),
-		screenshot(t),
-		// wait for run to enter planned-and-finished state
-		chromedp.WaitReady(`//*[text()='planned and finished']`),
-		screenshot(t),
-		// run widget should show plan summary
-		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
-		screenshot(t),
+	browser.New(t, ctx, func(page playwright.Page) {
+		startRunTasks(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", run.PlanOnlyOperation, false)
 	})
 }

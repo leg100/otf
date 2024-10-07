@@ -1,10 +1,11 @@
 package integration
 
 import (
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
+	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_UserTokenUI demonstrates managing user tokens via the UI.
@@ -12,24 +13,37 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	integrationTest(t)
 
 	svc, _, ctx := setup(t, nil)
-	browser.Run(t, ctx, chromedp.Tasks{
+	browser.New(t, ctx, func(page playwright.Page) {
 		// go to profile
-		chromedp.Navigate("https://" + svc.System.Hostname() + "/app/profile"),
+		_, err := page.Goto("https://" + svc.System.Hostname() + "/app/profile")
+		require.NoError(t, err)
+
 		// go to user tokens
-		chromedp.Click(`//div[@id='user-tokens-link']/a`),
-		screenshot(t, "user_tokens"),
+		err = page.Locator(`//div[@id='user-tokens-link']/a`).Click()
+		require.NoError(t, err)
+
+		screenshot(t, page, "user_tokens")
 		// go to new token
-		chromedp.Click(`//button[@id='new-user-token-button']`),
+		err = page.Locator(`//button[@id='new-user-token-button']`).Click()
+		require.NoError(t, err)
+
 		// enter description for new token and submit
-		chromedp.Focus("textarea#description", chromedp.NodeVisible, chromedp.ByQuery),
-		input.InsertText("my new token"),
-		screenshot(t, "user_token_enter_description"),
-		chromedp.Click(`//button[text()='Create token']`),
-		screenshot(t, "user_token_created"),
-		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
+		err = page.Locator("textarea#description").Fill("my new token")
+		require.NoError(t, err)
+		screenshot(t, page, "user_token_enter_description")
+
+		err = page.Locator(`//button[text()='Create token']`).Click()
+		require.NoError(t, err)
+
+		screenshot(t, page, "user_token_created")
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+		require.NoError(t, err)
+
 		// delete the token
-		chromedp.Click(`//button[text()='delete']`),
-		screenshot(t),
-		matchText(t, "//div[@role='alert']", "Deleted token"),
+		err = page.Locator(`//button[text()='delete']`).Click()
+		require.NoError(t, err)
+
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("Deleted token")
+		require.NoError(t, err)
 	})
 }

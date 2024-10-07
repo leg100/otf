@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,25 +18,28 @@ func TestWorkingDirectory(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// create workspace and set working directory
-	browser.Run(t, ctx, chromedp.Tasks{
-		createWorkspace(t, daemon.System.Hostname(), org.Name, "my-workspace"),
-		chromedp.Tasks{
-			// go to workspace
-			chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace")),
-			screenshot(t),
-			// go to workspace settings
-			chromedp.Click(`//a[text()='settings']`),
-			screenshot(t),
-			// enter working directory
-			chromedp.Focus("input#working_directory", chromedp.NodeVisible),
-			input.InsertText("subdir"),
-			screenshot(t),
-			// submit form
-			chromedp.Click(`//button[text()='Save changes']`),
-			screenshot(t),
-			// confirm workspace updated
-			matchText(t, "//div[@role='alert']", "updated workspace"),
-		},
+	browser.New(t, ctx, func(page playwright.Page) {
+
+		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
+
+		// go to workspace
+		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace"))
+		require.NoError(t, err)
+
+		// go to workspace settings
+		err = page.Locator(`//a[text()='settings']`).Click()
+		require.NoError(t, err)
+
+		// enter working directory
+		err = page.Locator("input#working_directory").Fill("subdir")
+		require.NoError(t, err)
+
+		// submit form
+		err = page.Locator(`//button[text()='Save changes']`).Click()
+		require.NoError(t, err)
+		// confirm workspace updated
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+		require.NoError(t, err)
 	})
 
 	// create root module along with a sub-directory containing the config we're

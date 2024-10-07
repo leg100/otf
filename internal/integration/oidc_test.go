@@ -3,16 +3,17 @@ package integration
 import (
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_OIDC demonstrates logging in using OIDC
 func TestIntegration_OIDC(t *testing.T) {
 	integrationTest(t)
 
-	// Start daemon with a stub github server populated with a user.
+	// Start daemon configured to use a google OIDC test stub.
 	cfg := config{
 		Config: daemon.Config{
 			OIDC: authenticator.OIDCConfig{
@@ -28,14 +29,19 @@ func TestIntegration_OIDC(t *testing.T) {
 
 	svc, _, _ := setup(t, &cfg)
 
-	browser.Run(t, nil, chromedp.Tasks{
+	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page
-		chromedp.Navigate("https://" + svc.System.Hostname() + "/login"),
-		screenshot(t, "oidc_login_button"),
+		_, err := page.Goto("https://" + svc.System.Hostname() + "/login")
+		require.NoError(t, err)
+		screenshot(t, page, "oidc_login_button")
+
 		// login
-		chromedp.Click("a#login-button-google"),
-		screenshot(t),
+		err = page.Locator("a#login-button-google").Click()
+		require.NoError(t, err)
+		page.Pause()
+
 		// check login confirmation message
-		matchText(t, "#content > p", "You are logged in as bobby", chromedp.ByQuery),
+		err = expect.Locator(page.Locator("#content > p")).ToHaveText("You are logged in as bobby")
+		require.NoError(t, err)
 	})
 }

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-	expect "github.com/google/goexpect"
+	goexpect "github.com/google/goexpect"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,35 +33,45 @@ func TestTerraformLogin(t *testing.T) {
 
 	tfpath := svc.downloadTerraform(t, ctx, nil)
 
-	e, tferr, err := expect.SpawnWithArgs(
+	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "login", svc.System.Hostname()},
 		time.Minute,
-		expect.PartialMatch(true),
+		goexpect.PartialMatch(true),
 		// expect.Verbose(testing.Verbose()),
-		expect.Tee(out),
-		expect.SetEnv(
+		goexpect.Tee(out),
+		goexpect.SetEnv(
 			append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
 		),
 	)
 	require.NoError(t, err)
 	defer e.Close()
 
-	e.Expect(regexp.MustCompile(`Enter a value:`), -1)
-	e.Send("yes\n")
-	e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
-	u, _, _ := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
+	_, _, err = e.Expect(regexp.MustCompile(`Enter a value:`), -1)
+	require.NoError(t, err)
 
-	browser.Run(t, ctx, chromedp.Tasks{
+	err = e.Send("yes\n")
+	require.NoError(t, err)
+
+	_, _, err = e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
+	require.NoError(t, err)
+
+	url, _, err := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
+	require.NoError(t, err)
+
+	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to auth url captured from terraform login output
-		chromedp.Navigate(strings.TrimSpace(u)),
-		screenshot(t, "terraform_login_consent"),
-		// give consent
-		chromedp.Click(`//button[text()='Accept']`),
-		screenshot(t, "terraform_login_flow_complete"),
-		matchText(t, `//body/p`, `The login server has returned an authentication code to Terraform.`),
-	})
+		_, err = page.Goto(strings.TrimSpace(url))
+		require.NoError(t, err)
+		screenshot(t, page, "terraform_login_consent")
 
-	e.Expect(regexp.MustCompile(`Success! Terraform has obtained and saved an API token.`), -1)
+		// give consent
+		err = page.Locator(`//button[text()='Accept']`).Click()
+		require.NoError(t, err)
+
+		screenshot(t, page, "terraform_login_flow_complete")
+		err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
+		require.NoError(t, err)
+	})
 
 	err = <-tferr
 	if !assert.NoError(t, err) || t.Failed() {

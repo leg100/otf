@@ -4,21 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,63 +63,62 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			githubHostname := func(t *testing.T, path string, public bool) string {
-				mux := http.NewServeMux()
-				mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-					// check that the manifest has been correctly submitted.
-					var (
-						manifest struct {
-							Public bool
-						}
-						params struct {
-							Manifest string `schema:"manifest,required"`
-						}
-					)
-					// first decode POST form manifest=<json>
-					err := decode.Form(&params, r)
-					require.NoError(t, err)
-					// then unmarshal the json into a manifest
-					err = json.Unmarshal([]byte(params.Manifest), &manifest)
-					require.NoError(t, err)
-					require.Equal(t, public, manifest.Public)
-					w.Write([]byte(`<html><body>success</body></html>`))
-				})
-				mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-					// ignore favicon requests
-				})
-				mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-					t.Fatalf("form submitted to wrong path: %s", r.URL.Path)
-				})
-				stub := httptest.NewTLSServer(mux)
-				t.Cleanup(stub.Close)
-
-				u, err := url.Parse(stub.URL)
+			daemon, _, _ := setup(t, nil, github.WithHandler(tt.path, func(w http.ResponseWriter, r *http.Request) {
+				// check that the manifest has been correctly submitted.
+				var (
+					manifest struct {
+						Public bool
+					}
+					params struct {
+						Manifest string `schema:"manifest,required"`
+					}
+				)
+				// first decode POST form manifest=<json>
+				err := decode.Form(&params, r)
 				require.NoError(t, err)
-				return u.Host
-			}(t, tt.path, tt.public)
+				// then unmarshal the json into a manifest
+				err = json.Unmarshal([]byte(params.Manifest), &manifest)
+				require.NoError(t, err)
+				require.Equal(t, tt.public, manifest.Public)
+				w.Write([]byte(`<html><body>success</body></html>`))
+			}))
 
-			daemon, _, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
-			tasks := chromedp.Tasks{
+			browser.New(t, ctx, func(page playwright.Page) {
 				// go to site settings page
-				chromedp.Navigate("https://" + daemon.System.Hostname() + "/app/admin"),
-				screenshot(t, "site_settings"),
+				_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
+				require.NoError(t, err)
+				screenshot(t, page, "site_settings")
+
 				// go to github app page
-				chromedp.Click("//a[text()='GitHub app']"),
-				screenshot(t, "empty_github_app_page"),
+				err = page.GetByRole("link").Filter(playwright.LocatorFilterOptions{
+					HasText: "GitHub app",
+				}).Click()
+				require.NoError(t, err)
+
+				screenshot(t, page, "empty_github_app_page")
 				// go to page for creating a new github app
-				chromedp.Click("//a[@id='new-github-app-link']"),
-				screenshot(t, "new_github_app"),
-			}
-			if tt.public {
-				tasks = append(tasks, chromedp.Click(`//input[@type='checkbox' and @id='public']`))
-			}
-			if tt.organization != "" {
-				tasks = append(tasks, chromedp.Focus(`//input[@id="organization"]`, chromedp.NodeVisible))
-				tasks = append(tasks, input.InsertText(tt.organization))
-			}
-			tasks = append(tasks, chromedp.Click(`//button[text()='Create']`))
-			tasks = append(tasks, chromedp.WaitVisible(`//body[text()='success']`))
-			browser.Run(t, ctx, tasks)
+				err = page.Locator("//a[@id='new-github-app-link']").Click()
+				require.NoError(t, err)
+				screenshot(t, page, "new_github_app")
+
+				if tt.public {
+					err = page.Locator(`//input[@type='checkbox' and @id='public']`).Click()
+					require.NoError(t, err)
+				}
+
+				if tt.organization != "" {
+					err = page.Locator(`//input[@id="organization"]`).Fill(tt.organization)
+					require.NoError(t, err)
+				}
+
+				err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
+					HasText: "Create",
+				}).Click()
+				require.NoError(t, err)
+
+				err = expect.Locator(page.GetByText("success")).ToBeVisible()
+				require.NoError(t, err)
+			})
 		})
 	}
 
@@ -131,7 +127,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	// stub Github server, and receiving back the app config, and then
 	// redirecting to the github app page showing the created app.
 	t.Run("complete creation of github app", func(t *testing.T) {
-		handlers := []github.TestServerOption{
+		daemon, _, _ := setup(t, nil,
 			github.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&gogithub.AppConfig{
 					ID:            internal.Int64(123),
@@ -147,18 +143,20 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add("Content-Type", "application/json")
 			}),
-		}
-		daemon, _, _ := setup(t, nil, handlers...)
-		browser.Run(t, ctx, chromedp.Tasks{
+		)
+		browser.New(t, ctx, func(page playwright.Page) {
 			// go to the exchange code endpoint
-			chromedp.Navigate((&url.URL{
+			_, err := page.Goto((&url.URL{
 				Scheme:   "https",
 				Host:     daemon.System.Hostname(),
 				Path:     "/app/github-apps/exchange-code",
 				RawQuery: "code=anything",
-			}).String()),
-			chromedp.WaitVisible(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`),
-			screenshot(t, "github_app_created"),
+			}).String())
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
+			require.NoError(t, err)
+			screenshot(t, page, "github_app_created")
 		})
 	})
 
@@ -185,10 +183,14 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			PrivateKey: string(testutils.ReadFile(t, "./fixtures/key.pem")),
 		})
 		require.NoError(t, err)
-		browser.Run(t, ctx, chromedp.Tasks{
-			chromedp.Navigate(daemon.System.URL("/app/github-apps")),
-			chromedp.WaitVisible(`//div[@id='installations']//a[contains(text(), "user/leg100")]`),
-			screenshot(t, "github_app_install_list"),
+
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err = page.Goto(daemon.System.URL("/app/github-apps"))
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator(`//div[@id='installations']//a[contains(text(), "user/leg100")]`)).ToBeVisible()
+			require.NoError(t, err)
+			screenshot(t, page, "github_app_install_list")
 		})
 	})
 }

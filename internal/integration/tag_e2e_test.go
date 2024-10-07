@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
-	expect "github.com/google/goexpect"
+	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,20 +39,20 @@ resource "null_resource" "tags_e2e" {}
 
 	// run terraform init
 	_, token := daemon.createToken(t, ctx, nil)
-	e, tferr, err := expect.SpawnWithArgs(
+	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
-		expect.PartialMatch(true),
-		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),
+		goexpect.PartialMatch(true),
+		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()
 
 	// create tagged workspace when prompted
-	e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "Enter a value: "},
-		&expect.BSnd{S: "tagged\n"},
-		&expect.BExp{R: "Terraform Cloud has been successfully initialized!"},
+	e.ExpectBatch([]goexpect.Batcher{
+		&goexpect.BExp{R: "Enter a value: "},
+		&goexpect.BSnd{S: "tagged\n"},
+		&goexpect.BExp{R: "Terraform Cloud has been successfully initialized!"},
 	}, time.Second*5)
 	// Terraform should return with exit code 0
 	require.NoError(t, <-tferr, e.String)
@@ -71,32 +70,42 @@ resource "null_resource" "tags_e2e" {}
 	require.Contains(t, ws.Tags, "bar")
 
 	// test UI management of tags
-	browser.Run(t, ctx, chromedp.Tasks{
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), org.Name, "tagged")),
+	browser.New(t, ctx, func(page playwright.Page) {
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "tagged"))
+		require.NoError(t, err)
 		// confirm workspace page lists both tags
-		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'foo')]`),
-		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'bar')]`),
+		err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'foo')]`)).ToBeVisible()
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'bar')]`)).ToBeVisible()
+		require.NoError(t, err)
 		// remove bar tag
-		chromedp.Click(`//button[@id='button-remove-tag-bar']`),
-		screenshot(t),
-		matchText(t, "//div[@role='alert']", "removed tag: bar"),
+		err = page.Locator(`//button[@id='button-remove-tag-bar']`).Click()
+		require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed tag: bar")
+		require.NoError(t, err)
+
 		// add new tag
-		chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
-		input.InsertText("baz"),
-		chromedp.Submit(`//input[@x-ref='input-search']`),
-		screenshot(t),
-		matchText(t, "//div[@role='alert']", "created tag: baz"),
+		err = page.Locator(`//input[@x-ref='input-search']`).Fill("baz")
+		require.NoError(t, err)
+
+		err = page.Locator(`//input[@x-ref='input-search']`).Press("Enter")
+		require.NoError(t, err)
+
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("created tag: baz")
+
+		require.NoError(t, err)
 		// go to workspace listing
-		chromedp.Click(`//span[@id='content-header-title']//a[text()='workspaces']`),
-		screenshot(t),
+		err = page.Locator(`//span[@id='content-header-title']//a[text()='workspaces']`).Click()
+		require.NoError(t, err)
 		// filter by tag foo
-		chromedp.Click(`//label[@for='workspace-tag-filter-foo']`),
-		screenshot(t),
+		err = page.Locator(`//label[@for='workspace-tag-filter-foo']`).Click()
+		require.NoError(t, err)
 		// filter by tag bar
-		chromedp.Click(`//label[@for='workspace-tag-filter-baz']`),
-		screenshot(t),
+		err = page.Locator(`//label[@for='workspace-tag-filter-baz']`).Click()
+		require.NoError(t, err)
 		// confirm workspace listing contains tagged workspace
-		chromedp.WaitVisible(`//div[@id='content-list']/div[@id='item-workspace-tagged']`),
+		err = expect.Locator(page.Locator(`//div[@id='content-list']/div[@id='item-workspace-tagged']`)).ToBeVisible()
+		require.NoError(t, err)
 	})
 
 	// should be tags 'foo' and 'baz'

@@ -1,11 +1,11 @@
 package integration
 
 import (
-	"strings"
+	"regexp"
 	"testing"
 
-	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/assert"
+	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_OrganizationTokenUI demonstrates managing organization tokens via the UI.
@@ -14,33 +14,56 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 
 	svc, org, ctx := setup(t, nil)
 
-	var (
-		createdTokenID     string
-		regeneratedTokenID string
-	)
-	browser.Run(t, ctx, chromedp.Tasks{
+	browser.New(t, ctx, func(page playwright.Page) {
 		// go to organization
-		chromedp.Navigate(organizationURL(svc.System.Hostname(), org.Name)),
+		_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		require.NoError(t, err)
+
 		// go to organization token page
-		chromedp.Click(`//span[@id='organization_tokens']/a`),
-		screenshot(t, "org_token_new"),
+		err = page.Locator(`//span[@id='organization_tokens']/a`).Click()
+		require.NoError(t, err)
+
+		screenshot(t, page, "org_token_new")
+
 		// create new token
-		chromedp.Click(`//button[text()='Create organization token']`),
-		screenshot(t, "org_token_created"),
+		err = page.Locator(`//button[text()='Create organization token']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "org_token_created")
+
 		// check for JWT in flash msg
-		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+		require.NoError(t, err)
+
 		// token widget should be visible
-		chromedp.WaitVisible(`//div[@class='widget']//span[text()='Token']`),
-		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &createdTokenID),
+		err = expect.Locator(page.Locator(`//div[@class='widget']//span[text()='Token']`)).ToBeVisible()
+		require.NoError(t, err)
+
+		// check token begins with `ot-`
+		err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+		require.NoError(t, err)
+
+		// capture token for comparison
+		token, err := page.Locator(`//div[@class='widget']//span[@x-ref='content']`).TextContent()
+		require.NoError(t, err)
+
 		// regenerate token
-		chromedp.Click(`//button[text()='regenerate']`),
-		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &regeneratedTokenID),
+		err = page.Locator(`//button[text()='regenerate']`).Click()
+		require.NoError(t, err)
+
+		// check regenerated token does not match original token
+		err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).Not().ToHaveText(token)
+		require.NoError(t, err)
+
+		// check regenerated token begins with `ot-`
+		err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+		require.NoError(t, err)
+
 		// delete token
-		chromedp.Click(`//button[text()='delete']`),
+		err = page.Locator(`//button[text()='delete']`).Click()
+		require.NoError(t, err)
+
 		// flash msg declaring token is deleted
-		matchText(t, "//div[@role='alert']", `Deleted organization token`),
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Deleted organization token`)
+		require.NoError(t, err)
 	})
-	assert.True(t, strings.HasPrefix(createdTokenID, "ot-"))
-	assert.True(t, strings.HasPrefix(regeneratedTokenID, "ot-"))
-	assert.NotEqual(t, createdTokenID, regeneratedTokenID)
 }

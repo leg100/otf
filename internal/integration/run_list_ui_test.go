@@ -1,12 +1,10 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
-	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/assert"
+	"github.com/playwright-community/playwright-go"
+	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_RunListUI demonstrates listing runs via the UI.
@@ -17,24 +15,31 @@ func TestIntegration_RunListUI(t *testing.T) {
 	ws := daemon.createWorkspace(t, ctx, nil)
 	tfConfig := newRootModule(t, daemon.System.Hostname(), ws.Organization, ws.Name)
 
-	var runListingAfter []*cdp.Node
-	browser.Run(t, ctx, chromedp.Tasks{
+	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to workspace page
-		chromedp.Navigate(workspaceURL(daemon.System.Hostname(), ws.Organization, ws.Name)),
+		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), ws.Organization, ws.Name))
+		require.NoError(t, err)
+
 		// navigate to runs page
-		chromedp.Click(`//a[text()='runs']`),
+		err = page.Locator(`//a[text()='runs']`).Click()
+		require.NoError(t, err)
+
 		// should be no runs listed
-		matchText(t, `//div[@id='content-list']`, `No items currently exist.`),
-		chromedp.ActionFunc(func(context.Context) error {
-			// meanwhile, execute a terraform cli init and plan
-			daemon.tfcli(t, ctx, "init", tfConfig)
-			daemon.tfcli(t, ctx, "plan", tfConfig)
-			return nil
-		}),
-		// should be one run listed
-		chromedp.Nodes(`//div[@id='content-list']//*[@class='widget']`, &runListingAfter, chromedp.NodeVisible),
-		// and its status should be 'planned and finished'
-		chromedp.WaitVisible(`//*[@class='widget']//a[text()='planned and finished']`),
+		err = expect.Locator(page.Locator(`//div[@id='content-list']`)).ToHaveText(`No items currently exist.`)
+		require.NoError(t, err)
 	})
-	assert.Equal(t, 1, len(runListingAfter))
+
+	// meanwhile, execute a terraform cli init and plan
+	daemon.tfcli(t, ctx, "init", tfConfig)
+	daemon.tfcli(t, ctx, "plan", tfConfig)
+
+	browser.New(t, ctx, func(page playwright.Page) {
+		// navigate to runs page
+		_, err := page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
+		require.NoError(t, err)
+
+		// should be one run listed with status planned and finished
+		err = expect.Locator(page.GetByText(`planned and finished`)).ToHaveCount(1)
+		require.NoError(t, err)
+	})
 }
