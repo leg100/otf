@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,36 +33,37 @@ func TestWebhook(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	// create and connect first workspace
-	page := browser.New(t, ctx)
-	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "workspace-1")
-	connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1", provider.String())
+	browser.New(t, ctx, func(page playwright.Page) {
+		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "workspace-1")
+		connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1", provider.String())
 
-	// webhook should be registered with github
-	hook := <-daemon.WebhookEvents
-	require.Equal(t, github.WebhookCreated, hook.Action)
+		// webhook should be registered with github
+		hook := <-daemon.WebhookEvents
+		require.Equal(t, github.WebhookCreated, hook.Action)
 
-	// create and connect second workspace
-	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "workspace-2")
-	connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-2", provider.String())
+		// create and connect second workspace
+		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "workspace-2")
+		connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-2", provider.String())
 
-	// second workspace re-uses same webhook on github
-	hook = <-daemon.WebhookEvents
-	require.Equal(t, github.WebhookUpdated, hook.Action)
+		// second workspace re-uses same webhook on github
+		hook = <-daemon.WebhookEvents
+		require.Equal(t, github.WebhookUpdated, hook.Action)
 
-	// disconnect second workspace
-	disconnectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-2")
+		// disconnect second workspace
+		disconnectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-2")
 
-	// first workspace is still connected, so webhook should still be configured
-	// on github
-	require.True(t, daemon.HasWebhook())
+		// first workspace is still connected, so webhook should still be configured
+		// on github
+		require.True(t, daemon.HasWebhook())
 
-	// disconnect first workspace
-	disconnectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1")
+		// disconnect first workspace
+		disconnectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1")
 
-	// No more workspaces are connected to repo, so webhook should have been
-	// deleted
-	hook = <-daemon.WebhookEvents
-	require.Equal(t, github.WebhookDeleted, hook.Action)
+		// No more workspaces are connected to repo, so webhook should have been
+		// deleted
+		hook = <-daemon.WebhookEvents
+		require.Equal(t, github.WebhookDeleted, hook.Action)
+	})
 }
 
 // TestWebhook_Purger tests specifically the purging of webhooks in response to

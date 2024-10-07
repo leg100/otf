@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/run"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,23 +34,24 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	}
 
 	// open browser, go to run, and click retry
-	page := browser.New(t, ctx)
-	_, err := page.Goto(runURL(daemon.System.Hostname(), r.ID))
-	require.NoError(t, err)
-	// run should be in planned and finished state
-	err = expect.Locator(page.Locator(`//a[text()='planned and finished']`)).ToBeVisible()
-	require.NoError(t, err)
-	screenshot(t, page, "run_page_planned_and_finished_state")
-	// click retry button
-	err = page.Locator(`//button[text()='retry run']`).Click()
-	require.NoError(t, err)
-	// confirm plan begins and ends
-	expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`))
+	browser.New(t, ctx, func(page playwright.Page) {
+		_, err := page.Goto(runURL(daemon.System.Hostname(), r.ID))
+		require.NoError(t, err)
+		// run should be in planned and finished state
+		err = expect.Locator(page.Locator(`//a[text()='planned and finished']`)).ToBeVisible()
+		require.NoError(t, err)
+		screenshot(t, page, "run_page_planned_and_finished_state")
+		// click retry button
+		err = page.Locator(`//button[text()='retry run']`).Click()
+		require.NoError(t, err)
+		// confirm plan begins and ends
+		expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`))
 
-	err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeVisible()
-	require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//span[@id='plan-status' and text()='finished']`)).ToBeVisible()
+		require.NoError(t, err)
 
-	// confirm retry button re-appears
-	err = expect.Locator(page.Locator(`//button[text()='retry run']`)).ToBeVisible()
-	require.NoError(t, err)
+		// confirm retry button re-appears
+		err = expect.Locator(page.Locator(`//button[text()='retry run']`)).ToBeVisible()
+		require.NoError(t, err)
+	})
 }

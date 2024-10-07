@@ -26,83 +26,83 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// create a vcs provider with a github personal access token
-	page := browser.New(t, ctx)
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to org
+		_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		require.NoError(t, err)
 
-	// go to org
-	_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-	require.NoError(t, err)
+		screenshot(t, page, "organization_main_menu")
+		// go to vcs providers
+		err = page.Locator("#vcs_providers > a").Click()
+		require.NoError(t, err)
+		screenshot(t, page, "vcs_providers_list")
+		// click 'New Github VCS Provider' button
+		err = page.Locator(`//button[text()='New Github VCS Provider (Personal Token)']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "new_github_vcs_provider_form")
 
-	screenshot(t, page, "organization_main_menu")
-	// go to vcs providers
-	err = page.Locator("#vcs_providers > a").Click()
-	require.NoError(t, err)
-	screenshot(t, page, "vcs_providers_list")
-	// click 'New Github VCS Provider' button
-	err = page.Locator(`//button[text()='New Github VCS Provider (Personal Token)']`).Click()
-	require.NoError(t, err)
-	screenshot(t, page, "new_github_vcs_provider_form")
+		// enter fake github token
+		err = page.Locator("textarea#token").Fill("fake-github-personal-token")
+		require.NoError(t, err)
 
-	// enter fake github token
-	err = page.Locator("textarea#token").Fill("fake-github-personal-token")
-	require.NoError(t, err)
+		// submit form to create provider
+		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
+			HasText: "Create",
+		}).Click()
+		require.NoError(t, err)
 
-	// submit form to create provider
-	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
-		HasText: "Create",
-	}).Click()
-	require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (token)`)
+		require.NoError(t, err)
 
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (token)`)
-	require.NoError(t, err)
+		screenshot(t, page, "vcs_provider_created_github_pat_provider")
+		// edit provider
+		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		require.NoError(t, err)
 
-	screenshot(t, page, "vcs_provider_created_github_pat_provider")
-	// edit provider
-	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
-	require.NoError(t, err)
+		// give it a name
+		err = page.Locator("input#name").Fill("my-token")
+		require.NoError(t, err)
 
-	// give it a name
-	err = page.Locator("input#name").Fill("my-token")
-	require.NoError(t, err)
+		err = page.Locator(`//button[text()='Update']`).Click()
+		require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
+		require.NoError(t, err)
+		// change token
+		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		require.NoError(t, err)
 
-	err = page.Locator(`//button[text()='Update']`).Click()
-	require.NoError(t, err)
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
-	require.NoError(t, err)
-	// change token
-	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
-	require.NoError(t, err)
+		err = page.Locator("textarea#token").Fill("my-updated-fake-github-personal-token")
+		require.NoError(t, err)
 
-	err = page.Locator("textarea#token").Fill("my-updated-fake-github-personal-token")
-	require.NoError(t, err)
+		err = page.Locator(`//button[text()='Update']`).Click()
+		require.NoError(t, err)
 
-	err = page.Locator(`//button[text()='Update']`).Click()
-	require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
+		require.NoError(t, err)
 
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
-	require.NoError(t, err)
+		// clear name
+		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		require.NoError(t, err)
 
-	// clear name
-	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
-	require.NoError(t, err)
+		err = page.Locator("input#name").Clear()
+		require.NoError(t, err)
 
-	err = page.Locator("input#name").Clear()
-	require.NoError(t, err)
+		err = page.Locator(`//button[text()='Update']`).Click()
+		require.NoError(t, err)
 
-	err = page.Locator(`//button[text()='Update']`).Click()
-	require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: github (token)`)
+		require.NoError(t, err)
 
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`updated provider: github (token)`)
-	require.NoError(t, err)
+		// delete token
+		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		require.NoError(t, err)
 
-	// delete token
-	err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
-	require.NoError(t, err)
+		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
+		require.NoError(t, err)
 
-	err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
-	require.NoError(t, err)
-
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
-	require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
+		require.NoError(t, err)
+	})
 }
 
 // TestIntegration_VCSProviderAppUI demonstrates management of github app vcs
@@ -160,30 +160,30 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	require.NoError(t, err)
 
 	// create github app vcs provider via UI.
-	page := browser.New(t, ctx)
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to org
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		require.NoError(t, err)
 
-	// go to org
-	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-	require.NoError(t, err)
+		// go to vcs providers
+		err = page.Locator("#vcs_providers > a").Click()
+		require.NoError(t, err)
 
-	// go to vcs providers
-	err = page.Locator("#vcs_providers > a").Click()
-	require.NoError(t, err)
+		screenshot(t, page, "vcs_provider_list_including_github_app")
+		// click button for creating a new vcs provider with a github app
+		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
+			HasText: "New Github VCS Provider (App)",
+		}).Click()
+		require.NoError(t, err)
 
-	screenshot(t, page, "vcs_provider_list_including_github_app")
-	// click button for creating a new vcs provider with a github app
-	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
-		HasText: "New Github VCS Provider (App)",
-	}).Click()
-	require.NoError(t, err)
+		// one github app installation should be listed
+		err = expect.Locator(page.Locator(`//select[@id='select-install-id']/option[text()='user/leg100']`)).ToBeAttached()
+		require.NoError(t, err)
 
-	// one github app installation should be listed
-	err = expect.Locator(page.Locator(`//select[@id='select-install-id']/option[text()='user/leg100']`)).ToBeAttached()
-	require.NoError(t, err)
+		err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "Create"}).Click()
+		require.NoError(t, err)
 
-	err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "Create"}).Click()
-	require.NoError(t, err)
-
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (app)`)
-	require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created provider: github (app)`)
+		require.NoError(t, err)
+	})
 }

@@ -84,7 +84,7 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 }
 
 // New requests a page from the browser pool.
-func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
+func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page)) {
 	t.Helper()
 
 	// Wait for available context from pool
@@ -97,10 +97,10 @@ func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 	require.NoError(t, err)
 
 	// When test has finished, close ctx and make available space in pool
-	t.Cleanup(func() {
-		browserCtx.Close()
+	defer func() {
 		p.pool <- nil
-	})
+	}()
+	defer browserCtx.Close()
 
 	err = browserCtx.GrantPermissions([]string{
 		"clipboard-read",
@@ -112,11 +112,11 @@ func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 	page, err := browserCtx.NewPage()
 	require.NoError(t, err)
 
-	// When test finishes close page.
-	t.Cleanup(func() {
+	// Close page when done with page
+	defer func() {
 		err := page.Close()
 		require.NoError(t, err)
-	})
+	}()
 
 	// Click OK on any browser javascript dialog boxes that pop up
 	page.OnDialog(func(dialog playwright.Dialog) {
@@ -142,5 +142,5 @@ func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 		require.NoError(t, err)
 	}
 
-	return page
+	fn(page)
 }

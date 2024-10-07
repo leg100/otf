@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,34 +18,35 @@ func TestWorkingDirectory(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// create workspace and set working directory
-	page := browser.New(t, ctx)
+	browser.New(t, ctx, func(page playwright.Page) {
 
-	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
+		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
 
-	// go to workspace
-	_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace"))
-	require.NoError(t, err)
+		// go to workspace
+		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-workspace"))
+		require.NoError(t, err)
 
-	// go to workspace settings
-	err = page.Locator(`//a[text()='settings']`).Click()
-	require.NoError(t, err)
+		// go to workspace settings
+		err = page.Locator(`//a[text()='settings']`).Click()
+		require.NoError(t, err)
 
-	// enter working directory
-	err = page.Locator("input#working_directory").Fill("subdir")
-	require.NoError(t, err)
+		// enter working directory
+		err = page.Locator("input#working_directory").Fill("subdir")
+		require.NoError(t, err)
 
-	// submit form
-	err = page.Locator(`//button[text()='Save changes']`).Click()
-	require.NoError(t, err)
-	// confirm workspace updated
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
-	require.NoError(t, err)
+		// submit form
+		err = page.Locator(`//button[text()='Save changes']`).Click()
+		require.NoError(t, err)
+		// confirm workspace updated
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+		require.NoError(t, err)
+	})
 
 	// create root module along with a sub-directory containing the config we're
 	// going to test
 	root := newRootModule(t, daemon.System.Hostname(), org.Name, "my-workspace")
 	subdir := path.Join(root, "subdir")
-	err = os.Mkdir(subdir, 0o755)
+	err := os.Mkdir(subdir, 0o755)
 	require.NoError(t, err)
 	config := `
 resource "null_resource" "subdir" {}

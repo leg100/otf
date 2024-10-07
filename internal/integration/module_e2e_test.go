@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,58 +32,58 @@ func TestModuleE2E(t *testing.T) {
 
 	var moduleURL string // captures url for module page
 
-	page := browser.New(t, ctx)
+	browser.New(t, ctx, func(page playwright.Page) {
+		// publish module
+		// go to org
+		_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		require.NoError(t, err)
 
-	// publish module
-	// go to org
-	_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
-	require.NoError(t, err)
+		// go to modules
+		err = page.Locator("#modules > a").Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_list")
 
-	// go to modules
-	err = page.Locator("#modules > a").Click()
-	require.NoError(t, err)
-	screenshot(t, page, "modules_list")
+		// click publish button
+		err = page.Locator(`//button[text()='Publish']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_select_provider")
 
-	// click publish button
-	err = page.Locator(`//button[text()='Publish']`).Click()
-	require.NoError(t, err)
-	screenshot(t, page, "modules_select_provider")
+		// select provider
+		err = page.Locator(`//button[text()='connect']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_select_repo")
 
-	// select provider
-	err = page.Locator(`//button[text()='connect']`).Click()
-	require.NoError(t, err)
-	screenshot(t, page, "modules_select_repo")
+		// connect to first repo in list (there should only be one)
+		err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "modules_confirm")
 
-	// connect to first repo in list (there should only be one)
-	err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
-	require.NoError(t, err)
-	screenshot(t, page, "modules_confirm")
+		// confirm module details
+		err = page.Locator(`//button[text()='connect']`).Click()
+		require.NoError(t, err)
+		screenshot(t, page, "newly_created_module_page")
 
-	// confirm module details
-	err = page.Locator(`//button[text()='connect']`).Click()
-	require.NoError(t, err)
-	screenshot(t, page, "newly_created_module_page")
+		// flash message indicates success
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`published module: mod`)
+		require.NoError(t, err)
 
-	// flash message indicates success
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`published module: mod`)
-	require.NoError(t, err)
+		// capture module url so we can visit it later
+		moduleURL = page.URL()
 
-	// capture module url so we can visit it later
-	moduleURL = page.URL()
+		// confirm versions are populated
+		err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.1']`)).ToBeEnabled()
+		require.NoError(t, err)
 
-	// confirm versions are populated
-	err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.1']`)).ToBeEnabled()
-	require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.2']`)).ToBeEnabled()
+		require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.0.2']`)).ToBeEnabled()
-	require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.1.0']`)).ToBeEnabled()
+		require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`//select[@id='version']/option[text()='0.1.0']`)).ToBeEnabled()
-	require.NoError(t, err)
-
-	// should show vcs repo source
-	err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToHaveText(regexp.MustCompile(`.*/terraform-aws-mod`))
-	require.NoError(t, err)
+		// should show vcs repo source
+		err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToHaveText(regexp.MustCompile(`.*/terraform-aws-mod`))
+		require.NoError(t, err)
+	})
 
 	// Now we test the webhook functionality by sending an event to the daemon
 	// (which would usually be triggered by a git push to github). The event
@@ -93,17 +94,19 @@ func TestModuleE2E(t *testing.T) {
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 
-	// v1.0.0 should appear as latest module on workspace
-	// go to module
-	_, err = page.Goto(moduleURL)
-	require.NoError(t, err)
-
-	reloadUntilEnabled(t, page, `//select[@id="version"]/option[@selected]`)
-
-	// Now run terraform with some config that sources the module. First we need
-	// a workspace...
 	workspaceName := "module-test"
-	createWorkspace(t, page, svc.System.Hostname(), org.Name, workspaceName)
+	browser.New(t, ctx, func(page playwright.Page) {
+		// v1.0.0 should appear as latest module on workspace
+		// go to module
+		_, err := page.Goto(moduleURL)
+		require.NoError(t, err)
+
+		reloadUntilEnabled(t, page, `//select[@id="version"]/option[@selected]`)
+
+		// Now run terraform with some config that sources the module. First we need
+		// a workspace...
+		createWorkspace(t, page, svc.System.Hostname(), org.Name, workspaceName)
+	})
 
 	// generate some terraform config that sources our module
 	root := newRootModule(t, svc.System.Hostname(), org.Name, workspaceName)
@@ -113,7 +116,7 @@ module "mod" {
   version = "1.0.0"
 }
 `, svc.System.Hostname(), org.Name, "mod", "aws")
-	err = os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
@@ -128,27 +131,29 @@ module "mod" {
 	_, err = svc.VCSProviders.Delete(ctx, provider.ID)
 	require.NoError(t, err)
 
-	// go to org
-	_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
-	require.NoError(t, err)
+	browser.New(t, ctx, func(page playwright.Page) {
+		// go to org
+		_, err = page.Goto(organizationURL(svc.System.Hostname(), org.Name))
+		require.NoError(t, err)
 
-	// go to modules
-	err = page.Locator("#modules > a").Click()
-	require.NoError(t, err)
+		// go to modules
+		err = page.Locator("#modules > a").Click()
+		require.NoError(t, err)
 
-	// select existing module
-	err = page.Locator(`.widget`).Click()
-	require.NoError(t, err)
+		// select existing module
+		err = page.Locator(`.widget`).Click()
+		require.NoError(t, err)
 
-	// confirm no longer connected
-	err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToBeHidden()
-	require.NoError(t, err)
+		// confirm no longer connected
+		err = expect.Locator(page.Locator(`//span[@id='vcs-repo']`)).ToBeHidden()
+		require.NoError(t, err)
 
-	// delete module
-	err = page.Locator(`//button[text()='Delete module']`).Click()
-	require.NoError(t, err)
+		// delete module
+		err = page.Locator(`//button[text()='Delete module']`).Click()
+		require.NoError(t, err)
 
-	// flash message indicates success
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted module: mod`)
-	require.NoError(t, err)
+		// flash message indicates success
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted module: mod`)
+		require.NoError(t, err)
+	})
 }

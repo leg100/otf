@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,18 +25,18 @@ func TestGithubLogin(t *testing.T) {
 	username := "bobby"
 	svc, _, _ := setup(t, &cfg, github.WithUser(&username))
 
-	page := browser.New(t, nil)
+	browser.New(t, nil, func(page playwright.Page) {
+		// go to login page
+		_, err := page.Goto("https://" + svc.System.Hostname() + "/login")
+		require.NoError(t, err)
+		screenshot(t, page, "github_login_button")
 
-	// go to login page
-	_, err := page.Goto("https://" + svc.System.Hostname() + "/login")
-	require.NoError(t, err)
-	screenshot(t, page, "github_login_button")
+		// login
+		err = page.Locator("a#login-button-github").Click()
+		require.NoError(t, err)
 
-	// login
-	err = page.Locator("a#login-button-github").Click()
-	require.NoError(t, err)
-
-	// check login confirmation message
-	err = expect.Locator(page.Locator(`#content > p`)).ToHaveText(`You are logged in as bobby`)
-	require.NoError(t, err)
+		// check login confirmation message
+		err = expect.Locator(page.Locator(`#content > p`)).ToHaveText(`You are logged in as bobby`)
+		require.NoError(t, err)
+	})
 }

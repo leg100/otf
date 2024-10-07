@@ -8,6 +8,7 @@ import (
 	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -69,42 +70,43 @@ resource "null_resource" "tags_e2e" {}
 	require.Contains(t, ws.Tags, "bar")
 
 	// test UI management of tags
-	page := browser.New(t, ctx)
-	_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "tagged"))
-	require.NoError(t, err)
-	// confirm workspace page lists both tags
-	err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'foo')]`)).ToBeVisible()
-	require.NoError(t, err)
-	err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'bar')]`)).ToBeVisible()
-	require.NoError(t, err)
-	// remove bar tag
-	err = page.Locator(`//button[@id='button-remove-tag-bar']`).Click()
-	require.NoError(t, err)
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed tag: bar")
-	require.NoError(t, err)
+	browser.New(t, ctx, func(page playwright.Page) {
+		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "tagged"))
+		require.NoError(t, err)
+		// confirm workspace page lists both tags
+		err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'foo')]`)).ToBeVisible()
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'bar')]`)).ToBeVisible()
+		require.NoError(t, err)
+		// remove bar tag
+		err = page.Locator(`//button[@id='button-remove-tag-bar']`).Click()
+		require.NoError(t, err)
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed tag: bar")
+		require.NoError(t, err)
 
-	// add new tag
-	err = page.Locator(`//input[@x-ref='input-search']`).Fill("baz")
-	require.NoError(t, err)
+		// add new tag
+		err = page.Locator(`//input[@x-ref='input-search']`).Fill("baz")
+		require.NoError(t, err)
 
-	err = page.Locator(`//input[@x-ref='input-search']`).Press("Enter")
-	require.NoError(t, err)
+		err = page.Locator(`//input[@x-ref='input-search']`).Press("Enter")
+		require.NoError(t, err)
 
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText("created tag: baz")
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("created tag: baz")
 
-	require.NoError(t, err)
-	// go to workspace listing
-	err = page.Locator(`//span[@id='content-header-title']//a[text()='workspaces']`).Click()
-	require.NoError(t, err)
-	// filter by tag foo
-	err = page.Locator(`//label[@for='workspace-tag-filter-foo']`).Click()
-	require.NoError(t, err)
-	// filter by tag bar
-	err = page.Locator(`//label[@for='workspace-tag-filter-baz']`).Click()
-	require.NoError(t, err)
-	// confirm workspace listing contains tagged workspace
-	err = expect.Locator(page.Locator(`//div[@id='content-list']/div[@id='item-workspace-tagged']`)).ToBeVisible()
-	require.NoError(t, err)
+		require.NoError(t, err)
+		// go to workspace listing
+		err = page.Locator(`//span[@id='content-header-title']//a[text()='workspaces']`).Click()
+		require.NoError(t, err)
+		// filter by tag foo
+		err = page.Locator(`//label[@for='workspace-tag-filter-foo']`).Click()
+		require.NoError(t, err)
+		// filter by tag bar
+		err = page.Locator(`//label[@for='workspace-tag-filter-baz']`).Click()
+		require.NoError(t, err)
+		// confirm workspace listing contains tagged workspace
+		err = expect.Locator(page.Locator(`//div[@id='content-list']/div[@id='item-workspace-tagged']`)).ToBeVisible()
+		require.NoError(t, err)
+	})
 
 	// should be tags 'foo' and 'baz'
 	tags, err := daemon.Workspaces.ListTags(ctx, org.Name, workspace.ListTagsOptions{})

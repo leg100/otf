@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/team"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,58 +24,59 @@ func TestWeb(t *testing.T) {
 	err = daemon.Users.AddTeamMembership(ctx, team.ID, []string{user.Username})
 	require.NoError(t, err)
 
-	page := browser.New(t, ctx)
-	// create workspace
-	createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
-	// assign workspace manager role to devops team
-	// go to org
-	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-	require.NoError(t, err)
-	// list teams
-	err = page.Locator("#teams > a").Click()
-	require.NoError(t, err)
-	// select devops team
-	err = page.Locator("#item-team-devops").Click()
-	require.NoError(t, err)
-	// tick checkbox for workspace manager role
-	err = page.Locator("#manage_workspaces").Click()
-	require.NoError(t, err)
-	// submit form
-	err = page.GetByRole("button").GetByText("Save changes").Click()
-	require.NoError(t, err)
-	screenshot(t, page, "team_permissions_added_workspace_manager")
-	// confirm permissions updated
-	err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
-	require.NoError(t, err)
-	// add write permission on workspace to devops team
-	addWorkspacePermission(t, page, daemon.System.Hostname(), org.Name, "my-workspace", team.ID, "write")
-	// list users
+	browser.New(t, ctx, func(page playwright.Page) {
+		// create workspace
+		createWorkspace(t, page, daemon.System.Hostname(), org.Name, "my-workspace")
+		// assign workspace manager role to devops team
+		// go to org
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		require.NoError(t, err)
+		// list teams
+		err = page.Locator("#teams > a").Click()
+		require.NoError(t, err)
+		// select devops team
+		err = page.Locator("#item-team-devops").Click()
+		require.NoError(t, err)
+		// tick checkbox for workspace manager role
+		err = page.Locator("#manage_workspaces").Click()
+		require.NoError(t, err)
+		// submit form
+		err = page.GetByRole("button").GetByText("Save changes").Click()
+		require.NoError(t, err)
+		screenshot(t, page, "team_permissions_added_workspace_manager")
+		// confirm permissions updated
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("team permissions updated")
+		require.NoError(t, err)
+		// add write permission on workspace to devops team
+		addWorkspacePermission(t, page, daemon.System.Hostname(), org.Name, "my-workspace", team.ID, "write")
+		// list users
 
-	// go to org
-	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-	require.NoError(t, err)
+		// go to org
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		require.NoError(t, err)
 
-	// list users
-	err = page.Locator("#users > a").Click()
-	require.NoError(t, err)
+		// list users
+		err = page.Locator("#users > a").Click()
+		require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
-	require.NoError(t, err)
+		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
+		require.NoError(t, err)
 
-	// list team members
+		// list team members
 
-	// go to org
-	_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
-	require.NoError(t, err)
+		// go to org
+		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
+		require.NoError(t, err)
 
-	// list teams
-	err = page.Locator("#teams > a").Click()
-	require.NoError(t, err)
+		// list teams
+		err = page.Locator("#teams > a").Click()
+		require.NoError(t, err)
 
-	// select owners team
-	err = page.Locator("#item-team-owners").Click()
-	require.NoError(t, err)
+		// select owners team
+		err = page.Locator("#item-team-owners").Click()
+		require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
-	require.NoError(t, err)
+		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
+		require.NoError(t, err)
+	})
 }

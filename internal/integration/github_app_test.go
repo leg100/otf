@@ -83,42 +83,42 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				w.Write([]byte(`<html><body>success</body></html>`))
 			}))
 
-			page := browser.New(t, ctx)
-
-			// go to site settings page
-			_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
-			require.NoError(t, err)
-			screenshot(t, page, "site_settings")
-
-			// go to github app page
-			err = page.GetByRole("link").Filter(playwright.LocatorFilterOptions{
-				HasText: "GitHub app",
-			}).Click()
-			require.NoError(t, err)
-
-			screenshot(t, page, "empty_github_app_page")
-			// go to page for creating a new github app
-			err = page.Locator("//a[@id='new-github-app-link']").Click()
-			require.NoError(t, err)
-			screenshot(t, page, "new_github_app")
-
-			if tt.public {
-				err = page.Locator(`//input[@type='checkbox' and @id='public']`).Click()
+			browser.New(t, ctx, func(page playwright.Page) {
+				// go to site settings page
+				_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/admin")
 				require.NoError(t, err)
-			}
+				screenshot(t, page, "site_settings")
 
-			if tt.organization != "" {
-				err = page.Locator(`//input[@id="organization"]`).Fill(tt.organization)
+				// go to github app page
+				err = page.GetByRole("link").Filter(playwright.LocatorFilterOptions{
+					HasText: "GitHub app",
+				}).Click()
 				require.NoError(t, err)
-			}
 
-			err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
-				HasText: "Create",
-			}).Click()
-			require.NoError(t, err)
+				screenshot(t, page, "empty_github_app_page")
+				// go to page for creating a new github app
+				err = page.Locator("//a[@id='new-github-app-link']").Click()
+				require.NoError(t, err)
+				screenshot(t, page, "new_github_app")
 
-			err = expect.Locator(page.GetByText("success")).ToBeVisible()
-			require.NoError(t, err)
+				if tt.public {
+					err = page.Locator(`//input[@type='checkbox' and @id='public']`).Click()
+					require.NoError(t, err)
+				}
+
+				if tt.organization != "" {
+					err = page.Locator(`//input[@id="organization"]`).Fill(tt.organization)
+					require.NoError(t, err)
+				}
+
+				err = page.GetByRole("button").Filter(playwright.LocatorFilterOptions{
+					HasText: "Create",
+				}).Click()
+				require.NoError(t, err)
+
+				err = expect.Locator(page.GetByText("success")).ToBeVisible()
+				require.NoError(t, err)
+			})
 		})
 	}
 
@@ -144,20 +144,20 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				w.Header().Add("Content-Type", "application/json")
 			}),
 		)
-		page := browser.New(t, ctx)
-		// go to the exchange code endpoint
-		//
-		_, err := page.Goto((&url.URL{
-			Scheme:   "https",
-			Host:     daemon.System.Hostname(),
-			Path:     "/app/github-apps/exchange-code",
-			RawQuery: "code=anything",
-		}).String())
-		require.NoError(t, err)
+		browser.New(t, ctx, func(page playwright.Page) {
+			// go to the exchange code endpoint
+			_, err := page.Goto((&url.URL{
+				Scheme:   "https",
+				Host:     daemon.System.Hostname(),
+				Path:     "/app/github-apps/exchange-code",
+				RawQuery: "code=anything",
+			}).String())
+			require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
-		require.NoError(t, err)
-		screenshot(t, page, "github_app_created")
+			err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
+			require.NoError(t, err)
+			screenshot(t, page, "github_app_created")
+		})
 	})
 
 	// demonstrate the listing of github installations
@@ -184,14 +184,14 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		page := browser.New(t, ctx)
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err = page.Goto(daemon.System.URL("/app/github-apps"))
+			require.NoError(t, err)
 
-		_, err = page.Goto(daemon.System.URL("/app/github-apps"))
-		require.NoError(t, err)
-
-		err = expect.Locator(page.Locator(`//div[@id='installations']//a[contains(text(), "user/leg100")]`)).ToBeVisible()
-		require.NoError(t, err)
-		screenshot(t, page, "github_app_install_list")
+			err = expect.Locator(page.Locator(`//div[@id='installations']//a[contains(text(), "user/leg100")]`)).ToBeVisible()
+			require.NoError(t, err)
+			screenshot(t, page, "github_app_install_list")
+		})
 	})
 }
 

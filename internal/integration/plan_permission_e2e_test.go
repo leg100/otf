@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/run"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,9 +28,10 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Open tab and create a workspace and assign plan role to the
 	// engineer's team.
-	page := browser.New(t, ctx)
-	createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
-	addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "plan")
+	browser.New(t, ctx, func(page playwright.Page) {
+		createWorkspace(t, page, svc.System.Hostname(), org.Name, "my-test-workspace")
+		addWorkspacePermission(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", team.ID, "plan")
+	})
 
 	// As engineer, run terraform init, and plan. This should succeed because
 	// the engineer has been assigned the plan role.
@@ -50,5 +52,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	}
 
 	// Now demonstrate engineer can start a plan via the UI.
-	startRunTasks(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", run.PlanOnlyOperation, false)
+	browser.New(t, ctx, func(page playwright.Page) {
+		startRunTasks(t, page, svc.System.Hostname(), org.Name, "my-test-workspace", run.PlanOnlyOperation, false)
+	})
 }

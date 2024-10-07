@@ -11,6 +11,7 @@ import (
 	"time"
 
 	goexpect "github.com/google/goexpect"
+	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,20 +58,20 @@ func TestTerraformLogin(t *testing.T) {
 	url, _, err := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
 	require.NoError(t, err)
 
-	page := browser.New(t, ctx)
+	browser.New(t, ctx, func(page playwright.Page) {
+		// navigate to auth url captured from terraform login output
+		_, err = page.Goto(strings.TrimSpace(url))
+		require.NoError(t, err)
+		screenshot(t, page, "terraform_login_consent")
 
-	// navigate to auth url captured from terraform login output
-	_, err = page.Goto(strings.TrimSpace(url))
-	require.NoError(t, err)
-	screenshot(t, page, "terraform_login_consent")
+		// give consent
+		err = page.Locator(`//button[text()='Accept']`).Click()
+		require.NoError(t, err)
 
-	// give consent
-	err = page.Locator(`//button[text()='Accept']`).Click()
-	require.NoError(t, err)
-
-	screenshot(t, page, "terraform_login_flow_complete")
-	err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
-	require.NoError(t, err)
+		screenshot(t, page, "terraform_login_flow_complete")
+		err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
+		require.NoError(t, err)
+	})
 
 	err = <-tferr
 	if !assert.NoError(t, err) || t.Failed() {
