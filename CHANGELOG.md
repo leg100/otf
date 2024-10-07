@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.0](https://github.com/leg100/otf/compare/v0.2.4...v0.3.0) (2024-10-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* move to sqlc, tern ([#683](https://github.com/leg100/otf/issues/683))
+
+### refactor
+
+* move to sqlc, tern ([#683](https://github.com/leg100/otf/issues/683)) ([878ebfb](https://github.com/leg100/otf/commit/878ebfba5eea34926b2f3aebe9bce8f826347b20))
+
+
+### Bug Fixes
+
+* make linting and tests pass ([ebc1e53](https://github.com/leg100/otf/commit/ebc1e53a9e00412e4db8467a71b299e86b5fb43e))
+* use base58 alphabet for resource IDs ([#680](https://github.com/leg100/otf/issues/680)) ([1e7d7a2](https://github.com/leg100/otf/commit/1e7d7a2b2c350c17c29fb49ae0dfbbeb31b2942d))
+
+
+### Miscellaneous
+
+* bump go ([5663eab](https://github.com/leg100/otf/commit/5663eab55cf22f5d9fe9f8a29c6df9d2908ecb20))
+* unarchive ([c954c36](https://github.com/leg100/otf/commit/c954c36107c910192941393e366ee1b8a2e290f1))
+* upgrade dependencies ([59eb979](https://github.com/leg100/otf/commit/59eb97996785328e78c31f2372cfce889f5ef7cb))
+* use forked sse lib's module path ([fc9b138](https://github.com/leg100/otf/commit/fc9b13865844062570ffbeb7d8c57bdf5ae50b91))
+
 ## [0.2.4](https://github.com/leg100/otf/compare/v0.2.3...v0.2.4) (2023-12-16)
 
 
