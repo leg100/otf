@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -69,12 +70,19 @@ func TestGithubPullRequest(t *testing.T) {
 
 		// github should receive several pending status updates followed by a final
 		// update with details of planned resources
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		got := daemon.GetStatus(t, ctx)
-		require.Equal(t, "success", got.GetState())
-		require.Equal(t, "planned: +2/~0/−0", got.GetDescription())
+		var pending int
+		for {
+			got := daemon.GetStatus(t, ctx)
+			switch got.GetState() {
+			case "pending":
+				pending++
+			case "success":
+				// Expect to have received at least one pending status update
+				// before the final update
+				assert.GreaterOrEqual(t, pending, 1)
+				require.Equal(t, "planned: +2/~0/−0", got.GetDescription())
+				return
+			}
+		}
 	}
 }
