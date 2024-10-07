@@ -14,13 +14,17 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	page := browser.New(t, ctx)
+
 	// go to organization
 	_, err := page.Goto(organizationURL(svc.System.Hostname(), org.Name))
 	require.NoError(t, err)
+
 	// go to organization token page
 	err = page.Locator(`//span[@id='organization_tokens']/a`).Click()
 	require.NoError(t, err)
+
 	screenshot(t, page, "org_token_new")
+
 	// create new token
 	err = page.Locator(`//button[text()='Create organization token']`).Click()
 	require.NoError(t, err)

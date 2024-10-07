@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,9 +31,9 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 	err = page.Locator("input#name").Press("Enter")
 	require.NoError(t, err)
 
-	err = page.GetByRole("alert").Filter(playwright.LocatorFilterOptions{
-		HasText: "created organization: acme-corp",
-	}).Click()
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(
+		"created organization: acme-corp",
+	)
 	require.NoError(t, err)
 
 	// go to organization settings

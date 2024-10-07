@@ -57,7 +57,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	screenshot(t, page, "created_agent_pool")
 
 	// expect flash message confirming pool creation
-	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`created agent pool: pool-1`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`created agent pool: pool-1`)
 	require.NoError(t, err)
 
 	// confirm pool was created
@@ -143,7 +143,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	screenshot(t, page, "agent_pool_token_created")
 
 	// expect flash message confirming token creation
-	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
 	require.NoError(t, err)
 
 	// click clipboard icon to copy token into clipboard
@@ -189,7 +189,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	err = page.Locator(`//button[@id="delete-agent-token-button"]`).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`Deleted token: token-1`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Deleted token: token-1`)
 	require.NoError(t, err)
 
 	// confirm user is notified that they must unassign pool from workspace
@@ -225,7 +225,7 @@ func TestAgentPoolsUI(t *testing.T) {
 	err = page.Locator(`//button[@id="delete-agent-pool-button"]`).Click()
 	require.NoError(t, err)
 
-	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`Deleted agent pool: pool-1`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Deleted agent pool: pool-1`)
 	require.NoError(t, err)
 
 	// confirm pool was deleted

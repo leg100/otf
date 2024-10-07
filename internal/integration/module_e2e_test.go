@@ -64,7 +64,7 @@ func TestModuleE2E(t *testing.T) {
 	screenshot(t, page, "newly_created_module_page")
 
 	// flash message indicates success
-	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`published module: mod`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`published module: mod`)
 	require.NoError(t, err)
 
 	// capture module url so we can visit it later
@@ -149,6 +149,6 @@ module "mod" {
 	require.NoError(t, err)
 
 	// flash message indicates success
-	err = expect.Locator(page.Locator(`//div[@role='alert']`)).ToHaveText(`deleted module: mod`)
+	err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted module: mod`)
 	require.NoError(t, err)
 }
