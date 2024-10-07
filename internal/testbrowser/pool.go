@@ -87,31 +87,32 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 func (p *Pool) New(t *testing.T, user context.Context) playwright.Page {
 	t.Helper()
 
-	browserCtx := <-p.pool
-	if browserCtx == nil {
-		ctx, err := p.browser.NewContext(playwright.BrowserNewContextOptions{
-			IgnoreHttpsErrors: internal.Bool(true),
-		})
-		require.NoError(t, err)
-		browserCtx = ctx
-	}
-	// Return browser context back to pool after this method finishes
-	defer func() { p.pool <- browserCtx }()
+	// Wait for available context from pool
+	<-p.pool
 
-	err := browserCtx.GrantPermissions([]string{
+	// Construct new ctx
+	browserCtx, err := p.browser.NewContext(playwright.BrowserNewContextOptions{
+		IgnoreHttpsErrors: internal.Bool(true),
+	})
+	require.NoError(t, err)
+
+	// When test has finished, close ctx and make available space in pool
+	t.Cleanup(func() {
+		browserCtx.Close()
+		p.pool <- nil
+	})
+
+	err = browserCtx.GrantPermissions([]string{
 		"clipboard-read",
 		"clipboard-write",
 	})
 	require.NoError(t, err)
 
-	// Because context is being re-used, cookies are cleared and a new session
-	// is created for the calling user.
-	err = browserCtx.ClearCookies()
-	require.NoError(t, err)
-
 	// Create a browser page (tab) for test
 	page, err := browserCtx.NewPage()
 	require.NoError(t, err)
+
+	// When test finishes close page.
 	t.Cleanup(func() {
 		err := page.Close()
 		require.NoError(t, err)
