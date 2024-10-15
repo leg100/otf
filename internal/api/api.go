@@ -10,6 +10,7 @@ import (
 
 const (
 	DefaultBasePath = "/otfapi"
+	V2BasePath      = "/otfapi/v2"
 	PingEndpoint    = "ping"
 	DefaultAddress  = "localhost:8080"
 )

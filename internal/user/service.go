@@ -122,6 +122,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 	a.tfeapi.addHandlers(r)
 	a.api.addHandlers(r)
+	(&v2{Service: a}).addHandlers(r)
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {

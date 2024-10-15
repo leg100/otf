@@ -54,7 +54,8 @@ func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	}
 	// Set cookie to expire at same time as token
 	html.SetCookie(w, SessionCookie, string(token), internal.Time(expiry))
-	html.ReturnUserOriginalPage(w, r)
+	// Send user to their profile
+	http.Redirect(w, r, "/profile", http.StatusFound)
 
 	a.V(2).Info("started session", "username", *opts.Username)
 

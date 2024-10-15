@@ -25,8 +25,6 @@ func htmlPanic(format string, a ...any) {
 	panic(fmt.Sprintf(format, a...))
 }
 
-// SendUserToLoginPage sends user to the login prompt page, saving the original
-// path they tried to access so it can return them there after login.
 func SendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
 	// if request path was for a background event-stream then save the referring
 	// html page, otherwise the user will be returned to a blank page.

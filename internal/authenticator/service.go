@@ -91,6 +91,8 @@ func (a *service) AddHandlers(r *mux.Router) {
 		authenticator.addHandlers(r)
 	}
 	r.HandleFunc("/login", a.loginHandler)
+
+	(&api{service: a}).addHandlers(r)
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {

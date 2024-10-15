@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -31,6 +32,12 @@ var AuthenticatedPrefixes = []string{
 	tfeapi.ModuleV1Prefix,
 	otfapi.DefaultBasePath,
 	paths.UIPrefix,
+}
+
+// AuthenticatedPrefixExceptions are exceptions to the AuthenticatedPrefixes
+// above requiring authentication
+var AuthenticatedPrefixExceptions = []string{
+	path.Join(otfapi.V2BasePath, "/login"),
 }
 
 type (
@@ -100,11 +107,11 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 					http.Error(w, err.Error(), http.StatusUnauthorized)
 					return
 				}
-			} else if strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
+			} else if strings.HasPrefix(r.URL.Path, otfapi.V2BasePath) {
 				var ok bool
-				subject, ok = mw.validateUIRequest(ctx, w, r)
+				subject, ok = mw.validateSession(ctx, w, r)
 				if !ok {
-					html.SendUserToLoginPage(w, r)
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
 					return
 				}
 			} else {
@@ -153,7 +160,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 	return m.GetSubject(ctx, kind, parsed.Subject())
 }
 
-func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {
+func (m *middleware) validateSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {
 	cookie, err := r.Cookie(SessionCookie)
 	if err == http.ErrNoCookie {
 		html.FlashSuccess(w, "you need to login to access the requested page")
@@ -178,10 +185,18 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 }
 
 func isProtectedPath(path string) bool {
+	for _, prefix := range AuthenticatedPrefixExceptions {
+		if strings.HasPrefix(path, prefix) {
+			// not protected
+			return false
+		}
+	}
 	for _, prefix := range AuthenticatedPrefixes {
 		if strings.HasPrefix(path, prefix) {
+			// protected
 			return true
 		}
 	}
+	// not protected
 	return false
 }
