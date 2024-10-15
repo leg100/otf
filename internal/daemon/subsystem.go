@@ -72,7 +72,8 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	}
 	// Backoff and retry whenever operation returns an error. If context is
 	// cancelled then it'll stop retrying and return the context error.
-	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
+	infiniteRetry := backoff.WithMaxElapsedTime(0)
+	policy := backoff.WithContext(backoff.NewExponentialBackOff(infiniteRetry), ctx)
 	g.Go(func() error {
 		return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
 			s.Error(err, "restarting subsystem", "name", s.Name, "backoff", next)
