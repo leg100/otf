@@ -1,5 +1,5 @@
 # local node shite
-/node_modules
+ui/node_modules
 package.json
 package-lock.json
 # tfenv
