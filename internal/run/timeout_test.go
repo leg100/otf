@@ -54,7 +54,7 @@ func TestTimeout(t *testing.T) {
 				StatusTimestamps: []StatusTimestamp{
 					{
 						Status:    RunPlanning,
-						Timestamp: time.Now().Add(time.Hour),
+						Timestamp: time.Now().Add(-time.Hour),
 					},
 				},
 			},
@@ -68,7 +68,7 @@ func TestTimeout(t *testing.T) {
 				StatusTimestamps: []StatusTimestamp{
 					{
 						Status:    RunApplying,
-						Timestamp: time.Now().Add(time.Hour),
+						Timestamp: time.Now().Add(-time.Hour),
 					},
 				},
 			},
@@ -82,9 +82,10 @@ func TestTimeout(t *testing.T) {
 			timeout := &Timeout{
 				Runs:            client,
 				PlanningTimeout: tt.planningTimeout,
+				ApplyingTimeout: tt.applyingTimeout,
 			}
 			timeout.check(context.Background())
-			assert.Equal(t, client.timeout, tt.timedout)
+			assert.Equal(t, tt.timedout, client.timeout)
 		})
 	}
 }
