@@ -22,6 +22,7 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "planning timeout exceeded",
 			run: &Run{
+				Status: RunPlanning,
 				StatusTimestamps: []StatusTimestamp{
 					{
 						Status:    RunPlanning,
@@ -35,6 +36,7 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "applying timeout exceeded",
 			run: &Run{
+				Status: RunApplying,
 				StatusTimestamps: []StatusTimestamp{
 					{
 						Status:    RunApplying,
@@ -48,6 +50,7 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "planning timeout not exceeded",
 			run: &Run{
+				Status: RunPlanning,
 				StatusTimestamps: []StatusTimestamp{
 					{
 						Status:    RunPlanning,
@@ -61,6 +64,7 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "applying timeout not exceeded",
 			run: &Run{
+				Status: RunApplying,
 				StatusTimestamps: []StatusTimestamp{
 					{
 						Status:    RunApplying,

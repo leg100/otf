@@ -75,33 +75,36 @@ func (e *Timeout) check(ctx context.Context) {
 		e.Error(err, "checking run status timeouts")
 		return
 	}
-	for status, s := range statuses {
-		for _, run := range runs {
-			// For each run retrieve the timestamp for when it started
-			// the status
-			started, err := run.StatusTimestamp(status)
-			if err != nil {
-				// should never happen
-				e.Error(err, fmt.Sprintf("checking %s timeout", status))
-				continue
-			}
-			// Check whether the timeout has been exceeded
-			if time.Since(started) > s.timeout {
-				// Timeout exceeded...
-				//
-				// Inform the user via log message,
-				e.Error(fmt.Errorf("checking %s timeout", status), "timeout", s.timeout, "started", started)
-				// And terminate the corresponding phase and the run, forcing it into
-				// an errored state.
-				//
-				// TODO: bubble up to the UI/API the reason for entering the errored
-				// state.
-				// NOTE: returned error is ignored because FinishPhase
-				// logs errors
-				_, _ = e.Runs.FinishPhase(ctx, run.ID, s.phase, PhaseFinishOptions{
-					Errored: true,
-				})
-			}
+	for _, run := range runs {
+		s, ok := statuses[run.Status]
+		if !ok {
+			// Should never happen.
+			continue
+		}
+		// For each run retrieve the timestamp for when it started
+		// the status
+		started, err := run.StatusTimestamp(run.Status)
+		if err != nil {
+			// should never happen
+			e.Error(err, fmt.Sprintf("checking %s timeout", run.Status))
+			continue
+		}
+		// Check whether the timeout has been exceeded
+		if time.Since(started) > s.timeout {
+			// Timeout exceeded...
+			//
+			// Inform the user via log message,
+			e.Error(fmt.Errorf("checking %s timeout", run.Status), "timeout", s.timeout, "started", started)
+			// And terminate the corresponding phase and the run, forcing it into
+			// an errored state.
+			//
+			// TODO: bubble up to the UI/API the reason for entering the errored
+			// state.
+			// NOTE: returned error is ignored because FinishPhase
+			// logs errors
+			_, _ = e.Runs.FinishPhase(ctx, run.ID, s.phase, PhaseFinishOptions{
+				Errored: true,
+			})
 		}
 	}
 }
