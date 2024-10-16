@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"errors"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
@@ -42,6 +43,8 @@ type Config struct {
 	SkipTLSVerification          bool
 	// skip checks for latest terraform version
 	DisableLatestChecker *bool
+	PlanningTimeout      time.Duration
+	ApplyingTimeout      time.Duration
 
 	tokens.GoogleIAPConfig
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
@@ -108,6 +109,9 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")
 
 	cmd.Flags().StringVar(&cfg.GoogleIAPConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")
+
+	cmd.Flags().DurationVar(&cfg.PlanningTimeout, "planning-timeout", 2*time.Hour, "Timeout for plans.")
+	cmd.Flags().DurationVar(&cfg.ApplyingTimeout, "applying-timeout", 24*time.Hour, "Timeout for applies.")
 
 	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
 	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())
