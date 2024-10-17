@@ -109,10 +109,8 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		description string
 	)
 	switch run.Status {
-	case RunPending, RunPlanQueued, RunApplyQueued:
+	case RunPending, RunPlanQueued, RunApplyQueued, RunPlanning, RunApplying, RunPlanned, RunConfirmed:
 		status = vcs.PendingStatus
-	case RunPlanning, RunApplying, RunPlanned, RunConfirmed:
-		status = vcs.RunningStatus
 	case RunPlannedAndFinished:
 		status = vcs.SuccessStatus
 		if run.Plan.ResourceReport != nil {
