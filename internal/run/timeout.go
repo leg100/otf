@@ -105,11 +105,10 @@ func (e *Timeout) check(ctx context.Context) {
 			// Timeout exceeded...
 			//
 			// Inform the user via log message,
-			e.Error(nil, "run timeout exceeded",
+			e.Error(nil, fmt.Sprintf("%s timeout exceeded", run.Status),
 				fmt.Sprintf("%s_timeout", run.Status), s.timeout,
 				fmt.Sprintf("started_%s", run.Status), started,
 				"run_id", run.ID,
-				"status", run.Status,
 			)
 			// Send cancellation signal to terminate terraform process and force
 			// run into the canceled state.
