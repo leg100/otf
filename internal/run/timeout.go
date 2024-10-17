@@ -61,8 +61,9 @@ func (e *Timeout) Start(ctx context.Context) error {
 func (e *Timeout) check(ctx context.Context) {
 	// Statuses that are checked for timeout
 	statuses := map[Status]struct {
-		// run phase corresponding to phase
-		phase   internal.PhaseType
+		// phase corresponding to status
+		phase internal.PhaseType
+		// each status has a specific timeout
 		timeout time.Duration
 	}{
 		RunPlanning: {
