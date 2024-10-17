@@ -59,10 +59,12 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@class='widget']//img[@id='run-trigger-github']`)).ToBeVisible()
 		require.NoError(t, err)
 
-		// github should receive three pending status updates followed by a final
-		// update with details of planned resources
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
+		// GitHub should receive two pending status updates followed by a final
+		// update with details of planned resources. (The reason for two pending
+		// updates is that the run reporter de-dups status updates but only does
+		// so for OTF's abstract vcs.Status, which has a "running" value; but
+		// GitHub has no equivalent "running" value, so the Github client maps
+		// "running" to "pending"...).
 		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 		got := daemon.GetStatus(t, ctx)
