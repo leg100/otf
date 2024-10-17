@@ -23,7 +23,7 @@ func TestReporter_HandleRun(t *testing.T) {
 		want vcs.SetStatusOptions
 	}{
 		{
-			name: "pending run",
+			name: "set pending status",
 			run:  &Run{ID: "run-123", Status: RunPending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
@@ -64,12 +64,13 @@ func TestReporter_HandleRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got vcs.SetStatusOptions
+			got := make(chan vcs.SetStatusOptions, 1)
 			reporter := &Reporter{
 				Workspaces:      &fakeReporterWorkspaceService{ws: tt.ws},
 				Configs:         &fakeReporterConfigurationVersionService{cv: tt.cv},
-				VCS:             &fakeReporterVCSProviderService{got: &got},
+				VCS:             &fakeReporterVCSProviderService{got: got},
 				HostnameService: internal.NewHostnameService("otf-host.org"),
+				Cache:           make(map[string]vcs.Status),
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -77,6 +78,52 @@ func TestReporter_HandleRun(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// TestReporter_DontSetStatusTwice tests that the same status is not set more
+// than once for a given run.
+func TestReporter_DontSetStatusTwice(t *testing.T) {
+	ctx := context.Background()
+
+	run := &Run{ID: "run-123", Status: RunPending}
+	ws := &workspace.Workspace{
+		Name:       "dev",
+		Connection: &workspace.Connection{},
+	}
+	cv := &configversion.ConfigurationVersion{
+		IngressAttributes: &configversion.IngressAttributes{
+			CommitSHA: "abc123",
+			Repo:      "leg100/otf",
+		},
+	}
+
+	got := make(chan vcs.SetStatusOptions, 1)
+	reporter := &Reporter{
+		Workspaces:      &fakeReporterWorkspaceService{ws: ws},
+		Configs:         &fakeReporterConfigurationVersionService{cv: cv},
+		VCS:             &fakeReporterVCSProviderService{got: got},
+		HostnameService: internal.NewHostnameService("otf-host.org"),
+		Cache:           make(map[string]vcs.Status),
+	}
+
+	// handle run the first time and expect status to be set
+	err := reporter.handleRun(ctx, run)
+	require.NoError(t, err)
+
+	want := vcs.SetStatusOptions{
+		Workspace: "dev",
+		Ref:       "abc123",
+		Repo:      "leg100/otf",
+		Status:    vcs.PendingStatus,
+		TargetURL: "https://otf-host.org/app/runs/run-123",
+	}
+	assert.Equal(t, want, <-got)
+
+	// handle run the second time with the same status and expect status to
+	// *not* be set
+	err = reporter.handleRun(ctx, run)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(got))
 }
 
 type fakeReporterConfigurationVersionService struct {
@@ -100,7 +147,7 @@ func (f *fakeReporterWorkspaceService) Get(context.Context, string) (*workspace.
 }
 
 type fakeReporterVCSProviderService struct {
-	got *vcs.SetStatusOptions
+	got chan vcs.SetStatusOptions
 }
 
 func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (vcs.Client, error) {
@@ -110,10 +157,10 @@ func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (
 type fakeReporterCloudClient struct {
 	vcs.Client
 
-	got *vcs.SetStatusOptions
+	got chan vcs.SetStatusOptions
 }
 
 func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
-	*f.got = opts
+	f.got <- opts
 	return nil
 }
