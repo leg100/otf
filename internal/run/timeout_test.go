@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,8 +15,8 @@ func TestTimeout(t *testing.T) {
 		run             *Run
 		planningTimeout time.Duration
 		applyingTimeout time.Duration
-		// whether run has been timed out
-		timedout bool
+		// expect run to be canceled or not
+		canceled bool
 	}{
 		{
 			name: "planning timeout exceeded",
@@ -31,7 +30,7 @@ func TestTimeout(t *testing.T) {
 				},
 			},
 			planningTimeout: time.Hour,
-			timedout:        true,
+			canceled:        true,
 		},
 		{
 			name: "applying timeout exceeded",
@@ -45,7 +44,7 @@ func TestTimeout(t *testing.T) {
 				},
 			},
 			applyingTimeout: time.Hour,
-			timedout:        true,
+			canceled:        true,
 		},
 		{
 			name: "planning timeout not exceeded",
@@ -59,7 +58,7 @@ func TestTimeout(t *testing.T) {
 				},
 			},
 			planningTimeout: 2 * time.Hour,
-			timedout:        false,
+			canceled:        false,
 		},
 		{
 			name: "applying timeout not exceeded",
@@ -73,7 +72,7 @@ func TestTimeout(t *testing.T) {
 				},
 			},
 			applyingTimeout: 2 * time.Hour,
-			timedout:        false,
+			canceled:        false,
 		},
 	}
 	for _, tt := range tests {
@@ -85,21 +84,21 @@ func TestTimeout(t *testing.T) {
 				ApplyingTimeout: tt.applyingTimeout,
 			}
 			timeout.check(context.Background())
-			assert.Equal(t, tt.timedout, client.timeout)
+			assert.Equal(t, tt.canceled, client.canceled)
 		})
 	}
 }
 
 type fakeTimeoutRunClient struct {
-	run     *Run
-	timeout bool
+	run      *Run
+	canceled bool
 }
 
 func (f *fakeTimeoutRunClient) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	return resource.NewPage([]*Run{f.run}, resource.PageOptions{}, nil), nil
 }
 
-func (f *fakeTimeoutRunClient) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
-	f.timeout = true
-	return nil, nil
+func (f *fakeTimeoutRunClient) Cancel(ctx context.Context, runID string) error {
+	f.canceled = true
+	return nil
 }

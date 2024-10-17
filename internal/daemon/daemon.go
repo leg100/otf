@@ -489,10 +489,11 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(run.TimeoutLockID),
 			System: &run.Timeout{
-				Logger:          d.Logger.WithValues("component", "timeout"),
-				PlanningTimeout: d.PlanningTimeout,
-				ApplyingTimeout: d.ApplyingTimeout,
-				Runs:            d.Runs,
+				Logger:                d.Logger.WithValues("component", "timeout"),
+				OverrideCheckInterval: d.OverrideTimeoutCheckInterval,
+				PlanningTimeout:       d.PlanningTimeout,
+				ApplyingTimeout:       d.ApplyingTimeout,
+				Runs:                  d.Runs,
 			},
 		},
 		{

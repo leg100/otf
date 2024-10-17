@@ -14,6 +14,9 @@ import (
 // TimeoutLockID is a unique ID guaranteeing only one timeout daemon on a cluster is running at any time.
 const TimeoutLockID int64 = 179366396344335598
 
+// By default check timed out runs every minute
+var defaultCheckInterval = time.Minute
+
 type (
 	// Timeout is a daemon that "times out" runs if one of the phases -
 	// planning, applying - exceeds a timeout. This can happen for a number of
@@ -23,21 +26,28 @@ type (
 	Timeout struct {
 		logr.Logger
 
-		PlanningTimeout time.Duration
-		ApplyingTimeout time.Duration
-		Runs            timeoutRunClient
+		OverrideCheckInterval time.Duration
+		PlanningTimeout       time.Duration
+		ApplyingTimeout       time.Duration
+		Runs                  timeoutRunClient
 	}
 
 	timeoutRunClient interface {
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error)
+		Cancel(ctx context.Context, runID string) error
 	}
 )
 
 // Start the timeout daemon.
 func (e *Timeout) Start(ctx context.Context) error {
-	// Check every minute for timed out runs.
-	ticker := time.NewTicker(time.Minute)
+	// Set the interval between checking for timed out runs. Unless an override
+	// interval has been provided, use a default.
+	interval := defaultCheckInterval
+	if e.OverrideCheckInterval != 0 {
+		interval = e.OverrideCheckInterval
+	}
+
+	ticker := time.NewTicker(interval)
 	for {
 		select {
 		case <-ctx.Done():
@@ -86,7 +96,7 @@ func (e *Timeout) check(ctx context.Context) {
 		started, err := run.StatusTimestamp(run.Status)
 		if err != nil {
 			// should never happen
-			e.Error(err, fmt.Sprintf("checking %s timeout", run.Status))
+			e.Error(err, "checking run timeout", "run_id", run.ID, "status", run.Status)
 			continue
 		}
 		// Check whether the timeout has been exceeded
@@ -94,17 +104,17 @@ func (e *Timeout) check(ctx context.Context) {
 			// Timeout exceeded...
 			//
 			// Inform the user via log message,
-			e.Error(fmt.Errorf("checking %s timeout", run.Status), "timeout", s.timeout, "started", started)
-			// And terminate the corresponding phase and the run, forcing it into
-			// an errored state.
+			e.Error(nil, "run timeout exceeded",
+				fmt.Sprintf("%s_timeout", run.Status), s.timeout,
+				fmt.Sprintf("started_%s", run.Status), started,
+				"run_id", run.ID,
+				"status", run.Status,
+			)
+			// Send cancellation signal to terminate terraform process and force
+			// run into the canceled state.
 			//
-			// TODO: bubble up to the UI/API the reason for entering the errored
-			// state.
-			// NOTE: returned error is ignored because FinishPhase
-			// logs errors
-			_, _ = e.Runs.FinishPhase(ctx, run.ID, s.phase, PhaseFinishOptions{
-				Errored: true,
-			})
+			// TODO: bubble up to the UI/API the reason for cancelling the run.
+			_ = e.Runs.Cancel(ctx, run.ID)
 		}
 	}
 }
