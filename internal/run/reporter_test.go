@@ -20,7 +20,9 @@ func TestReporter_HandleRun(t *testing.T) {
 		run  *Run
 		ws   *workspace.Workspace
 		cv   *configversion.ConfigurationVersion
-		want vcs.SetStatusOptions
+		// expect the given status options to be set. If nil then expect no
+		// status options to be set.
+		want *vcs.SetStatusOptions
 	}{
 		{
 			name: "set pending status",
@@ -35,7 +37,7 @@ func TestReporter_HandleRun(t *testing.T) {
 					Repo:      "leg100/otf",
 				},
 			},
-			want: vcs.SetStatusOptions{
+			want: &vcs.SetStatusOptions{
 				Workspace: "dev",
 				Ref:       "abc123",
 				Repo:      "leg100/otf",
@@ -49,17 +51,17 @@ func TestReporter_HandleRun(t *testing.T) {
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: nil,
 			},
-			want: vcs.SetStatusOptions{},
+			want: nil,
 		},
 		{
 			name: "skip UI-triggered run",
 			run:  &Run{ID: "run-123", Source: SourceUI},
-			want: vcs.SetStatusOptions{},
+			want: nil,
 		},
 		{
 			name: "skip API-triggered run",
 			run:  &Run{ID: "run-123", Source: SourceAPI},
-			want: vcs.SetStatusOptions{},
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -75,7 +77,11 @@ func TestReporter_HandleRun(t *testing.T) {
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, got)
+			if tt.want == nil {
+				assert.Equal(t, 0, len(got))
+			} else {
+				assert.Equal(t, *tt.want, <-got)
+			}
 		})
 	}
 }
