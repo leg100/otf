@@ -31,7 +31,9 @@ type (
 		// Cache most recently set status for each incomplete run to ensure the
 		// same status is not set more than once on an upstream VCS provider.
 		// This is important to avoid hitting rate limits on VCS providers, e.g.
-		// GitHub has a limit of 1000 status updates on a commit.
+		// GitHub has a limit of 1000 status updates on a commit:
+		//
+		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		//
 		// key is the run ID.
 		Cache map[string]vcs.Status
