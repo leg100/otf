@@ -3,16 +3,32 @@ package pubsub
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"strconv"
 	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal/sql"
 )
 
-const (
-	// subBufferSize is the buffer size of the channel for each subscription.
-	subBufferSize = 100
-)
+// subBufferSize is the buffer size of the channel for each subscription.
+var subBufferSize = 100
+
+// Optionally allow user to override the buffer size.
+const overrideBufferSizeEnv = "OTF_SUB_BUFFER_SIZE"
+
+func init() {
+	overrideBufferSizeString, ok := os.LookupEnv(overrideBufferSizeEnv)
+	if !ok {
+		return
+	}
+	overrideBufferSize, err := strconv.Atoi(overrideBufferSizeString)
+	if err != nil {
+		panic(fmt.Sprintf("expected %s to have an integer value", overrideBufferSizeEnv))
+	}
+	subBufferSize = overrideBufferSize
+}
 
 // ErrSubscriptionTerminated is for use by subscribers to indicate that their
 // subscription has been terminated by the broker.
