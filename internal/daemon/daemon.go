@@ -480,6 +480,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,
 				Configs:         d.Configs,
+				Cache:           make(map[string]vcs.Status),
 			},
 		},
 		{

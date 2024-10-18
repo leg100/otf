@@ -59,11 +59,8 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@class='widget']//img[@id='run-trigger-github']`)).ToBeVisible()
 		require.NoError(t, err)
 
-		// github should receive three pending status updates followed by a final
-		// update with details of planned resources
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
-		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
+		// GitHub should receive one pending status update followed by a final
+		// update with details of planned resources.
 		require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 		got := daemon.GetStatus(t, ctx)
 		require.Equal(t, "success", got.GetState())
