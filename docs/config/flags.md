@@ -16,6 +16,13 @@ following listens on all interfaces using a random port:
 otfd --address :0
 ```
 
+## `--applying-timeout`
+
+* System: `otfd`
+* Default: `24h`
+
+Sets the amount of time a run is permitted to be in the `applying` state before it is canceled.
+
 ## `--cache-expiry`
 
 * System: `otfd`
@@ -173,6 +180,13 @@ OIDC scopes to request from OIDC provider.
 * Default: "name"
 
 OIDC claim for mapping to an OTF username. Must be one of `name`, `email`, or `sub`.
+
+## `--planning-timeout`
+
+* System: `otfd`
+* Default: `2h`
+
+Sets the amount of time a run is permitted to be in the `planning` state before it is canceled.
 
 ## `--restrict-org-creation`
 
