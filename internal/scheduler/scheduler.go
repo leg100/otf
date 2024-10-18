@@ -177,8 +177,12 @@ func (s *scheduler) handleRunEvent(ctx context.Context, event pubsub.Event[*run.
 	}
 	q, ok := s.queues[event.Payload.WorkspaceID]
 	if !ok {
-		// should never happen
-		s.Error(nil, "workspace queue does not exist for run event", "workspace", event.Payload.WorkspaceID, "run", event.Payload.ID, "event", event.Type)
+		// No queue exists for the workspace because the workspace has
+		// since been deleted, which can occur when run events arrive *after*
+		// the "workspace deleted" event, which is entirely possible with the
+		// way the scheduler processes events.
+		//
+		// In this case no action need be taken on the run.
 		return nil
 	}
 	if err := q.handleRun(ctx, event.Payload); err != nil {
