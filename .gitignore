@@ -1,5 +1,7 @@
 # local node shite
 ui/node_modules
+# temp vite shite
+ui/.vite
 # tfenv
 .terraform-version
 # google service account key for testing

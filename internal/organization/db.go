@@ -14,8 +14,9 @@ type (
 	// dbListOptions represents the options for listing organizations via the
 	// database.
 	dbListOptions struct {
-		names []string // filter organizations by name if non-nil
 		resource.PageOptions
+
+		names []string // filter organizations by name if non-nil
 	}
 )
 

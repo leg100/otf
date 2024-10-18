@@ -9,14 +9,12 @@ import (
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
 
 type (
 	v2 struct {
 		*Service
-		*tfeapi.Responder
 	}
 )
 
