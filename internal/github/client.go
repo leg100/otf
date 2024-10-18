@@ -2,14 +2,13 @@ package github
 
 import (
 	"context"
-	"sort"
-
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -190,7 +189,7 @@ func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositories
 		// Apps.ListRepos endpoint does not support ordering on the server-side,
 		// so instead we request *all* repos, page-by-page, and then sort
 		// client-side.
-		var page = 1
+		page := 1
 		for {
 			result, resp, err := g.client.Apps.ListRepos(ctx, &github.ListOptions{
 				PerPage: opts.PageSize,
@@ -448,7 +447,7 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 
 	var status string
 	switch opts.Status {
-	case vcs.PendingStatus, vcs.RunningStatus:
+	case vcs.PendingStatus:
 		status = "pending"
 	case vcs.SuccessStatus:
 		status = "success"

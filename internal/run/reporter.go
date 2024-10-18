@@ -27,6 +27,16 @@ type (
 		Workspaces reporterWorkspaceClient
 		VCS        reporterVCSClient
 		Runs       reporterRunClient
+
+		// Cache most recently set status for each incomplete run to ensure the
+		// same status is not set more than once on an upstream VCS provider.
+		// This is important to avoid hitting rate limits on VCS providers, e.g.
+		// GitHub has a limit of 1000 status updates on a commit:
+		//
+		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
+		//
+		// key is the run ID.
+		Cache map[string]vcs.Status
 	}
 
 	reporterWorkspaceClient interface {
@@ -58,7 +68,10 @@ func (r *Reporter) Start(ctx context.Context) error {
 			continue
 		}
 		if err := r.handleRun(ctx, event.Payload); err != nil {
-			return err
+			// any error is treated as non-fatal because reporting on runs is
+			// considered "best-effort" rather than an integral operation
+			r.Error(err, "reporting run vcs status", "run_id", event.Payload.ID)
+			return nil
 		}
 	}
 	return pubsub.ErrSubscriptionTerminated
@@ -99,10 +112,8 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		description string
 	)
 	switch run.Status {
-	case RunPending, RunPlanQueued, RunApplyQueued:
+	case RunPending, RunPlanQueued, RunApplyQueued, RunPlanning, RunApplying, RunPlanned, RunConfirmed:
 		status = vcs.PendingStatus
-	case RunPlanning, RunApplying, RunPlanned, RunConfirmed:
-		status = vcs.RunningStatus
 	case RunPlannedAndFinished:
 		status = vcs.SuccessStatus
 		if run.Plan.ResourceReport != nil {
@@ -119,7 +130,19 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 	default:
 		return fmt.Errorf("unknown run status: %s", run.Status)
 	}
-	return client.SetStatus(ctx, vcs.SetStatusOptions{
+
+	// Check status cache. If there is a hit for the same run and status then
+	// skip setting the status again.
+	if lastStatus, ok := r.Cache[run.ID]; ok && lastStatus == status {
+		r.V(8).Info("skipped setting duplicate run status on vcs",
+			"run_id", run.ID,
+			"run_status", run.Status,
+			"vcs_status", status,
+		)
+		return nil
+	}
+
+	err = client.SetStatus(ctx, vcs.SetStatusOptions{
 		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes.CommitSHA,
 		Repo:        cv.IngressAttributes.Repo,
@@ -127,4 +150,17 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Description: description,
 		TargetURL:   r.URL(paths.Run(run.ID)),
 	})
+	if err != nil {
+		return err
+	}
+
+	// Update status cache. If the run is complete then remove the run from the
+	// cache because no further status updates are expected.
+	if run.Done() {
+		delete(r.Cache, run.ID)
+	} else {
+		r.Cache[run.ID] = status
+	}
+
+	return nil
 }

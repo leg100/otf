@@ -38,9 +38,9 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 			}
 		}
 		if err := q.UpdateWorkspaceLockByID(ctx, params); err != nil {
-			return sql.Error(err)
+			return err
 		}
 		return nil
 	})
-	return ws, err
+	return ws, sql.Error(err)
 }

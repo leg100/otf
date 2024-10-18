@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -82,7 +83,18 @@ func (q *queue) handleRun(ctx context.Context, run *otfrun.Run) error {
 				// no current run & queue is empty; unlock workspace
 				q.current = nil
 				ws, err := q.Unlock(ctx, q.ws.ID, &run.ID, false)
-				if err != nil {
+				if errors.Is(err, internal.ErrResourceNotFound) {
+					// Workspace not found occurs when the workspace has been
+					// deleted and the scheduler hasn't yet processed the
+					// corresponding "workspace deleted" event. In which there
+					// is nothing to unlock and the scheduler can continue as
+					// normal.
+					return nil
+				} else if err != nil {
+					// Any other error is treated as a transient or unexpected
+					// error, so propagate the error which'll notify the user
+					// via the logs and trigger the scheduler to be restarted
+					// with a backoff-and-retry.
 					return err
 				}
 				q.ws = ws

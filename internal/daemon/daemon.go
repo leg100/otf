@@ -480,6 +480,21 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,
 				Configs:         d.Configs,
+				Cache:           make(map[string]vcs.Status),
+			},
+		},
+		{
+			Name:      "timeout",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(run.TimeoutLockID),
+			System: &run.Timeout{
+				Logger:                d.Logger.WithValues("component", "timeout"),
+				OverrideCheckInterval: d.OverrideTimeoutCheckInterval,
+				PlanningTimeout:       d.PlanningTimeout,
+				ApplyingTimeout:       d.ApplyingTimeout,
+				Runs:                  d.Runs,
 			},
 		},
 		{
