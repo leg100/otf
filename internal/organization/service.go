@@ -102,6 +102,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
+	(&v2{Service: s}).addHandlers(r)
 }
 
 func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {

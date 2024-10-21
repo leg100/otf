@@ -1,7 +1,5 @@
 # local node shite
 ui/node_modules
-package.json
-package-lock.json
 # temp vite shite
 ui/.vite
 # tfenv

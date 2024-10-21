@@ -29,7 +29,15 @@ func (a *v2) listOrganizations(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(orgs); err != nil {
+	type v2org struct {
+		Name string `json:"name"`
+	}
+	v2orgs := make([]v2org, len(orgs.Items))
+	for i, org := range orgs.Items {
+		v2orgs[i] = v2org{Name: org.Name}
+	}
+
+	if err := json.NewEncoder(w).Encode(v2orgs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

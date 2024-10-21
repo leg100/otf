@@ -39,6 +39,12 @@ export default defineConfig({
                 secure: false,
                 ws: true,
             },
+            '/admin/login': {
+                target: 'https://localhost:8080',
+                changeOrigin: true,
+                secure: false,
+                ws: true,
+            },
         }
     }
 })

@@ -121,8 +121,9 @@ jobs:
         run: |
           # set app version
           yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otf/Chart.yaml
-          # bump patch in chart version
-          yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/otf/Chart.yaml
+          yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otf-agent/Chart.yaml
+          # bump patch in chart versions
+          make bump
           # render README.md to reflect updated version
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install norwoodj/tap/helm-docs
@@ -131,8 +132,7 @@ jobs:
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"
           git checkout -b new-otf-version-${{ needs.release-please.outputs.tag_name }}
-          git add ./charts/otf/Chart.yaml
-          git add ./README.md
+          git add -A
           git commit -m "New otf version ${{ needs.release-please.outputs.tag_name }}"
           git push origin new-otf-version-${{ needs.release-please.outputs.tag_name }}
       - name: Create pull request

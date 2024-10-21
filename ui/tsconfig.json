@@ -15,4 +15,9 @@
     "src/**/*.tsx",
     "src/**/*.vue"
   ],
+  "compilerOptions": {
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "noUncheckedIndexedAccess": true
+  }
 }

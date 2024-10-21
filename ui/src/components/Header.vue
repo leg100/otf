@@ -22,6 +22,9 @@ const username = computed(() => store.user?.username)
             <div>
                 <RouterLink to="/login">login</RouterLink>
             </div>
+            <div>
+                <RouterLink to="/organizations">organizations</RouterLink>
+            </div>
         </nav>
     </header>
 </template>
