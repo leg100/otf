@@ -432,8 +432,8 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 	}
 
 	agentDaemon, err := agent.NewPoolDaemon(logger, cfg, api.Config{
-		Token:   token,
-		Address: s.System.Hostname(),
+		Token: token,
+		URL:   s.System.URL("/"),
 	})
 	require.NoError(t, err)
 
@@ -491,7 +491,7 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
-	cmdargs := []string{"--address", s.System.Hostname(), "--token", string(token)}
+	cmdargs := []string{"--url", s.System.URL("/"), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer

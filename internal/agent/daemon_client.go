@@ -28,8 +28,8 @@ type (
 		logs       logsClient
 		server     hostnameClient
 
-		// address of OTF server peer - only populated when daemonClient is using RPC
-		address string
+		// URL of OTF server peer - only populated when daemonClient is using RPC
+		url string
 	}
 
 	// InProcClient is a client for in-process communication with the server.
@@ -93,7 +93,7 @@ func newRPCDaemonClient(cfg otfapi.Config, agentID *string) (*daemonClient, erro
 		configs:    &configversion.Client{Client: apiClient},
 		logs:       &logs.Client{Client: apiClient},
 		server:     apiClient,
-		address:    cfg.Address,
+		url:        cfg.URL,
 	}, nil
 }
 
@@ -101,7 +101,7 @@ func newRPCDaemonClient(cfg otfapi.Config, agentID *string) (*daemonClient, erro
 // behalf of a job, authenticating as a job using the job token arg.
 func (c *daemonClient) newJobClient(agentID string, token []byte, logger logr.Logger) (*daemonClient, error) {
 	return newRPCDaemonClient(otfapi.Config{
-		Address:       c.address,
+		URL:           c.url,
 		Token:         string(token),
 		RetryRequests: true,
 		RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {

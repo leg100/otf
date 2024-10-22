@@ -34,34 +34,48 @@ func TestSanitizeHostname(t *testing.T) {
 	}
 }
 
-func TestSanitizeAddress(t *testing.T) {
+func TestParseURL(t *testing.T) {
 	tests := []struct {
 		name    string
 		address string
-		want    string
+		want    error
 	}{
 		{
-			name:    "add scheme",
-			address: "localhost:8080",
-			want:    "https://localhost:8080",
-		},
-		{
-			name:    "no change",
-			address: "https://localhost:8080",
-			want:    "https://localhost:8080",
-		},
-		{
-			name:    "fix scheme",
+			name:    "valid http url",
 			address: "http://localhost:8080",
-			want:    "https://localhost:8080",
+		},
+		{
+			name:    "valid https url",
+			address: "https://localhost:8080",
+		},
+		{
+			name:    "valid https url with path",
+			address: "https://localhost:8080/otf",
+		},
+		{
+			name:    "valid https url using ip address",
+			address: "https://127.0.0.1:8080",
+		},
+		{
+			name:    "invalid address missing scheme",
+			address: "localhost:8080",
+			want:    ErrParseURL,
+		},
+		{
+			name:    "invalid address with non-http(s) scheme",
+			address: "ftp://localhost:8080",
+			want:    ErrParseURL,
+		},
+		{
+			name:    "invalid address without host",
+			address: "http:///otf",
+			want:    ErrParseURL,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SanitizeAddress(tt.address)
-			if assert.NoError(t, err) {
-				assert.Equal(t, tt.want, got)
-			}
+			_, err := ParseURL(tt.address)
+			assert.ErrorIs(t, err, tt.want)
 		})
 	}
 }

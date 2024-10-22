@@ -61,7 +61,7 @@ Give the token a description and click **Create token**.
 Copy the token to your system clipboard. Now you can run the agent:
 
 ```bash
-otf-agent --token <token> --address <otfd-hostname>
+otf-agent --token <token> --url https://<otfd-hostname>
 ```
 
 The agent should confirm it has registered successfully:

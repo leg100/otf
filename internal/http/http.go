@@ -4,6 +4,7 @@ Package http provides an HTTP interface allowing HTTP clients to interact with o
 package http
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -59,18 +60,22 @@ func SanitizeHostname(hostname string) (string, error) {
 	return u.Host, nil
 }
 
-// SanitizeAddress ensures address is in format https://<host>:<port>
-func SanitizeAddress(address string) (string, error) {
-	u, err := url.ParseRequestURI(address)
-	if err != nil || u.Host == "" {
-		u, er := url.ParseRequestURI("https://" + address)
-		if er != nil {
-			return "", fmt.Errorf("could not parse hostname: %w", err)
-		}
-		return u.String(), nil
+var ErrParseURL = errors.New("url must begin with http:// or https:// and contain a hostname or ip address")
+
+// ParseURL parses address into a URL. The URL must be absolute with an http(s)
+// scheme.
+func ParseURL(address string) (*url.URL, error) {
+	u, err := url.Parse(address)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrParseURL, err)
 	}
-	u.Scheme = "https"
-	return u.String(), nil
+	if u.Scheme != "https" && u.Scheme != "http" {
+		return nil, ErrParseURL
+	}
+	if u.Host == "" {
+		return nil, ErrParseURL
+	}
+	return u, nil
 }
 
 // GetClientIP gets the client's IP address

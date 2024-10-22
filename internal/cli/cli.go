@@ -48,7 +48,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 		PersistentPreRunE: a.newClient(&cfg),
 	}
 
-	cmd.PersistentFlags().StringVar(&cfg.Address, "address", api.DefaultAddress, "Address of OTF server")
+	cmd.PersistentFlags().StringVar(&cfg.URL, "url", api.DefaultURL, "URL of OTF server")
 	cmd.PersistentFlags().StringVar(&cfg.Token, "token", "", "API authentication token")
 
 	cmd.SetArgs(args)
@@ -80,7 +80,7 @@ func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
 
 		if cfg.Token == "" {
 			// not set via flag, so try lower precedence options
-			token, err := a.getToken(cfg.Address)
+			token, err := a.getToken(cfg.URL)
 			if err != nil {
 				return err
 			}

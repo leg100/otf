@@ -74,7 +74,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	_, token := daemon.createToken(t, ctx, nil)
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: "https://" + daemon.System.Hostname(),
+		Address: daemon.System.URL("/"),
 		Token:   string(token),
 	})
 	require.NoError(t, err)

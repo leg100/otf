@@ -57,7 +57,7 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	cmd.Flags().StringVar(&clientConfig.Address, "address", otfapi.DefaultAddress, "Address of OTF server")
+	cmd.Flags().StringVar(&clientConfig.URL, "url", otfapi.DefaultURL, "URL of OTF server")
 	cmd.Flags().StringVar(&clientConfig.Token, "token", "", "Agent token for authentication")
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
