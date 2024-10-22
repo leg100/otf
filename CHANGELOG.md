@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/leg100/otf/compare/v0.3.0...v0.3.1) (2024-10-22)
+
+
+### Bug Fixes
+
+* make goreleaser config valid for v2 ([0ed8d22](https://github.com/leg100/otf/commit/0ed8d22140570aefefdcabd3a16cdd46eefcebf4))
+
 ## [0.3.0](https://github.com/leg100/otf/compare/v0.2.4...v0.3.0) (2024-10-22)
 
 
