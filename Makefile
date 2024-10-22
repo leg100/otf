@@ -2,6 +2,7 @@ VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
+IMAGE_NAME_AGENT = leg100/otf-agent
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 DBSTRING=postgres:///otf
 LD_FLAGS = " \
@@ -100,6 +101,16 @@ image: build
 .PHONY: load
 load: image
 	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
+
+# Build docker image for otf-agent
+.PHONY: image-agent
+image-agent: build
+	docker build -f ./Dockerfile.agent -t $(IMAGE_NAME_AGENT):$(IMAGE_TAG) -t $(IMAGE_NAME_AGENT):latest ./_build
+
+# Build and load otf-agent image into k8s kind
+.PHONY: load-agent
+load-agent: image-agent
+	kind load docker-image $(IMAGE_NAME_AGENT):$(IMAGE_TAG)
 
 # Install pre-commit
 .PHONY: install-pre-commit
