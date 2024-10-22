@@ -61,11 +61,7 @@ func NewClient(config Config) (*Client, error) {
 	}
 	config.Headers.Set("User-Agent", "otf-agent")
 
-	addr, err := otfhttp.SanitizeAddress(config.Address)
-	if err != nil {
-		return nil, err
-	}
-	baseURL, err := url.Parse(addr)
+	baseURL, err := otfhttp.ParseURL(config.Address)
 	if err != nil {
 		return nil, fmt.Errorf("invalid address: %v", err)
 	}
