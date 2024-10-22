@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.3.0](https://github.com/leg100/otf/compare/v0.2.4...v0.3.0) (2024-10-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename --address flag to --url; require scheme
+* move to sqlc, tern ([#683](https://github.com/leg100/otf/issues/683))
+
+### refactor
+
+* move to sqlc, tern ([#683](https://github.com/leg100/otf/issues/683)) ([878ebfb](https://github.com/leg100/otf/commit/878ebfba5eea34926b2f3aebe9bce8f826347b20))
+* rename --address flag to --url; require scheme ([3e83474](https://github.com/leg100/otf/commit/3e834744e2eff9984dd29255b53f489aa857e2dc))
+
+
+### Features
+
+* add timeout settings for plans and applies ([#686](https://github.com/leg100/otf/issues/686)) ([797902b](https://github.com/leg100/otf/commit/797902bc8187a8b1682d340abab730a58247c304))
+* allow subscription buffer size to be overridden ([#687](https://github.com/leg100/otf/issues/687)) ([d51469d](https://github.com/leg100/otf/commit/d51469d84534e22bd6b4ef3ee55a76582d58aec4))
+
+
+### Bug Fixes
+
+* avoid hitting Github limit on commit status updates ([#688](https://github.com/leg100/otf/issues/688)) ([029e525](https://github.com/leg100/otf/commit/029e5255a5ea70ea7701f11b16add510fb03b23f))
+* don't unnecessarily restart scheduler ([#689](https://github.com/leg100/otf/issues/689)) ([d240965](https://github.com/leg100/otf/commit/d24096536d06da30b035d846c7eb62537e2153a0))
+* make linting and tests pass ([ebc1e53](https://github.com/leg100/otf/commit/ebc1e53a9e00412e4db8467a71b299e86b5fb43e))
+* pin version of gcp pub-sub emulator docker image ([8048e72](https://github.com/leg100/otf/commit/8048e720d3d7a99c1f244ba797f6276c1dd56938))
+* prevent subsystem failure from stopping otfd ([e5061b0](https://github.com/leg100/otf/commit/e5061b04bf051c9ad7f9e4ba7408cc3c4afa1a43))
+* use base58 alphabet for resource IDs ([#680](https://github.com/leg100/otf/issues/680)) ([1e7d7a2](https://github.com/leg100/otf/commit/1e7d7a2b2c350c17c29fb49ae0dfbbeb31b2942d))
+
+
+### Miscellaneous
+
+* bump go ([5663eab](https://github.com/leg100/otf/commit/5663eab55cf22f5d9fe9f8a29c6df9d2908ecb20))
+* trigger new version of agent chart upon deploy ([#690](https://github.com/leg100/otf/issues/690)) ([155e026](https://github.com/leg100/otf/commit/155e026252c52d4ec7565f9bb7444b297bca16f7))
+* unarchive ([c954c36](https://github.com/leg100/otf/commit/c954c36107c910192941393e366ee1b8a2e290f1))
+* upgrade dependencies ([59eb979](https://github.com/leg100/otf/commit/59eb97996785328e78c31f2372cfce889f5ef7cb))
+* use forked sse lib's module path ([fc9b138](https://github.com/leg100/otf/commit/fc9b13865844062570ffbeb7d8c57bdf5ae50b91))
+
 ## [0.2.4](https://github.com/leg100/otf/compare/v0.2.3...v0.2.4) (2023-12-16)
 
 
