@@ -11,19 +11,21 @@ Usage:
   otf [command]
 
 Available Commands:
-  agents        Agent management
-  help          Help about any command
-  organizations Organization management
-  runs          Runs management
-  state         State version management
-  teams         Team management
-  users         User account management
-  workspaces    Workspace management
+  agents          Agent management
+  completion      Generate the autocompletion script for the specified shell
+  help            Help about any command
+  organizations   Organization management
+  runs            Runs management
+  state           State version management
+  team-membership Team membership management
+  teams           Team management
+  users           User account management
+  workspaces      Workspace management
 
 Flags:
-      --address string   Address of OTF server (default "localhost:8080")
-  -h, --help             help for otf
-      --token string     API authentication token
+  -h, --help           help for otf
+      --token string   API authentication token
+      --url string     URL of OTF server (default "https://localhost:8080")
 
 Use "otf [command] --help" for more information about a command.
 ```

@@ -245,6 +245,13 @@ otfd --site-token=643f57a1016cdde7e7e39914785d36d61fd
 
 The default, an empty string, disables the site admin account.
 
+## `--url`
+
+* System: `otf-agent`, `otf`
+* Default: `https://localhost:8080`
+
+Specifies the URL of `otfd` to connect to. You must include the scheme, which is either `https://` or `http://`.
+
 ## `--v`, `-v`
 
 * System: `otfd`, `otf-agent`

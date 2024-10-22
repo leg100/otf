@@ -60,11 +60,7 @@ func SanitizeHostname(hostname string) (string, error) {
 	return u.Host, nil
 }
 
-var (
-	ErrParseURL              = errors.New("unable to parse address")
-	ErrParseURLMissingScheme = errors.New("address must begin with http:// or https://")
-	ErrParseURLMissingHost   = errors.New("address must be absolute with a hostname or ip address")
-)
+var ErrParseURL = errors.New("url must begin with http:// or https:// and contain a hostname or ip address")
 
 // ParseURL parses address into a URL. The URL must be absolute with an http(s)
 // scheme.
@@ -74,10 +70,10 @@ func ParseURL(address string) (*url.URL, error) {
 		return nil, fmt.Errorf("%w: %w", ErrParseURL, err)
 	}
 	if u.Scheme != "https" && u.Scheme != "http" {
-		return nil, ErrParseURLMissingScheme
+		return nil, ErrParseURL
 	}
 	if u.Host == "" {
-		return nil, ErrParseURLMissingHost
+		return nil, ErrParseURL
 	}
 	return u, nil
 }

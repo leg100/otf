@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -28,8 +29,8 @@ type (
 
 	// Config provides configuration details to the API client.
 	Config struct {
-		// The address of the otf API.
-		Address string
+		// The URL of the otf API.
+		URL string
 		// The base path on which the API is served.
 		BasePath string
 		// API token used to access the otf API.
@@ -47,8 +48,8 @@ type (
 
 func NewClient(config Config) (*Client, error) {
 	// set defaults
-	if config.Address == "" {
-		config.Address = DefaultAddress
+	if config.URL == "" {
+		config.URL = DefaultURL
 	}
 	if config.BasePath == "" {
 		config.BasePath = DefaultBasePath
@@ -61,11 +62,11 @@ func NewClient(config Config) (*Client, error) {
 	}
 	config.Headers.Set("User-Agent", "otf-agent")
 
-	baseURL, err := otfhttp.ParseURL(config.Address)
+	baseURL, err := otfhttp.ParseURL(config.URL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid address: %v", err)
+		return nil, fmt.Errorf("invalid server url: %v", err)
 	}
-	baseURL.Path = config.BasePath
+	baseURL.Path = path.Join(baseURL.Path, config.BasePath)
 	if !strings.HasSuffix(baseURL.Path, "/") {
 		baseURL.Path += "/"
 	}

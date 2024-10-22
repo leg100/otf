@@ -41,31 +41,35 @@ func TestParseURL(t *testing.T) {
 		want    error
 	}{
 		{
-			name:    "valid http address",
+			name:    "valid http url",
 			address: "http://localhost:8080",
 		},
 		{
-			name:    "valid https address",
+			name:    "valid https url",
 			address: "https://localhost:8080",
 		},
 		{
-			name:    "valid https address with path",
+			name:    "valid https url with path",
 			address: "https://localhost:8080/otf",
+		},
+		{
+			name:    "valid https url using ip address",
+			address: "https://127.0.0.1:8080",
 		},
 		{
 			name:    "invalid address missing scheme",
 			address: "localhost:8080",
-			want:    ErrParseURLMissingScheme,
+			want:    ErrParseURL,
 		},
 		{
 			name:    "invalid address with non-http(s) scheme",
 			address: "ftp://localhost:8080",
-			want:    ErrParseURLMissingScheme,
+			want:    ErrParseURL,
 		},
 		{
 			name:    "invalid address without host",
 			address: "http:///otf",
-			want:    ErrParseURLMissingHost,
+			want:    ErrParseURL,
 		},
 	}
 	for _, tt := range tests {

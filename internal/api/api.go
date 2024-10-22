@@ -11,7 +11,7 @@ import (
 const (
 	DefaultBasePath = "/otfapi"
 	PingEndpoint    = "ping"
-	DefaultAddress  = "https://localhost:8080"
+	DefaultURL      = "https://localhost:8080"
 )
 
 type Handlers struct{}
