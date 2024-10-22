@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/leg100/otf/compare/v0.3.1...v0.3.2) (2024-10-22)
+
+
+### Bug Fixes
+
+* bad git command in chart release step ([3ed91e3](https://github.com/leg100/otf/commit/3ed91e351a23c0d5ba858ff0423035194bc0471b))
+
 ## [0.3.1](https://github.com/leg100/otf/compare/v0.3.0...v0.3.1) (2024-10-22)
 
 
