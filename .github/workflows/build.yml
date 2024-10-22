@@ -133,7 +133,7 @@ jobs:
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"
           git checkout -b new-otf-version-${{ needs.release-please.outputs.tag_name }}
-          git a -A
+          git add -A
           git commit -m "New otf version ${{ needs.release-please.outputs.tag_name }}"
           git push origin new-otf-version-${{ needs.release-please.outputs.tag_name }}
       - name: Create pull request
