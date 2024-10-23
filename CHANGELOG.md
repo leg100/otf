@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/leg100/otf/compare/v0.3.2...v0.3.3) (2024-10-23)
+
+
+### Bug Fixes
+
+* make tern migration postgres 12 compat ([#695](https://github.com/leg100/otf/issues/695)) ([c662668](https://github.com/leg100/otf/commit/c6626686d03b8f6e2a8a34d8db1e692bf99f2b05))
+* report 409 when cancel or force cancel not allowed ([#693](https://github.com/leg100/otf/issues/693)) ([dbe5668](https://github.com/leg100/otf/commit/dbe5668cb8fab94eb510d64f2962f523efef8b46))
+
 ## [0.3.2](https://github.com/leg100/otf/compare/v0.3.1...v0.3.2) (2024-10-22)
 
 
