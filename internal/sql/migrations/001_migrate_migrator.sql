@@ -2195,63 +2195,99 @@ END $$;
 -- Name: workspace_tags delete_tags; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER delete_tags AFTER DELETE ON public.workspace_tags FOR EACH STATEMENT EXECUTE FUNCTION public.delete_tags();
+DO $$BEGIN
+    CREATE TRIGGER delete_tags AFTER DELETE ON public.workspace_tags FOR EACH STATEMENT EXECUTE FUNCTION public.delete_tags();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: agent_pools notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.agent_pools FOR EACH ROW EXECUTE FUNCTION public.agent_pools_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.agent_pools FOR EACH ROW EXECUTE FUNCTION public.agent_pools_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: agents notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.agents FOR EACH ROW EXECUTE FUNCTION public.agents_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.agents FOR EACH ROW EXECUTE FUNCTION public.agents_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: jobs notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.jobs FOR EACH ROW EXECUTE FUNCTION public.jobs_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.jobs FOR EACH ROW EXECUTE FUNCTION public.jobs_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: logs notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.logs FOR EACH ROW EXECUTE FUNCTION public.logs_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.logs FOR EACH ROW EXECUTE FUNCTION public.logs_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: notification_configurations notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.notification_configurations FOR EACH ROW EXECUTE FUNCTION public.notification_configurations_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.notification_configurations FOR EACH ROW EXECUTE FUNCTION public.notification_configurations_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: organizations notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.organizations FOR EACH ROW EXECUTE FUNCTION public.organizations_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.organizations FOR EACH ROW EXECUTE FUNCTION public.organizations_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: runs notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.runs FOR EACH ROW EXECUTE FUNCTION public.runs_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.runs FOR EACH ROW EXECUTE FUNCTION public.runs_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
 -- Name: workspaces notify_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.workspaces_notify_event();
+DO $$BEGIN
+    CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.workspaces_notify_event();
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 
 --
