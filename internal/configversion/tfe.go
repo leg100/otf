@@ -153,10 +153,7 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 		if _, err := io.Copy(buf, r.Body); err != nil {
 			maxBytesError := &http.MaxBytesError{}
 			if errors.As(err, &maxBytesError) {
-				tfeapi.Error(w, &internal.HTTPError{
-					Code:    422,
-					Message: fmt.Sprintf("config exceeds maximum size (%d bytes)", a.maxConfigSize),
-				})
+				tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 				// Terraform CLI only informs the user that an HTTP 422 response
 				// was received, and they aren't informed that their config
 				// exceeds the max size. To help them diagnose the cause, the

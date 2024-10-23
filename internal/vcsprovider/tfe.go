@@ -48,19 +48,19 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 
 	// required parameters
 	if params.OAuthToken == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "oauth-token-string"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "oauth-token-string"})
 		return
 	}
 	if params.ServiceProvider == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "service-provider"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "service-provider"})
 		return
 	}
 	if params.APIURL == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "api-url"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "api-url"})
 		return
 	}
 	if params.HTTPURL == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "http-url"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "http-url"})
 		return
 	}
 

@@ -60,7 +60,6 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	// https://github.com/leg100/otf/issues/626) OTF accepts the upload but does
 	// nothing with it.
 	signed.HandleFunc("/state-versions/{id}/upload/json", func(http.ResponseWriter, *http.Request) {})
-
 }
 
 func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +77,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 
 	// required options
 	if opts.Serial == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "serial"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "serial"})
 		return
 	}
 	// TFE docs say md5 is a required option yet the state itself is optional.
@@ -86,7 +85,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 	// actually used if the state is also provided at creation-time. If the
 	// state is only later uploaded, the md5 is not used.
 	if opts.MD5 == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "md5"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "md5"})
 		return
 	}
 

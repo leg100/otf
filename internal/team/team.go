@@ -78,7 +78,7 @@ type (
 func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 	// required parameters
 	if opts.Name == nil {
-		return nil, &internal.MissingParameterError{Parameter: "name"}
+		return nil, &internal.ErrMissingParameter{Parameter: "name"}
 	}
 	// default parameters
 	if opts.Visibility == nil {

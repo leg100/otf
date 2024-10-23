@@ -3,12 +3,10 @@ package notifications
 import (
 	"errors"
 	"fmt"
-	"net/url"
-	"time"
-
 	"log/slog"
-
+	"net/url"
 	"slices"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
@@ -120,10 +118,10 @@ func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 		return nil, err
 	}
 	if opts.Enabled == nil {
-		return nil, &internal.MissingParameterError{Parameter: "enabled"}
+		return nil, &internal.ErrMissingParameter{Parameter: "enabled"}
 	}
 	if opts.Name == nil {
-		return nil, &internal.MissingParameterError{Parameter: "name"}
+		return nil, &internal.ErrMissingParameter{Parameter: "name"}
 	}
 	if *opts.Name == "" {
 		return nil, fmt.Errorf("name cannot be an empty string")

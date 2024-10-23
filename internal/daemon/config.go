@@ -66,7 +66,7 @@ func ApplyDefaults(cfg *Config) {
 
 func (cfg *Config) Valid() error {
 	if cfg.Secret == nil {
-		return &internal.MissingParameterError{Parameter: "secret"}
+		return &internal.ErrMissingParameter{Parameter: "secret"}
 	}
 	if len(cfg.Secret) != 16 {
 		return ErrInvalidSecretLength

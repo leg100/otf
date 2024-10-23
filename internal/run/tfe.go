@@ -58,7 +58,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if params.Workspace == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "workspace"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "workspace"})
 		return
 	}
 
@@ -215,7 +215,11 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = a.Cancel(r.Context(), id); err != nil {
-		tfeapi.Error(w, err)
+		if internal.ErrorIs(err, ErrRunCancelNotAllowed, ErrRunForceCancelNotAllowed) {
+			tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusConflict))
+		} else {
+			tfeapi.Error(w, err)
+		}
 		return
 	}
 

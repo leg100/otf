@@ -54,38 +54,32 @@ var (
 	ErrInvalidRepo = errors.New("repository path is invalid")
 )
 
-type (
-	HTTPError struct {
-		Code    int
-		Message string
-	}
-
-	// MissingParameterError occurs when the caller has failed to provide a
-	// required parameter
-	MissingParameterError struct {
-		Parameter string
-	}
-
-	// ForeignKeyError occurs when there is a foreign key violation.
-	ForeignKeyError struct {
-		*pgconn.PgError
-	}
-
-	InvalidParameterError string
-)
-
-func (e InvalidParameterError) Error() string {
-	return string(e)
-}
-
-func (e *HTTPError) Error() string {
-	return e.Message
-}
-
-func (e *MissingParameterError) Error() string {
-	return fmt.Sprintf("required parameter missing: %s", e.Parameter)
+// ForeignKeyError occurs when there is a foreign key violation.
+type ForeignKeyError struct {
+	*pgconn.PgError
 }
 
 func (e *ForeignKeyError) Error() string {
 	return e.Detail
+}
+
+// ErrMissingParameter occurs when the user has failed to provide a
+// required parameter
+type ErrMissingParameter struct {
+	Parameter string
+}
+
+func (e *ErrMissingParameter) Error() string {
+	return fmt.Sprintf("required parameter missing: %s", e.Parameter)
+}
+
+// ErrorIs is a modification to the upstream errors.Is, allowing multiple
+// targets to be checked.
+func ErrorIs(err error, target error, moreTargets ...error) bool {
+	for _, t := range append(moreTargets, target) {
+		if errors.Is(err, t) {
+			return true
+		}
+	}
+	return false
 }
