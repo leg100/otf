@@ -1,9 +1,9 @@
 package variable
 
 import (
-	"errors"
 	"net/http"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 
@@ -486,16 +486,13 @@ func (a *tfe) convertVariable(from *Variable, scrubSensitiveValue bool) *types.V
 }
 
 func variableError(w http.ResponseWriter, err error) {
-	maxErrors := []error{
+	if internal.ErrorIs(err,
 		ErrVariableDescriptionMaxExceeded,
 		ErrVariableKeyMaxExceeded,
 		ErrVariableValueMaxExceeded,
-	}
-	for _, maxError := range maxErrors {
-		if errors.Is(err, maxError) {
-			tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
-			return
-		}
+	) {
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
+		return
 	}
 	tfeapi.Error(w, err)
 }

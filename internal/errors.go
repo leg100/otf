@@ -76,8 +76,8 @@ func (e *ErrMissingParameter) Error() string {
 // ErrorIs is a modification to the upstream errors.Is, allowing multiple
 // targets to be checked.
 func ErrorIs(err error, target error, moreTargets ...error) bool {
-	for _, i := range append(moreTargets, target) {
-		if errors.Is(err, i) {
+	for _, t := range append(moreTargets, target) {
+		if errors.Is(err, t) {
 			return true
 		}
 	}
