@@ -81,10 +81,10 @@ type (
 // new create a new state version
 func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	if opts.WorkspaceID == nil {
-		return nil, &internal.MissingParameterError{Parameter: "workspace_id"}
+		return nil, &internal.ErrMissingParameter{Parameter: "workspace_id"}
 	}
 	if opts.Serial == nil {
-		return nil, &internal.MissingParameterError{Parameter: "serial"}
+		return nil, &internal.ErrMissingParameter{Parameter: "serial"}
 	}
 	// Serial should be greater than or equal to current serial
 	current, err := f.db.getCurrentVersion(ctx, *opts.WorkspaceID)

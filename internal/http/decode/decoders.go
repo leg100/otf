@@ -89,14 +89,14 @@ func Param(name string, r *http.Request) (string, error) {
 	if v, ok := mux.Vars(r)[name]; ok {
 		return v, nil
 	}
-	return "", &internal.MissingParameterError{Parameter: name}
+	return "", &internal.ErrMissingParameter{Parameter: name}
 }
 
 func decode(dst interface{}, src map[string][]string) error {
 	if err := decoder.Decode(dst, src); err != nil {
 		var emptyField schema.EmptyFieldError
 		if errors.As(err, &emptyField) {
-			return &internal.MissingParameterError{Parameter: emptyField.Key}
+			return &internal.ErrMissingParameter{Parameter: emptyField.Key}
 		}
 		return err
 	}

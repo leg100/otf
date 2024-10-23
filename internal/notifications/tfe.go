@@ -38,7 +38,7 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if params.DestinationType == nil {
-		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "destination_type"})
+		tfeapi.Error(w, &internal.ErrMissingParameter{Parameter: "destination_type"})
 		return
 	}
 

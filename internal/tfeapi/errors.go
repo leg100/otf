@@ -16,38 +16,48 @@ var codes = map[error]int{
 	internal.ErrConflict:                http.StatusConflict,
 }
 
+// lookupHTTPCode maps an OTF domain error to a http status code
 func lookupHTTPCode(err error) int {
-	if v, ok := codes[err]; ok {
-		return v
+	for otfError, httpError := range codes {
+		if errors.Is(err, otfError) {
+			return httpError
+		}
 	}
 	return http.StatusInternalServerError
 }
 
-// Error writes an HTTP response with a JSON-API encoded error.
-func Error(w http.ResponseWriter, err error) {
-	var (
-		httpError *internal.HTTPError
-		missing   *internal.MissingParameterError
-		code      int
-	)
-	// If error is type internal.HTTPError then extract its status code
-	if errors.As(err, &httpError) {
-		code = httpError.Code
-	} else if errors.As(err, &missing) {
-		// report missing parameter errors as a 422
-		code = http.StatusUnprocessableEntity
-	} else {
-		code = lookupHTTPCode(err)
+type ErrorOption func(*jsonapi.Error)
+
+func WithStatus(httpStatusCode int) ErrorOption {
+	return func(err *jsonapi.Error) {
+		err.Status = &httpStatusCode
 	}
-	b, err := jsonapi.Marshal(&jsonapi.Error{
-		Status: &code,
-		Title:  http.StatusText(code),
+}
+
+// Error writes an HTTP response with a JSON-API encoded error.
+func Error(w http.ResponseWriter, err error, opts ...ErrorOption) {
+	jsonapiError := &jsonapi.Error{
 		Detail: err.Error(),
-	})
+	}
+	for _, fn := range opts {
+		fn(jsonapiError)
+	}
+	if jsonapiError.Status == nil {
+		var missing *internal.ErrMissingParameter
+		if errors.As(err, &missing) {
+			// report missing parameter errors as a 422
+			jsonapiError.Status = internal.Int(http.StatusUnprocessableEntity)
+		} else {
+			jsonapiError.Status = internal.Int(lookupHTTPCode(err))
+		}
+	}
+	jsonapiError.Title = http.StatusText(*jsonapiError.Status)
+
+	b, err := jsonapi.Marshal(jsonapiError)
 	if err != nil {
 		panic(err)
 	}
 	w.Header().Set("Content-type", mediaType)
-	w.WriteHeader(code)
+	w.WriteHeader(*jsonapiError.Status)
 	w.Write(b)
 }

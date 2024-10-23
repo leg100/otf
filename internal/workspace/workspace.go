@@ -4,12 +4,10 @@ package workspace
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"time"
-
 	"log/slog"
-
+	"regexp"
 	"slices"
+	"time"
 
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
@@ -27,9 +25,7 @@ const (
 	MinTerraformVersion     = "1.2.0"
 )
 
-var (
-	apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
-)
+var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 
 type (
 	// Workspace is a terraform workspace.
@@ -436,10 +432,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 	// must specify both repo and vcs provider ID
 	if opts.RepoPath == nil {
-		return &internal.MissingParameterError{Parameter: "repo_path"}
+		return &internal.ErrMissingParameter{Parameter: "repo_path"}
 	}
 	if opts.VCSProviderID == nil {
-		return &internal.MissingParameterError{Parameter: "vcs_provider_id"}
+		return &internal.ErrMissingParameter{Parameter: "vcs_provider_id"}
 	}
 	ws.Connection = &Connection{
 		Repo:          *opts.RepoPath,

@@ -282,11 +282,8 @@ func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 
 	ws, err := a.Unlock(r.Context(), id, nil, force)
 	if err != nil {
-		if errors.Is(err, ErrWorkspaceAlreadyUnlocked) || errors.Is(err, ErrWorkspaceLockedByRun) {
-			tfeapi.Error(w, &internal.HTTPError{
-				Code:    http.StatusConflict,
-				Message: err.Error(),
-			})
+		if internal.ErrorIs(err, ErrWorkspaceAlreadyUnlocked, ErrWorkspaceLockedByRun) {
+			tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusConflict))
 		} else {
 			tfeapi.Error(w, err)
 		}
