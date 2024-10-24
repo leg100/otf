@@ -17,8 +17,10 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
+	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -31,10 +33,16 @@ const (
 	lockFilename       = ".terraform.lock.hcl"
 )
 
-var ascii = regexp.MustCompile("[[:^ascii:]]")
+var (
+	DefaultEnvs = []string{
+		"TF_IN_AUTOMATION=true",
+		"CHECKPOINT_DISABLE=true",
+	}
+	ascii = regexp.MustCompile("[[:^ascii:]]")
+)
 
-// operation performs the execution of a job
-type operation struct {
+// Operation performs the execution of a job
+type Operation struct {
 	*daemonClient
 	*run.Run
 	logr.Logger
@@ -50,47 +58,111 @@ type operation struct {
 	variables     []*variable.Variable
 	proc          *os.Process
 	downloader    downloader
-	token         []byte
 	agentID       string
-	isPoolAgent   bool
+
+	// job token to be made available to terraform CLI for authentication with
+	// server
+	token []byte
+	// isRemote is true if the operation communicates with the server via rpc.
+	isRemote bool
 
 	*workdir
 }
 
-type newOperationOptions struct {
-	logger      logr.Logger
-	client      *daemonClient
-	config      Config
-	job         *Job
-	downloader  downloader
-	envs        []string
-	token       []byte
-	agentID     string
-	isPoolAgent bool
+type LocalOperationOptions struct {
+	ClientConfig otfapi.Config
+	client       *daemonClient
+	config       Config
+	job          *Job
+	downloader   downloader
+	envs         []string
+	agentID      string
 }
 
-func newOperation(opts newOperationOptions) *operation {
-	// an operation has its own uninherited context; the operation is instead
-	// canceled via its cancel() method.
-	ctx, cancelfn := context.WithCancel(context.Background())
-	return &operation{
-		Logger:       opts.logger.WithValues("job", opts.job),
+func NewLocalOperation(opts LocalOperationOptions) *Operation {
+	return &Operation{
+		Logger:       logr.Discard(),
 		daemonClient: opts.client,
 		config:       opts.config,
 		job:          opts.job,
 		envs:         opts.envs,
 		downloader:   opts.downloader,
-		token:        opts.token,
+		agentID:      opts.agentID,
+	}
+}
+
+type RemoteOperationOptions struct {
+	Logger       logr.Logger
+	ClientConfig otfapi.Config
+	client       *daemonClient
+	config       Config
+	job          *Job
+	downloader   downloader
+	envs         []string
+	Token        []byte
+	agentID      string
+}
+
+func NewRemoteOperation(opts RemoteOperationOptions) *Operation {
+	// If a downloader isn't specified then create one. This is necessary, for
+	// example, when the operation is carried out on a k8s pod.
+	if opts.downloader == nil {
+		opts.downloader = releases.NewDownloader(opts.config.TerraformBinDir)
+	}
+	return &Operation{
+		Logger:       opts.Logger.WithValues("job", opts.job),
+		daemonClient: opts.client,
+		config:       opts.config,
+		job:          opts.job,
+		envs:         opts.envs,
+		downloader:   opts.downloader,
+		token:        opts.Token,
+		agentID:      opts.agentID,
+	}
+}
+
+type operationOptions struct {
+	Logger     logr.Logger
+	client     *daemonClient
+	config     Config
+	job        *Job
+	downloader downloader
+	envs       []string
+	agentID    string
+}
+
+func newOperation(opts operationOptions) (*Operation, error) {
+	if opts.config.Sandbox {
+		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
+			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
+		}
+		opts.Logger.V(0).Info("enabled sandbox mode")
+	}
+	if opts.downloader == nil {
+		return nil, errors.New("must specify a downloader")
+	}
+	// an operation has its own uninherited context; the operation is instead
+	// canceled via its cancel() method.
+	//
+	// TODO: why?
+	ctx, cancelfn := context.WithCancel(context.Background())
+	op := &Operation{
+		Logger:       opts.Logger.WithValues("job", opts.job),
+		daemonClient: opts.client,
+		config:       opts.config,
+		job:          opts.job,
+		envs:         opts.envs,
+		downloader:   opts.downloader,
 		ctx:          ctx,
 		cancelfn:     cancelfn,
 		agentID:      opts.agentID,
-		isPoolAgent:  opts.isPoolAgent,
 	}
+	return op, nil
 }
 
 // doAndFinish executes the job and marks the job as complete with the
 // appropriate status.
-func (o *operation) doAndFinish() {
+func (o *Operation) doAndFinish() {
 	// do the job, and then handle any error and send appropriate job status
 	// update
 	err := o.do()
@@ -122,11 +194,11 @@ func (o *operation) doAndFinish() {
 }
 
 // do executes the job
-func (o *operation) do() error {
+func (o *Operation) do() error {
 	// if this is a pool agent using RPC to communicate with the server
 	// then use a new client for this job, configured to authenticate using the
 	// job token and to retry requests upon encountering transient errors.
-	if o.isPoolAgent {
+	if o.isRemote {
 		jc, err := o.newJobClient(o.agentID, o.token, o.Logger)
 		if err != nil {
 			return fmt.Errorf("initializing job client: %w", err)
@@ -192,7 +264,7 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "Debug mode enabled")
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(o.out, "External agent: %t\n", o.isPoolAgent)
+		fmt.Fprintf(o.out, "External agent: %t\n", o.isRemote)
 		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.config.Sandbox)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
@@ -249,7 +321,7 @@ func (o *operation) do() error {
 	return nil
 }
 
-func (o *operation) cancel(force, sendSignal bool) {
+func (o *Operation) cancel(force, sendSignal bool) {
 	o.canceled = true
 	// cancel context only if forced and if there is a context to cancel
 	if force && o.cancelfn != nil {
@@ -293,7 +365,7 @@ func redirectStdout(dst string) executionOptionFunc {
 }
 
 // execute executes a process.
-func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
+func (o *Operation) execute(args []string, funcs ...executionOptionFunc) error {
 	if len(args) == 0 {
 		return fmt.Errorf("missing command name")
 	}
@@ -337,7 +409,7 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 }
 
 // addSandboxWrapper wraps the args within a bubblewrap sandbox.
-func (o *operation) addSandboxWrapper(args []string) []string {
+func (o *Operation) addSandboxWrapper(args []string) []string {
 	bargs := []string{
 		"bwrap",
 		"--ro-bind", args[0], path.Join("/bin", path.Base(args[0])),
@@ -359,13 +431,13 @@ func (o *operation) addSandboxWrapper(args []string) []string {
 	return append(bargs, args[1:]...)
 }
 
-func (o *operation) downloadTerraform(ctx context.Context) error {
+func (o *Operation) downloadTerraform(ctx context.Context) error {
 	var err error
 	o.terraformPath, err = o.downloader.Download(ctx, o.TerraformVersion, o.out)
 	return err
 }
 
-func (o *operation) downloadConfig(ctx context.Context) error {
+func (o *Operation) downloadConfig(ctx context.Context) error {
 	cv, err := o.configs.DownloadConfig(ctx, o.ConfigurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
@@ -377,7 +449,7 @@ func (o *operation) downloadConfig(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) deleteBackendConfig(ctx context.Context) error {
+func (o *Operation) deleteBackendConfig(ctx context.Context) error {
 	if err := internal.RewriteHCL(o.workdir.String(), internal.RemoveBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
@@ -386,7 +458,7 @@ func (o *operation) deleteBackendConfig(ctx context.Context) error {
 
 // downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
-func (o *operation) downloadState(ctx context.Context) error {
+func (o *Operation) downloadState(ctx context.Context) error {
 	statefile, err := o.state.DownloadCurrent(ctx, o.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
@@ -402,7 +474,7 @@ func (o *operation) downloadState(ctx context.Context) error {
 // downloadLockFile downloads the .terraform.lock.hcl file into the working
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
-func (o *operation) downloadLockFile(ctx context.Context) error {
+func (o *Operation) downloadLockFile(ctx context.Context) error {
 	lockFile, err := o.runs.GetLockFile(ctx, o.ID)
 	if err != nil {
 		return err
@@ -410,18 +482,18 @@ func (o *operation) downloadLockFile(ctx context.Context) error {
 	return o.writeFile(lockFilename, lockFile)
 }
 
-func (o *operation) writeTerraformVars(ctx context.Context) error {
+func (o *Operation) writeTerraformVars(ctx context.Context) error {
 	if err := variable.WriteTerraformVars(o.workdir.String(), o.variables); err != nil {
 		return fmt.Errorf("writing terraform.fvars: %w", err)
 	}
 	return nil
 }
 
-func (o *operation) terraformInit(ctx context.Context) error {
+func (o *Operation) terraformInit(ctx context.Context) error {
 	return o.execute([]string{o.terraformPath, "init"})
 }
 
-func (o *operation) terraformPlan(ctx context.Context) error {
+func (o *Operation) terraformPlan(ctx context.Context) error {
 	args := []string{"plan"}
 	if o.IsDestroy {
 		args = append(args, "-destroy")
@@ -430,7 +502,7 @@ func (o *operation) terraformPlan(ctx context.Context) error {
 	return o.execute(append([]string{o.terraformPath}, args...))
 }
 
-func (o *operation) terraformApply(ctx context.Context) (err error) {
+func (o *Operation) terraformApply(ctx context.Context) (err error) {
 	// prior to running an apply, capture info about local state file
 	// so we can detect changes...
 	statePath := filepath.Join(o.workdir.String(), localStateFilename)
@@ -466,7 +538,7 @@ func (o *operation) terraformApply(ctx context.Context) (err error) {
 	return o.execute(append([]string{o.terraformPath}, args...), sandboxIfEnabled())
 }
 
-func (o *operation) convertPlanToJSON(ctx context.Context) error {
+func (o *Operation) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
 	return o.execute(
 		append([]string{o.terraformPath}, args...),
@@ -474,7 +546,7 @@ func (o *operation) convertPlanToJSON(ctx context.Context) error {
 	)
 }
 
-func (o *operation) uploadPlan(ctx context.Context) error {
+func (o *Operation) uploadPlan(ctx context.Context) error {
 	file, err := o.readFile(planFilename)
 	if err != nil {
 		return err
@@ -487,7 +559,7 @@ func (o *operation) uploadPlan(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) uploadJSONPlan(ctx context.Context) error {
+func (o *Operation) uploadJSONPlan(ctx context.Context) error {
 	jsonFile, err := o.readFile(jsonPlanFilename)
 	if err != nil {
 		return err
@@ -498,7 +570,7 @@ func (o *operation) uploadJSONPlan(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) uploadLockFile(ctx context.Context) error {
+func (o *Operation) uploadLockFile(ctx context.Context) error {
 	lockFile, err := o.readFile(lockFilename)
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
@@ -512,7 +584,7 @@ func (o *operation) uploadLockFile(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) downloadPlanFile(ctx context.Context) error {
+func (o *Operation) downloadPlanFile(ctx context.Context) error {
 	plan, err := o.runs.GetPlanFile(ctx, o.ID, run.PlanFormatBinary)
 	if err != nil {
 		return err
@@ -522,7 +594,7 @@ func (o *operation) downloadPlanFile(ctx context.Context) error {
 }
 
 // uploadState reads, parses, and uploads terraform state
-func (o *operation) uploadState(ctx context.Context) error {
+func (o *Operation) uploadState(ctx context.Context) error {
 	statefile, err := o.readFile(localStateFilename)
 	if err != nil {
 		return err

@@ -17,7 +17,7 @@ import (
 func TestExecutor_execute(t *testing.T) {
 	t.Run("no options", func(t *testing.T) {
 		var got bytes.Buffer
-		w := &operation{
+		w := &Operation{
 			out:     &got,
 			workdir: &workdir{root: ""},
 		}
@@ -27,7 +27,7 @@ func TestExecutor_execute(t *testing.T) {
 	})
 
 	t.Run("redirect stdout", func(t *testing.T) {
-		w := &operation{
+		w := &Operation{
 			out:     io.Discard,
 			workdir: &workdir{root: ""},
 		}
@@ -46,7 +46,7 @@ func TestExecutor_execute(t *testing.T) {
 			t.Skip("Skipping test that requires bwrap")
 		}
 
-		w := &operation{
+		w := &Operation{
 			config:  Config{Sandbox: true},
 			out:     io.Discard,
 			workdir: &workdir{root: "."},
@@ -58,7 +58,7 @@ func TestExecutor_execute(t *testing.T) {
 
 	t.Run("stderr", func(t *testing.T) {
 		var got bytes.Buffer
-		w := &operation{
+		w := &Operation{
 			out:     &got,
 			workdir: &workdir{root: ""},
 		}
@@ -70,7 +70,7 @@ func TestExecutor_execute(t *testing.T) {
 
 	t.Run("cancel", func(t *testing.T) {
 		r, w := io.Pipe()
-		wkr := &operation{
+		wkr := &Operation{
 			Logger:  logr.Discard(),
 			out:     w,
 			workdir: &workdir{root: ""},
@@ -88,7 +88,7 @@ func TestExecutor_execute(t *testing.T) {
 	t.Run("cancel forceably", func(t *testing.T) {
 		r, w := io.Pipe()
 		reader := iochan.DelimReader(r, '\n')
-		wkr := &operation{
+		wkr := &Operation{
 			Logger:  logr.Discard(),
 			out:     w,
 			workdir: &workdir{root: ""},
@@ -110,7 +110,7 @@ func TestExecutor_execute(t *testing.T) {
 
 func TestExecutor_addSandboxWrapper(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
-		w := operation{
+		w := Operation{
 			workdir: &workdir{root: "/root"},
 		}
 		want := []string{
@@ -129,7 +129,7 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 	})
 
 	t.Run("with plugin cache", func(t *testing.T) {
-		w := operation{
+		w := Operation{
 			config: Config{
 				PluginCache: true,
 			},
@@ -152,7 +152,7 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 	})
 
 	t.Run("with relative working directory", func(t *testing.T) {
-		w := operation{
+		w := Operation{
 			config: Config{
 				PluginCache: true,
 			},

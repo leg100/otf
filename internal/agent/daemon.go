@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -27,13 +26,7 @@ import (
 
 const DefaultConcurrency = 5
 
-var (
-	PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
-	DefaultEnvs    = []string{
-		"TF_IN_AUTOMATION=true",
-		"CHECKPOINT_DISABLE=true",
-	}
-)
+var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
 type (
 	// Config is configuration for an agent daemon
@@ -54,6 +47,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	flags.BoolVar(&cfg.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
 	flags.StringVar(&cfg.Name, "name", "", "Give agent a descriptive name. Optional.")
+	flags.StringVar(&cfg.TerraformBinDir, "terraform-bin-dir", releases.DefaultTerraformBinDir, "Destination directory for terraform binary downloads.")
 	return &cfg
 }
 
@@ -61,7 +55,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 type daemon struct {
 	*daemonClient
 
-	envs       []string // terraform environment variables
+	extraEnvs  []string // additional environment variables to pass to terraform
 	config     Config
 	downloader downloader
 	registered chan *Agent
@@ -101,15 +95,9 @@ func newDaemon(opts DaemonOptions) (*daemon, error) {
 	if opts.Config.Debug {
 		opts.Logger.V(0).Info("enabled debug mode")
 	}
-	if opts.Config.Sandbox {
-		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
-			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
-		}
-		opts.Logger.V(0).Info("enabled sandbox mode")
-	}
 	d := &daemon{
 		daemonClient: opts.client,
-		envs:         DefaultEnvs,
+		extraEnvs:    DefaultEnvs,
 		downloader:   releases.NewDownloader(opts.Config.TerraformBinDir),
 		registered:   make(chan *Agent),
 		config:       opts.Config,
@@ -121,7 +109,7 @@ func newDaemon(opts DaemonOptions) (*daemon, error) {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		d.envs = append(d.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
+		d.extraEnvs = append(d.extraEnvs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 		opts.Logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 	return d, nil
@@ -273,7 +261,7 @@ func (d *daemon) Start(ctx context.Context) error {
 			}
 		}()
 
-		// fetch jobs allocated to this agent and launch workers to do jobs; also
+		// fetch jobs allocated to this agent and instruct executor to do jobs; also
 		// handle cancelation signals for jobs
 		for {
 			processJobs := func() (err error) {
@@ -296,17 +284,27 @@ func (d *daemon) Start(ctx context.Context) error {
 							continue
 						}
 						d.poolLogger.V(0).Info("started job")
-						op := newOperation(newOperationOptions{
-							logger:      d.poolLogger.WithValues("job", j),
-							client:      d.daemonClient,
-							config:      d.config,
-							agentID:     agent.ID,
-							job:         j,
-							downloader:  d.downloader,
-							envs:        d.envs,
-							token:       token,
-							isPoolAgent: d.isPoolAgent,
-						})
+						var op *Operation
+						if d.isPoolAgent {
+							op = NewRemoteOperation(RemoteOperationOptions{
+								Logger:     d.poolLogger.WithValues("job", j),
+								client:     d.daemonClient,
+								config:     d.config,
+								agentID:    agent.ID,
+								job:        j,
+								downloader: d.downloader,
+								envs:       d.extraEnvs,
+								Token:      token,
+							})
+						} else {
+							op = NewLocalOperation(LocalOperationOptions{
+								config:     d.config,
+								agentID:    agent.ID,
+								job:        j,
+								downloader: d.downloader,
+								envs:       d.extraEnvs,
+							})
+						}
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.
 						terminator.checkIn(j.Spec, op)
