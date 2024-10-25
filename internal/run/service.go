@@ -234,6 +234,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 // NOTE: this is an internal action, invoked by the scheduler only.
 func (s *Service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		// TODO: this does not need to be part of the tx
 		subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
 		if err != nil {
 			return err
@@ -386,6 +387,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 // Apply enqueues an apply for the run.
 func (s *Service) Apply(ctx context.Context, runID string) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		// TODO: this does not need to be part of the tx
 		subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
 		if err != nil {
 			return err
