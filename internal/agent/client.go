@@ -19,8 +19,8 @@ type client struct {
 	agentID *string
 }
 
-// NewRequest constructs a new API request
-func (c *client) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+// newRequest constructs a new API request
+func (c *client) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
 	req, err := c.Client.NewRequest(method, path, v)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (c *client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 }
 
 func (c *client) registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error) {
-	req, err := c.NewRequest("POST", "agents/register", &opts)
+	req, err := c.newRequest("POST", "agents/register", &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (c *client) registerAgent(ctx context.Context, opts registerAgentOptions) (
 }
 
 func (c *client) getAgentJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	req, err := c.NewRequest("GET", "agents/jobs", nil)
+	req, err := c.newRequest("GET", "agents/jobs", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (c *client) getAgentJobs(ctx context.Context, agentID string) ([]*Job, erro
 }
 
 func (c *client) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
-	req, err := c.NewRequest("POST", "agents/status", &updateAgentStatusParams{
+	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,
 	})
 	if err != nil {
@@ -84,7 +84,7 @@ func (c *client) updateAgentStatus(ctx context.Context, agentID string, status A
 
 func (c *client) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
-	req, err := c.NewRequest("POST", u, &opts)
+	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,7 +98,7 @@ func (c *client) CreateAgentToken(ctx context.Context, poolID string, opts Creat
 // jobs
 
 func (c *client) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
-	req, err := c.NewRequest("POST", "agents/start", &spec)
+	req, err := c.newRequest("POST", "agents/start", &spec)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (c *client) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 }
 
 func (c *client) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
-	req, err := c.NewRequest("POST", "agents/finish", &finishJobParams{
+	req, err := c.newRequest("POST", "agents/finish", &finishJobParams{
 		JobSpec:          spec,
 		finishJobOptions: opts,
 	})
