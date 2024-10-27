@@ -110,10 +110,6 @@ func (a *allocator) Start(ctx context.Context) error {
 }
 
 func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
-	a.pools = make(map[string]*Pool, len(pools))
-	for _, pool := range pools {
-		a.pools[pool.ID] = pool
-	}
 	a.agents = make(map[string]*Agent, len(agents))
 	for _, agent := range agents {
 		a.agents[agent.ID] = agent
@@ -124,7 +120,7 @@ func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
 	}
 }
 
-// allocate jobs to agents.
+// allocate jobs to runners.
 func (a *allocator) allocate(ctx context.Context) error {
 	for _, job := range a.jobs {
 		var reallocate bool

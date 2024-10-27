@@ -1,4 +1,4 @@
-package agent
+package runner
 
 import (
 	"context"
@@ -16,22 +16,22 @@ var (
 // time.
 const ManagerLockID int64 = 5577006791947779413
 
-// manager manages the state of agents.
+// manager manages the state of runners.
 //
 // Only one manager should be running on an OTF cluster at any one time.
 type manager struct {
-	// service for retrieving agents and updating their state.
+	// service for retrieving runners and updating their state.
 	client managerClient
-	// frequency with which the manager will check agents.
+	// frequency with which the manager will check runners.
 	interval time.Duration
 	// manager identifies itself as a subject when making service calls
 	internal.Subject
 }
 
 type managerClient interface {
-	listAgents(ctx context.Context) ([]*Agent, error)
-	updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error
-	deleteAgent(ctx context.Context, agentID string) error
+	listRunners(ctx context.Context) ([]*runner, error)
+	updateStatus(ctx context.Context, agentID string, status RunnerStatus) error
+	deleteRunner(ctx context.Context, agentID string) error
 }
 
 func newManager(s *Service) *manager {
@@ -51,7 +51,7 @@ func (m *manager) Start(ctx context.Context) error {
 	ctx = internal.AddSubjectToContext(ctx, m)
 
 	updateAll := func() error {
-		agents, err := m.client.listAgents(ctx)
+		agents, err := m.client.listRunners(ctx)
 		if err != nil {
 			return err
 		}
@@ -80,26 +80,26 @@ func (m *manager) Start(ctx context.Context) error {
 	}
 }
 
-func (m *manager) update(ctx context.Context, agent *Agent) error {
-	switch agent.Status {
-	case AgentIdle, AgentBusy:
+func (m *manager) update(ctx context.Context, runner *runner) error {
+	switch runner.Status {
+	case RunnerIdle, RunnerBusy:
 		// update agent status to unknown if the agent has failed to ping within
 		// the timeout.
-		if time.Since(agent.LastPingAt) > pingTimeout {
-			return m.client.updateAgentStatus(ctx, agent.ID, AgentUnknown)
+		if time.Since(runner.LastPingAt) > pingTimeout {
+			return m.client.updateStatus(ctx, runner.ID, RunnerUnknown)
 		}
-	case AgentUnknown:
+	case RunnerUnknown:
 		// update agent status from unknown to errored if a further period of 5
 		// minutes has elapsed.
-		if time.Since(agent.LastStatusAt) > 5*time.Minute {
+		if time.Since(runner.LastStatusAt) > 5*time.Minute {
 			// update agent status to errored.
-			return m.client.updateAgentStatus(ctx, agent.ID, AgentErrored)
+			return m.client.updateStatus(ctx, runner.ID, RunnerErrored)
 		}
-	case AgentErrored, AgentExited:
+	case RunnerErrored, RunnerExited:
 		// purge agent from database once a further 1 hour has elapsed for
 		// agents in a terminal state.
-		if time.Since(agent.LastStatusAt) > time.Hour {
-			return m.client.deleteAgent(ctx, agent.ID)
+		if time.Since(runner.LastStatusAt) > time.Hour {
+			return m.client.deleteRunner(ctx, runner.ID)
 		}
 	}
 	return nil

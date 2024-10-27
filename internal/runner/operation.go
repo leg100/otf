@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -17,11 +16,10 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -35,7 +33,13 @@ const (
 	lockFilename       = ".terraform.lock.hcl"
 )
 
-var ascii = regexp.MustCompile("[[:^ascii:]]")
+var (
+	DefaultEnvs = []string{
+		"TF_IN_AUTOMATION=true",
+		"CHECKPOINT_DISABLE=true",
+	}
+	ascii = regexp.MustCompile("[[:^ascii:]]")
+)
 
 type (
 	// operation performs the execution of a job
@@ -43,8 +47,13 @@ type (
 		logr.Logger
 		*workdir
 
+		Sandbox         bool   // isolate privileged ops within sandbox
+		Debug           bool   // toggle debug mode
+		PluginCachePath string // toggle use of terraform's shared plugin cache
+
+		job           *Job
+		jobToken      []byte
 		run           *run.Run
-		config        Config
 		canceled      bool
 		ctx           context.Context
 		cancelfn      context.CancelFunc
@@ -53,8 +62,7 @@ type (
 		envs          []string
 		proc          *os.Process
 		downloader    downloader
-		token         []byte
-		isRemote       bool
+		isRemote      bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -69,14 +77,14 @@ type (
 	operationOptions struct {
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
-		PluginCachePath     string   // toggle use of terraform's shared plugin cache
+		PluginCachePath string // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
 
 		logger     logr.Logger
 		job        *Job
+		jobToken   []byte
 		downloader downloader
-		jobToken      []byte
-		isRemote bool
+		isRemote   bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -125,17 +133,19 @@ type (
 func newOperation(opts operationOptions) *operation {
 	// an operation has its own uninherited context; the operation is instead
 	// canceled via its cancel() method.
+	//
+	// TODO: why?
 	ctx, cancelfn := context.WithCancel(context.Background())
+
+	if opts.downloader == nil {
+		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)
+	}
 	return &operation{
 		Logger:     opts.logger.WithValues("job", opts.job),
-		config:     opts.config,
 		job:        opts.job,
-		envs:       opts.envs,
 		downloader: opts.downloader,
-		token:      opts.jobToken,
 		ctx:        ctx,
 		cancelfn:   cancelfn,
-		agentID:    opts.agentID,
 		runs:       opts.runs,
 		workspaces: opts.workspaces,
 		variables:  opts.variables,
@@ -145,36 +155,6 @@ func newOperation(opts operationOptions) *operation {
 		logs:       opts.logs,
 		server:     opts.server,
 	}
-}
-
-// newRemoteOperation constructs an operation that is performed remotely,
-// communicating via RPC with otfd.
-func newRemoteOperation(logger logr.Logger, url string, token []byte, opts operationOptions) (*operation, error) {
-	cfg := otfapi.Config{
-		URL:           url,
-		Token:         string(token),
-		RetryRequests: true,
-		RetryLogHook: func(_ retryablehttp.Logger, r *http.Request, n int) {
-			if n > 0 {
-				logger.Error(nil, "retrying request", "url", r.URL, "attempt", n)
-			}
-		},
-	}
-	apiClient, err := otfapi.NewClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return newOperation(
-		runs:       &run.Client{Client: apiClient},
-		workspaces: &workspace.Client{Client: apiClient},
-		variables:  &variable.Client{Client: apiClient},
-		runners:     &client{Client: apiClient},
-		state:      &state.Client{Client: apiClient},
-		configs:    &configversion.Client{Client: apiClient},
-		logs:       &logs.Client{Client: apiClient},
-		server:     apiClient,
-		url:        cfg.URL,
-	), nil
 }
 
 // doAndFinish executes the job and marks the job as complete with the
@@ -212,22 +192,13 @@ func (o *operation) doAndFinish() {
 
 // do executes the job
 func (o *operation) do() error {
-	// if this is a pool agent using RPC to communicate with the server
-	// then use a new client for this job, configured to authenticate using the
-	// job token and to retry requests upon encountering transient errors.
-	if o.isAgent {
-		jc, err := o.newJobClient(o.agentID, o.token, o.Logger)
-		if err != nil {
-			return fmt.Errorf("initializing job client: %w", err)
-		}
-		o.daemonClient = jc
-	} else {
+	if !o.isRemote {
 		// this is a server agent: directly authenticate as job with services
 		o.ctx = internal.AddSubjectToContext(o.ctx, o.job)
 	}
 
 	// make token available to terraform CLI
-	o.envs = append(o.envs, internal.CredentialEnv(o.server.Hostname(), o.token))
+	o.envs = append(o.envs, internal.CredentialEnv(o.server.Hostname(), o.jobToken))
 
 	run, err := o.runs.Get(o.ctx, o.job.Spec.RunID)
 	if err != nil {
@@ -258,7 +229,7 @@ func (o *operation) do() error {
 	o.out = writer
 
 	// dump info if in debug mode
-	if o.config.Debug {
+	if o.Debug {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
@@ -268,7 +239,7 @@ func (o *operation) do() error {
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintf(o.out, "Hostname: %s\n", hostname)
 		fmt.Fprintf(o.out, "External agent: %t\n", o.isAgent)
-		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.config.Sandbox)
+		fmt.Fprintf(o.out, "Sandbox mode: %t\n", o.Sandbox)
 		fmt.Fprintln(o.out, "------------------")
 		fmt.Fprintln(o.out)
 	}
@@ -376,7 +347,7 @@ func (o *operation) execute(args []string, funcs ...executionOptionFunc) error {
 	for _, fn := range funcs {
 		fn(&opts)
 	}
-	if opts.sandboxIfEnabled && o.config.Sandbox {
+	if opts.sandboxIfEnabled && o.Sandbox {
 		args = o.addSandboxWrapper(args)
 	}
 	cmd := exec.Command(args[0], args[1:]...)
@@ -427,7 +398,7 @@ func (o *operation) addSandboxWrapper(args []string) []string {
 		// avoids provider error "failed to read schema..."
 		"--tmpfs", "/tmp",
 	}
-	if o.config.PluginCache {
+	if o.PluginCachePath != "" {
 		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
 	}
 	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))

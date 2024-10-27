@@ -20,25 +20,16 @@ import (
 
 const DefaultConcurrency = 5
 
-var (
-	PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
-	DefaultEnvs    = []string{
-		"TF_IN_AUTOMATION=true",
-		"CHECKPOINT_DISABLE=true",
-	}
-)
+var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
-type (
-	// Config is configuration for an runner daemon
-	Config struct {
-		Name            string // descriptive name for agent
-		Concurrency     int    // number of jobs the runner can execute at any one time
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
-	}
-)
+// Config is configuration for an runner daemon
+type Config struct {
+	Concurrency     int    // number of jobs the runner can execute at any one time
+	Sandbox         bool   // isolate privileged ops within sandbox
+	Debug           bool   // toggle debug mode
+	PluginCache     bool   // toggle use of terraform's shared plugin cache
+	TerraformBinDir string // destination directory for terraform binaries
+}
 
 // runner carries out jobs.
 type runner struct {
@@ -140,7 +131,7 @@ func (d *runner) Start(ctx context.Context) error {
 	}
 
 	// register runner with server
-	runner, err := d.runners.registerrunner(ctx, registerrunnerOptions{
+	runner, err := d.runners.register(ctx, registerOptions{
 		Name:        d.config.Name,
 		Version:     internal.Version,
 		Concurrency: d.config.Concurrency,
@@ -159,7 +150,7 @@ func (d *runner) Start(ctx context.Context) error {
 		// server runners should identify themselves as a serverrunner
 		// (pool runners identify themselves as a poolrunner, but the
 		// bearer token middleware takes care of that server-side).
-		ctx = internal.AddSubjectToContext(ctx, &serverrunner{runner: runner})
+		ctx = internal.AddSubjectToContext(ctx, &serverRunner{runner: runner})
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -170,7 +161,7 @@ func (d *runner) Start(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			if updateErr := d.runners.updaterunnerStatus(ctx, runner.ID, runnerExited); updateErr != nil {
+			if updateErr := d.runners.updateRunnerStatus(ctx, runner.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			} else {
 				d.logger.Info("sent final status update", "status", "exited")
@@ -183,11 +174,11 @@ func (d *runner) Start(ctx context.Context) error {
 			select {
 			case <-ticker.C:
 				// send runner status update
-				status := runnerIdle
+				status := RunnerIdle
 				if terminator.totalJobs() > 0 {
-					status = runnerBusy
+					status = RunnerBusy
 				}
-				if err := d.runners.updaterunnerStatus(ctx, runner.ID, status); err != nil {
+				if err := d.runners.updateStatus(ctx, runner.ID, status); err != nil {
 					if ctx.Err() != nil {
 						// context canceled
 						return nil
@@ -230,7 +221,7 @@ func (d *runner) Start(ctx context.Context) error {
 			processJobs := func() (err error) {
 				d.poolLogger.Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := d.runners.getrunnerJobs(ctx, runner.ID)
+				jobs, err := d.runners.getRunnerJobs(ctx, runner.ID)
 				if err != nil {
 					return err
 				}
@@ -248,15 +239,14 @@ func (d *runner) Start(ctx context.Context) error {
 						}
 						d.poolLogger.V(0).Info("started job")
 						op := newOperation(operationOptions{
-							logger:       d.poolLogger.WithValues("job", j),
-							client:       d.client,
-							config:       d.config,
-							runnerID:     runner.ID,
-							job:          j,
-							downloader:   d.downloader,
-							envs:         d.envs,
-							jobToken:     token,
-							isPoolrunner: d.isAgent,
+							logger:     d.poolLogger.WithValues("job", j),
+							client:     d.client,
+							config:     d.config,
+							runnerID:   runner.ID,
+							job:        j,
+							downloader: d.downloader,
+							jobToken:   token,
+							isRemote:   d.isAgent,
 						})
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.
