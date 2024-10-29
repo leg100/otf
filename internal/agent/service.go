@@ -196,12 +196,18 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 	if err != nil {
 		return nil, err
 	}
-	pool, err := newPool(opts)
+	pool, err := func() (*Pool, error) {
+		pool, err := newPool(opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.db.createPool(ctx, pool); err != nil {
+			return nil, err
+		}
+		return pool, nil
+	}()
 	if err != nil {
 		s.Error(err, "creating agent pool", "subject", subject)
-		return nil, err
-	}
-	if err := s.db.createPool(ctx, pool); err != nil {
 		return nil, err
 	}
 	s.V(0).Info("created agent pool", "subject", subject, "pool", pool)
