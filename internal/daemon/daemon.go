@@ -484,6 +484,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
+			Name:   "run_metrics",
+			Logger: d.Logger,
+			System: &run.MetricsCollector{
+				Service: d.Runs,
+			},
+		},
+		{
 			Name:      "timeout",
 			Logger:    d.Logger,
 			Exclusive: true,
