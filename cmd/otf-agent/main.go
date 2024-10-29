@@ -33,7 +33,7 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	var (
 		loggerConfig  *logr.Config
-		runnerOptions *runner.RemoteOptions
+		runnerOptions *runner.AgentOptions
 	)
 
 	cmd := &cobra.Command{
@@ -46,7 +46,7 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			runner, err := runner.NewRemote(logger, *runnerOptions)
+			runner, err := runner.NewAgent(logger, *runnerOptions)
 			if err != nil {
 				return fmt.Errorf("initializing agent: %w", err)
 			}
@@ -59,7 +59,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.SetArgs(args)
 
 	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
-	runnerOptions = runner.NewRemoteOptionsFromFlags(cmd.Flags())
+	runnerOptions = runner.NewAgentOptionsFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

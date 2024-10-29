@@ -90,7 +90,7 @@ func metadataFromContext(ctx context.Context) (*runnerMeta, error) {
 	}
 	meta, ok := subject.(*runnerMeta)
 	if !ok {
-		return nil, ErrUnauthorizedAgentRegistration
+		return nil, ErrUnauthorizedRegistration
 	}
 	return meta, nil
 }

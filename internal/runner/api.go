@@ -100,7 +100,7 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 
 	err = a.Service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status)
 	if err != nil {
-		if errors.Is(err, ErrInvalidAgentStateTransition) {
+		if errors.Is(err, ErrInvalidStateTransition) {
 			tfeapi.Error(w, err)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
