@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.4](https://github.com/leg100/otf/compare/v0.3.3...v0.3.4) (2024-10-29)
+
+
+### Features
+
+* run status metrics ([#697](https://github.com/leg100/otf/issues/697)) ([4642e5d](https://github.com/leg100/otf/commit/4642e5d98937ca036f68681ab5abef9ed14379d2))
+
+
+### Bug Fixes
+
+* log create agent pool db errors ([ece6de7](https://github.com/leg100/otf/commit/ece6de7186d54bbeb390f8d6e7bf5c9e1c0eb543))
+
 ## [0.3.3](https://github.com/leg100/otf/compare/v0.3.2...v0.3.3) (2024-10-23)
 
 
