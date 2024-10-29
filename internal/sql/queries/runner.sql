@@ -1,6 +1,6 @@
--- name: InsertAgent :exec
-INSERT INTO agents (
-    agent_id,
+-- name: InsertRunner :exec
+INSERT INTO runners (
+    runner_id,
     name,
     version,
     max_jobs,
@@ -10,7 +10,7 @@ INSERT INTO agents (
     status,
     agent_pool_id
 ) VALUES (
-    sqlc.arg('agent_id'),
+    sqlc.arg('runner_id'),
     sqlc.arg('name'),
     sqlc.arg('version'),
     sqlc.arg('max_jobs'),
@@ -21,94 +21,94 @@ INSERT INTO agents (
     sqlc.arg('agent_pool_id')
 );
 
--- name: UpdateAgent :one
-UPDATE agents
+-- name: UpdateRunner :one
+UPDATE runners
 SET status = sqlc.arg('status'),
     last_ping_at = sqlc.arg('last_ping_at'),
     last_status_at = sqlc.arg('last_status_at')
-WHERE agent_id = sqlc.arg('agent_id')
+WHERE runner_id = sqlc.arg('runner_id')
 RETURNING *;
 
--- name: FindAgents :many
+-- name: FindRunners :many
 SELECT
     a.*,
     ( SELECT count(*)
       FROM jobs j
-      WHERE a.agent_id = j.agent_id
+      WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
-FROM agents a
-GROUP BY a.agent_id
+FROM runners a
+GROUP BY a.runner_id
 ORDER BY a.last_ping_at DESC;
 
--- name: FindAgentsByOrganization :many
+-- name: FindRunnersByOrganization :many
 SELECT
     a.*,
     ( SELECT count(*)
       FROM jobs j
-      WHERE a.agent_id = j.agent_id
+      WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
-FROM agents a
+FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.organization_name = sqlc.arg('organization_name')
-GROUP BY a.agent_id
+GROUP BY a.runner_id
 ORDER BY last_ping_at DESC;
 
--- name: FindAgentsByPoolID :many
+-- name: FindRunnersByPoolID :many
 SELECT
     a.*,
     ( SELECT count(*)
       FROM jobs j
-      WHERE a.agent_id = j.agent_id
+      WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
-FROM agents a
+FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.agent_pool_id = sqlc.arg('agent_pool_id')
-GROUP BY a.agent_id
+GROUP BY a.runner_id
 ORDER BY last_ping_at DESC;
 
--- name: FindServerAgents :many
+-- name: FindServerRunners :many
 SELECT
     a.*,
     ( SELECT count(*)
       FROM jobs j
-      WHERE a.agent_id = j.agent_id
+      WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
-FROM agents a
+FROM runners a
 WHERE agent_pool_id IS NULL
-GROUP BY a.agent_id
+GROUP BY a.runner_id
 ORDER BY last_ping_at DESC;
 
--- name: FindAgentByID :one
+-- name: FindRunnerByID :one
 SELECT
     a.*,
     ( SELECT count(*)
       FROM jobs j
-      WHERE a.agent_id = j.agent_id
+      WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
-FROM agents a
-LEFT JOIN jobs j USING (agent_id)
-WHERE a.agent_id = sqlc.arg('agent_id')
-GROUP BY a.agent_id;
+FROM runners a
+LEFT JOIN jobs j USING (runner_id)
+WHERE a.runner_id = sqlc.arg('runner_id')
+GROUP BY a.runner_id;
 
--- name: FindAgentByIDForUpdate :one
+-- name: FindRunnerByIDForUpdate :one
 SELECT
     a.*,
     ( SELECT count(*)
       FROM jobs j
-      WHERE a.agent_id = j.agent_id
+      WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
-FROM agents a
-WHERE a.agent_id = sqlc.arg('agent_id')
+FROM runners a
+WHERE a.runner_id = sqlc.arg('runner_id')
 FOR UPDATE OF a;
 
--- name: DeleteAgent :one
+-- name: DeleteRunner :one
 DELETE
-FROM agents
-WHERE agent_id = sqlc.arg('agent_id')
+FROM runners
+WHERE runner_id = sqlc.arg('runner_id')
 RETURNING *;

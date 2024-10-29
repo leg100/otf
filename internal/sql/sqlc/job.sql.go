@@ -17,14 +17,14 @@ SELECT
     j.phase,
     j.status,
     j.signaled,
-    j.agent_id,
+    j.runner_id,
     w.agent_pool_id,
     r.workspace_id,
     w.organization_name
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE j.agent_id = $1
+WHERE j.runner_id = $1
 AND   j.status = 'allocated'
 `
 
@@ -33,14 +33,14 @@ type FindAllocatedJobsRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	AgentID          pgtype.Text
+	RunnerID         pgtype.Text
 	AgentPoolID      pgtype.Text
 	WorkspaceID      pgtype.Text
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindAllocatedJobs(ctx context.Context, agentID pgtype.Text) ([]FindAllocatedJobsRow, error) {
-	rows, err := q.db.Query(ctx, findAllocatedJobs, agentID)
+func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID pgtype.Text) ([]FindAllocatedJobsRow, error) {
+	rows, err := q.db.Query(ctx, findAllocatedJobs, runnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (q *Queries) FindAllocatedJobs(ctx context.Context, agentID pgtype.Text) ([
 			&i.Phase,
 			&i.Status,
 			&i.Signaled,
-			&i.AgentID,
+			&i.RunnerID,
 			&i.AgentPoolID,
 			&i.WorkspaceID,
 			&i.OrganizationName,
@@ -74,7 +74,7 @@ SET signaled = NULL
 FROM runs r, workspaces w
 WHERE j.run_id = r.run_id
 AND   r.workspace_id = w.workspace_id
-AND   j.agent_id = $1
+AND   j.runner_id = $1
 AND   j.status = 'running'
 AND   j.signaled IS NOT NULL
 RETURNING
@@ -82,7 +82,7 @@ RETURNING
     j.phase,
     j.status,
     j.signaled,
-    j.agent_id,
+    j.runner_id,
     w.agent_pool_id,
     r.workspace_id,
     w.organization_name
@@ -93,15 +93,15 @@ type FindAndUpdateSignaledJobsRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	AgentID          pgtype.Text
+	RunnerID         pgtype.Text
 	AgentPoolID      pgtype.Text
 	WorkspaceID      pgtype.Text
 	OrganizationName pgtype.Text
 }
 
 // Find signaled jobs and then immediately update signal with null.
-func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, agentID pgtype.Text) ([]FindAndUpdateSignaledJobsRow, error) {
-	rows, err := q.db.Query(ctx, findAndUpdateSignaledJobs, agentID)
+func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype.Text) ([]FindAndUpdateSignaledJobsRow, error) {
+	rows, err := q.db.Query(ctx, findAndUpdateSignaledJobs, runnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, agentID pgtype.
 			&i.Phase,
 			&i.Status,
 			&i.Signaled,
-			&i.AgentID,
+			&i.RunnerID,
 			&i.AgentPoolID,
 			&i.WorkspaceID,
 			&i.OrganizationName,
@@ -135,7 +135,7 @@ SELECT
     j.phase,
     j.status,
     j.signaled,
-    j.agent_id,
+    j.runner_id,
     w.agent_pool_id,
     r.workspace_id,
     w.organization_name
@@ -156,7 +156,7 @@ type FindJobRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	AgentID          pgtype.Text
+	RunnerID         pgtype.Text
 	AgentPoolID      pgtype.Text
 	WorkspaceID      pgtype.Text
 	OrganizationName pgtype.Text
@@ -170,7 +170,7 @@ func (q *Queries) FindJob(ctx context.Context, arg FindJobParams) (FindJobRow, e
 		&i.Phase,
 		&i.Status,
 		&i.Signaled,
-		&i.AgentID,
+		&i.RunnerID,
 		&i.AgentPoolID,
 		&i.WorkspaceID,
 		&i.OrganizationName,
@@ -184,7 +184,7 @@ SELECT
     j.phase,
     j.status,
     j.signaled,
-    j.agent_id,
+    j.runner_id,
     w.agent_pool_id,
     r.workspace_id,
     w.organization_name
@@ -206,7 +206,7 @@ type FindJobForUpdateRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	AgentID          pgtype.Text
+	RunnerID         pgtype.Text
 	AgentPoolID      pgtype.Text
 	WorkspaceID      pgtype.Text
 	OrganizationName pgtype.Text
@@ -220,7 +220,7 @@ func (q *Queries) FindJobForUpdate(ctx context.Context, arg FindJobForUpdatePara
 		&i.Phase,
 		&i.Status,
 		&i.Signaled,
-		&i.AgentID,
+		&i.RunnerID,
 		&i.AgentPoolID,
 		&i.WorkspaceID,
 		&i.OrganizationName,
@@ -234,7 +234,7 @@ SELECT
     j.phase,
     j.status,
     j.signaled,
-    j.agent_id,
+    j.runner_id,
     w.agent_pool_id,
     r.workspace_id,
     w.organization_name
@@ -248,7 +248,7 @@ type FindJobsRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	AgentID          pgtype.Text
+	RunnerID         pgtype.Text
 	AgentPoolID      pgtype.Text
 	WorkspaceID      pgtype.Text
 	OrganizationName pgtype.Text
@@ -268,7 +268,7 @@ func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 			&i.Phase,
 			&i.Status,
 			&i.Signaled,
-			&i.AgentID,
+			&i.RunnerID,
 			&i.AgentPoolID,
 			&i.WorkspaceID,
 			&i.OrganizationName,
@@ -310,16 +310,16 @@ const updateJob = `-- name: UpdateJob :one
 UPDATE jobs
 SET status   = $1,
     signaled = $2,
-    agent_id = $3
+    runner_id = $3
 WHERE run_id = $4
 AND   phase = $5
-RETURNING run_id, phase, status, agent_id, signaled
+RETURNING run_id, phase, status, runner_id, signaled
 `
 
 type UpdateJobParams struct {
 	Status   pgtype.Text
 	Signaled pgtype.Bool
-	AgentID  pgtype.Text
+	RunnerID pgtype.Text
 	RunID    pgtype.Text
 	Phase    pgtype.Text
 }
@@ -328,7 +328,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 	row := q.db.QueryRow(ctx, updateJob,
 		arg.Status,
 		arg.Signaled,
-		arg.AgentID,
+		arg.RunnerID,
 		arg.RunID,
 		arg.Phase,
 	)
@@ -337,7 +337,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.RunID,
 		&i.Phase,
 		&i.Status,
-		&i.AgentID,
+		&i.RunnerID,
 		&i.Signaled,
 	)
 	return i, err

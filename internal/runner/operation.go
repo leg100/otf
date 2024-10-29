@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	DefaultEnvs = []string{
+	defaultEnvs = []string{
 		"TF_IN_AUTOMATION=true",
 		"CHECKPOINT_DISABLE=true",
 	}
@@ -67,11 +67,11 @@ type (
 		runs       runClient
 		workspaces workspaceClient
 		variables  variablesClient
-		runners    runnerClient
 		state      stateClient
 		configs    configClient
 		logs       logsClient
 		server     hostnameClient
+		jobs       operationJobsClient
 	}
 
 	operationOptions struct {
@@ -89,11 +89,19 @@ type (
 		runs       runClient
 		workspaces workspaceClient
 		variables  variablesClient
-		runners    runnerClient
 		state      stateClient
 		configs    configClient
 		logs       logsClient
 		server     hostnameClient
+		jobs       operationJobsClient
+	}
+
+	operationSpawner interface {
+		newOperation(job *Job, jobToken []byte) (*operation, error)
+	}
+
+	operationJobsClient interface {
+		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 	}
 
 	runClient interface {
@@ -140,16 +148,24 @@ func newOperation(opts operationOptions) *operation {
 	if opts.downloader == nil {
 		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)
 	}
+	envs := defaultEnvs
+	if opts.PluginCachePath != "" {
+		envs = append(envs, "TF_PLUGIN_CACHE_DIR="+opts.PluginCachePath)
+	}
+	// make token available to terraform CLI
+	envs = append(envs, internal.CredentialEnv(opts.server.Hostname(), opts.jobToken))
+
 	return &operation{
 		Logger:     opts.logger.WithValues("job", opts.job),
 		job:        opts.job,
 		downloader: opts.downloader,
+		envs:       envs,
 		ctx:        ctx,
 		cancelfn:   cancelfn,
 		runs:       opts.runs,
 		workspaces: opts.workspaces,
 		variables:  opts.variables,
-		runners:    opts.runners,
+		jobs:       opts.jobs,
 		state:      opts.state,
 		configs:    opts.configs,
 		logs:       opts.logs,
@@ -192,14 +208,6 @@ func (o *operation) doAndFinish() {
 
 // do executes the job
 func (o *operation) do() error {
-	if !o.isRemote {
-		// this is a server agent: directly authenticate as job with services
-		o.ctx = internal.AddSubjectToContext(o.ctx, o.job)
-	}
-
-	// make token available to terraform CLI
-	o.envs = append(o.envs, internal.CredentialEnv(o.server.Hostname(), o.jobToken))
-
 	run, err := o.runs.Get(o.ctx, o.job.Spec.RunID)
 	if err != nil {
 		return err

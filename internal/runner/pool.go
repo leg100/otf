@@ -1,12 +1,10 @@
-// Package agent contains code related to agents
-package agent
+package runner
 
 import (
 	"errors"
+	"log/slog"
 	"slices"
 	"time"
-
-	"log/slog"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
@@ -19,7 +17,7 @@ var (
 )
 
 type (
-	// Pool is a group of non-server agents sharing one or more tokens, assigned to
+	// Pool is a group of remote runners sharing one or more tokens, assigned to
 	// an organization or particular workspaces within the organization.
 	Pool struct {
 		// Unique system-wide ID

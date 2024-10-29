@@ -10,7 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
@@ -30,6 +29,7 @@ import (
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -66,18 +66,18 @@ type (
 		Users         *user.Service
 		GithubApp     *github.Service
 		RepoHooks     *repohooks.Service
-		Agents        *agent.Service
+		Runners       *runner.Service
 		Connections   *connections.Service
 		System        *internal.HostnameService
 
 		handlers []internal.Handlers
 		listener *sql.Listener
-		agent    agentDaemon
+		runner   runnerDaemon
 	}
 
-	agentDaemon interface {
+	runnerDaemon interface {
 		Start(context.Context) error
-		Registered() <-chan *agent.Agent
+		Registered() <-chan *runner.Runner
 	}
 )
 
@@ -284,7 +284,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunClient:           runService,
 	})
 
-	agentService := agent.NewService(agent.ServiceOptions{
+	runnerService := runner.NewService(runner.ServiceOptions{
 		Logger:           logger,
 		DB:               db,
 		Renderer:         renderer,
@@ -295,20 +295,18 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:         listener,
 	})
 
-	agentDaemon, err := agent.NewServerDaemon(
-		logger.WithValues("component", "agent"),
-		*cfg.AgentConfig,
-		agent.ServerDaemonOptions{
-			WorkspaceService:            workspaceService,
-			VariableService:             variableService,
-			StateService:                stateService,
-			ConfigurationVersionService: configService,
-			RunService:                  runService,
-			LogsService:                 logsService,
-			AgentService:                agentService,
-			HostnameService:             hostnameService,
-		},
-	)
+	runner, err := runner.NewLocal(runner.LocalOptions{
+		Logger:        logger,
+		DaemonOptions: cfg.RunnerConfig,
+		Workspaces:    workspaceService,
+		Variables:     variableService,
+		State:         stateService,
+		Configs:       configService,
+		Runs:          runService,
+		Logs:          logsService,
+		Jobs:          runnerService,
+		Server:        hostnameService,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +376,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		configService,
 		notificationService,
 		githubAppService,
-		agentService,
+		runnerService,
 		disco.Service{},
 		&ghapphandler.Handler{
 			Logger:       logger,
@@ -411,9 +409,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RepoHooks:     repoService,
 		GithubApp:     githubAppService,
 		Connections:   connectionService,
-		Agents:        agentService,
+		Runners:       runnerService,
 		DB:            db,
-		agent:         agentDaemon,
+		runner:        runner,
 		listener:      listener,
 	}, nil
 }
@@ -518,7 +516,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive: true,
 			DB:        d.DB,
 			LockID:    internal.Int64(agent.AllocatorLockID),
-			System:    d.Agents.NewAllocator(d.Logger),
+			System:    d.Runners.NewAllocator(d.Logger),
 		},
 		{
 			Name:      "agent-manager",
@@ -526,13 +524,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive: true,
 			DB:        d.DB,
 			LockID:    internal.Int64(agent.ManagerLockID),
-			System:    d.Agents.NewManager(),
+			System:    d.Runners.NewManager(),
 		},
 		{
 			Name:   "agent-daemon",
 			Logger: d.Logger,
 			DB:     d.DB,
-			System: d.agent,
+			System: d.runner,
 		},
 	}
 	if !d.DisableScheduler {
@@ -567,7 +565,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-d.agent.Registered():
+	case <-d.runner.Registered():
 	}
 
 	// Run HTTP/JSON-API server and web app

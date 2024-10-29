@@ -10,11 +10,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff"
 	"github.com/leg100/otf/internal"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,136 +23,118 @@ const DefaultConcurrency = 5
 
 var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
-// Config is configuration for an runner daemon
-type Config struct {
-	Concurrency     int    // number of jobs the runner can execute at any one time
-	Sandbox         bool   // isolate privileged ops within sandbox
-	Debug           bool   // toggle debug mode
-	PluginCache     bool   // toggle use of terraform's shared plugin cache
-	TerraformBinDir string // destination directory for terraform binaries
-}
+type (
+	Runner struct {
+		*runnerMeta
 
-// runner carries out jobs.
-type runner struct {
-	*client
+		Logger          logr.Logger
+		Client          client
+		Concurrency     int    // number of jobs the runner can execute at any one time
+		Sandbox         bool   // isolate privileged ops within sandbox
+		Debug           bool   // toggle debug mode
+		PluginCache     bool   // toggle use of terraform's shared plugin cache
+		TerraformBinDir string // destination directory for terraform binaries
 
-	envs       []string // terraform environment variables
-	config     Config
-	downloader downloader
-	registered chan *runner
-	logger     logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
-	poolLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
+		logger       logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
+		remoteLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
+		spawner      operationSpawner
+		isRemote     bool
+		registered   chan *Runner
+	}
 
-	isAgent bool
-}
+	// downloader downloads terraform versions
+	downloader interface {
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
+	}
 
-type Options struct {
-	Logger logr.Logger
-	Config Config
-	client *client
+	Options struct {
+		Logger logr.Logger
+		Client client
 
-	// whether runner is an agent (true) or a server (false).
-	isAgent bool
-}
+		Concurrency     int    // number of jobs the runner can execute at any one time
+		Sandbox         bool   // isolate privileged ops within sandbox
+		Debug           bool   // toggle debug mode
+		PluginCache     bool   // toggle use of terraform's shared plugin cache
+		TerraformBinDir string // destination directory for terraform binaries
 
-// downloader downloads terraform versions
-type downloader interface {
-	Download(ctx context.Context, version string, w io.Writer) (string, error)
+		spawner  operationSpawner
+		isRemote bool
+	}
+
+	DaemonOptions = Options
+)
+
+func NewDaemonOptionsFromFlags(flags *pflag.FlagSet) *DaemonOptions {
+	opts := DaemonOptions{}
+	flags.IntVar(&opts.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
+	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
+	flags.BoolVar(&opts.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
+	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
+	flags.StringVar(&opts.TerraformBinDir, "terraform-bins-dir", releases.DefaultTerraformBinDir, "Destination directory for terraform binary downloads.")
+	return &opts
 }
 
 // newRunner constructs a runner.
-func newRunner(opts Options) (*runner, error) {
-	poolLogger := opts.Logger
-	if !opts.isAgent {
+func newRunner(opts Options) (*Runner, error) {
+	remoteLogger := opts.Logger
+	if !opts.isRemote {
 		// disable logging for server runners otherwise the server logs are
 		// likely to contain duplicate logs from both the runner daemon and the
 		// runner service, but still make logger available to server runner when
 		// it does need to log something.
-		poolLogger = logr.NewNoopLogger()
+		remoteLogger = logr.Discard()
 	}
-	if opts.Config.Concurrency == 0 {
-		opts.Config.Concurrency = DefaultConcurrency
+	if opts.Concurrency == 0 {
+		opts.Concurrency = DefaultConcurrency
 	}
-	if opts.Config.Debug {
+	if opts.Debug {
 		opts.Logger.V(0).Info("enabled debug mode")
 	}
-	if opts.Config.Sandbox {
+	if opts.Sandbox {
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
 		}
 		opts.Logger.V(0).Info("enabled sandbox mode")
 	}
-	d := &runner{
-		client:     opts.client,
-		envs:       DefaultEnvs,
-		downloader: releases.NewDownloader(opts.Config.TerraformBinDir),
-		registered: make(chan *runner),
-		config:     opts.Config,
-		poolLogger: poolLogger,
-		logger:     opts.Logger,
-		isAgent:    opts.isAgent,
+	d := &Runner{
+		Client:       opts.Client,
+		registered:   make(chan *Runner),
+		remoteLogger: remoteLogger,
+		logger:       opts.Logger,
+		isRemote:     opts.isRemote,
+		spawner:      opts.spawner,
 	}
-	if opts.Config.PluginCache {
+	if opts.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		d.envs = append(d.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 		opts.Logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 	return d, nil
 }
 
-// NewPoolDaemon constructs a pool runner daemon that communicates with the otfd server via RPC.
-func NewPoolDaemon(logger logr.Logger, cfg Config, apiConfig otfapi.Config) (*runner, error) {
-	rpcClient, err := newRPCClient(apiConfig, nil)
-	if err != nil {
-		return nil, err
-	}
-	return newRunner(Options{
-		Logger:  logger,
-		Config:  cfg,
-		client:  rpcClient,
-		isAgent: true,
-	})
-}
-
 // Start the runner daemon.
-func (d *runner) Start(ctx context.Context) error {
-	d.poolLogger.Info("starting runner", "version", internal.Version)
+func (r *Runner) Start(ctx context.Context) error {
+	r.remoteLogger.Info("starting runner", "version", internal.Version)
 
 	// initialize terminator
 	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
 
-	if !d.isAgent {
-		// prior to registration, the server runner identifies itself as an
-		// unregisteredServerrunner (the pool runner identifies itself as an
-		// unregisteredPoolrunner but the server-side token middleware handles
-		// that).
-		ctx = internal.AddSubjectToContext(ctx, &unregisteredServerrunner{})
-	}
-
 	// register runner with server
-	runner, err := d.runners.register(ctx, registerOptions{
-		Name:        d.config.Name,
+	runner, err := r.Client.register(ctx, registerOptions{
+		Name:        r.Name,
 		Version:     internal.Version,
-		Concurrency: d.config.Concurrency,
+		Concurrency: r.Concurrency,
 	})
 	if err != nil {
 		return fmt.Errorf("registering runner: %w", err)
 	}
-	d.poolLogger.Info("registered successfully", "runner", runner)
+	r.remoteLogger.Info("registered successfully", "runner", runner)
 	// send registered runner to channel, letting caller know runner has
 	// registered.
 	go func() {
-		d.registered <- runner
+		r.registered <- runner
 	}()
-
-	if !d.isAgent {
-		// server runners should identify themselves as a serverrunner
-		// (pool runners identify themselves as a poolrunner, but the
-		// bearer token middleware takes care of that server-side).
-		ctx = internal.AddSubjectToContext(ctx, &serverRunner{runner: runner})
-	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() (err error) {
@@ -161,10 +144,10 @@ func (d *runner) Start(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			if updateErr := d.runners.updateRunnerStatus(ctx, runner.ID, RunnerExited); updateErr != nil {
+			if updateErr := r.Client.updateStatus(ctx, runner.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			} else {
-				d.logger.Info("sent final status update", "status", "exited")
+				r.logger.Info("sent final status update", "status", "exited")
 			}
 		}()
 
@@ -178,7 +161,7 @@ func (d *runner) Start(ctx context.Context) error {
 				if terminator.totalJobs() > 0 {
 					status = RunnerBusy
 				}
-				if err := d.runners.updateStatus(ctx, runner.ID, status); err != nil {
+				if err := r.Client.updateStatus(ctx, runner.ID, status); err != nil {
 					if ctx.Err() != nil {
 						// context canceled
 						return nil
@@ -191,10 +174,10 @@ func (d *runner) Start(ctx context.Context) error {
 						// sending an update.
 						return errors.New("runner status update failed due to conflict; runner needs to re-register")
 					} else {
-						d.poolLogger.Error(err, "sending runner status update", "status", status)
+						r.remoteLogger.Error(err, "sending runner status update", "status", status)
 					}
 				} else {
-					d.poolLogger.V(9).Info("sent runner status update", "status", status)
+					r.remoteLogger.V(9).Info("sent runner status update", "status", status)
 				}
 			case <-ctx.Done():
 				// context canceled
@@ -206,7 +189,7 @@ func (d *runner) Start(ctx context.Context) error {
 	g.Go(func() (err error) {
 		defer func() {
 			if terminator.totalJobs() > 0 {
-				d.logger.Info("gracefully canceling in-progress jobs", "total", terminator.totalJobs())
+				r.logger.Info("gracefully canceling in-progress jobs", "total", terminator.totalJobs())
 				// The interrupt sent to the main process is also sent to the
 				// forked terraform processes, so there is no need to send the
 				// latter another interrupt but merely set the cancel semaphore
@@ -219,35 +202,29 @@ func (d *runner) Start(ctx context.Context) error {
 		// handle cancelation signals for jobs
 		for {
 			processJobs := func() (err error) {
-				d.poolLogger.Info("waiting for next job")
+				r.remoteLogger.Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := d.runners.getRunnerJobs(ctx, runner.ID)
+				jobs, err := r.Client.getJobs(ctx, runner.ID)
 				if err != nil {
 					return err
 				}
 				for _, j := range jobs {
 					if j.Status == JobAllocated {
-						d.poolLogger.Info("received job", "job", j)
+						r.remoteLogger.Info("received job", "job", j)
 						// start job and receive job token in return
-						token, err := d.runners.startJob(ctx, j.Spec)
+						token, err := r.Client.startJob(ctx, j.Spec)
 						if err != nil {
 							if ctx.Err() != nil {
 								return nil
 							}
-							d.poolLogger.Error(err, "starting job")
+							r.remoteLogger.Error(err, "starting job")
 							continue
 						}
-						d.poolLogger.V(0).Info("started job")
-						op := newOperation(operationOptions{
-							logger:     d.poolLogger.WithValues("job", j),
-							client:     d.client,
-							config:     d.config,
-							runnerID:   runner.ID,
-							job:        j,
-							downloader: d.downloader,
-							jobToken:   token,
-							isRemote:   d.isAgent,
-						})
+						op, err := r.spawner.newOperation(j, token)
+						if err != nil {
+							r.logger.Error(err, "starting job")
+							continue
+						}
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.
 						terminator.checkIn(j.Spec, op)
@@ -258,7 +235,7 @@ func (d *runner) Start(ctx context.Context) error {
 							return nil
 						})
 					} else if j.Signaled != nil {
-						d.poolLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
+						r.remoteLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
 						terminator.cancel(j.Spec, *j.Signaled, true)
 					}
 				}
@@ -266,7 +243,7 @@ func (d *runner) Start(ctx context.Context) error {
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 			_ = backoff.RetryNotify(processJobs, policy, func(err error, next time.Duration) {
-				d.poolLogger.Error(err, "waiting for next job", "backoff", next)
+				r.remoteLogger.Error(err, "waiting for next job", "backoff", next)
 			})
 			// only stop retrying if context is canceled
 			if ctx.Err() != nil {
@@ -279,6 +256,26 @@ func (d *runner) Start(ctx context.Context) error {
 
 // Registered returns the daemon's corresponding runner on a channel once it has
 // successfully registered.
-func (d *runner) Registered() <-chan *runner {
-	return d.registered
+func (r *Runner) Registered() <-chan *Runner {
+	return r.registered
+}
+
+func (a *Runner) String() string      { return a.ID }
+func (a *Runner) IsSiteAdmin() bool   { return true }
+func (a *Runner) IsOwner(string) bool { return true }
+
+func (a *Runner) Organizations() []string {
+	// a runner is not a member of any organizations (although its agent pool
+	// is, if it has one).
+	return nil
+}
+
+func (*Runner) CanAccessSite(action rbac.Action) bool {
+	// runner cannot carry out site-level actions
+	return false
+}
+
+func (*Runner) CanAccessTeam(rbac.Action, string) bool {
+	// agent cannot carry out team-level actions
+	return false
 }

@@ -28,7 +28,7 @@ func TestCluster(t *testing.T) {
 	otfd1, org, ctx := setup(t, &config{Config: daemon.Config{Database: connstr}})
 	otfd2, _, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
-	pool, err := otfd1.Agents.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+	pool, err := otfd1.Runners.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
 		Organization: org.Name,
 		Name:         "pool-1",
 	})

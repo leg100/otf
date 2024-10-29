@@ -417,14 +417,14 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 
 	if token == "" {
 		if poolID == "" {
-			pool, err := s.Agents.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+			pool, err := s.Runners.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
 				Name:         uuid.NewString(),
 				Organization: org,
 			})
 			require.NoError(t, err)
 			poolID = pool.ID
 		}
-		_, tokenBytes, err := s.Agents.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

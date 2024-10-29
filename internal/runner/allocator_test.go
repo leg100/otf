@@ -23,9 +23,9 @@ func TestAllocator_seed(t *testing.T) {
 		Status: JobUnallocated,
 	}
 	job2 := &Job{
-		Spec:    JobSpec{RunID: "run-2", Phase: internal.PlanPhase},
-		Status:  JobAllocated,
-		AgentID: internal.String("agent-2"),
+		Spec:     JobSpec{RunID: "run-2", Phase: internal.PlanPhase},
+		Status:   JobAllocated,
+		RunnerID: internal.String("agent-2"),
 	}
 
 	a := &allocator{}
@@ -35,9 +35,9 @@ func TestAllocator_seed(t *testing.T) {
 		assert.Contains(t, a.pools, "pool-1")
 		assert.Contains(t, a.pools, "pool-2")
 	}
-	if assert.Len(t, a.agents, 2) {
-		assert.Contains(t, a.agents, "agent-1")
-		assert.Contains(t, a.agents, "agent-2")
+	if assert.Len(t, a.runners, 2) {
+		assert.Contains(t, a.runners, "agent-1")
+		assert.Contains(t, a.runners, "agent-2")
 	}
 }
 
@@ -67,9 +67,9 @@ func TestAllocator_allocate(t *testing.T) {
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:  JobAllocated,
-				AgentID: internal.String("agent-idle"),
+				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:   JobAllocated,
+				RunnerID: internal.String("agent-idle"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-idle": {ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1},
@@ -86,9 +86,9 @@ func TestAllocator_allocate(t *testing.T) {
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:  JobAllocated,
-				AgentID: internal.String("agent-new"),
+				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:   JobAllocated,
+				RunnerID: internal.String("agent-new"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-new": {ID: "agent-new", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, LastPingAt: now},
@@ -110,7 +110,7 @@ func TestAllocator_allocate(t *testing.T) {
 				Spec:        JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
 				Status:      JobAllocated,
 				AgentPoolID: internal.String("pool-1"),
-				AgentID:     internal.String("agent-1"),
+				RunnerID:    internal.String("agent-1"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-1": {ID: "agent-1", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 1, AgentPoolID: internal.String("pool-1")},
@@ -141,14 +141,14 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: "agent-idle", Status: AgentIdle, MaxJobs: 1, CurrentJobs: 0},
 			},
 			job: &Job{
-				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:  JobAllocated,
-				AgentID: internal.String("agent-unknown"),
+				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:   JobAllocated,
+				RunnerID: internal.String("agent-unknown"),
 			},
 			wantJob: &Job{
-				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:  JobAllocated,
-				AgentID: internal.String("agent-idle"),
+				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:   JobAllocated,
+				RunnerID: internal.String("agent-idle"),
 			},
 			wantAgents: map[string]*Agent{
 				"agent-unknown": {ID: "agent-unknown", Status: AgentUnknown, CurrentJobs: 0},
@@ -159,9 +159,9 @@ func TestAllocator_allocate(t *testing.T) {
 			name:   "de-allocate finished job",
 			agents: []*Agent{{ID: "agent-1", CurrentJobs: 1}},
 			job: &Job{
-				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:  JobFinished,
-				AgentID: internal.String("agent-1"),
+				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:   JobFinished,
+				RunnerID: internal.String("agent-1"),
 			},
 			wantJob:    nil,
 			wantAgents: map[string]*Agent{"agent-1": {ID: "agent-1", CurrentJobs: 0}},
@@ -169,9 +169,9 @@ func TestAllocator_allocate(t *testing.T) {
 		{
 			name: "ignore running job",
 			job: &Job{
-				Spec:    JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
-				Status:  JobRunning,
-				AgentID: internal.String("agent-1"),
+				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				Status:   JobRunning,
+				RunnerID: internal.String("agent-1"),
 			},
 		},
 	}
@@ -187,9 +187,9 @@ func TestAllocator_allocate(t *testing.T) {
 			err := a.allocate(context.Background())
 			require.NoError(t, err)
 			// check agents
-			if assert.Equal(t, len(tt.wantAgents), len(a.agents)) {
+			if assert.Equal(t, len(tt.wantAgents), len(a.runners)) {
 				for id, want := range tt.wantAgents {
-					assert.Equal(t, want, a.agents[id])
+					assert.Equal(t, want, a.runners[id])
 				}
 			}
 			// check job

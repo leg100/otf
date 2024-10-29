@@ -14,28 +14,28 @@ func TestManager(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		agent       *Agent
-		want        AgentStatus
+		runner      *runnerMeta
+		want        RunnerStatus
 		wantDeleted bool
 	}{
 		{
-			name:  "no update",
-			agent: &Agent{Status: AgentIdle, LastPingAt: now},
-			want:  "",
+			name:   "no update",
+			runner: &runnerMeta{Status: RunnerIdle, LastPingAt: now},
+			want:   "",
 		},
 		{
-			name:  "update from idle to unknown",
-			agent: &Agent{Status: AgentIdle, LastPingAt: now.Add(-pingTimeout).Add(-time.Second)},
-			want:  AgentUnknown,
+			name:   "update from idle to unknown",
+			runner: &runnerMeta{Status: RunnerIdle, LastPingAt: now.Add(-pingTimeout).Add(-time.Second)},
+			want:   RunnerUnknown,
 		},
 		{
-			name:  "update from unknown to errored",
-			agent: &Agent{Status: AgentUnknown, LastStatusAt: now.Add(-6 * time.Minute)},
-			want:  AgentErrored,
+			name:   "update from unknown to errored",
+			runner: &runnerMeta{Status: RunnerUnknown, LastStatusAt: now.Add(-6 * time.Minute)},
+			want:   RunnerErrored,
 		},
 		{
 			name:        "delete",
-			agent:       &Agent{Status: AgentErrored, LastStatusAt: now.Add(-2 * time.Hour)},
+			runner:      &runnerMeta{Status: RunnerErrored, LastStatusAt: now.Add(-2 * time.Hour)},
 			want:        "",
 			wantDeleted: true,
 		},
@@ -44,7 +44,7 @@ func TestManager(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &fakeService{}
 			m := &manager{client: svc}
-			err := m.update(context.Background(), tt.agent)
+			err := m.update(context.Background(), tt.runner)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, svc.status)
 		})

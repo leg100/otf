@@ -21,14 +21,14 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	// create some workspaces to assign to pool
 	ws1 := daemon.createWorkspace(t, ctx, org)
-	//ws2 := daemon.createWorkspace(t, ctx, org)
+	// ws2 := daemon.createWorkspace(t, ctx, org)
 
 	// subscribe to agent pool events
-	poolsSub, unsub := daemon.Agents.WatchAgentPools(ctx)
+	poolsSub, unsub := daemon.Runners.WatchAgentPools(ctx)
 	defer unsub()
 
 	// subscribe to agent events
-	agentsSub, agentsUnsub := daemon.Agents.WatchAgents(ctx)
+	agentsSub, agentsUnsub := daemon.Runners.WatchAgents(ctx)
 	defer agentsUnsub()
 
 	// create agent pool via UI

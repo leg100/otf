@@ -1,4 +1,4 @@
-package agent
+package runner
 
 import (
 	"context"
@@ -26,7 +26,7 @@ type (
 	// serverAgent is a registered server agent (otfd) for the purposes of
 	// authorization and auditing.
 	serverAgent struct {
-		*Agent
+		*Runner
 	}
 
 	// poolAgent is a registered pool agent (otf-agent) for the purposes of

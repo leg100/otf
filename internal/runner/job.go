@@ -50,7 +50,7 @@ func (j JobSpec) String() string {
 }
 
 // Job is the unit of work corresponding to a run phase. A job is allocated to
-// an Agent, which then executes the work through to completion.
+// a runner, which then executes the work through to completion.
 type Job struct {
 	// Spec uniquely identifies the job, identifying the corresponding run
 	// phase.
@@ -58,16 +58,16 @@ type Job struct {
 	// Current status of job.
 	Status JobStatus `jsonapi:"attribute" json:"status"`
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
-	// the job is allocated to a pool agent belonging to the pool. If nil then
-	// the job is allocated to a server agent.
+	// the job is allocated to an agent runner belonging to the pool. If nil then
+	// the job is allocated to a server runner.
 	AgentPoolID *string `jsonapi:"attribute" json:"agent_pool_id"`
 	// Name of job's organization
 	Organization string `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
 	WorkspaceID string `jsonapi:"attribute" json:"workspace_id"`
-	// ID of agent that this job is allocated to. Only set once job enters
+	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
-	AgentID *string `jsonapi:"attribute" json:"agent_id"`
+	RunnerID *string `jsonapi:"attribute" json:"runner_id"`
 	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
 	Signaled *bool `jsonapi:"attribute" json:"signaled"`
@@ -175,19 +175,19 @@ func (j *Job) CanAccessTeam(rbac.Action, string) bool {
 	return false
 }
 
-func (j *Job) allocate(agentID string) error {
+func (j *Job) allocate(runnerID string) error {
 	if err := j.updateStatus(JobAllocated); err != nil {
 		return err
 	}
-	j.AgentID = &agentID
+	j.RunnerID = &runnerID
 	return nil
 }
 
-func (j *Job) reallocate(agentID string) error {
+func (j *Job) reallocate(runnerID string) error {
 	if j.Status != JobAllocated {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}
-	j.AgentID = &agentID
+	j.RunnerID = &runnerID
 	return nil
 }
 

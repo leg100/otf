@@ -1,4 +1,4 @@
-package runner
+package operation
 
 import (
 	"net/http"
@@ -25,7 +25,6 @@ type RemoteOperationOptions struct {
 	downloader downloader
 	url        string
 	jobToken   []byte
-	isRemote   bool
 }
 
 // newRemoteOperation constructs an operation that is performed remotely,

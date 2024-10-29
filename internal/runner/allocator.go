@@ -22,19 +22,19 @@ type allocator struct {
 	client allocatorClient
 	// cache of agent pools
 	pools map[string]*Pool
-	// agents to allocate jobs to, keyed by agent ID
-	agents map[string]*Agent
+	// runners to allocate jobs to, keyed by agent ID
+	runners map[string]*runnerMeta
 	// jobs awaiting allocation to an agent, keyed by job ID
 	jobs map[JobSpec]*Job
 }
 
 type allocatorClient interface {
 	WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
-	WatchAgents(context.Context) (<-chan pubsub.Event[*Agent], func())
+	WatchAgents(context.Context) (<-chan pubsub.Event[*runnerMeta], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
 
 	listAllAgentPools(ctx context.Context) ([]*Pool, error)
-	listAgents(ctx context.Context) ([]*Agent, error)
+	listAgents(ctx context.Context) ([]*runnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
 	allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
@@ -88,9 +88,9 @@ func (a *allocator) Start(ctx context.Context) error {
 			}
 			switch event.Type {
 			case pubsub.DeletedEvent:
-				delete(a.agents, event.Payload.ID)
+				delete(a.runners, event.Payload.ID)
 			default:
-				a.agents[event.Payload.ID] = event.Payload
+				a.runners[event.Payload.ID] = event.Payload
 			}
 		case event, open := <-jobsSub:
 			if !open {
@@ -109,10 +109,10 @@ func (a *allocator) Start(ctx context.Context) error {
 	}
 }
 
-func (a *allocator) seed(pools []*Pool, agents []*Agent, jobs []*Job) {
-	a.agents = make(map[string]*Agent, len(agents))
+func (a *allocator) seed(pools []*Pool, agents []*runnerMeta, jobs []*Job) {
+	a.runners = make(map[string]*runnerMeta, len(agents))
 	for _, agent := range agents {
-		a.agents[agent.ID] = agent
+		a.runners[agent.ID] = agent
 	}
 	a.jobs = make(map[JobSpec]*Job, len(jobs))
 	for _, job := range jobs {
@@ -130,11 +130,11 @@ func (a *allocator) allocate(ctx context.Context) error {
 		case JobAllocated:
 			// check agent the job is allocated to: if the agent is no longer in
 			// a fit state then try to allocate job to another agent
-			agent, ok := a.agents[*job.AgentID]
+			agent, ok := a.runners[*job.RunnerID]
 			if !ok {
-				return fmt.Errorf("agent %s not found in cache", *job.AgentID)
+				return fmt.Errorf("agent %s not found in cache", *job.RunnerID)
 			}
-			if agent.Status == AgentIdle || agent.Status == AgentBusy {
+			if agent.Status == RunnerIdle || agent.Status == RunnerBusy {
 				// agent still healthy, wait for agent to start job
 				continue
 			}
@@ -144,16 +144,16 @@ func (a *allocator) allocate(ctx context.Context) error {
 			// job has completed: remove and adjust number of current jobs
 			// agents has
 			delete(a.jobs, job.Spec)
-			a.agents[*job.AgentID].CurrentJobs--
+			a.runners[*job.RunnerID].CurrentJobs--
 			continue
 		default:
 			// job running; ignore
 			continue
 		}
 		// allocate job to available agent
-		var available []*Agent
-		for _, agent := range a.agents {
-			if agent.Status != AgentIdle && agent.Status != AgentBusy {
+		var available []*runnerMeta
+		for _, agent := range a.runners {
+			if agent.Status != RunnerIdle && agent.Status != RunnerBusy {
 				// skip agents that are not ready for jobs
 				continue
 			}
@@ -181,7 +181,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			continue
 		}
 		// select agent that has most recently sent a ping
-		slices.SortFunc(available, func(a, b *Agent) int {
+		slices.SortFunc(available, func(a, b *runnerMeta) int {
 			if a.LastPingAt.After(b.LastPingAt) {
 				// a with more recent ping comes first in list
 				return -1
@@ -195,12 +195,12 @@ func (a *allocator) allocate(ctx context.Context) error {
 			err        error
 		)
 		if reallocate {
-			from := *job.AgentID
+			from := *job.RunnerID
 			updatedJob, err = a.client.reallocateJob(ctx, job.Spec, agent.ID)
 			if err != nil {
 				return err
 			}
-			a.agents[from].CurrentJobs--
+			a.runners[from].CurrentJobs--
 		} else {
 			updatedJob, err = a.client.allocateJob(ctx, job.Spec, agent.ID)
 			if err != nil {
@@ -208,7 +208,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			}
 		}
 		a.jobs[job.Spec] = updatedJob
-		a.agents[agent.ID].CurrentJobs++
+		a.runners[agent.ID].CurrentJobs++
 	}
 	return nil
 }
