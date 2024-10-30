@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +15,6 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -43,28 +41,18 @@ type (
 		registered  chan *RunnerMeta
 	}
 
-	// downloader downloads terraform versions
-	downloader interface {
-		Download(ctx context.Context, version string, w io.Writer) (string, error)
-	}
-
-	Options struct {
+	Config struct {
 		Name            string // descriptive name given to runner
 		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
-
-		logger   logr.Logger
-		client   client
-		spawner  operationSpawner
-		isRemote bool
 	}
 )
 
-func NewOptionsFromFlags(flags *pflag.FlagSet) *Options {
-	opts := Options{}
+func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
+	opts := Config{}
 	flags.IntVar(&opts.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
@@ -74,44 +62,50 @@ func NewOptionsFromFlags(flags *pflag.FlagSet) *Options {
 }
 
 // newRunner constructs a runner.
-func newRunner(opts Options) (*Runner, error) {
-	agentLogger := opts.logger
-	if !opts.isRemote {
+func newRunner(
+	logger logr.Logger,
+	client client,
+	spawner operationSpawner,
+	isRemote bool,
+	cfg Config,
+) (*Runner, error) {
+	agentLogger := logger
+	if !isRemote {
 		// disable logging for server runners otherwise the server logs are
 		// likely to contain duplicate logs from both the runner daemon and the
 		// runner service, but still make logger available to server runner when
 		// it does need to log something.
 		agentLogger = logr.Discard()
 	}
-	if opts.MaxJobs == 0 {
-		opts.MaxJobs = DefaultMaxJobs
+	if cfg.MaxJobs == 0 {
+		cfg.MaxJobs = DefaultMaxJobs
 	}
-	if opts.Debug {
-		opts.logger.V(0).Info("enabled debug mode")
+	if cfg.Debug {
+		logger.V(0).Info("enabled debug mode")
 	}
-	if opts.Sandbox {
+	if cfg.Sandbox {
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
 		}
-		opts.logger.V(0).Info("enabled sandbox mode")
+		logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &Runner{
 		RunnerMeta: &RunnerMeta{
-			Name:     opts.Name,
-			MaxJobs:  opts.MaxJobs,
-			isRemote: opts.isRemote,
+			Name:     cfg.Name,
+			MaxJobs:  cfg.MaxJobs,
+			isRemote: isRemote,
 		},
-		Client:      opts.client,
+		Client:      client,
 		registered:  make(chan *RunnerMeta),
 		agentLogger: agentLogger,
-		logger:      opts.logger,
-		spawner:     opts.spawner,
+		logger:      logger,
+		spawner:     spawner,
 	}
-	if opts.PluginCache {
+	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		opts.logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
+		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 	return d, nil
 }
@@ -261,24 +255,4 @@ func (r *Runner) Start(ctx context.Context) error {
 // successfully registered.
 func (r *Runner) Registered() <-chan *RunnerMeta {
 	return r.registered
-}
-
-func (r *Runner) String() string      { return r.ID }
-func (r *Runner) IsSiteAdmin() bool   { return true }
-func (r *Runner) IsOwner(string) bool { return true }
-
-func (r *Runner) Organizations() []string {
-	// a runner is not a member of any organizations (although its agent pool
-	// is, if it has one).
-	return nil
-}
-
-func (*Runner) CanAccessSite(action rbac.Action) bool {
-	// runner cannot carry out site-level actions
-	return false
-}
-
-func (*Runner) CanAccessTeam(rbac.Action, string) bool {
-	// agent cannot carry out team-level actions
-	return false
 }

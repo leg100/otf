@@ -8,9 +8,9 @@ import (
 	"github.com/leg100/otf/internal/releases"
 )
 
-// ServerOptions are options for constructing a server runner.
-type ServerOptions struct {
-	*Options
+// ServerRunnerOptions are options for constructing a server runner.
+type ServerRunnerOptions struct {
+	*Config
 
 	Logger     logr.Logger
 	Runners    *Service
@@ -29,22 +29,26 @@ type ServerRunner struct {
 	*Runner
 }
 
-// NewServer constructs a server runner.
-func NewServer(opts ServerOptions) (*ServerRunner, error) {
-	opts.spawner = &localOperationSpawner{
-		logger:     opts.Logger,
-		runs:       opts.Runs,
-		workspaces: opts.Workspaces,
-		variables:  opts.Variables,
-		state:      opts.State,
-		configs:    opts.Configs,
-		logs:       opts.Logs,
-		server:     opts.Server,
-		jobs:       opts.Jobs,
-		downloader: releases.NewDownloader(opts.TerraformBinDir),
-	}
-	opts.client = opts.Runners
-	daemon, err := newRunner(*opts.Options)
+// NewServerRunner constructs a server runner.
+func NewServerRunner(opts ServerRunnerOptions) (*ServerRunner, error) {
+	daemon, err := newRunner(
+		opts.Logger,
+		opts.Runners,
+		&localOperationSpawner{
+			logger:     opts.Logger,
+			runs:       opts.Runs,
+			workspaces: opts.Workspaces,
+			variables:  opts.Variables,
+			state:      opts.State,
+			configs:    opts.Configs,
+			logs:       opts.Logs,
+			server:     opts.Server,
+			jobs:       opts.Jobs,
+			downloader: releases.NewDownloader(opts.TerraformBinDir),
+		},
+		false,
+		*opts.Config,
+	)
 	if err != nil {
 		return nil, err
 	}

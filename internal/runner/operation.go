@@ -103,6 +103,11 @@ type (
 		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 	}
 
+	// downloader downloads terraform versions
+	downloader interface {
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
+	}
+
 	runClient interface {
 		Get(ctx context.Context, runID string) (*run.Run, error)
 		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)

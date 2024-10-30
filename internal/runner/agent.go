@@ -14,16 +14,15 @@ import (
 )
 
 type AgentOptions struct {
-	*Options
+	*Config
 
-	Name  string
 	URL   string
 	Token string
 }
 
 func NewAgentOptionsFromFlags(flags *pflag.FlagSet) *AgentOptions {
 	opts := AgentOptions{
-		Options: NewOptionsFromFlags(flags),
+		Config: NewConfigFromFlags(flags),
 	}
 	flags.StringVar(&opts.Name, "name", "", "Give agent a descriptive name. Optional.")
 	flags.StringVar(&opts.URL, "url", otfapi.DefaultURL, "URL of OTF server")
@@ -40,18 +39,17 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts.client = &remoteClient{Client: apiClient}
-	return newRunner(Options{
-		logger:   logger,
-		client:   &remoteClient{Client: apiClient},
-		Name:     opts.Name,
-		isRemote: true,
-		spawner: &remoteOperationSpawner{
+	return newRunner(
+		logger,
+		&remoteClient{Client: apiClient},
+		&remoteOperationSpawner{
 			logger:     logger,
 			url:        opts.URL,
 			downloader: releases.NewDownloader(opts.TerraformBinDir),
 		},
-	})
+		true,
+		*opts.Config,
+	)
 }
 
 type remoteOperationSpawner struct {

@@ -48,9 +48,9 @@ func TestIntegration_Agents(t *testing.T) {
 	require.NoError(t, err)
 
 	// start agents up
-	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, pool1.ID, "", runner.Options{})
+	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, pool1.ID, "", runner.Config{})
 	defer shutdown1()
-	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, pool2.ID, "", runner.Options{})
+	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, pool2.ID, "", runner.Config{})
 	defer shutdown2()
 
 	// watch job events

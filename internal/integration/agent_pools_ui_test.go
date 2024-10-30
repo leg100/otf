@@ -161,7 +161,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, token)
 
 		// start agent up, configured to use token.
-		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, runner.Options{})
+		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, runner.Config{})
 
 		// go back to agent pool
 		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)

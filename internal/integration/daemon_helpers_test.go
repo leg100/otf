@@ -401,7 +401,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg runner.Options) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -431,9 +431,9 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 	}
 
 	agentDaemon, err := runner.NewAgent(logger, runner.AgentOptions{
-		Options: &cfg,
-		Token:   token,
-		URL:     s.System.URL("/"),
+		Config: &cfg,
+		Token:  token,
+		URL:    s.System.URL("/"),
 	})
 	require.NoError(t, err)
 

@@ -295,9 +295,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:         listener,
 	})
 
-	runner, err := runner.NewServer(runner.ServerOptions{
+	runner, err := runner.NewServerRunner(runner.ServerRunnerOptions{
 		Logger:     logger,
-		Options:    cfg.RunnerOptions,
+		Config:     cfg.RunnerConfig,
 		Runners:    runnerService,
 		Workspaces: workspaceService,
 		Variables:  variableService,

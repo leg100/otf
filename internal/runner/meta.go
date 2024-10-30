@@ -83,29 +83,6 @@ func register(opts registerOptions) (*RunnerMeta, error) {
 	return m, nil
 }
 
-func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
-	subject, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	meta, ok := subject.(*RunnerMeta)
-	if !ok {
-		return nil, internal.ErrAccessNotPermitted
-	}
-	return meta, nil
-}
-
-func authorizeRunner(ctx context.Context, id string) error {
-	runner, err := runnerFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	if id != "" && id != runner.ID {
-		return internal.ErrAccessNotPermitted
-	}
-	return nil
-}
-
 func (m *RunnerMeta) setStatus(status RunnerStatus, ping bool) error {
 	// the agent fsm is as follows:
 	//
@@ -178,4 +155,27 @@ func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.Work
 		return *m.AgentPoolOrganizationName == policy.Organization
 	}
 	return true
+}
+
+func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
+	subject, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	meta, ok := subject.(*RunnerMeta)
+	if !ok {
+		return nil, internal.ErrAccessNotPermitted
+	}
+	return meta, nil
+}
+
+func authorizeRunner(ctx context.Context, id string) error {
+	runner, err := runnerFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	if id != "" && id != runner.ID {
+		return internal.ErrAccessNotPermitted
+	}
+	return nil
 }

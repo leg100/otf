@@ -17,7 +17,7 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 // Config configures the otfd daemon. Descriptions of each field can be found in
 // the flag definitions in ./cmd/otfd
 type Config struct {
-	RunnerOptions                *runner.Options
+	RunnerConfig                 *runner.Config
 	CacheConfig                  *inmem.CacheConfig
 	GithubHostname               string
 	GithubClientID               string
@@ -51,8 +51,8 @@ type Config struct {
 }
 
 func ApplyDefaults(cfg *Config) {
-	if cfg.RunnerOptions == nil {
-		cfg.RunnerOptions = &runner.Options{
+	if cfg.RunnerConfig == nil {
+		cfg.RunnerConfig = &runner.Config{
 			MaxJobs: runner.DefaultMaxJobs,
 		}
 	}
