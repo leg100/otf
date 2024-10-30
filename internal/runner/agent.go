@@ -22,17 +22,13 @@ type AgentOptions struct {
 }
 
 func NewAgentOptionsFromFlags(flags *pflag.FlagSet) *AgentOptions {
-	opts := &AgentOptions{
+	opts := AgentOptions{
 		Options: NewOptionsFromFlags(flags),
 	}
 	flags.StringVar(&opts.Name, "name", "", "Give agent a descriptive name. Optional.")
 	flags.StringVar(&opts.URL, "url", otfapi.DefaultURL, "URL of OTF server")
 	flags.StringVar(&opts.Token, "token", "", "Agent token for authentication")
-	return opts
-}
-
-type Agent struct {
-	*Runner
+	return &opts
 }
 
 func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
@@ -44,9 +40,11 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 	if err != nil {
 		return nil, err
 	}
+	opts.Client = &remoteClient{Client: apiClient}
 	return newRunner(Options{
 		Logger:   logger,
 		Client:   &remoteClient{Client: apiClient},
+		Name:     opts.Name,
 		isRemote: true,
 		spawner: &remoteOperationSpawner{
 			logger:     logger,

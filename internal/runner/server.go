@@ -8,8 +8,9 @@ import (
 	"github.com/leg100/otf/internal/releases"
 )
 
-type LocalOptions struct {
-	*Options
+// ServerOptions are options for constructing a server runner.
+type ServerOptions struct {
+	Options
 
 	Logger     logr.Logger
 	Runs       runClient
@@ -22,11 +23,13 @@ type LocalOptions struct {
 	Jobs       operationJobsClient
 }
 
-type Local struct {
+// ServerRunner is a runner built into the otfd server prcess.
+type ServerRunner struct {
 	*Runner
 }
 
-func NewLocal(opts LocalOptions) (*Local, error) {
+// NewServer constructs a server runner.
+func NewServer(opts ServerOptions) (*ServerRunner, error) {
 	opts.spawner = &localOperationSpawner{
 		logger:     opts.Logger,
 		runs:       opts.Runs,
@@ -39,16 +42,16 @@ func NewLocal(opts LocalOptions) (*Local, error) {
 		jobs:       opts.Jobs,
 		downloader: releases.NewDownloader(opts.TerraformBinDir),
 	}
-	daemon, err := newRunner(*opts.Options)
+	daemon, err := newRunner(opts.Options)
 	if err != nil {
 		return nil, err
 	}
-	return &Local{Runner: daemon}, nil
+	return &ServerRunner{Runner: daemon}, nil
 }
 
-// Start the runner daemon.
-func (d *Local) Start(ctx context.Context) error {
-	// Authenticate as local daemon
+// Start the server runner daemon.
+func (d *ServerRunner) Start(ctx context.Context) error {
+	// Authenticate as runner with server endpoints.
 	ctx = internal.AddSubjectToContext(ctx, d.RunnerMeta)
 
 	return d.Runner.Start(ctx)

@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const DefaultConcurrency = 5
+const DefaultMaxJobs = 5
 
 var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
@@ -32,17 +32,16 @@ type (
 
 		Logger          logr.Logger
 		Client          client
-		Concurrency     int    // number of jobs the runner can execute at any one time
+		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
 
-		logger       logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
-		remoteLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
-		spawner      operationSpawner
-		isRemote     bool
-		registered   chan *RunnerMeta
+		logger      logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
+		agentLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
+		spawner     operationSpawner
+		registered  chan *RunnerMeta
 	}
 
 	// downloader downloads terraform versions
@@ -54,7 +53,8 @@ type (
 		Logger logr.Logger
 		Client client
 
-		Concurrency     int    // number of jobs the runner can execute at any one time
+		Name            string // descriptive name given to runner
+		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
@@ -67,7 +67,7 @@ type (
 
 func NewOptionsFromFlags(flags *pflag.FlagSet) *Options {
 	opts := Options{}
-	flags.IntVar(&opts.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
+	flags.IntVar(&opts.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
@@ -77,16 +77,16 @@ func NewOptionsFromFlags(flags *pflag.FlagSet) *Options {
 
 // newRunner constructs a runner.
 func newRunner(opts Options) (*Runner, error) {
-	remoteLogger := opts.Logger
+	agentLogger := opts.Logger
 	if !opts.isRemote {
 		// disable logging for server runners otherwise the server logs are
 		// likely to contain duplicate logs from both the runner daemon and the
 		// runner service, but still make logger available to server runner when
 		// it does need to log something.
-		remoteLogger = logr.Discard()
+		agentLogger = logr.Discard()
 	}
-	if opts.Concurrency == 0 {
-		opts.Concurrency = DefaultConcurrency
+	if opts.MaxJobs == 0 {
+		opts.MaxJobs = DefaultMaxJobs
 	}
 	if opts.Debug {
 		opts.Logger.V(0).Info("enabled debug mode")
@@ -98,12 +98,16 @@ func newRunner(opts Options) (*Runner, error) {
 		opts.Logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &Runner{
-		Client:       opts.Client,
-		registered:   make(chan *RunnerMeta),
-		remoteLogger: remoteLogger,
-		logger:       opts.Logger,
-		isRemote:     opts.isRemote,
-		spawner:      opts.spawner,
+		RunnerMeta: &RunnerMeta{
+			Name:     opts.Name,
+			MaxJobs:  opts.MaxJobs,
+			isRemote: opts.isRemote,
+		},
+		Client:      opts.Client,
+		registered:  make(chan *RunnerMeta),
+		agentLogger: agentLogger,
+		logger:      opts.Logger,
+		spawner:     opts.spawner,
 	}
 	if opts.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
@@ -116,7 +120,7 @@ func newRunner(opts Options) (*Runner, error) {
 
 // Start the runner daemon.
 func (r *Runner) Start(ctx context.Context) error {
-	r.remoteLogger.Info("starting runner", "version", internal.Version)
+	r.agentLogger.Info("starting runner", "version", internal.Version)
 
 	// initialize terminator
 	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
@@ -125,12 +129,12 @@ func (r *Runner) Start(ctx context.Context) error {
 	runner, err := r.Client.register(ctx, registerOptions{
 		Name:        r.Name,
 		Version:     internal.Version,
-		Concurrency: r.Concurrency,
+		Concurrency: r.MaxJobs,
 	})
 	if err != nil {
 		return fmt.Errorf("registering runner: %w", err)
 	}
-	r.remoteLogger.Info("registered successfully", "runner", runner)
+	r.agentLogger.Info("registered successfully", "runner", runner)
 	// send registered runner to channel, letting caller know runner has
 	// registered.
 	go func() {
@@ -175,10 +179,10 @@ func (r *Runner) Start(ctx context.Context) error {
 						// sending an update.
 						return errors.New("runner status update failed due to conflict; runner needs to re-register")
 					} else {
-						r.remoteLogger.Error(err, "sending runner status update", "status", status)
+						r.agentLogger.Error(err, "sending runner status update", "status", status)
 					}
 				} else {
-					r.remoteLogger.V(9).Info("sent runner status update", "status", status)
+					r.agentLogger.V(9).Info("sent runner status update", "status", status)
 				}
 			case <-ctx.Done():
 				// context canceled
@@ -203,7 +207,7 @@ func (r *Runner) Start(ctx context.Context) error {
 		// handle cancelation signals for jobs
 		for {
 			processJobs := func() (err error) {
-				r.remoteLogger.Info("waiting for next job")
+				r.agentLogger.Info("waiting for next job")
 				// block on waiting for jobs
 				jobs, err := r.Client.getJobs(ctx, runner.ID)
 				if err != nil {
@@ -211,14 +215,14 @@ func (r *Runner) Start(ctx context.Context) error {
 				}
 				for _, j := range jobs {
 					if j.Status == JobAllocated {
-						r.remoteLogger.Info("received job", "job", j)
+						r.agentLogger.Info("received job", "job", j)
 						// start job and receive job token in return
 						token, err := r.Client.startJob(ctx, j.Spec)
 						if err != nil {
 							if ctx.Err() != nil {
 								return nil
 							}
-							r.remoteLogger.Error(err, "starting job")
+							r.agentLogger.Error(err, "starting job")
 							continue
 						}
 						op, err := r.spawner.newOperation(j, token)
@@ -236,7 +240,7 @@ func (r *Runner) Start(ctx context.Context) error {
 							return nil
 						})
 					} else if j.Signaled != nil {
-						r.remoteLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
+						r.agentLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
 						terminator.cancel(j.Spec, *j.Signaled, true)
 					}
 				}
@@ -244,7 +248,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 			_ = backoff.RetryNotify(processJobs, policy, func(err error, next time.Duration) {
-				r.remoteLogger.Error(err, "waiting for next job", "backoff", next)
+				r.agentLogger.Error(err, "waiting for next job", "backoff", next)
 			})
 			// only stop retrying if context is canceled
 			if ctx.Err() != nil {

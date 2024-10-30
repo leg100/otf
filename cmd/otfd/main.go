@@ -114,7 +114,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().DurationVar(&cfg.ApplyingTimeout, "applying-timeout", 24*time.Hour, "Timeout for applies.")
 
 	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
-	cfg.RunnerConfig = runner.NewOptionsFromFlags(cmd.Flags())
+	cfg.RunnerOptions = runner.NewOptionsFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

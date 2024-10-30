@@ -23,7 +23,7 @@ func TestSandbox(t *testing.T) {
 	require.NoError(t, err)
 
 	daemon, org, ctx := setup(t, &config{Config: daemon.Config{
-		RunnerConfig: &runner.Options{
+		RunnerOptions: &runner.Options{
 			Sandbox: true,
 			Debug:   true,
 		},
