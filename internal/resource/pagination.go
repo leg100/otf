@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"errors"
 	"math"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -71,12 +72,16 @@ func NewPage[T any](resources []T, opts PageOptions, count *int64) *Page[T] {
 	}
 }
 
+var ErrInfinitePaginationDetected = errors.New("infinite pagination detected")
+
 // ListAll is a helper for retrieving all pages. The provided fn should perform
 // an operation that retrieves a page at a time.
 func ListAll[T any](fn func(PageOptions) (*Page[T], error)) ([]T, error) {
 	var (
 		opts PageOptions
 		all  []T
+		// keep track of the last NextPage to prevent an infinite loop.
+		lastNextPage int
 	)
 	for {
 		page, err := fn(opts)
@@ -91,7 +96,11 @@ func ListAll[T any](fn func(PageOptions) (*Page[T], error)) ([]T, error) {
 		if page.NextPage == nil {
 			break
 		}
+		if *page.NextPage == lastNextPage {
+			return nil, ErrInfinitePaginationDetected
+		}
 		opts.PageNumber = *page.NextPage
+		lastNextPage = *page.NextPage
 	}
 	return all, nil
 }
