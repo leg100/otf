@@ -33,9 +33,6 @@ func NewAgentOptionsFromFlags(flags *pflag.FlagSet) *AgentOptions {
 
 type Agent struct {
 	*Runner
-
-	client  *otfapi.Client
-	agentID *string
 }
 
 func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {

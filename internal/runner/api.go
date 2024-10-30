@@ -19,7 +19,7 @@ type (
 	}
 
 	updateAgentStatusParams struct {
-		Status AgentStatus `json:"status"`
+		Status RunnerStatus `json:"status"`
 	}
 
 	finishJobParams struct {
@@ -43,7 +43,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
-	var opts registerAgentOptions
+	var opts registerOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -57,7 +57,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	opts.IPAddress = &ip
 
-	agent, err := a.Service.registerAgent(r.Context(), opts)
+	agent, err := a.Service.register(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -67,14 +67,14 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
-	// retrieve subject, which contains ID of calling agent
-	subject, err := poolAgentFromContext(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	// retrieve runner, which contains ID of calling agent
+	runner, err := runnerFromContext(r.Context())
+	if err != nil || runner.ID == "" {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	jobs, err := a.Service.getAgentJobs(r.Context(), subject.agent.ID)
+	jobs, err := a.Service.getJobs(r.Context(), runner.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,10 +85,10 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 
 // updateStatus receives a status update from an agent
 func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
-	// retrieve subject, which contains ID of calling agent
-	subject, err := poolAgentFromContext(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	// retrieve runner, which contains ID of calling agent
+	runner, err := runnerFromContext(r.Context())
+	if err != nil || runner.ID == "" {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.Service.updateAgentStatus(r.Context(), subject.agent.ID, params.Status)
+	err = a.Service.updateStatus(r.Context(), runner.ID, params.Status)
 	if err != nil {
 		if errors.Is(err, ErrInvalidStateTransition) {
 			tfeapi.Error(w, err)

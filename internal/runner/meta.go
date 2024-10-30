@@ -83,16 +83,27 @@ func register(opts registerOptions) (*runnerMeta, error) {
 	return m, nil
 }
 
-func metadataFromContext(ctx context.Context) (*runnerMeta, error) {
+func runnerFromContext(ctx context.Context) (*runnerMeta, error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	meta, ok := subject.(*runnerMeta)
 	if !ok {
-		return nil, ErrUnauthorizedRegistration
+		return nil, internal.ErrAccessNotPermitted
 	}
 	return meta, nil
+}
+
+func authorizeRunner(ctx context.Context, id string) error {
+	runner, err := runnerFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	if id != "" && id != runner.ID {
+		return internal.ErrAccessNotPermitted
+	}
+	return nil
 }
 
 func (m *runnerMeta) setStatus(status RunnerStatus, ping bool) error {
@@ -133,23 +144,38 @@ func (m *runnerMeta) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (a *runnerMeta) CanAccessOrganization(action rbac.Action, name string) bool {
+func (m *runnerMeta) String() string { return m.ID }
+
+func (m *runnerMeta) IsSiteAdmin() bool   { return true }
+func (m *runnerMeta) IsOwner(string) bool { return true }
+
+func (m *runnerMeta) Organizations() []string { return nil }
+
+func (*runnerMeta) CanAccessSite(action rbac.Action) bool {
+	return false
+}
+
+func (*runnerMeta) CanAccessTeam(rbac.Action, string) bool {
+	return false
+}
+
+func (m *runnerMeta) CanAccessOrganization(action rbac.Action, name string) bool {
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if a.isRemote {
-		return *a.AgentPoolOrganizationName == name
+	if m.isRemote {
+		return *m.AgentPoolOrganizationName == name
 	}
 	return true
 }
 
-func (a *runnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (m *runnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
 	// only a server-based agent can authenticate as an Agent, and if that is
 	// so, then it can carry out all workspace-based actions.
 	//
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if a.isRemote {
-		return *a.AgentPoolOrganizationName == policy.Organization
+	if m.isRemote {
+		return *m.AgentPoolOrganizationName == policy.Organization
 	}
 	return true
 }

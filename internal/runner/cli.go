@@ -28,7 +28,7 @@ func NewAgentsCommand(apiClient *otfapi.Client) *cobra.Command {
 			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
 				return err
 			}
-			cli.agentCLIService = &client{Client: apiClient}
+			cli.agentCLIService = &remoteClient{Client: apiClient}
 			return nil
 		},
 	}

@@ -1,3 +1,6 @@
+// Package runner contains the runner, the component responsible for carrying
+// out runs by executing terraform processes, either as part of the server
+// or remotely via agents.
 package runner
 
 import (
@@ -39,7 +42,7 @@ type (
 		remoteLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
 		spawner      operationSpawner
 		isRemote     bool
-		registered   chan *Runner
+		registered   chan *runnerMeta
 	}
 
 	// downloader downloads terraform versions
@@ -98,7 +101,7 @@ func newRunner(opts Options) (*Runner, error) {
 	}
 	d := &Runner{
 		Client:       opts.Client,
-		registered:   make(chan *Runner),
+		registered:   make(chan *runnerMeta),
 		remoteLogger: remoteLogger,
 		logger:       opts.Logger,
 		isRemote:     opts.isRemote,
@@ -256,15 +259,15 @@ func (r *Runner) Start(ctx context.Context) error {
 
 // Registered returns the daemon's corresponding runner on a channel once it has
 // successfully registered.
-func (r *Runner) Registered() <-chan *Runner {
+func (r *Runner) Registered() <-chan *runnerMeta {
 	return r.registered
 }
 
-func (a *Runner) String() string      { return a.ID }
-func (a *Runner) IsSiteAdmin() bool   { return true }
-func (a *Runner) IsOwner(string) bool { return true }
+func (r *Runner) String() string      { return r.ID }
+func (r *Runner) IsSiteAdmin() bool   { return true }
+func (r *Runner) IsOwner(string) bool { return true }
 
-func (a *Runner) Organizations() []string {
+func (r *Runner) Organizations() []string {
 	// a runner is not a member of any organizations (although its agent pool
 	// is, if it has one).
 	return nil

@@ -37,11 +37,11 @@ type webClient interface {
 	listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
 	deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
 
-	registerAgent(ctx context.Context, opts registerAgentOptions) (*Agent, error)
-	listAgents(ctx context.Context) ([]*Agent, error)
-	listAgentsByOrganization(ctx context.Context, organization string) ([]*Agent, error)
-	listAgentsByPool(ctx context.Context, poolID string) ([]*Agent, error)
-	listServerAgents(ctx context.Context) ([]*Agent, error)
+	register(ctx context.Context, opts registerOptions) (*runnerMeta, error)
+	listRunners(ctx context.Context) ([]*runnerMeta, error)
+	listRunnersByOrganization(ctx context.Context, organization string) ([]*runnerMeta, error)
+	listRunnersByPool(ctx context.Context, poolID string) ([]*runnerMeta, error)
+	listServerRunners(ctx context.Context) ([]*runnerMeta, error)
 
 	CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -99,19 +99,19 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverAgents, err := h.svc.listServerAgents(r.Context())
+	serverAgents, err := h.svc.listServerRunners(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	poolAgents, err := h.svc.listAgentsByOrganization(r.Context(), org)
+	poolAgents, err := h.svc.listRunnersByOrganization(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// order agents to show 'freshest' at the top
 	agents := append(serverAgents, poolAgents...)
-	slices.SortFunc(agents, func(a, b *Agent) int {
+	slices.SortFunc(agents, func(a, b *runnerMeta) int {
 		if a.LastPingAt.Before(b.LastPingAt) {
 			return 1
 		} else {
@@ -121,7 +121,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("agents_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Agents []*Agent
+		Agents []*runnerMeta
 	}{
 		OrganizationPage: organization.NewPage(r, "agents", org),
 		Agents:           agents,
@@ -276,7 +276,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agents, err := h.svc.listAgentsByPool(r.Context(), poolID)
+	agents, err := h.svc.listRunnersByPool(r.Context(), poolID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -290,7 +290,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		AssignedWorkspaces             []poolWorkspace
 		AvailableWorkspaces            []poolWorkspace
 		Tokens                         []*agentToken
-		Agents                         []*Agent
+		Agents                         []*runnerMeta
 	}{
 		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
 		Pool:                           pool,

@@ -30,11 +30,11 @@ type allocator struct {
 
 type allocatorClient interface {
 	WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
-	WatchAgents(context.Context) (<-chan pubsub.Event[*runnerMeta], func())
+	WatchRunners(context.Context) (<-chan pubsub.Event[*runnerMeta], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
 
 	listAllAgentPools(ctx context.Context) ([]*Pool, error)
-	listAgents(ctx context.Context) ([]*runnerMeta, error)
+	listRunners(ctx context.Context) ([]*runnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
 	allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
@@ -46,7 +46,7 @@ func (a *allocator) Start(ctx context.Context) error {
 	// Subscribe to pool, job and agent events and unsubscribe before returning.
 	poolsSub, poolsUnsub := a.client.WatchAgentPools(ctx)
 	defer poolsUnsub()
-	agentsSub, agentsUnsub := a.client.WatchAgents(ctx)
+	agentsSub, agentsUnsub := a.client.WatchRunners(ctx)
 	defer agentsUnsub()
 	jobsSub, jobsUnsub := a.client.WatchJobs(ctx)
 	defer jobsUnsub()
@@ -56,7 +56,7 @@ func (a *allocator) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	agents, err := a.client.listAgents(ctx)
+	agents, err := a.client.listRunners(ctx)
 	if err != nil {
 		return err
 	}

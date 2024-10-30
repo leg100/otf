@@ -52,7 +52,6 @@ type (
 		PluginCachePath string // toggle use of terraform's shared plugin cache
 
 		job           *Job
-		jobToken      []byte
 		run           *run.Run
 		canceled      bool
 		ctx           context.Context
@@ -62,7 +61,7 @@ type (
 		envs          []string
 		proc          *os.Process
 		downloader    downloader
-		isRemote      bool
+		isAgent       bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -201,7 +200,7 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.runners.finishJob(o.ctx, o.job.Spec, opts); err != nil {
+	if err := o.jobs.finishJob(o.ctx, o.job.Spec, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }

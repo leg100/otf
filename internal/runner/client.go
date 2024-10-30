@@ -13,7 +13,7 @@ import (
 const agentIDHeader = "otf-agent-id"
 
 type client interface {
-	register(ctx context.Context, opts registerOptions) (*Runner, error)
+	register(ctx context.Context, opts registerOptions) (*runnerMeta, error)
 	updateStatus(ctx context.Context, agentID string, status RunnerStatus) error
 
 	getJobs(ctx context.Context, agentID string) ([]*Job, error)
@@ -77,7 +77,7 @@ func (c *remoteClient) getJobs(ctx context.Context, agentID string) ([]*Job, err
 	return jobs, nil
 }
 
-func (c *remoteClient) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+func (c *remoteClient) updateStatus(ctx context.Context, agentID string, status RunnerStatus) error {
 	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,
 	})

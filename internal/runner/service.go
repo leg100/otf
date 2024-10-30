@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -32,13 +33,13 @@ type (
 
 		organization internal.Authorizer
 
-		tfeapi      *tfe
-		api         *api
-		web         *webHandlers
-		poolBroker  pubsub.SubscriptionService[*Pool]
-		agentBroker pubsub.SubscriptionService[*Agent]
-		jobBroker   pubsub.SubscriptionService[*Job]
-		phases      phaseClient
+		tfeapi       *tfe
+		api          *api
+		web          *webHandlers
+		poolBroker   pubsub.SubscriptionService[*Pool]
+		runnerBroker pubsub.SubscriptionService[*runnerMeta]
+		jobBroker    pubsub.SubscriptionService[*Job]
+		phases       phaseClient
 
 		db *db
 		*tokenFactory
@@ -98,15 +99,15 @@ func NewService(opts ServiceOptions) *Service {
 			return svc.db.getPool(ctx, id)
 		},
 	)
-	svc.agentBroker = pubsub.NewBroker(
+	svc.runnerBroker = pubsub.NewBroker(
 		opts.Logger,
 		opts.Listener,
-		"agents",
-		func(ctx context.Context, id string, action sql.Action) (*Agent, error) {
+		"runners",
+		func(ctx context.Context, id string, action sql.Action) (*runnerMeta, error) {
 			if action == sql.DeleteAction {
-				return &Agent{ID: id}, nil
+				return &runnerMeta{ID: id}, nil
 			}
-			return svc.db.getAgent(ctx, id)
+			return svc.db.get(ctx, id)
 		},
 	)
 	svc.jobBroker = pubsub.NewBroker(
@@ -131,10 +132,6 @@ func NewService(opts ServiceOptions) *Service {
 		if err != nil {
 			return nil, err
 		}
-		unregistered := &unregisteredPoolAgent{
-			pool:         pool,
-			agentTokenID: tokenID,
-		}
 		// if the agent has registered then it should be sending its ID in an
 		// http header
 		headers, err := otfhttp.HeadersFromContext(ctx)
@@ -142,16 +139,16 @@ func NewService(opts ServiceOptions) *Service {
 			return nil, err
 		}
 		if agentID := headers.Get(agentIDHeader); agentID != "" {
-			agent, err := svc.getRunner(ctx, agentID)
+			runner, err := svc.getRunner(ctx, agentID)
 			if err != nil {
 				return nil, fmt.Errorf("retrieving agent corresponding to ID found in http header: %w", err)
 			}
-			return &poolAgent{
-				agent:                 agent,
-				unregisteredPoolAgent: unregistered,
-			}, nil
+			return runner, nil
 		}
-		return unregistered, nil
+		// Agent hasn't registered yet
+		//
+		// TODO: create constructor for constructing unregistered agent.
+		return &runnerMeta{AgentPoolID: &pool.ID}, nil
 	})
 	// create jobs when a plan or apply is enqueued
 	opts.RunService.AfterEnqueuePlan(svc.createJob)
@@ -177,6 +174,7 @@ func NewService(opts ServiceOptions) *Service {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
+	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
@@ -194,8 +192,8 @@ func (s *Service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Poo
 	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *Service) WatchAgents(ctx context.Context) (<-chan pubsub.Event[*Agent], func()) {
-	return s.agentBroker.Subscribe(ctx)
+func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*runnerMeta], func()) {
+	return s.runnerBroker.Subscribe(ctx)
 }
 
 func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
@@ -204,7 +202,7 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], fun
 
 func (s *Service) register(ctx context.Context, opts registerOptions) (*runnerMeta, error) {
 	meta, err := func() (*runnerMeta, error) {
-		if _, err := metadataFromContext(ctx); err != nil {
+		if err := authorizeRunner(ctx, ""); err != nil {
 			return nil, ErrUnauthorizedRegistration
 		}
 		meta, err := register(opts)
@@ -240,7 +238,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	switch s := subject.(type) {
 	case *manager:
 		// ok
-	case *serverAgent, *poolAgent:
+	case *runnerMeta:
 		if s.String() != runnerID {
 			return internal.ErrAccessNotPermitted
 		}
@@ -269,7 +267,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	return nil
 }
 
-func (s *Service) list(ctx context.Context) ([]*runnerMeta, error) {
+func (s *Service) listRunners(ctx context.Context) ([]*runnerMeta, error) {
 	return s.db.list(ctx)
 }
 
@@ -336,36 +334,30 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 
 // getJobs returns jobs that either:
 // (a) have JobAllocated status
-// (b) have JobRunning status and a non-nil signal
+// (b) have JobRunning status and a non-nil cancellation signal
 //
-// getAgentJobs is intended to be called by an agent in order to retrieve jobs to
+// getJobs is intended to be called by an agent in order to retrieve jobs to
 // execute and jobs to cancel.
 func (s *Service) getJobs(ctx context.Context, agentID string) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) an agent with an ID matching agentID
-	subject, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	switch s := subject.(type) {
-	case *serverAgent, *poolAgent:
-		if s.String() != agentID {
-			return nil, internal.ErrAccessNotPermitted
-		}
-	default:
+	if err := authorizeRunner(ctx, agentID); err != nil {
 		return nil, internal.ErrAccessNotPermitted
 	}
 
 	sub, unsub := s.WatchJobs(ctx)
 	defer unsub()
+
 	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, agentID)
 	if err != nil {
 		return nil, err
 	}
+
 	if len(jobs) > 0 {
 		// return existing jobs
 		return jobs, nil
 	}
+
 	// wait for a job matching criteria to arrive:
 	for event := range sub {
 		job := event.Payload
@@ -425,7 +417,7 @@ func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, agentID strin
 // carry out the job. Only a runner that has been allocated the job can
 // call this method.
 func (s *Service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
-	subject, err := registeredAgentFromContext(ctx)
+	subject, err := runnerFromContext(ctx)
 	if err != nil {
 		return nil, internal.ErrAccessNotPermitted
 	}

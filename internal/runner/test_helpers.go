@@ -1,4 +1,4 @@
-package agent
+package runner
 
 import "context"
 
@@ -7,7 +7,7 @@ type fakeService struct {
 	createAgentPoolOptions CreateAgentPoolOptions
 	at                     *agentToken
 	token                  []byte
-	status                 AgentStatus
+	status                 RunnerStatus
 	deletedAgentID         string
 	job                    *Job
 
@@ -39,7 +39,7 @@ func (f *fakeService) DeleteAgentToken(context.Context, string) (*agentToken, er
 	return f.at, nil
 }
 
-func (f *fakeService) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) error {
+func (f *fakeService) updateAgentStatus(ctx context.Context, agentID string, status RunnerStatus) error {
 	f.status = status
 	return nil
 }
