@@ -9,7 +9,7 @@ import (
 )
 
 type LocalOptions struct {
-	*DaemonOptions
+	*Options
 
 	Logger     logr.Logger
 	Runs       runClient
@@ -27,7 +27,7 @@ type Local struct {
 }
 
 func NewLocal(opts LocalOptions) (*Local, error) {
-	opts.DaemonOptions.spawner = &localOperationSpawner{
+	opts.spawner = &localOperationSpawner{
 		logger:     opts.Logger,
 		runs:       opts.Runs,
 		workspaces: opts.Workspaces,
@@ -39,7 +39,7 @@ func NewLocal(opts LocalOptions) (*Local, error) {
 		jobs:       opts.Jobs,
 		downloader: releases.NewDownloader(opts.TerraformBinDir),
 	}
-	daemon, err := newRunner(*opts.DaemonOptions)
+	daemon, err := newRunner(*opts.Options)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func NewLocal(opts LocalOptions) (*Local, error) {
 // Start the runner daemon.
 func (d *Local) Start(ctx context.Context) error {
 	// Authenticate as local daemon
-	ctx = internal.AddSubjectToContext(ctx, d.runnerMeta)
+	ctx = internal.AddSubjectToContext(ctx, d.RunnerMeta)
 
 	return d.Runner.Start(ctx)
 }

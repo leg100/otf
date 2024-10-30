@@ -77,7 +77,7 @@ type (
 
 	runnerDaemon interface {
 		Start(context.Context) error
-		Registered() <-chan *runner.Runner
+		Registered() <-chan *runner.RunnerMeta
 	}
 )
 
@@ -296,16 +296,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	runner, err := runner.NewLocal(runner.LocalOptions{
-		Logger:        logger,
-		DaemonOptions: cfg.RunnerConfig,
-		Workspaces:    workspaceService,
-		Variables:     variableService,
-		State:         stateService,
-		Configs:       configService,
-		Runs:          runService,
-		Logs:          logsService,
-		Jobs:          runnerService,
-		Server:        hostnameService,
+		Logger:     logger,
+		Options:    cfg.RunnerConfig,
+		Workspaces: workspaceService,
+		Variables:  variableService,
+		State:      stateService,
+		Configs:    configService,
+		Runs:       runService,
+		Logs:       logsService,
+		Jobs:       runnerService,
+		Server:     hostnameService,
 	})
 	if err != nil {
 		return nil, err
@@ -515,7 +515,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Logger:    d.Logger,
 			Exclusive: true,
 			DB:        d.DB,
-			LockID:    internal.Int64(agent.AllocatorLockID),
+			LockID:    internal.Int64(runner.AllocatorLockID),
 			System:    d.Runners.NewAllocator(d.Logger),
 		},
 		{
@@ -523,7 +523,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Logger:    d.Logger,
 			Exclusive: true,
 			DB:        d.DB,
-			LockID:    internal.Int64(agent.ManagerLockID),
+			LockID:    internal.Int64(runner.ManagerLockID),
 			System:    d.Runners.NewManager(),
 		},
 		{

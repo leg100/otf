@@ -8,10 +8,10 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -61,7 +61,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.AddCommand(workspace.NewCommand(a.client))
 	cmd.AddCommand(run.NewCommand(a.client))
 	cmd.AddCommand(state.NewCommand(a.client))
-	cmd.AddCommand(agent.NewAgentsCommand(a.client))
+	cmd.AddCommand(runner.NewAgentsCommand(a.client))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")

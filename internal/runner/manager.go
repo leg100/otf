@@ -29,7 +29,7 @@ type manager struct {
 }
 
 type managerClient interface {
-	listRunners(ctx context.Context) ([]*runnerMeta, error)
+	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	updateStatus(ctx context.Context, runnerID string, status RunnerStatus) error
 	deleteRunner(ctx context.Context, runnerID string) error
 }
@@ -80,7 +80,7 @@ func (m *manager) Start(ctx context.Context) error {
 	}
 }
 
-func (m *manager) update(ctx context.Context, runner *runnerMeta) error {
+func (m *manager) update(ctx context.Context, runner *RunnerMeta) error {
 	switch runner.Status {
 	case RunnerIdle, RunnerBusy:
 		// update runner status to unknown if the runner has failed to ping within

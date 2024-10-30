@@ -14,7 +14,7 @@ import (
 )
 
 type AgentOptions struct {
-	*DaemonOptions
+	*Options
 
 	Name  string
 	URL   string
@@ -23,7 +23,7 @@ type AgentOptions struct {
 
 func NewAgentOptionsFromFlags(flags *pflag.FlagSet) *AgentOptions {
 	opts := &AgentOptions{
-		DaemonOptions: NewDaemonOptionsFromFlags(flags),
+		Options: NewOptionsFromFlags(flags),
 	}
 	flags.StringVar(&opts.Name, "name", "", "Give agent a descriptive name. Optional.")
 	flags.StringVar(&opts.URL, "url", otfapi.DefaultURL, "URL of OTF server")

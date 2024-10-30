@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +38,7 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	// edit workspace via CLI
 	//
 	// create pool first so that one can be specified in the CLI command
-	pool, err := daemon.Runners.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+	pool, err := daemon.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
 		Organization: org.Name,
 		Name:         "pool-1",
 	})

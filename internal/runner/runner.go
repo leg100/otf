@@ -28,7 +28,7 @@ var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
 type (
 	Runner struct {
-		*runnerMeta
+		*RunnerMeta
 
 		Logger          logr.Logger
 		Client          client
@@ -42,7 +42,7 @@ type (
 		remoteLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
 		spawner      operationSpawner
 		isRemote     bool
-		registered   chan *runnerMeta
+		registered   chan *RunnerMeta
 	}
 
 	// downloader downloads terraform versions
@@ -63,12 +63,10 @@ type (
 		spawner  operationSpawner
 		isRemote bool
 	}
-
-	DaemonOptions = Options
 )
 
-func NewDaemonOptionsFromFlags(flags *pflag.FlagSet) *DaemonOptions {
-	opts := DaemonOptions{}
+func NewOptionsFromFlags(flags *pflag.FlagSet) *Options {
+	opts := Options{}
 	flags.IntVar(&opts.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
@@ -101,7 +99,7 @@ func newRunner(opts Options) (*Runner, error) {
 	}
 	d := &Runner{
 		Client:       opts.Client,
-		registered:   make(chan *runnerMeta),
+		registered:   make(chan *RunnerMeta),
 		remoteLogger: remoteLogger,
 		logger:       opts.Logger,
 		isRemote:     opts.isRemote,
@@ -259,7 +257,7 @@ func (r *Runner) Start(ctx context.Context) error {
 
 // Registered returns the daemon's corresponding runner on a channel once it has
 // successfully registered.
-func (r *Runner) Registered() <-chan *runnerMeta {
+func (r *Runner) Registered() <-chan *RunnerMeta {
 	return r.registered
 }
 

@@ -23,18 +23,18 @@ type allocator struct {
 	// cache of agent pools
 	pools map[string]*Pool
 	// runners to allocate jobs to, keyed by agent ID
-	runners map[string]*runnerMeta
+	runners map[string]*RunnerMeta
 	// jobs awaiting allocation to an agent, keyed by job ID
 	jobs map[JobSpec]*Job
 }
 
 type allocatorClient interface {
 	WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
-	WatchRunners(context.Context) (<-chan pubsub.Event[*runnerMeta], func())
+	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerMeta], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
 
 	listAllAgentPools(ctx context.Context) ([]*Pool, error)
-	listRunners(ctx context.Context) ([]*runnerMeta, error)
+	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
 	allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
@@ -109,8 +109,8 @@ func (a *allocator) Start(ctx context.Context) error {
 	}
 }
 
-func (a *allocator) seed(pools []*Pool, agents []*runnerMeta, jobs []*Job) {
-	a.runners = make(map[string]*runnerMeta, len(agents))
+func (a *allocator) seed(pools []*Pool, agents []*RunnerMeta, jobs []*Job) {
+	a.runners = make(map[string]*RunnerMeta, len(agents))
 	for _, agent := range agents {
 		a.runners[agent.ID] = agent
 	}
@@ -151,7 +151,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			continue
 		}
 		// allocate job to available agent
-		var available []*runnerMeta
+		var available []*RunnerMeta
 		for _, agent := range a.runners {
 			if agent.Status != RunnerIdle && agent.Status != RunnerBusy {
 				// skip agents that are not ready for jobs
@@ -181,7 +181,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			continue
 		}
 		// select agent that has most recently sent a ping
-		slices.SortFunc(available, func(a, b *runnerMeta) int {
+		slices.SortFunc(available, func(a, b *RunnerMeta) int {
 			if a.LastPingAt.After(b.LastPingAt) {
 				// a with more recent ping comes first in list
 				return -1

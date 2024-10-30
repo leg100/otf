@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +23,7 @@ func TestSandbox(t *testing.T) {
 	require.NoError(t, err)
 
 	daemon, org, ctx := setup(t, &config{Config: daemon.Config{
-		RunnerConfig: &agent.Config{
+		RunnerConfig: &runner.Options{
 			Sandbox: true,
 			Debug:   true,
 		},

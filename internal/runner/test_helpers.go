@@ -8,7 +8,6 @@ type fakeService struct {
 	at                     *agentToken
 	token                  []byte
 	status                 RunnerStatus
-	deletedAgentID         string
 	job                    *Job
 
 	Service
@@ -37,16 +36,6 @@ func (f *fakeService) ListAgentTokens(context.Context, string) ([]*agentToken, e
 
 func (f *fakeService) DeleteAgentToken(context.Context, string) (*agentToken, error) {
 	return f.at, nil
-}
-
-func (f *fakeService) updateAgentStatus(ctx context.Context, agentID string, status RunnerStatus) error {
-	f.status = status
-	return nil
-}
-
-func (f *fakeService) deleteAgent(ctx context.Context, agentID string) error {
-	f.deletedAgentID = agentID
-	return nil
 }
 
 func (f *fakeService) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {

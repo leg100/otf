@@ -37,7 +37,7 @@ type (
 		api          *api
 		web          *webHandlers
 		poolBroker   pubsub.SubscriptionService[*Pool]
-		runnerBroker pubsub.SubscriptionService[*runnerMeta]
+		runnerBroker pubsub.SubscriptionService[*RunnerMeta]
 		jobBroker    pubsub.SubscriptionService[*Job]
 		phases       phaseClient
 
@@ -103,9 +103,9 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runners",
-		func(ctx context.Context, id string, action sql.Action) (*runnerMeta, error) {
+		func(ctx context.Context, id string, action sql.Action) (*RunnerMeta, error) {
 			if action == sql.DeleteAction {
-				return &runnerMeta{ID: id}, nil
+				return &RunnerMeta{ID: id}, nil
 			}
 			return svc.db.get(ctx, id)
 		},
@@ -148,7 +148,7 @@ func NewService(opts ServiceOptions) *Service {
 		// Agent hasn't registered yet
 		//
 		// TODO: create constructor for constructing unregistered agent.
-		return &runnerMeta{AgentPoolID: &pool.ID}, nil
+		return &RunnerMeta{AgentPoolID: &pool.ID}, nil
 	})
 	// create jobs when a plan or apply is enqueued
 	opts.RunService.AfterEnqueuePlan(svc.createJob)
@@ -192,7 +192,7 @@ func (s *Service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Poo
 	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*runnerMeta], func()) {
+func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*RunnerMeta], func()) {
 	return s.runnerBroker.Subscribe(ctx)
 }
 
@@ -200,8 +200,8 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], fun
 	return s.jobBroker.Subscribe(ctx)
 }
 
-func (s *Service) register(ctx context.Context, opts registerOptions) (*runnerMeta, error) {
-	meta, err := func() (*runnerMeta, error) {
+func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
+	meta, err := func() (*RunnerMeta, error) {
 		if err := authorizeRunner(ctx, ""); err != nil {
 			return nil, ErrUnauthorizedRegistration
 		}
@@ -222,7 +222,7 @@ func (s *Service) register(ctx context.Context, opts registerOptions) (*runnerMe
 	return meta, nil
 }
 
-func (s *Service) getRunner(ctx context.Context, runnerID string) (*runnerMeta, error) {
+func (s *Service) getRunner(ctx context.Context, runnerID string) (*RunnerMeta, error) {
 	return s.db.get(ctx, runnerID)
 }
 
@@ -238,7 +238,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	switch s := subject.(type) {
 	case *manager:
 		// ok
-	case *runnerMeta:
+	case *RunnerMeta:
 		if s.String() != runnerID {
 			return internal.ErrAccessNotPermitted
 		}
@@ -250,7 +250,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	// keep a record of what the status was before the update for logging
 	// purposes
 	var from RunnerStatus
-	err = s.db.update(ctx, runnerID, func(runner *runnerMeta) error {
+	err = s.db.update(ctx, runnerID, func(runner *RunnerMeta) error {
 		from = runner.Status
 		return runner.setStatus(to, isAgent)
 	})
@@ -267,15 +267,15 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	return nil
 }
 
-func (s *Service) listRunners(ctx context.Context) ([]*runnerMeta, error) {
+func (s *Service) listRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	return s.db.list(ctx)
 }
 
-func (s *Service) listServerRunners(ctx context.Context) ([]*runnerMeta, error) {
+func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	return s.db.listServerRunners(ctx)
 }
 
-func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*runnerMeta, error) {
+func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
 	_, err := s.organization.CanAccess(ctx, rbac.ListAgentsAction, organization)
 	if err != nil {
 		return nil, err
@@ -283,7 +283,7 @@ func (s *Service) listRunnersByOrganization(ctx context.Context, organization st
 	return s.db.listRunnersByOrganization(ctx, organization)
 }
 
-func (s *Service) listRunnersByPool(ctx context.Context, poolID string) ([]*runnerMeta, error) {
+func (s *Service) listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error) {
 	return s.db.listRunnersByPool(ctx, poolID)
 }
 
@@ -434,7 +434,7 @@ func (s *Service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 		if _, err = s.phases.StartPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseStartOptions{}); err != nil {
 			return err
 		}
-		token, err = s.tokenFactory.createJobToken(spec)
+		token, err = s.createJobToken(spec)
 		if err != nil {
 			return err
 		}
@@ -460,8 +460,7 @@ func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		if err != nil {
 			return internal.ErrAccessNotPermitted
 		}
-		_, ok := subject.(*Job)
-		if !ok {
+		if _, ok := subject.(*Job); !ok {
 			return internal.ErrAccessNotPermitted
 		}
 	}
@@ -623,12 +622,18 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 	if err != nil {
 		return nil, err
 	}
-	pool, err := newPool(opts)
+	pool, err := func() (*Pool, error) {
+		pool, err := newPool(opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.db.createPool(ctx, pool); err != nil {
+			return nil, err
+		}
+		return pool, nil
+	}()
 	if err != nil {
 		s.Error(err, "creating agent pool", "subject", subject)
-		return nil, err
-	}
-	if err := s.db.createPool(ctx, pool); err != nil {
 		return nil, err
 	}
 	s.V(0).Info("created agent pool", "subject", subject, "pool", pool)

@@ -37,11 +37,11 @@ type webClient interface {
 	listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
 	deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
 
-	register(ctx context.Context, opts registerOptions) (*runnerMeta, error)
-	listRunners(ctx context.Context) ([]*runnerMeta, error)
-	listRunnersByOrganization(ctx context.Context, organization string) ([]*runnerMeta, error)
-	listRunnersByPool(ctx context.Context, poolID string) ([]*runnerMeta, error)
-	listServerRunners(ctx context.Context) ([]*runnerMeta, error)
+	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
+	listRunners(ctx context.Context) ([]*RunnerMeta, error)
+	listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error)
+	listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error)
+	listServerRunners(ctx context.Context) ([]*RunnerMeta, error)
 
 	CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
@@ -111,7 +111,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 	}
 	// order agents to show 'freshest' at the top
 	agents := append(serverAgents, poolAgents...)
-	slices.SortFunc(agents, func(a, b *runnerMeta) int {
+	slices.SortFunc(agents, func(a, b *RunnerMeta) int {
 		if a.LastPingAt.Before(b.LastPingAt) {
 			return 1
 		} else {
@@ -121,7 +121,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("agents_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Agents []*runnerMeta
+		Agents []*RunnerMeta
 	}{
 		OrganizationPage: organization.NewPage(r, "agents", org),
 		Agents:           agents,
@@ -290,7 +290,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		AssignedWorkspaces             []poolWorkspace
 		AvailableWorkspaces            []poolWorkspace
 		Tokens                         []*agentToken
-		Agents                         []*runnerMeta
+		Agents                         []*RunnerMeta
 	}{
 		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
 		Pool:                           pool,

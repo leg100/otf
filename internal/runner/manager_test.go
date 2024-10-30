@@ -14,28 +14,28 @@ func TestManager(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		runner      *runnerMeta
+		runner      *RunnerMeta
 		want        RunnerStatus
 		wantDeleted bool
 	}{
 		{
 			name:   "no update",
-			runner: &runnerMeta{Status: RunnerIdle, LastPingAt: now},
+			runner: &RunnerMeta{Status: RunnerIdle, LastPingAt: now},
 			want:   "",
 		},
 		{
 			name:   "update from idle to unknown",
-			runner: &runnerMeta{Status: RunnerIdle, LastPingAt: now.Add(-pingTimeout).Add(-time.Second)},
+			runner: &RunnerMeta{Status: RunnerIdle, LastPingAt: now.Add(-pingTimeout).Add(-time.Second)},
 			want:   RunnerUnknown,
 		},
 		{
 			name:   "update from unknown to errored",
-			runner: &runnerMeta{Status: RunnerUnknown, LastStatusAt: now.Add(-6 * time.Minute)},
+			runner: &RunnerMeta{Status: RunnerUnknown, LastStatusAt: now.Add(-6 * time.Minute)},
 			want:   RunnerErrored,
 		},
 		{
 			name:        "delete",
-			runner:      &runnerMeta{Status: RunnerErrored, LastStatusAt: now.Add(-2 * time.Hour)},
+			runner:      &RunnerMeta{Status: RunnerErrored, LastStatusAt: now.Add(-2 * time.Hour)},
 			want:        "",
 			wantDeleted: true,
 		},

@@ -13,7 +13,7 @@ import (
 const agentIDHeader = "otf-agent-id"
 
 type client interface {
-	register(ctx context.Context, opts registerOptions) (*runnerMeta, error)
+	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
 	updateStatus(ctx context.Context, agentID string, status RunnerStatus) error
 
 	getJobs(ctx context.Context, agentID string) ([]*Job, error)
@@ -41,12 +41,12 @@ func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryabl
 	return req, err
 }
 
-func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*runnerMeta, error) {
+func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
 	req, err := c.newRequest("POST", "agents/register", &opts)
 	if err != nil {
 		return nil, err
 	}
-	var m runnerMeta
+	var m RunnerMeta
 	if err := c.Do(ctx, req, &m); err != nil {
 		return nil, err
 	}

@@ -11,8 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/cli"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
@@ -23,6 +21,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
@@ -402,7 +401,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg agent.Config) (*agent.Agent, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg runner.Options) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -417,23 +416,24 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 
 	if token == "" {
 		if poolID == "" {
-			pool, err := s.Runners.CreateAgentPool(ctx, agent.CreateAgentPoolOptions{
+			pool, err := s.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
 				Name:         uuid.NewString(),
 				Organization: org,
 			})
 			require.NoError(t, err)
 			poolID = pool.ID
 		}
-		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, poolID, agent.CreateAgentTokenOptions{
+		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, poolID, runner.CreateAgentTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)
 		token = string(tokenBytes)
 	}
 
-	agentDaemon, err := agent.NewPoolDaemon(logger, cfg, api.Config{
-		Token: token,
-		URL:   s.System.URL("/"),
+	agentDaemon, err := runner.NewAgent(logger, runner.AgentOptions{
+		Options: &cfg,
+		Token:   token,
+		URL:     s.System.URL("/"),
 	})
 	require.NoError(t, err)
 

@@ -29,8 +29,8 @@ type runnerMetaResult struct {
 	CurrentJobs  int64
 }
 
-func (r runnerMetaResult) toRunnerMeta() *runnerMeta {
-	meta := &runnerMeta{
+func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
+	meta := &RunnerMeta{
 		ID:           r.RunnerID.String,
 		Name:         r.Name.String,
 		Version:      r.Version.String,
@@ -47,7 +47,7 @@ func (r runnerMetaResult) toRunnerMeta() *runnerMeta {
 	return meta
 }
 
-func (db *db) create(ctx context.Context, meta *runnerMeta) error {
+func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	err := db.Querier(ctx).InsertRunner(ctx, sqlc.InsertRunnerParams{
 		RunnerID:     sql.String(meta.ID),
 		Name:         sql.String(meta.Name),
@@ -62,7 +62,7 @@ func (db *db) create(ctx context.Context, meta *runnerMeta) error {
 	return err
 }
 
-func (db *db) update(ctx context.Context, agentID string, fn func(*runnerMeta) error) error {
+func (db *db) update(ctx context.Context, agentID string, fn func(*RunnerMeta) error) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := q.FindRunnerByIDForUpdate(ctx, sql.String(agentID))
 		if err != nil {
@@ -86,7 +86,7 @@ func (db *db) update(ctx context.Context, agentID string, fn func(*runnerMeta) e
 	return nil
 }
 
-func (db *db) get(ctx context.Context, agentID string) (*runnerMeta, error) {
+func (db *db) get(ctx context.Context, agentID string) (*RunnerMeta, error) {
 	result, err := db.Querier(ctx).FindRunnerByID(ctx, sql.String(agentID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -94,48 +94,48 @@ func (db *db) get(ctx context.Context, agentID string) (*runnerMeta, error) {
 	return runnerMetaResult(result).toRunnerMeta(), nil
 }
 
-func (db *db) list(ctx context.Context) ([]*runnerMeta, error) {
+func (db *db) list(ctx context.Context) ([]*RunnerMeta, error) {
 	rows, err := db.Querier(ctx).FindRunners(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	agents := make([]*runnerMeta, len(rows))
+	agents := make([]*RunnerMeta, len(rows))
 	for i, r := range rows {
 		agents[i] = runnerMetaResult(r).toRunnerMeta()
 	}
 	return agents, nil
 }
 
-func (db *db) listServerRunners(ctx context.Context) ([]*runnerMeta, error) {
+func (db *db) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	rows, err := db.Querier(ctx).FindServerRunners(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	agents := make([]*runnerMeta, len(rows))
+	agents := make([]*RunnerMeta, len(rows))
 	for i, r := range rows {
 		agents[i] = runnerMetaResult(r).toRunnerMeta()
 	}
 	return agents, nil
 }
 
-func (db *db) listRunnersByOrganization(ctx context.Context, organization string) ([]*runnerMeta, error) {
+func (db *db) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
 	rows, err := db.Querier(ctx).FindRunnersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	agents := make([]*runnerMeta, len(rows))
+	agents := make([]*RunnerMeta, len(rows))
 	for i, r := range rows {
 		agents[i] = runnerMetaResult(r).toRunnerMeta()
 	}
 	return agents, nil
 }
 
-func (db *db) listRunnersByPool(ctx context.Context, poolID string) ([]*runnerMeta, error) {
+func (db *db) listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error) {
 	rows, err := db.Querier(ctx).FindRunnersByPoolID(ctx, sql.String(poolID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	runners := make([]*runnerMeta, len(rows))
+	runners := make([]*RunnerMeta, len(rows))
 	for i, r := range rows {
 		runners[i] = runnerMetaResult(r).toRunnerMeta()
 	}
