@@ -154,3 +154,16 @@ func TestNewPage(t *testing.T) {
 		})
 	}
 }
+
+func TestListAll(t *testing.T) {
+	type foo int
+
+	got, err := ListAll(func(opts PageOptions) (*Page[foo], error) {
+		return &Page[foo]{
+			Items: []foo{0},
+			Pagination: &Pagination{
+				NextPage: internal.Int(1),
+			},
+		}, nil
+	})
+}

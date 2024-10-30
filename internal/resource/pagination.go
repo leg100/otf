@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -77,6 +78,8 @@ func ListAll[T any](fn func(PageOptions) (*Page[T], error)) ([]T, error) {
 	var (
 		opts PageOptions
 		all  []T
+		// keep track of the last NextPage to prevent an infinite loop.
+		lastNextPage int
 	)
 	for {
 		page, err := fn(opts)
@@ -91,7 +94,11 @@ func ListAll[T any](fn func(PageOptions) (*Page[T], error)) ([]T, error) {
 		if page.NextPage == nil {
 			break
 		}
+		if *page.NextPage == lastNextPage {
+			return nil, fmt.Errorf("malformed pagination; stopping infinite page retrieval")
+		}
 		opts.PageNumber = *page.NextPage
+		lastNextPage = *page.NextPage
 	}
 	return all, nil
 }
