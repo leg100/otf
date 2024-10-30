@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPagination(t *testing.T) {
@@ -158,7 +159,31 @@ func TestNewPage(t *testing.T) {
 func TestListAll(t *testing.T) {
 	type foo int
 
+	var page int
 	got, err := ListAll(func(opts PageOptions) (*Page[foo], error) {
+		if opts.PageNumber == 10 {
+			return &Page[foo]{
+				Pagination: &Pagination{},
+			}, nil
+		}
+		page++
+		return &Page[foo]{
+			Items: []foo{foo(page)},
+			Pagination: &Pagination{
+				NextPage: internal.Int(page),
+			},
+		}, nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []foo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, got)
+}
+
+func TestListAll_infinite_pagination(t *testing.T) {
+	type foo int
+
+	// This demonstrates an incorrectly implemented func being passed to
+	// ListAll, which retrieves the same page ad infinitum.
+	_, err := ListAll(func(opts PageOptions) (*Page[foo], error) {
 		return &Page[foo]{
 			Items: []foo{0},
 			Pagination: &Pagination{
@@ -166,4 +191,5 @@ func TestListAll(t *testing.T) {
 			},
 		}, nil
 	})
+	assert.Equal(t, ErrInfinitePaginationDetected, err)
 }
