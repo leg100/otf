@@ -28,7 +28,6 @@ type (
 	Runner struct {
 		*RunnerMeta
 
-		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
@@ -87,6 +86,8 @@ func newRunner(
 		// here are also logged on the service endpoints, resulting in duplicate
 		// logs.
 		r.v = 1
+		// Distinguish log messages on server runner from other components.
+		r.logger = logger.WithValues("component", "runner")
 	}
 	if cfg.MaxJobs == 0 {
 		cfg.MaxJobs = DefaultMaxJobs
@@ -116,8 +117,9 @@ func (r *Runner) Start(ctx context.Context) error {
 	// initialize terminator
 	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
 
-	// register runner with server
-	runner, err := r.client.register(ctx, registerOptions{
+	// register runner with server, which responds with an updated runner
+	// registrationMetadata, including a unique ID.
+	registrationMetadata, err := r.client.register(ctx, registerOptions{
 		Name:        r.Name,
 		Version:     internal.Version,
 		Concurrency: r.MaxJobs,
@@ -125,12 +127,18 @@ func (r *Runner) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("registering runner: %w", err)
 	}
-	r.logger.V(r.v).Info("registered successfully", "runner", runner)
+	r.logger.V(r.v).Info("registered successfully", "runner", registrationMetadata)
 	// send registered runner to channel, letting caller know runner has
 	// registered.
 	go func() {
-		r.registered <- runner
+		r.registered <- registrationMetadata
 	}()
+
+	// Update metadata with metadata from server, which includes unique ID.
+	r.RunnerMeta = registrationMetadata
+	// Add metadata to the context in all calls, which is needed to authorize a
+	// server runner with service endpoints.
+	ctx = internal.AddSubjectToContext(ctx, registrationMetadata)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() (err error) {
@@ -140,7 +148,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			if updateErr := r.client.updateStatus(ctx, runner.ID, RunnerExited); updateErr != nil {
+			if updateErr := r.client.updateStatus(ctx, registrationMetadata.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			} else {
 				r.logger.V(r.v).Info("sent final status update", "status", "exited")
@@ -157,7 +165,7 @@ func (r *Runner) Start(ctx context.Context) error {
 				if terminator.totalJobs() > 0 {
 					status = RunnerBusy
 				}
-				if err := r.client.updateStatus(ctx, runner.ID, status); err != nil {
+				if err := r.client.updateStatus(ctx, registrationMetadata.ID, status); err != nil {
 					if ctx.Err() != nil {
 						// context canceled
 						return nil
@@ -200,7 +208,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			processJobs := func() (err error) {
 				r.logger.V(r.v).Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := r.client.getJobs(ctx, runner.ID)
+				jobs, err := r.client.getJobs(ctx, registrationMetadata.ID)
 				if err != nil {
 					return err
 				}

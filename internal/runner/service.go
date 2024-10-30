@@ -336,19 +336,19 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 // (a) have JobAllocated status
 // (b) have JobRunning status and a non-nil cancellation signal
 //
-// getJobs is intended to be called by an agent in order to retrieve jobs to
+// getJobs is intended to be called by an runner in order to retrieve jobs to
 // execute and jobs to cancel.
-func (s *Service) getJobs(ctx context.Context, agentID string) ([]*Job, error) {
+func (s *Service) getJobs(ctx context.Context, runnerID string) ([]*Job, error) {
 	// only these subjects may call this endpoint:
-	// (a) an agent with an ID matching agentID
-	if err := authorizeRunner(ctx, agentID); err != nil {
+	// (a) a runner with an ID matching runnerID
+	if err := authorizeRunner(ctx, runnerID); err != nil {
 		return nil, internal.ErrAccessNotPermitted
 	}
 
 	sub, unsub := s.WatchJobs(ctx)
 	defer unsub()
 
-	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, agentID)
+	jobs, err := s.db.getAllocatedAndSignaledJobs(ctx, runnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (s *Service) getJobs(ctx context.Context, agentID string) ([]*Job, error) {
 	// wait for a job matching criteria to arrive:
 	for event := range sub {
 		job := event.Payload
-		if job.RunnerID == nil || *job.RunnerID != agentID {
+		if job.RunnerID == nil || *job.RunnerID != runnerID {
 			continue
 		}
 		switch job.Status {
