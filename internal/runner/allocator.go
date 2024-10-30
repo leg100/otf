@@ -13,18 +13,18 @@ import (
 // time.
 const AllocatorLockID int64 = 5577006791947779412
 
-// allocator allocates jobs to agents. Only one allocator must be active on
+// allocator allocates jobs to runners. Only one allocator must be active on
 // an OTF cluster at any one time.
 type allocator struct {
 	logr.Logger
-	// service for seeding and streaming pools, agents, and jobs, and for
-	// allocating jobs to agents.
+	// service for seeding and streaming pools, runners, and jobs, and for
+	// allocating jobs to runners.
 	client allocatorClient
 	// cache of agent pools
 	pools map[string]*Pool
-	// runners to allocate jobs to, keyed by agent ID
+	// runners to allocate jobs to, keyed by runner ID
 	runners map[string]*RunnerMeta
-	// jobs awaiting allocation to an agent, keyed by job ID
+	// jobs awaiting allocation to an runner, keyed by job ID
 	jobs map[JobSpec]*Job
 }
 
@@ -37,26 +37,26 @@ type allocatorClient interface {
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
-	allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
-	reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error)
+	allocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error)
+	reallocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error)
 }
 
 // Start the allocator. Should be invoked in a go routine.
 func (a *allocator) Start(ctx context.Context) error {
-	// Subscribe to pool, job and agent events and unsubscribe before returning.
+	// Subscribe to pool, job and runner events and unsubscribe before returning.
 	poolsSub, poolsUnsub := a.client.WatchAgentPools(ctx)
 	defer poolsUnsub()
-	agentsSub, agentsUnsub := a.client.WatchRunners(ctx)
-	defer agentsUnsub()
+	runnersSub, runnersUnsub := a.client.WatchRunners(ctx)
+	defer runnersUnsub()
 	jobsSub, jobsUnsub := a.client.WatchJobs(ctx)
 	defer jobsUnsub()
 
-	// seed allocator with pools, agents, and jobs
+	// seed allocator with pools, runners, and jobs
 	pools, err := a.client.listAllAgentPools(ctx)
 	if err != nil {
 		return err
 	}
-	agents, err := a.client.listRunners(ctx)
+	runners, err := a.client.listRunners(ctx)
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,9 @@ func (a *allocator) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	a.seed(pools, agents, jobs)
+	a.seed(pools, runners, jobs)
 
-	// allocate jobs to agents
+	// allocate jobs to runners
 	a.allocate(ctx)
 
 	// consume events until a subscriber is closed, and allocate jobs.
@@ -82,7 +82,7 @@ func (a *allocator) Start(ctx context.Context) error {
 			default:
 				a.pools[event.Payload.ID] = event.Payload
 			}
-		case event, open := <-agentsSub:
+		case event, open := <-runnersSub:
 			if !open {
 				return pubsub.ErrSubscriptionTerminated
 			}
@@ -111,8 +111,8 @@ func (a *allocator) Start(ctx context.Context) error {
 
 func (a *allocator) seed(pools []*Pool, agents []*RunnerMeta, jobs []*Job) {
 	a.runners = make(map[string]*RunnerMeta, len(agents))
-	for _, agent := range agents {
-		a.runners[agent.ID] = agent
+	for _, runner := range agents {
+		a.runners[runner.ID] = runner
 	}
 	a.jobs = make(map[JobSpec]*Job, len(jobs))
 	for _, job := range jobs {
@@ -128,14 +128,14 @@ func (a *allocator) allocate(ctx context.Context) error {
 		case JobUnallocated:
 			// see below
 		case JobAllocated:
-			// check agent the job is allocated to: if the agent is no longer in
-			// a fit state then try to allocate job to another agent
-			agent, ok := a.runners[*job.RunnerID]
+			// check runner the job is allocated to: if the runner is no longer in
+			// a fit state then try to allocate job to another runner
+			runner, ok := a.runners[*job.RunnerID]
 			if !ok {
-				return fmt.Errorf("agent %s not found in cache", *job.RunnerID)
+				return fmt.Errorf("runner %s not found in cache", *job.RunnerID)
 			}
-			if agent.Status == RunnerIdle || agent.Status == RunnerBusy {
-				// agent still healthy, wait for agent to start job
+			if runner.Status == RunnerIdle || runner.Status == RunnerBusy {
+				// runner still healthy, wait for runner to start job
 				continue
 			}
 			// another no longer healthy, try reallocating job to another another
@@ -150,37 +150,37 @@ func (a *allocator) allocate(ctx context.Context) error {
 			// job running; ignore
 			continue
 		}
-		// allocate job to available agent
+		// allocate job to available runner
 		var available []*RunnerMeta
-		for _, agent := range a.runners {
-			if agent.Status != RunnerIdle && agent.Status != RunnerBusy {
-				// skip agents that are not ready for jobs
+		for _, runner := range a.runners {
+			if runner.Status != RunnerIdle && runner.Status != RunnerBusy {
+				// skip runners that are not ready for jobs
 				continue
 			}
-			// skip agents with insufficient capacity
-			if agent.CurrentJobs == agent.MaxJobs {
+			// skip runners with insufficient capacity
+			if runner.CurrentJobs == runner.MaxJobs {
 				continue
 			}
-			if agent.AgentPoolID == nil {
-				// if agent has a nil agent pool ID then it is a server
-				// agent and it only handles jobs with a nil pool ID.
+			if runner.AgentPoolID == nil {
+				// if runner has a nil agent pool ID then it is a server
+				// runner and it only handles jobs with a nil pool ID.
 				if job.AgentPoolID != nil {
 					continue
 				}
 			} else {
-				// if an agent has a non-nil agent pool ID then it is a pool agent
+				// if a runner has a non-nil agent pool ID then it is an agent
 				// and it only handles jobs with a matching pool ID.
-				if job.AgentPoolID == nil || *agent.AgentPoolID != *job.AgentPoolID {
+				if job.AgentPoolID == nil || *runner.AgentPoolID != *job.AgentPoolID {
 					continue
 				}
 			}
-			available = append(available, agent)
+			available = append(available, runner)
 		}
 		if len(available) == 0 {
-			a.Error(nil, "no available agents found for job", "job", job)
+			a.Error(nil, "no available runners found for job", "job", job)
 			continue
 		}
-		// select agent that has most recently sent a ping
+		// select runner that has most recently sent a ping
 		slices.SortFunc(available, func(a, b *RunnerMeta) int {
 			if a.LastPingAt.After(b.LastPingAt) {
 				// a with more recent ping comes first in list
@@ -190,25 +190,25 @@ func (a *allocator) allocate(ctx context.Context) error {
 			}
 		})
 		var (
-			agent      = available[0]
+			runner     = available[0]
 			updatedJob *Job
 			err        error
 		)
 		if reallocate {
 			from := *job.RunnerID
-			updatedJob, err = a.client.reallocateJob(ctx, job.Spec, agent.ID)
+			updatedJob, err = a.client.reallocateJob(ctx, job.Spec, runner.ID)
 			if err != nil {
 				return err
 			}
 			a.runners[from].CurrentJobs--
 		} else {
-			updatedJob, err = a.client.allocateJob(ctx, job.Spec, agent.ID)
+			updatedJob, err = a.client.allocateJob(ctx, job.Spec, runner.ID)
 			if err != nil {
 				return err
 			}
 		}
 		a.jobs[job.Spec] = updatedJob
-		a.runners[agent.ID].CurrentJobs++
+		a.runners[runner.ID].CurrentJobs++
 	}
 	return nil
 }

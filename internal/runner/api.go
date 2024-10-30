@@ -34,7 +34,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	// agents
 	r.HandleFunc("/agents/register", a.registerAgent).Methods("POST")
 	r.HandleFunc("/agents/jobs", a.getJobs).Methods("GET")
-	r.HandleFunc("/agents/status", a.updateStatus).Methods("POST")
+	r.HandleFunc("/agents/status", a.updateAgentStatus).Methods("POST")
 	r.HandleFunc("/agents/start", a.startJob).Methods("POST")
 	r.HandleFunc("/agents/finish", a.finishJob).Methods("POST")
 
@@ -83,8 +83,8 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, jobs, http.StatusOK)
 }
 
-// updateStatus receives a status update from an agent
-func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
+// updateAgentStatus receives a status update from an agent
+func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 	// retrieve runner, which contains ID of calling agent
 	runner, err := runnerFromContext(r.Context())
 	if err != nil || runner.ID == "" {
