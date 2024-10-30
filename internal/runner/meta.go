@@ -35,7 +35,7 @@ type RunnerMeta struct {
 	// Agent pool's organization
 	AgentPoolOrganizationName *string
 
-	isRemote bool
+	isAgent bool
 }
 
 type registerOptions struct {
@@ -108,7 +108,7 @@ func (m *RunnerMeta) setStatus(status RunnerStatus, ping bool) error {
 func (m *RunnerMeta) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", m.ID),
-		slog.Bool("remote", m.isRemote),
+		slog.Bool("agent", m.isAgent),
 		slog.String("status", string(m.Status)),
 		slog.String("ip_address", m.IPAddress.String()),
 	}
@@ -139,7 +139,7 @@ func (*RunnerMeta) CanAccessTeam(rbac.Action, string) bool {
 func (m *RunnerMeta) CanAccessOrganization(action rbac.Action, name string) bool {
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if m.isRemote {
+	if m.isAgent {
 		return *m.AgentPoolOrganizationName == name
 	}
 	return true
@@ -151,7 +151,7 @@ func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.Work
 	//
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if m.isRemote {
+	if m.isAgent {
 		return *m.AgentPoolOrganizationName == policy.Organization
 	}
 	return true

@@ -28,17 +28,18 @@ type (
 	Runner struct {
 		*RunnerMeta
 
-		Client          client
 		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
 
-		logger      logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
-		agentLogger logr.Logger // logger that only logs messages if the runner is a pool runner.
-		spawner     operationSpawner
-		registered  chan *RunnerMeta
+		client     client
+		spawner    operationSpawner
+		registered chan *RunnerMeta
+
+		logger logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
+		v      int         // logger verbosity
 	}
 
 	Config struct {
@@ -66,59 +67,57 @@ func newRunner(
 	logger logr.Logger,
 	client client,
 	spawner operationSpawner,
-	isRemote bool,
+	isAgent bool,
 	cfg Config,
 ) (*Runner, error) {
-	agentLogger := logger
-	if !isRemote {
-		// disable logging for server runners otherwise the server logs are
-		// likely to contain duplicate logs from both the runner daemon and the
-		// runner service, but still make logger available to server runner when
-		// it does need to log something.
-		agentLogger = logr.Discard()
+	r := &Runner{
+		RunnerMeta: &RunnerMeta{
+			Name:    cfg.Name,
+			MaxJobs: cfg.MaxJobs,
+			isAgent: isAgent,
+		},
+		client:     client,
+		registered: make(chan *RunnerMeta),
+		logger:     logger,
+		spawner:    spawner,
+	}
+	if !isAgent {
+		// Set a higher threshold for logging on server runner where the runner is
+		// but one of several components and many of the actions that are logged
+		// here are also logged on the service endpoints, resulting in duplicate
+		// logs.
+		r.v = 1
 	}
 	if cfg.MaxJobs == 0 {
 		cfg.MaxJobs = DefaultMaxJobs
 	}
 	if cfg.Debug {
-		logger.V(0).Info("enabled debug mode")
+		r.logger.V(r.v).Info("enabled debug mode")
 	}
 	if cfg.Sandbox {
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
 		}
-		logger.V(0).Info("enabled sandbox mode")
-	}
-	d := &Runner{
-		RunnerMeta: &RunnerMeta{
-			Name:     cfg.Name,
-			MaxJobs:  cfg.MaxJobs,
-			isRemote: isRemote,
-		},
-		Client:      client,
-		registered:  make(chan *RunnerMeta),
-		agentLogger: agentLogger,
-		logger:      logger,
-		spawner:     spawner,
+		r.logger.V(r.v).Info("enabled sandbox mode")
 	}
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
+		r.logger.V(r.v).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
-	return d, nil
+	return r, nil
 }
 
 // Start the runner daemon.
 func (r *Runner) Start(ctx context.Context) error {
-	r.agentLogger.Info("starting runner", "version", internal.Version)
+	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
 
 	// initialize terminator
 	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
 
 	// register runner with server
-	runner, err := r.Client.register(ctx, registerOptions{
+	runner, err := r.client.register(ctx, registerOptions{
 		Name:        r.Name,
 		Version:     internal.Version,
 		Concurrency: r.MaxJobs,
@@ -126,7 +125,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("registering runner: %w", err)
 	}
-	r.agentLogger.Info("registered successfully", "runner", runner)
+	r.logger.V(r.v).Info("registered successfully", "runner", runner)
 	// send registered runner to channel, letting caller know runner has
 	// registered.
 	go func() {
@@ -141,10 +140,10 @@ func (r *Runner) Start(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			if updateErr := r.Client.updateStatus(ctx, runner.ID, RunnerExited); updateErr != nil {
+			if updateErr := r.client.updateStatus(ctx, runner.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
 			} else {
-				r.logger.Info("sent final status update", "status", "exited")
+				r.logger.V(r.v).Info("sent final status update", "status", "exited")
 			}
 		}()
 
@@ -158,7 +157,7 @@ func (r *Runner) Start(ctx context.Context) error {
 				if terminator.totalJobs() > 0 {
 					status = RunnerBusy
 				}
-				if err := r.Client.updateStatus(ctx, runner.ID, status); err != nil {
+				if err := r.client.updateStatus(ctx, runner.ID, status); err != nil {
 					if ctx.Err() != nil {
 						// context canceled
 						return nil
@@ -171,10 +170,10 @@ func (r *Runner) Start(ctx context.Context) error {
 						// sending an update.
 						return errors.New("runner status update failed due to conflict; runner needs to re-register")
 					} else {
-						r.agentLogger.Error(err, "sending runner status update", "status", status)
+						r.logger.Error(err, "sending runner status update", "status", status)
 					}
 				} else {
-					r.agentLogger.V(9).Info("sent runner status update", "status", status)
+					r.logger.V(9).Info("sent runner status update", "status", status)
 				}
 			case <-ctx.Done():
 				// context canceled
@@ -199,27 +198,27 @@ func (r *Runner) Start(ctx context.Context) error {
 		// handle cancelation signals for jobs
 		for {
 			processJobs := func() (err error) {
-				r.agentLogger.Info("waiting for next job")
+				r.logger.V(r.v).Info("waiting for next job")
 				// block on waiting for jobs
-				jobs, err := r.Client.getJobs(ctx, runner.ID)
+				jobs, err := r.client.getJobs(ctx, runner.ID)
 				if err != nil {
 					return err
 				}
 				for _, j := range jobs {
 					if j.Status == JobAllocated {
-						r.agentLogger.Info("received job", "job", j)
+						r.logger.V(r.v).Info("received job", "job", j)
 						// start job and receive job token in return
-						token, err := r.Client.startJob(ctx, j.Spec)
+						token, err := r.client.startJob(ctx, j.Spec)
 						if err != nil {
 							if ctx.Err() != nil {
 								return nil
 							}
-							r.agentLogger.Error(err, "starting job")
+							r.logger.Error(err, "starting job and retrieving job token")
 							continue
 						}
 						op, err := r.spawner.newOperation(j, token)
 						if err != nil {
-							r.logger.Error(err, "starting job")
+							r.logger.Error(err, "spawning job operation")
 							continue
 						}
 						// check operation in with the terminator, so that if a cancelation signal
@@ -232,7 +231,7 @@ func (r *Runner) Start(ctx context.Context) error {
 							return nil
 						})
 					} else if j.Signaled != nil {
-						r.agentLogger.Info("received cancelation signal", "force", *j.Signaled, "job", j)
+						r.logger.V(r.v).Info("received cancelation signal", "force", *j.Signaled, "job", j)
 						terminator.cancel(j.Spec, *j.Signaled, true)
 					}
 				}
@@ -240,7 +239,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 			_ = backoff.RetryNotify(processJobs, policy, func(err error, next time.Duration) {
-				r.agentLogger.Error(err, "waiting for next job", "backoff", next)
+				r.logger.Error(err, "waiting for next job", "backoff", next)
 			})
 			// only stop retrying if context is canceled
 			if ctx.Err() != nil {
