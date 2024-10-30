@@ -10,9 +10,10 @@ import (
 
 // ServerOptions are options for constructing a server runner.
 type ServerOptions struct {
-	Options
+	*Options
 
 	Logger     logr.Logger
+	Runners    *Service
 	Runs       runClient
 	Workspaces workspaceClient
 	Variables  variablesClient
@@ -42,7 +43,8 @@ func NewServer(opts ServerOptions) (*ServerRunner, error) {
 		jobs:       opts.Jobs,
 		downloader: releases.NewDownloader(opts.TerraformBinDir),
 	}
-	daemon, err := newRunner(opts.Options)
+	opts.client = opts.Runners
+	daemon, err := newRunner(*opts.Options)
 	if err != nil {
 		return nil, err
 	}

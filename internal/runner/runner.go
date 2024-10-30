@@ -30,7 +30,6 @@ type (
 	Runner struct {
 		*RunnerMeta
 
-		Logger          logr.Logger
 		Client          client
 		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
@@ -50,9 +49,6 @@ type (
 	}
 
 	Options struct {
-		Logger logr.Logger
-		Client client
-
 		Name            string // descriptive name given to runner
 		MaxJobs         int    // number of jobs the runner can execute at any one time
 		Sandbox         bool   // isolate privileged ops within sandbox
@@ -60,6 +56,8 @@ type (
 		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
 
+		logger   logr.Logger
+		client   client
 		spawner  operationSpawner
 		isRemote bool
 	}
@@ -77,7 +75,7 @@ func NewOptionsFromFlags(flags *pflag.FlagSet) *Options {
 
 // newRunner constructs a runner.
 func newRunner(opts Options) (*Runner, error) {
-	agentLogger := opts.Logger
+	agentLogger := opts.logger
 	if !opts.isRemote {
 		// disable logging for server runners otherwise the server logs are
 		// likely to contain duplicate logs from both the runner daemon and the
@@ -89,13 +87,13 @@ func newRunner(opts Options) (*Runner, error) {
 		opts.MaxJobs = DefaultMaxJobs
 	}
 	if opts.Debug {
-		opts.Logger.V(0).Info("enabled debug mode")
+		opts.logger.V(0).Info("enabled debug mode")
 	}
 	if opts.Sandbox {
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
 		}
-		opts.Logger.V(0).Info("enabled sandbox mode")
+		opts.logger.V(0).Info("enabled sandbox mode")
 	}
 	d := &Runner{
 		RunnerMeta: &RunnerMeta{
@@ -103,17 +101,17 @@ func newRunner(opts Options) (*Runner, error) {
 			MaxJobs:  opts.MaxJobs,
 			isRemote: opts.isRemote,
 		},
-		Client:      opts.Client,
+		Client:      opts.client,
 		registered:  make(chan *RunnerMeta),
 		agentLogger: agentLogger,
-		logger:      opts.Logger,
+		logger:      opts.logger,
 		spawner:     opts.spawner,
 	}
 	if opts.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
-		opts.Logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
+		opts.logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 	return d, nil
 }

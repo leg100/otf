@@ -40,10 +40,10 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts.Client = &remoteClient{Client: apiClient}
+	opts.client = &remoteClient{Client: apiClient}
 	return newRunner(Options{
-		Logger:   logger,
-		Client:   &remoteClient{Client: apiClient},
+		logger:   logger,
+		client:   &remoteClient{Client: apiClient},
 		Name:     opts.Name,
 		isRemote: true,
 		spawner: &remoteOperationSpawner{
