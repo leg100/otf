@@ -36,6 +36,7 @@ func NewServerRunner(opts ServerRunnerOptions) (*ServerRunner, error) {
 		opts.Runners,
 		&localOperationSpawner{
 			logger:     opts.Logger,
+			config:     *opts.Config,
 			runs:       opts.Runs,
 			workspaces: opts.Workspaces,
 			variables:  opts.Variables,
@@ -64,6 +65,7 @@ func (d *ServerRunner) Start(ctx context.Context) error {
 }
 
 type localOperationSpawner struct {
+	config     Config
 	logger     logr.Logger
 	downloader downloader
 	runs       runClient
@@ -76,18 +78,21 @@ type localOperationSpawner struct {
 	jobs       operationJobsClient
 }
 
-func (l *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operation, error) {
+func (s *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operation, error) {
 	return newOperation(operationOptions{
-		logger:     l.logger,
-		job:        job,
-		jobToken:   jobToken,
-		downloader: l.downloader,
-		runs:       l.runs,
-		workspaces: l.workspaces,
-		variables:  l.variables,
-		state:      l.state,
-		configs:    l.configs,
-		logs:       l.logs,
-		server:     l.server,
+		logger:      s.logger,
+		Debug:       s.config.Debug,
+		Sandbox:     s.config.Sandbox,
+		PluginCache: s.config.PluginCache,
+		job:         job,
+		jobToken:    jobToken,
+		downloader:  s.downloader,
+		runs:        s.runs,
+		workspaces:  s.workspaces,
+		variables:   s.variables,
+		state:       s.state,
+		configs:     s.configs,
+		logs:        s.logs,
+		server:      s.server,
 	}), nil
 }

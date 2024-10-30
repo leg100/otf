@@ -130,8 +130,8 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 
 	t.Run("with plugin cache", func(t *testing.T) {
 		w := operation{
-			PluginCachePath: "/cache",
-			workdir:         &workdir{root: "/root"},
+			PluginCache: true,
+			workdir:     &workdir{root: "/root"},
 		}
 		want := []string{
 			"bwrap",
@@ -142,7 +142,7 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 			"--chdir", "/config",
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
-			"--ro-bind", "/cache", "/cache",
+			"--ro-bind", "/tmp/plugin-cache", "/tmp/plugin-cache",
 			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
@@ -151,8 +151,8 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 
 	t.Run("with relative working directory", func(t *testing.T) {
 		w := operation{
-			PluginCachePath: "/cache",
-			workdir:         &workdir{root: "/root", relative: "/relative"},
+			PluginCache: true,
+			workdir:     &workdir{root: "/root", relative: "/relative"},
 		}
 		want := []string{
 			"bwrap",
@@ -163,7 +163,7 @@ func TestExecutor_addSandboxWrapper(t *testing.T) {
 			"--chdir", "/config/relative",
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
-			"--ro-bind", "/cache", "/cache",
+			"--ro-bind", "/tmp/plugin-cache", "/tmp/plugin-cache",
 			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}

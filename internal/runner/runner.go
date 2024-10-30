@@ -42,8 +42,9 @@ type (
 	}
 
 	Config struct {
-		Name            string // descriptive name given to runner
-		MaxJobs         int    // number of jobs the runner can execute at any one time
+		Name    string // descriptive name given to runner
+		MaxJobs int    // number of jobs the runner can execute at any one time
+
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
 		PluginCache     bool   // toggle use of terraform's shared plugin cache

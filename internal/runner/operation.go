@@ -47,9 +47,9 @@ type (
 		logr.Logger
 		*workdir
 
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCachePath string // toggle use of terraform's shared plugin cache
+		Sandbox     bool // isolate privileged ops within sandbox
+		Debug       bool // toggle debug mode
+		PluginCache bool // toggle use of terraform's shared plugin cache
 
 		job           *Job
 		run           *run.Run
@@ -76,14 +76,14 @@ type (
 	operationOptions struct {
 		Sandbox         bool   // isolate privileged ops within sandbox
 		Debug           bool   // toggle debug mode
-		PluginCachePath string // toggle use of terraform's shared plugin cache
+		PluginCache     bool   // toggle use of terraform's shared plugin cache
 		TerraformBinDir string // destination directory for terraform binaries
 
 		logger     logr.Logger
 		job        *Job
 		jobToken   []byte
 		downloader downloader
-		isRemote   bool
+		isAgent    bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -143,18 +143,17 @@ type (
 )
 
 func newOperation(opts operationOptions) *operation {
-	// an operation has its own uninherited context; the operation is instead
-	// canceled via its cancel() method.
-	//
-	// TODO: why?
+	// An operation has its own uninherited context; the operation is instead
+	// canceled via its cancel() method, which provides more control, with the
+	// ability to gracefully or forcefully cancel an operation.
 	ctx, cancelfn := context.WithCancel(context.Background())
 
 	if opts.downloader == nil {
 		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)
 	}
 	envs := defaultEnvs
-	if opts.PluginCachePath != "" {
-		envs = append(envs, "TF_PLUGIN_CACHE_DIR="+opts.PluginCachePath)
+	if opts.PluginCache {
+		envs = append(envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 	}
 	// make token available to terraform CLI
 	envs = append(envs, internal.CredentialEnv(opts.server.Hostname(), opts.jobToken))
@@ -410,8 +409,8 @@ func (o *operation) addSandboxWrapper(args []string) []string {
 		// avoids provider error "failed to read schema..."
 		"--tmpfs", "/tmp",
 	}
-	if o.PluginCachePath != "" {
-		bargs = append(bargs, "--ro-bind", o.PluginCachePath, o.PluginCachePath)
+	if o.PluginCache {
+		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
 	}
 	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))
 	return append(bargs, args[1:]...)
