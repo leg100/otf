@@ -82,7 +82,6 @@ func newJob(run *otfrun.Run) *Job {
 		Status:       JobUnallocated,
 		Organization: run.Organization,
 		WorkspaceID:  run.WorkspaceID,
-		AgentPoolID:  run.AgentPoolID,
 	}
 }
 

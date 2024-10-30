@@ -411,7 +411,7 @@ func (o *operation) addSandboxWrapper(args []string) []string {
 		"--tmpfs", "/tmp",
 	}
 	if o.PluginCachePath != "" {
-		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
+		bargs = append(bargs, "--ro-bind", o.PluginCachePath, o.PluginCachePath)
 	}
 	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))
 	return append(bargs, args[1:]...)

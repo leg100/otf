@@ -20,8 +20,6 @@ type allocator struct {
 	// service for seeding and streaming pools, runners, and jobs, and for
 	// allocating jobs to runners.
 	client allocatorClient
-	// cache of agent pools
-	pools map[string]*Pool
 	// runners to allocate jobs to, keyed by runner ID
 	runners map[string]*RunnerMeta
 	// jobs awaiting allocation to an runner, keyed by job ID
@@ -29,11 +27,9 @@ type allocator struct {
 }
 
 type allocatorClient interface {
-	WatchAgentPools(context.Context) (<-chan pubsub.Event[*Pool], func())
 	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerMeta], func())
 	WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
 
-	listAllAgentPools(ctx context.Context) ([]*Pool, error)
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
@@ -44,18 +40,11 @@ type allocatorClient interface {
 // Start the allocator. Should be invoked in a go routine.
 func (a *allocator) Start(ctx context.Context) error {
 	// Subscribe to pool, job and runner events and unsubscribe before returning.
-	poolsSub, poolsUnsub := a.client.WatchAgentPools(ctx)
-	defer poolsUnsub()
 	runnersSub, runnersUnsub := a.client.WatchRunners(ctx)
 	defer runnersUnsub()
 	jobsSub, jobsUnsub := a.client.WatchJobs(ctx)
 	defer jobsUnsub()
 
-	// seed allocator with pools, runners, and jobs
-	pools, err := a.client.listAllAgentPools(ctx)
-	if err != nil {
-		return err
-	}
 	runners, err := a.client.listRunners(ctx)
 	if err != nil {
 		return err
@@ -64,7 +53,7 @@ func (a *allocator) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	a.seed(pools, runners, jobs)
+	a.seed(runners, jobs)
 
 	// allocate jobs to runners
 	a.allocate(ctx)
@@ -72,16 +61,6 @@ func (a *allocator) Start(ctx context.Context) error {
 	// consume events until a subscriber is closed, and allocate jobs.
 	for {
 		select {
-		case event, open := <-poolsSub:
-			if !open {
-				return pubsub.ErrSubscriptionTerminated
-			}
-			switch event.Type {
-			case pubsub.DeletedEvent:
-				delete(a.pools, event.Payload.ID)
-			default:
-				a.pools[event.Payload.ID] = event.Payload
-			}
 		case event, open := <-runnersSub:
 			if !open {
 				return pubsub.ErrSubscriptionTerminated
@@ -109,7 +88,7 @@ func (a *allocator) Start(ctx context.Context) error {
 	}
 }
 
-func (a *allocator) seed(pools []*Pool, agents []*RunnerMeta, jobs []*Job) {
+func (a *allocator) seed(agents []*RunnerMeta, jobs []*Job) {
 	a.runners = make(map[string]*RunnerMeta, len(agents))
 	for _, runner := range agents {
 		a.runners[runner.ID] = runner

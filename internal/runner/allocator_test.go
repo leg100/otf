@@ -12,9 +12,6 @@ import (
 )
 
 func TestAllocator_seed(t *testing.T) {
-	pool1 := &Pool{ID: "pool-1"}
-	pool2 := &Pool{ID: "pool-2"}
-
 	agent1 := &RunnerMeta{ID: "agent-1", Status: RunnerIdle, MaxJobs: 5}
 	agent2 := &RunnerMeta{ID: "agent-2", Status: RunnerIdle, MaxJobs: 5}
 
@@ -29,12 +26,8 @@ func TestAllocator_seed(t *testing.T) {
 	}
 
 	a := &allocator{}
-	a.seed([]*Pool{pool1, pool2}, []*RunnerMeta{agent1, agent2}, []*Job{job1, job2})
+	a.seed([]*RunnerMeta{agent1, agent2}, []*Job{job1, job2})
 
-	if assert.Len(t, a.pools, 2) {
-		assert.Contains(t, a.pools, "pool-1")
-		assert.Contains(t, a.pools, "pool-2")
-	}
 	if assert.Len(t, a.runners, 2) {
 		assert.Contains(t, a.runners, "agent-1")
 		assert.Contains(t, a.runners, "agent-2")
@@ -183,7 +176,7 @@ func TestAllocator_allocate(t *testing.T) {
 					job: tt.job,
 				},
 			}
-			a.seed(tt.pools, tt.agents, []*Job{tt.job})
+			a.seed(tt.agents, []*Job{tt.job})
 			err := a.allocate(context.Background())
 			require.NoError(t, err)
 			// check agents
