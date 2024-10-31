@@ -239,7 +239,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	case *manager:
 		// ok
 	case *RunnerMeta:
-		if s.String() != runnerID {
+		if s.ID != runnerID {
 			return internal.ErrAccessNotPermitted
 		}
 		isAgent = true
