@@ -243,6 +243,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	// sets documented above.
 	allWorkspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspacepkg.Workspace], error) {
 		return h.workspaces.List(r.Context(), workspacepkg.ListOptions{
+			PageOptions:  opts,
 			Organization: &pool.Organization,
 		})
 	})
