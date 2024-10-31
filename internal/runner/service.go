@@ -132,7 +132,7 @@ func NewService(opts ServiceOptions) *Service {
 		if err != nil {
 			return nil, err
 		}
-		// if the agent has registered then it should be sending its ID in an
+		// if the runner has registered then it should be sending its ID in an
 		// http header
 		headers, err := otfhttp.HeadersFromContext(ctx)
 		if err != nil {
@@ -229,7 +229,7 @@ func (s *Service) getRunner(ctx context.Context, runnerID string) (*RunnerMeta, 
 func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerStatus) error {
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
-	// (b) an agent with an ID matching agentID
+	// (b) an runner with an ID matching runnerID
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -255,14 +255,11 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 		return runner.setStatus(to, isAgent)
 	})
 	if err != nil {
-		s.Error(err, "updating agent status", "agent_id", runnerID, "status", to, "subject", subject)
+		s.Error(err, "updating runner status", "runner_id", runnerID, "status", to, "subject", subject)
 		return err
 	}
-	if isAgent && from == to {
-		// if no change in status then log it as a ping
-		s.V(9).Info("received agent ping", "agent_id", runnerID)
-	} else {
-		s.V(9).Info("updated agent status", "agent_id", runnerID, "from", from, "to", to, "subject", subject)
+	if isAgent {
+		s.V(9).Info("updated runner status", "runner_id", runnerID, "from", from, "to", to, "subject", subject)
 	}
 	return nil
 }
@@ -276,7 +273,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 }
 
 func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	_, err := s.organization.CanAccess(ctx, rbac.ListAgentsAction, organization)
+	_, err := s.organization.CanAccess(ctx, rbac.ListRunnersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -289,10 +286,10 @@ func (s *Service) listRunnersByPool(ctx context.Context, poolID string) ([]*Runn
 
 func (s *Service) deleteRunner(ctx context.Context, runnerID string) error {
 	if err := s.db.deleteRunner(ctx, runnerID); err != nil {
-		s.Error(err, "deleting agent", "agent_id", runnerID)
+		s.Error(err, "deleting runner", "runner_id", runnerID)
 		return err
 	}
-	s.V(2).Info("deleted agent", "agent_id", runnerID)
+	s.V(2).Info("deleted runner", "runner_id", runnerID)
 	return nil
 }
 
@@ -384,32 +381,32 @@ func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *Service) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+func (s *Service) allocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error) {
 	allocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
-		return job.allocate(agentID)
+		return job.allocate(runnerID)
 	})
 	if err != nil {
-		s.Error(err, "allocating job", "spec", spec, "agent_id", agentID)
+		s.Error(err, "allocating job", "spec", spec, "runner_id", runnerID)
 		return nil, err
 	}
-	s.V(0).Info("allocated job", "job", allocated, "agent_id", agentID)
+	s.V(0).Info("allocated job", "job", allocated, "runner_id", runnerID)
 	return allocated, nil
 }
 
-func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error) {
 	var (
-		from        string // ID of agent that job *was* allocated to
+		from        string // ID of runner that job *was* allocated to
 		reallocated *Job
 	)
 	reallocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
 		from = *job.RunnerID
-		return job.reallocate(agentID)
+		return job.reallocate(runnerID)
 	})
 	if err != nil {
-		s.Error(err, "re-allocating job", "spec", spec, "from", from, "to", agentID)
+		s.Error(err, "re-allocating job", "spec", spec, "from", from, "to", runnerID)
 		return nil, err
 	}
-	s.V(0).Info("re-allocated job", "spec", spec, "from", from, "to", agentID)
+	s.V(0).Info("re-allocated job", "spec", spec, "from", from, "to", runnerID)
 	return reallocated, nil
 }
 
@@ -441,10 +438,10 @@ func (s *Service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "starting job", "spec", spec, "agent", subject)
+		s.Error(err, "starting job", "spec", spec, "runner", subject)
 		return nil, err
 	}
-	s.V(2).Info("started job", "spec", spec, "agent", subject)
+	s.V(2).Info("started job", "spec", spec, "runner", subject)
 	return token, nil
 }
 
@@ -697,20 +694,6 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID string) (*Pool, error
 	}
 	s.V(9).Info("retrieved agent pool", "subject", subject, "organization", pool.Organization)
 	return pool, nil
-}
-
-func (s *Service) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
-	subject, err := internal.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	pools, err := s.db.listPools(ctx)
-	if err != nil {
-		s.Error(err, "listing all agent pools", "subject", subject)
-		return nil, err
-	}
-	s.V(9).Info("listed all agent pools", "subject", subject, "count", len(pools))
-	return pools, nil
 }
 
 func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {

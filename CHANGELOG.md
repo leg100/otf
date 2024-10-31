@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/leg100/otf/compare/v0.3.4...v0.3.5) (2024-10-30)
+
+
+### Bug Fixes
+
+* **ui:** unresponsive agent pool page ([#701](https://github.com/leg100/otf/issues/701)) ([c0853f5](https://github.com/leg100/otf/commit/c0853f51f8ba359e6f96fdd43ccb089ede645598)), closes [#698](https://github.com/leg100/otf/issues/698) [#661](https://github.com/leg100/otf/issues/661)
+
 ## [0.3.4](https://github.com/leg100/otf/compare/v0.3.3...v0.3.4) (2024-10-29)
 
 

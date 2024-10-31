@@ -248,7 +248,7 @@ var specs = []controllerSpec{
 				},
 			},
 			{
-				Name:           "agent",
+				Name:           "runner",
 				controllerType: resourcePath,
 				actions: []action{
 					{

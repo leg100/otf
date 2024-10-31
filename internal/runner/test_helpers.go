@@ -24,10 +24,6 @@ func (f *fakeService) updateAgentPool(ctx context.Context, poolID string, opts u
 	return nil, nil
 }
 
-func (f *fakeService) listAllAgentPools(ctx context.Context) ([]*Pool, error) {
-	return []*Pool{f.pool}, nil
-}
-
 func (f *fakeService) listAgentPoolsByOrganization(context.Context, string, listPoolOptions) ([]*Pool, error) {
 	return []*Pool{f.pool}, nil
 }

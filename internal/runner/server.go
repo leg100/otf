@@ -87,6 +87,7 @@ func (s *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operat
 		job:         job,
 		jobToken:    jobToken,
 		downloader:  s.downloader,
+		jobs:        s.jobs,
 		runs:        s.runs,
 		workspaces:  s.workspaces,
 		variables:   s.variables,

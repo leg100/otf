@@ -423,18 +423,6 @@ func (db *db) getPoolByTokenID(ctx context.Context, tokenID string) (*Pool, erro
 	return poolresult(result).toPool(), nil
 }
 
-func (db *db) listPools(ctx context.Context) ([]*Pool, error) {
-	rows, err := db.Querier(ctx).FindAgentPools(ctx)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	pools := make([]*Pool, len(rows))
-	for i, r := range rows {
-		pools[i] = poolresult(r).toPool()
-	}
-	return pools, nil
-}
-
 func (db *db) listPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
 	rows, err := db.Querier(ctx).FindAgentPoolsByOrganization(ctx, sqlc.FindAgentPoolsByOrganizationParams{
 		OrganizationName:     sql.String(organization),
