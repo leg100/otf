@@ -28,8 +28,8 @@ func TestAgentPoolsUI(t *testing.T) {
 	defer unsub()
 
 	// subscribe to agent events
-	agentsSub, agentsUnsub := daemon.Runners.WatchRunners(ctx)
-	defer agentsUnsub()
+	runnersSub, runnersUnsub := daemon.Runners.WatchRunners(ctx)
+	defer runnersUnsub()
 
 	// create agent pool via UI
 	browser.New(t, ctx, func(page playwright.Page) {
@@ -177,7 +177,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 		// shut agent down and wait for it to exit
 		shutdownAgent()
-		testutils.Wait(t, agentsSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
+		testutils.Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
 			return event.Payload.Status == runner.RunnerExited
 		})
 

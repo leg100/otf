@@ -527,7 +527,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System:    d.Runners.NewAllocator(d.Logger),
 		},
 		{
-			Name:      "agent-manager",
+			Name:      "runner-manager",
 			Logger:    d.Logger,
 			Exclusive: true,
 			DB:        d.DB,
@@ -535,7 +535,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System:    d.Runners.NewManager(),
 		},
 		{
-			Name:   "agent-daemon",
+			Name:   "runner-daemon",
 			Logger: d.Logger,
 			DB:     d.DB,
 			System: d.runner,

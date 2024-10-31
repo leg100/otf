@@ -56,7 +56,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	opts := Config{}
 	flags.IntVar(&opts.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
-	flags.BoolVar(&opts.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
+	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
 	flags.StringVar(&opts.TerraformBinDir, "terraform-bins-dir", releases.DefaultTerraformBinDir, "Destination directory for terraform binary downloads.")
 	return &opts
@@ -74,7 +74,7 @@ func newRunner(
 		RunnerMeta: &RunnerMeta{
 			Name:    cfg.Name,
 			MaxJobs: cfg.MaxJobs,
-			isAgent: isAgent,
+			IsAgent: isAgent,
 		},
 		client:     client,
 		registered: make(chan *RunnerMeta),

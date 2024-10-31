@@ -74,8 +74,8 @@ func (l *poolWorkspaceList) UnmarshalText(v []byte) error {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	// agents
-	r.HandleFunc("/organizations/{organization_name}/agents", h.listAgents).Methods("GET")
+	// runners
+	r.HandleFunc("/organizations/{organization_name}/runners", h.listAgents).Methods("GET")
 
 	// agent pools
 	r.HandleFunc("/organizations/{organization_name}/agent-pools", h.listAgentPools).Methods("GET")
@@ -90,7 +90,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agent-tokens/{token_id}/delete", h.deleteAgentToken).Methods("POST")
 }
 
-// agent handlers
+// runner handlers
 
 func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
@@ -99,19 +99,19 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverAgents, err := h.svc.listServerRunners(r.Context())
+	serverRunners, err := h.svc.listServerRunners(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	poolAgents, err := h.svc.listRunnersByOrganization(r.Context(), org)
+	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// order agents to show 'freshest' at the top
-	agents := append(serverAgents, poolAgents...)
-	slices.SortFunc(agents, func(a, b *RunnerMeta) int {
+	// order runners to show 'freshest' at the top
+	runners := append(serverRunners, agentRunners...)
+	slices.SortFunc(runners, func(a, b *RunnerMeta) int {
 		if a.LastPingAt.Before(b.LastPingAt) {
 			return 1
 		} else {
@@ -119,12 +119,12 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-	h.Render("agents_list.tmpl", w, struct {
+	h.Render("runners_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Agents []*RunnerMeta
+		Runners []*RunnerMeta
 	}{
-		OrganizationPage: organization.NewPage(r, "agents", org),
-		Agents:           agents,
+		OrganizationPage: organization.NewPage(r, "runners", org),
+		Runners:          runners,
 	})
 }
 

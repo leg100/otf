@@ -1,4 +1,4 @@
-{{ define "agent_item" }}
+{{ define "runner_item" }}
   {{ $statusColors := dict
     "idle" "bg-green-100"
     "busy" "bg-blue-200"
@@ -21,7 +21,7 @@
       {{ template "identifier" . }}
       <div>
         <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .Version }}</span>
-        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ if .IsServer }}otfd{{ else }}otf-agent{{ end }}</span>
+        <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ if .IsAgent }}otf-agent{{ else }}otfd{{ end }}</span>
         <span class="font-mono bg-gray-200 py-1 px-2 text-xs">{{ .IPAddress }}</span>
       </div>
     </div>

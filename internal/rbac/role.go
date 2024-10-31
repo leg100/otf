@@ -22,8 +22,8 @@ var (
 			GetVCSProviderAction:   true,
 			ListVariableSetsAction: true,
 			GetVariableSetAction:   true,
-			WatchAgentsAction:      true,
-			ListAgentsAction:       true,
+			WatchRunnersAction:     true,
+			ListRunnersAction:      true,
 		},
 	}
 

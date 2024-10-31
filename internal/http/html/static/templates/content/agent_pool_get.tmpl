@@ -121,7 +121,7 @@
   <hr class="my-4">
   <h3 class="font-semibold text-lg mb-2">Agents</h3>
   {{ range .Agents }}
-    {{ template "agent_item" . }}
+    {{ template "runner_item" . }}
   {{ end }}
 
   {{ if .CanDeleteAgentPool }}
