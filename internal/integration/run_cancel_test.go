@@ -56,7 +56,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 		Name:          internal.String("ws-1"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
-		AgentPoolID:   internal.String(*agent.AgentPoolID),
+		AgentPoolID:   internal.String(agent.AgentPool.ID),
 	})
 	require.NoError(t, err)
 

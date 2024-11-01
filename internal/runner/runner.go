@@ -70,11 +70,13 @@ func newRunner(
 	isAgent bool,
 	cfg Config,
 ) (*Runner, error) {
+	if cfg.MaxJobs == 0 {
+		cfg.MaxJobs = DefaultMaxJobs
+	}
 	r := &Runner{
 		RunnerMeta: &RunnerMeta{
 			Name:    cfg.Name,
 			MaxJobs: cfg.MaxJobs,
-			IsAgent: isAgent,
 		},
 		client:     client,
 		registered: make(chan *RunnerMeta),
@@ -89,9 +91,6 @@ func newRunner(
 		r.v = 1
 		// Distinguish log messages on server runner from other components.
 		r.logger = logger.WithValues("component", "runner")
-	}
-	if cfg.MaxJobs == 0 {
-		cfg.MaxJobs = DefaultMaxJobs
 	}
 	if cfg.Debug {
 		r.logger.V(r.v).Info("enabled debug mode")

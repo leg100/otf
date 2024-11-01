@@ -36,7 +36,7 @@ func TestRunError(t *testing.T) {
 			"execute run via daemon", workspace.RemoteExecutionMode, nil,
 		},
 		{
-			"execute run via agent", workspace.AgentExecutionMode, agent.AgentPoolID,
+			"execute run via agent", workspace.AgentExecutionMode, &agent.AgentPool.ID,
 		},
 	}
 	for _, tt := range tests {

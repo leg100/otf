@@ -26,6 +26,7 @@ type runnerMetaResult struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *sqlc.AgentPool
 	CurrentJobs  int64
 }
 
@@ -41,14 +42,18 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 		LastStatusAt: r.LastStatusAt.Time.UTC(),
 		Status:       RunnerStatus(r.Status.String),
 	}
-	if r.AgentPoolID.Valid {
-		meta.AgentPoolID = &r.AgentPoolID.String
+	if r.AgentPool != nil {
+		meta.AgentPool = &RunnerMetaAgentPool{
+			ID:               r.AgentPool.AgentPoolID.String,
+			Name:             r.AgentPool.Name.String,
+			OrganizationName: r.AgentPool.OrganizationName.String,
+		}
 	}
 	return meta
 }
 
 func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
-	err := db.Querier(ctx).InsertRunner(ctx, sqlc.InsertRunnerParams{
+	params := sqlc.InsertRunnerParams{
 		RunnerID:     sql.String(meta.ID),
 		Name:         sql.String(meta.Name),
 		Version:      sql.String(meta.Version),
@@ -57,9 +62,11 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 		Status:       sql.String(string(meta.Status)),
 		LastPingAt:   sql.Timestamptz(meta.LastPingAt),
 		LastStatusAt: sql.Timestamptz(meta.LastStatusAt),
-		AgentPoolID:  sql.StringPtr(meta.AgentPoolID),
-	})
-	return err
+	}
+	if meta.AgentPool != nil {
+		params.AgentPoolID = sql.String(meta.AgentPool.ID)
+	}
+	return db.Querier(ctx).InsertRunner(ctx, params)
 }
 
 func (db *db) update(ctx context.Context, agentID string, fn func(*RunnerMeta) error) error {

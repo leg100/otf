@@ -123,10 +123,10 @@ install-pre-commit:
 install-sqlc:
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
-# Generate sql code
+# Generate sql code and register table types with pgx
 .PHONY: sql
 sql:
-	sqlc generate
+	sqlc generate && go generate ./internal/sql
 
 # Install DB migration tool
 .PHONY: install-migrator
