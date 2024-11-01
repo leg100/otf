@@ -430,7 +430,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 		token = string(tokenBytes)
 	}
 
-	agentDaemon, err := runner.NewAgent(logger, runner.AgentOptions{
+	agent, err := runner.NewAgent(logger, runner.AgentOptions{
 		Config: &cfg,
 		Token:  token,
 		URL:    s.System.URL("/"),
@@ -440,7 +440,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
-		err := agentDaemon.Start(ctx)
+		err := agent.Start(ctx)
 		close(done)
 		require.NoError(t, err)
 	}()
@@ -449,7 +449,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 		cancel() // terminate agent
 		<-done   // don't exit test until agent fully terminated
 	})
-	return <-agentDaemon.Registered(), cancel
+	return <-agent.Registered(), cancel
 }
 
 func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPath string, args ...string) string {
