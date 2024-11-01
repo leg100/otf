@@ -48,8 +48,7 @@ type registerOptions struct {
 	// IPAddress of agent. Optional. Not sent over the wire; instead the server
 	// handler is responsible for determining client's IP address.
 	IPAddress *netip.Addr `json:"-"`
-	// ID of agent's pool. If unset then the agent is assumed to be a server
-	// agent (which does not belong to a pool).
+	// ID of agent's pool. Only set if runner is an agent.
 	AgentPoolID *string `json:"-"`
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
