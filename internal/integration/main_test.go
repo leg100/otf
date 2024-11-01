@@ -135,7 +135,6 @@ func doMain(m *testing.M) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	//unset, err = setenv("PLAYWRIGHT_DRIVER_PATH", path.Join(oldHome, ".cache", "ms-playwright"))
 
 	// Instruct terraform CLI to skip checks for new versions.
 	unset, err = setenv("CHECKPOINT_DISABLE", "true")

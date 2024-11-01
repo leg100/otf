@@ -50,7 +50,7 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 
 	pw, err := playwright.Run()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("running playwright: %w", err)
 	}
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless: &headless,

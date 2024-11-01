@@ -117,7 +117,8 @@ func (a *allocator) allocate(ctx context.Context) error {
 				// runner still healthy, wait for runner to start job
 				continue
 			}
-			// another no longer healthy, try reallocating job to another another
+			// no longer healthy, try reallocating job to another another
+			a.Info("reallocating job away from unhealthy runner", "job", job, "runner", runner)
 			reallocate = true
 		case JobFinished, JobCanceled, JobErrored:
 			// job has completed: remove and adjust number of current jobs
