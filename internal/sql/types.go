@@ -27,4 +27,6 @@ var tableTypes = []string{
 	"configuration_version_status_timestamps[]",
 	"state_version_outputs",
 	"state_version_outputs[]",
+	"agent_pools",
+	"agent_pools[]",
 }

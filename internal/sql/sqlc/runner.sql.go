@@ -39,15 +39,16 @@ func (q *Queries) DeleteRunner(ctx context.Context, runnerID pgtype.Text) (Runne
 const findRunnerByID = `-- name: FindRunnerByID :one
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 LEFT JOIN jobs j USING (runner_id)
 WHERE a.runner_id = $1
-GROUP BY a.runner_id
 `
 
 type FindRunnerByIDRow struct {
@@ -60,6 +61,7 @@ type FindRunnerByIDRow struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
@@ -76,6 +78,7 @@ func (q *Queries) FindRunnerByID(ctx context.Context, runnerID pgtype.Text) (Fin
 		&i.LastStatusAt,
 		&i.Status,
 		&i.AgentPoolID,
+		&i.AgentPool,
 		&i.CurrentJobs,
 	)
 	return i, err
@@ -84,12 +87,14 @@ func (q *Queries) FindRunnerByID(ctx context.Context, runnerID pgtype.Text) (Fin
 const findRunnerByIDForUpdate = `-- name: FindRunnerByIDForUpdate :one
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE a.runner_id = $1
 FOR UPDATE OF a
 `
@@ -104,6 +109,7 @@ type FindRunnerByIDForUpdateRow struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
@@ -120,6 +126,7 @@ func (q *Queries) FindRunnerByIDForUpdate(ctx context.Context, runnerID pgtype.T
 		&i.LastStatusAt,
 		&i.Status,
 		&i.AgentPoolID,
+		&i.AgentPool,
 		&i.CurrentJobs,
 	)
 	return i, err
@@ -128,13 +135,14 @@ func (q *Queries) FindRunnerByIDForUpdate(ctx context.Context, runnerID pgtype.T
 const findRunners = `-- name: FindRunners :many
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-GROUP BY a.runner_id
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 ORDER BY a.last_ping_at DESC
 `
 
@@ -148,6 +156,7 @@ type FindRunnersRow struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
@@ -170,6 +179,7 @@ func (q *Queries) FindRunners(ctx context.Context) ([]FindRunnersRow, error) {
 			&i.LastStatusAt,
 			&i.Status,
 			&i.AgentPoolID,
+			&i.AgentPool,
 			&i.CurrentJobs,
 		); err != nil {
 			return nil, err
@@ -185,6 +195,7 @@ func (q *Queries) FindRunners(ctx context.Context) ([]FindRunnersRow, error) {
 const findRunnersByOrganization = `-- name: FindRunnersByOrganization :many
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
@@ -193,7 +204,6 @@ SELECT
 FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.organization_name = $1
-GROUP BY a.runner_id
 ORDER BY last_ping_at DESC
 `
 
@@ -207,6 +217,7 @@ type FindRunnersByOrganizationRow struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
@@ -229,6 +240,7 @@ func (q *Queries) FindRunnersByOrganization(ctx context.Context, organizationNam
 			&i.LastStatusAt,
 			&i.Status,
 			&i.AgentPoolID,
+			&i.AgentPool,
 			&i.CurrentJobs,
 		); err != nil {
 			return nil, err
@@ -244,6 +256,7 @@ func (q *Queries) FindRunnersByOrganization(ctx context.Context, organizationNam
 const findRunnersByPoolID = `-- name: FindRunnersByPoolID :many
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
@@ -252,7 +265,6 @@ SELECT
 FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.agent_pool_id = $1
-GROUP BY a.runner_id
 ORDER BY last_ping_at DESC
 `
 
@@ -266,6 +278,7 @@ type FindRunnersByPoolIDRow struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
@@ -288,6 +301,7 @@ func (q *Queries) FindRunnersByPoolID(ctx context.Context, agentPoolID pgtype.Te
 			&i.LastStatusAt,
 			&i.Status,
 			&i.AgentPoolID,
+			&i.AgentPool,
 			&i.CurrentJobs,
 		); err != nil {
 			return nil, err
@@ -303,6 +317,7 @@ func (q *Queries) FindRunnersByPoolID(ctx context.Context, agentPoolID pgtype.Te
 const findServerRunners = `-- name: FindServerRunners :many
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
@@ -310,7 +325,6 @@ SELECT
     ) AS current_jobs
 FROM runners a
 WHERE agent_pool_id IS NULL
-GROUP BY a.runner_id
 ORDER BY last_ping_at DESC
 `
 
@@ -324,6 +338,7 @@ type FindServerRunnersRow struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  pgtype.Text
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
@@ -346,6 +361,7 @@ func (q *Queries) FindServerRunners(ctx context.Context) ([]FindServerRunnersRow
 			&i.LastStatusAt,
 			&i.Status,
 			&i.AgentPoolID,
+			&i.AgentPool,
 			&i.CurrentJobs,
 		); err != nil {
 			return nil, err

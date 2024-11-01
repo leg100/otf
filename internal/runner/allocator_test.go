@@ -92,7 +92,7 @@ func TestAllocator_allocate(t *testing.T) {
 			name:  "allocate job to pool agent",
 			pools: []*Pool{{ID: "pool-1"}},
 			agents: []*RunnerMeta{
-				{ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, AgentPoolID: internal.String("pool-1")},
+				{ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, AgentPool: &RunnerMetaAgentPool{ID: "pool-1"}},
 			},
 			job: &Job{
 				Spec:        JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
@@ -106,7 +106,7 @@ func TestAllocator_allocate(t *testing.T) {
 				RunnerID:    internal.String("agent-1"),
 			},
 			wantAgents: map[string]*RunnerMeta{
-				"agent-1": {ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, AgentPoolID: internal.String("pool-1")},
+				"agent-1": {ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, AgentPool: &RunnerMetaAgentPool{ID: "pool-1"}},
 			},
 		},
 		{

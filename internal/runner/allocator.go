@@ -140,7 +140,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			if runner.CurrentJobs == runner.MaxJobs {
 				continue
 			}
-			if runner.AgentPoolID == nil {
+			if runner.AgentPool == nil {
 				// if runner has a nil agent pool ID then it is a server
 				// runner and it only handles jobs with a nil pool ID.
 				if job.AgentPoolID != nil {
@@ -149,7 +149,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			} else {
 				// if a runner has a non-nil agent pool ID then it is an agent
 				// and it only handles jobs with a matching pool ID.
-				if job.AgentPoolID == nil || *runner.AgentPoolID != *job.AgentPoolID {
+				if job.AgentPoolID == nil || runner.AgentPool.ID != *job.AgentPoolID {
 					continue
 				}
 			}

@@ -74,7 +74,6 @@ func newRunner(
 		RunnerMeta: &RunnerMeta{
 			Name:    cfg.Name,
 			MaxJobs: cfg.MaxJobs,
-			IsAgent: isAgent,
 		},
 		client:     client,
 		registered: make(chan *RunnerMeta),

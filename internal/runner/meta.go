@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/netip"
 	"time"
@@ -30,12 +31,18 @@ type RunnerMeta struct {
 	LastStatusAt time.Time `jsonapi:"attribute" json:"last-status-at"`
 	// IP address of runner.
 	IPAddress netip.Addr `jsonapi:"attribute" json:"ip-address"`
-	// ID of agent's pool. Nil if server runner.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id"`
-	// Agent pool's organization
-	AgentPoolOrganizationName *string
+	// Info about the runner's agent pool. Non-nil if agent runner; nil if server
+	// runner.
+	AgentPool *RunnerMetaAgentPool `jsonapi:"attribute" json:"agent-pool"`
+}
 
-	IsAgent bool
+type RunnerMetaAgentPool struct {
+	// ID of agent's pool.
+	ID string `jsonapi:"attribute" json:"id"`
+	// Name of agent's pool
+	Name string `jsonapi:"attribute" json:"name"`
+	// Agent pool's organization.
+	OrganizationName string `jsonapi:"attribute" json:"organization-name"`
 }
 
 type registerOptions struct {
@@ -57,16 +64,17 @@ type registerOptions struct {
 	CurrentJobs []JobSpec `json:"current-jobs,omitempty"`
 }
 
-func register(opts registerOptions) (*RunnerMeta, error) {
-	m := &RunnerMeta{
-		ID:          internal.NewID("runner"),
-		Name:        opts.Name,
-		Version:     opts.Version,
-		MaxJobs:     opts.Concurrency,
-		AgentPoolID: opts.AgentPoolID,
+func (m *RunnerMeta) register(opts registerOptions) error {
+	if m.ID != "" {
+		return errors.New("runner has already registered")
 	}
+	m.ID = internal.NewID("runner")
+	m.Name = opts.Name
+	m.Version = opts.Version
+	m.MaxJobs = opts.Concurrency
+
 	if err := m.setStatus(RunnerIdle, true); err != nil {
-		return nil, err
+		return err
 	}
 	if opts.IPAddress != nil {
 		m.IPAddress = *opts.IPAddress
@@ -80,7 +88,7 @@ func register(opts registerOptions) (*RunnerMeta, error) {
 		m.IPAddress = ip
 	}
 
-	return m, nil
+	return nil
 }
 
 func (m *RunnerMeta) setStatus(status RunnerStatus, ping bool) error {
@@ -105,20 +113,32 @@ func (m *RunnerMeta) setStatus(status RunnerStatus, ping bool) error {
 	return nil
 }
 
+func (m *RunnerMeta) IsAgent() bool {
+	return m.AgentPool != nil
+}
+
 func (m *RunnerMeta) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", m.ID),
-		slog.Bool("agent", m.IsAgent),
+		slog.Bool("agent", m.IsAgent()),
 		slog.String("status", string(m.Status)),
 		slog.String("ip_address", m.IPAddress.String()),
 	}
-	if m.AgentPoolID != nil {
-		attrs = append(attrs, slog.String("pool_id", *m.AgentPoolID))
+	if m.AgentPool != nil {
+		attrs = append(attrs, slog.Any("pool", m.AgentPool))
 	}
 	if m.Name != "" {
 		attrs = append(attrs, slog.String("name", m.Name))
 	}
 	return slog.GroupValue(attrs...)
+}
+
+func (m *RunnerMetaAgentPool) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", m.ID),
+		slog.String("name", m.Name),
+		slog.String("organization", m.OrganizationName),
+	)
 }
 
 func (m *RunnerMeta) String() string { return m.ID }
@@ -139,8 +159,8 @@ func (*RunnerMeta) CanAccessTeam(rbac.Action, string) bool {
 func (m *RunnerMeta) CanAccessOrganization(action rbac.Action, name string) bool {
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if m.IsAgent {
-		return *m.AgentPoolOrganizationName == name
+	if m.AgentPool != nil {
+		return m.AgentPool.OrganizationName == name
 	}
 	return true
 }
@@ -151,8 +171,8 @@ func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.Work
 	//
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if m.IsAgent {
-		return *m.AgentPoolOrganizationName == policy.Organization
+	if m.AgentPool != nil {
+		return m.AgentPool.OrganizationName == policy.Organization
 	}
 	return true
 }

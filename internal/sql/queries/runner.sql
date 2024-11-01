@@ -32,18 +32,20 @@ RETURNING *;
 -- name: FindRunners :many
 SELECT
     a.*,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-GROUP BY a.runner_id
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 ORDER BY a.last_ping_at DESC;
 
 -- name: FindRunnersByOrganization :many
 SELECT
     a.*,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
@@ -52,12 +54,12 @@ SELECT
 FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.organization_name = sqlc.arg('organization_name')
-GROUP BY a.runner_id
 ORDER BY last_ping_at DESC;
 
 -- name: FindRunnersByPoolID :many
 SELECT
     a.*,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
@@ -66,12 +68,12 @@ SELECT
 FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.agent_pool_id = sqlc.arg('agent_pool_id')
-GROUP BY a.runner_id
 ORDER BY last_ping_at DESC;
 
 -- name: FindServerRunners :many
 SELECT
     a.*,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
@@ -79,31 +81,33 @@ SELECT
     ) AS current_jobs
 FROM runners a
 WHERE agent_pool_id IS NULL
-GROUP BY a.runner_id
 ORDER BY last_ping_at DESC;
 
 -- name: FindRunnerByID :one
 SELECT
     a.*,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 LEFT JOIN jobs j USING (runner_id)
-WHERE a.runner_id = sqlc.arg('runner_id')
-GROUP BY a.runner_id;
+WHERE a.runner_id = sqlc.arg('runner_id');
 
 -- name: FindRunnerByIDForUpdate :one
 SELECT
     a.*,
+    ap::"agent_pools" AS agent_pool,
     ( SELECT count(*)
       FROM jobs j
       WHERE a.runner_id = j.runner_id
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE a.runner_id = sqlc.arg('runner_id')
 FOR UPDATE OF a;
 

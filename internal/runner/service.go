@@ -145,10 +145,13 @@ func NewService(opts ServiceOptions) *Service {
 			}
 			return runner, nil
 		}
-		// Runner hasn't registered yet
-		//
-		// TODO: create constructor for constructing unregistered agent.
-		return &RunnerMeta{AgentPoolID: &pool.ID}, nil
+		// Agent runner hasn't registered yet, so set subject to a runner with a
+		// agent pool info, which will be used when registering the runner below.
+		return &RunnerMeta{AgentPool: &RunnerMetaAgentPool{
+			ID:               pool.ID,
+			Name:             pool.Name,
+			OrganizationName: pool.Organization,
+		}}, nil
 	})
 	// create jobs when a plan or apply is enqueued
 	opts.RunService.AfterEnqueuePlan(svc.createJob)
@@ -201,25 +204,25 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], fun
 }
 
 func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
-	meta, err := func() (*RunnerMeta, error) {
-		if err := authorizeRunner(ctx, ""); err != nil {
+	runner, err := func() (*RunnerMeta, error) {
+		runner, err := runnerFromContext(ctx)
+		if err != nil {
 			return nil, ErrUnauthorizedRegistration
 		}
-		meta, err := register(opts)
-		if err != nil {
+		if err := runner.register(opts); err != nil {
 			return nil, err
 		}
-		if err := s.db.create(ctx, meta); err != nil {
+		if err := s.db.create(ctx, runner); err != nil {
 			return nil, err
 		}
-		return meta, nil
+		return runner, nil
 	}()
 	if err != nil {
 		s.Error(err, "registering runner")
 		return nil, err
 	}
-	s.V(0).Info("registered runner", "runner", meta)
-	return meta, nil
+	s.V(0).Info("registered runner", "runner", runner)
+	return runner, nil
 }
 
 func (s *Service) getRunner(ctx context.Context, runnerID string) (*RunnerMeta, error) {
