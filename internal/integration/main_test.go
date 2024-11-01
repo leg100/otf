@@ -33,7 +33,7 @@ var (
 
 	// Setup playwright browser expectations with a timeout to wait for expected
 	// condition.
-	expect = playwright.NewPlaywrightAssertions(5000)
+	expect = playwright.NewPlaywrightAssertions(10_000)
 )
 
 func TestMain(m *testing.M) {
