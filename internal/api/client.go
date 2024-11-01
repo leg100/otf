@@ -17,6 +17,7 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 )
 
 type (
@@ -39,10 +40,10 @@ type (
 		Headers http.Header
 		// Toggle retrying requests upon encountering transient errors.
 		RetryRequests bool
-		// RetryLogHook is invoked each time a request is retried.
-		RetryLogHook retryablehttp.RequestLogHook
 		// Override default http transport
 		Transport http.RoundTripper
+		// Logger for logging an error upon retry
+		Logger logr.Logger
 	}
 )
 
@@ -83,17 +84,21 @@ func NewClient(config Config) (*Client, error) {
 		headers: config.Headers,
 	}
 	client.http = &retryablehttp.Client{
-		Backoff:        retryablehttp.DefaultBackoff,
-		ErrorHandler:   retryablehttp.PassthroughErrorHandler,
-		RequestLogHook: config.RetryLogHook,
-		HTTPClient:     &http.Client{Transport: config.Transport},
-		RetryWaitMin:   100 * time.Millisecond,
-		RetryWaitMax:   400 * time.Millisecond,
-		RetryMax:       30,
+		Backoff:      retryablehttp.DefaultBackoff,
+		ErrorHandler: retryablehttp.PassthroughErrorHandler,
+		HTTPClient:   &http.Client{Transport: config.Transport},
+		RetryWaitMin: 100 * time.Millisecond,
+		RetryWaitMax: 400 * time.Millisecond,
+		RetryMax:     30,
 	}
 	if config.RetryRequests {
 		// enable retries
 		client.http.CheckRetry = retryablehttp.DefaultRetryPolicy
+		client.http.RequestLogHook = func(_ retryablehttp.Logger, r *http.Request, n int) {
+			if n > 0 {
+				config.Logger.Error(nil, "retrying request", "url", r.URL, "attempt", n)
+			}
+		}
 	} else {
 		// disable retries
 		client.http.CheckRetry = func(_ context.Context, _ *http.Response, err error) (bool, error) {

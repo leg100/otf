@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	agentpkg "github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -17,13 +17,13 @@ func TestIntegration_Agents(t *testing.T) {
 
 	daemon, org, ctx := setup(t, nil)
 
-	pool1, err := daemon.Agents.CreateAgentPool(ctx, agentpkg.CreateAgentPoolOptions{
+	pool1, err := daemon.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
 		Name:         "pool-1",
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
 
-	pool2, err := daemon.Agents.CreateAgentPool(ctx, agentpkg.CreateAgentPoolOptions{
+	pool2, err := daemon.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
 		Name:         "pool-2",
 		Organization: org.Name,
 	})
@@ -48,30 +48,30 @@ func TestIntegration_Agents(t *testing.T) {
 	require.NoError(t, err)
 
 	// start agents up
-	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, pool1.ID, "", agentpkg.Config{})
+	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, pool1.ID, "", runner.Config{})
 	defer shutdown1()
-	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, pool2.ID, "", agentpkg.Config{})
+	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, pool2.ID, "", runner.Config{})
 	defer shutdown2()
 
 	// watch job events
-	jobsSub, unsub := daemon.Agents.WatchJobs(ctx)
+	jobsSub, unsub := daemon.Runners.WatchJobs(ctx)
 	defer unsub()
 
 	// create a run on ws1
 	_ = daemon.createRun(t, ctx, ws1, nil)
 
 	// wait for job to be allocated to agent1
-	testutils.Wait(t, jobsSub, func(event pubsub.Event[*agentpkg.Job]) bool {
-		return event.Payload.Status == agentpkg.JobAllocated &&
-			*event.Payload.AgentID == agent1.ID
+	testutils.Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
+		return event.Payload.Status == runner.JobAllocated &&
+			*event.Payload.RunnerID == agent1.ID
 	})
 
 	// create a run on ws2
 	_ = daemon.createRun(t, ctx, ws2, nil)
 
 	// wait for job to be allocated to agent2
-	testutils.Wait(t, jobsSub, func(event pubsub.Event[*agentpkg.Job]) bool {
-		return event.Payload.Status == agentpkg.JobAllocated &&
-			*event.Payload.AgentID == agent2.ID
+	testutils.Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
+		return event.Payload.Status == runner.JobAllocated &&
+			*event.Payload.RunnerID == agent2.ID
 	})
 }

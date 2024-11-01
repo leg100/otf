@@ -15,7 +15,7 @@ import (
 
 const hashicorpReleasesHost = "releases.hashicorp.com"
 
-var defaultTerraformBinDir = path.Join(os.TempDir(), "otf-terraform-bins")
+var DefaultTerraformBinDir = path.Join(os.TempDir(), "otf-terraform-bins")
 
 // downloader downloads terraform binaries
 type downloader struct {
@@ -30,7 +30,7 @@ type downloader struct {
 // to use a default.
 func NewDownloader(destdir string) *downloader {
 	if destdir == "" {
-		destdir = defaultTerraformBinDir
+		destdir = DefaultTerraformBinDir
 	}
 
 	mu := make(chan struct{}, 1)

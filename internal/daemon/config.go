@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/inmem"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -17,7 +17,7 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 // Config configures the otfd daemon. Descriptions of each field can be found in
 // the flag definitions in ./cmd/otfd
 type Config struct {
-	AgentConfig                  *agent.Config
+	RunnerConfig                 *runner.Config
 	CacheConfig                  *inmem.CacheConfig
 	GithubHostname               string
 	GithubClientID               string
@@ -51,9 +51,9 @@ type Config struct {
 }
 
 func ApplyDefaults(cfg *Config) {
-	if cfg.AgentConfig == nil {
-		cfg.AgentConfig = &agent.Config{
-			Concurrency: agent.DefaultConcurrency,
+	if cfg.RunnerConfig == nil {
+		cfg.RunnerConfig = &runner.Config{
+			MaxJobs: runner.DefaultMaxJobs,
 		}
 	}
 	if cfg.CacheConfig == nil {

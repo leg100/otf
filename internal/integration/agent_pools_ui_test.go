@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
@@ -21,15 +21,15 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	// create some workspaces to assign to pool
 	ws1 := daemon.createWorkspace(t, ctx, org)
-	//ws2 := daemon.createWorkspace(t, ctx, org)
+	// ws2 := daemon.createWorkspace(t, ctx, org)
 
 	// subscribe to agent pool events
-	poolsSub, unsub := daemon.Agents.WatchAgentPools(ctx)
+	poolsSub, unsub := daemon.Runners.WatchAgentPools(ctx)
 	defer unsub()
 
 	// subscribe to agent events
-	agentsSub, agentsUnsub := daemon.Agents.WatchAgents(ctx)
-	defer agentsUnsub()
+	runnersSub, runnersUnsub := daemon.Runners.WatchRunners(ctx)
+	defer runnersUnsub()
 
 	// create agent pool via UI
 	browser.New(t, ctx, func(page playwright.Page) {
@@ -161,7 +161,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, token)
 
 		// start agent up, configured to use token.
-		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, agent.Config{})
+		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, runner.Config{})
 
 		// go back to agent pool
 		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
@@ -177,8 +177,8 @@ func TestAgentPoolsUI(t *testing.T) {
 
 		// shut agent down and wait for it to exit
 		shutdownAgent()
-		testutils.Wait(t, agentsSub, func(event pubsub.Event[*agent.Agent]) bool {
-			return event.Payload.Status == agent.AgentExited
+		testutils.Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
+			return event.Payload.Status == runner.RunnerExited
 		})
 
 		// go to agent pool
@@ -229,7 +229,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// confirm pool was deleted
-		testutils.Wait(t, poolsSub, func(event pubsub.Event[*agent.Pool]) bool {
+		testutils.Wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
 			return event.Type == pubsub.DeletedEvent
 		})
 	})

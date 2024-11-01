@@ -69,6 +69,10 @@ sql:
           - db_type: "state_version_outputs"
             go_type:
               type: "StateVersionOutput"
+          - db_type: "agent_pools"
+            go_type:
+              type: "AgentPool"
+              pointer: true
         initialisms:
           - "id"
           - "vcs"

@@ -134,6 +134,8 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 }
 
 func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, apply bool) {
+	t.Helper()
+
 	// confirm plan begins and ends
 	err := expect.Locator(page.Locator(`//*[@id='tailed-plan-logs']`)).ToContainText("Initializing the backend")
 	require.NoError(t, err)

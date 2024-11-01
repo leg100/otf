@@ -10,18 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Agent struct {
-	AgentID      pgtype.Text
-	Name         pgtype.Text
-	Version      pgtype.Text
-	MaxJobs      pgtype.Int4
-	IPAddress    netip.Addr
-	LastPingAt   pgtype.Timestamptz
-	LastStatusAt pgtype.Timestamptz
-	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
-}
-
 type AgentPool struct {
 	AgentPoolID        pgtype.Text
 	Name               pgtype.Text
@@ -33,10 +21,6 @@ type AgentPool struct {
 type AgentPoolAllowedWorkspace struct {
 	AgentPoolID pgtype.Text
 	WorkspaceID pgtype.Text
-}
-
-type AgentStatus struct {
-	Status pgtype.Text
 }
 
 type AgentToken struct {
@@ -110,7 +94,7 @@ type Job struct {
 	RunID    pgtype.Text
 	Phase    pgtype.Text
 	Status   pgtype.Text
-	AgentID  pgtype.Text
+	RunnerID pgtype.Text
 	Signaled pgtype.Bool
 }
 
@@ -281,6 +265,22 @@ type RunVariable struct {
 	RunID pgtype.Text
 	Key   pgtype.Text
 	Value pgtype.Text
+}
+
+type Runner struct {
+	RunnerID     pgtype.Text
+	Name         pgtype.Text
+	Version      pgtype.Text
+	MaxJobs      pgtype.Int4
+	IPAddress    netip.Addr
+	LastPingAt   pgtype.Timestamptz
+	LastStatusAt pgtype.Timestamptz
+	Status       pgtype.Text
+	AgentPoolID  pgtype.Text
+}
+
+type RunnerStatus struct {
+	Status pgtype.Text
 }
 
 type SchemaVersion struct {

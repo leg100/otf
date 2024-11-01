@@ -9,9 +9,8 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/agent"
-	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/runner"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -34,8 +33,7 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	var (
 		loggerConfig *logr.Config
-		clientConfig otfapi.Config
-		agentConfig  *agent.Config
+		opts         *runner.AgentOptions
 	)
 
 	cmd := &cobra.Command{
@@ -48,7 +46,7 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			agent, err := agent.NewPoolDaemon(logger, *agentConfig, clientConfig)
+			agent, err := runner.NewAgent(logger, *opts)
 			if err != nil {
 				return fmt.Errorf("initializing agent: %w", err)
 			}
@@ -57,13 +55,11 @@ func run(ctx context.Context, args []string) error {
 		},
 	}
 
-	cmd.Flags().StringVar(&clientConfig.URL, "url", otfapi.DefaultURL, "URL of OTF server")
-	cmd.Flags().StringVar(&clientConfig.Token, "token", "", "Agent token for authentication")
 	cmd.MarkFlagRequired("token")
 	cmd.SetArgs(args)
 
 	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
-	agentConfig = agent.NewConfigFromFlags(cmd.Flags())
+	opts = runner.NewAgentOptionsFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
