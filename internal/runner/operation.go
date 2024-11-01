@@ -147,6 +147,9 @@ func newOperation(opts operationOptions) *operation {
 	// canceled via its cancel() method, which provides more control, with the
 	// ability to gracefully or forcefully cancel an operation.
 	ctx, cancelfn := context.WithCancel(context.Background())
+	// Authenticate as the job (only effective on server runner; the agent
+	// runner instead authenticates remotely via its job token).
+	ctx = internal.AddSubjectToContext(ctx, opts.job)
 
 	if opts.downloader == nil {
 		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)
@@ -160,6 +163,8 @@ func newOperation(opts operationOptions) *operation {
 
 	return &operation{
 		Logger:     opts.logger.WithValues("job", opts.job),
+		Sandbox:    opts.Sandbox,
+		Debug:      opts.Debug,
 		job:        opts.job,
 		downloader: opts.downloader,
 		envs:       envs,
@@ -173,6 +178,7 @@ func newOperation(opts operationOptions) *operation {
 		configs:    opts.configs,
 		logs:       opts.logs,
 		server:     opts.server,
+		isAgent:    opts.isAgent,
 	}
 }
 
