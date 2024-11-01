@@ -126,7 +126,7 @@ func NewService(opts ServiceOptions) *Service {
 		},
 	)
 	// Register with auth middleware the agent token kind and a means of
-	// retrieving the appropriate agent corresponding to the agent token ID
+	// retrieving the appropriate runner corresponding to the agent token ID
 	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
 		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
 		if err != nil {
@@ -138,14 +138,14 @@ func NewService(opts ServiceOptions) *Service {
 		if err != nil {
 			return nil, err
 		}
-		if agentID := headers.Get(agentIDHeader); agentID != "" {
-			runner, err := svc.getRunner(ctx, agentID)
+		if runnerID := headers.Get(runnerIDHeader); runnerID != "" {
+			runner, err := svc.getRunner(ctx, runnerID)
 			if err != nil {
-				return nil, fmt.Errorf("retrieving agent corresponding to ID found in http header: %w", err)
+				return nil, fmt.Errorf("retrieving runner corresponding to ID found in http header: %w", err)
 			}
 			return runner, nil
 		}
-		// Agent hasn't registered yet
+		// Runner hasn't registered yet
 		//
 		// TODO: create constructor for constructing unregistered agent.
 		return &RunnerMeta{AgentPoolID: &pool.ID}, nil
