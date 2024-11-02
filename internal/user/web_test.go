@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
@@ -43,7 +43,7 @@ func TestWeb_UserTokens(t *testing.T) {
 		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
 		h.createUserToken(w, r)
@@ -63,7 +63,7 @@ func TestWeb_UserTokens(t *testing.T) {
 		}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
 		h.userTokens(w, r)
@@ -78,7 +78,7 @@ func TestWeb_UserTokens(t *testing.T) {
 		}
 		q := "/?id=token-123"
 		r := httptest.NewRequest("POST", q, nil)
-		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
 		h.deleteUserToken(w, r)
@@ -104,7 +104,7 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 
 	q := "/?team_id=team-123"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(internal.AddSubjectToContext(r.Context(), owner))
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), owner))
 	w := httptest.NewRecorder()
 	h.getTeam(w, r)
 	if !assert.Equal(t, 200, w.Code) {

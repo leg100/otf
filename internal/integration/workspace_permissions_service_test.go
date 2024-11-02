@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,15 +55,15 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 		assert.Equal(t, org.Name, got.Organization)
 		assert.Equal(t, ws.ID, got.WorkspaceID)
 		assert.Equal(t, 3, len(got.Permissions))
-		assert.Contains(t, got.Permissions, internal.WorkspacePermission{
+		assert.Contains(t, got.Permissions, authz.WorkspacePermission{
 			TeamID: scum.ID,
 			Role:   rbac.WorkspaceAdminRole,
 		})
-		assert.Contains(t, got.Permissions, internal.WorkspacePermission{
+		assert.Contains(t, got.Permissions, authz.WorkspacePermission{
 			TeamID: skates.ID,
 			Role:   rbac.WorkspaceReadRole,
 		})
-		assert.Contains(t, got.Permissions, internal.WorkspacePermission{
+		assert.Contains(t, got.Permissions, authz.WorkspacePermission{
 			TeamID: cherries.ID,
 			Role:   rbac.WorkspacePlanRole,
 		})

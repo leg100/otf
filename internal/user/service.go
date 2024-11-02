@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
@@ -24,8 +25,8 @@ type (
 	Service struct {
 		logr.Logger
 
-		site         internal.Authorizer // authorizes site access
-		organization internal.Authorizer // authorizes org access
+		site         authz.Authorizer // authorizes site access
+		organization authz.Authorizer // authorizes org access
 		teams        *team.Service
 
 		db     *pgdb
@@ -52,7 +53,7 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
+		site:         &authz.SiteAuthorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB, opts.Logger},
 		userTokenFactory: &userTokenFactory{
 			tokens: opts.TokensService,
@@ -100,19 +101,17 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
 	// Register with auth middleware the user token kind and a means of
 	// retrieving user corresponding to token.
-	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID string) (authz.Subject, error) {
 		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: internal.String(tokenID)})
-
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.
-	opts.TokensService.RegisterUISubjectGetterOrCreator(func(ctx context.Context, username string) (internal.Subject, error) {
+	opts.TokensService.RegisterUISubjectGetterOrCreator(func(ctx context.Context, username string) (authz.Subject, error) {
 		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
 			user, err = svc.Create(ctx, username)
 		}
 		return user, err
-
 	})
 
 	return &svc

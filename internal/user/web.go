@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -109,14 +110,14 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.Render("profile.tmpl", w, struct {
 		html.SitePage
-		User internal.Subject
+		User authz.Subject
 	}{
 		SitePage: html.NewSitePage(r, "profile"),
 		User:     user,
@@ -152,14 +153,14 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.Render("site.tmpl", w, struct {
 		html.SitePage
-		User internal.Subject
+		User authz.Subject
 	}{
 		SitePage: html.NewSitePage(r, "site"),
 		User:     user,
@@ -235,7 +236,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -11,6 +11,7 @@ import (
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
@@ -60,7 +61,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 			}
 
 			// Confer superuser privileges on all calls to service endpoints
-			ctx := internal.AddSubjectToContext(cmd.Context(), &internal.Superuser{Username: "app-user"})
+			ctx := authz.AddSubjectToContext(cmd.Context(), &authz.Superuser{Username: "app-user"})
 
 			d, err := daemon.New(ctx, logger, cfg)
 			if err != nil {

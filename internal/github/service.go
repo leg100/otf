@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
@@ -22,8 +23,8 @@ type (
 
 		GithubHostname string
 
-		site         internal.Authorizer
-		organization internal.Authorizer
+		site         authz.Authorizer
+		organization authz.Authorizer
 		db           *pgdb
 		web          *webHandlers
 	}
@@ -44,7 +45,7 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:         opts.Logger,
 		GithubHostname: opts.GithubHostname,
-		site:           &internal.SiteAuthorizer{Logger: opts.Logger},
+		site:           &authz.SiteAuthorizer{Logger: opts.Logger},
 		organization:   &organization.Authorizer{Logger: opts.Logger},
 		db:             &pgdb{opts.DB},
 	}

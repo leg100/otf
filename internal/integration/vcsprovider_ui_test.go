@@ -10,6 +10,7 @@ import (
 
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
@@ -149,7 +150,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	daemon, org, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
 
 	// creating a github app requires site-admin role
-	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
+	ctx := authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// create app
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{

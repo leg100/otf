@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -73,13 +73,13 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var (
-				subject internal.Subject
+				subject authz.Subject
 				err     error
 			)
 			// Until request is authenticated, call service endpoints using
 			// superuser privileges. Once authenticated, the authenticated user
 			// replaces the superuser in the context.
-			ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{
+			ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{
 				Username: "auth",
 			})
 
@@ -111,13 +111,13 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 				http.Error(w, "no authentication token found", http.StatusUnauthorized)
 				return
 			}
-			ctx = internal.AddSubjectToContext(r.Context(), subject)
+			ctx = authz.AddSubjectToContext(r.Context(), subject)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func (m *middleware) validateIAPToken(ctx context.Context, token string) (internal.Subject, error) {
+func (m *middleware) validateIAPToken(ctx context.Context, token string) (authz.Subject, error) {
 	payload, err := idtoken.Validate(ctx, token, m.Audience)
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (intern
 	return m.GetOrCreateUISubject(ctx, email.(string))
 }
 
-func (m *middleware) validateBearer(ctx context.Context, bearer string) (internal.Subject, error) {
+func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.Subject, error) {
 	splitToken := strings.Split(bearer, "Bearer ")
 	if len(splitToken) != 2 {
 		return nil, fmt.Errorf("malformed bearer token")
@@ -153,7 +153,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 	return m.GetSubject(ctx, kind, parsed.Subject())
 }
 
-func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {
+func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (authz.Subject, bool) {
 	cookie, err := r.Cookie(SessionCookie)
 	if err == http.ErrNoCookie {
 		html.FlashSuccess(w, "you need to login to access the requested page")

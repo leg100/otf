@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 )
 
 // registry provides a means of registering different kinds of tokens with the
@@ -18,7 +18,7 @@ import (
 // other packages.
 type registry struct {
 	SiteToken string
-	SiteAdmin internal.Subject
+	SiteAdmin authz.Subject
 
 	kinds                    map[Kind]SubjectGetter
 	mu                       sync.Mutex
@@ -27,11 +27,11 @@ type registry struct {
 
 // SubjectGetter retrieves an OTF subject given the jwtSubject string, which is the
 // value of the 'subject' field parsed from a JWT.
-type SubjectGetter func(ctx context.Context, jwtSubject string) (internal.Subject, error)
+type SubjectGetter func(ctx context.Context, jwtSubject string) (authz.Subject, error)
 
 // UISubjectGetterOrCreator retrieves the OTF subject with the given login that
 // is attempting to access the UI. If the subject does not exist it is created.
-type UISubjectGetterOrCreator func(ctx context.Context, login string) (internal.Subject, error)
+type UISubjectGetterOrCreator func(ctx context.Context, login string) (authz.Subject, error)
 
 // RegisterKind registers a kind of authentication token, providing a func that
 // can retrieve the OTF subject indicated in the token.
@@ -41,7 +41,7 @@ func (r *registry) RegisterKind(k Kind, fn SubjectGetter) {
 	r.mu.Unlock()
 }
 
-func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (internal.Subject, error) {
+func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (authz.Subject, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -54,7 +54,7 @@ func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (i
 
 // RegisterSiteToken registers a site token which the middleware, and the
 // subject to return as the site admin upon successful authentication.
-func (r *registry) RegisterSiteToken(token string, siteAdmin internal.Subject) {
+func (r *registry) RegisterSiteToken(token string, siteAdmin authz.Subject) {
 	r.SiteToken = token
 	r.SiteAdmin = siteAdmin
 }
@@ -63,6 +63,6 @@ func (r *registry) RegisterUISubjectGetterOrCreator(fn UISubjectGetterOrCreator)
 	r.uiSubjectGetterOrCreator = fn
 }
 
-func (r *registry) GetOrCreateUISubject(ctx context.Context, login string) (internal.Subject, error) {
+func (r *registry) GetOrCreateUISubject(ctx context.Context, login string) (authz.Subject, error) {
 	return r.uiSubjectGetterOrCreator(ctx, login)
 }

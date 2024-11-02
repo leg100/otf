@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
@@ -31,7 +32,7 @@ type (
 	Service struct {
 		logr.Logger
 
-		organization internal.Authorizer
+		organization authz.Authorizer
 
 		tfeapi       *tfe
 		api          *api
@@ -127,7 +128,7 @@ func NewService(opts ServiceOptions) *Service {
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
-	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (authz.Subject, error) {
 		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
 		if err != nil {
 			return nil, err
@@ -166,7 +167,7 @@ func NewService(opts ServiceOptions) *Service {
 	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
-	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString string) (authz.Subject, error) {
 		spec, err := jobSpecFromString(jobspecString)
 		if err != nil {
 			return nil, err
@@ -233,7 +234,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerSt
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
 	// (b) an runner with an ID matching runnerID
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -456,7 +457,7 @@ type finishJobOptions struct {
 // finishJob finishes a job. Only the job itself may call this endpoint.
 func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
 	{
-		subject, err := internal.SubjectFromContext(ctx)
+		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {
 			return internal.ErrAccessNotPermitted
 		}
@@ -495,7 +496,7 @@ func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 // agent tokens
 
 func (s *Service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
-	at, token, subject, err := func() (*agentToken, []byte, internal.Subject, error) {
+	at, token, subject, err := func() (*agentToken, []byte, authz.Subject, error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
 			return nil, nil, nil, err
@@ -523,7 +524,7 @@ func (s *Service) CreateAgentToken(ctx context.Context, poolID string, opts Crea
 }
 
 func (s *Service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
-	at, subject, err := func() (*agentToken, internal.Subject, error) {
+	at, subject, err := func() (*agentToken, authz.Subject, error) {
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
 			return nil, nil, err
@@ -566,7 +567,7 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentT
 }
 
 func (s *Service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
-	at, subject, err := func() (*agentToken, internal.Subject, error) {
+	at, subject, err := func() (*agentToken, authz.Subject, error) {
 		// retrieve agent token and pool in order to get organization for authorization
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
@@ -642,7 +643,7 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 
 func (s *Service) updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
 	var (
-		subject       internal.Subject
+		subject       authz.Subject
 		before, after Pool
 	)
 	err := s.db.Lock(ctx, "agent_pools, agent_pool_allowed_workspaces", func(ctx context.Context, q *sqlc.Queries) (err error) {
@@ -714,7 +715,7 @@ func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization
 }
 
 func (s *Service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, error) {
-	pool, subject, err := func() (*Pool, internal.Subject, error) {
+	pool, subject, err := func() (*Pool, authz.Subject, error) {
 		// retrieve pool in order to get organization for authorization
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {

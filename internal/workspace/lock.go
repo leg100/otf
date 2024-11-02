@@ -1,7 +1,7 @@
 package workspace
 
 import (
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
 )
@@ -86,7 +86,7 @@ func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 
 // lockButtonHelper helps the UI determine the button to display for
 // locking/unlocking the workspace.
-func lockButtonHelper(ws *Workspace, policy internal.WorkspacePolicy, user internal.Subject) LockButton {
+func lockButtonHelper(ws *Workspace, policy authz.WorkspacePolicy, user authz.Subject) LockButton {
 	var btn LockButton
 
 	if ws.Locked() {

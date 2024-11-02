@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/team"
@@ -74,7 +74,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 
 			q := "/?workspace_id=ws-123"
 			r := httptest.NewRequest("GET", q, nil)
-			r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+			r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 			w := httptest.NewRecorder()
 			app.getWorkspace(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
@@ -105,7 +105,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		name   string
 		ws     *Workspace
 		teams  []*team.Team
-		policy internal.WorkspacePolicy
+		policy authz.WorkspacePolicy
 		user   user.User
 		want   func(t *testing.T, doc *html.Node)
 	}{
@@ -129,8 +129,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			name: "with policy",
 			ws:   &Workspace{ID: "ws-123"},
 			user: user.SiteAdmin,
-			policy: internal.WorkspacePolicy{
-				Permissions: []internal.WorkspacePermission{
+			policy: authz.WorkspacePolicy{
+				Permissions: []authz.WorkspacePermission{
 					{TeamID: "team-1", Role: rbac.WorkspaceAdminRole},
 					{TeamID: "team-4", Role: rbac.WorkspacePlanRole},
 				},
@@ -186,7 +186,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 
 			q := "/?workspace_id=ws-123"
 			r := httptest.NewRequest("GET", q, nil)
-			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &tt.user))
+			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &tt.user))
 			w := httptest.NewRecorder()
 			app.editWorkspace(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
@@ -234,7 +234,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1", nil)
-		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &user.SiteAdmin))
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -244,7 +244,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 	t.Run("second page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2", nil)
-		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &user.SiteAdmin))
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -254,7 +254,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 	t.Run("last page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3", nil)
-		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &user.SiteAdmin))
+		r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -271,7 +271,7 @@ func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 	}
 
 	r := httptest.NewRequest("GET", "/?organization_name=acme", nil)
-	r = r.WithContext(internal.AddSubjectToContext(context.Background(), &user.SiteAdmin))
+	r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 	w := httptest.NewRecorder()
 	app.listWorkspaces(w, r)
 	assert.Equal(t, 200, w.Code, w.Body.String())
@@ -346,9 +346,9 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
 			providers: []*vcsprovider.VCSProvider{
-				&vcsprovider.VCSProvider{},
-				&vcsprovider.VCSProvider{},
-				&vcsprovider.VCSProvider{},
+				{},
+				{},
+				{},
 			},
 		},
 	}
@@ -367,7 +367,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
 			providers: []*vcsprovider.VCSProvider{
-				&vcsprovider.VCSProvider{},
+				{},
 			},
 			repos: []string{
 				vcs.NewTestRepo(),
@@ -436,7 +436,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestFilterUnassigned(t *testing.T) {
-	policy := internal.WorkspacePolicy{Permissions: []internal.WorkspacePermission{
+	policy := authz.WorkspacePolicy{Permissions: []authz.WorkspacePermission{
 		{TeamID: "bosses", Role: rbac.WorkspaceAdminRole},
 		{TeamID: "workers", Role: rbac.WorkspacePlanRole},
 	}}

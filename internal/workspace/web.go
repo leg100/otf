@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -74,7 +75,7 @@ type (
 		RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error
 		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
-		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
+		GetPolicy(ctx context.Context, workspaceID string) (authz.WorkspacePolicy, error)
 		SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, teamID string) error
 	}
@@ -168,7 +169,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -256,7 +257,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -359,7 +360,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -762,7 +763,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 //
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
-func filterUnassigned(policy internal.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
+func filterUnassigned(policy authz.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
 	assigned := make(map[string]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.TeamID] = struct{}{}

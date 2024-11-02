@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -66,8 +67,8 @@ func (f *fakeWebServices) Create(ctx context.Context, workspaceID string, opts C
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) GetPolicy(context.Context, string) (internal.WorkspacePolicy, error) {
-	return internal.WorkspacePolicy{}, nil
+func (f *fakeWebServices) GetPolicy(context.Context, string) (authz.WorkspacePolicy, error) {
+	return authz.WorkspacePolicy{}, nil
 }
 
 func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {

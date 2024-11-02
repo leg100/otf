@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
@@ -57,8 +58,8 @@ func (f *fakeTailProxy) get(ctx context.Context, opts internal.GetChunkOptions) 
 	return f.chunk, nil
 }
 
-func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (internal.Subject, error) {
-	return &internal.Superuser{}, nil
+func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (authz.Subject, error) {
+	return &authz.Superuser{}, nil
 }
 
 type fakeSubService struct {

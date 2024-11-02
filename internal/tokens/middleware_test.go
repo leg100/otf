@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,7 +49,7 @@ func TestMiddleware(t *testing.T) {
 		token := newTestJWT(t, secret, Kind("test-kind"), time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
@@ -68,7 +68,7 @@ func TestMiddleware(t *testing.T) {
 		token := newTestJWT(t, secret, Kind("test-kind"), time.Hour)
 		r.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -92,7 +92,7 @@ func TestMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
+		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -100,7 +100,7 @@ func TestMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/app/protected", nil)
 		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
+		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -108,7 +108,7 @@ func TestMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "https://example.com")(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
+		fakeIAPMiddleware(t, "https://example.com")(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -116,7 +116,7 @@ func TestMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "https://invalid.com")(wantSubjectHandler(t, &internal.Superuser{})).ServeHTTP(w, r)
+		fakeIAPMiddleware(t, "https://invalid.com")(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
 		assert.Equal(t, 401, w.Code)
 	})
 }

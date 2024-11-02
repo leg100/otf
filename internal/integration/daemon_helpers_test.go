@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/cli"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
@@ -106,7 +107,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	}
 
 	// Confer superuser privileges on all calls to service endpoints
-	ctx := internal.AddSubjectToContext(context.Background(), &internal.Superuser{Username: "app-user"})
+	ctx := authz.AddSubjectToContext(context.Background(), &authz.Superuser{Username: "app-user"})
 
 	d, err := daemon.New(ctx, logger, cfg.Config)
 	require.NoError(t, err)
@@ -150,7 +151,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		// re-fetch user so that its ownership of the above org is included
 		testUser = daemon.getUser(t, adminCtx, testUser.Username)
 		// and re-add to context
-		testUserCtx = internal.AddSubjectToContext(ctx, testUser)
+		testUserCtx = authz.AddSubjectToContext(ctx, testUser)
 	}
 
 	return daemon, org, testUserCtx
@@ -239,7 +240,7 @@ func (s *testDaemon) createUserCtx(t *testing.T, opts ...otfuser.NewUserOption) 
 	t.Helper()
 
 	user := s.createUser(t, opts...)
-	return user, internal.AddSubjectToContext(context.Background(), user)
+	return user, authz.AddSubjectToContext(context.Background(), user)
 }
 
 func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *otfuser.User {
@@ -255,7 +256,7 @@ func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username stri
 
 	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})
 	require.NoError(t, err)
-	return user, internal.AddSubjectToContext(ctx, user)
+	return user, authz.AddSubjectToContext(ctx, user)
 }
 
 func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *team.Team {
@@ -371,7 +372,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *otfuse
 	// If user is provided then add them to context. Otherwise the context is
 	// expected to contain a user if authz is to succeed.
 	if user != nil {
-		ctx = internal.AddSubjectToContext(ctx, user)
+		ctx = authz.AddSubjectToContext(ctx, user)
 	}
 
 	ut, token, err := s.Users.CreateToken(ctx, otfuser.CreateUserTokenOptions{

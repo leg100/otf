@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -54,12 +54,12 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 		key:    key,
 		registry: &registry{
 			kinds: map[Kind]SubjectGetter{
-				"test-kind": func(context.Context, string) (internal.Subject, error) {
-					return &internal.Superuser{}, nil
+				"test-kind": func(context.Context, string) (authz.Subject, error) {
+					return &authz.Superuser{}, nil
 				},
 			},
-			uiSubjectGetterOrCreator: func(context.Context, string) (internal.Subject, error) {
-				return &internal.Superuser{}, nil
+			uiSubjectGetterOrCreator: func(context.Context, string) (authz.Subject, error) {
+				return &authz.Superuser{}, nil
 			},
 		},
 	})
@@ -71,7 +71,7 @@ func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
 		Logger:   logr.Discard(),
-		registry: &registry{SiteToken: token, SiteAdmin: &internal.Superuser{}},
+		registry: &registry{SiteToken: token, SiteAdmin: &authz.Superuser{}},
 		key:      key,
 	})
 }
@@ -83,8 +83,8 @@ func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 	return newMiddleware(middlewareOptions{
 		Logger: logr.Discard(),
 		registry: &registry{
-			uiSubjectGetterOrCreator: func(context.Context, string) (internal.Subject, error) {
-				return &internal.Superuser{}, nil
+			uiSubjectGetterOrCreator: func(context.Context, string) (authz.Subject, error) {
+				return &authz.Superuser{}, nil
 			},
 		},
 		GoogleIAPConfig: GoogleIAPConfig{
@@ -102,7 +102,7 @@ func wantSubjectHandler(t *testing.T, want any) http.HandlerFunc {
 	t.Helper()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got, err := internal.SubjectFromContext(r.Context())
+		got, err := authz.SubjectFromContext(r.Context())
 		require.NoError(t, err)
 		if assert.NotNil(t, got, "subject is missing") {
 			assert.Equal(t, reflect.TypeOf(want), reflect.TypeOf(got))

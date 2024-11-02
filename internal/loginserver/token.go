@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/user"
 )
@@ -75,7 +76,7 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create API token for user and include in response
-	userCtx := internal.AddSubjectToContext(r.Context(), &user.User{Username: code.Username})
+	userCtx := authz.AddSubjectToContext(r.Context(), &user.User{Username: code.Username})
 	_, token, err := s.users.CreateToken(userCtx, user.CreateUserTokenOptions{
 		Description: "terraform login",
 	})

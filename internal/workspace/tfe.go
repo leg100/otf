@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -407,7 +408,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 }
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error) {
-	subject, err := internal.SubjectFromContext(r.Context())
+	subject, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
 	}

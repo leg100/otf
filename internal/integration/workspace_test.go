@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
@@ -386,7 +387,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				ctx := internal.AddSubjectToContext(ctx, tt.user)
+				ctx := authz.AddSubjectToContext(ctx, tt.user)
 				results, err := svc.Workspaces.List(ctx, tt.opts)
 				require.NoError(t, err)
 

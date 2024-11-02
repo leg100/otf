@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -30,7 +31,7 @@ type (
 
 		db        *pgdb
 		cache     internal.Cache // cache state file
-		workspace internal.Authorizer
+		workspace authz.Authorizer
 		web       *webHandlers
 		tfeapi    *tfe
 		api       *api
@@ -265,7 +266,7 @@ func (a *Service) GetOutput(ctx context.Context, outputID string) (*Output, erro
 	return out, nil
 }
 
-func (a *Service) CanAccess(ctx context.Context, action rbac.Action, svID string) (internal.Subject, error) {
+func (a *Service) CanAccess(ctx context.Context, action rbac.Action, svID string) (authz.Subject, error) {
 	sv, err := a.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err
