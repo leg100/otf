@@ -77,7 +77,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, 
 	})
 }
 
-func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceid resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	q := db.Querier(ctx)
 	rows, err := q.FindConfigurationVersionsByWorkspaceID(ctx, sqlc.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID.String()),
@@ -102,13 +102,13 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceid resou
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
 	q := db.Querier(ctx)
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, sql.String(*opts.ID.String()))
+		result, err := q.FindConfigurationVersionByID(ctx, sql.String(opts.ID.String()))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return pgRow(result).toConfigVersion(), nil
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID.String()))
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.String(opts.WorkspaceID.String()))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -119,7 +119,7 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 }
 
 func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
-	cfg, err := db.Querier(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
+	cfg, err := db.Querier(ctx).DownloadConfigurationVersion(ctx, sql.String(id.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -127,7 +127,7 @@ func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
 }
 
 func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteConfigurationVersionByID(ctx, sql.String(id))
+	_, err := db.Querier(ctx).DeleteConfigurationVersionByID(ctx, sql.String(id.String()))
 	if err != nil {
 		return sql.Error(err)
 	}

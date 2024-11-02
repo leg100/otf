@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
@@ -17,8 +18,8 @@ type Client struct {
 }
 
 // DownloadConfig downloads a configuration version tarball.  Only configuration versions in the uploaded state may be downloaded.
-func (c *Client) DownloadConfig(ctx context.Context, cvID resource.ID ([]byte, error) {
-	u := fmt.Sprintf("configuration-versions/%s/download", url.QueryEscape(cvID))
+func (c *Client) DownloadConfig(ctx context.Context, cvID resource.ID) ([]byte, error) {
+	u := fmt.Sprintf("configuration-versions/%s/download", url.QueryEscape(cvID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err

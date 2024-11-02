@@ -87,7 +87,7 @@ type Superuser struct {
 }
 
 func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
-func (*Superuser) CanAccessTeam(rbac.Action, string) bool               { return true }
+func (*Superuser) CanAccessTeam(rbac.Action, resource.ID) bool          { return true }
 func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
 func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
 func (s *Superuser) Organizations() []string                            { return nil }
@@ -102,7 +102,7 @@ type Nobody struct {
 }
 
 func (*Nobody) CanAccessSite(action rbac.Action) bool                { return false }
-func (*Nobody) CanAccessTeam(rbac.Action, string) bool               { return false }
+func (*Nobody) CanAccessTeam(rbac.Action, resource.ID) bool          { return false }
 func (*Nobody) CanAccessOrganization(rbac.Action, string) bool       { return false }
 func (*Nobody) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return false }
 func (s *Nobody) Organizations() []string                            { return nil }

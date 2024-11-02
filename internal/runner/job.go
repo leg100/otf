@@ -171,7 +171,7 @@ func (j *Job) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolic
 	return false
 }
 
-func (j *Job) CanAccessTeam(rbac.Action, string) bool {
+func (j *Job) CanAccessTeam(rbac.Action, resource.ID) bool {
 	// Can't access team level actions
 	return false
 }

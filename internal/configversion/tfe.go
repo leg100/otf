@@ -34,7 +34,7 @@ type tfe struct {
 // tfeConfigsClient gives the tfe handlers access to config version services
 type tfeClient interface {
 	Create(ctx context.Context, workspaceid resource.ID, opts CreateOptions) (*ConfigurationVersion, error)
-	Get(ctx context.Context, id resource.ID (*ConfigurationVersion, error)
+	Get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error)
 	GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error)
 	List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
 	Delete(ctx context.Context, cvID resource.ID) error

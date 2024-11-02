@@ -153,7 +153,7 @@ func (*RunnerMeta) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (*RunnerMeta) CanAccessTeam(rbac.Action, string) bool {
+func (*RunnerMeta) CanAccessTeam(rbac.Action, resource.ID) bool {
 	return false
 }
 
