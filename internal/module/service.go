@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -28,7 +29,7 @@ type (
 
 		db *pgdb
 
-		organization internal.Authorizer
+		organization authz.Authorizer
 
 		api          *api
 		web          *webHandlers

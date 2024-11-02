@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -17,7 +18,7 @@ type (
 	Service struct {
 		logr.Logger
 
-		workspace internal.Authorizer
+		workspace authz.Authorizer
 
 		db     *pgdb
 		cache  internal.Cache
@@ -28,7 +29,7 @@ type (
 	Options struct {
 		logr.Logger
 
-		WorkspaceAuthorizer internal.Authorizer
+		WorkspaceAuthorizer authz.Authorizer
 		MaxConfigSize       int64
 
 		internal.Cache
@@ -154,7 +155,7 @@ func (s *Service) Delete(ctx context.Context, cvID string) error {
 	return nil
 }
 
-func (s *Service) canAccess(ctx context.Context, action rbac.Action, cvID string) (internal.Subject, error) {
+func (s *Service) canAccess(ctx context.Context, action rbac.Action, cvID string) (authz.Subject, error) {
 	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		return nil, err

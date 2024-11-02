@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	otfrun "github.com/leg100/otf/internal/run"
 )
@@ -136,7 +137,7 @@ func (j *Job) CanAccessOrganization(action rbac.Action, name string) bool {
 	}
 }
 
-func (j *Job) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (j *Job) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	if policy.WorkspaceID != j.WorkspaceID {
 		// job is allowed the retrieve the state of *another* workspace only if:
 		// (a) workspace is in the same organization as job, or

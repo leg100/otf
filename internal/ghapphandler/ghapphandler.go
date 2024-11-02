@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/vcs"
@@ -27,7 +27,7 @@ func (h *Handler) AddHandlers(r *mux.Router) {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// permit handler to talk to services
-	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "github-app-event-handler"})
+	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "github-app-event-handler"})
 	// retrieve github app config; if one hasn't been configured then return a
 	// 400
 	app, err := h.GithubApps.GetApp(ctx)

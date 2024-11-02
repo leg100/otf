@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
@@ -15,7 +16,7 @@ type (
 	Service struct {
 		logr.Logger
 
-		run internal.Authorizer
+		run authz.Authorizer
 
 		api    *api
 		web    *webHandlers
@@ -37,7 +38,7 @@ type (
 		*sql.Listener
 		internal.Verifier
 
-		RunAuthorizer internal.Authorizer
+		RunAuthorizer authz.Authorizer
 	}
 )
 

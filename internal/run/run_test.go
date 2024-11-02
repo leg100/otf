@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/user"
@@ -16,7 +17,7 @@ import (
 
 func TestRun_New_CreatedBy(t *testing.T) {
 	ctx := context.Background()
-	ctx = internal.AddSubjectToContext(ctx, &user.User{Username: "terry"})
+	ctx = authz.AddSubjectToContext(ctx, &user.User{Username: "terry"})
 	run := newTestRun(ctx, CreateOptions{})
 	assert.NotNil(t, run.CreatedBy)
 	assert.Equal(t, "terry", *run.CreatedBy)

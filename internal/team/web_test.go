@@ -5,14 +5,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTeam_WebHandlers(t *testing.T) {
-
 	t.Run("new", func(t *testing.T) {
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
@@ -57,7 +56,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		}
 		// make request with user with full perms, to ensure parts of
 		// page that are hidden to unprivileged users are not hidden.
-		userCtx := internal.AddSubjectToContext(context.Background(), &internal.Superuser{})
+		userCtx := authz.AddSubjectToContext(context.Background(), &authz.Superuser{})
 
 		q := "/?organization_name=acme"
 		r := httptest.NewRequest("GET", q, nil)

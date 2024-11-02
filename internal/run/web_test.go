@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
@@ -25,7 +25,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1", nil)
-		r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -35,7 +35,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("second page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2", nil)
-		r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -45,7 +45,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("last page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3", nil)
-		r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -68,7 +69,6 @@ func (a *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/tokens/show", a.organizationToken).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/tokens/delete", a.deleteOrganizationToken).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/tokens/create", a.createOrganizationToken).Methods("POST")
-
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +120,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	// Only enable the 'new organization' button if:
 	// (a) RestrictOrganizationCreation is false, or
 	// (b) The user has site permissions.
-	subject, err := internal.SubjectFromContext(r.Context())
+	subject, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return

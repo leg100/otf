@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/testutils"
@@ -21,7 +21,7 @@ func TestListModules(t *testing.T) {
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
 	w := httptest.NewRecorder()
 	h.list(w, r)
 	if !assert.Equal(t, 200, w.Code) {

@@ -1,9 +1,10 @@
-package internal
+package authz
 
 import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -21,5 +22,5 @@ func (a *SiteAuthorizer) CanAccess(ctx context.Context, action rbac.Action, _ st
 		return subj, nil
 	}
 	a.Error(nil, "unauthorized action", "action", action, "subject", subj)
-	return nil, ErrAccessNotPermitted
+	return nil, internal.ErrAccessNotPermitted
 }

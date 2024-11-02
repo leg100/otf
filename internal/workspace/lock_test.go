@@ -3,7 +3,7 @@ package workspace
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -140,7 +140,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := lockButtonHelper(tt.ws, internal.WorkspacePolicy{}, tt.subject)
+			got := lockButtonHelper(tt.ws, authz.WorkspacePolicy{}, tt.subject)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -150,12 +150,12 @@ type fakeSubject struct {
 	id                                 string
 	canUnlock, canForceUnlock, canLock bool
 
-	internal.Subject
+	authz.Subject
 }
 
 func (f *fakeSubject) String() string { return f.id }
 
-func (f *fakeSubject) CanAccessWorkspace(action rbac.Action, _ internal.WorkspacePolicy) bool {
+func (f *fakeSubject) CanAccessWorkspace(action rbac.Action, _ authz.WorkspacePolicy) bool {
 	switch action {
 	case rbac.UnlockWorkspaceAction:
 		return f.canUnlock

@@ -17,6 +17,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
@@ -149,7 +150,7 @@ func newOperation(opts operationOptions) *operation {
 	ctx, cancelfn := context.WithCancel(context.Background())
 	// Authenticate as the job (only effective on server runner; the agent
 	// runner instead authenticates remotely via its job token).
-	ctx = internal.AddSubjectToContext(ctx, opts.job)
+	ctx = authz.AddSubjectToContext(ctx, opts.job)
 
 	if opts.downloader == nil {
 		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)

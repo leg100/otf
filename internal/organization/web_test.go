@@ -9,7 +9,7 @@ import (
 
 	"github.com/antchfx/htmlquery"
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -66,7 +66,7 @@ func TestWeb_ListHandler(t *testing.T) {
 
 		t.Run("first page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=1", nil)
-			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
+			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -76,7 +76,7 @@ func TestWeb_ListHandler(t *testing.T) {
 
 		t.Run("second page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=2", nil)
-			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
+			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -86,7 +86,7 @@ func TestWeb_ListHandler(t *testing.T) {
 
 		t.Run("last page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=3", nil)
-			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
+			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -98,7 +98,7 @@ func TestWeb_ListHandler(t *testing.T) {
 	t.Run("new organization button", func(t *testing.T) {
 		tests := []struct {
 			name     string
-			subject  internal.Subject
+			subject  authz.Subject
 			restrict bool
 			want     bool
 		}{
@@ -110,7 +110,7 @@ func TestWeb_ListHandler(t *testing.T) {
 			{"disabled", &unprivilegedSubject{}, true, false},
 			// restricted creation of organizations, but button still enabled
 			// for site admins
-			{"site admin", &internal.Superuser{}, true, true},
+			{"site admin", &authz.Superuser{}, true, true},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -120,7 +120,7 @@ func TestWeb_ListHandler(t *testing.T) {
 					RestrictCreation: tt.restrict,
 				}
 				r := httptest.NewRequest("GET", "/?", nil)
-				r = r.WithContext(internal.AddSubjectToContext(context.Background(), tt.subject))
+				r = r.WithContext(authz.AddSubjectToContext(context.Background(), tt.subject))
 				w := httptest.NewRecorder()
 				svc.list(w, r)
 				assert.Equal(t, 200, w.Code)
@@ -163,7 +163,7 @@ type (
 	}
 
 	unprivilegedSubject struct {
-		internal.Subject
+		authz.Subject
 	}
 )
 

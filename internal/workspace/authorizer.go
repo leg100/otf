@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -15,12 +16,12 @@ type authorizer struct {
 	db *pgdb
 }
 
-func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID string) (internal.Subject, error) {
-	subj, err := internal.SubjectFromContext(ctx)
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID string) (authz.Subject, error) {
+	subj, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if internal.SkipAuthz(ctx) {
+	if authz.SkipAuthz(ctx) {
 		return subj, nil
 	}
 	policy, err := a.db.GetWorkspacePolicy(ctx, workspaceID)

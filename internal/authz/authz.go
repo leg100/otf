@@ -1,4 +1,5 @@
-package internal
+// Package authz handles all things authorization
+package authz
 
 import (
 	"context"

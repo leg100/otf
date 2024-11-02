@@ -9,6 +9,7 @@ import (
 
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/testutils"
@@ -25,7 +26,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	integrationTest(t)
 
 	// creating a github app requires site-admin role
-	ctx := internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
+	ctx := authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// these tests submit the create github app form using different
 	// combinations of form fields, and then checking that a (stub) github server
@@ -221,7 +222,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 		}),
 	)
 	// creating a github app requires site-admin role
-	ctx = internal.AddSubjectToContext(ctx, &user.SiteAdmin)
+	ctx = authz.AddSubjectToContext(ctx, &user.SiteAdmin)
 	// create an OTF daemon with a fake github backend, and serve up a repo and
 	// its contents via tarball.
 	_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{

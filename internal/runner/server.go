@@ -3,7 +3,7 @@ package runner
 import (
 	"context"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/releases"
 )
@@ -59,7 +59,7 @@ func NewServerRunner(opts ServerRunnerOptions) (*ServerRunner, error) {
 // Start the server runner daemon.
 func (d *ServerRunner) Start(ctx context.Context) error {
 	// Authenticate as runner with server endpoints.
-	ctx = internal.AddSubjectToContext(ctx, d.RunnerMeta)
+	ctx = authz.AddSubjectToContext(ctx, d.RunnerMeta)
 
 	return d.Runner.Start(ctx)
 }

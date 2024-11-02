@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -54,7 +55,7 @@ func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []
 }
 
 func (s *Service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}

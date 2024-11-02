@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -63,7 +64,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
 	// give spawner unlimited powers
-	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "run-spawner"})
+	ctx = authz.AddSubjectToContext(ctx, &authz.Superuser{Username: "run-spawner"})
 
 	// skip events other than those that create or update a ref or pull request
 	switch event.Action {
