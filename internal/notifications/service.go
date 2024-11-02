@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
@@ -17,7 +17,7 @@ type (
 	Service struct {
 		logr.Logger
 
-		workspaceAuthorizer internal.Authorizer // authorize workspaces actions
+		workspaceAuthorizer authz.Authorizer // authorize workspaces actions
 		db                  *pgdb
 		api                 *tfe
 		broker              *pubsub.Broker[*Config]
@@ -29,7 +29,7 @@ type (
 		*tfeapi.Responder
 		logr.Logger
 
-		WorkspaceAuthorizer internal.Authorizer
+		WorkspaceAuthorizer authz.Authorizer
 	}
 )
 
@@ -85,7 +85,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts Crea
 }
 
 func (s *Service) Update(ctx context.Context, id resource.ID, opts UpdateConfigOptions) (*Config, error) {
-	var subject internal.Subject
+	var subject authz.Subject
 	updated, err := s.db.update(ctx, id, func(nc *Config) (err error) {
 		subject, err = s.workspaceAuthorizer.CanAccess(ctx, rbac.UpdateNotificationConfigurationAction, nc.WorkspaceID)
 		if err != nil {

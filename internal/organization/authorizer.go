@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -13,12 +14,12 @@ type Authorizer struct {
 	logr.Logger
 }
 
-func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name string) (internal.Subject, error) {
-	subj, err := internal.SubjectFromContext(ctx)
+func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name string) (authz.Subject, error) {
+	subj, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if internal.SkipAuthz(ctx) {
+	if authz.SkipAuthz(ctx) {
 		return subj, nil
 	}
 	if subj.CanAccessOrganization(action, name) {

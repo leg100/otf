@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
@@ -458,7 +459,7 @@ func (r *Run) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (r *Run) CanAccessWorkspace(action rbac.Action, policy *internal.WorkspacePolicy) bool {
+func (r *Run) CanAccessWorkspace(action rbac.Action, policy *authz.WorkspacePolicy) bool {
 	// run can access anything within its workspace
 	return r.WorkspaceID == policy.WorkspaceID
 }

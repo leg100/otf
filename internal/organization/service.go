@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
@@ -21,11 +22,11 @@ type (
 	Service struct {
 		RestrictOrganizationCreation bool
 
-		internal.Authorizer // authorize access to org
+		authz.Authorizer // authorize access to org
 		logr.Logger
 
 		db           *pgdb
-		site         internal.Authorizer // authorize access to site
+		site         authz.Authorizer // authorize access to site
 		web          *web
 		tfeapi       *tfe
 		api          *api
@@ -59,7 +60,7 @@ func NewService(opts Options) *Service {
 		Logger:                       opts.Logger,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
-		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
+		site:                         &authz.SiteAuthorizer{Logger: opts.Logger},
 		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
 	svc.web = &web{
@@ -92,7 +93,7 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
 	// Register with auth middleware the organization token and a means of
 	// retrieving organization corresponding to token.
-	opts.TokensService.RegisterKind(OrganizationTokenKind, func(ctx context.Context, tokenID resource.ID) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(OrganizationTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		return svc.getOrganizationTokenByID(ctx, tokenID)
 	})
 	return &svc
@@ -174,7 +175,7 @@ func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (
 // Subject is an organization token: return its organization
 // Subject is a team: return its organization
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -245,8 +246,8 @@ func (s *Service) GetEntitlements(ctx context.Context, organization string) (Ent
 	return defaultEntitlements(org.ID), nil
 }
 
-func (s *Service) restrictOrganizationCreation(ctx context.Context) (internal.Subject, error) {
-	subject, err := internal.SubjectFromContext(ctx)
+func (s *Service) restrictOrganizationCreation(ctx context.Context) (authz.Subject, error) {
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

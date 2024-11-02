@@ -7,7 +7,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -51,7 +51,7 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 
 	// Confer all privileges to subsystem and identify subsystem in service
 	// endpoint calls.
-	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: s.Name})
+	ctx = authz.AddSubjectToContext(ctx, &authz.Superuser{Username: s.Name})
 
 	op := func() (err error) {
 		if s.Exclusive {

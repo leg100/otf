@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
@@ -24,8 +25,8 @@ type (
 	Service struct {
 		logr.Logger
 
-		organization internal.Authorizer // authorizes org access
-		team         internal.Authorizer // authorizes team access
+		organization authz.Authorizer // authorizes org access
+		team         authz.Authorizer // authorizes team access
 
 		db     *pgdb
 		web    *webHandlers
@@ -78,7 +79,7 @@ func NewService(opts Options) *Service {
 		// only an owner can create a team but there are no owners until an
 		// owners team is created, so in this particular instance authorization
 		// is skipped.
-		ctx = internal.AddSkipAuthz(ctx)
+		ctx = authz.AddSkipAuthz(ctx)
 		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
 			Name: internal.String("owners"),
 		})
@@ -89,7 +90,7 @@ func NewService(opts Options) *Service {
 	})
 	// Register with auth middleware the team token kind and a means of
 	// retrieving team corresponding to token.
-	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.ID) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
 

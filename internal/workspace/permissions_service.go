@@ -3,7 +3,7 @@ package workspace
 import (
 	"context"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -12,7 +12,7 @@ import (
 //
 // NOTE: no authz protects this endpoint because it's used in the process of making
 // authz decisions.
-func (s *Service) GetPolicy(ctx context.Context, workspaceID resource.ID) (internal.WorkspacePolicy, error) {
+func (s *Service) GetPolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 

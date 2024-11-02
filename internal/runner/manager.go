@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -26,7 +26,7 @@ type manager struct {
 	// frequency with which the manager will check runners.
 	interval time.Duration
 	// manager identifies itself as a subject when making service calls
-	internal.Subject
+	authz.Subject
 }
 
 type managerClient interface {
@@ -49,7 +49,7 @@ func (m *manager) String() string { return "runner-manager" }
 //
 // Should be invoked in a go routine.
 func (m *manager) Start(ctx context.Context) error {
-	ctx = internal.AddSubjectToContext(ctx, m)
+	ctx = authz.AddSubjectToContext(ctx, m)
 
 	updateAll := func() error {
 		runners, err := m.client.listRunners(ctx)

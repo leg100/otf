@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -48,7 +48,7 @@ type (
 	webWorkspaceClient interface {
 		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		GetPolicy(ctx context.Context, workspaceID resource.ID) (internal.WorkspacePolicy, error)
+		GetPolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
 	}
 
 	workspaceInfo struct {
@@ -187,7 +187,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -211,7 +211,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		workspace.WorkspacePage
 		WorkspaceVariableTable workspaceVariableTable
 		VariableSetTables      []setVariableTable
-		Policy                 internal.WorkspacePolicy
+		Policy                 authz.WorkspacePolicy
 		CanCreateVariable      bool
 		CanDeleteVariable      bool
 		CanUpdateWorkspace     bool
@@ -315,7 +315,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -438,7 +438,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := internal.SubjectFromContext(r.Context())
+	user, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

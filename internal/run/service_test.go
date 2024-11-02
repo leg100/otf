@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ func TestService_Watch(t *testing.T) {
 	in := make(chan pubsub.Event[*Run], 1)
 
 	svc := &Service{
-		site:   internal.NewAllowAllAuthorizer(),
+		site:   authz.NewAllowAllAuthorizer(),
 		Logger: logr.Discard(),
 		broker: &fakeSubService{ch: in},
 	}

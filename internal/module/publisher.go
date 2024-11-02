@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -41,7 +41,7 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
 	// give spawner unlimited powers
-	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "run-spawner"})
+	ctx = authz.AddSubjectToContext(ctx, &authz.Superuser{Username: "run-spawner"})
 
 	// only create-tag events trigger the publishing of new module version
 	if event.Type != vcs.EventTypeTag {

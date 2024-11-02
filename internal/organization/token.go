@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
@@ -76,7 +77,7 @@ func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string
 	return true
 }
 
-func (u *OrganizationToken) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (u *OrganizationToken) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	return u.CanAccessOrganization(action, policy.Organization)
 }
 

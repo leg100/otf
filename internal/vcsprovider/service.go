@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -21,8 +22,8 @@ type (
 	Service struct {
 		logr.Logger
 
-		site              internal.Authorizer
-		organization      internal.Authorizer
+		site              authz.Authorizer
+		organization      authz.Authorizer
 		db                *pgdb
 		web               *webHandlers
 		api               *tfe
@@ -59,7 +60,7 @@ func NewService(opts Options) *Service {
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
 		githubapps:      opts.GithubAppService,
-		site:            &internal.SiteAuthorizer{Logger: opts.Logger},
+		site:            &authz.SiteAuthorizer{Logger: opts.Logger},
 		organization:    &organization.Authorizer{Logger: opts.Logger},
 		factory:         &factory,
 		db: &pgdb{
@@ -86,8 +87,8 @@ func NewService(opts Options) *Service {
 			return
 		}
 		// create user with unlimited permissions
-		user := &internal.Superuser{Username: "vcs-provider-service"}
-		ctx := internal.AddSubjectToContext(context.Background(), user)
+		user := &authz.Superuser{Username: "vcs-provider-service"}
+		ctx := authz.AddSubjectToContext(context.Background(), user)
 		// list all vcsproviders using the app install
 		providers, err := svc.ListVCSProvidersByGithubAppInstall(ctx, *event.GithubAppInstallID)
 		if err != nil {
@@ -129,7 +130,7 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider,
 
 func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		before  VCSProvider
 		after   *VCSProvider
 	)
@@ -186,7 +187,7 @@ func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, erro
 
 // ListVCSProvidersByGithubAppInstall is unauthenticated: only for internal use.
 func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +230,7 @@ func (a *Service) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs
 func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, error) {
 	var (
 		provider *VCSProvider
-		subject  internal.Subject
+		subject  authz.Subject
 	)
 	err := a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
 		// retrieve vcs provider first in order to get organization for authorization

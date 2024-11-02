@@ -14,6 +14,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/spf13/pflag"
@@ -138,7 +139,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	r.RunnerMeta = registrationMetadata
 	// Add metadata to the context in all calls, which is needed to authorize a
 	// server runner with service endpoints.
-	ctx = internal.AddSubjectToContext(ctx, registrationMetadata)
+	ctx = authz.AddSubjectToContext(ctx, registrationMetadata)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() (err error) {

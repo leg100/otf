@@ -3,7 +3,7 @@ package workspace
 import (
 	"context"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
@@ -13,7 +13,7 @@ import (
 
 type FakeService struct {
 	Workspaces []*Workspace
-	Policy     internal.WorkspacePolicy
+	Policy     authz.WorkspacePolicy
 }
 
 func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
@@ -57,7 +57,7 @@ func (f *FakeService) ListTags(context.Context, string, ListTagsOptions) (*resou
 	return nil, nil
 }
 
-func (f *FakeService) GetPolicy(context.Context, string) (internal.WorkspacePolicy, error) {
+func (f *FakeService) GetPolicy(context.Context, string) (authz.WorkspacePolicy, error) {
 	return f.Policy, nil
 }
 

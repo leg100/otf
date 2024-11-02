@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -24,9 +25,9 @@ type (
 	Service struct {
 		logr.Logger
 
-		site                internal.Authorizer
-		organization        internal.Authorizer
-		internal.Authorizer // workspace authorizer
+		site             authz.Authorizer
+		organization     authz.Authorizer
+		authz.Authorizer // workspace authorizer
 
 		db          *pgdb
 		web         *webHandlers
@@ -66,7 +67,7 @@ func NewService(opts Options) *Service {
 		db:           db,
 		connections:  opts.ConnectionService,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
+		site:         &authz.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.web = &webHandlers{
 		Renderer:     opts.Renderer,
@@ -219,7 +220,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
-			subject, err := internal.SubjectFromContext(ctx)
+			subject, err := authz.SubjectFromContext(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -317,7 +318,7 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspa
 
 // connect connects the workspace to a repo.
 func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connection *Connection) error {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -338,7 +339,7 @@ func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connecti
 }
 
 func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}

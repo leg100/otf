@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -165,7 +166,7 @@ func (m *RunnerMeta) CanAccessOrganization(action rbac.Action, name string) bool
 	return true
 }
 
-func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	// only a server-based agent can authenticate as an Agent, and if that is
 	// so, then it can carry out all workspace-based actions.
 	//
@@ -178,7 +179,7 @@ func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy internal.Work
 }
 
 func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

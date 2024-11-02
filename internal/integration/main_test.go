@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
@@ -26,7 +26,7 @@ var (
 	sharedEnvs []string
 
 	// Context conferring site admin privileges
-	adminCtx = internal.AddSubjectToContext(context.Background(), &user.SiteAdmin)
+	adminCtx = authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	// pool of web browsers
 	browser *testbrowser.Pool

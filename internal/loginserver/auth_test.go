@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,7 @@ func TestAuthHandler_Auth(t *testing.T) {
 	q += "&state=somethingrandom"
 
 	r := httptest.NewRequest("POST", q, nil)
-	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &user.User{Username: "bobby"}))
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{Username: "bobby"}))
 	w := httptest.NewRecorder()
 	srv.authHandler(w, r)
 

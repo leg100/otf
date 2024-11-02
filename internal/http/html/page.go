@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 )
 
 const (
@@ -28,8 +29,8 @@ func NewSitePage(r *http.Request, title string) SitePage {
 	}
 }
 
-func (v SitePage) CurrentUser() internal.Subject {
-	subject, err := internal.SubjectFromContext(v.request.Context())
+func (v SitePage) CurrentUser() authz.Subject {
+	subject, err := authz.SubjectFromContext(v.request.Context())
 	if err != nil {
 		return nil
 	}

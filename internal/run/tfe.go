@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/rbac"
@@ -351,7 +352,7 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 
 // toRun converts a run into its equivalent json:api struct
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
-	subject, err := internal.SubjectFromContext(ctx)
+	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

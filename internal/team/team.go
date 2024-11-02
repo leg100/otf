@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -165,7 +166,7 @@ func (t *Team) CanAccessOrganization(action rbac.Action, org string) bool {
 	return false
 }
 
-func (t *Team) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (t *Team) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	// coarser-grained organization perms take precedence.
 	if t.CanAccessOrganization(action, policy.Organization) {
 		return true

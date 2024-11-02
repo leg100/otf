@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
@@ -25,13 +25,13 @@ type (
 		web          *web
 		tfeapi       *tfe
 		api          *api
-		workspace    internal.Authorizer
-		organization internal.Authorizer
+		workspace    authz.Authorizer
+		organization authz.Authorizer
 		runs         runClient
 	}
 
 	Options struct {
-		WorkspaceAuthorizer internal.Authorizer
+		WorkspaceAuthorizer authz.Authorizer
 		WorkspaceService    *workspace.Service
 		RunClient           runClient
 
@@ -129,7 +129,7 @@ func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resou
 
 func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		before  *WorkspaceVariable
 		after   WorkspaceVariable
 	)
@@ -205,7 +205,7 @@ func (s *Service) GetWorkspaceVariable(ctx context.Context, variableID resource.
 
 func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		wv      *WorkspaceVariable
 	)
 	err := s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
@@ -262,7 +262,7 @@ func (s *Service) createVariableSet(ctx context.Context, organization string, op
 
 func (s *Service) updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		before  *VariableSet
 		after   VariableSet
 	)
@@ -388,7 +388,7 @@ func (s *Service) deleteVariableSet(ctx context.Context, setID resource.ID) (*Va
 
 func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		set     *VariableSet
 		v       *Variable
 	)
@@ -430,7 +430,7 @@ func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.
 
 func (s *Service) updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		set     *VariableSet
 		before  Variable
 		after   *Variable

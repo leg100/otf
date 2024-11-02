@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -35,9 +36,9 @@ type (
 	Service struct {
 		logr.Logger
 
-		site                internal.Authorizer
-		organization        internal.Authorizer
-		workspaceAuthorizer internal.Authorizer
+		site                authz.Authorizer
+		organization        authz.Authorizer
+		workspaceAuthorizer authz.Authorizer
 		*authorizer
 
 		workspaces *workspace.Service
@@ -57,7 +58,7 @@ type (
 	}
 
 	Options struct {
-		WorkspaceAuthorizer internal.Authorizer
+		WorkspaceAuthorizer authz.Authorizer
 		VCSEventSubscriber  vcs.Subscriber
 
 		WorkspaceService     *workspace.Service
@@ -84,7 +85,7 @@ func NewService(opts Options) *Service {
 		workspaces:          opts.WorkspaceService,
 		db:                  db,
 		cache:               opts.Cache,
-		site:                &internal.SiteAuthorizer{Logger: opts.Logger},
+		site:                &authz.SiteAuthorizer{Logger: opts.Logger},
 		organization:        &organization.Authorizer{Logger: opts.Logger},
 		workspaceAuthorizer: opts.WorkspaceAuthorizer,
 		authorizer:          &authorizer{db, opts.WorkspaceAuthorizer},
@@ -194,7 +195,7 @@ func (s *Service) Get(ctx context.Context, runID resource.ID) (*Run, error) {
 // list.
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	var (
-		subject internal.Subject
+		subject authz.Subject
 		authErr error
 	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {

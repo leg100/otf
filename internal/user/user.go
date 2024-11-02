@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
@@ -19,8 +20,8 @@ const (
 )
 
 var (
-	SiteAdmin                  = User{ID: SiteAdminID, Username: SiteAdminUsername}
-	_         internal.Subject = (*User)(nil)
+	SiteAdmin               = User{ID: SiteAdminID, Username: SiteAdminUsername}
+	_         authz.Subject = (*User)(nil)
 )
 
 type (
@@ -165,7 +166,7 @@ func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	// coarser-grained organization perms take precedence.
 	if u.CanAccessOrganization(action, policy.Organization) {
 		return true
@@ -204,7 +205,7 @@ func (s UserSpec) LogValue() slog.Value {
 
 // UserFromContext retrieves a user from a context
 func UserFromContext(ctx context.Context) (*User, error) {
-	subj, err := internal.SubjectFromContext(ctx)
+	subj, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
