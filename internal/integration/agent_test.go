@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestIntegration_Agents demonstrates the use of pooled agents
+// TestIntegration_Agents demonstrates the use of agents to execute runs.
 func TestIntegration_Agents(t *testing.T) {
 	integrationTest(t)
 
