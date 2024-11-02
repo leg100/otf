@@ -69,7 +69,7 @@ func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []st
 	return sql.Error(err)
 }
 
-func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error {
+func (db *pgdb) addTag(ctx context.Context, organization, name, id resource.ID) error {
 	err := db.Querier(ctx).InsertTag(ctx, sqlc.InsertTagParams{
 		TagID:            sql.String(id),
 		Name:             sql.String(name),
@@ -92,7 +92,7 @@ func (db *pgdb) findTagByName(ctx context.Context, organization, name string) (*
 	return tagresult(tag).toTag(), nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization, id string) (*Tag, error) {
+func (db *pgdb) findTagByID(ctx context.Context, organization, id resource.ID) (*Tag, error) {
 	tag, err := db.Querier(ctx).FindTagByID(ctx, sqlc.FindTagByIDParams{
 		TagID:            sql.String(id),
 		OrganizationName: sql.String(organization),
@@ -103,10 +103,10 @@ func (db *pgdb) findTagByID(ctx context.Context, organization, id string) (*Tag,
 	return tagresult(tag).toTag(), nil
 }
 
-func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID string) error {
+func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.ID) error {
 	_, err := db.Querier(ctx).InsertWorkspaceTag(ctx, sqlc.InsertWorkspaceTagParams{
-		TagID:       sql.String(tagID),
-		WorkspaceID: sql.String(workspaceID),
+		TagID:       sql.String(tagID.String()),
+		WorkspaceID: sql.String(workspaceID.String()),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -114,10 +114,10 @@ func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID string) err
 	return nil
 }
 
-func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID string) error {
+func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.ID) error {
 	_, err := db.Querier(ctx).DeleteWorkspaceTag(ctx, sqlc.DeleteWorkspaceTagParams{
-		WorkspaceID: sql.String(workspaceID),
-		TagID:       sql.String(tagID),
+		WorkspaceID: sql.String(workspaceID.String()),
+		TagID:       sql.String(tagID.String()),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -125,18 +125,18 @@ func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID strin
 	return nil
 }
 
-func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspaceTags(ctx, sqlc.FindWorkspaceTagsParams{
-		WorkspaceID: sql.String(workspaceID),
+		WorkspaceID: sql.String(workspaceID.String()),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := q.CountTags(ctx, sql.String(workspaceID))
+	count, err := q.CountTags(ctx, sql.String(workspaceID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

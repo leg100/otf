@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -56,7 +57,7 @@ type pgdb struct {
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	err := db.Querier(ctx).InsertTeam(ctx, sqlc.InsertTeamParams{
-		ID:                              sql.String(team.ID),
+		ID:                              sql.String(team.ID.String()),
 		Name:                            sql.String(team.Name),
 		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
 		OrganizationName:                sql.String(team.Organization),
@@ -72,13 +73,13 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
+func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(*Team) error) (*Team, error) {
 	var team *Team
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
 
 		// retrieve team
-		result, err := q.FindTeamByIDForUpdate(ctx, sql.String(teamID))
+		result, err := q.FindTeamByIDForUpdate(ctx, sql.String(teamID.String()))
 		if err != nil {
 			return err
 		}
@@ -90,7 +91,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 		}
 		// persist update
 		_, err = q.UpdateTeamByID(ctx, sqlc.UpdateTeamByIDParams{
-			TeamID:                          sql.String(teamID),
+			TeamID:                          sql.String(teamID.String()),
 			Name:                            sql.String(team.Name),
 			Visibility:                      sql.String(team.Visibility),
 			SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
@@ -120,7 +121,7 @@ func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, 
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
+func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) {
 	result, err := db.Querier(ctx).FindTeamByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -128,8 +129,8 @@ func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
-	result, err := db.Querier(ctx).FindTeamByTokenID(ctx, sql.String(tokenID))
+func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
+	result, err := db.Querier(ctx).FindTeamByTokenID(ctx, sql.String(tokenID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -149,8 +150,8 @@ func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, er
 	return items, nil
 }
 
-func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
-	_, err := db.Querier(ctx).DeleteTeamByID(ctx, sql.String(teamID))
+func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.ID) error {
+	_, err := db.Querier(ctx).DeleteTeamByID(ctx, sql.String(teamID.String()))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -163,17 +164,17 @@ func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
 
 func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
 	err := db.Querier(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
-		TeamTokenID: sql.String(token.ID),
-		TeamID:      sql.String(token.TeamID),
+		TeamTokenID: sql.String(token.ID.String()),
+		TeamID:      sql.String(token.TeamID.String()),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
 		Expiry:      sql.TimestamptzPtr(token.Expiry),
 	})
 	return err
 }
 
-func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID string) (*Token, error) {
+func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*Token, error) {
 	// query only returns 0 or 1 tokens
-	result, err := db.Querier(ctx).FindTeamTokensByID(ctx, sql.String(teamID))
+	result, err := db.Querier(ctx).FindTeamTokensByID(ctx, sql.String(teamID.String()))
 	if err != nil {
 		return nil, err
 	}

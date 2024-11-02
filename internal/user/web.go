@@ -32,14 +32,14 @@ type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
 	ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
-	ListTeamUsers(ctx context.Context, teamID string) ([]*User, error)
+	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
-	AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
 
 	CreateToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*UserToken, error)
-	DeleteToken(ctx context.Context, tokenID string) error
+	DeleteToken(ctx context.Context, tokenID resource.ID) error
 }
 
 type tokensClient interface {
@@ -47,7 +47,7 @@ type tokensClient interface {
 }
 
 type teamsClient interface {
-	GetByID(ctx context.Context, teamID string) (*otfteam.Team, error)
+	GetByID(ctx context.Context, teamID resource.ID) (*otfteam.Team, error)
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {

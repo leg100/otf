@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
@@ -20,11 +21,11 @@ func integrationTest(t *testing.T) {
 	}
 }
 
-func runURL(hostname, runID string) string {
+func runURL(hostname, runID resource.ID) string {
 	return "https://" + hostname + "/app/runs/" + runID
 }
 
-func runsURL(hostname, workspaceID string) string {
+func runsURL(hostname, workspaceID resource.ID) string {
 	return "https://" + hostname + "/app/workspaces/" + workspaceID + "/runs"
 }
 

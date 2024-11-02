@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -27,10 +28,10 @@ type webHandlers struct {
 
 type webClient interface {
 	Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
-	Update(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error)
-	Get(ctx context.Context, id string) (*VCSProvider, error)
+	Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error)
+	Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 	List(ctx context.Context, organization string) ([]*VCSProvider, error)
-	Delete(ctx context.Context, id string) (*VCSProvider, error)
+	Delete(ctx context.Context, id resource.ID) (*VCSProvider, error)
 }
 
 type webGithubAppClient interface {

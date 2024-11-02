@@ -5,17 +5,18 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // GetPolicy retrieves a workspace policy.
 //
 // NOTE: no authz protects this endpoint because it's used in the process of making
 // authz decisions.
-func (s *Service) GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error) {
+func (s *Service) GetPolicy(ctx context.Context, workspaceID resource.ID) (internal.WorkspacePolicy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
-func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
+func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
 	subject, err := s.CanAccess(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
@@ -33,7 +34,7 @@ func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID string,
 	return nil
 }
 
-func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID string) error {
+func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	subject, err := s.CanAccess(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)

@@ -137,22 +137,22 @@ func (f *fakeCLIService) List(context.Context, string, resource.PageOptions) (*r
 	return f.stateVersionList, nil
 }
 
-func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID string) (*Version, error) {
+func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	if f.stateVersion == nil {
 		return nil, internal.ErrResourceNotFound
 	}
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Delete(ctx context.Context, svID string) error {
+func (f *fakeCLIService) Delete(ctx context.Context, svID resource.ID) error {
 	return nil
 }
 
-func (f *fakeCLIService) Rollback(ctx context.Context, svID string) (*Version, error) {
+func (f *fakeCLIService) Rollback(ctx context.Context, svID resource.ID) (*Version, error) {
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Download(ctx context.Context, svID string) ([]byte, error) {
+func (f *fakeCLIService) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
 	return f.state, nil
 }
 

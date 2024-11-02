@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/playwright-community/playwright-go"
@@ -93,7 +94,7 @@ func TestWebhook_Purger(t *testing.T) {
 		},
 		{
 			name: "delete vcs provider",
-			event: func(t *testing.T, _, _, vcsProviderID string) {
+			event: func(t *testing.T, _, _, vcsProviderID resource.ID) {
 				_, err := daemon.VCSProviders.Delete(ctx, vcsProviderID)
 				require.NoError(t, err)
 			},

@@ -334,7 +334,7 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
+func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.ID) {
 	params := types.WorkspaceUpdateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)

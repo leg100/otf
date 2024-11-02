@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
 
@@ -22,7 +23,7 @@ func (f *fakeService) List(ctx context.Context) ([]*User, error) {
 	return []*User{f.user}, nil
 }
 
-func (f *fakeService) ListTeamUsers(ctx context.Context, teamID string) ([]*User, error) {
+func (f *fakeService) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error) {
 	return []*User{f.user}, nil
 }
 

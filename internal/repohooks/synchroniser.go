@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/pkg/errors"
 )
@@ -19,7 +20,7 @@ type (
 	}
 
 	syncdb interface {
-		updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error
+		updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID resource.ID) error
 	}
 )
 

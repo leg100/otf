@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -26,7 +27,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 		return "", fmt.Errorf("refusing to persist empty chunk")
 	}
 	id, err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
-		RunID:  sql.String(opts.RunID),
+		RunID:  sql.String(opts.RunID.String()),
 		Phase:  sql.String(string(opts.Phase)),
 		Chunk:  opts.Data,
 		Offset: sql.Int4(opts.Offset),
@@ -37,7 +38,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 	return strconv.Itoa(int(id.Int32)), nil
 }
 
-func (db *pgdb) getChunk(ctx context.Context, chunkID string) (internal.Chunk, error) {
+func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (internal.Chunk, error) {
 	id, err := strconv.Atoi(chunkID)
 	if err != nil {
 		return internal.Chunk{}, err
@@ -55,9 +56,9 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID string) (internal.Chunk, e
 	}, nil
 }
 
-func (db *pgdb) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+func (db *pgdb) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	data, err := db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
-		RunID: sql.String(runID),
+		RunID: sql.String(runID.String()),
 		Phase: sql.String(string(phase)),
 	})
 	if err != nil {

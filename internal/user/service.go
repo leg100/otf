@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/team"
@@ -100,9 +101,8 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterSiteToken(opts.SiteToken, &SiteAdmin)
 	// Register with auth middleware the user token kind and a means of
 	// retrieving user corresponding to token.
-	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID resource.ID) (internal.Subject, error) {
 		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: internal.String(tokenID)})
-
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.
@@ -112,7 +112,6 @@ func NewService(opts Options) *Service {
 			user, err = svc.Create(ctx, username)
 		}
 		return user, err
-
 	})
 
 	return &svc
@@ -182,7 +181,7 @@ func (a *Service) ListOrganizationUsers(ctx context.Context, organization string
 // ListTeamUsers lists users that are members of the given team. The caller
 // needs either organization-wide authority to call this endpoint, or they need
 // to be a member of the team.
-func (a *Service) ListTeamUsers(ctx context.Context, teamID string) ([]*User, error) {
+func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error) {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return nil, err
@@ -223,7 +222,7 @@ func (a *Service) Delete(ctx context.Context, username string) error {
 
 // AddTeamMembership adds users to a team. If a user does not exist then the
 // user is created first.
-func (a *Service) AddTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return err
@@ -262,7 +261,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID string, username
 }
 
 // RemoveTeamMembership removes users from a team.
-func (a *Service) RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return err
@@ -349,7 +348,7 @@ func (a *Service) ListTokens(ctx context.Context) ([]*UserToken, error) {
 	return a.db.listUserTokens(ctx, user.Username)
 }
 
-func (a *Service) DeleteToken(ctx context.Context, tokenID string) error {
+func (a *Service) DeleteToken(ctx context.Context, tokenID resource.ID) error {
 	user, err := UserFromContext(ctx)
 	if err != nil {
 		return err

@@ -20,7 +20,7 @@ type (
 		CreatedAt time.Time
 
 		// Token belongs to a team
-		TeamID string
+		TeamID resource.ID
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -28,7 +28,7 @@ type (
 	// CreateTokenOptions are options for creating an team token via the service
 	// endpoint
 	CreateTokenOptions struct {
-		TeamID string
+		TeamID resource.ID
 		Expiry *time.Time
 	}
 
@@ -88,7 +88,7 @@ func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 	return tt, token, nil
 }
 
-func (a *Service) GetTeamToken(ctx context.Context, teamID string) (*Token, error) {
+func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token, error) {
 	_, err := a.team.CanAccess(ctx, rbac.GetTeamTokenAction, teamID)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID string) (*Token, erro
 	return a.db.getTeamTokenByTeamID(ctx, teamID)
 }
 
-func (a *Service) DeleteTeamToken(ctx context.Context, teamID string) error {
+func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.ID) error {
 	_, err := a.team.CanAccess(ctx, rbac.DeleteTeamTokenAction, teamID)
 	if err != nil {
 		return err

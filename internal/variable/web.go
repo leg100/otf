@@ -26,29 +26,29 @@ type (
 
 	// webVariablesClient provides web handlers with access to variables
 	webVariablesClient interface {
-		CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
-		GetWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
-		ListWorkspaceVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
-		listWorkspaceVariableSets(ctx context.Context, workspaceID string) ([]*VariableSet, error)
-		UpdateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-		DeleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
+		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error)
+		GetWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
+		ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error)
+		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error)
+		UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+		DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
 
 		createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
-		updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error)
-		getVariableSet(ctx context.Context, setID string) (*VariableSet, error)
-		getVariableSetByVariableID(ctx context.Context, variableID string) (*VariableSet, error)
+		updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error)
+		getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
+		getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error)
 		listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
-		deleteVariableSet(ctx context.Context, setID string) (*VariableSet, error)
-		createVariableSetVariable(ctx context.Context, setID string, opts CreateVariableOptions) (*Variable, error)
-		updateVariableSetVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*VariableSet, error)
-		deleteVariableSetVariable(ctx context.Context, variableID string) (*VariableSet, error)
+		deleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
+		createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error)
+		updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error)
+		deleteVariableSetVariable(ctx context.Context, variableID resource.ID) (*VariableSet, error)
 	}
 
 	// webWorkspaceClient provides web handlers with access to workspaces
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
+		GetPolicy(ctx context.Context, workspaceID resource.ID) (internal.WorkspacePolicy, error)
 	}
 
 	workspaceInfo struct {
@@ -140,7 +140,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		WorkspaceID string `schema:"workspace_id,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -557,7 +557,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		SetID string `schema:"variable_set_id,required"`
+		SetID resource.ID `schema:"variable_set_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -677,11 +677,11 @@ func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspa
 	return availableWorkspaces, nil
 }
 
-func (workspaceVariableTable) EditPath(variableID string) string {
+func (workspaceVariableTable) EditPath(variableID resource.ID) string {
 	return paths.EditVariable(variableID)
 }
 
-func (workspaceVariableTable) DeletePath(variableID string) string {
+func (workspaceVariableTable) DeletePath(variableID resource.ID) string {
 	return paths.DeleteVariable(variableID)
 }
 
@@ -690,11 +690,11 @@ func (w workspaceVariableTable) IsOverwritten(v *Variable) bool {
 	return false
 }
 
-func (setVariableTable) EditPath(variableID string) string {
+func (setVariableTable) EditPath(variableID resource.ID) string {
 	return paths.EditVariableSetVariable(variableID)
 }
 
-func (setVariableTable) DeletePath(variableID string) string {
+func (setVariableTable) DeletePath(variableID resource.ID) string {
 	return paths.DeleteVariableSetVariable(variableID)
 }
 

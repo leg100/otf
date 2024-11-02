@@ -15,7 +15,7 @@ type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+func (c *Client) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, &PlanFileOptions{Format: format})
 	if err != nil {
@@ -30,7 +30,7 @@ func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanForma
 	return buf.Bytes(), nil
 }
 
-func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
+func (c *Client) UploadPlanFile(ctx context.Context, runID resource.ID, plan []byte, format PlanFormat) error {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("PUT", u, plan)
 	if err != nil {
@@ -52,7 +52,7 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 	return nil
 }
 
-func (c *Client) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
+func (c *Client) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *Client) GetLockFile(ctx context.Context, runID string) ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
-func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []byte) error {
+func (c *Client) UploadLockFile(ctx context.Context, runID resource.ID, lockfile []byte) error {
 	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("PUT", u, lockfile)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page
 	return &list, nil
 }
 
-func (c *Client) Get(ctx context.Context, runID string) (*Run, error) {
+func (c *Client) Get(ctx context.Context, runID resource.ID) (*Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {

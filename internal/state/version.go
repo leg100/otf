@@ -41,7 +41,7 @@ type (
 		State       []byte             `jsonapi:"attribute" json:"state"`
 		Status      Status             `jsonapi:"attribute" json:"status"`
 		Outputs     map[string]*Output `jsonapi:"attribute" json:"outputs"`
-		WorkspaceID string             `jsonapi:"attribute" json:"workspace-id"`
+		WorkspaceID resource.ID        `jsonapi:"attribute" json:"workspace-id"`
 	}
 
 	Output struct {
@@ -50,7 +50,7 @@ type (
 		Type           string
 		Value          json.RawMessage
 		Sensitive      bool
-		StateVersionID string
+		StateVersionID resource.ID
 	}
 
 	// CreateStateVersionOptions are options for creating a state version.
@@ -71,11 +71,11 @@ type (
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
-		getVersion(ctx context.Context, svID string) (*Version, error)
-		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
+		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
+		getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
 		updateCurrentVersion(context.Context, string, string) error
-		uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error
-		discardPending(ctx context.Context, workspaceID string) error
+		uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error
+		discardPending(ctx context.Context, workspaceID resource.ID) error
 	}
 )
 
@@ -188,7 +188,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 	return sv, err
 }
 
-func (f *factory) rollback(ctx context.Context, svID string) (*Version, error) {
+func (f *factory) rollback(ctx context.Context, svID resource.ID) (*Version, error) {
 	sv, err := f.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

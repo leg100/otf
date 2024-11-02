@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error) {
+func (c *Client) ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*Variable, error) {
 	u := fmt.Sprintf("vars/effective/%s", runID)
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {

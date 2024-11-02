@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -29,8 +30,8 @@ func (row outputRow) toOutput() *Output {
 	}
 }
 
-func (db *pgdb) getOutput(ctx context.Context, outputID string) (*Output, error) {
-	result, err := db.Querier(ctx).FindStateVersionOutputByID(ctx, sql.String(outputID))
+func (db *pgdb) getOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
+	result, err := db.Querier(ctx).FindStateVersionOutputByID(ctx, sql.String(outputID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

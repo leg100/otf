@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -43,7 +44,7 @@ func (f *fakeService) List(context.Context, string) ([]*vcsprovider.VCSProvider,
 	return f.vcsprovs, nil
 }
 
-func (f *fakeService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+func (f *fakeService) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
 	return &fakeModulesCloudClient{repos: f.repos}, nil
 }
 

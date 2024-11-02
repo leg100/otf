@@ -61,19 +61,19 @@ func (f *FakeService) GetPolicy(context.Context, string) (internal.WorkspacePoli
 	return f.Policy, nil
 }
 
-func (f *FakeService) AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (f *FakeService) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	return nil
 }
 
-func (f *FakeService) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (f *FakeService) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	return nil
 }
 
-func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
+func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
 	return nil
 }
 
-func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID string) error {
+func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	return nil
 }
 
@@ -82,7 +82,7 @@ type fakeVCSProviderService struct {
 	repos     []string
 }
 
-func (f *fakeVCSProviderService) Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.ID) (*vcsprovider.VCSProvider, error) {
 	return f.providers[0], nil
 }
 
@@ -90,7 +90,7 @@ func (f *fakeVCSProviderService) List(context.Context, string) ([]*vcsprovider.V
 	return f.providers, nil
 }
 
-func (f *fakeVCSProviderService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+func (f *fakeVCSProviderService) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
 	return &fakeVCSClient{repos: f.repos}, nil
 }
 

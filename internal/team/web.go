@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -25,10 +26,10 @@ type webHandlers struct {
 type webClient interface {
 	Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
 	Get(ctx context.Context, organization, team string) (*Team, error)
-	GetByID(ctx context.Context, teamID string) (*Team, error)
+	GetByID(ctx context.Context, teamID resource.ID) (*Team, error)
 	List(ctx context.Context, organization string) ([]*Team, error)
-	Update(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
-	Delete(ctx context.Context, teamID string) error
+	Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
+	Delete(ctx context.Context, teamID resource.ID) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -87,7 +88,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID string `schema:"team_id,required"`
+		TeamID resource.ID `schema:"team_id,required"`
 		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {

@@ -68,7 +68,7 @@ type pgdb struct {
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	err := db.Querier(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
-		ID:                         sql.String(org.ID),
+		ID:                         sql.String(org.ID.String()),
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
 		Name:                       sql.String(org.Name),
@@ -150,7 +150,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
+func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
 	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -192,7 +192,7 @@ func (result tokenRow) toToken() *OrganizationToken {
 
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
 	err := db.Querier(ctx).UpsertOrganizationToken(ctx, sqlc.UpsertOrganizationTokenParams{
-		OrganizationTokenID: sql.String(token.ID),
+		OrganizationTokenID: sql.String(token.ID.String()),
 		OrganizationName:    sql.String(token.Organization),
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
 		Expiry:              sql.TimestamptzPtr(token.Expiry),
@@ -220,8 +220,8 @@ func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string)
 	return items, nil
 }
 
-func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
-	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID))
+func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
+	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

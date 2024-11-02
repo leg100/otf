@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/repohooks"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -24,26 +25,26 @@ type (
 
 	// Connection is a connection between a VCS repo and an OTF resource.
 	Connection struct {
-		VCSProviderID string
+		VCSProviderID resource.ID
 		Repo          string
 	}
 
 	ConnectOptions struct {
 		ConnectionType // OTF resource type
 
-		VCSProviderID string // vcs provider of repo
-		ResourceID    string // ID of OTF resource
+		VCSProviderID resource.ID // vcs provider of repo
+		ResourceID    resource.ID // ID of OTF resource
 		RepoPath      string
 	}
 
 	DisconnectOptions struct {
 		ConnectionType // OTF resource type
 
-		ResourceID string // ID of OTF resource
+		ResourceID resource.ID // ID of OTF resource
 	}
 
 	SynchroniseOptions struct {
-		VCSProviderID string // vcs provider of repo
+		VCSProviderID resource.ID // vcs provider of repo
 		RepoPath      string
 	}
 

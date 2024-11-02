@@ -20,11 +20,11 @@ type CLI struct {
 }
 
 type cliStateService interface {
-	List(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetCurrent(ctx context.Context, workspaceID string) (*Version, error)
-	Download(ctx context.Context, versionID string) ([]byte, error)
-	Rollback(ctx context.Context, versionID string) (*Version, error)
-	Delete(ctx context.Context, versionID string) error
+	List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error)
+	Download(ctx context.Context, versionID resource.ID) ([]byte, error)
+	Rollback(ctx context.Context, versionID resource.ID) (*Version, error)
+	Delete(ctx context.Context, versionID resource.ID) error
 }
 
 type cliWorkspaceService interface {

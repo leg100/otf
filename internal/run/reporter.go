@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -40,15 +41,15 @@ type (
 	}
 
 	reporterWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	reporterConfigClient interface {
-		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	reporterRunClient interface {

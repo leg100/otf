@@ -41,18 +41,18 @@ type (
 
 	// webModulesClient provides web handlers with access to modules
 	webModulesClient interface {
-		GetModuleByID(ctx context.Context, id string) (*Module, error)
-		GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error)
+		GetModuleByID(ctx context.Context, id resource.ID) (*Module, error)
+		GetModuleInfo(ctx context.Context, versionID resource.ID) (*TerraformModule, error)
 		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
-		DeleteModule(ctx context.Context, id string) (*Module, error)
+		DeleteModule(ctx context.Context, id resource.ID) (*Module, error)
 	}
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
 		Get(context.Context, string) (*vcsprovider.VCSProvider, error)
 		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	newModuleStep string
@@ -210,8 +210,8 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  string `schema:"organization_name,required"`
-		VCSProviderID string `schema:"vcs_provider_id,required"`
+		Organization  string      `schema:"organization_name,required"`
+		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -249,7 +249,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	h.Render("module_new.tmpl", w, struct {
 		organization.OrganizationPage
 		Repos         []string
-		VCSProviderID string
+		VCSProviderID resource.ID
 		Step          newModuleStep
 	}{
 		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
@@ -261,9 +261,9 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  string `schema:"organization_name,required"`
-		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Repo          string `schema:"identifier,required"`
+		Organization  string      `schema:"organization_name,required"`
+		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
+		Repo          string      `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -291,8 +291,8 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Repo          Repo   `schema:"identifier,required"`
+		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
+		Repo          Repo        `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

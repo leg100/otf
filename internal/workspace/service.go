@@ -86,7 +86,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
-		func(ctx context.Context, id string, action sql.Action) (*Workspace, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Workspace, error) {
 			if action == sql.DeleteAction {
 				return &Workspace{ID: id}, nil
 			}
@@ -172,7 +172,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) Get(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
 }
 
-func (s *Service) Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
+func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (s *Service) Update(ctx context.Context, workspaceID string, opts UpdateOpt
 	return updated, nil
 }
 
-func (s *Service) Delete(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -316,7 +316,7 @@ func (s *Service) Delete(ctx context.Context, workspaceID string) (*Workspace, e
 }
 
 // connect connects the workspace to a repo.
-func (s *Service) connect(ctx context.Context, workspaceID string, connection *Connection) error {
+func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connection *Connection) error {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -337,7 +337,7 @@ func (s *Service) connect(ctx context.Context, workspaceID string, connection *C
 	return nil
 }
 
-func (s *Service) disconnect(ctx context.Context, workspaceID string) error {
+func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -358,6 +358,6 @@ func (s *Service) disconnect(ctx context.Context, workspaceID string) error {
 }
 
 // SetCurrentRun sets the current run for the workspace
-func (s *Service) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+func (s *Service) SetCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
 	return s.db.setCurrentRun(ctx, workspaceID, runID)
 }

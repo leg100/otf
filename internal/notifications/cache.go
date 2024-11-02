@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -84,7 +86,7 @@ func (c *cache) add(cfg *Config) error {
 	return nil
 }
 
-func (c *cache) remove(id string) error {
+func (c *cache) remove(id resource.ID) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

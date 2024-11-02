@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -37,7 +38,7 @@ func (f *fakeCloudClient) UpdateWebhook(context.Context, string, vcs.UpdateWebho
 	return nil
 }
 
-func (f *fakeDB) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
+func (f *fakeDB) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID resource.ID) error {
 	f.hook.cloudID = &cloudID
 	return nil
 }

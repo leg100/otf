@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // authorizer authorizes access to a workspace
@@ -15,7 +16,7 @@ type authorizer struct {
 	db *pgdb
 }
 
-func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID string) (internal.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID resource.ID) (internal.Subject, error) {
 	subj, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

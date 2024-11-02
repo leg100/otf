@@ -30,7 +30,7 @@ var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         string        `jsonapi:"primary,workspaces"`
+		resource.ID                `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
 		AgentPoolID                *string       `jsonapi:"attribute" json:"agent-pool-id"`
@@ -279,7 +279,7 @@ func (ws *Workspace) ExecutionModes() []string {
 // LogValue implements slog.LogValuer.
 func (ws *Workspace) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", ws.ID),
+		slog.String("id", ws.ID.String()),
 		slog.String("organization", ws.Organization),
 		slog.String("name", ws.Name),
 	)

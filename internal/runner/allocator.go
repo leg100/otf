@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // AllocatorLockID guarantees only one allocator on a cluster is running at any
@@ -33,8 +34,8 @@ type allocatorClient interface {
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
-	allocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error)
-	reallocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error)
+	allocateJob(ctx context.Context, spec JobSpec, runnerID resource.ID) (*Job, error)
+	reallocateJob(ctx context.Context, spec JobSpec, runnerID resource.ID) (*Job, error)
 }
 
 // Start the allocator. Should be invoked in a go routine.

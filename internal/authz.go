@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // unexported key types prevents collisions
@@ -21,7 +22,7 @@ const (
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
 	CanAccessSite(action rbac.Action) bool
-	CanAccessTeam(action rbac.Action, id string) bool
+	CanAccessTeam(action rbac.Action, id resource.ID) bool
 	CanAccessOrganization(action rbac.Action, name string) bool
 	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
@@ -46,7 +47,7 @@ type WorkspacePolicy struct {
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	TeamID string
+	TeamID resource.ID
 	Role   rbac.Role
 }
 

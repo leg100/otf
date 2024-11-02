@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -14,9 +15,9 @@ const runnerIDHeader = "otf-agent-id"
 
 type client interface {
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
-	updateStatus(ctx context.Context, agentID string, status RunnerStatus) error
+	updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error
 
-	getJobs(ctx context.Context, agentID string) ([]*Job, error)
+	getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error)
 	startJob(ctx context.Context, spec JobSpec) ([]byte, error)
 	finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
 }
@@ -56,7 +57,7 @@ func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*Run
 	return &m, nil
 }
 
-func (c *remoteClient) getJobs(ctx context.Context, agentID string) ([]*Job, error) {
+func (c *remoteClient) getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
 	req, err := c.newRequest("GET", "agents/jobs", nil)
 	if err != nil {
 		return nil, err
@@ -77,7 +78,7 @@ func (c *remoteClient) getJobs(ctx context.Context, agentID string) ([]*Job, err
 	return jobs, nil
 }
 
-func (c *remoteClient) updateStatus(ctx context.Context, agentID string, status RunnerStatus) error {
+func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error {
 	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,
 	})
@@ -92,7 +93,7 @@ func (c *remoteClient) updateStatus(ctx context.Context, agentID string, status 
 
 // agent tokens
 
-func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
 	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 
 	"github.com/leg100/otf/internal"
 	"github.com/pkg/errors"
@@ -20,11 +21,11 @@ type CLI struct {
 }
 
 type cliClient interface {
-	Get(ctx context.Context, runID string) (*Run, error)
+	Get(ctx context.Context, runID resource.ID) (*Run, error)
 }
 
 type cliConfigsClient interface {
-	DownloadConfig(ctx context.Context, id string) ([]byte, error)
+	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {

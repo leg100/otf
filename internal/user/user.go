@@ -79,7 +79,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
-func (u *User) IsTeamMember(teamID string) bool {
+func (u *User) IsTeamMember(teamID resource.ID) bool {
 	for _, t := range u.Teams {
 		if t.ID == teamID {
 			return true
@@ -138,7 +138,7 @@ func (u *User) CanAccessSite(action rbac.Action) bool {
 	return u.IsSiteAdmin()
 }
 
-func (u *User) CanAccessTeam(action rbac.Action, teamID string) bool {
+func (u *User) CanAccessTeam(action rbac.Action, teamID resource.ID) bool {
 	// coarser-grained site-level perms take precedence
 	if u.CanAccessSite(action) {
 		return true

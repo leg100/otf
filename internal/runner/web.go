@@ -32,21 +32,21 @@ type webHandlers struct {
 // webClient gives web handlers access to the agents service endpoints
 type webClient interface {
 	CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
-	GetAgentPool(ctx context.Context, poolID string) (*Pool, error)
-	updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error)
+	GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
+	updateAgentPool(ctx context.Context, poolID resource.ID, opts updatePoolOptions) (*Pool, error)
 	listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
-	deleteAgentPool(ctx context.Context, poolID string) (*Pool, error)
+	deleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
 
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error)
-	listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error)
+	listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error)
 	listServerRunners(ctx context.Context) ([]*RunnerMeta, error)
 
-	CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
-	GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
-	ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error)
-	DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error)
+	CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+	GetAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error)
+	ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*agentToken, error)
+	DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error)
 }
 
 type (
@@ -342,7 +342,7 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("agent_pools_list_allowed.tmpl", w, struct {
 		Pools         []*Pool
-		CurrentPoolID string
+		CurrentPoolID resource.ID
 	}{
 		Pools:         pools,
 		CurrentPoolID: r.URL.Query().Get("agent_pool_id"),

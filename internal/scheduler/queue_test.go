@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -165,7 +166,7 @@ func newFakeQueueApp(ws *workspace.Workspace, runs ...*otfrun.Run) *fakeQueueSer
 	return &fakeQueueServices{ws: ws, runs: db}
 }
 
-func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*otfrun.Run, error) {
+func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID resource.ID) (*otfrun.Run, error) {
 	f.runs[runID].Status = otfrun.RunPlanQueued
 	return f.runs[runID], nil
 }
@@ -177,21 +178,21 @@ type fakeWorkspaceService struct {
 	workspaceClient
 }
 
-func (f *fakeWorkspaceService) Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*workspace.Workspace, error) {
 	if err := f.ws.Enlock(*runID, workspace.RunLock); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeWorkspaceService) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*workspace.Workspace, error) {
 	if err := f.ws.Unlock(*runID, workspace.RunLock, false); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeWorkspaceService) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) SetCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*workspace.Workspace, error) {
 	f.ws.LatestRun = &workspace.LatestRun{ID: runID}
 	return f.ws, nil
 }

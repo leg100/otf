@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -54,7 +55,7 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 
 func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	params := sqlc.InsertRunnerParams{
-		RunnerID:     sql.String(meta.ID),
+		RunnerID:     sql.String(meta.ID.String()),
 		Name:         sql.String(meta.Name),
 		Version:      sql.String(meta.Version),
 		MaxJobs:      sql.Int4(meta.MaxJobs),
@@ -64,14 +65,14 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 		LastStatusAt: sql.Timestamptz(meta.LastStatusAt),
 	}
 	if meta.AgentPool != nil {
-		params.AgentPoolID = sql.String(meta.AgentPool.ID)
+		params.AgentPoolID = sql.String(meta.AgentPool.ID.String())
 	}
 	return db.Querier(ctx).InsertRunner(ctx, params)
 }
 
-func (db *db) update(ctx context.Context, agentID string, fn func(*RunnerMeta) error) error {
+func (db *db) update(ctx context.Context, agentID resource.ID, fn func(*RunnerMeta) error) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindRunnerByIDForUpdate(ctx, sql.String(agentID))
+		result, err := q.FindRunnerByIDForUpdate(ctx, sql.String(agentID.String()))
 		if err != nil {
 			return err
 		}
@@ -80,7 +81,7 @@ func (db *db) update(ctx context.Context, agentID string, fn func(*RunnerMeta) e
 			return err
 		}
 		_, err = q.UpdateRunner(ctx, sqlc.UpdateRunnerParams{
-			RunnerID:     sql.String(agent.ID),
+			RunnerID:     sql.String(agent.ID.String()),
 			Status:       sql.String(string(agent.Status)),
 			LastPingAt:   sql.Timestamptz(agent.LastPingAt),
 			LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
@@ -93,8 +94,8 @@ func (db *db) update(ctx context.Context, agentID string, fn func(*RunnerMeta) e
 	return nil
 }
 
-func (db *db) get(ctx context.Context, agentID string) (*RunnerMeta, error) {
-	result, err := db.Querier(ctx).FindRunnerByID(ctx, sql.String(agentID))
+func (db *db) get(ctx context.Context, agentID resource.ID) (*RunnerMeta, error) {
+	result, err := db.Querier(ctx).FindRunnerByID(ctx, sql.String(agentID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -137,8 +138,8 @@ func (db *db) listRunnersByOrganization(ctx context.Context, organization string
 	return agents, nil
 }
 
-func (db *db) listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error) {
-	rows, err := db.Querier(ctx).FindRunnersByPoolID(ctx, sql.String(poolID))
+func (db *db) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
+	rows, err := db.Querier(ctx).FindRunnersByPoolID(ctx, sql.String(poolID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -149,8 +150,8 @@ func (db *db) listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMe
 	return runners, nil
 }
 
-func (db *db) deleteRunner(ctx context.Context, agentID string) error {
-	_, err := db.Querier(ctx).DeleteRunner(ctx, sql.String(agentID))
+func (db *db) deleteRunner(ctx context.Context, agentID resource.ID) error {
+	_, err := db.Querier(ctx).DeleteRunner(ctx, sql.String(agentID.String()))
 	return sql.Error(err)
 }
 
@@ -191,19 +192,19 @@ func (r jobResult) toJob() *Job {
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
 	err := db.Querier(ctx).InsertJob(ctx, sqlc.InsertJobParams{
-		RunID:  sql.String(job.Spec.RunID),
+		RunID:  sql.String(job.Spec.RunID.String()),
 		Phase:  sql.String(string(job.Spec.Phase)),
 		Status: sql.String(string(job.Status)),
 	})
 	return sql.Error(err)
 }
 
-func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID string) ([]*Job, error) {
-	allocated, err := db.Querier(ctx).FindAllocatedJobs(ctx, sql.String(agentID))
+func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
+	allocated, err := db.Querier(ctx).FindAllocatedJobs(ctx, sql.String(agentID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	signaled, err := db.Querier(ctx).FindAndUpdateSignaledJobs(ctx, sql.String(agentID))
+	signaled, err := db.Querier(ctx).FindAndUpdateSignaledJobs(ctx, sql.String(agentID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -219,7 +220,7 @@ func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID string) (
 
 func (db *db) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
 	result, err := db.Querier(ctx).FindJob(ctx, sqlc.FindJobParams{
-		RunID: sql.String(spec.RunID),
+		RunID: sql.String(spec.RunID.String()),
 		Phase: sql.String(string(spec.Phase)),
 	})
 	if err != nil {
@@ -244,7 +245,7 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 	var job *Job
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := q.FindJobForUpdate(ctx, sqlc.FindJobForUpdateParams{
-			RunID: sql.String(spec.RunID),
+			RunID: sql.String(spec.RunID.String()),
 			Phase: sql.String(string(spec.Phase)),
 		})
 		if err != nil {
@@ -292,14 +293,14 @@ func (row agentTokenRow) toAgentToken() *agentToken {
 
 func (db *db) createAgentToken(ctx context.Context, token *agentToken) error {
 	return db.Querier(ctx).InsertAgentToken(ctx, sqlc.InsertAgentTokenParams{
-		AgentTokenID: sql.String(token.ID),
+		AgentTokenID: sql.String(token.ID.String()),
 		Description:  sql.String(token.Description),
-		AgentPoolID:  sql.String(token.AgentPoolID),
+		AgentPoolID:  sql.String(token.AgentPoolID.String()),
 		CreatedAt:    sql.Timestamptz(token.CreatedAt.UTC()),
 	})
 }
 
-func (db *db) getAgentTokenByID(ctx context.Context, id string) (*agentToken, error) {
+func (db *db) getAgentTokenByID(ctx context.Context, id resource.ID) (*agentToken, error) {
 	r, err := db.Querier(ctx).FindAgentTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -307,8 +308,8 @@ func (db *db) getAgentTokenByID(ctx context.Context, id string) (*agentToken, er
 	return agentTokenRow(r).toAgentToken(), nil
 }
 
-func (db *db) listAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
-	rows, err := db.Querier(ctx).FindAgentTokensByAgentPoolID(ctx, sql.String(poolID))
+func (db *db) listAgentTokens(ctx context.Context, poolID resource.ID) ([]*agentToken, error) {
+	rows, err := db.Querier(ctx).FindAgentTokensByAgentPoolID(ctx, sql.String(poolID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -319,7 +320,7 @@ func (db *db) listAgentTokens(ctx context.Context, poolID string) ([]*agentToken
 	return tokens, nil
 }
 
-func (db *db) deleteAgentToken(ctx context.Context, id string) error {
+func (db *db) deleteAgentToken(ctx context.Context, id resource.ID) error {
 	_, err := db.Querier(ctx).DeleteAgentTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
@@ -354,7 +355,7 @@ func (r poolresult) toPool() *Pool {
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		err := db.Querier(ctx).InsertAgentPool(ctx, sqlc.InsertAgentPoolParams{
-			AgentPoolID:        sql.String(pool.ID),
+			AgentPoolID:        sql.String(pool.ID.String()),
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
 			OrganizationName:   sql.String(pool.Organization),
@@ -365,8 +366,8 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 		}
 		for _, workspaceID := range pool.AllowedWorkspaces {
 			err := q.InsertAgentPoolAllowedWorkspace(ctx, sqlc.InsertAgentPoolAllowedWorkspaceParams{
-				PoolID:      sql.String(pool.ID),
-				WorkspaceID: sql.String(workspaceID),
+				PoolID:      sql.String(pool.ID.String()),
+				WorkspaceID: sql.String(workspaceID.String()),
 			})
 			if err != nil {
 				return err
@@ -382,7 +383,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 
 func (db *db) updatePool(ctx context.Context, pool *Pool) error {
 	_, err := db.Querier(ctx).UpdateAgentPool(ctx, sqlc.UpdateAgentPoolParams{
-		PoolID:             sql.String(pool.ID),
+		PoolID:             sql.String(pool.ID.String()),
 		Name:               sql.String(pool.Name),
 		OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 	})
@@ -392,10 +393,10 @@ func (db *db) updatePool(ctx context.Context, pool *Pool) error {
 	return nil
 }
 
-func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID string) error {
+func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.ID) error {
 	err := db.Querier(ctx).InsertAgentPoolAllowedWorkspace(ctx, sqlc.InsertAgentPoolAllowedWorkspaceParams{
-		PoolID:      sql.String(poolID),
-		WorkspaceID: sql.String(workspaceID),
+		PoolID:      sql.String(poolID.String()),
+		WorkspaceID: sql.String(workspaceID.String()),
 	})
 	if err != nil {
 		return err
@@ -403,10 +404,10 @@ func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspac
 	return nil
 }
 
-func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID string) error {
+func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.ID) error {
 	err := db.Querier(ctx).DeleteAgentPoolAllowedWorkspace(ctx, sqlc.DeleteAgentPoolAllowedWorkspaceParams{
-		PoolID:      sql.String(poolID),
-		WorkspaceID: sql.String(workspaceID),
+		PoolID:      sql.String(poolID.String()),
+		WorkspaceID: sql.String(workspaceID.String()),
 	})
 	if err != nil {
 		return err
@@ -414,16 +415,16 @@ func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, works
 	return nil
 }
 
-func (db *db) getPool(ctx context.Context, poolID string) (*Pool, error) {
-	result, err := db.Querier(ctx).FindAgentPool(ctx, sql.String(poolID))
+func (db *db) getPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
+	result, err := db.Querier(ctx).FindAgentPool(ctx, sql.String(poolID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return poolresult(result).toPool(), nil
 }
 
-func (db *db) getPoolByTokenID(ctx context.Context, tokenID string) (*Pool, error) {
-	result, err := db.Querier(ctx).FindAgentPoolByAgentTokenID(ctx, sql.String(tokenID))
+func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool, error) {
+	result, err := db.Querier(ctx).FindAgentPoolByAgentTokenID(ctx, sql.String(tokenID.String()))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -447,8 +448,8 @@ func (db *db) listPoolsByOrganization(ctx context.Context, organization string, 
 	return pools, nil
 }
 
-func (db *db) deleteAgentPool(ctx context.Context, poolID string) error {
-	_, err := db.Querier(ctx).DeleteAgentPool(ctx, sql.String(poolID))
+func (db *db) deleteAgentPool(ctx context.Context, poolID resource.ID) error {
+	_, err := db.Querier(ctx).DeleteAgentPool(ctx, sql.String(poolID.String()))
 	if err != nil {
 		return sql.Error(err)
 	}

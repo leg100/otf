@@ -33,15 +33,15 @@ type (
 	workspaceClient interface {
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
-		Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error)
-		Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error)
-		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*workspace.Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*workspace.Workspace, error)
+		SetCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*workspace.Workspace, error)
 	}
 
 	runClient interface {
 		List(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
 		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
-		EnqueuePlan(ctx context.Context, runID string) (*run.Run, error)
+		EnqueuePlan(ctx context.Context, runID resource.ID) (*run.Run, error)
 	}
 
 	Options struct {

@@ -27,22 +27,22 @@ type (
 	}
 
 	webRunClient interface {
-		Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Get(ctx context.Context, id string) (*Run, error)
-		Delete(ctx context.Context, runID string) error
-		Cancel(ctx context.Context, runID string) error
-		ForceCancel(ctx context.Context, runID string) error
-		Apply(ctx context.Context, runID string) error
-		Discard(ctx context.Context, runID string) error
+		Get(ctx context.Context, id resource.ID) (*Run, error)
+		Delete(ctx context.Context, runID resource.ID) error
+		Cancel(ctx context.Context, runID resource.ID) error
+		ForceCancel(ctx context.Context, runID resource.ID) error
+		Apply(ctx context.Context, runID resource.ID) error
+		Discard(ctx context.Context, runID resource.ID) error
 
-		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
+		getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
 
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
-		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		GetPolicy(ctx context.Context, workspaceID resource.ID) (internal.WorkspacePolicy, error)
 	}
 )
 
@@ -67,8 +67,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string    `schema:"workspace_id,required"`
-		Operation   Operation `schema:"operation,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		Operation   Operation   `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -91,8 +91,8 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		PageNumber  int    `schema:"page[number]"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		PageNumber  int         `schema:"page[number]"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -319,9 +319,9 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		Latest      bool   `schema:"latest"`
-		RunID       string `schema:"run_id"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		Latest      bool        `schema:"latest"`
+		RunID       string      `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

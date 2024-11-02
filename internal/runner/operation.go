@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -109,28 +110,28 @@ type (
 	}
 
 	runClient interface {
-		Get(ctx context.Context, runID string) (*run.Run, error)
-		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
-		UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
-		GetLockFile(ctx context.Context, id string) ([]byte, error)
-		UploadLockFile(ctx context.Context, id string, lockFile []byte) error
+		Get(ctx context.Context, runID resource.ID) (*run.Run, error)
+		GetPlanFile(ctx context.Context, id resource.ID, format run.PlanFormat) ([]byte, error)
+		UploadPlanFile(ctx context.Context, id resource.ID, plan []byte, format run.PlanFormat) error
+		GetLockFile(ctx context.Context, id resource.ID) ([]byte, error)
+		UploadLockFile(ctx context.Context, id resource.ID, lockFile []byte) error
 	}
 
 	workspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	variablesClient interface {
-		ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
+		ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*variable.Variable, error)
 	}
 
 	configClient interface {
-		DownloadConfig(ctx context.Context, id string) ([]byte, error)
+		DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 	}
 
 	stateClient interface {
 		Create(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrent(ctx context.Context, workspaceID string) ([]byte, error)
+		DownloadCurrent(ctx context.Context, workspaceID resource.ID) ([]byte, error)
 	}
 
 	logsClient interface {

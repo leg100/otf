@@ -53,30 +53,30 @@ type (
 	}
 
 	webVCSProvidersClient interface {
-		Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error)
+		Get(ctx context.Context, providerID resource.ID) (*vcsprovider.VCSProvider, error)
 		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
 
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	// webClient provides web handlers with access to the workspace service
 	webClient interface {
 		Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
-		Get(ctx context.Context, workspaceID string) (*Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
 		GetByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-		Update(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
-		Delete(ctx context.Context, workspaceID string) (*Workspace, error)
-		Lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
-		Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error)
+		Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
+		Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*Workspace, error)
 
-		AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error
-		RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error
+		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
+		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
 		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
-		GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
-		SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error
-		UnsetPermission(ctx context.Context, workspaceID, teamID string) error
+		GetPolicy(ctx context.Context, workspaceID resource.ID) (internal.WorkspacePolicy, error)
+		SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error
+		UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error
 	}
 
 	// WorkspacePage contains data shared by all workspace-based pages.
@@ -629,8 +629,8 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   string `schema:"workspace_id,required"`
-		VCSProviderID string `schema:"vcs_provider_id,required"`
+		WorkspaceID   string      `schema:"workspace_id,required"`
+		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
 
 		// TODO: filters, public/private, etc
 	}
@@ -660,7 +660,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 	h.Render("workspace_vcs_repo_list.tmpl", w, struct {
 		WorkspacePage
 		Repos         []string
-		VCSProviderID string
+		VCSProviderID resource.ID
 	}{
 		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID, ws),
 		Repos:         repos,
@@ -715,9 +715,9 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		TeamID      string `schema:"team_id,required"`
-		Role        string `schema:"role,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		TeamID      string      `schema:"team_id,required"`
+		Role        string      `schema:"role,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -740,8 +740,8 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		TeamID      string `schema:"team_id,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		TeamID      string      `schema:"team_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

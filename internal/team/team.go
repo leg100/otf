@@ -132,7 +132,7 @@ func (t *Team) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (t *Team) CanAccessTeam(action rbac.Action, id string) bool {
+func (t *Team) CanAccessTeam(action rbac.Action, id resource.ID) bool {
 	// team can access self
 	return t.ID == id
 }

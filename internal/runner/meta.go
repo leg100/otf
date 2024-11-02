@@ -15,7 +15,7 @@ import (
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
 	// Unique system-wide ID
-	ID string `jsonapi:"primary,agents"`
+	ID resource.ID `jsonapi:"primary,agents"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -39,7 +39,7 @@ type RunnerMeta struct {
 
 type RunnerMetaAgentPool struct {
 	// ID of agent's pool.
-	ID string `jsonapi:"attribute" json:"id"`
+	ID resource.ID `jsonapi:"attribute" json:"id"`
 	// Name of agent's pool
 	Name string `jsonapi:"attribute" json:"name"`
 	// Agent pool's organization.
@@ -189,7 +189,7 @@ func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 	return meta, nil
 }
 
-func authorizeRunner(ctx context.Context, id string) error {
+func authorizeRunner(ctx context.Context, id resource.ID) error {
 	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return err

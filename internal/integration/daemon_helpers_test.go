@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
@@ -181,7 +182,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	return ws
 }
 
-func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID string) *workspace.Workspace {
+func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID resource.ID) *workspace.Workspace {
 	t.Helper()
 
 	ws, err := s.Workspaces.Get(ctx, workspaceID)
@@ -357,7 +358,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
-func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID string) *state.Version {
+func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID resource.ID) *state.Version {
 	t.Helper()
 
 	sv, err := s.State.GetCurrent(ctx, wsID)

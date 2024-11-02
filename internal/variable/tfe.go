@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 
@@ -424,7 +425,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID string) *types.WorkspaceVariable {
+func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.ID) *types.WorkspaceVariable {
 	return &types.WorkspaceVariable{
 		Variable: a.convertVariable(from, true),
 		Workspace: &types.Workspace{
@@ -461,7 +462,7 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	return to
 }
 
-func (a *tfe) convertVariableSetVariable(from *Variable, setID string) *types.VariableSetVariable {
+func (a *tfe) convertVariableSetVariable(from *Variable, setID resource.ID) *types.VariableSetVariable {
 	return &types.VariableSetVariable{
 		Variable:    a.convertVariable(from, true),
 		VariableSet: &types.VariableSet{ID: setID},

@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -58,9 +59,9 @@ type (
 	}
 
 	phaseClient interface {
-		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
-		FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
-		Cancel(ctx context.Context, runID string) error
+		StartPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
+		FinishPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
+		Cancel(ctx context.Context, runID resource.ID) error
 	}
 )
 
@@ -92,7 +93,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"agent_pools",
-		func(ctx context.Context, id string, action sql.Action) (*Pool, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Pool, error) {
 			if action == sql.DeleteAction {
 				return &Pool{ID: id}, nil
 			}
@@ -103,7 +104,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runners",
-		func(ctx context.Context, id string, action sql.Action) (*RunnerMeta, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*RunnerMeta, error) {
 			if action == sql.DeleteAction {
 				return &RunnerMeta{ID: id}, nil
 			}
@@ -127,7 +128,7 @@ func NewService(opts ServiceOptions) *Service {
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
-	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID string) (internal.Subject, error) {
+	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID resource.ID) (internal.Subject, error) {
 		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
 		if err != nil {
 			return nil, err
@@ -225,11 +226,11 @@ func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMe
 	return runner, nil
 }
 
-func (s *Service) getRunner(ctx context.Context, runnerID string) (*RunnerMeta, error) {
+func (s *Service) getRunner(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
 	return s.db.get(ctx, runnerID)
 }
 
-func (s *Service) updateStatus(ctx context.Context, runnerID string, to RunnerStatus) error {
+func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to RunnerStatus) error {
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
 	// (b) an runner with an ID matching runnerID
@@ -283,11 +284,11 @@ func (s *Service) listRunnersByOrganization(ctx context.Context, organization st
 	return s.db.listRunnersByOrganization(ctx, organization)
 }
 
-func (s *Service) listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error) {
+func (s *Service) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
 	return s.db.listRunnersByPool(ctx, poolID)
 }
 
-func (s *Service) deleteRunner(ctx context.Context, runnerID string) error {
+func (s *Service) deleteRunner(ctx context.Context, runnerID resource.ID) error {
 	if err := s.db.deleteRunner(ctx, runnerID); err != nil {
 		s.Error(err, "deleting runner", "runner_id", runnerID)
 		return err
@@ -338,7 +339,7 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 //
 // getJobs is intended to be called by an runner in order to retrieve jobs to
 // execute and jobs to cancel.
-func (s *Service) getJobs(ctx context.Context, runnerID string) ([]*Job, error) {
+func (s *Service) getJobs(ctx context.Context, runnerID resource.ID) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) a runner with an ID matching runnerID
 	if err := authorizeRunner(ctx, runnerID); err != nil {
@@ -384,7 +385,7 @@ func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *Service) allocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error) {
+func (s *Service) allocateJob(ctx context.Context, spec JobSpec, runnerID resource.ID) (*Job, error) {
 	allocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
 		return job.allocate(runnerID)
 	})
@@ -396,7 +397,7 @@ func (s *Service) allocateJob(ctx context.Context, spec JobSpec, runnerID string
 	return allocated, nil
 }
 
-func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error) {
+func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, runnerID resource.ID) (*Job, error) {
 	var (
 		from        string // ID of runner that job *was* allocated to
 		reallocated *Job
@@ -494,7 +495,7 @@ func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 
 // agent tokens
 
-func (s *Service) CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	at, token, subject, err := func() (*agentToken, []byte, internal.Subject, error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
@@ -522,7 +523,7 @@ func (s *Service) CreateAgentToken(ctx context.Context, poolID string, opts Crea
 	return at, token, nil
 }
 
-func (s *Service) GetAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, internal.Subject, error) {
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
@@ -546,7 +547,7 @@ func (s *Service) GetAgentToken(ctx context.Context, tokenID string) (*agentToke
 	return at, nil
 }
 
-func (s *Service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentToken, error) {
+func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*agentToken, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		return nil, err
@@ -565,7 +566,7 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID string) ([]*agentT
 	return tokens, nil
 }
 
-func (s *Service) DeleteAgentToken(ctx context.Context, tokenID string) (*agentToken, error) {
+func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, internal.Subject, error) {
 		// retrieve agent token and pool in order to get organization for authorization
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
@@ -640,7 +641,7 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 	return pool, nil
 }
 
-func (s *Service) updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
+func (s *Service) updateAgentPool(ctx context.Context, poolID resource.ID, opts updatePoolOptions) (*Pool, error) {
 	var (
 		subject       internal.Subject
 		before, after Pool
@@ -685,7 +686,7 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID string, opts updat
 	return &after, nil
 }
 
-func (s *Service) GetAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
@@ -713,7 +714,7 @@ func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization
 	return pools, nil
 }
 
-func (s *Service) deleteAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+func (s *Service) deleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	pool, subject, err := func() (*Pool, internal.Subject, error) {
 		// retrieve pool in order to get organization for authorization
 		pool, err := s.db.getPool(ctx, poolID)

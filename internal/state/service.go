@@ -21,7 +21,7 @@ import (
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
 
 // cacheKey generates a key for caching state files
-func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
+func cacheKey(svID resource.ID) string { return fmt.Sprintf("%s.json", svID) }
 
 type (
 	// Service provides access to state and state versions
@@ -116,7 +116,7 @@ func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*
 	return sv, nil
 }
 
-func (a *Service) DownloadCurrent(ctx context.Context, workspaceID string) ([]byte, error) {
+func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.ID) ([]byte, error) {
 	v, err := a.GetCurrent(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (a *Service) DownloadCurrent(ctx context.Context, workspaceID string) ([]by
 	return a.Download(ctx, v.ID)
 }
 
-func (a *Service) List(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (a *Service) List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (a *Service) List(ctx context.Context, workspaceID string, opts resource.Pa
 	return svl, nil
 }
 
-func (a *Service) GetCurrent(ctx context.Context, workspaceID string) (*Version, error) {
+func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (a *Service) GetCurrent(ctx context.Context, workspaceID string) (*Version,
 	return sv, nil
 }
 
-func (a *Service) Get(ctx context.Context, versionID string) (*Version, error) {
+func (a *Service) Get(ctx context.Context, versionID resource.ID) (*Version, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (a *Service) Get(ctx context.Context, versionID string) (*Version, error) {
 	return sv, nil
 }
 
-func (a *Service) Delete(ctx context.Context, versionID string) error {
+func (a *Service) Delete(ctx context.Context, versionID resource.ID) error {
 	subject, err := a.CanAccess(ctx, rbac.DeleteStateVersionAction, versionID)
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func (a *Service) Delete(ctx context.Context, versionID string) error {
 	return nil
 }
 
-func (a *Service) Rollback(ctx context.Context, versionID string) (*Version, error) {
+func (a *Service) Rollback(ctx context.Context, versionID resource.ID) (*Version, error) {
 	subject, err := a.CanAccess(ctx, rbac.RollbackStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (a *Service) Rollback(ctx context.Context, versionID string) (*Version, err
 	return sv, nil
 }
 
-func (a *Service) Upload(ctx context.Context, svID string, state []byte) error {
+func (a *Service) Upload(ctx context.Context, svID resource.ID, state []byte) error {
 	var sv *Version
 	err := a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
@@ -228,7 +228,7 @@ func (a *Service) Upload(ctx context.Context, svID string, state []byte) error {
 	return nil
 }
 
-func (a *Service) Download(ctx context.Context, svID string) ([]byte, error) {
+func (a *Service) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
 	subject, err := a.CanAccess(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
@@ -249,7 +249,7 @@ func (a *Service) Download(ctx context.Context, svID string) ([]byte, error) {
 	return state, nil
 }
 
-func (a *Service) GetOutput(ctx context.Context, outputID string) (*Output, error) {
+func (a *Service) GetOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
 	out, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)
@@ -265,7 +265,7 @@ func (a *Service) GetOutput(ctx context.Context, outputID string) (*Output, erro
 	return out, nil
 }
 
-func (a *Service) CanAccess(ctx context.Context, action rbac.Action, svID string) (internal.Subject, error) {
+func (a *Service) CanAccess(ctx context.Context, action rbac.Action, svID resource.ID) (internal.Subject, error) {
 	sv, err := a.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type fakeService struct {
@@ -20,7 +21,7 @@ func (f *fakeService) CreateAgentPool(ctx context.Context, opts CreateAgentPoolO
 	return f.pool, nil
 }
 
-func (f *fakeService) updateAgentPool(ctx context.Context, poolID string, opts updatePoolOptions) (*Pool, error) {
+func (f *fakeService) updateAgentPool(ctx context.Context, poolID resource.ID, opts updatePoolOptions) (*Pool, error) {
 	return nil, nil
 }
 
@@ -32,7 +33,7 @@ func (f *fakeService) GetAgentPool(context.Context, string) (*Pool, error) {
 	return f.pool, nil
 }
 
-func (f *fakeService) deleteAgentPool(ctx context.Context, poolID string) (*Pool, error) {
+func (f *fakeService) deleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	return nil, nil
 }
 
@@ -56,14 +57,14 @@ func (f *fakeService) listJobs(ctx context.Context) ([]*Job, error) {
 	return nil, nil
 }
 
-func (f *fakeService) allocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+func (f *fakeService) allocateJob(ctx context.Context, spec JobSpec, agentID resource.ID) (*Job, error) {
 	if err := f.job.allocate(agentID); err != nil {
 		return nil, err
 	}
 	return f.job, nil
 }
 
-func (f *fakeService) reallocateJob(ctx context.Context, spec JobSpec, agentID string) (*Job, error) {
+func (f *fakeService) reallocateJob(ctx context.Context, spec JobSpec, agentID resource.ID) (*Job, error) {
 	if err := f.job.reallocate(agentID); err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (f *fakeService) register(ctx context.Context, opts registerOptions) (*Runn
 	return nil, nil
 }
 
-func (f *fakeService) updateStatus(ctx context.Context, runnerID string, status RunnerStatus) error {
+func (f *fakeService) updateStatus(ctx context.Context, runnerID resource.ID, status RunnerStatus) error {
 	f.status = status
 	return nil
 }
@@ -95,7 +96,7 @@ func (f *fakeService) listRunnersByOrganization(ctx context.Context, organizatio
 	return nil, nil
 }
 
-func (f *fakeService) listRunnersByPool(ctx context.Context, poolID string) ([]*RunnerMeta, error) {
+func (f *fakeService) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
 	return nil, nil
 }
 
@@ -103,6 +104,6 @@ func (f *fakeService) listServerRunners(ctx context.Context) ([]*RunnerMeta, err
 	return nil, nil
 }
 
-func (f *fakeService) deleteRunner(ctx context.Context, runnerID string) error {
+func (f *fakeService) deleteRunner(ctx context.Context, runnerID resource.ID) error {
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 )
 
@@ -30,7 +31,7 @@ const (
 // JobSpec uniquely identifies a job.
 type JobSpec struct {
 	// ID of the run that this job is for.
-	RunID string `json:"run_id"`
+	RunID resource.ID `json:"run_id"`
 	// Phase of run that this job is for.
 	Phase internal.PhaseType `json:"phase"`
 }
@@ -64,7 +65,7 @@ type Job struct {
 	// Name of job's organization
 	Organization string `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
-	WorkspaceID string `jsonapi:"attribute" json:"workspace_id"`
+	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
 	RunnerID *string `jsonapi:"attribute" json:"runner_id"`
@@ -89,7 +90,7 @@ func (j *Job) MarshalID() string {
 	return j.Spec.String()
 }
 
-func (j *Job) UnmarshalID(id string) error {
+func (j *Job) UnmarshalID(id resource.ID) error {
 	spec, err := jobSpecFromString(id)
 	if err != nil {
 		return err
@@ -174,7 +175,7 @@ func (j *Job) CanAccessTeam(rbac.Action, string) bool {
 	return false
 }
 
-func (j *Job) allocate(runnerID string) error {
+func (j *Job) allocate(runnerID resource.ID) error {
 	if err := j.updateStatus(JobAllocated); err != nil {
 		return err
 	}
@@ -182,7 +183,7 @@ func (j *Job) allocate(runnerID string) error {
 	return nil
 }
 
-func (j *Job) reallocate(runnerID string) error {
+func (j *Job) reallocate(runnerID resource.ID) error {
 	if j.Status != JobAllocated {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}

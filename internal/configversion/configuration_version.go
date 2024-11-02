@@ -19,13 +19,17 @@ const (
 
 	// Default maximum config size is 10mb.
 	DefaultConfigMaxSize int64 = 1024 * 1024 * 10
+
+	Kind                  = "cv"
+	IngressAttributesKind = "ia"
 )
 
 type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                string
+		resource.ID
+
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
 		Source            Source
@@ -110,7 +114,7 @@ type (
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func NewConfigurationVersion(workspaceID string, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            resource.NewID("cv"),
+		ID:            resource.NewID(Kind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,
@@ -132,8 +136,6 @@ func NewConfigurationVersion(workspaceID string, opts CreateOptions) (*Configura
 	}
 	return &cv, nil
 }
-
-func (cv *ConfigurationVersion) String() string { return cv.ID }
 
 func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
 	for _, sts := range cv.StatusTimestamps {
