@@ -110,7 +110,7 @@ type (
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func NewConfigurationVersion(workspaceID string, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            internal.NewID("cv"),
+		ID:            resource.NewID("cv"),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,

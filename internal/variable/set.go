@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -36,7 +36,7 @@ type (
 
 func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
 	return &VariableSet{
-		ID:           internal.NewID("varset"),
+		ID:           resource.NewID("varset"),
 		Name:         opts.Name,
 		Description:  opts.Description,
 		Global:       opts.Global,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -36,7 +37,7 @@ type (
 
 func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
-		ID:           internal.NewID("ot"),
+		ID:           resource.NewID("ot"),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,

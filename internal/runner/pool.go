@@ -77,7 +77,7 @@ func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 		return nil, errors.New("organization must not be empty")
 	}
 	pool := &Pool{
-		ID:                 internal.NewID("apool"),
+		ID:                 resource.NewID("apool"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		Name:               opts.Name,
 		Organization:       opts.Organization,

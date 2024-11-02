@@ -5,14 +5,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"slices"
 	"strings"
 
-	"log/slog"
-
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"golang.org/x/exp/maps"
 )
@@ -79,7 +78,7 @@ type (
 
 func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID: internal.NewID("var"),
+		ID: resource.NewID("var"),
 	}
 	if opts.generateVersion == nil {
 		opts.generateVersion = versionGenerator

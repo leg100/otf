@@ -2,12 +2,12 @@ package team
 
 import (
 	"context"
-	"time"
-
 	"log/slog"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -39,7 +39,7 @@ type (
 
 func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte, error) {
 	tt := Token{
-		ID:        internal.NewID("tt"),
+		ID:        resource.NewID("tt"),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,

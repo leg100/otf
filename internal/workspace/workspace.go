@@ -183,7 +183,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 
 	ws := Workspace{
-		ID:                 internal.NewID("ws"),
+		ID:                 resource.NewID("ws"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
@@ -456,7 +456,7 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 }
 
 func (ws *Workspace) setName(name string) error {
-	if !internal.ReStringID.MatchString(name) {
+	if !resource.ReStringID.MatchString(name) {
 		return internal.ErrInvalidName
 	}
 	ws.Name = name

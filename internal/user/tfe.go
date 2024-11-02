@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -152,9 +152,9 @@ func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	membership := &types.OrganizationMembership{
-		ID: internal.NewID("ou"),
+		ID: resource.NewID("ou"),
 		User: &types.User{
-			ID: internal.NewID("user"),
+			ID: resource.NewID("user"),
 		},
 		Organization: &types.Organization{
 			Name: org,

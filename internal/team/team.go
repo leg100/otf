@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -86,7 +87,7 @@ func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 	}
 
 	team := &Team{
-		ID:           internal.NewID("team"),
+		ID:           resource.NewID("team"),
 		Name:         *opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: organization,

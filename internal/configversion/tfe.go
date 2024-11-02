@@ -224,7 +224,7 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 		return nil, err
 	}
 	return []any{&types.IngressAttributes{
-		ID:        internal.ConvertID(cv.ID, "ia"),
+		ID:        resource.ConvertID(cv.ID, "ia"),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
 	}}, nil
@@ -242,7 +242,7 @@ func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *types.Confi
 	}
 	if from.IngressAttributes != nil {
 		to.IngressAttributes = &types.IngressAttributes{
-			ID: internal.ConvertID(from.ID, "ia"),
+			ID: resource.ConvertID(from.ID, "ia"),
 		}
 	}
 	for _, ts := range from.StatusTimestamps {

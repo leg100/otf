@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"golang.org/x/exp/maps"
 )
@@ -115,7 +116,7 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 // newWithoutValidation creates a state version without validating the options.
 func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
-		ID:          internal.NewID("sv"),
+		ID:          resource.NewID("sv"),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Serial:      *opts.Serial,
 		State:       opts.State,
@@ -154,7 +155,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 			return nil, err
 		}
 		outputs[k] = &Output{
-			ID:             internal.NewID("wsout"),
+			ID:             resource.NewID("wsout"),
 			Name:           k,
 			Type:           typ,
 			Value:          v.Value,

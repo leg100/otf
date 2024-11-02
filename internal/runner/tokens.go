@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -64,7 +65,7 @@ func (f *tokenFactory) NewAgentToken(poolID string, opts CreateAgentTokenOptions
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
 	at := agentToken{
-		ID:          internal.NewID("at"),
+		ID:          resource.NewID("at"),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		AgentPoolID: poolID,

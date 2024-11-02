@@ -3,9 +3,8 @@ package module
 
 import (
 	"errors"
-	"time"
-
 	"log/slog"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
@@ -99,7 +98,7 @@ type (
 
 func newModule(opts CreateOptions) *Module {
 	return &Module{
-		ID:           internal.NewID("mod"),
+		ID:           resource.NewID("mod"),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		UpdatedAt:    internal.CurrentTimestamp(nil),
 		Name:         opts.Name,
@@ -111,7 +110,7 @@ func newModule(opts CreateOptions) *Module {
 
 func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
-		ID:        internal.NewID("modver"),
+		ID:        resource.NewID("modver"),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
 		ModuleID:  opts.ModuleID,

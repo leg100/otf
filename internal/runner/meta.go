@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // RunnerMeta is information about a runner.
@@ -67,7 +68,7 @@ func (m *RunnerMeta) register(opts registerOptions) error {
 	if m.ID != "" {
 		return errors.New("runner has already registered")
 	}
-	m.ID = internal.NewID("runner")
+	m.ID = resource.NewID("runner")
 	m.Name = opts.Name
 	m.Version = opts.Version
 	m.MaxJobs = opts.Concurrency

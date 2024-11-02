@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 )
 
@@ -128,7 +129,7 @@ func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 	}
 
 	return &Config{
-		ID:              internal.NewID("nc"),
+		ID:              resource.NewID("nc"),
 		CreatedAt:       internal.CurrentTimestamp(nil),
 		UpdatedAt:       internal.CurrentTimestamp(nil),
 		Name:            *opts.Name,

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -31,7 +32,7 @@ type (
 
 func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
-		ID:          internal.NewID("ut"),
+		ID:          resource.NewID("ut"),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		Username:    username,

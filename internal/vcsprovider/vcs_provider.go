@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"log/slog"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -73,7 +73,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 
 func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
-		ID:                  internal.NewID("vcs"),
+		ID:                  resource.NewID("vcs"),
 		Name:                opts.Name,
 		CreatedAt:           internal.CurrentTimestamp(nil),
 		Organization:        opts.Organization,

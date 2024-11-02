@@ -4,12 +4,12 @@ package user
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"log/slog"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
 
@@ -59,7 +59,7 @@ type (
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        internal.NewID("user"),
+		ID:        resource.NewID("user"),
 		Username:  username,
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),

@@ -180,7 +180,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 			case name != "":
 				existing, err := s.db.findTagByName(ctx, ws.Organization, name)
 				if errors.Is(err, internal.ErrResourceNotFound) {
-					id = internal.NewID("tag")
+					id = resource.NewID("tag")
 					if err := s.db.addTag(ctx, ws.Organization, name, id); err != nil {
 						return fmt.Errorf("adding tag: %s %w", name, err)
 					}
