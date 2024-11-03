@@ -11,7 +11,7 @@ import (
 type (
 	Service struct {
 		logr.Logger
-		*factory
+		*tokenFactory
 		*registry
 		*sessionFactory
 
@@ -37,8 +37,8 @@ func NewService(opts Options) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc.factory = &factory{key: key}
-	svc.sessionFactory = &sessionFactory{factory: svc.factory}
+	svc.tokenFactory = &tokenFactory{key: key}
+	svc.sessionFactory = &sessionFactory{tokenFactory: svc.tokenFactory}
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
 	}

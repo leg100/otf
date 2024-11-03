@@ -131,9 +131,7 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (authz.
 	if !ok {
 		return nil, fmt.Errorf("expected IAP token email to be a string: %#v", email)
 	}
-	return m.GetOrCreateUser(ctx, GetOrCreateUserOptions{
-		Username: &emailString,
-	})
+	return m.GetOrCreateUser(ctx, emailString)
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.Subject, error) {
@@ -168,10 +166,7 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 		}
 		return nil, false
 	}
-	// TODO: just use m.GetSubject
-	user, err := m.GetOrCreateUser(ctx, GetOrCreateUserOptions{
-		ID: &id,
-	})
+	user, err := m.GetSubject(ctx, id)
 	if err != nil {
 		html.FlashError(w, "unable to find user: "+err.Error())
 		return nil, false

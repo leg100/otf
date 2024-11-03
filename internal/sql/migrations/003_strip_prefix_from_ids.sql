@@ -11,7 +11,14 @@ UPDATE runs SET run_id = trim(leading 'run-' from run_id);
 UPDATE runs SET run_id = trim(leading 'run-' from run_id);
 UPDATE runs SET run_id = trim(leading 'run-' from run_id);
 
+ALTER TABLE jobs ADD COLUMN job_id text NOT NULL;
+ALTER TABLE jobs ADD PRIMARY KEY (job_id);
+
+UPDATE jobs SET job_id = 
+
 ---- create above / drop below ----
+
+ALTER TABLE jobs DROP COLUMN job_id;
 
 UPDATE organizations SET organization_id = 'organization-' || organization_id;
 UPDATE workspaces SET workspace_id = 'ws-' || workspace_id;

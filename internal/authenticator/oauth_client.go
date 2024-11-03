@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )
@@ -31,7 +30,7 @@ type (
 	}
 
 	sessionStarter interface {
-		StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID, opts tokens.StartSessionOptions) error
+		StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
 	}
 
 	// OAuthClient performs the client role in an oauth handshake, requesting
@@ -169,7 +168,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Lookup user in db, to retrieve user id to embed in session token
 	// Get or create user.
-	err = a.sessions.StartSession(w, r, tokens.StartSessionOptions{UserID: user.ID})
+	err = a.sessions.StartSession(w, r, user.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return

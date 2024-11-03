@@ -26,8 +26,8 @@ type (
 	Service struct {
 		logr.Logger
 
-		site         authz.Authorizer // authorizes site access
-		organization authz.Authorizer // authorizes org access
+		site         authz.Authorizer         // authorizes site access
+		organization *organization.Authorizer // authorizes org access
 		teams        *team.Service
 
 		db     *pgdb
@@ -103,17 +103,22 @@ func NewService(opts Options) *Service {
 	// Register with auth middleware the user token kind and a means of
 	// retrieving user corresponding to token.
 	opts.TokensService.RegisterKind(UserTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
-		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: internal.String(tokenID)})
+		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: &tokenID})
+	})
+	// Register with auth middleware the user session kind and a means of
+	// retrieving user corresponding to token.
+	opts.TokensService.RegisterKind(UserKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
+		return svc.GetUser(ctx, UserSpec{UserID: &tokenID})
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.
-	opts.TokensService.GetOrCreateUser(func(ctx context.Context, opts tokens.GetOrCreateUserOptions) (authz.Subject, error) {
+	opts.TokensService.GetOrCreateUser = func(ctx context.Context, username string) (authz.Subject, error) {
 		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
 			user, err = svc.Create(ctx, username)
 		}
 		return user, err
-	})
+	}
 
 	return &svc
 }
@@ -125,7 +130,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, "")
+	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, resource.ID{})
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +148,7 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 }
 
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.GetUserAction, "")
+	subject, err := a.site.CanAccess(ctx, rbac.GetUserAction, resource.ID{})
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +166,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 // List lists all users.
 func (a *Service) List(ctx context.Context) ([]*User, error) {
-	_, err := a.site.CanAccess(ctx, rbac.ListUsersAction, "")
+	_, err := a.site.CanAccess(ctx, rbac.ListUsersAction, resource.ID{})
 	if err != nil {
 		return nil, err
 	}

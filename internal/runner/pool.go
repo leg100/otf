@@ -20,8 +20,8 @@ type (
 	// Pool is a group of remote runners sharing one or more tokens, assigned to
 	// an organization or particular workspaces within the organization.
 	Pool struct {
-		// Unique system-wide ID
-		ID        string
+		resource.ID
+
 		Name      string
 		CreatedAt time.Time
 		// Pool belongs to an organization with this name.
@@ -117,7 +117,7 @@ func (p *Pool) update(opts updatePoolOptions) error {
 
 func (p *Pool) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", p.ID),
+		slog.String("id", p.ID.String()),
 		slog.String("name", p.Name),
 		slog.String("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),

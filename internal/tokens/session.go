@@ -17,7 +17,7 @@ const (
 
 // sessionFactory constructs new sessions.
 type sessionFactory struct {
-	*factory
+	*tokenFactory
 }
 
 func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {

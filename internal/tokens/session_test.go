@@ -20,7 +20,7 @@ func TestService_StartSession(t *testing.T) {
 	svc := Service{
 		Logger: logr.Discard(),
 		sessionFactory: &sessionFactory{
-			factory: &factory{key: key},
+			tokenFactory: &tokenFactory{key: key},
 		},
 	}
 

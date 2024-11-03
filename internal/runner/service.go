@@ -168,7 +168,7 @@ func NewService(opts ServiceOptions) *Service {
 	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
-	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString string) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString resource.ID) (authz.Subject, error) {
 		spec, err := jobSpecFromString(jobspecString)
 		if err != nil {
 			return nil, err

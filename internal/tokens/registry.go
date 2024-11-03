@@ -32,17 +32,9 @@ type (
 	// value of the 'subject' field parsed from a JWT.
 	SubjectGetter func(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error)
 
-	// GetOrCreateUser retrieves the user with the given identifier
-	// that is attempting to access the UI. If the subject does not exist it is
-	// created.
-	GetOrCreateUser func(ctx context.Context, opts GetOrCreateUserOptions) (authz.Subject, error)
-
-	// GetOrCreateUserOptions are mutually exclusive options for retrieving or
-	// create a user.
-	GetOrCreateUserOptions struct {
-		Username *string
-		ID       *resource.ID
-	}
+	// GetOrCreateUser retrieves the user with the given username. If the
+	// user does not exist it is created.
+	GetOrCreateUser func(ctx context.Context, username string) (authz.Subject, error)
 )
 
 // RegisterKind registers a kind of authentication token, providing a func that

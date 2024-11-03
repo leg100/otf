@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	AgentTokenKind tokens.Kind = "agent_token"
-	JobTokenKind   tokens.Kind = "job_token"
+	AgentTokenKind resource.Kind = "at"
+	JobTokenKind   tokens.Kind   = "job_token"
 
 	defaultJobTokenExpiry = 60 * time.Minute
 )
@@ -21,7 +21,8 @@ type (
 	// agentToken represents the authentication token for an agent.
 	// NOTE: the cryptographic token itself is not retained.
 	agentToken struct {
-		ID          string `jsonapi:"primary,agent_tokens"`
+		resource.ID `jsonapi:"primary,agent_tokens"`
+
 		CreatedAt   time.Time
 		AgentPoolID string `jsonapi:"attribute" json:"agent_pool_id"`
 		Description string `jsonapi:"attribute" json:"description"`
@@ -65,7 +66,7 @@ func (f *tokenFactory) NewAgentToken(poolID string, opts CreateAgentTokenOptions
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
 	at := agentToken{
-		ID:          resource.NewID("at"),
+		ID:          resource.NewID(AgentTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		AgentPoolID: poolID,
