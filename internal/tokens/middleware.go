@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -145,12 +146,11 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.S
 	if err != nil {
 		return nil, err
 	}
-	kindClaim, ok := parsed.Get("kind")
-	if !ok {
-		return nil, fmt.Errorf("missing claim: kind")
+	subj, err := resource.IDFromString(parsed.Subject())
+	if err != nil {
+		return nil, err
 	}
-	kind := Kind(kindClaim.(string))
-	return m.GetSubject(ctx, kind, parsed.Subject())
+	return m.GetSubject(ctx, subj)
 }
 
 func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (authz.Subject, bool) {

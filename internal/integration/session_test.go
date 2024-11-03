@@ -19,7 +19,7 @@ func TestSession(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
 		err := svc.Tokens.StartSession(w, r, tokens.StartSessionOptions{
-			Username: &want.Username,
+			UserID: &want.Username,
 		})
 		require.NoError(t, err)
 		cookies := w.Result().Cookies()

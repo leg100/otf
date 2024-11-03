@@ -4,9 +4,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/sql"
 )
 
 const (
@@ -46,7 +44,7 @@ type (
 // of the full result set. This latter case is useful, say, if a database has
 // already produced a segment of a full result set, e.g. using LIMIT and OFFSET.
 func NewPage[T any](resources []T, opts PageOptions, count *int64) *Page[T] {
-	opts = opts.normalize()
+	opts = opts.Normalize()
 
 	var metadata *Pagination
 
@@ -125,19 +123,8 @@ func newPagination(opts PageOptions, count int64) *Pagination {
 	return &pagination
 }
 
-// GetOffset calculates the offset for use in SQL queries.
-func (o PageOptions) GetOffset() pgtype.Int4 {
-	o = o.normalize()
-	return sql.Int4((o.PageNumber - 1) * o.PageSize)
-}
-
-// GetLimit calculates the limit for use in SQL queries.
-func (o PageOptions) GetLimit() pgtype.Int4 {
-	return sql.Int4(o.normalize().PageSize)
-}
-
-// normalize page number and size
-func (o PageOptions) normalize() PageOptions {
+// Normalize page number and size
+func (o PageOptions) Normalize() PageOptions {
 	if o.PageNumber < 1 {
 		o.PageNumber = 1
 	}

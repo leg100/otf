@@ -43,6 +43,7 @@ type Broker[T any] struct {
 	mu     sync.Mutex                 // sync access to map
 	getter GetterFunc[T]
 	table  string
+	kind   resource.Kind
 }
 
 // GetterFunc retrieves the type T using its unique id.
@@ -53,12 +54,13 @@ type databaseListener interface {
 	RegisterFunc(table string, ff sql.ForwardFunc)
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table string, getter GetterFunc[T]) *Broker[T] {
+func NewBroker[T any](logger logr.Logger, listener databaseListener, table string, kind resource.Kind, getter GetterFunc[T]) *Broker[T] {
 	b := &Broker[T]{
 		Logger: logger.WithValues("component", "broker"),
 		subs:   make(map[chan Event[T]]struct{}),
 		getter: getter,
 		table:  table,
+		kind:   kind,
 	}
 	listener.RegisterFunc(table, b.forward)
 	return b
@@ -97,11 +99,13 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 
 // forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
-func (b *Broker[T]) forward(ctx context.Context, id string, action sql.Action) {
+func (b *Broker[T]) forward(ctx context.Context, rowID string, action sql.Action) {
+	id := resource.ID{Kind: b.kind, ID: rowID}
+
 	var event Event[T]
 	payload, err := b.getter(ctx, id, action)
 	if err != nil {
-		b.Error(err, "retrieving type for database event", "table", b.table, "id", id, "action", action)
+		b.Error(err, "retrieving type for database event", "table", b.table, "id", rowID, "action", action)
 		return
 	}
 	event.Payload = payload

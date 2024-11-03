@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sync"
-
 	"log/slog"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -100,17 +99,17 @@ func (b *Listener) Start(ctx context.Context) error {
 				return err
 			}
 		}
-		var pge event
-		if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
+		var event event
+		if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
 			b.Error(err, "unmarshaling postgres notification")
 			continue
 		}
-		forwarder, ok := b.forwarders[string(pge.Table)]
+		forwarder, ok := b.forwarders[string(event.Table)]
 		if !ok {
-			b.Error(nil, "no getter found for table: %s", pge.Table)
+			b.Error(nil, "no getter found for table: %s", event.Table)
 			continue
 		}
-		forwarder(ctx, pge.ID, pge.Action)
+		forwarder(ctx, event.ID, event.Action)
 	}
 }
 

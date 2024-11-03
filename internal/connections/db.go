@@ -17,15 +17,15 @@ type (
 func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 	q := db.Querier(ctx)
 	params := sqlc.InsertRepoConnectionParams{
-		VCSProviderID: sql.String(opts.VCSProviderID.String()),
+		VCSProviderID: sql.ID(opts.VCSProviderID),
 		RepoPath:      sql.String(opts.RepoPath),
 	}
 
 	switch opts.ConnectionType {
 	case WorkspaceConnection:
-		params.WorkspaceID = sql.String(opts.ResourceID.String())
+		params.WorkspaceID = sql.ID(opts.ResourceID)
 	case ModuleConnection:
-		params.ModuleID = sql.String(opts.ResourceID.String())
+		params.ModuleID = sql.ID(opts.ResourceID)
 	default:
 		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
@@ -40,9 +40,9 @@ func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err
 	q := db.Querier(ctx)
 	switch opts.ConnectionType {
 	case WorkspaceConnection:
-		_, err = q.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID.String()))
+		_, err = q.DeleteWorkspaceConnectionByID(ctx, sql.ID(opts.ResourceID))
 	case ModuleConnection:
-		_, err = q.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID.String()))
+		_, err = q.DeleteModuleConnectionByID(ctx, sql.ID(opts.ResourceID))
 	default:
 		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}

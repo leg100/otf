@@ -5,7 +5,7 @@ import "github.com/leg100/otf/internal/resource"
 // OTF is free and therefore the user is entitled to all currently supported
 // services.
 type Entitlements struct {
-	ID                    string
+	ID                    resource.ID
 	Agents                bool
 	AuditLogging          bool
 	CostEstimation        bool

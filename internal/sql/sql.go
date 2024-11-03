@@ -115,17 +115,28 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{}
 }
 
-// String converts a go-string into a postgres non-null string
+// ID converts a resource ID into an ID suitable for postgres.
 func ID(s resource.ID) pgtype.Text {
 	return pgtype.Text{String: s.ID, Valid: true}
 }
 
-// StringPtr converts a go-string pointer into a postgres nullable string
+// ID converts a resource ID pointer into an ID suitable for postgres.
 func IDPtr(s *resource.ID) pgtype.Text {
 	if s != nil {
 		return pgtype.Text{String: s.ID, Valid: true}
 	}
 	return pgtype.Text{}
+}
+
+// GetOffset calculates the offset for use in SQL queries.
+func GetOffset(opts resource.PageOptions) pgtype.Int4 {
+	opts = opts.Normalize()
+	return Int4((opts.PageNumber - 1) * opts.PageSize)
+}
+
+// GetLimit calculates the limit for use in SQL queries.
+func GetLimit(opts resource.PageOptions) pgtype.Int4 {
+	return Int4(opts.Normalize().PageSize)
 }
 
 func Error(err error) error {

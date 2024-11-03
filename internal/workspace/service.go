@@ -26,7 +26,7 @@ type (
 		logr.Logger
 
 		site             authz.Authorizer
-		organization     authz.Authorizer
+		organization     *organization.Authorizer
 		authz.Authorizer // workspace authorizer
 
 		db          *pgdb
@@ -87,6 +87,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
+		WorkspaceKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Workspace, error) {
 			if action == sql.DeleteAction {
 				return &Workspace{ID: id}, nil

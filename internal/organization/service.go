@@ -81,6 +81,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"organizations",
+		OrganizationKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Organization, error) {
 			if action == sql.DeleteAction {
 				return &Organization{ID: id}, nil

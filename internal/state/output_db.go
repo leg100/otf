@@ -31,7 +31,7 @@ func (row outputRow) toOutput() *Output {
 }
 
 func (db *pgdb) getOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
-	result, err := db.Querier(ctx).FindStateVersionOutputByID(ctx, sql.String(outputID.String()))
+	result, err := db.Querier(ctx).FindStateVersionOutputByID(ctx, sql.ID(outputID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

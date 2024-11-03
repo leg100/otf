@@ -27,7 +27,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 		return "", fmt.Errorf("refusing to persist empty chunk")
 	}
 	id, err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
-		RunID:  sql.String(opts.RunID.String()),
+		RunID:  sql.ID(opts.RunID),
 		Phase:  sql.String(string(opts.Phase)),
 		Chunk:  opts.Data,
 		Offset: sql.Int4(opts.Offset),
@@ -58,7 +58,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (internal.Chu
 
 func (db *pgdb) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	data, err := db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
-		RunID: sql.String(runID.String()),
+		RunID: sql.ID(runID),
 		Phase: sql.String(string(phase)),
 	})
 	if err != nil {

@@ -40,7 +40,7 @@ func (s *Service) ListTags(ctx context.Context, organization string, opts ListTa
 	return list, nil
 }
 
-func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []string) error {
+func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
 	subject, err := s.organization.CanAccess(ctx, rbac.DeleteTagsAction, organization)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []
 	return nil
 }
 
-func (s *Service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error {
+func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.ID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs 
 	return nil
 }
 
-func (s *Service) AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	subject, err := s.CanAccess(ctx, rbac.AddTagsAction, workspaceID)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (s *Service) AddTags(ctx context.Context, workspaceID string, tags []TagSpe
 	return nil
 }
 
-func (s *Service) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	subject, err := s.CanAccess(ctx, rbac.RemoveTagsAction, workspaceID)
 	if err != nil {
 		return err

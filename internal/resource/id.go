@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"strings"
 )
 
 var (
+	EmptyID = ID{}
 	// ReStringID is a regular expression used to validate common string ID patterns.
 	ReStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 	// base58 alphabet
@@ -30,6 +32,14 @@ func NewID(kind Kind) ID {
 // run-123 to plan-123.
 func ConvertID(id ID, to Kind) ID {
 	return ID{Kind: to, ID: id.ID}
+}
+
+func IDFromString(s string) (ID, error) {
+	id, kind, found := strings.Cut(s, "-")
+	if !found {
+		return ID{}, fmt.Errorf("failed to parse resource ID: %s", s)
+	}
+	return ID{Kind: Kind(kind), ID: id}, nil
 }
 
 func (id ID) String() string {

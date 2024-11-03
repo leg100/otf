@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -24,10 +24,12 @@ func TestService_StartSession(t *testing.T) {
 		},
 	}
 
+	userID := resource.NewID(resource.Kind("user"))
+
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)
 	svc.StartSession(w, r, StartSessionOptions{
-		Username: internal.String("bobby"),
+		UserID: userID,
 	})
 
 	// verify and validate token in cookie set in response
@@ -35,7 +37,7 @@ func TestService_StartSession(t *testing.T) {
 	require.Equal(t, 1, len(cookies))
 	token, err := jwt.Parse([]byte(cookies[0].Value), jwt.WithKey(jwa.HS256, key))
 	require.NoError(t, err)
-	assert.Equal(t, "bobby", token.Subject())
+	assert.Equal(t, userID.String(), token.Subject())
 
 	// user is redirected to their profile page
 	assert.Equal(t, 302, w.Code)

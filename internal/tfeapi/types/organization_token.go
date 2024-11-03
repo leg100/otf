@@ -3,14 +3,18 @@
 
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 // OrganizationToken represents a Terraform Enterprise organization token.
 type OrganizationToken struct {
-	ID        string     `jsonapi:"primary,authentication-tokens"`
-	CreatedAt time.Time  `jsonapi:"attribute" json:"created-at"`
-	Token     string     `jsonapi:"attribute" json:"token"`
-	ExpiredAt *time.Time `jsonapi:"attribute" json:"expired-at"`
+	ID        resource.ID `jsonapi:"primary,authentication-tokens"`
+	CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
+	Token     string      `jsonapi:"attribute" json:"token"`
+	ExpiredAt *time.Time  `jsonapi:"attribute" json:"expired-at"`
 }
 
 // OrganizationTokenCreateOptions contains the options for creating an organization token.

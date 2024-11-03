@@ -22,7 +22,7 @@ func newConfigUploader(q *sqlc.Queries, id resource.ID) *cvUploader {
 
 func (u *cvUploader) SetErrored(ctx context.Context) error {
 	// TODO: add status timestamp
-	_, err := u.q.UpdateConfigurationVersionErroredByID(ctx, sql.String(u.id.String()))
+	_, err := u.q.UpdateConfigurationVersionErroredByID(ctx, sql.ID(u.id))
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func (u *cvUploader) SetErrored(ctx context.Context) error {
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
 	// TODO: add status timestamp
 	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, sqlc.UpdateConfigurationVersionConfigByIDParams{
-		ID:     sql.String(u.id.String()),
+		ID:     sql.ID(u.id),
 		Config: config,
 	})
 	if err != nil {

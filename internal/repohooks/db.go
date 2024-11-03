@@ -35,7 +35,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Querier(ctx)
 	result, err := q.FindRepohookByRepoAndProvider(ctx, sqlc.FindRepohookByRepoAndProviderParams{
 		RepoPath:      sql.String(hook.repoPath),
-		VCSProviderID: sql.String(hook.vcsProviderID.String()),
+		VCSProviderID: sql.ID(hook.vcsProviderID),
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -51,7 +51,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 		Secret:        sql.String(hook.secret),
 		RepoPath:      sql.String(hook.repoPath),
 		VCSID:         sql.StringPtr(hook.cloudID),
-		VCSProviderID: sql.String(hook.vcsProviderID.String()),
+		VCSProviderID: sql.ID(hook.vcsProviderID),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("inserting webhook into db: %w", sql.Error(err))
@@ -105,7 +105,7 @@ func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID resource.ID) error {
 	q := db.Querier(ctx)
 	_, err := q.UpdateRepohookVCSID(ctx, sqlc.UpdateRepohookVCSIDParams{
-		VCSID:      sql.String(cloudID.String()),
+		VCSID:      sql.ID(cloudID),
 		RepohookID: sql.UUID(id),
 	})
 	if err != nil {

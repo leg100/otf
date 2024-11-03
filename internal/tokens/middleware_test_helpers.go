@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,8 +54,8 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 		Logger: logr.Discard(),
 		key:    key,
 		registry: &registry{
-			kinds: map[Kind]SubjectGetter{
-				"test-kind": func(context.Context, string) (authz.Subject, error) {
+			kinds: map[resource.Kind]SubjectGetter{
+				"test-kind": func(context.Context, resource.ID) (authz.Subject, error) {
 					return &authz.Superuser{}, nil
 				},
 			},

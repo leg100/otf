@@ -144,7 +144,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.tokens.StartSession(w, r, tokens.StartSessionOptions{
-		Username: internal.String(SiteAdminUsername),
+		UserID: internal.String(SiteAdminUsername),
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)

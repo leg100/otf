@@ -4,6 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
@@ -39,7 +40,7 @@ func NewService(opts Options) (*Service, error) {
 	svc.factory = &factory{key: key}
 	svc.sessionFactory = &sessionFactory{factory: svc.factory}
 	svc.registry = &registry{
-		kinds: make(map[Kind]SubjectGetter),
+		kinds: make(map[resource.Kind]SubjectGetter),
 	}
 	svc.middleware = newMiddleware(middlewareOptions{
 		Logger:          opts.Logger,

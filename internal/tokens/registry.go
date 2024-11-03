@@ -21,7 +21,7 @@ type registry struct {
 	SiteToken string
 	SiteAdmin authz.Subject
 
-	kinds                    map[Kind]SubjectGetter
+	kinds                    map[resource.Kind]SubjectGetter
 	mu                       sync.Mutex
 	uiSubjectGetterOrCreator UISubjectGetterOrCreator
 }
@@ -36,17 +36,17 @@ type UISubjectGetterOrCreator func(ctx context.Context, login string) (authz.Sub
 
 // RegisterKind registers a kind of authentication token, providing a func that
 // can retrieve the OTF subject indicated in the token.
-func (r *registry) RegisterKind(k Kind, fn SubjectGetter) {
+func (r *registry) RegisterKind(k resource.Kind, fn SubjectGetter) {
 	r.mu.Lock()
 	r.kinds[k] = fn
 	r.mu.Unlock()
 }
 
-func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (authz.Subject, error) {
+func (r *registry) GetSubject(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	subjectGetter, ok := r.kinds[k]
+	subjectGetter, ok := r.kinds[jwtSubject.Kind]
 	if !ok {
 		return nil, fmt.Errorf("unknown authentication token kind")
 	}

@@ -64,7 +64,6 @@ func newOAuthClient(
 	tokensService sessionStarter,
 	cfg OAuthConfig,
 ) (*OAuthClient, error) {
-
 	if cfg.ClientID == "" && cfg.ClientSecret != "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
@@ -162,7 +161,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
-	err = a.sessions.StartSession(w, r, tokens.StartSessionOptions{Username: &username})
+	err = a.sessions.StartSession(w, r, tokens.StartSessionOptions{UserID: &username})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return

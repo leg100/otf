@@ -19,6 +19,6 @@ func (f fakeTokenHandler) getUsername(ctx context.Context, token *oauth2.Token) 
 type fakeTokensService struct{}
 
 func (fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
-	w.Header().Set("username", *opts.Username)
+	w.Header().Set("username", *opts.UserID)
 	return nil
 }

@@ -10,12 +10,13 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-const OrganizationTokenKind tokens.Kind = "organization_token"
+const OrganizationTokenKind resource.Kind = "ot"
 
 type (
 	// OrganizationToken provides information about an API token for an organization
 	OrganizationToken struct {
-		ID        string
+		resource.ID
+
 		CreatedAt time.Time
 		// Token belongs to an organization
 		Organization string
@@ -38,15 +39,14 @@ type (
 
 func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
-		ID:           resource.NewID("ot"),
+		ID:           resource.NewID(OrganizationTokenKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
 	}
 	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
-		Subject: ot.ID,
-		Kind:    OrganizationTokenKind,
-		Expiry:  opts.Expiry,
+		ID:     ot.ID,
+		Expiry: opts.Expiry,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -88,7 +88,6 @@ func (u *OrganizationToken) IsOwner(organization string) bool {
 }
 
 func (u *OrganizationToken) IsSiteAdmin() bool { return false }
-func (u *OrganizationToken) String() string    { return u.ID }
 
 func (u *OrganizationToken) Organizations() []string {
 	return []string{u.Organization}

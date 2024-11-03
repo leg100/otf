@@ -5,17 +5,12 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestSessionJWT(t *testing.T, username string, secret []byte, lifetime time.Duration) string {
-	t.Helper()
-
-	return newTestJWT(t, secret, userSessionKind, lifetime, "sub", username)
-}
-
-func newTestJWT(t *testing.T, secret []byte, kind Kind, lifetime time.Duration, claims ...string) string {
+func newTestJWT(t *testing.T, secret []byte, id resource.ID, lifetime time.Duration, claims ...string) string {
 	t.Helper()
 
 	claimsMap := make(map[string]string, len(claims)/2)
@@ -24,7 +19,7 @@ func newTestJWT(t *testing.T, secret []byte, kind Kind, lifetime time.Duration, 
 	}
 	f := &factory{key: newTestJWK(t, secret)}
 	token, err := f.NewToken(NewTokenOptions{
-		Kind:   kind,
+		ID:     id,
 		Expiry: internal.Time(time.Now().Add(lifetime)),
 		Claims: claimsMap,
 	})

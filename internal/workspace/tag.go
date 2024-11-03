@@ -2,8 +2,9 @@ package workspace
 
 import (
 	"errors"
-
 	"log/slog"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 var ErrInvalidTagSpec = errors.New("invalid tag spec: must provide either an ID or a name")
@@ -21,7 +22,7 @@ type (
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to
 	// valid.
 	TagSpec struct {
-		ID   string
+		ID   resource.ID
 		Name string
 	}
 
@@ -29,7 +30,7 @@ type (
 )
 
 func (s TagSpec) Valid() error {
-	if s.ID == "" && s.Name == "" {
+	if s.ID == resource.EmptyID && s.Name == "" {
 		return ErrInvalidTagSpec
 	}
 	return nil
@@ -37,7 +38,7 @@ func (s TagSpec) Valid() error {
 
 func (specs TagSpecs) LogValue() slog.Value {
 	var (
-		ids   = make([]string, len(specs))
+		ids   = make([]resource.ID, len(specs))
 		names = make([]string, len(specs))
 	)
 	for i, s := range specs {

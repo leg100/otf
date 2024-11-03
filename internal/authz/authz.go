@@ -38,7 +38,7 @@ type Subject interface {
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
 	Organization string
-	WorkspaceID  string
+	WorkspaceID  resource.ID
 	Permissions  []WorkspacePermission
 
 	// Whether workspace permits its state to be consumed by all workspaces in
