@@ -33,7 +33,7 @@ type (
 	Service struct {
 		logr.Logger
 
-		organization authz.Authorizer
+		organization *organization.Authorizer
 
 		tfeapi       *tfe
 		api          *api
@@ -94,6 +94,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"agent_pools",
+		AgentPoolKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Pool, error) {
 			if action == sql.DeleteAction {
 				return &Pool{ID: id}, nil

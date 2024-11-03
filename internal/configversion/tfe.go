@@ -39,8 +39,8 @@ type tfeClient interface {
 	List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
 	Delete(ctx context.Context, cvID resource.ID) error
 
-	UploadConfig(ctx context.Context, id string, config []byte) error
-	DownloadConfig(ctx context.Context, id string) ([]byte, error)
+	UploadConfig(ctx context.Context, id resource.ID, config []byte) error
+	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -56,7 +56,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -116,8 +116,8 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID          string `schema:"workspace_id,required"`
-		resource.PageOptions        // Pagination
+		WorkspaceID          resource.ID `schema:"workspace_id,required"`
+		resource.PageOptions             // Pagination
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {

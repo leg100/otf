@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // Query schema decoder: caches structs, and safe for sharing.
@@ -90,6 +91,16 @@ func Param(name string, r *http.Request) (string, error) {
 		return v, nil
 	}
 	return "", &internal.ErrMissingParameter{Parameter: name}
+}
+
+// ID retrieves a single parameter by name from the request and parses into a
+// resource ID.
+func ID(name string, r *http.Request) (resource.ID, error) {
+	s, err := Param(name, r)
+	if err != nil {
+		return resource.ID{}, err
+	}
+	return resource.IDFromString(s)
 }
 
 func decode(dst interface{}, src map[string][]string) error {

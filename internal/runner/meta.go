@@ -15,8 +15,8 @@ import (
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	// Unique system-wide ID
-	ID resource.ID `jsonapi:"primary,agents"`
+	resource.ID `jsonapi:"primary,agents"`
+
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -66,10 +66,10 @@ type registerOptions struct {
 }
 
 func (m *RunnerMeta) register(opts registerOptions) error {
-	if m.ID != "" {
+	if m.ID != resource.EmptyID {
 		return errors.New("runner has already registered")
 	}
-	m.ID = resource.NewID("runner")
+	m.ID = resource.NewID(RunnerKind)
 	m.Name = opts.Name
 	m.Version = opts.Version
 	m.MaxJobs = opts.Concurrency
@@ -120,7 +120,7 @@ func (m *RunnerMeta) IsAgent() bool {
 
 func (m *RunnerMeta) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", m.ID),
+		slog.String("id", m.ID.String()),
 		slog.Bool("agent", m.IsAgent()),
 		slog.String("status", string(m.Status)),
 		slog.String("ip_address", m.IPAddress.String()),
@@ -136,13 +136,11 @@ func (m *RunnerMeta) LogValue() slog.Value {
 
 func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", m.ID),
+		slog.String("id", m.ID.String()),
 		slog.String("name", m.Name),
 		slog.String("organization", m.OrganizationName),
 	)
 }
-
-func (m *RunnerMeta) String() string { return m.ID }
 
 func (m *RunnerMeta) IsSiteAdmin() bool   { return true }
 func (m *RunnerMeta) IsOwner(string) bool { return true }
@@ -195,7 +193,7 @@ func authorizeRunner(ctx context.Context, id resource.ID) error {
 	if err != nil {
 		return err
 	}
-	if id != "" && id != runner.ID {
+	if id != runner.ID {
 		return internal.ErrAccessNotPermitted
 	}
 	return nil

@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -35,7 +36,7 @@ func ConvertID(id ID, to Kind) ID {
 }
 
 func IDFromString(s string) (ID, error) {
-	id, kind, found := strings.Cut(s, "-")
+	kind, id, found := strings.Cut(s, "-")
 	if !found {
 		return ID{}, fmt.Errorf("failed to parse resource ID: %s", s)
 	}
@@ -44,6 +45,14 @@ func IDFromString(s string) (ID, error) {
 
 func (id ID) String() string {
 	return fmt.Sprintf("%s-%s", id.Kind, id.ID)
+}
+
+func (id *ID) UnmarshalText(text []byte) error {
+	kind, idd, found := bytes.Cut(text, []byte("-"))
+	if !found {
+		return fmt.Errorf("failed to parse resource ID: %s", s)
+	}
+	return ID{Kind: Kind(kind), ID: id}, nil
 }
 
 // GenerateRandomStringFromAlphabet generates a random string of a given size

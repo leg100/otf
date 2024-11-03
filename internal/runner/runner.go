@@ -17,11 +17,15 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
-const DefaultMaxJobs = 5
+const (
+	DefaultMaxJobs               = 5
+	RunnerKind     resource.Kind = "runner"
+)
 
 var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 

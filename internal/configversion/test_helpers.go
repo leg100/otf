@@ -15,7 +15,7 @@ func (f *FakeService) GetLatest(context.Context, string) (*ConfigurationVersion,
 }
 
 func (f *FakeService) Create(context.Context, string, CreateOptions) (*ConfigurationVersion, error) {
-	return &ConfigurationVersion{ID: "created"}, nil
+	return &ConfigurationVersion{}, nil
 }
 
 func (f *FakeService) UploadConfig(context.Context, string, []byte) error {

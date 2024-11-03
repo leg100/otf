@@ -102,13 +102,13 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resou
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
 	q := db.Querier(ctx)
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, sql.ID(opts.ID))
+		result, err := q.FindConfigurationVersionByID(ctx, sql.ID(*opts.ID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return pgRow(result).toConfigVersion(), nil
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.ID(opts.WorkspaceID))
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.ID(*opts.WorkspaceID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
