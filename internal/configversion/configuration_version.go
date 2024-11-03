@@ -20,7 +20,7 @@ const (
 	// Default maximum config size is 10mb.
 	DefaultConfigMaxSize int64 = 1024 * 1024 * 10
 
-	Kind                  = "cv"
+	ConfigVersionKind     = "cv"
 	IngressAttributesKind = "ia"
 )
 
@@ -114,7 +114,7 @@ type (
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            resource.NewID(Kind),
+		ID:            resource.NewID(ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,

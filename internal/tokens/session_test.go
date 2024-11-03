@@ -28,9 +28,8 @@ func TestService_StartSession(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)
-	svc.StartSession(w, r, StartSessionOptions{
-		UserID: userID,
-	})
+	err = svc.StartSession(w, r, userID)
+	require.NoError(t, err)
 
 	// verify and validate token in cookie set in response
 	cookies := w.Result().Cookies()

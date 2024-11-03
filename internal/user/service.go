@@ -107,7 +107,7 @@ func NewService(opts Options) *Service {
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.
-	opts.TokensService.RegisterUISubjectGetterOrCreator(func(ctx context.Context, username string) (authz.Subject, error) {
+	opts.TokensService.GetOrCreateUser(func(ctx context.Context, opts tokens.GetOrCreateUserOptions) (authz.Subject, error) {
 		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
 			user, err = svc.Create(ctx, username)

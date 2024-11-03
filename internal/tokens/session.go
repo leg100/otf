@@ -15,35 +15,14 @@ const (
 	defaultSessionExpiry = 24 * time.Hour
 )
 
-type (
-	StartSessionOptions struct {
-		UserID resource.ID
-		Expiry *time.Time
-	}
-
-	// sessionFactory constructs new sessions.
-	sessionFactory struct {
-		*factory
-	}
-)
-
-func (f *sessionFactory) NewSessionToken(userID resource.ID, expiry time.Time) (string, error) {
-	token, err := f.NewToken(NewTokenOptions{
-		ID:     userID,
-		Expiry: &expiry,
-	})
-	if err != nil {
-		return "", err
-	}
-	return string(token), nil
+// sessionFactory constructs new sessions.
+type sessionFactory struct {
+	*factory
 }
 
-func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error {
+func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultSessionExpiry)
-	if opts.Expiry != nil {
-		expiry = *opts.Expiry
-	}
-	token, err := a.NewSessionToken(opts.UserID, expiry)
+	token, err := a.NewToken(userID, NewTokenOptions{Expiry: &expiry})
 	if err != nil {
 		return err
 	}
@@ -52,7 +31,7 @@ func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	html.ReturnUserOriginalPage(w, r)
 
 	// TODO: log username instead
-	a.V(2).Info("started session", "user_id", opts.UserID)
+	a.V(2).Info("started session", "user_id", userID)
 
 	return nil
 }

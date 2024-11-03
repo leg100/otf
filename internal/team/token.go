@@ -11,14 +11,14 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-const TeamTokenKind tokens.Kind = "team_token"
+const TeamTokenKind resource.Kind = "tt"
 
 type (
 	// Token provides information about an API token for a team.
 	Token struct {
-		ID        string
-		CreatedAt time.Time
+		resource.ID
 
+		CreatedAt time.Time
 		// Token belongs to a team
 		TeamID resource.ID
 		// Optional expiry.
@@ -39,15 +39,14 @@ type (
 
 func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte, error) {
 	tt := Token{
-		ID:        resource.NewID("tt"),
+		ID:        resource.NewID(TeamTokenKind),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
 	}
 	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
-		Subject: tt.ID,
-		Kind:    TeamTokenKind,
-		Expiry:  opts.Expiry,
+		ID:     tt.ID,
+		Expiry: opts.Expiry,
 	})
 	if err != nil {
 		return nil, nil, err

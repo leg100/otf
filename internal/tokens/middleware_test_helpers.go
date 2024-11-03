@@ -59,7 +59,7 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 					return &authz.Superuser{}, nil
 				},
 			},
-			uiSubjectGetterOrCreator: func(context.Context, string) (authz.Subject, error) {
+			GetOrCreateUser: func(context.Context, GetOrCreateUserOptions) (authz.Subject, error) {
 				return &authz.Superuser{}, nil
 			},
 		},
@@ -84,7 +84,7 @@ func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 	return newMiddleware(middlewareOptions{
 		Logger: logr.Discard(),
 		registry: &registry{
-			uiSubjectGetterOrCreator: func(context.Context, string) (authz.Subject, error) {
+			GetOrCreateUser: func(context.Context, GetOrCreateUserOptions) (authz.Subject, error) {
 				return &authz.Superuser{}, nil
 			},
 		},

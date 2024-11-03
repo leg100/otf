@@ -15,19 +15,21 @@ import (
 )
 
 const (
-	SiteAdminID       = "user-site-admin"
-	SiteAdminUsername = "site-admin"
+	SiteAdminUsername               = "site-admin"
+	UserKind          resource.Kind = "user"
 )
 
 var (
-	SiteAdmin               = User{ID: SiteAdminID, Username: SiteAdminUsername}
-	_         authz.Subject = (*User)(nil)
+	SiteAdminID               = resource.ID{Kind: UserKind, ID: "user-site-admin"}
+	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
+	_           authz.Subject = (*User)(nil)
 )
 
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        string    `jsonapi:"primary,users"`
+		resource.ID `jsonapi:"primary,users"`
+
 		CreatedAt time.Time `jsonapi:"attribute" json:"created-at"`
 		UpdatedAt time.Time `jsonapi:"attribute" json:"updated-at"`
 		SiteAdmin bool      `jsonapi:"attribute" json:"site-admin"`

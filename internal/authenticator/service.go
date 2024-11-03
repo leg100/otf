@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/user"
 )
 
 type (
@@ -18,6 +19,7 @@ type (
 
 		*internal.HostnameService
 
+		UserService          userService
 		TokensService        *tokens.Service
 		OpaqueHandlerConfigs []OpaqueHandlerConfig
 		IDTokenHandlerConfig OIDCConfig
@@ -28,6 +30,11 @@ type (
 		html.Renderer
 
 		clients []*OAuthClient
+	}
+
+	userService interface {
+		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
+		Create(ctx context.Context, username string) (*user.User, error)
 	}
 )
 

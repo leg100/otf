@@ -12,7 +12,6 @@ import (
 
 type (
 	NewTokenOptions struct {
-		ID     resource.ID
 		Expiry *time.Time
 		Claims map[string]string
 	}
@@ -23,9 +22,9 @@ type (
 	}
 )
 
-func (f *factory) NewToken(opts NewTokenOptions) ([]byte, error) {
+func (f *factory) NewToken(subjectID resource.ID, opts NewTokenOptions) ([]byte, error) {
 	builder := jwt.NewBuilder().
-		Subject(opts.ID.String()).
+		Subject(subjectID.String()).
 		IssuedAt(time.Now())
 	for k, v := range opts.Claims {
 		builder = builder.Claim(k, v)

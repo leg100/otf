@@ -15,7 +15,8 @@ const TeamKind resource.Kind = "team"
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		ID           string    `jsonapi:"primary,teams"`
+		resource.ID `jsonapi:"primary,teams"`
+
 		CreatedAt    time.Time `jsonapi:"attribute" json:"created-at"`
 		Name         string    `jsonapi:"attribute" json:"name"`
 		Organization string    `jsonapi:"attribute" json:"organization"`

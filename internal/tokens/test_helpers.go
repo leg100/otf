@@ -18,8 +18,7 @@ func newTestJWT(t *testing.T, secret []byte, id resource.ID, lifetime time.Durat
 		claimsMap[claims[i]] = claims[i+1]
 	}
 	f := &factory{key: newTestJWK(t, secret)}
-	token, err := f.NewToken(NewTokenOptions{
-		ID:     id,
+	token, err := f.NewToken(id, NewTokenOptions{
 		Expiry: internal.Time(time.Now().Add(lifetime)),
 		Claims: claimsMap,
 	})

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -144,7 +143,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.tokens.StartSession(w, r, tokens.StartSessionOptions{
-		UserID: internal.String(SiteAdminUsername),
+		UserID: SiteAdminID,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)

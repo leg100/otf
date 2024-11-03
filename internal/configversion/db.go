@@ -162,14 +162,14 @@ type pgRow struct {
 
 func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	cv := ConfigurationVersion{
-		ID:               resource.ID{Kind: Kind, ID: result.ConfigurationVersionID.String},
+		ID:               resource.ID{Kind: ConfigVersionKind, ID: result.ConfigurationVersionID.String},
 		CreatedAt:        result.CreatedAt.Time.UTC(),
 		AutoQueueRuns:    result.AutoQueueRuns.Bool,
 		Speculative:      result.Speculative.Bool,
 		Source:           Source(result.Source.String),
 		Status:           ConfigurationStatus(result.Status.String),
 		StatusTimestamps: unmarshalStatusTimestampRows(result.StatusTimestamps),
-		WorkspaceID:      resource.ID{Kind: Kind, ID: result.WorkspaceID.String},
+		WorkspaceID:      resource.ID{Kind: ConfigVersionKind, ID: result.WorkspaceID.String},
 	}
 	if result.IngressAttributes != nil {
 		cv.IngressAttributes = NewIngressFromRow(result.IngressAttributes)

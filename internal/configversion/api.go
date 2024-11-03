@@ -26,7 +26,7 @@ func (a *api) download(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.DownloadConfig(r.Context(), resource.ID{Kind: Kind, ID: id})
+	resp, err := a.DownloadConfig(r.Context(), resource.ID{Kind: ConfigVersionKind, ID: id})
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
