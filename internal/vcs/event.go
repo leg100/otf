@@ -3,6 +3,8 @@ package vcs
 import (
 	"errors"
 	"fmt"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 type EventType string
@@ -46,7 +48,7 @@ type (
 	}
 
 	EventHeader struct {
-		VCSProviderID string
+		VCSProviderID resource.ID
 	}
 
 	EventPayload struct {

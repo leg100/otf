@@ -3,10 +3,12 @@
 
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 type (
 	// OrganizationTag represents a Terraform Enterprise Organization tag
 	OrganizationTag struct {
-		ID string `jsonapi:"primary,tags"`
+		ID resource.ID `jsonapi:"primary,tags"`
 
 		// Optional:
 		Name string `jsonapi:"attribute" json:"name,omitempty"`
@@ -20,7 +22,7 @@ type (
 
 	// Tag is owned by an organization and applied to workspaces. Used for grouping and search.
 	Tag struct {
-		ID   string `jsonapi:"primary,tags"`
-		Name string `jsonapi:"attr,name,omitempty"`
+		ID   resource.ID `jsonapi:"primary,tags"`
+		Name string      `jsonapi:"attr,name,omitempty"`
 	}
 )

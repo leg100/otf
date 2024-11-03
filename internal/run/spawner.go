@@ -187,7 +187,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
-				// ID     string
+				// ID     resource.ID
 				Branch: event.Branch,
 				// CloneURL          string
 				// CommitMessage     string

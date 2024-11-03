@@ -322,7 +322,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.ID `schema:"workspace_id,required"`
 		Latest      bool        `schema:"latest"`
-		RunID       string      `schema:"run_id"`
+		RunID       resource.ID `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

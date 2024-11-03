@@ -1,16 +1,18 @@
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 type (
 	// User represents an OTF user.
 	User struct {
-		ID               string     `jsonapi:"primary,users"`
-		AvatarURL        string     `jsonapi:"attribute" json:"avatar-url"`
-		Email            string     `jsonapi:"attribute" json:"email"`
-		IsServiceAccount bool       `jsonapi:"attribute" json:"is-service-account"`
-		TwoFactor        *TwoFactor `jsonapi:"attribute" json:"two-factor"`
-		UnconfirmedEmail string     `jsonapi:"attribute" json:"unconfirmed-email"`
-		Username         string     `jsonapi:"attribute" json:"username"`
-		V2Only           bool       `jsonapi:"attribute" json:"v2-only"`
+		ID               resource.ID `jsonapi:"primary,users"`
+		AvatarURL        string      `jsonapi:"attribute" json:"avatar-url"`
+		Email            string      `jsonapi:"attribute" json:"email"`
+		IsServiceAccount bool        `jsonapi:"attribute" json:"is-service-account"`
+		TwoFactor        *TwoFactor  `jsonapi:"attribute" json:"two-factor"`
+		UnconfirmedEmail string      `jsonapi:"attribute" json:"unconfirmed-email"`
+		Username         string      `jsonapi:"attribute" json:"username"`
+		V2Only           bool        `jsonapi:"attribute" json:"v2-only"`
 
 		// Relations
 		// AuthenticationTokens *AuthenticationTokens `jsonapi:"relation,authentication-tokens"`

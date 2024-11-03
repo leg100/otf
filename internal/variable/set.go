@@ -10,7 +10,7 @@ import (
 type (
 	// VariableSet is a set of variables
 	VariableSet struct {
-		ID           string
+		ID           resource.ID
 		Name         string
 		Description  string
 		Global       bool

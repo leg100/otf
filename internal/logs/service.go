@@ -20,15 +20,15 @@ type (
 
 		api    *api
 		web    *webHandlers
-		broker pubsub.SubscriptionService[internal.Chunk]
+		broker pubsub.SubscriptionService[Chunk]
 
 		chunkproxy
 	}
 
 	chunkproxy interface {
 		Start(ctx context.Context) error
-		get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
-		put(ctx context.Context, opts internal.PutChunkOptions) error
+		get(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+		put(ctx context.Context, opts PutChunkOptions) error
 	}
 
 	Options struct {
@@ -60,9 +60,9 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, id string, action sql.Action) (internal.Chunk, error) {
+		func(ctx context.Context, id string, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
-				return internal.Chunk{ID: id}, nil
+				return Chunk{ID: id}, nil
 			}
 			return db.getChunk(ctx, id)
 		},
@@ -81,25 +81,25 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func()) {
+func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (s *Service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
+func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	logs, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {
 		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
-		return internal.Chunk{}, err
+		return Chunk{}, err
 	}
 	s.V(9).Info("read logs", "id", opts.RunID, "offset", opts.Offset)
 	return logs, nil
 }
 
 // PutChunk writes a chunk of logs for a phase
-func (s *Service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) error {
+func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, opts.RunID)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (s *Service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) e
 
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *Service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error) {
+func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
 	subject, err := s.run.CanAccess(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (s *Service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 	opts.Offset += len(chunk.Data)
 
 	// relay is the chan returned to the caller on which chunks are relayed to.
-	relay := make(chan internal.Chunk)
+	relay := make(chan Chunk)
 	go func() {
 		// send existing chunk
 		if len(chunk.Data) > 0 {
@@ -155,7 +155,7 @@ func (s *Service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 					continue
 				}
 				// remove overlapping portion of chunk
-				chunk = chunk.Cut(internal.GetChunkOptions{Offset: opts.Offset})
+				chunk = chunk.Cut(GetChunkOptions{Offset: opts.Offset})
 			}
 			if len(chunk.Data) == 0 {
 				// don't send empty chunks

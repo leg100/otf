@@ -27,7 +27,7 @@ func TestProxy_Get(t *testing.T) {
 		got, err := proxy.get(ctx, opts)
 		require.NoError(t, err)
 
-		want := internal.Chunk{RunID: "run-123", Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
+		want := Chunk{RunID: "run-123", Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
 		assert.Equal(t, want, got)
 	})
 
@@ -39,7 +39,7 @@ func TestProxy_Get(t *testing.T) {
 		got, err := proxy.get(ctx, opts)
 		require.NoError(t, err)
 
-		want := internal.Chunk{RunID: "run-123", Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
+		want := Chunk{RunID: "run-123", Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
 		assert.Equal(t, want, got)
 
 		// cache should be populated now

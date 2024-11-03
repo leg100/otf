@@ -90,7 +90,7 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     string
+		// ID     resource.ID
 		Branch string
 		// CloneURL          string
 		// CommitMessage     string

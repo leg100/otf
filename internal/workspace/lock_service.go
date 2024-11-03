@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 )
 
 // Lock locks the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (s *Service) Lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
+func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*Workspace, error) {
 	var (
 		id   string
 		kind LockKind
@@ -47,7 +48,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID string, runID *string) (
 // Unlock unlocks the workspace. A workspace can only be unlocked on behalf of a run or
 // a user. If the former then runID must be non-nil; otherwise a user is
 // extracted from the context.
-func (s *Service) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
+func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*Workspace, error) {
 	var (
 		id   string
 		kind LockKind

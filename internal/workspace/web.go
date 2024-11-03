@@ -460,14 +460,14 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID       string `schema:"agent_pool_id"`
-		AutoApply         bool   `schema:"auto_apply"`
+		AgentPoolID       resource.ID `schema:"agent_pool_id"`
+		AutoApply         bool        `schema:"auto_apply"`
 		Name              string
 		Description       string
 		ExecutionMode     ExecutionMode `schema:"execution_mode"`
 		TerraformVersion  string        `schema:"terraform_version"`
 		WorkingDirectory  string        `schema:"working_directory"`
-		WorkspaceID       string        `schema:"workspace_id,required"`
+		WorkspaceID       resource.ID   `schema:"workspace_id,required"`
 		GlobalRemoteState bool          `schema:"global_remote_state"`
 
 		// VCS connection
@@ -630,7 +630,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   string      `schema:"workspace_id,required"`
+		WorkspaceID   resource.ID `schema:"workspace_id,required"`
 		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
 
 		// TODO: filters, public/private, etc
@@ -671,9 +671,9 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   string  `schema:"workspace_id,required"`
-		RepoPath      *string `schema:"identifier,required"`
-		VCSProviderID *string `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.ID `schema:"workspace_id,required"`
+		RepoPath      *string     `schema:"identifier,required"`
+		VCSProviderID *string     `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -717,7 +717,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		TeamID      string      `schema:"team_id,required"`
+		TeamID      resource.ID `schema:"team_id,required"`
 		Role        string      `schema:"role,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -742,7 +742,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		TeamID      string      `schema:"team_id,required"`
+		TeamID      resource.ID `schema:"team_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -22,7 +23,7 @@ type (
 
 	fakeTailProxy struct {
 		// fake chunk to return
-		chunk internal.Chunk
+		chunk Chunk
 		chunkproxy
 	}
 
@@ -50,11 +51,11 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	return val, nil
 }
 
-func (s *fakeDB) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+func (s *fakeDB) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	return s.data, nil
 }
 
-func (f *fakeTailProxy) get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
+func (f *fakeTailProxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	return f.chunk, nil
 }
 
@@ -63,12 +64,12 @@ func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (authz.
 }
 
 type fakeSubService struct {
-	stream chan pubsub.Event[internal.Chunk]
+	stream chan pubsub.Event[Chunk]
 
-	pubsub.SubscriptionService[internal.Chunk]
+	pubsub.SubscriptionService[Chunk]
 }
 
-func (f *fakeSubService) Subscribe(ctx context.Context) (<-chan pubsub.Event[internal.Chunk], func()) {
+func (f *fakeSubService) Subscribe(ctx context.Context) (<-chan pubsub.Event[Chunk], func()) {
 	go func() {
 		<-ctx.Done()
 		close(f.stream)

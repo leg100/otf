@@ -3,12 +3,14 @@
 
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 // AgentPool represents a Terraform Cloud agent pool.
 type AgentPool struct {
-	ID                 string `jsonapi:"primary,agent-pools"`
-	Name               string `jsonapi:"attribute" json:"name"`
-	AgentCount         int    `jsonapi:"attribute" json:"agent-count"`
-	OrganizationScoped bool   `jsonapi:"attribute" json:"organization-scoped"`
+	ID                 resource.ID `jsonapi:"primary,agent-pools"`
+	Name               string      `jsonapi:"attribute" json:"name"`
+	AgentCount         int         `jsonapi:"attribute" json:"agent-count"`
+	OrganizationScoped bool        `jsonapi:"attribute" json:"organization-scoped"`
 
 	// Relations
 	Organization      *Organization `jsonapi:"relationship" json:"organization"`

@@ -24,7 +24,7 @@ type Organization struct {
 	CreatedAt                                         time.Time                `jsonapi:"attribute" json:"created-at"`
 	Email                                             string                   `jsonapi:"attribute" json:"email"`
 	ExternalID                                        resource.ID              `jsonapi:"attribute" json:"external-id"`
-	OwnersTeamSAMLRoleID                              string                   `jsonapi:"attribute" json:"owners-team-saml-role-id"`
+	OwnersTeamSAMLRoleID                              resource.ID              `jsonapi:"attribute" json:"owners-team-saml-role-id"`
 	Permissions                                       *OrganizationPermissions `jsonapi:"attribute" json:"permissions"`
 	SAMLEnabled                                       bool                     `jsonapi:"attribute" json:"saml-enabled"`
 	SessionRemember                                   *int                     `jsonapi:"attribute" json:"session-remember"`

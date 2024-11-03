@@ -1,19 +1,25 @@
 package resource
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"regexp"
-	"strings"
+	"strconv"
+)
+
+const (
+	// base58 alphabet
+	base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	// length of id part of ID
+	idLength = 16
 )
 
 var (
 	EmptyID = ID{}
 	// ReStringID is a regular expression used to validate common string ID patterns.
 	ReStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
-	// base58 alphabet
-	base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	// regex for valid ID
+	idRegex = regexp.MustCompile(`^[a-z]{2,}-[` + base58 + `]{` + strconv.Itoa(idLength) + `}`)
 )
 
 type ID struct {
@@ -35,12 +41,12 @@ func ConvertID(id ID, to Kind) ID {
 	return ID{Kind: to, ID: id.ID}
 }
 
-func IDFromString(s string) (ID, error) {
-	kind, id, found := strings.Cut(s, "-")
-	if !found {
+func ParseID(s string) (ID, error) {
+	matches := idRegex.FindStringSubmatch(s)
+	if matches == nil {
 		return ID{}, fmt.Errorf("failed to parse resource ID: %s", s)
 	}
-	return ID{Kind: Kind(kind), ID: id}, nil
+	return ID{Kind: Kind(matches[1]), ID: matches[2]}, nil
 }
 
 func (id ID) String() string {
@@ -48,11 +54,13 @@ func (id ID) String() string {
 }
 
 func (id *ID) UnmarshalText(text []byte) error {
-	kind, idd, found := bytes.Cut(text, []byte("-"))
-	if !found {
+	s := string(text)
+	x, err := ParseID(s)
+	if err != nil {
 		return fmt.Errorf("failed to parse resource ID: %s", s)
 	}
-	return ID{Kind: Kind(kind), ID: id}, nil
+	*id = x
+	return nil
 }
 
 // GenerateRandomStringFromAlphabet generates a random string of a given size

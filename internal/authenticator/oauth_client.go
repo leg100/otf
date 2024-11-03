@@ -50,7 +50,7 @@ type (
 	// OAuthConfig is configuration for constructing an OAuth client
 	OAuthConfig struct {
 		Hostname            string
-		ClientID            string
+		ClientID            resource.ID
 		ClientSecret        string
 		Endpoint            oauth2.Endpoint
 		Scopes              []string

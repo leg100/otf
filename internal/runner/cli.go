@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ type (
 	}
 
 	agentCLIService interface {
-		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+		CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	}
 )
 
@@ -51,7 +52,7 @@ func (a *agentCLI) agentTokenCommand() *cobra.Command {
 
 func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 	var (
-		poolID string
+		poolID resource.ID
 		opts   = CreateAgentTokenOptions{}
 	)
 	cmd := &cobra.Command{
