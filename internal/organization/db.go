@@ -37,7 +37,7 @@ type row struct {
 // organization.
 func (r row) toOrganization() *Organization {
 	org := &Organization{
-		ID:                         r.OrganizationID.String,
+		ID:                         resource.ID{Kind: OrganizationKind, ID: r.OrganizationID.String},
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		Name:                       r.Name.String,
@@ -151,7 +151,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
-	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.String(id))
+	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.String(id.ID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

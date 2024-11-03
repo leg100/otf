@@ -57,7 +57,7 @@ type (
 
 func (r pgresult) toWorkspace() (*Workspace, error) {
 	ws := Workspace{
-		ID:                         r.WorkspaceID.String,
+		ID:                         resource.ID{Kind: WorkspaceKind, ID: r.WorkspaceID.String},
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		AllowDestroyPlan:           r.AllowDestroyPlan.Bool,
@@ -267,7 +267,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
 	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspacesByConnection(ctx, sqlc.FindWorkspacesByConnectionParams{

@@ -11,12 +11,15 @@ import (
 const (
 	DefaultSessionTimeout    = 20160
 	DefaultSessionExpiration = 20160
+
+	OrganizationKind resource.Kind = "org"
 )
 
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        string    `jsonapi:"primary,organizations"`
+		resource.ID `jsonapi:"primary,organizations"`
+
 		CreatedAt time.Time `jsonapi:"attribute" json:"created-at"`
 		UpdatedAt time.Time `jsonapi:"attribute" json:"updated-at"`
 		Name      string    `jsonapi:"attribute" json:"name"`
@@ -87,8 +90,6 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 	}
 	return &org, nil
 }
-
-func (org *Organization) String() string { return org.ID }
 
 func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.Name != nil {

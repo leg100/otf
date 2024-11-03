@@ -14,7 +14,7 @@ type Authorizer struct {
 	logr.Logger
 }
 
-func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name string) (authz.Subject, error) {
+func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, organizationName string) (authz.Subject, error) {
 	subj, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -22,9 +22,9 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name str
 	if authz.SkipAuthz(ctx) {
 		return subj, nil
 	}
-	if subj.CanAccessOrganization(action, name) {
+	if subj.CanAccessOrganization(action, organizationName) {
 		return subj, nil
 	}
-	a.Error(nil, "unauthorized action", "organization", name, "action", action.String(), "subject", subj)
+	a.Error(nil, "unauthorized action", "organization", organizationName, "action", action.String(), "subject", subj)
 	return nil, internal.ErrAccessNotPermitted
 }

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -45,7 +46,7 @@ type Broker[T any] struct {
 }
 
 // GetterFunc retrieves the type T using its unique id.
-type GetterFunc[T any] func(ctx context.Context, id string, action sql.Action) (T, error)
+type GetterFunc[T any] func(ctx context.Context, id resource.ID, action sql.Action) (T, error)
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {

@@ -23,6 +23,8 @@ const (
 
 	DefaultAllowDestroyPlan = true
 	MinTerraformVersion     = "1.2.0"
+
+	WorkspaceKind resource.Kind = "ws"
 )
 
 var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}

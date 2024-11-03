@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // Bool converts a go-boolean into a postgres non-null boolean
@@ -112,6 +113,19 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 		return pgtype.Timestamptz{Time: *t, Valid: true}
 	}
 	return pgtype.Timestamptz{}
+}
+
+// String converts a go-string into a postgres non-null string
+func ID(s resource.ID) pgtype.Text {
+	return pgtype.Text{String: s.ID, Valid: true}
+}
+
+// StringPtr converts a go-string pointer into a postgres nullable string
+func IDPtr(s *resource.ID) pgtype.Text {
+	if s != nil {
+		return pgtype.Text{String: s.ID, Valid: true}
+	}
+	return pgtype.Text{}
 }
 
 func Error(err error) error {

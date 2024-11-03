@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // registry provides a means of registering different kinds of tokens with the
@@ -27,7 +28,7 @@ type registry struct {
 
 // SubjectGetter retrieves an OTF subject given the jwtSubject string, which is the
 // value of the 'subject' field parsed from a JWT.
-type SubjectGetter func(ctx context.Context, jwtSubject string) (authz.Subject, error)
+type SubjectGetter func(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error)
 
 // UISubjectGetterOrCreator retrieves the OTF subject with the given login that
 // is attempting to access the UI. If the subject does not exist it is created.

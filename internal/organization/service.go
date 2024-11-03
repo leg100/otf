@@ -22,7 +22,7 @@ type (
 	Service struct {
 		RestrictOrganizationCreation bool
 
-		authz.Authorizer // authorize access to org
+		*Authorizer // authorize access to org
 		logr.Logger
 
 		db           *pgdb
