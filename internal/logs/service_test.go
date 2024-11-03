@@ -119,7 +119,7 @@ func TestTail(t *testing.T) {
 			run:        &fakeAuthorizer{},
 		}
 
-		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
+		stream, err := svc.Tail(ctx, GetChunkOptions{
 			RunID: "run-123",
 			Phase: internal.PlanPhase,
 		})

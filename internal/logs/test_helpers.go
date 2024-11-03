@@ -59,7 +59,7 @@ func (f *fakeTailProxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, e
 	return f.chunk, nil
 }
 
-func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (authz.Subject, error) {
+func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, resource.ID) (authz.Subject, error) {
 	return &authz.Superuser{}, nil
 }
 

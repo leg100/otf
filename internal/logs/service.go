@@ -60,11 +60,11 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, id string, action sql.Action) (Chunk, error) {
+		func(ctx context.Context, chunkID string, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
-				return Chunk{ID: id}, nil
+				return Chunk{ID: chunkID}, nil
 			}
-			return db.getChunk(ctx, id)
+			return db.getChunk(ctx, chunkID)
 		},
 	)
 	svc.chunkproxy = &proxy{
