@@ -25,5 +25,5 @@ UPDATE workspaces SET workspace_id = 'ws-' || workspace_id;
 UPDATE runs SET run_id = 'run-' || run_id;
 UPDATE state_versions SET state_version_id = 'sv-' || state_version_id;
 UPDATE state_version_outputs SET state_version_output_id = 'svo-' || state_version_output_id;
-UPDATE configuration_version_id SET configuration_version_id = 'cv-' || configuration_version_id;
+UPDATE configuration_versions SET configuration_version_id = 'cv-' || configuration_version_id;
 UPDATE runners SET runner_id = 'runner-' || runner_id;
