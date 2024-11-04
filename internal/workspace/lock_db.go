@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Workspace) error) (*Workspace, error) {
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglefn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// retrieve workspace

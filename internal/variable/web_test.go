@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -99,7 +100,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 	}
 }
 
-func fakeWebApp(t *testing.T, workspaceID string, v *Variable) *web {
+func fakeWebApp(t *testing.T, workspaceID resource.ID, v *Variable) *web {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &web{

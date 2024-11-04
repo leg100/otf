@@ -35,7 +35,7 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          string             `jsonapi:"primary,state-versions"`
+		ID          resource.ID        `jsonapi:"primary,state-versions"`
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
@@ -45,7 +45,7 @@ type (
 	}
 
 	Output struct {
-		ID             string
+		ID             resource.ID
 		Name           string
 		Type           string
 		Value          json.RawMessage

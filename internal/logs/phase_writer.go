@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -12,17 +13,17 @@ type (
 	PhaseWriter struct {
 		ctx     context.Context    // permits canceling mid-flow
 		started bool               // has first chunk been sent?
-		id      string             // ID of run to write logs on behalf of.
+		runID   resource.ID        // ID of run to write logs on behalf of.
 		phase   internal.PhaseType // run phase
 		offset  int                // current position in stream
 
-		internal.PutChunkService // for uploading logs to server
+		PutChunkService // for uploading logs to server
 	}
 
 	PhaseWriterOptions struct {
-		RunID  string
+		RunID  resource.ID
 		Phase  internal.PhaseType
-		Writer internal.PutChunkService
+		Writer PutChunkService
 	}
 )
 
@@ -31,7 +32,7 @@ type (
 func NewPhaseWriter(ctx context.Context, opts PhaseWriterOptions) *PhaseWriter {
 	return &PhaseWriter{
 		ctx:             ctx,
-		id:              opts.RunID,
+		runID:           opts.RunID,
 		phase:           opts.Phase,
 		PutChunkService: opts.Writer,
 	}
@@ -46,11 +47,11 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 
 	if !w.started {
 		w.started = true
-		data = append([]byte{internal.STX}, data...)
+		data = append([]byte{STX}, data...)
 	}
 
-	chunk := internal.PutChunkOptions{
-		RunID:  w.id,
+	chunk := PutChunkOptions{
+		RunID:  w.runID,
 		Phase:  w.phase,
 		Data:   data,
 		Offset: w.offset,
@@ -66,15 +67,15 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (w *PhaseWriter) Close() error {
-	opts := internal.PutChunkOptions{
-		RunID:  w.id,
+	opts := PutChunkOptions{
+		RunID:  w.runID,
 		Phase:  w.phase,
 		Offset: w.offset,
 	}
 	if w.started {
-		opts.Data = []byte{internal.ETX}
+		opts.Data = []byte{ETX}
 	} else {
-		opts.Data = []byte{internal.STX, internal.ETX}
+		opts.Data = []byte{STX, ETX}
 	}
 
 	if err := w.PutChunk(w.ctx, opts); err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -14,14 +15,14 @@ type (
 	proxy struct {
 		cache  internal.Cache
 		db     proxydb
-		broker pubsub.SubscriptionService[internal.Chunk]
+		broker pubsub.SubscriptionService[Chunk]
 
 		logr.Logger
 	}
 
 	proxydb interface {
-		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
-		put(ctx context.Context, opts internal.PutChunkOptions) (string, error)
+		getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
+		put(ctx context.Context, opts PutChunkOptions) (string, error)
 	}
 )
 
@@ -64,7 +65,7 @@ func (p *proxy) Start(ctx context.Context) error {
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
+func (p *proxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	key := cacheKey(opts.RunID, opts.Phase)
 
 	data, err := p.cache.Get(key)
@@ -72,26 +73,26 @@ func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (interna
 		// fall back to retrieving from db...
 		data, err = p.db.getLogs(ctx, opts.RunID, opts.Phase)
 		if err != nil {
-			return internal.Chunk{}, err
+			return Chunk{}, err
 		}
 		// ...and cache it
 		if err := p.cache.Set(key, data); err != nil {
 			p.Error(err, "caching log chunk")
 		}
 	}
-	chunk := internal.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
+	chunk := Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
 	// Cut chunk down to requested size.
 	return chunk.Cut(opts), nil
 }
 
 // put writes a chunk of data to the db
-func (p *proxy) put(ctx context.Context, opts internal.PutChunkOptions) error {
+func (p *proxy) put(ctx context.Context, opts PutChunkOptions) error {
 	// db triggers an event, which proxy listens for to populate its cache
 	_, err := p.db.put(ctx, opts)
 	return err
 }
 
 // cacheKey generates a key for caching log chunks.
-func cacheKey(runID string, phase internal.PhaseType) string {
+func cacheKey(runID resource.ID, phase internal.PhaseType) string {
 	return fmt.Sprintf("%s.%s.log", runID, string(phase))
 }

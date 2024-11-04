@@ -31,7 +31,7 @@ var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
 	Module struct {
-		ID           string
+		ID           resource.ID
 		CreatedAt    time.Time
 		UpdatedAt    time.Time
 		Name         string
@@ -45,8 +45,8 @@ type (
 	ModuleStatus string
 
 	ModuleVersion struct {
-		ID          string
-		ModuleID    string
+		ID          resource.ID
+		ModuleID    resource.ID
 		Version     string
 		CreatedAt   time.Time
 		UpdatedAt   time.Time
@@ -59,10 +59,10 @@ type (
 
 	PublishOptions struct {
 		Repo          Repo
-		VCSProviderID string
+		VCSProviderID resource.ID
 	}
 	PublishVersionOptions struct {
-		ModuleID string
+		ModuleID resource.ID
 		Version  string
 		Ref      string
 		Repo     Repo
@@ -74,11 +74,11 @@ type (
 		Organization string
 	}
 	CreateModuleVersionOptions struct {
-		ModuleID string
+		ModuleID resource.ID
 		Version  string
 	}
 	UpdateModuleVersionStatusOptions struct {
-		ID     string
+		ID     resource.ID
 		Status ModuleVersionStatus
 		Error  string
 	}

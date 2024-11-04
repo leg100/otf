@@ -52,8 +52,8 @@ type (
 	}
 
 	workspaceInfo struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
+		ID   resource.ID `json:"id"`
+		Name string      `json:"name"`
 	}
 
 	createVariableParams struct {
@@ -72,7 +72,7 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         bool
-		VariableID  string `schema:"variable_id,required"`
+		VariableID  resource.ID `schema:"variable_id,required"`
 	}
 
 	workspaceVariableTable struct {
@@ -472,7 +472,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		SetID          string `schema:"variable_set_id,required"`
+		SetID          resource.ID `schema:"variable_set_id,required"`
 		Name           *string
 		Description    *string
 		Global         *bool

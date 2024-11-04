@@ -170,8 +170,8 @@ func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string  `schema:"team_id,required"`
-		Username *string `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username *string     `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -190,8 +190,8 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string `schema:"team_id,required"`
-		Username string `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

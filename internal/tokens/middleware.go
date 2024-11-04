@@ -179,7 +179,7 @@ func (m *middleware) parseIDFromJWT(token []byte) (resource.ID, error) {
 	if err != nil {
 		return resource.ID{}, err
 	}
-	subject, err := resource.IDFromString(parsed.Subject())
+	subject, err := resource.ParseID(parsed.Subject())
 	if err != nil {
 		return resource.ID{}, err
 	}

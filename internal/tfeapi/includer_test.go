@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,15 +13,15 @@ import (
 func TestIncluder(t *testing.T) {
 	type (
 		baz struct {
-			ID string
+			ID resource.ID
 		}
 		bar struct {
 			Baz baz
-			ID  string
+			ID  resource.ID
 		}
 		foo struct {
 			Bar bar
-			ID  string
+			ID  resource.ID
 		}
 	)
 	tests := []struct {
@@ -141,5 +142,4 @@ func TestIncluder(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-
 }

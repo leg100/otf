@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -62,7 +63,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var params []struct {
-		ID string `jsonapi:"primary,tags"`
+		ID resource.ID `jsonapi:"primary,tags"`
 	}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)

@@ -1,8 +1,10 @@
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 // OrganizationMembership represents a Terraform Enterprise organization membership.
 type OrganizationMembership struct {
-	ID     string                       `jsonapi:"primary,organization-memberships"`
+	ID     resource.ID                  `jsonapi:"primary,organization-memberships"`
 	Status OrganizationMembershipStatus `jsonapi:"attribute" json:"status"`
 	Email  string                       `jsonapi:"attribute" json:"email"`
 

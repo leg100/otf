@@ -32,7 +32,7 @@ var (
 
 type (
 	Variable struct {
-		ID          string           `jsonapi:"primary,variables"`
+		ID          resource.ID      `jsonapi:"primary,variables"`
 		Key         string           `jsonapi:"attribute" json:"key"`
 		Value       string           `jsonapi:"attribute" json:"value"`
 		Description string           `jsonapi:"attribute" json:"description"`
@@ -42,12 +42,12 @@ type (
 
 		// OTF doesn't use this internally but the go-tfe integration tests
 		// expect it to be a random value that changes on every update.
-		VersionID string
+		VersionID resource.ID
 	}
 
 	WorkspaceVariable struct {
 		*Variable
-		WorkspaceID string
+		WorkspaceID resource.ID
 	}
 
 	CreateVariableOptions struct {

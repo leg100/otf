@@ -2,6 +2,8 @@ package vcs
 
 import (
 	"context"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -52,8 +54,8 @@ type (
 
 	// Webhook is a cloud's configuration for a webhook.
 	Webhook struct {
-		ID       string // cloud's webhook ID
-		Repo     string // identifier is <repo_owner>/<repo_name>
+		ID       resource.ID // cloud's webhook ID
+		Repo     string      // identifier is <repo_owner>/<repo_name>
 		Events   []EventType
 		Endpoint string // the OTF URL that receives events
 	}
@@ -69,14 +71,14 @@ type (
 
 	// GetWebhookOptions are options for retrieving a webhook.
 	GetWebhookOptions struct {
-		Repo string // Repository identifier, <owner>/<repo>
-		ID   string // vcs' webhook ID
+		Repo string      // Repository identifier, <owner>/<repo>
+		ID   resource.ID // vcs' webhook ID
 	}
 
 	// DeleteWebhookOptions are options for deleting a webhook.
 	DeleteWebhookOptions struct {
-		Repo string // Repository identifier, <owner>/<repo>
-		ID   string // vcs' webhook ID
+		Repo string      // Repository identifier, <owner>/<repo>
+		ID   resource.ID // vcs' webhook ID
 	}
 
 	// SetStatusOptions are options for setting a status on a VCS repo

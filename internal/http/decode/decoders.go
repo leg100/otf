@@ -100,7 +100,7 @@ func ID(name string, r *http.Request) (resource.ID, error) {
 	if err != nil {
 		return resource.ID{}, err
 	}
-	return resource.IDFromString(s)
+	return resource.ParseID(s)
 }
 
 func decode(dst interface{}, src map[string][]string) error {

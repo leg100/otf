@@ -22,7 +22,7 @@ type sessionFactory struct {
 
 func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultSessionExpiry)
-	token, err := a.NewToken(userID, NewTokenOptions{Expiry: &expiry})
+	token, err := a.NewToken(userID, WithExpiry(expiry))
 	if err != nil {
 		return err
 	}

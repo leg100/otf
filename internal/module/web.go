@@ -100,8 +100,8 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID      string  `schema:"module_id,required"`
-		Version *string `schema:"version"`
+		ID      resource.ID `schema:"module_id,required"`
+		Version *string     `schema:"version"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

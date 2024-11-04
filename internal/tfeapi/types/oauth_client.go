@@ -3,7 +3,11 @@
 
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 // ServiceProviderType represents a VCS type.
 type ServiceProviderType string
@@ -27,7 +31,7 @@ const (
 // OAuthClient represents a connection between an organization and a VCS
 // provider.
 type OAuthClient struct {
-	ID                  string              `jsonapi:"primary,oauth-clients"`
+	ID                  resource.ID         `jsonapi:"primary,oauth-clients"`
 	APIURL              string              `jsonapi:"attribute" json:"api-url"`
 	CallbackURL         string              `jsonapi:"attribute" json:"callback-url"`
 	ConnectPath         string              `jsonapi:"attribute" json:"connect-path"`

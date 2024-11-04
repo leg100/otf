@@ -54,8 +54,8 @@ type (
 	// only the fields needed is used rather than the full *workspace.Workspace
 	// with its dozens of fields
 	poolWorkspace struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
+		ID   resource.ID `json:"id"`
+		Name string      `json:"name"`
 	}
 
 	poolWorkspaceList []poolWorkspace

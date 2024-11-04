@@ -179,9 +179,9 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID    string `schema:"vcs_provider_id,required"`
-		Token string `schema:"token"`
-		Name  string `schema:"name"`
+		ID    resource.ID `schema:"vcs_provider_id,required"`
+		Token string      `schema:"token"`
+		Name  string      `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -24,8 +24,8 @@ type (
 		resource.ID `jsonapi:"primary,agent_tokens"`
 
 		CreatedAt   time.Time
-		AgentPoolID string `jsonapi:"attribute" json:"agent_pool_id"`
-		Description string `jsonapi:"attribute" json:"description"`
+		AgentPoolID resource.ID `jsonapi:"attribute" json:"agent_pool_id"`
+		Description string      `jsonapi:"attribute" json:"description"`
 	}
 
 	CreateAgentTokenOptions struct {
@@ -58,7 +58,7 @@ func (f *tokenFactory) createJobToken(spec JobSpec) ([]byte, error) {
 
 // NewAgentToken constructs a token for an agent, returning both the
 // representation of the token, and the cryptographic token itself.
-func (f *tokenFactory) NewAgentToken(poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (f *tokenFactory) NewAgentToken(poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	if poolID == "" {
 		return nil, nil, fmt.Errorf("agent pool ID cannot be an empty string")
 	}

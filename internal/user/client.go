@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type client struct {
@@ -41,7 +42,7 @@ func (c *client) Delete(ctx context.Context, username string) error {
 }
 
 // AddTeamMembership adds users to a team via HTTP.
-func (c *client) AddTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+func (c *client) AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error {
 	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID))
 	req, err := c.NewRequest("POST", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,
@@ -56,7 +57,7 @@ func (c *client) AddTeamMembership(ctx context.Context, teamID string, usernames
 }
 
 // RemoveTeamMembership removes users from a team via HTTP.
-func (c *client) RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error {
+func (c *client) RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error {
 	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID))
 	req, err := c.NewRequest("DELETE", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -21,7 +22,7 @@ type (
 	hook struct {
 		id            uuid.UUID // internal otf ID
 		cloudID       *string   // cloud's hook ID; populated following synchronisation
-		vcsProviderID string
+		vcsProviderID resource.ID
 
 		secret   string   // secret token
 		repoPath string   // repo identifier: <repo_owner>/<repo_name>
@@ -31,7 +32,7 @@ type (
 
 	newRepohookOptions struct {
 		id            *uuid.UUID
-		vcsProviderID string
+		vcsProviderID resource.ID
 		secret        *string
 		repoPath      string
 		cloud         vcs.Kind

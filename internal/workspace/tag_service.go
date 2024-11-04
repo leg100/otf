@@ -149,7 +149,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 	return nil
 }
 
-func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.CanAccess(ctx, rbac.ListWorkspaceTags, workspaceID)
 	if err != nil {
 		return nil, err

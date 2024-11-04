@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 // NotificationTriggerType represents the different TFE notifications that can be sent
 // as a run's progress transitions between different states
@@ -43,7 +47,7 @@ type NotificationConfigurationList struct {
 
 // NotificationConfiguration represents a Notification Configuration.
 type NotificationConfiguration struct {
-	ID                string                      `jsonapi:"primary,notification-configurations"`
+	ID                resource.ID                 `jsonapi:"primary,notification-configurations"`
 	CreatedAt         time.Time                   `jsonapi:"attribute" json:"created-at"`
 	DeliveryResponses []*DeliveryResponse         `jsonapi:"attribute" json:"delivery-responses"`
 	DestinationType   NotificationDestinationType `jsonapi:"attribute" json:"destination-type"`

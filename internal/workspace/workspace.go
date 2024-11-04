@@ -81,7 +81,7 @@ type (
 		// exclusive with TriggerPatterns.
 		TagsRegex string
 
-		VCSProviderID string
+		VCSProviderID resource.ID
 		Repo          string
 
 		// By default, once a workspace is connected to a repo it is not
