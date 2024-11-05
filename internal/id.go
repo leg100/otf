@@ -4,6 +4,10 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/btcsuite/btcutil/base58"
+
+	"github.com/google/uuid"
 )
 
 // ReStringID is a regular expression used to validate common string ID patterns.
@@ -23,15 +27,14 @@ func GetID(s any) (string, bool) {
 	return f.String(), true
 }
 
-// base58 alphabet
-var base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-
 // NewID constructs resource IDs, composed of:
 // (1) a symbol representing a resource type, e.g. "ws" for workspaces
 // (2) a hyphen
 // (3) a 16 character string composed of random characters from the base58 alphabet
 func NewID(rtype string) string {
-	return rtype + "-" + GenerateRandomStringFromAlphabet(16, base58)
+	u := uuid.New()
+	encoded := base58.Encode(u[:])
+	return rtype + "-" + encoded
 }
 
 // ValidStringID checks if the given string pointer is non-nil and
