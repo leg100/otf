@@ -172,7 +172,7 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 	opts := updatePoolOptions{
 		Name:               &params.Name,
 		OrganizationScoped: &params.OrganizationScoped,
-		AllowedWorkspaces:  make([]string, len(params.AllowedButUnassigned)+len(params.AllowedAndAssigned)),
+		AllowedWorkspaces:  make([]resource.ID, len(params.AllowedButUnassigned)+len(params.AllowedAndAssigned)),
 	}
 	for i, allowed := range append(params.AllowedButUnassigned, params.AllowedAndAssigned...) {
 		opts.AllowedWorkspaces[i] = allowed.ID
@@ -322,18 +322,21 @@ func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
-	if err != nil {
+	var opts struct {
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		AgentPoolID resource.ID `schema:"agent_pool_id,required"`
+	}
+	if err := decode.All(&opts, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := h.workspaces.Get(r.Context(), workspaceID)
+	ws, err := h.workspaces.Get(r.Context(), opts.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), ws.Organization, listPoolOptions{
-		AllowedWorkspaceID: &workspaceID,
+		AllowedWorkspaceID: &opts.WorkspaceID,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -345,7 +348,7 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		CurrentPoolID resource.ID
 	}{
 		Pools:         pools,
-		CurrentPoolID: r.URL.Query().Get("agent_pool_id"),
+		CurrentPoolID: opts.AgentPoolID,
 	})
 }
 

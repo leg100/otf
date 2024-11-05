@@ -82,7 +82,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 		Organization:       organization,
 		OrganizationScoped: params.OrganizationScoped,
 	}
-	opts.AllowedWorkspaces = make([]string, len(params.AllowedWorkspaces))
+	opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
 	for i, aw := range params.AllowedWorkspaces {
 		opts.AllowedWorkspaces[i] = aw.ID
 	}
@@ -113,7 +113,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		OrganizationScoped: params.OrganizationScoped,
 	}
 	if params.AllowedWorkspaces != nil {
-		opts.AllowedWorkspaces = make([]string, len(params.AllowedWorkspaces))
+		opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
 		for i, aw := range params.AllowedWorkspaces {
 			opts.AllowedWorkspaces[i] = aw.ID
 		}

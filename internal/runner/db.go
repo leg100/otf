@@ -268,6 +268,37 @@ func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(*Job) er
 	return job, nil
 }
 
+func (db *db) updateJobByRunPhase(ctx context.Context, runID resource.ID, runPhase internal.PhaseType, fn func(*Job) error) (*Job, error) {
+	var job *Job
+	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+		result, err := q.FindJobForUpdateByRunPhase(ctx, sqlc.FindJobForUpdateByRunPhaseParams{
+			RunID: sql.ID(runID),
+			Phase: sql.String(string(runPhase)),
+		})
+		if err != nil {
+			return err
+		}
+		job = jobResult(result).toJob()
+		if err := fn(job); err != nil {
+			return err
+		}
+		_, err = q.UpdateJob(ctx, sqlc.UpdateJobParams{
+			Status:   sql.String(string(job.Status)),
+			Signaled: sql.BoolPtr(job.Signaled),
+			RunnerID: sql.IDPtr(job.RunnerID),
+			JobID:    result.JobID,
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return job, nil
+}
+
 // agent tokens
 
 type agentTokenRow struct {

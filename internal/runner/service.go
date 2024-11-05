@@ -305,11 +305,8 @@ func (s *Service) createJob(ctx context.Context, run *otfrun.Run) error {
 // the corresponding job is signaled and what type of signal, and/or whether the
 // job should be canceled.
 func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
-	var (
-		spec   = JobSpec{RunID: run.ID, Phase: run.Phase()}
-		signal *bool
-	)
-	job, err := s.db.updateJob(ctx, spec, func(job *Job) (err error) {
+	var signal *bool
+	job, err := s.db.updateJobByRunPhase(ctx, run.ID, run.Phase(), func(job *Job) (err error) {
 		signal, err = job.cancel(run)
 		return err
 	})
@@ -318,7 +315,7 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 			// ignore when no job has yet been created for the run.
 			return nil
 		}
-		s.Error(err, "canceling job", "spec", spec)
+		s.Error(err, "canceling job for run", "run", run)
 		return err
 	}
 	if signal != nil {
@@ -374,7 +371,7 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.ID) ([]*Job, er
 }
 
 func (s *Service) getJob(ctx context.Context, jobID resource.ID) (*Job, error) {
-	return s.db.getJob(ctx, spec)
+	return s.db.getJob(ctx, jobID)
 }
 
 func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {

@@ -62,6 +62,25 @@ WHERE j.job_id = sqlc.arg('job_id')
 FOR UPDATE OF j
 ;
 
+-- name: FindJobForUpdateByRunPhase :one
+SELECT
+    j.job_id,
+    j.run_id,
+    j.phase,
+    j.status,
+    j.signaled,
+    j.runner_id,
+    w.agent_pool_id,
+    r.workspace_id,
+    w.organization_name
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+WHERE j.run_id = sqlc.arg('run_id')
+AND   j.phase = sqlc.arg('phase')
+FOR UPDATE OF j
+;
+
 -- name: FindAllocatedJobs :many
 SELECT
     j.job_id,
