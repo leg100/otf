@@ -27,7 +27,7 @@ type remoteClient struct {
 	*otfapi.Client
 
 	// agentID is the ID of the agent using the client
-	agentID *string
+	agentID *resource.ID
 }
 
 // newRequest constructs a new API request
@@ -37,7 +37,7 @@ func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryabl
 		return nil, err
 	}
 	if c.agentID != nil {
-		req.Header.Add(runnerIDHeader, *c.agentID)
+		req.Header.Add(runnerIDHeader, c.agentID.String())
 	}
 	return req, err
 }

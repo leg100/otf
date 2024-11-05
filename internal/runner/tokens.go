@@ -12,7 +12,7 @@ import (
 
 const (
 	AgentTokenKind resource.Kind = "at"
-	JobTokenKind   tokens.Kind   = "job_token"
+	JobTokenKind   resource.Kind = "jt"
 
 	defaultJobTokenExpiry = 60 * time.Minute
 )
@@ -35,8 +35,8 @@ type (
 
 func (a *agentToken) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", a.ID),
-		slog.String("agent_pool_id", string(a.AgentPoolID)),
+		slog.String("id", a.ID.String()),
+		slog.String("agent_pool_id", string(a.AgentPoolID.String())),
 		slog.String("description", a.Description),
 	}
 	return slog.GroupValue(attrs...)

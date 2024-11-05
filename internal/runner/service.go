@@ -117,15 +117,12 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"jobs",
-		func(ctx context.Context, specStr string, action sql.Action) (*Job, error) {
-			spec, err := jobSpecFromString(specStr)
-			if err != nil {
-				return nil, err
-			}
+		JobKind,
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Job, error) {
 			if action == sql.DeleteAction {
-				return &Job{Spec: spec}, nil
+				return &Job{ID: id}, nil
 			}
-			return svc.db.getJob(ctx, spec)
+			return svc.db.getJob(ctx, id)
 		},
 	)
 	// Register with auth middleware the agent token kind and a means of

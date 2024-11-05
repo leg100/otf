@@ -136,7 +136,7 @@ type (
 	}
 
 	logsClient interface {
-		PutChunk(ctx context.Context, opts internal.PutChunkOptions) error
+		PutChunk(ctx context.Context, opts logs.PutChunkOptions) error
 	}
 
 	hostnameClient interface {

@@ -33,7 +33,7 @@ type runnerMetaResult struct {
 
 func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 	meta := &RunnerMeta{
-		ID:           r.RunnerID.String,
+		ID:           resource.ParseID(r.RunnerID.String),
 		Name:         r.Name.String,
 		Version:      r.Version.String,
 		MaxJobs:      int(r.MaxJobs.Int32),
@@ -45,7 +45,7 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 	}
 	if r.AgentPool != nil {
 		meta.AgentPool = &RunnerMetaAgentPool{
-			ID:               r.AgentPool.AgentPoolID.String,
+			ID:               resource.ParseID(r.AgentPool.AgentPoolID.String),
 			Name:             r.AgentPool.Name.String,
 			OrganizationName: r.AgentPool.OrganizationName.String,
 		}
@@ -158,31 +158,32 @@ func (db *db) deleteRunner(ctx context.Context, agentID resource.ID) error {
 // jobs
 
 type jobResult struct {
-	RunID            pgtype.Text `json:"run_id"`
-	Phase            pgtype.Text `json:"phase"`
-	Status           pgtype.Text `json:"status"`
-	Signaled         pgtype.Bool `json:"signaled"`
-	RunnerID         pgtype.Text `json:"agent_id"`
-	AgentPoolID      pgtype.Text `json:"agent_pool_id"`
-	WorkspaceID      pgtype.Text `json:"workspace_id"`
-	OrganizationName pgtype.Text `json:"organization_name"`
+	JobID            pgtype.Text
+	RunID            pgtype.Text
+	Phase            pgtype.Text
+	Status           pgtype.Text
+	Signaled         pgtype.Bool
+	RunnerID         pgtype.Text
+	AgentPoolID      pgtype.Text
+	WorkspaceID      pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 func (r jobResult) toJob() *Job {
 	job := &Job{
-		Spec: JobSpec{
-			RunID: r.RunID.String,
-			Phase: internal.PhaseType(r.Phase.String),
-		},
+		RunID:        resource.ParseID(r.RunID.String),
+		Phase:        internal.PhaseType(r.Phase.String),
 		Status:       JobStatus(r.Status.String),
-		WorkspaceID:  r.WorkspaceID.String,
+		WorkspaceID:  resource.ParseID(r.WorkspaceID.String),
 		Organization: r.OrganizationName.String,
 	}
 	if r.RunnerID.Valid {
-		job.RunnerID = &r.RunnerID.String
+		runnerID := resource.ParseID(r.RunnerID.String)
+		job.RunnerID = &runnerID
 	}
 	if r.AgentPoolID.Valid {
-		job.AgentPoolID = &r.AgentPoolID.String
+		agentPoolID := resource.ParseID(r.AgentPoolID.String)
+		job.AgentPoolID = &agentPoolID
 	}
 	if r.Signaled.Valid {
 		job.Signaled = &r.Signaled.Bool
@@ -192,19 +193,20 @@ func (r jobResult) toJob() *Job {
 
 func (db *db) createJob(ctx context.Context, job *Job) error {
 	err := db.Querier(ctx).InsertJob(ctx, sqlc.InsertJobParams{
-		RunID:  sql.ID(job.Spec.RunID),
-		Phase:  sql.String(string(job.Spec.Phase)),
+		JobID:  sql.ID(job.ID),
+		RunID:  sql.ID(job.RunID),
+		Phase:  sql.String(string(job.Phase)),
 		Status: sql.String(string(job.Status)),
 	})
 	return sql.Error(err)
 }
 
-func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
-	allocated, err := db.Querier(ctx).FindAllocatedJobs(ctx, sql.ID(agentID))
+func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, runnerID resource.ID) ([]*Job, error) {
+	allocated, err := db.Querier(ctx).FindAllocatedJobs(ctx, sql.ID(runnerID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	signaled, err := db.Querier(ctx).FindAndUpdateSignaledJobs(ctx, sql.ID(agentID))
+	signaled, err := db.Querier(ctx).FindAndUpdateSignaledJobs(ctx, sql.ID(runnerID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -218,11 +220,8 @@ func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, agentID resource.
 	return jobs, nil
 }
 
-func (db *db) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
-	result, err := db.Querier(ctx).FindJob(ctx, sqlc.FindJobParams{
-		RunID: sql.ID(spec.RunID),
-		Phase: sql.String(string(spec.Phase)),
-	})
+func (db *db) getJob(ctx context.Context, jobID resource.ID) (*Job, error) {
+	result, err := db.Querier(ctx).FindJob(ctx, sql.ID(jobID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -258,7 +257,7 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 		_, err = q.UpdateJob(ctx, sqlc.UpdateJobParams{
 			Status:   sql.String(string(job.Status)),
 			Signaled: sql.BoolPtr(job.Signaled),
-			RunnerID: sql.StringPtr(job.RunnerID),
+			RunnerID: sql.IDPtr(job.RunnerID),
 			RunID:    result.RunID,
 			Phase:    result.Phase,
 		})
@@ -284,10 +283,10 @@ type agentTokenRow struct {
 
 func (row agentTokenRow) toAgentToken() *agentToken {
 	return &agentToken{
-		ID:          row.AgentTokenID.String,
+		ID:          resource.ParseID(row.AgentTokenID.String),
 		CreatedAt:   row.CreatedAt.Time.UTC(),
 		Description: row.Description.String,
-		AgentPoolID: row.AgentPoolID.String,
+		AgentPoolID: resource.ParseID(row.AgentPoolID.String),
 	}
 }
 
@@ -342,7 +341,7 @@ type poolresult struct {
 
 func (r poolresult) toPool() *Pool {
 	return &Pool{
-		ID:                 r.AgentPoolID.String,
+		ID:                 resource.ParseID(r.AgentPoolID.String),
 		Name:               r.Name.String,
 		CreatedAt:          r.CreatedAt.Time.UTC(),
 		Organization:       r.OrganizationName.String,
@@ -436,7 +435,7 @@ func (db *db) listPoolsByOrganization(ctx context.Context, organization string, 
 		OrganizationName:     sql.String(organization),
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),
 		AllowedWorkspaceName: sql.StringPtr(opts.AllowedWorkspaceName),
-		AllowedWorkspaceID:   sql.StringPtr(opts.AllowedWorkspaceID),
+		AllowedWorkspaceID:   sql.IDPtr(opts.AllowedWorkspaceID),
 	})
 	if err != nil {
 		return nil, sql.Error(err)

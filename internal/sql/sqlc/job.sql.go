@@ -13,6 +13,7 @@ import (
 
 const findAllocatedJobs = `-- name: FindAllocatedJobs :many
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -29,6 +30,7 @@ AND   j.status = 'allocated'
 `
 
 type FindAllocatedJobsRow struct {
+	JobID            pgtype.Text
 	RunID            pgtype.Text
 	Phase            pgtype.Text
 	Status           pgtype.Text
@@ -49,6 +51,7 @@ func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID pgtype.Text) (
 	for rows.Next() {
 		var i FindAllocatedJobsRow
 		if err := rows.Scan(
+			&i.JobID,
 			&i.RunID,
 			&i.Phase,
 			&i.Status,
@@ -78,6 +81,7 @@ AND   j.runner_id = $1
 AND   j.status = 'running'
 AND   j.signaled IS NOT NULL
 RETURNING
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -89,6 +93,7 @@ RETURNING
 `
 
 type FindAndUpdateSignaledJobsRow struct {
+	JobID            pgtype.Text
 	RunID            pgtype.Text
 	Phase            pgtype.Text
 	Status           pgtype.Text
@@ -110,6 +115,7 @@ func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype
 	for rows.Next() {
 		var i FindAndUpdateSignaledJobsRow
 		if err := rows.Scan(
+			&i.JobID,
 			&i.RunID,
 			&i.Phase,
 			&i.Status,
@@ -131,6 +137,7 @@ func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype
 
 const findJob = `-- name: FindJob :one
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -142,16 +149,11 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE j.run_id = $1
-AND   phase = $2
+WHERE j.job_id = $1
 `
 
-type FindJobParams struct {
-	RunID pgtype.Text
-	Phase pgtype.Text
-}
-
 type FindJobRow struct {
+	JobID            pgtype.Text
 	RunID            pgtype.Text
 	Phase            pgtype.Text
 	Status           pgtype.Text
@@ -162,10 +164,11 @@ type FindJobRow struct {
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindJob(ctx context.Context, arg FindJobParams) (FindJobRow, error) {
-	row := q.db.QueryRow(ctx, findJob, arg.RunID, arg.Phase)
+func (q *Queries) FindJob(ctx context.Context, jobID pgtype.Text) (FindJobRow, error) {
+	row := q.db.QueryRow(ctx, findJob, jobID)
 	var i FindJobRow
 	err := row.Scan(
+		&i.JobID,
 		&i.RunID,
 		&i.Phase,
 		&i.Status,
@@ -180,6 +183,7 @@ func (q *Queries) FindJob(ctx context.Context, arg FindJobParams) (FindJobRow, e
 
 const findJobForUpdate = `-- name: FindJobForUpdate :one
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -202,6 +206,7 @@ type FindJobForUpdateParams struct {
 }
 
 type FindJobForUpdateRow struct {
+	JobID            pgtype.Text
 	RunID            pgtype.Text
 	Phase            pgtype.Text
 	Status           pgtype.Text
@@ -216,6 +221,7 @@ func (q *Queries) FindJobForUpdate(ctx context.Context, arg FindJobForUpdatePara
 	row := q.db.QueryRow(ctx, findJobForUpdate, arg.RunID, arg.Phase)
 	var i FindJobForUpdateRow
 	err := row.Scan(
+		&i.JobID,
 		&i.RunID,
 		&i.Phase,
 		&i.Status,
@@ -230,6 +236,7 @@ func (q *Queries) FindJobForUpdate(ctx context.Context, arg FindJobForUpdatePara
 
 const findJobs = `-- name: FindJobs :many
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -244,6 +251,7 @@ JOIN workspaces w USING (workspace_id)
 `
 
 type FindJobsRow struct {
+	JobID            pgtype.Text
 	RunID            pgtype.Text
 	Phase            pgtype.Text
 	Status           pgtype.Text
@@ -264,6 +272,7 @@ func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 	for rows.Next() {
 		var i FindJobsRow
 		if err := rows.Scan(
+			&i.JobID,
 			&i.RunID,
 			&i.Phase,
 			&i.Status,
@@ -285,24 +294,32 @@ func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 
 const insertJob = `-- name: InsertJob :exec
 INSERT INTO jobs (
+    job_id,
     run_id,
     phase,
     status
 ) VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 )
 `
 
 type InsertJobParams struct {
+	JobID  pgtype.Text
 	RunID  pgtype.Text
 	Phase  pgtype.Text
 	Status pgtype.Text
 }
 
 func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
-	_, err := q.db.Exec(ctx, insertJob, arg.RunID, arg.Phase, arg.Status)
+	_, err := q.db.Exec(ctx, insertJob,
+		arg.JobID,
+		arg.RunID,
+		arg.Phase,
+		arg.Status,
+	)
 	return err
 }
 

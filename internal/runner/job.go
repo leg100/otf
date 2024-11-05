@@ -51,7 +51,7 @@ type Job struct {
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
 	// the job is allocated to an agent runner belonging to the pool. If nil then
 	// the job is allocated to a server runner.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent_pool_id"`
+	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent_pool_id"`
 	// Name of job's organization
 	Organization string `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace

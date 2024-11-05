@@ -52,7 +52,7 @@ func (a *agentCLI) agentTokenCommand() *cobra.Command {
 
 func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 	var (
-		poolID resource.ID
+		poolID string
 		opts   = CreateAgentTokenOptions{}
 	)
 	cmd := &cobra.Command{
@@ -61,7 +61,7 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, token, err := a.CreateAgentToken(cmd.Context(), poolID, opts)
+			_, token, err := a.CreateAgentToken(cmd.Context(), resource.ParseID(poolID), opts)
 			if err != nil {
 				return err
 			}
