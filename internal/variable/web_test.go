@@ -84,11 +84,11 @@ func TestVariable_UpdateHandler(t *testing.T) {
 			v, err := newVariable(nil, tt.existing)
 			require.NoError(t, err)
 
-			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.updated.Encode()))
+			r := httptest.NewRequest("POST", "/?variable_id="+v.ID.String(), strings.NewReader(tt.updated.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
-			fakeWebApp(t, "ws-123", v).updateWorkspaceVariable(w, r)
+			fakeWebApp(t, resource.ParseID("ws-123"), v).updateWorkspaceVariable(w, r)
 
 			if assert.Equal(t, 302, w.Code, "got body: %s", w.Body.String()) {
 				redirect, err := w.Result().Location()
