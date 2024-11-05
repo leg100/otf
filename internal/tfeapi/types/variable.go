@@ -11,7 +11,7 @@ type Variable struct {
 	Category    string      `jsonapi:"attribute" json:"category"`
 	HCL         bool        `jsonapi:"attribute" json:"hcl"`
 	Sensitive   bool        `jsonapi:"attribute" json:"sensitive"`
-	VersionID   resource.ID `jsonapi:"attribute" json:"version-id"`
+	VersionID   string      `jsonapi:"attribute" json:"version-id"`
 }
 
 // VariableList is a list of workspace variables

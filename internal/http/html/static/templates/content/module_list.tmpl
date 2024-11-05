@@ -22,7 +22,7 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="widget" x-data="block_link($el, '{{ modulePath .ID }}')">
+  <div class="widget" x-data="block_link($el, '{{ modulePath .ID.String }}')">
     <div>
       <span>{{ .Name }}</span>
       <span>{{ durationRound .CreatedAt }} ago</span>

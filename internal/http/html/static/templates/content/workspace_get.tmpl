@@ -14,23 +14,23 @@
       <div>{{ template "identifier" .Workspace }}</div>
       <div>
         <h3 class="text-lg font-bold my-2">Latest Run</h3>
-        <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
+        <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID.String }}?latest=true" sse-swap="latest-run">
           {{ if .Workspace.LatestRun }}
-            <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
+            <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID.String }}" hx-trigger="load" hx-swap="outerHTML"></div>
           {{ else }}
             There are no runs for this workspace.
           {{ end }}
         </div>
       </div>
       <div>
-        <div hx-get="{{ stateWorkspacePath .Workspace.ID }}" hx-trigger="load" hx-swap="innerHTML"></div>
+        <div hx-get="{{ stateWorkspacePath .Workspace.ID.String }}" hx-trigger="load" hx-swap="innerHTML"></div>
       </div>
     </div>
     <div class="flex gap-4 flex-col basis-1/5">
       {{ if .CanCreateRun }}
         <div>
           <h3 class="font-semibold mb-2">Actions</h3>
-          <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
+          <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID.String }}" method="POST">
             <select name="operation" id="start-run-operation" onchange="this.form.submit()">
               <option value="" selected>-- start run --</option>
               <option value="plan-only">plan only</option>
@@ -41,7 +41,7 @@
           </form>
         </div>
       {{ end }}
-      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">{{ .Workspace.TerraformVersion }}</a></div>
+      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID.String }}#terraform-version">{{ .Workspace.TerraformVersion }}</a></div>
       <div>
         <h3 class="font-semibold mb-2">Locking</h3>
         {{ with .LockButton }}
@@ -63,7 +63,7 @@
         {{ with .Workspace.Tags }}
           <div id="tags" class="tag-container">
             {{ range . }}
-              <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
+              <form action="{{ deleteTagWorkspacePath $.Workspace.ID.String }}" method="POST">
                 <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
                 <div class="flex gap-1 items-center tag">
                   <span>{{ . }}</span>

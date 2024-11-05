@@ -14,8 +14,8 @@ type (
 		Name         string
 		Description  string
 		Global       bool
-		Workspaces   []string // workspace IDs
-		Organization string   // org name
+		Workspaces   []resource.ID
+		Organization string // org name
 		Variables    []*Variable
 	}
 
@@ -23,14 +23,14 @@ type (
 		Name        string
 		Description string
 		Global      bool
-		Workspaces  []string // workspace IDs
+		Workspaces  []resource.ID
 	}
 
 	UpdateVariableSetOptions struct {
 		Name        *string
 		Description *string
 		Global      *bool
-		Workspaces  []string // workspace IDs
+		Workspaces  []resource.ID
 	}
 )
 
@@ -46,7 +46,7 @@ func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, e
 
 func (s *VariableSet) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", s.ID),
+		slog.String("id", s.ID.String()),
 		slog.String("name", s.Name),
 		slog.String("organization", s.Organization),
 		slog.Bool("global", s.Global),

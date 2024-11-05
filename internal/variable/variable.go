@@ -42,7 +42,7 @@ type (
 
 		// OTF doesn't use this internally but the go-tfe integration tests
 		// expect it to be a random value that changes on every update.
-		VersionID resource.ID
+		VersionID string
 	}
 
 	WorkspaceVariable struct {
@@ -132,7 +132,7 @@ func versionGenerator() string {
 
 func (v *Variable) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
+		slog.String("id", v.ID.String()),
 		slog.String("key", v.Key),
 		slog.Bool("sensitive", v.Sensitive),
 	}

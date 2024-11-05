@@ -26,15 +26,15 @@ type (
 		workspaces workspaceClient
 		runs       runClient
 
-		queues map[string]eventHandler
+		queues map[resource.ID]eventHandler
 		queueFactory
 	}
 
 	workspaceClient interface {
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
-		Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*workspace.Workspace, error)
-		Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*workspace.Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*workspace.Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*workspace.Workspace, error)
 		SetCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*workspace.Workspace, error)
 	}
 
@@ -66,7 +66,7 @@ func NewScheduler(opts Options) *scheduler {
 // queues for scheduling.
 func (s *scheduler) Start(ctx context.Context) error {
 	// Reset queues each time scheduler starts
-	s.queues = make(map[string]eventHandler)
+	s.queues = make(map[resource.ID]eventHandler)
 
 	// subscribe to workspace events
 	subWorkspaces, unsubWorkspaces := s.workspaces.Watch(ctx)

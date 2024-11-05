@@ -35,16 +35,16 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div x-data="block_link($el, '{{ editVCSProviderPath .ID }}')" id="{{ .ID }}" class="widget">
+  <div x-data="block_link($el, '{{ editVCSProviderPath .ID }}')" id="{{ .ID.String }}" class="widget">
     <div>
       <span>
-        <a id="edit-vcs-provider-link" href="{{ editVCSProviderPath .ID }}">{{ .String }}</a>
+        <a id="edit-vcs-provider-link" href="{{ editVCSProviderPath .ID.String }}">{{ .String }}</a>
       </span>
       <span>{{ durationRound .CreatedAt }} ago</span>
     </div>
     <div>
       {{ template "identifier" . }}
-      <form action="{{ deleteVCSProviderPath .ID }}" method="POST">
+      <form action="{{ deleteVCSProviderPath .ID.String }}" method="POST">
         <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
         <input type="hidden" name="id" value="{{ .ID }}">
       </form>

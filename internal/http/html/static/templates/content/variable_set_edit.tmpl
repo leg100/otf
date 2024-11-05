@@ -15,7 +15,7 @@
 
   <h3 class="text-xl">Variables</h3>
   {{ template "variable-table" .VariableTable }}
-  <form class="mt-2" action="{{ newVariableSetVariablePath $.VariableSet.ID }}" method="GET">
+  <form class="mt-2" action="{{ newVariableSetVariablePath $.VariableSet.ID.String }}" method="GET">
     <button class="btn" id="add-variable-button">Add variable</button>
   </form>
 {{ end }}

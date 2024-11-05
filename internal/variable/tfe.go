@@ -386,7 +386,7 @@ func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]string, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -411,7 +411,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]string, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}

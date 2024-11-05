@@ -253,7 +253,7 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		EditMode   bool
 		FormAction string
 	}{
-		WorkspacePage: workspace.NewPage(r, "edit | "+wv.ID, ws),
+		WorkspacePage: workspace.NewPage(r, "edit | "+wv.ID.String(), ws),
 		Variable:      wv.Variable,
 		EditMode:      true,
 		FormAction:    paths.UpdateVariable(wv.ID.String()),
@@ -383,7 +383,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]string, len(workspaces))
+	workspaceIDs := make([]resource.ID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -455,7 +455,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		CanDeleteVariable   bool
 		VariableTable       setVariableTable
 	}{
-		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID, set.Organization),
+		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID.String(), set.Organization),
 		VariableSet:         set,
 		EditMode:            true,
 		FormAction:          paths.UpdateVariableSet(set.ID.String()),
@@ -488,7 +488,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]string, len(workspaces))
+	workspaceIDs := make([]resource.ID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}

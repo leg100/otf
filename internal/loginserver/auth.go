@@ -8,18 +8,17 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 )
 
 func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ClientID            resource.ID `schema:"client_id"`
-		CodeChallenge       string      `schema:"code_challenge"`
-		CodeChallengeMethod string      `schema:"code_challenge_method"`
-		RedirectURI         string      `schema:"redirect_uri"`
-		ResponseType        string      `schema:"response_type"`
-		State               string      `schema:"state"`
+		ClientID            string `schema:"client_id"`
+		CodeChallenge       string `schema:"code_challenge"`
+		CodeChallengeMethod string `schema:"code_challenge_method"`
+		RedirectURI         string `schema:"redirect_uri"`
+		ResponseType        string `schema:"response_type"`
+		State               string `schema:"state"`
 
 		Consented bool `schema:"consented"`
 	}

@@ -10,17 +10,16 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 )
 
 func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ClientID     resource.ID `schema:"client_id"`
-		Code         string      `schema:"code"`
-		CodeVerifier string      `schema:"code_verifier"`
-		GrantType    string      `schema:"grant_type"`
-		RedirectURI  string      `schema:"redirect_uri"`
+		ClientID     string `schema:"client_id"`
+		Code         string `schema:"code"`
+		CodeVerifier string `schema:"code_verifier"`
+		GrantType    string `schema:"grant_type"`
+		RedirectURI  string `schema:"redirect_uri"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -16,7 +16,7 @@
         <div>
           {{ template "identifier" . }}
           {{ if $.CanDeleteApp }}
-            <form action="{{ deleteGithubAppPath (toString .ID) }}" method="POST">
+            <form action="{{ deleteGithubAppPath (toString .ID.String) }}" method="POST">
               <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
               <input type="hidden" name="id" value="{{ .ID }}">
             </form>
@@ -44,7 +44,7 @@
             </div>
             <div>
               {{ template "identifier" . }}
-              <form action="{{ deleteInstallGithubAppPath (toString .ID) }}" method="POST">
+              <form action="{{ deleteInstallGithubAppPath (toString .ID.String) }}" method="POST">
                 <button class="btn-danger" onclick="return confirm('Are you sure you want to uninstall?')">uninstall</button>
                 <input type="hidden" name="install_id" value="{{ .ID }}">
               </form>

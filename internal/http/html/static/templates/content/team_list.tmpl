@@ -15,7 +15,7 @@
 {{ define "content" }}
   <div id="content-list">
     {{ range .Teams }}
-      <div id="item-team-{{ .Name }}" class="widget" x-data="block_link($el, '{{ teamPath .ID }}')">
+      <div id="item-team-{{ .Name }}" class="widget" x-data="block_link($el, '{{ teamPath .ID.String }}')">
         <div>
           <span>{{ .Name }}</span>
         </div>

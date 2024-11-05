@@ -1,6 +1,6 @@
 {{ define "run-listing" }}
   {{/* watch for updates to listed runs as well as newly created runs */}}
-  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}">
+  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID.String }}">
     {{/* if a new run is created then reload entire run listing */}}
     <div hx-get="{{ .CurrentURL }}" hx-trigger="sse:created" hx-target="#content"></div>
     {{ template "content-list" . }}

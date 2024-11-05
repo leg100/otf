@@ -9,9 +9,9 @@
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
   /
-  <a href="{{ runsPath .Workspace.ID }}">runs</a>
+  <a href="{{ runsPath .Workspace.ID.String }}">runs</a>
   /
   {{ .Run.ID }}
 {{ end }}
@@ -23,7 +23,7 @@
   </div>
   {{ template "period-report" .Run }}
   <div class="flex flex-col gap-4">
-    <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">
+    <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID.String }}?run_id={{ .Run.ID.String }}">
       {{ template "run-item" .Run }}
     </div>
     <details id="plan" open>
@@ -56,12 +56,12 @@
 {{ define "post-content" }}
   {{ if not .PlanLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .PlanLogs.NextOffset }});
+      setupTail({{ tailRunPath .Run.ID.String }}, 'plan', {{ .PlanLogs.NextOffset }});
     </script>
   {{ end }}
   {{ if not .ApplyLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .ApplyLogs.NextOffset }});
+      setupTail({{ tailRunPath .Run.ID.String }}, 'apply', {{ .ApplyLogs.NextOffset }});
     </script>
   {{ end }}
 {{ end }}

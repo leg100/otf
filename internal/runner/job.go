@@ -2,9 +2,7 @@ package runner
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -12,6 +10,8 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 )
+
+const JobKind resource.Kind = "job"
 
 var (
 	ErrInvalidJobStateTransition = errors.New("invalid job state transition")
@@ -37,26 +37,15 @@ type JobSpec struct {
 	Phase internal.PhaseType `json:"phase"`
 }
 
-// jobSpecFromString constructs a job spec from a string. The string is
-// expected to be in the format run-<id>/<phase>
-func jobSpecFromString(spec string) (JobSpec, error) {
-	parts := strings.Split(spec, "/")
-	if len(parts) != 2 || !strings.HasPrefix(parts[0], "run-") {
-		return JobSpec{}, ErrMalformedJobSpecString
-	}
-	return JobSpec{RunID: parts[0], Phase: internal.PhaseType(parts[1])}, nil
-}
-
-func (j JobSpec) String() string {
-	return fmt.Sprintf("%s/%s", j.RunID, j.Phase)
-}
-
 // Job is the unit of work corresponding to a run phase. A job is allocated to
 // a runner, which then executes the work through to completion.
 type Job struct {
-	// Spec uniquely identifies the job, identifying the corresponding run
-	// phase.
-	Spec JobSpec `jsonapi:"primary,jobs"`
+	resource.ID `jsonapi:"primary,jobs"`
+
+	// ID of the run that this job is for.
+	RunID resource.ID `jsonapi:"attribute" json:"run_id"`
+	// Phase of run that this job is for.
+	Phase internal.PhaseType `jsonapi:"attribute" json:"phase"`
 	// Current status of job.
 	Status JobStatus `jsonapi:"attribute" json:"status"`
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
@@ -69,7 +58,7 @@ type Job struct {
 	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
-	RunnerID *string `jsonapi:"attribute" json:"runner_id"`
+	RunnerID *resource.ID `jsonapi:"attribute" json:"runner_id"`
 	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
 	Signaled *bool `jsonapi:"attribute" json:"signaled"`
@@ -77,37 +66,19 @@ type Job struct {
 
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
-		Spec: JobSpec{
-			RunID: run.ID,
-			Phase: run.Phase(),
-		},
+		ID:           resource.NewID(JobKind),
+		RunID:        run.ID,
+		Phase:        run.Phase(),
 		Status:       JobUnallocated,
 		Organization: run.Organization,
 		WorkspaceID:  run.WorkspaceID,
 	}
 }
 
-func (j *Job) MarshalID() string {
-	return j.Spec.String()
-}
-
-func (j *Job) UnmarshalID(id resource.ID) error {
-	spec, err := jobSpecFromString(id)
-	if err != nil {
-		return err
-	}
-	j.Spec = spec
-	return nil
-}
-
-func (j *Job) String() string {
-	return j.Spec.String()
-}
-
 func (j *Job) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("run_id", j.Spec.RunID),
-		slog.String("phase", string(j.Spec.Phase)),
+		slog.String("run_id", j.RunID.String()),
+		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
 	if j.Signaled != nil {
@@ -159,12 +130,12 @@ func (j *Job) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolic
 		return true
 	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
 		// plan phase
-		if j.Spec.Phase == internal.PlanPhase {
+		if j.Phase == internal.PlanPhase {
 			return true
 		}
 	case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
 		// apply phase
-		if j.Spec.Phase == internal.ApplyPhase {
+		if j.Phase == internal.ApplyPhase {
 			return true
 		}
 	}

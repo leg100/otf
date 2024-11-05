@@ -3,7 +3,7 @@
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
   /
   runs
 {{ end }}

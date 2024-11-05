@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,6 +40,6 @@ type fakeTailService struct {
 	chunks chan Chunk
 }
 
-func (f *fakeTailService) Tail(context.Context, internal.GetChunkOptions) (<-chan Chunk, error) {
+func (f *fakeTailService) Tail(context.Context, GetChunkOptions) (<-chan Chunk, error) {
 	return f.chunks, nil
 }

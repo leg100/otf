@@ -1,6 +1,6 @@
 {{ define "run-item" }}
   <div sse-swap="run-item-{{ .ID }}">
-    <div x-data="block_link($el, '{{ runPath .ID }}')" id="{{ .ID }}" class="widget">
+    <div x-data="block_link($el, '{{ runPath .ID.String }}')" id="{{ .ID.String }}" class="widget">
       <div>
         {{ template "run-status" . }}
         {{ if .PlanOnly }}
@@ -51,20 +51,20 @@
             {{ end }}
           {{ end }}
           {{ if eq .Status "planned" }}
-            <form action="{{ applyRunPath .ID }}" method="POST">
+            <form action="{{ applyRunPath .ID.String }}" method="POST">
               <button class="btn">apply</button>
             </form>
           {{ end }}
 					{{ if .Cancelable }}
-						<form action="{{ cancelRunPath .ID }}" method="POST">
+						<form action="{{ cancelRunPath .ID.String }}" method="POST">
 							<button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
 						</form>
 					{{ else if .ForceCancelable }}
-						<form action="{{ forceCancelRunPath .ID }}" method="POST">
+						<form action="{{ forceCancelRunPath .ID.String }}" method="POST">
 							<button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
 						</form>
 					{{ else if .Discardable }}
-						<form action="{{ discardRunPath .ID }}" method="POST">
+						<form action="{{ discardRunPath .ID.String }}" method="POST">
 							<button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
 						</form>
 					{{ else if and .CancelSignaledAt (not .Done)}}

@@ -12,7 +12,7 @@
   <span class="text-lg my-2">Workspace Variables ({{ len .WorkspaceVariableTable.Variables }})</span>
   {{ template "variable-table" .WorkspaceVariableTable }}
   {{ if .CanCreateVariable }}
-    <form class="mt-2" action="{{ newVariablePath $.Workspace.ID }}" method="GET">
+    <form class="mt-2" action="{{ newVariablePath $.Workspace.ID.String }}" method="GET">
       <button class="btn">Add variable</button>
     </form>
   {{ end }}

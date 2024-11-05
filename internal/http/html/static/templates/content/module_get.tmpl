@@ -13,7 +13,7 @@
     {{ else if eq .Module.Status .ModuleStatusSetupFailed }}
       Module setup failed.
     {{ else if eq .Module.Status .ModuleStatusSetupComplete }}
-      <div class="flex gap-4 items-center"> <form class="flex gap-2 items-center" action="{{ modulePath .Module.ID }}" method="GET">
+      <div class="flex gap-4 items-center"> <form class="flex gap-2 items-center" action="{{ modulePath .Module.ID.String }}" method="GET">
           <label>Version</label>
           <select class="w-32" name="version" id="version" onchange="this.form.submit()">
             {{ range reverse .Module.AvailableVersions }}
@@ -69,7 +69,7 @@
         {{ end }}
       </div>
     {{ end }}
-    <form id="module-delete-button" action="{{ deleteModulePath .Module.ID }}" method="POST">
+    <form id="module-delete-button" action="{{ deleteModulePath .Module.ID.String }}" method="POST">
       <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
     </form>
   </div>
