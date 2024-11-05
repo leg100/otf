@@ -324,7 +324,7 @@ func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		AgentPoolID resource.ID `schema:"agent_pool_id,required"`
+		AgentPoolID resource.ID `schema:"agent_pool_id"`
 	}
 	if err := decode.All(&opts, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
