@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type allowAllAuthorizer struct {
@@ -16,6 +17,6 @@ func NewAllowAllAuthorizer() *allowAllAuthorizer {
 	}
 }
 
-func (a *allowAllAuthorizer) CanAccess(context.Context, rbac.Action, string) (Subject, error) {
+func (a *allowAllAuthorizer) CanAccess(context.Context, rbac.Action, resource.ID) (Subject, error) {
 	return a.User, nil
 }

@@ -36,8 +36,8 @@ type (
 		//
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		//
-		// key is the run ID.
-		Cache map[string]vcs.Status
+		// Key is the run ID.
+		Cache map[resource.ID]vcs.Status
 	}
 
 	reporterWorkspaceClient interface {

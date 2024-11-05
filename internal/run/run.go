@@ -30,7 +30,7 @@ const (
 	// plan
 	defaultRefresh = true
 
-	Kind resource.Kind = "run"
+	RunKind resource.Kind = "run"
 )
 
 var ErrInvalidRunStateTransition = errors.New("invalid run state transition")
@@ -147,15 +147,15 @@ type (
 
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
-		Organization *string `schema:"organization_name,omitempty"` // filter by organization name
-		WorkspaceID  *string `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
+		Organization *string      `schema:"organization_name,omitempty"` // filter by organization name
+		WorkspaceID  *resource.ID `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
 
 // newRun creates a new run with defaults.
 func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
-		ID:                     resource.NewID(Kind),
+		ID:                     resource.NewID(RunKind),
 		CreatedAt:              internal.CurrentTimestamp(opts.now),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,

@@ -37,7 +37,7 @@ type (
 		logr.Logger
 
 		site                authz.Authorizer
-		organization        authz.Authorizer
+		organization        *organization.Authorizer
 		workspaceAuthorizer authz.Authorizer
 		*authorizer
 
@@ -125,6 +125,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runs",
+		RunKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Run, error) {
 			if action == sql.DeleteAction {
 				return &Run{ID: id}, nil
@@ -213,7 +214,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 		subject, authErr = s.organization.CanAccess(ctx, rbac.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, authErr = s.site.CanAccess(ctx, rbac.ListRunsAction, "")
+		subject, authErr = s.site.CanAccess(ctx, rbac.ListRunsAction, resource.ID{})
 	}
 	if authErr != nil {
 		return nil, authErr
@@ -354,7 +355,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 		_, err = s.organization.CanAccess(ctx, rbac.WatchAction, *opts.Organization)
 	} else {
 		// caller must have site-level read permissions
-		_, err = s.site.CanAccess(ctx, rbac.WatchAction, "")
+		_, err = s.site.CanAccess(ctx, rbac.WatchAction, resource.ID{})
 	}
 	if err != nil {
 		return nil, err

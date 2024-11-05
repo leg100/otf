@@ -21,7 +21,7 @@ var runStatusMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 
 type MetricsCollector struct {
 	Service         *Service
-	currentStatuses map[string]Status
+	currentStatuses map[resource.ID]Status
 }
 
 func (mc *MetricsCollector) Start(ctx context.Context) error {
@@ -44,7 +44,7 @@ func (mc *MetricsCollector) Start(ctx context.Context) error {
 }
 
 func (mc *MetricsCollector) bootstrap(runs ...*Run) {
-	mc.currentStatuses = make(map[string]Status, len(runs))
+	mc.currentStatuses = make(map[resource.ID]Status, len(runs))
 	for _, run := range runs {
 		mc.currentStatuses[run.ID] = run.Status
 		runStatusMetric.WithLabelValues(run.Status.String()).Inc()

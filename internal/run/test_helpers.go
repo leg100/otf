@@ -75,11 +75,11 @@ func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebServices) getLogs(context.Context, string, internal.PhaseType) ([]byte, error) {
+func (f *fakeWebServices) getLogs(context.Context, resource.ID, internal.PhaseType) ([]byte, error) {
 	return nil, nil
 }
 
-func (f *fakeWebServices) Cancel(context.Context, string) error { return nil }
+func (f *fakeWebServices) Cancel(context.Context, resource.ID) error { return nil }
 
 func (f *fakeWebServices) Get(ctx context.Context, runID resource.ID) (*Run, error) {
 	return f.runs[0], nil

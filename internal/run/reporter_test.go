@@ -27,7 +27,7 @@ func TestReporter_HandleRun(t *testing.T) {
 	}{
 		{
 			name: "set pending status",
-			run:  &Run{ID: "run-123", Status: RunPending},
+			run:  &Run{ID: resource.ParseID("run-123"), Status: RunPending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
 				Connection: &workspace.Connection{},
@@ -56,12 +56,12 @@ func TestReporter_HandleRun(t *testing.T) {
 		},
 		{
 			name: "skip UI-triggered run",
-			run:  &Run{ID: "run-123", Source: SourceUI},
+			run:  &Run{ID: resource.ParseID("run-123"), Source: SourceUI},
 			want: nil,
 		},
 		{
 			name: "skip API-triggered run",
-			run:  &Run{ID: "run-123", Source: SourceAPI},
+			run:  &Run{ID: resource.ParseID("run-123"), Source: SourceAPI},
 			want: nil,
 		},
 	}
@@ -73,7 +73,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				Configs:         &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCS:             &fakeReporterVCSProviderService{got: got},
 				HostnameService: internal.NewHostnameService("otf-host.org"),
-				Cache:           make(map[string]vcs.Status),
+				Cache:           make(map[resource.ID]vcs.Status),
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestReporter_HandleRun(t *testing.T) {
 func TestReporter_DontSetStatusTwice(t *testing.T) {
 	ctx := context.Background()
 
-	run := &Run{ID: "run-123", Status: RunPending}
+	run := &Run{ID: resource.ParseID("run-123"), Status: RunPending}
 	ws := &workspace.Workspace{
 		Name:       "dev",
 		Connection: &workspace.Connection{},
@@ -110,7 +110,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 		Configs:         &fakeReporterConfigurationVersionService{cv: cv},
 		VCS:             &fakeReporterVCSProviderService{got: got},
 		HostnameService: internal.NewHostnameService("otf-host.org"),
-		Cache:           make(map[string]vcs.Status),
+		Cache:           make(map[resource.ID]vcs.Status),
 	}
 
 	// handle run the first time and expect status to be set
@@ -139,7 +139,7 @@ type fakeReporterConfigurationVersionService struct {
 	cv *configversion.ConfigurationVersion
 }
 
-func (f *fakeReporterConfigurationVersionService) Get(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeReporterConfigurationVersionService) Get(context.Context, resource.ID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
@@ -149,7 +149,7 @@ type fakeReporterWorkspaceService struct {
 	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeReporterWorkspaceService) Get(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
@@ -157,7 +157,7 @@ type fakeReporterVCSProviderService struct {
 	got chan vcs.SetStatusOptions
 }
 
-func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (vcs.Client, error) {
+func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, resource.ID) (vcs.Client, error) {
 	return &fakeReporterCloudClient{got: f.got}, nil
 }
 

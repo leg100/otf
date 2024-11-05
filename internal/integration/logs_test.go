@@ -51,7 +51,7 @@ func TestLogs(t *testing.T) {
 		tests := []struct {
 			name string
 			opts internal.GetChunkOptions
-			want internal.Chunk
+			want Chunk
 		}{
 			{
 				name: "entire chunk",
@@ -59,7 +59,7 @@ func TestLogs(t *testing.T) {
 					RunID: run.ID,
 					Phase: internal.PlanPhase,
 				},
-				want: internal.Chunk{
+				want: Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("\x02hello world\x03"),
@@ -73,7 +73,7 @@ func TestLogs(t *testing.T) {
 					Phase: internal.PlanPhase,
 					Limit: 4,
 				},
-				want: internal.Chunk{
+				want: Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("\x02hel"),
@@ -88,7 +88,7 @@ func TestLogs(t *testing.T) {
 					Offset: 4,
 					Limit:  3,
 				},
-				want: internal.Chunk{
+				want: Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("lo "),
@@ -102,7 +102,7 @@ func TestLogs(t *testing.T) {
 					Phase:  internal.PlanPhase,
 					Offset: 7,
 				},
-				want: internal.Chunk{
+				want: Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("world\x03"),
@@ -166,7 +166,7 @@ func TestClusterLogs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want1 := internal.Chunk{
+	want1 := Chunk{
 		ID:    "1",
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
@@ -174,7 +174,7 @@ func TestClusterLogs(t *testing.T) {
 	}
 	require.Equal(t, want1, <-sub)
 
-	want2 := internal.Chunk{
+	want2 := Chunk{
 		ID:     "2",
 		RunID:  run.ID,
 		Phase:  internal.PlanPhase,

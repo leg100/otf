@@ -27,7 +27,7 @@ type (
 	}
 
 	spawnerWorkspaceClient interface {
-		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*workspace.Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*workspace.Workspace, error)
 	}
 
 	spawnerConfigClient interface {
@@ -222,7 +222,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		if err := s.configs.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		runOpts.ConfigurationVersionID = internal.String(cv.ID)
+		runOpts.ConfigurationVersionID = &cv.ID
 		_, err = s.runs.Create(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err

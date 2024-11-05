@@ -16,7 +16,7 @@ type FakeService struct {
 	Policy     authz.WorkspacePolicy
 }
 
-func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
 	return f.Workspaces, nil
 }
 

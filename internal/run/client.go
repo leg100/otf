@@ -16,7 +16,7 @@ type Client struct {
 }
 
 func (c *Client) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
-	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
+	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("GET", u, &PlanFileOptions{Format: format})
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (c *Client) GetPlanFile(ctx context.Context, runID resource.ID, format Plan
 }
 
 func (c *Client) UploadPlanFile(ctx context.Context, runID resource.ID, plan []byte, format PlanFormat) error {
-	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
+	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("PUT", u, plan)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID resource.ID, plan []b
 }
 
 func (c *Client) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
-	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
+	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (c *Client) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, er
 }
 
 func (c *Client) UploadLockFile(ctx context.Context, runID resource.ID, lockfile []byte) error {
-	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
+	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("PUT", u, lockfile)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page
 }
 
 func (c *Client) Get(ctx context.Context, runID resource.ID) (*Run, error) {
-	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
+	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err

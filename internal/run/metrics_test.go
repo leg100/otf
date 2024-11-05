@@ -20,18 +20,18 @@ func TestMetricsCollector_bootstrap(t *testing.T) {
 
 	mc := &MetricsCollector{}
 	mc.bootstrap(
-		&Run{ID: "run-1", Status: RunPending},
-		&Run{ID: "run-2", Status: RunPending},
-		&Run{ID: "run-3", Status: RunPending},
-		&Run{ID: "run-4", Status: RunPending},
-		&Run{ID: "run-5", Status: RunPlanning},
-		&Run{ID: "run-6", Status: RunPlanning},
-		&Run{ID: "run-7", Status: RunPlanning},
-		&Run{ID: "run-8", Status: RunPlanning},
-		&Run{ID: "run-9", Status: RunApplied},
-		&Run{ID: "run-10", Status: RunApplied},
-		&Run{ID: "run-11", Status: RunApplied},
-		&Run{ID: "run-12", Status: RunApplied},
+		&Run{ID: resource.ParseID("run-1"), Status: RunPending},
+		&Run{ID: resource.ParseID("run-2"), Status: RunPending},
+		&Run{ID: resource.ParseID("run-3"), Status: RunPending},
+		&Run{ID: resource.ParseID("run-4"), Status: RunPending},
+		&Run{ID: resource.ParseID("run-5"), Status: RunPlanning},
+		&Run{ID: resource.ParseID("run-6"), Status: RunPlanning},
+		&Run{ID: resource.ParseID("run-7"), Status: RunPlanning},
+		&Run{ID: resource.ParseID("run-8"), Status: RunPlanning},
+		&Run{ID: resource.ParseID("run-9"), Status: RunApplied},
+		&Run{ID: resource.ParseID("run-10"), Status: RunApplied},
+		&Run{ID: resource.ParseID("run-11"), Status: RunApplied},
+		&Run{ID: resource.ParseID("run-12"), Status: RunApplied},
 	)
 	assert.Len(t, mc.currentStatuses, 12)
 	want := `
@@ -55,25 +55,25 @@ func TestMetricsCollector_update(t *testing.T) {
 	mc.bootstrap()
 
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-1", Status: RunPending},
+		Payload: &Run{ID: resource.ParseID("run-1"), Status: RunPending},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-2", Status: RunPending},
+		Payload: &Run{ID: resource.ParseID("run-2"), Status: RunPending},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-2", Status: RunPlanning},
+		Payload: &Run{ID: resource.ParseID("run-2"), Status: RunPlanning},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-3", Status: RunPending},
+		Payload: &Run{ID: resource.ParseID("run-3"), Status: RunPending},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-3", Status: RunPlanning},
+		Payload: &Run{ID: resource.ParseID("run-3"), Status: RunPlanning},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-3", Status: RunApplied},
+		Payload: &Run{ID: resource.ParseID("run-3"), Status: RunApplied},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: "run-4", Status: RunPending},
+		Payload: &Run{ID: resource.ParseID("run-4"), Status: RunPending},
 	})
 	mc.update(pubsub.Event[*Run]{
 		Type:    pubsub.DeletedEvent,

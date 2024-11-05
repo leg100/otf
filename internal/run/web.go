@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -180,13 +181,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	h.Render("run_get.tmpl", w, struct {
 		workspace.WorkspacePage
 		Run       *Run
-		PlanLogs  internal.Chunk
-		ApplyLogs internal.Chunk
+		PlanLogs  logs.Chunk
+		ApplyLogs logs.Chunk
 	}{
-		WorkspacePage: workspace.NewPage(r, run.ID, ws),
+		WorkspacePage: workspace.NewPage(r, run.ID.String(), ws),
 		Run:           run,
-		PlanLogs:      internal.Chunk{Data: planLogs},
-		ApplyLogs:     internal.Chunk{Data: applyLogs},
+		PlanLogs:      logs.Chunk{Data: planLogs},
+		ApplyLogs:     logs.Chunk{Data: applyLogs},
 	})
 }
 
@@ -320,9 +321,9 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		Latest      bool        `schema:"latest"`
-		RunID       resource.ID `schema:"run_id"`
+		WorkspaceID resource.ID  `schema:"workspace_id,required"`
+		Latest      bool         `schema:"latest"`
+		RunID       *resource.ID `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -330,7 +331,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, err := h.runs.watchWithOptions(r.Context(), WatchOptions{
-		WorkspaceID: internal.String(params.WorkspaceID),
+		WorkspaceID: &params.WorkspaceID,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -363,7 +364,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			if params.Latest && !event.Payload.Latest {
 				// skip: run is not the latest run for a workspace
 				continue
-			} else if params.RunID != "" && params.RunID != event.Payload.ID {
+			} else if params.RunID != nil && *params.RunID != event.Payload.ID {
 				// skip: event is for a run which does not match the
 				// filter
 				continue
@@ -382,7 +383,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
 			} else {
 				// updated run events target existing run items in page
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+event.Payload.ID), false)
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+event.Payload.ID.String()), false)
 			}
 			if params.Latest {
 				// also write a 'latest-run' event if the caller has requested

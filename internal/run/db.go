@@ -60,7 +60,7 @@ type (
 
 func (result pgresult) toRun() *Run {
 	run := Run{
-		ID:                     result.RunID.String,
+		ID:                     resource.ParseID(result.RunID.String),
 		CreatedAt:              result.CreatedAt.Time.UTC(),
 		IsDestroy:              result.IsDestroy.Bool,
 		PositionInQueue:        int(result.PositionInQueue.Int32),
@@ -77,18 +77,18 @@ func (result pgresult) toRun() *Run {
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest.Bool,
 		Organization:           result.OrganizationName.String,
-		WorkspaceID:            result.WorkspaceID.String,
-		ConfigurationVersionID: result.ConfigurationVersionID.String,
+		WorkspaceID:            resource.ParseID(result.WorkspaceID.String),
+		ConfigurationVersionID: resource.ParseID(result.ConfigurationVersionID.String),
 		CostEstimationEnabled:  result.CostEstimationEnabled.Bool,
 		Plan: Phase{
-			RunID:          result.RunID.String,
+			RunID:          resource.ParseID(result.RunID.String),
 			PhaseType:      internal.PlanPhase,
 			Status:         PhaseStatus(result.PlanStatus.String),
 			ResourceReport: reportFromDB(result.PlanResourceReport),
 			OutputReport:   reportFromDB(result.PlanOutputReport),
 		},
 		Apply: Phase{
-			RunID:          result.RunID.String,
+			RunID:          resource.ParseID(result.RunID.String),
 			PhaseType:      internal.ApplyPhase,
 			Status:         PhaseStatus(result.ApplyStatus.String),
 			ResourceReport: reportFromDB(result.ApplyResourceReport),
@@ -330,7 +330,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 	}
 	workspaceID := "%"
 	if opts.WorkspaceID != nil {
-		workspaceID = *opts.WorkspaceID
+		workspaceID = opts.WorkspaceID.String()
 	}
 	sources := []string{"%"}
 	if len(opts.Sources) > 0 {
