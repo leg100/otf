@@ -136,7 +136,7 @@ type WorkspaceCreateOptions struct {
 	// belonging to the workspace's organization. This value must not be
 	// specified if execution-mode is set to remote or local or if operations is
 	// set to true.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
+	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
 
 	// Whether destroy plans can be queued on the workspace.
 	AllowDestroyPlan *bool `jsonapi:"attribute" json:"allow-destroy-plan,omitempty"`
@@ -242,7 +242,7 @@ type WorkspaceUpdateOptions struct {
 	// belonging to the workspace's organization. This value must not be
 	// specified if execution-mode is set to remote or local or if operations is
 	// set to true.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
+	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
 
 	// Whether destroy plans can be queued on the workspace.
 	AllowDestroyPlan *bool `jsonapi:"attribute" json:"allow-destroy-plan,omitempty"`
@@ -335,11 +335,11 @@ func (opts *WorkspaceUpdateOptions) Validate() error {
 // VCSRepoOptions is used by workspaces, policy sets, and registry modules
 // VCSRepoOptions represents the configuration options of a VCS integration.
 type VCSRepoOptions struct {
-	Branch            *string `json:"branch,omitempty"`
-	Identifier        *string `json:"identifier,omitempty"`
-	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
-	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
-	TagsRegex         *string `json:"tags-regex,omitempty"`
+	Branch            *string      `json:"branch,omitempty"`
+	Identifier        *string      `json:"identifier,omitempty"`
+	IngressSubmodules *bool        `json:"ingress-submodules,omitempty"`
+	OAuthTokenID      *resource.ID `json:"oauth-token-id,omitempty"`
+	TagsRegex         *string      `json:"tags-regex,omitempty"`
 }
 
 // VCSRepoOptionsJSON wraps VCSRepoOptions and implements json.Unmarshaler in order to differentiate

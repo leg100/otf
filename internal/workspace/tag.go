@@ -20,9 +20,9 @@ type (
 	}
 
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to
-	// valid.
+	// be valid.
 	TagSpec struct {
-		ID   resource.ID
+		ID   *resource.ID
 		Name string
 	}
 
@@ -30,7 +30,7 @@ type (
 )
 
 func (s TagSpec) Valid() error {
-	if s.ID == resource.EmptyID && s.Name == "" {
+	if s.ID == nil && s.Name == "" {
 		return ErrInvalidTagSpec
 	}
 	return nil
@@ -38,12 +38,16 @@ func (s TagSpec) Valid() error {
 
 func (specs TagSpecs) LogValue() slog.Value {
 	var (
-		ids   = make([]resource.ID, len(specs))
-		names = make([]string, len(specs))
+		ids   []resource.ID
+		names []string
 	)
-	for i, s := range specs {
-		ids[i] = s.ID
-		names[i] = s.Name
+	for _, s := range specs {
+		if s.ID != nil {
+			ids = append(ids, *s.ID)
+		}
+		if s.Name != "" {
+			names = append(names, s.Name)
+		}
 	}
 	return slog.GroupValue(
 		slog.Any("ids", ids),

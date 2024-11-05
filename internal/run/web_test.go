@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
@@ -16,7 +17,7 @@ import (
 func TestListRunsHandler(t *testing.T) {
 	runs := make([]*Run, 201)
 	for i := 1; i <= 201; i++ {
-		runs[i-1] = &Run{ID: fmt.Sprintf("run-%d", i)}
+		runs[i-1] = &Run{ID: resource.ParseID(fmt.Sprintf("run-%d", i))}
 	}
 	h := newTestWebHandlers(t,
 		withWorkspace(&workspace.Workspace{ID: resource.ParseID("ws-123")}),
@@ -57,7 +58,7 @@ func TestListRunsHandler(t *testing.T) {
 func TestWeb_GetHandler(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withWorkspace(&workspace.Workspace{ID: resource.ParseID("ws-123")}),
-		withRuns((&Run{ID: resource.ParseID("run-123", WorkspaceID: "ws-1")}).updateStatus(RunPending, nil)),
+		withRuns((&Run{ID: resource.ParseID("run-123"), WorkspaceID: resource.ParseID("ws-1")}).updateStatus(RunPending, nil)),
 	)
 
 	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
@@ -78,7 +79,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withRuns(&Run{ID: resource.ParseID("run-1")}),
-		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &workspace.Connection{}}),
+		withWorkspace(&workspace.Workspace{ID: resource.ParseID("ws-123"), Connection: &workspace.Connection{}}),
 	)
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=true"

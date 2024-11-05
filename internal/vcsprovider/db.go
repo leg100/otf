@@ -186,5 +186,5 @@ func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error)
 			creds.Organization = &row.GithubAppInstall.Organization.String
 		}
 	}
-	return db.fromDB(ctx, opts, creds, row.VCSProviderID.String, row.CreatedAt.Time.UTC())
+	return db.fromDB(ctx, opts, creds, resource.ParseID(row.VCSProviderID.String), row.CreatedAt.Time.UTC())
 }

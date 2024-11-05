@@ -50,7 +50,7 @@ type (
 	// OAuthConfig is configuration for constructing an OAuth client
 	OAuthConfig struct {
 		Hostname            string
-		ClientID            resource.ID
+		ClientID            string
 		ClientSecret        string
 		Endpoint            oauth2.Endpoint
 		Scopes              []string
@@ -90,6 +90,7 @@ func newOAuthClient(
 		tokenHandler:    handler,
 		HostnameService: hostnameService,
 		sessions:        tokensService,
+		users:           userService,
 		OAuthConfig:     cfg,
 	}, nil
 }

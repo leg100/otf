@@ -5,11 +5,14 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewWorkspace(t *testing.T) {
+	agentPoolID := resource.ParseID("apool-123")
+
 	tests := []struct {
 		name string
 		opts CreateOptions
@@ -119,7 +122,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization: internal.String("my-org"),
 				ConnectOptions: &ConnectOptions{
 					RepoPath:      internal.String("leg100/otf"),
-					VCSProviderID: internal.String("vcs-123"),
+					VCSProviderID: resource.ParseID("vcs-123"),
 					TagsRegex:     internal.String("{**"),
 				},
 			},
@@ -131,7 +134,7 @@ func TestNewWorkspace(t *testing.T) {
 				Name:          internal.String("my-workspace"),
 				Organization:  internal.String("my-org"),
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
-				AgentPoolID:   internal.String("apool-123"),
+				AgentPoolID:   resource.ParseID(internal.String("apool-123")),
 			},
 			want: nil,
 		},
@@ -282,7 +285,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "existing agent execution mode with updated agent pool ID",
 			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: AgentExecutionMode, AgentPoolID: internal.String("apool-123")},
 			opts: UpdateOptions{
-				AgentPoolID: internal.String("apool-456"),
+				AgentPoolID: resource.IDPtr(resource.ParseID("apool-123")),
 			},
 			want: nil,
 		},
@@ -290,7 +293,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "existing remote execution mode with updated agent pool ID",
 			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: RemoteExecutionMode},
 			opts: UpdateOptions{
-				AgentPoolID: internal.String("apool-123"),
+				AgentPoolID: resource.IDPtr(resource.ParseID("apool-123")),
 			},
 			want: ErrNonAgentExecutionModeWithPool,
 		},
@@ -299,7 +302,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: RemoteExecutionMode},
 			opts: UpdateOptions{
 				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
-				AgentPoolID:   internal.String("apool-123"),
+				AgentPoolID:   resource.IDPtr(resource.ParseID("apool-123")),
 			},
 			want: ErrNonAgentExecutionModeWithPool,
 		},
@@ -381,7 +384,7 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
 					RepoPath:      internal.String("leg100/otf"),
-					VCSProviderID: internal.String("vcs-123"),
+					VCSProviderID: resource.IDPtr(resource.ParseID("vcs-123")),
 				},
 			},
 			want: internal.Bool(true),
@@ -406,7 +409,7 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 				Organization: "acme",
 				Connection: &Connection{
 					Repo:          "leg100/otf",
-					VCSProviderID: "vcs-123",
+					VCSProviderID: resource.ParseID("vcs-123"),
 				},
 			},
 			opts: UpdateOptions{

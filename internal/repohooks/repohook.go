@@ -71,7 +71,7 @@ func newRepohook(opts newRepohookOptions) (*hook, error) {
 func (h *hook) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", h.id.String()),
-		slog.String("vcs_provider_id", h.vcsProviderID),
+		slog.String("vcs_provider_id", h.vcsProviderID.String()),
 		slog.String("vcs_kind", string(h.cloud)),
 		slog.String("repo", h.repoPath),
 		slog.String("endpoint", h.endpoint),

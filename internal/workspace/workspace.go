@@ -35,7 +35,7 @@ type (
 		resource.ID                `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
-		AgentPoolID                *string       `jsonapi:"attribute" json:"agent-pool-id"`
+		AgentPoolID                *resource.ID  `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool          `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool          `jsonapi:"attribute" json:"auto_apply"`
 		CanQueueDestroyPlan        bool          `jsonapi:"attribute" json:"can_queue_destroy_plan"`
@@ -468,7 +468,7 @@ func (ws *Workspace) setName(name string) error {
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *string) (bool, error) {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.ID) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done

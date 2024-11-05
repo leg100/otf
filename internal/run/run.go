@@ -206,8 +206,6 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	return &run
 }
 
-func (r *Run) String() string { return r.ID }
-
 func (r *Run) Queued() bool {
 	return r.Status == RunPlanQueued || r.Status == RunApplyQueued
 }

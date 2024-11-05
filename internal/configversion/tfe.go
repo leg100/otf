@@ -143,7 +143,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 
 func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id, err := decode.Param("id", r)
+		id, err := decode.ID("id", r)
 		if err != nil {
 			tfeapi.Error(w, err)
 			return
@@ -173,7 +173,7 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 }
 
 func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -191,7 +191,8 @@ func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
-	// v must be a struct with a field named ConfigurationVersionID of kind string
+	// v must be a struct with a field named ConfigurationVersionID of kind
+	// resource.ID
 	if dst.Kind() != reflect.Struct {
 		return nil, nil
 	}
@@ -199,10 +200,11 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !id.IsValid() {
 		return nil, nil
 	}
-	if id.Kind() != reflect.String {
+	resourceID, ok := id.Interface().(resource.ID)
+	if !ok {
 		return nil, nil
 	}
-	cv, err := a.Get(ctx, id.String())
+	cv, err := a.Get(ctx, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +226,7 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 		return nil, err
 	}
 	return []any{&types.IngressAttributes{
-		ID:        resource.ConvertID(cv.ID, "ia"),
+		ID:        resource.ConvertID(cv.ID, IngressAttributesKind),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
 	}}, nil

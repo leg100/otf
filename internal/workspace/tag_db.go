@@ -23,7 +23,7 @@ type (
 // toTag converts a database result into a tag
 func (r tagresult) toTag() *Tag {
 	return &Tag{
-		ID:            r.TagID.String,
+		ID:            resource.ParseID(r.TagID.String),
 		Name:          r.Name.String,
 		Organization:  r.OrganizationName.String,
 		InstanceCount: int(r.InstanceCount),

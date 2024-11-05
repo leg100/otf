@@ -57,6 +57,8 @@ func ParseID(s string) ID {
 	return ID{Kind: Kind(kind), ID: id}
 }
 
+func IDPtr(id ID) *ID { return &id }
+
 func (id ID) String() string {
 	return fmt.Sprintf("%s-%s", id.Kind, id.ID)
 }

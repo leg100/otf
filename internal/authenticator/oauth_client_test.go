@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
 func TestOAuthClient_requestHandler(t *testing.T) {
-	client := newTestOAuthServerClient(t, "")
+	client := newTestOAuthServerClient(t, resource.ParseID("user-bobby"))
 
 	r := httptest.NewRequest("GET", "/auth", nil)
 	w := httptest.NewRecorder()
@@ -32,18 +33,18 @@ func TestOAuthClient_requestHandler(t *testing.T) {
 }
 
 func TestOAuthClient_callbackHandler(t *testing.T) {
-	client := newTestOAuthServerClient(t, "bobby")
+	client := newTestOAuthServerClient(t, resource.ParseID("user-bobby"))
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
 	w := httptest.NewRecorder()
 
 	client.callbackHandler(w, r)
-	assert.Equal(t, w.Header().Get("username"), "bobby")
+	assert.Equal(t, "user-bobby", w.Header().Get("user-id"))
 }
 
 // newTestOAuthServerClient creates an OAuth server for testing purposes and
 // returns a client configured to access the server.
-func newTestOAuthServerClient(t *testing.T, username string) *OAuthClient {
+func newTestOAuthServerClient(t *testing.T, userID resource.ID) *OAuthClient {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
 		require.NoError(t, err)
@@ -55,9 +56,10 @@ func newTestOAuthServerClient(t *testing.T, username string) *OAuthClient {
 	require.NoError(t, err)
 
 	client, err := newOAuthClient(
-		fakeTokenHandler{username},
+		fakeTokenHandler{},
 		internal.NewHostnameService("otf-server.com"),
 		&fakeTokensService{},
+		&fakeUserService{userID},
 		OAuthConfig{
 			Hostname: u.Host,
 			Endpoint: oauth2.Endpoint{

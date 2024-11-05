@@ -69,7 +69,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	tagIDs := make([]string, len(params))
+	tagIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		tagIDs[i] = p.ID
 	}
@@ -93,7 +93,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]string, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		workspaceIDs[i] = p.ID
 	}
@@ -184,7 +184,7 @@ func (a *tfe) toTag(from *Tag) *types.OrganizationTag {
 func toTagSpecs(from []*types.Tag) (to []TagSpec) {
 	for _, tag := range from {
 		to = append(to, TagSpec{
-			ID:   tag.ID,
+			ID:   &tag.ID,
 			Name: tag.Name,
 		})
 	}

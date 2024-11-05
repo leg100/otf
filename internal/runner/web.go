@@ -144,7 +144,7 @@ func (h *webHandlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created agent pool: "+pool.Name)
-	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
+	http.Redirect(w, r, paths.AgentPool(pool.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +185,7 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "updated agent pool: "+pool.Name)
-	http.Redirect(w, r, paths.AgentPool(pool.ID), http.StatusFound)
+	http.Redirect(w, r, paths.AgentPool(pool.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
@@ -373,7 +373,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.AgentPool(poolID), http.StatusFound)
+	http.Redirect(w, r, paths.AgentPool(poolID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -390,5 +390,5 @@ func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "Deleted token: "+at.Description)
-	http.Redirect(w, r, paths.AgentPool(at.AgentPoolID), http.StatusFound)
+	http.Redirect(w, r, paths.AgentPool(at.AgentPoolID.String()), http.StatusFound)
 }

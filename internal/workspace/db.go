@@ -82,13 +82,14 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		Tags:                       sql.FromStringArray(r.Tags),
 	}
 	if r.AgentPoolID.Valid {
-		ws.AgentPoolID = &r.AgentPoolID.String
+		agentPoolIDValue := resource.ParseID(r.AgentPoolID.String)
+		ws.AgentPoolID = &agentPoolIDValue
 	}
 
 	if r.VCSProviderID.Valid && r.RepoPath.Valid {
 		ws.Connection = &Connection{
 			AllowCLIApply: r.AllowCLIApply.Bool,
-			VCSProviderID: r.VCSProviderID.String,
+			VCSProviderID: resource.ParseID(r.VCSProviderID.String),
 			Repo:          r.RepoPath.String,
 			Branch:        r.Branch.String,
 		}
@@ -99,7 +100,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 	if r.LatestRunID.Valid && r.LatestRunStatus.Valid {
 		ws.LatestRun = &LatestRun{
-			ID:     r.LatestRunID.String,
+			ID:     resource.ParseID(r.LatestRunID.String),
 			Status: runStatus(r.LatestRunStatus.String),
 		}
 	}
@@ -125,7 +126,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		ID:                         sql.ID(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+		AgentPoolID:                sql.IDPtr(ws.AgentPoolID),
 		AllowCLIApply:              sql.Bool(false),
 		AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 		AutoApply:                  sql.Bool(ws.AutoApply),
@@ -177,7 +178,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(*Wo
 		}
 		// persist update
 		params := sqlc.UpdateWorkspaceByIDParams{
-			AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+			AgentPoolID:                sql.IDPtr(ws.AgentPoolID),
 			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 			AllowCLIApply:              sql.Bool(false),
 			AutoApply:                  sql.Bool(ws.AutoApply),
@@ -295,7 +296,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	rows, err := q.FindWorkspacesByUsername(ctx, sqlc.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
 		Username:         sql.String(username),
-		Limit:            sql.GetLimit(opts.PageOptions),
+		Limit:            sql.GetLimit(opts),
 		Offset:           sql.GetOffset(opts),
 	})
 	if err != nil {

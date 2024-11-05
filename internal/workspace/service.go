@@ -211,7 +211,7 @@ func (s *Service) GetByName(ctx context.Context, organization, workspace string)
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
+		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, resource.ID{})
 		if err != nil {
 			return nil, err
 		}
@@ -236,7 +236,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 	return s.db.list(ctx, opts)
 }
 
-func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
 	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 

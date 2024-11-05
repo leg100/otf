@@ -116,7 +116,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 		organization string
 		opts         UpdateOptions
 		mode         string
-		poolID       resource.ID
+		poolID       string
 	)
 
 	cmd := &cobra.Command{
@@ -131,7 +131,8 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 				opts.ExecutionMode = (*ExecutionMode)(&mode)
 			}
 			if poolID != "" {
-				opts.AgentPoolID = &poolID
+				poolResourceID := resource.ParseID(poolID)
+				opts.AgentPoolID = &poolResourceID
 			}
 			ws, err := a.client.GetByName(cmd.Context(), organization, name)
 			if err != nil {

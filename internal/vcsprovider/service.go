@@ -23,7 +23,7 @@ type (
 		logr.Logger
 
 		site              authz.Authorizer
-		organization      authz.Authorizer
+		organization      *organization.Authorizer
 		db                *pgdb
 		web               *webHandlers
 		api               *tfe
@@ -171,7 +171,7 @@ func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider
 }
 
 func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, "")
+	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, resource.ID{})
 	if err != nil {
 		return nil, err
 	}

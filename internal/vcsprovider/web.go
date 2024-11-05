@@ -172,7 +172,7 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
 		VCSProvider:      provider,
-		FormAction:       paths.UpdateVCSProvider(providerID),
+		FormAction:       paths.UpdateVCSProvider(providerID.String()),
 		EditMode:         true,
 	})
 }

@@ -127,8 +127,8 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 				} else if err != nil {
 					return err
 				}
-			case t.ID != "":
-				tag, err = s.db.findTagByID(ctx, ws.Organization, t.ID)
+			case t.ID != nil:
+				tag, err = s.db.findTagByID(ctx, ws.Organization, *t.ID)
 				if err != nil {
 					return err
 				}
@@ -181,17 +181,18 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 			case name != "":
 				existing, err := s.db.findTagByName(ctx, ws.Organization, name)
 				if errors.Is(err, internal.ErrResourceNotFound) {
-					id = resource.NewID("tag")
-					if err := s.db.addTag(ctx, ws.Organization, name, id); err != nil {
+					idValue := resource.NewID("tag")
+					id = &idValue
+					if err := s.db.addTag(ctx, ws.Organization, name, *id); err != nil {
 						return fmt.Errorf("adding tag: %s %w", name, err)
 					}
 				} else if err != nil {
 					return err
 				} else {
-					id = existing.ID
+					id = &existing.ID
 				}
-			case id != "":
-				existing, err := s.db.findTagByID(ctx, ws.Organization, t.ID)
+			case id != nil:
+				existing, err := s.db.findTagByID(ctx, ws.Organization, *t.ID)
 				if err != nil {
 					return err
 				}
@@ -200,7 +201,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 				return ErrInvalidTagSpec
 			}
 
-			if err := s.db.tagWorkspace(ctx, ws.ID, id); err != nil {
+			if err := s.db.tagWorkspace(ctx, ws.ID, *id); err != nil {
 				return err
 			}
 			added = append(added, name)

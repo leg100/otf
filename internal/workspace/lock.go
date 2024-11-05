@@ -92,7 +92,7 @@ func lockButtonHelper(ws *Workspace, policy authz.WorkspacePolicy, user authz.Su
 	if ws.Locked() {
 		btn.State = "locked"
 		btn.Text = "Unlock"
-		btn.Action = paths.UnlockWorkspace(ws.ID)
+		btn.Action = paths.UnlockWorkspace(ws.ID.String())
 		// A user needs at least the unlock permission
 		if !user.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy) {
 			btn.Tooltip = "insufficient permissions"
@@ -115,7 +115,7 @@ func lockButtonHelper(ws *Workspace, policy authz.WorkspacePolicy, user authz.Su
 		// User is going to need the force unlock permission
 		if user.CanAccessWorkspace(rbac.ForceUnlockWorkspaceAction, policy) {
 			btn.Text = "Force unlock"
-			btn.Action = paths.ForceUnlockWorkspace(ws.ID)
+			btn.Action = paths.ForceUnlockWorkspace(ws.ID.String())
 			return btn
 		}
 		// User cannot unlock
@@ -124,7 +124,7 @@ func lockButtonHelper(ws *Workspace, policy authz.WorkspacePolicy, user authz.Su
 	} else {
 		btn.State = "unlocked"
 		btn.Text = "Lock"
-		btn.Action = paths.LockWorkspace(ws.ID)
+		btn.Action = paths.LockWorkspace(ws.ID.String())
 		// User needs at least the lock permission
 		if !user.CanAccessWorkspace(rbac.LockWorkspaceAction, policy) {
 			btn.Disabled = true

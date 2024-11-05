@@ -54,6 +54,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 			&opaqueHandler{cfg},
 			opts.HostnameService,
 			opts.TokensService,
+			opts.UserService,
 			cfg.OAuthConfig,
 		)
 		if err != nil {
@@ -76,6 +77,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 		handler,
 		opts.HostnameService,
 		opts.TokensService,
+		opts.UserService,
 		OAuthConfig{
 			Endpoint:            handler.provider.Endpoint(),
 			Scopes:              opts.IDTokenHandlerConfig.Scopes,

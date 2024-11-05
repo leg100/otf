@@ -87,7 +87,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				return fmt.Errorf("listing state versions: %w", err)
 			}
 			for _, sv := range list {
-				fmt.Fprintf(out, sv.ID)
+				fmt.Fprintf(out, sv.ID.String())
 				if current.ID == sv.ID {
 					fmt.Fprintf(out, " (current)")
 				}

@@ -237,7 +237,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "created workspace: "+ws.Name)
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -316,7 +316,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 			Name:        "tag_name",
 			Available:   internal.DiffStrings(getTagNames(), ws.Tags),
 			Existing:    ws.Tags,
-			Action:      paths.CreateTagWorkspace(ws.ID),
+			Action:      paths.CreateTagWorkspace(ws.ID.String()),
 			Placeholder: "Add tags",
 			Width:       html.NarrowDropDown,
 		},
@@ -339,7 +339,7 @@ func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -435,7 +435,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerPatterns string
 		VCSTriggerTags     string
 	}{
-		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
+		WorkspacePage: NewPage(r, "edit | "+workspace.ID.String(), workspace),
 		Assigned:      perms,
 		Unassigned:    filterUnassigned(policy, teams),
 		Roles: []rbac.Role{
@@ -535,7 +535,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(ws.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -566,7 +566,7 @@ func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -582,7 +582,7 @@ func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -598,7 +598,7 @@ func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -623,7 +623,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		WorkspacePage
 		Items []*vcsprovider.VCSProvider
 	}{
-		WorkspacePage: NewPage(r, "list vcs providers | "+ws.ID, ws),
+		WorkspacePage: NewPage(r, "list vcs providers | "+ws.ID.String(), ws),
 		Items:         providers,
 	})
 }
@@ -663,7 +663,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		Repos         []string
 		VCSProviderID resource.ID
 	}{
-		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID, ws),
+		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID.String(), ws),
 		Repos:         repos,
 		VCSProviderID: params.VCSProviderID,
 	})
@@ -671,9 +671,9 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   resource.ID `schema:"workspace_id,required"`
-		RepoPath      *string     `schema:"identifier,required"`
-		VCSProviderID *string     `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.ID  `schema:"workspace_id,required"`
+		RepoPath      *string      `schema:"identifier,required"`
+		VCSProviderID *resource.ID `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -692,7 +692,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
@@ -711,7 +711,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "disconnected workspace from repo")
-	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(workspaceID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -736,7 +736,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	html.FlashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -755,7 +755,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 	html.FlashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID.String()), http.StatusFound)
 }
 
 // filterUnassigned removes from the list of teams those that are part of the
@@ -764,7 +764,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
 func filterUnassigned(policy authz.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
-	assigned := make(map[string]struct{}, len(teams))
+	assigned := make(map[resource.ID]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.TeamID] = struct{}{}
 	}

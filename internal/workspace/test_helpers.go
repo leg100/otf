@@ -24,7 +24,7 @@ func (f *FakeService) Create(context.Context, CreateOptions) (*Workspace, error)
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Update(_ context.Context, _ string, opts UpdateOptions) (*Workspace, error) {
+func (f *FakeService) Update(_ context.Context, _ resource.ID, opts UpdateOptions) (*Workspace, error) {
 	f.Workspaces[0].Update(opts)
 	return f.Workspaces[0], nil
 }
@@ -33,7 +33,7 @@ func (f *FakeService) List(ctx context.Context, opts ListOptions) (*resource.Pag
 	return resource.NewPage(f.Workspaces, opts.PageOptions, nil), nil
 }
 
-func (f *FakeService) Get(context.Context, string) (*Workspace, error) {
+func (f *FakeService) Get(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -41,15 +41,15 @@ func (f *FakeService) GetByName(context.Context, string, string) (*Workspace, er
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Delete(context.Context, string) (*Workspace, error) {
+func (f *FakeService) Delete(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Lock(context.Context, string, *string) (*Workspace, error) {
+func (f *FakeService) Lock(context.Context, resource.ID, *string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Unlock(context.Context, string, *string, bool) (*Workspace, error) {
+func (f *FakeService) Unlock(context.Context, resource.ID, *string, bool) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -57,7 +57,7 @@ func (f *FakeService) ListTags(context.Context, string, ListTagsOptions) (*resou
 	return nil, nil
 }
 
-func (f *FakeService) GetPolicy(context.Context, string) (authz.WorkspacePolicy, error) {
+func (f *FakeService) GetPolicy(context.Context, resource.ID) (authz.WorkspacePolicy, error) {
 	return f.Policy, nil
 }
 

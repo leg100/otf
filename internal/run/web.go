@@ -83,11 +83,11 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+		http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
@@ -227,7 +227,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(run.WorkspaceID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
@@ -242,7 +242,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +257,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +272,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID.String())+"#apply", http.StatusFound)
 }
 
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
@@ -287,7 +287,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
@@ -311,11 +311,11 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+		http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {

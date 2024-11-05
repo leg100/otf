@@ -3,9 +3,8 @@
 package notifications
 
 import (
-	"net/url"
-
 	"log/slog"
+	"net/url"
 
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/run"
@@ -59,6 +58,6 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 }
 
 func (n *notification) runURL() string {
-	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID)}
+	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID.String())}
 	return u.String()
 }

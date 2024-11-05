@@ -149,7 +149,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
-		TargetURL:   r.URL(paths.Run(run.ID)),
+		TargetURL:   r.URL(paths.Run(run.ID.String())),
 	})
 	if err != nil {
 		return err

@@ -105,7 +105,7 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 	return provider, nil
 }
 
-func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id string, createdAt time.Time) (*VCSProvider, error) {
+func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id resource.ID, createdAt time.Time) (*VCSProvider, error) {
 	provider, err := f.newWithGithubCredentials(ctx, opts, creds)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (t *VCSProvider) Update(opts UpdateOptions) error {
 // LogValue implements slog.LogValuer.
 func (t *VCSProvider) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", t.ID),
+		slog.String("id", t.ID.String()),
 		slog.String("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind)),

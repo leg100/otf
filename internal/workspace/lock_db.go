@@ -27,7 +27,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 		}
 		// persist to db
 		params := sqlc.UpdateWorkspaceLockByIDParams{
-			WorkspaceID: pgtype.Text{String: ws.ID, Valid: true},
+			WorkspaceID: sql.ID(ws.ID),
 		}
 		if ws.Lock != nil {
 			if ws.Lock.LockKind == RunLock {

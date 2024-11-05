@@ -102,10 +102,10 @@ func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 	return hooks, nil
 }
 
-func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID resource.ID) error {
+func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
 	q := db.Querier(ctx)
 	_, err := q.UpdateRepohookVCSID(ctx, sqlc.UpdateRepohookVCSIDParams{
-		VCSID:      sql.ID(cloudID),
+		VCSID:      sql.String(cloudID),
 		RepohookID: sql.UUID(id),
 	})
 	if err != nil {
@@ -127,7 +127,7 @@ func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
 func (db *db) fromRow(row hookRow) (*hook, error) {
 	opts := newRepohookOptions{
 		id:              internal.UUID(row.RepohookID.Bytes),
-		vcsProviderID:   row.VCSProviderID.String,
+		vcsProviderID:   resource.ParseID(row.VCSProviderID.String),
 		secret:          internal.String(row.Secret.String),
 		repoPath:        row.RepoPath.String,
 		cloud:           vcs.Kind(row.VCSKind.String),
