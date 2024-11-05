@@ -57,14 +57,14 @@ func (f *fakeService) listJobs(ctx context.Context) ([]*Job, error) {
 	return nil, nil
 }
 
-func (f *fakeService) allocateJob(ctx context.Context, spec JobSpec, agentID resource.ID) (*Job, error) {
+func (f *fakeService) allocateJob(ctx context.Context, jobID resource.ID, agentID resource.ID) (*Job, error) {
 	if err := f.job.allocate(agentID); err != nil {
 		return nil, err
 	}
 	return f.job, nil
 }
 
-func (f *fakeService) reallocateJob(ctx context.Context, spec JobSpec, agentID resource.ID) (*Job, error) {
+func (f *fakeService) reallocateJob(ctx context.Context, jobID resource.ID, agentID resource.ID) (*Job, error) {
 	if err := f.job.reallocate(agentID); err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
@@ -22,9 +23,14 @@ type (
 		Status RunnerStatus `json:"status"`
 	}
 
+	startJobParams struct {
+		JobID resource.ID `json:"job_id"`
+	}
+
 	finishJobParams struct {
-		JobSpec
 		finishJobOptions
+
+		JobID resource.ID `json:"job_id"`
 	}
 )
 
@@ -129,12 +135,12 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
-	var spec JobSpec
-	if err := json.NewDecoder(r.Body).Decode(&spec); err != nil {
-		tfeapi.Error(w, err)
+	jobID, err := decode.ID("job_id", r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := a.Service.startJob(r.Context(), spec)
+	token, err := a.Service.startJob(r.Context(), jobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -148,7 +154,7 @@ func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	err := a.Service.finishJob(r.Context(), params.JobSpec, params.finishJobOptions)
+	err := a.Service.finishJob(r.Context(), params.JobID, params.finishJobOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

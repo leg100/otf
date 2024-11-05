@@ -18,8 +18,8 @@ type client interface {
 	updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error
 
 	getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error)
-	startJob(ctx context.Context, spec JobSpec) ([]byte, error)
-	finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
+	startJob(ctx context.Context, jobID resource.ID) ([]byte, error)
+	finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
 }
 
 // client accesses the service endpoints via RPC.
@@ -108,8 +108,10 @@ func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.ID,
 
 // jobs
 
-func (c *remoteClient) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
-	req, err := c.newRequest("POST", "agents/start", &spec)
+func (c *remoteClient) startJob(ctx context.Context, jobID resource.ID) ([]byte, error) {
+	req, err := c.newRequest("POST", "agents/start", &startJobParams{
+		JobID: jobID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +122,9 @@ func (c *remoteClient) startJob(ctx context.Context, spec JobSpec) ([]byte, erro
 	return buf.Bytes(), nil
 }
 
-func (c *remoteClient) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
+func (c *remoteClient) finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error {
 	req, err := c.newRequest("POST", "agents/finish", &finishJobParams{
-		JobSpec:          spec,
+		JobID:            jobID,
 		finishJobOptions: opts,
 	})
 	if err != nil {

@@ -106,6 +106,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runners",
+		RunnerKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*RunnerMeta, error) {
 			if action == sql.DeleteAction {
 				return &RunnerMeta{ID: id}, nil
@@ -139,7 +140,7 @@ func NewService(opts ServiceOptions) *Service {
 			return nil, err
 		}
 		if runnerID := headers.Get(runnerIDHeader); runnerID != "" {
-			runner, err := svc.getRunner(ctx, runnerID)
+			runner, err := svc.getRunner(ctx, resource.ParseID(runnerID))
 			if err != nil {
 				return nil, fmt.Errorf("retrieving runner corresponding to ID found in http header: %w", err)
 			}
@@ -166,12 +167,8 @@ func NewService(opts ServiceOptions) *Service {
 	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
-	opts.TokensService.RegisterKind(JobTokenKind, func(ctx context.Context, jobspecString resource.ID) (authz.Subject, error) {
-		spec, err := jobSpecFromString(jobspecString)
-		if err != nil {
-			return nil, err
-		}
-		return svc.getJob(ctx, spec)
+	opts.TokensService.RegisterKind(JobKind, func(ctx context.Context, jobID resource.ID) (authz.Subject, error) {
+		return svc.getJob(ctx, jobID)
 	})
 	return svc
 }
@@ -376,7 +373,7 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.ID) ([]*Job, er
 	return nil, nil
 }
 
-func (s *Service) getJob(ctx context.Context, spec JobSpec) (*Job, error) {
+func (s *Service) getJob(ctx context.Context, jobID resource.ID) (*Job, error) {
 	return s.db.getJob(ctx, spec)
 }
 
@@ -384,67 +381,67 @@ func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *Service) allocateJob(ctx context.Context, spec JobSpec, runnerID resource.ID) (*Job, error) {
-	allocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
+func (s *Service) allocateJob(ctx context.Context, jobID resource.ID, runnerID resource.ID) (*Job, error) {
+	allocated, err := s.db.updateJob(ctx, jobID, func(job *Job) error {
 		return job.allocate(runnerID)
 	})
 	if err != nil {
-		s.Error(err, "allocating job", "spec", spec, "runner_id", runnerID)
+		s.Error(err, "allocating job", "job_id", jobID, "runner_id", runnerID)
 		return nil, err
 	}
 	s.V(0).Info("allocated job", "job", allocated, "runner_id", runnerID)
 	return allocated, nil
 }
 
-func (s *Service) reallocateJob(ctx context.Context, spec JobSpec, runnerID resource.ID) (*Job, error) {
+func (s *Service) reallocateJob(ctx context.Context, jobID resource.ID, runnerID resource.ID) (*Job, error) {
 	var (
-		from        string // ID of runner that job *was* allocated to
+		from        resource.ID // ID of runner that job *was* allocated to
 		reallocated *Job
 	)
-	reallocated, err := s.db.updateJob(ctx, spec, func(job *Job) error {
+	reallocated, err := s.db.updateJob(ctx, jobID, func(job *Job) error {
 		from = *job.RunnerID
 		return job.reallocate(runnerID)
 	})
 	if err != nil {
-		s.Error(err, "re-allocating job", "spec", spec, "from", from, "to", runnerID)
+		s.Error(err, "re-allocating job", "job_id", jobID, "from", from, "to", runnerID)
 		return nil, err
 	}
-	s.V(0).Info("re-allocated job", "spec", spec, "from", from, "to", runnerID)
+	s.V(0).Info("re-allocated job", "job", reallocated, "from", from, "to", runnerID)
 	return reallocated, nil
 }
 
 // startJob starts a job and returns a job token with permissions to
 // carry out the job. Only a runner that has been allocated the job can
 // call this method.
-func (s *Service) startJob(ctx context.Context, spec JobSpec) ([]byte, error) {
-	subject, err := runnerFromContext(ctx)
+func (s *Service) startJob(ctx context.Context, jobID resource.ID) ([]byte, error) {
+	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return nil, internal.ErrAccessNotPermitted
 	}
 
 	var token []byte
-	_, err = s.db.updateJob(ctx, spec, func(job *Job) error {
-		if job.RunnerID == nil || *job.RunnerID != subject.String() {
+	_, err = s.db.updateJob(ctx, jobID, func(job *Job) error {
+		if job.RunnerID == nil || *job.RunnerID != runner.ID {
 			return internal.ErrAccessNotPermitted
 		}
 		if err := job.startJob(); err != nil {
 			return err
 		}
 		// start corresponding run phase too
-		if _, err = s.phases.StartPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseStartOptions{}); err != nil {
+		if _, err = s.phases.StartPhase(ctx, job.RunID, job.Phase, otfrun.PhaseStartOptions{}); err != nil {
 			return err
 		}
-		token, err = s.createJobToken(spec)
+		token, err = s.createJobToken(jobID)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "starting job", "spec", spec, "runner", subject)
+		s.Error(err, "starting job", "spec", jobID, "runner", runner)
 		return nil, err
 	}
-	s.V(2).Info("started job", "spec", spec, "runner", subject)
+	s.V(2).Info("started job", "spec", jobID, "runner", runner)
 	return token, nil
 }
 
@@ -454,7 +451,7 @@ type finishJobOptions struct {
 }
 
 // finishJob finishes a job. Only the job itself may call this endpoint.
-func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error {
+func (s *Service) finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error {
 	{
 		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {
@@ -464,16 +461,16 @@ func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 			return internal.ErrAccessNotPermitted
 		}
 	}
-	job, err := s.db.updateJob(ctx, spec, func(job *Job) error {
+	job, err := s.db.updateJob(ctx, jobID, func(job *Job) error {
 		// update corresponding run phase too
 		var err error
 		switch opts.Status {
 		case JobFinished, JobErrored:
-			_, err = s.phases.FinishPhase(ctx, spec.RunID, spec.Phase, otfrun.PhaseFinishOptions{
+			_, err = s.phases.FinishPhase(ctx, job.RunID, job.Phase, otfrun.PhaseFinishOptions{
 				Errored: opts.Status == JobErrored,
 			})
 		case JobCanceled:
-			err = s.phases.Cancel(ctx, spec.RunID)
+			err = s.phases.Cancel(ctx, job.RunID)
 		}
 		if err != nil {
 			return err
@@ -481,7 +478,7 @@ func (s *Service) finishJob(ctx context.Context, spec JobSpec, opts finishJobOpt
 		return job.finishJob(opts.Status)
 	})
 	if err != nil {
-		s.Error(err, "finishing job", "spec", spec)
+		s.Error(err, "finishing job", "job_id", jobID)
 		return err
 	}
 	if opts.Error != "" {
@@ -663,8 +660,8 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID resource.ID, opts 
 			return err
 		}
 		// Add/remove allowed workspaces
-		add := internal.DiffStrings(after.AllowedWorkspaces, before.AllowedWorkspaces)
-		remove := internal.DiffStrings(before.AllowedWorkspaces, after.AllowedWorkspaces)
+		add := internal.Diff(after.AllowedWorkspaces, before.AllowedWorkspaces)
+		remove := internal.Diff(before.AllowedWorkspaces, after.AllowedWorkspaces)
 		for _, workspaceID := range add {
 			if err := s.db.addAgentPoolAllowedWorkspace(ctx, poolID, workspaceID); err != nil {
 				return err

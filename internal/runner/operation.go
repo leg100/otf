@@ -102,7 +102,7 @@ type (
 	}
 
 	operationJobsClient interface {
-		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
+		finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
 	}
 
 	// downloader downloads terraform versions
@@ -212,14 +212,14 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.jobs.finishJob(o.ctx, o.job.Spec, opts); err != nil {
+	if err := o.jobs.finishJob(o.ctx, o.job.ID, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }
 
 // do executes the job
 func (o *operation) do() error {
-	run, err := o.runs.Get(o.ctx, o.job.Spec.RunID)
+	run, err := o.runs.Get(o.ctx, o.job.RunID)
 	if err != nil {
 		return err
 	}
@@ -611,7 +611,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 		return err
 	}
 	_, err = o.state.Create(ctx, state.CreateStateVersionOptions{
-		WorkspaceID: &o.run.WorkspaceID,
+		WorkspaceID: o.run.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,
 	})

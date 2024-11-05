@@ -58,8 +58,7 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE j.run_id = sqlc.arg('run_id')
-AND   phase = sqlc.arg('phase')
+WHERE j.job_id = sqlc.arg('job_id')
 FOR UPDATE OF j
 ;
 
@@ -108,6 +107,5 @@ UPDATE jobs
 SET status   = sqlc.arg('status'),
     signaled = sqlc.arg('signaled'),
     runner_id = sqlc.arg('runner_id')
-WHERE run_id = sqlc.arg('run_id')
-AND   phase = sqlc.arg('phase')
+WHERE job_id = sqlc.arg('job_id')
 RETURNING *;

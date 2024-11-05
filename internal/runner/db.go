@@ -240,13 +240,10 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	return jobs, nil
 }
 
-func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) (*Job, error) {
+func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(*Job) error) (*Job, error) {
 	var job *Job
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindJobForUpdate(ctx, sqlc.FindJobForUpdateParams{
-			RunID: sql.ID(spec.RunID),
-			Phase: sql.String(string(spec.Phase)),
-		})
+		result, err := q.FindJobForUpdate(ctx, sql.ID(jobID))
 		if err != nil {
 			return err
 		}
@@ -258,8 +255,7 @@ func (db *db) updateJob(ctx context.Context, spec JobSpec, fn func(*Job) error) 
 			Status:   sql.String(string(job.Status)),
 			Signaled: sql.BoolPtr(job.Signaled),
 			RunnerID: sql.IDPtr(job.RunnerID),
-			RunID:    result.RunID,
-			Phase:    result.Phase,
+			JobID:    result.JobID,
 		})
 		if err != nil {
 			return err
@@ -340,15 +336,22 @@ type poolresult struct {
 }
 
 func (r poolresult) toPool() *Pool {
-	return &Pool{
+	pool := &Pool{
 		ID:                 resource.ParseID(r.AgentPoolID.String),
 		Name:               r.Name.String,
 		CreatedAt:          r.CreatedAt.Time.UTC(),
 		Organization:       r.OrganizationName.String,
 		OrganizationScoped: r.OrganizationScoped.Bool,
-		AssignedWorkspaces: sql.FromStringArray(r.WorkspaceIds),
-		AllowedWorkspaces:  sql.FromStringArray(r.AllowedWorkspaceIds),
 	}
+	pool.AssignedWorkspaces = make([]resource.ID, len(r.WorkspaceIds))
+	for i, wid := range r.WorkspaceIds {
+		pool.AssignedWorkspaces[i] = resource.ParseID(wid.String)
+	}
+	pool.AllowedWorkspaces = make([]resource.ID, len(r.AllowedWorkspaceIds))
+	for i, wid := range r.AllowedWorkspaceIds {
+		pool.AllowedWorkspaces[i] = resource.ParseID(wid.String)
+	}
+	return pool
 }
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {

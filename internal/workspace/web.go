@@ -314,7 +314,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		TagsDropdown: html.DropdownUI{
 			Name:        "tag_name",
-			Available:   internal.DiffStrings(getTagNames(), ws.Tags),
+			Available:   internal.Diff(getTagNames(), ws.Tags),
 			Existing:    ws.Tags,
 			Action:      paths.CreateTagWorkspace(ws.ID.String()),
 			Placeholder: "Add tags",
@@ -445,7 +445,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceAdminRole,
 		},
 		VCSProvider:        provider,
-		UnassignedTags:     internal.DiffStrings(getTagNames(), workspace.Tags),
+		UnassignedTags:     internal.Diff(getTagNames(), workspace.Tags),
 		VCSTagRegexDefault: vcsTagRegexDefault,
 		VCSTagRegexPrefix:  vcsTagRegexPrefix,
 		VCSTagRegexSuffix:  vcsTagRegexSuffix,

@@ -120,7 +120,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
 
 	// initialize terminator
-	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
+	terminator := &terminator{mapping: make(map[resource.ID]cancelable)}
 
 	// register runner with server, which responds with an updated runner
 	// registrationMetadata, including a unique ID.
@@ -221,7 +221,7 @@ func (r *Runner) Start(ctx context.Context) error {
 					if j.Status == JobAllocated {
 						r.logger.V(r.v).Info("received job", "job", j)
 						// start job and receive job token in return
-						token, err := r.client.startJob(ctx, j.Spec)
+						token, err := r.client.startJob(ctx, j.ID)
 						if err != nil {
 							if ctx.Err() != nil {
 								return nil
@@ -236,16 +236,16 @@ func (r *Runner) Start(ctx context.Context) error {
 						}
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.
-						terminator.checkIn(j.Spec, op)
+						terminator.checkIn(j.ID, op)
 						op.V(0).Info("started job")
 						g.Go(func() error {
 							op.doAndFinish()
-							terminator.checkOut(op.job.Spec)
+							terminator.checkOut(op.job.ID)
 							return nil
 						})
 					} else if j.Signaled != nil {
 						r.logger.V(r.v).Info("received cancelation signal", "force", *j.Signaled, "job", j)
-						terminator.cancel(j.Spec, *j.Signaled, true)
+						terminator.cancel(j.ID, *j.Signaled, true)
 					}
 				}
 				return nil

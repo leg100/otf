@@ -195,15 +195,9 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE j.run_id = $1
-AND   phase = $2
+WHERE j.job_id = $1
 FOR UPDATE OF j
 `
-
-type FindJobForUpdateParams struct {
-	RunID pgtype.Text
-	Phase pgtype.Text
-}
 
 type FindJobForUpdateRow struct {
 	JobID            pgtype.Text
@@ -217,8 +211,8 @@ type FindJobForUpdateRow struct {
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindJobForUpdate(ctx context.Context, arg FindJobForUpdateParams) (FindJobForUpdateRow, error) {
-	row := q.db.QueryRow(ctx, findJobForUpdate, arg.RunID, arg.Phase)
+func (q *Queries) FindJobForUpdate(ctx context.Context, jobID pgtype.Text) (FindJobForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, findJobForUpdate, jobID)
 	var i FindJobForUpdateRow
 	err := row.Scan(
 		&i.JobID,
@@ -328,8 +322,7 @@ UPDATE jobs
 SET status   = $1,
     signaled = $2,
     runner_id = $3
-WHERE run_id = $4
-AND   phase = $5
+WHERE job_id = $4
 RETURNING run_id, phase, status, runner_id, signaled, job_id
 `
 
@@ -337,8 +330,7 @@ type UpdateJobParams struct {
 	Status   pgtype.Text
 	Signaled pgtype.Bool
 	RunnerID pgtype.Text
-	RunID    pgtype.Text
-	Phase    pgtype.Text
+	JobID    pgtype.Text
 }
 
 func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, error) {
@@ -346,8 +338,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		arg.Status,
 		arg.Signaled,
 		arg.RunnerID,
-		arg.RunID,
-		arg.Phase,
+		arg.JobID,
 	)
 	var i Job
 	err := row.Scan(
