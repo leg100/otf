@@ -102,7 +102,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -179,7 +179,7 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 }
 
 func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -194,7 +194,7 @@ func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -209,7 +209,7 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -228,7 +228,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

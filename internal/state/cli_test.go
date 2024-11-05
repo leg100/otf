@@ -26,7 +26,7 @@ func TestCLI_State(t *testing.T) {
 				"three state versions",
 				newFakeCLI(
 					&workspace.Workspace{ID: resource.ParseID("ws-123")},
-					withStateVersion(&Version{ID: resource.ParseID("sv-3", WorkspaceID: "ws-123")}),
+					withStateVersion(&Version{ID: resource.ParseID("sv-3"), WorkspaceID: resource.ParseID("ws-123")}),
 					withStateVersionList(resource.NewPage(
 						[]*Version{
 							{ID: resource.ParseID("sv-3")},
@@ -133,7 +133,7 @@ func withState(state []byte) fakeCLIOption {
 	}
 }
 
-func (f *fakeCLIService) List(context.Context, string, resource.PageOptions) (*resource.Page[*Version], error) {
+func (f *fakeCLIService) List(context.Context, resource.ID, resource.PageOptions) (*resource.Page[*Version], error) {
 	return f.stateVersionList, nil
 }
 

@@ -95,10 +95,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	if opts.WorkspaceID == nil {
-		return nil, errors.New("workspace ID is required")
-	}
-	subject, err := a.workspace.CanAccess(ctx, rbac.CreateStateVersionAction, *opts.WorkspaceID)
+	subject, err := a.workspace.CanAccess(ctx, rbac.CreateStateVersionAction, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}

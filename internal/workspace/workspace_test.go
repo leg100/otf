@@ -12,6 +12,7 @@ import (
 
 func TestNewWorkspace(t *testing.T) {
 	agentPoolID := resource.ParseID("apool-123")
+	vcsProviderID := resource.ParseID("vcs-123")
 
 	tests := []struct {
 		name string
@@ -122,7 +123,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization: internal.String("my-org"),
 				ConnectOptions: &ConnectOptions{
 					RepoPath:      internal.String("leg100/otf"),
-					VCSProviderID: resource.ParseID("vcs-123"),
+					VCSProviderID: &vcsProviderID,
 					TagsRegex:     internal.String("{**"),
 				},
 			},
@@ -134,7 +135,7 @@ func TestNewWorkspace(t *testing.T) {
 				Name:          internal.String("my-workspace"),
 				Organization:  internal.String("my-org"),
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
-				AgentPoolID:   resource.ParseID(internal.String("apool-123")),
+				AgentPoolID:   &agentPoolID,
 			},
 			want: nil,
 		},
@@ -152,7 +153,7 @@ func TestNewWorkspace(t *testing.T) {
 			opts: CreateOptions{
 				Name:         internal.String("my-workspace"),
 				Organization: internal.String("my-org"),
-				AgentPoolID:  internal.String("apool-123"),
+				AgentPoolID:  &agentPoolID,
 			},
 			want: ErrNonAgentExecutionModeWithPool,
 		},
@@ -162,7 +163,7 @@ func TestNewWorkspace(t *testing.T) {
 				Name:          internal.String("my-workspace"),
 				Organization:  internal.String("my-org"),
 				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
-				AgentPoolID:   internal.String("apool-123"),
+				AgentPoolID:   &agentPoolID,
 			},
 			want: ErrNonAgentExecutionModeWithPool,
 		},
@@ -176,6 +177,9 @@ func TestNewWorkspace(t *testing.T) {
 }
 
 func TestWorkspace_UpdateError(t *testing.T) {
+	agentPoolID := resource.ParseID("apool-123")
+	vcsProviderID := resource.ParseID("vcs-123")
+
 	tests := []struct {
 		name string
 		ws   *Workspace
@@ -258,7 +262,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
 					RepoPath:      internal.String("leg100/otf"),
-					VCSProviderID: internal.String("vcs-123"),
+					VCSProviderID: &vcsProviderID,
 					TagsRegex:     internal.String("{**"),
 				},
 			},
@@ -269,7 +273,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			ws:   &Workspace{Name: "dev", Organization: "acme"},
 			opts: UpdateOptions{
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
-				AgentPoolID:   internal.String("apool-123"),
+				AgentPoolID:   &agentPoolID,
 			},
 			want: nil,
 		},
@@ -283,9 +287,9 @@ func TestWorkspace_UpdateError(t *testing.T) {
 		},
 		{
 			name: "existing agent execution mode with updated agent pool ID",
-			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: AgentExecutionMode, AgentPoolID: internal.String("apool-123")},
+			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: AgentExecutionMode, AgentPoolID: &agentPoolID},
 			opts: UpdateOptions{
-				AgentPoolID: resource.IDPtr(resource.ParseID("apool-123")),
+				AgentPoolID: &agentPoolID,
 			},
 			want: nil,
 		},
@@ -293,7 +297,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "existing remote execution mode with updated agent pool ID",
 			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: RemoteExecutionMode},
 			opts: UpdateOptions{
-				AgentPoolID: resource.IDPtr(resource.ParseID("apool-123")),
+				AgentPoolID: &agentPoolID,
 			},
 			want: ErrNonAgentExecutionModeWithPool,
 		},
@@ -302,7 +306,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			ws:   &Workspace{Name: "dev", Organization: "acme", ExecutionMode: RemoteExecutionMode},
 			opts: UpdateOptions{
 				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
-				AgentPoolID:   resource.IDPtr(resource.ParseID("apool-123")),
+				AgentPoolID:   &agentPoolID,
 			},
 			want: ErrNonAgentExecutionModeWithPool,
 		},
@@ -371,6 +375,8 @@ func TestWorkspace_Update(t *testing.T) {
 }
 
 func TestWorkspace_UpdateConnection(t *testing.T) {
+	vcsProviderID := resource.ParseID("vcs-123")
+
 	tests := []struct {
 		name string
 		ws   *Workspace
@@ -384,7 +390,7 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 				Name: internal.String("my-workspace"),
 				ConnectOptions: &ConnectOptions{
 					RepoPath:      internal.String("leg100/otf"),
-					VCSProviderID: resource.IDPtr(resource.ParseID("vcs-123")),
+					VCSProviderID: &vcsProviderID,
 				},
 			},
 			want: internal.Bool(true),

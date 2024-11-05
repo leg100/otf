@@ -43,7 +43,7 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) get(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -57,7 +57,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -79,7 +79,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -102,7 +102,7 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -119,7 +119,7 @@ func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

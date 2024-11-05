@@ -114,7 +114,7 @@ func (a *CLI) stateDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := a.state.Delete(cmd.Context(), args[0]); err != nil {
+			if err := a.state.Delete(cmd.Context(), resource.ParseID(args[0])); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted state version: %s\n", args[0])
@@ -131,7 +131,7 @@ func (a *CLI) stateDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			state, err := a.state.Download(cmd.Context(), args[0])
+			state, err := a.state.Download(cmd.Context(), resource.ParseID(args[0]))
 			if err != nil {
 				return err
 			}
@@ -153,7 +153,7 @@ func (a *CLI) stateRollbackCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := a.state.Rollback(cmd.Context(), args[0])
+			_, err := a.state.Rollback(cmd.Context(), resource.ParseID(args[0]))
 			if err != nil {
 				return err
 			}

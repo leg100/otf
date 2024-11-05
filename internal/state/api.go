@@ -67,7 +67,7 @@ func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.Param("id", r)
+	versionID, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -80,7 +80,7 @@ func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.Param("id", r)
+	versionID, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -94,7 +94,7 @@ func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.Param("id", r)
+	versionID, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,13 +22,13 @@ func TestFactory(t *testing.T) {
 		got, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state,
-			WorkspaceID: internal.String("ws-123"),
+			WorkspaceID: resource.ParseID("ws-123"),
 		})
 		require.NoError(t, err)
 
 		assert.Equal(t, int64(1), got.Serial)
 		assert.Equal(t, state, got.State)
-		assert.Equal(t, "ws-123", got.WorkspaceID)
+		assert.Equal(t, resource.ParseID("ws-123"), got.WorkspaceID)
 		// status should be finalized because state has been uploaded
 		assert.Equal(t, Finalized, got.Status)
 
@@ -61,7 +62,6 @@ func TestFactory(t *testing.T) {
 			err = json.Unmarshal(got.Outputs["baz"].Value, &baz)
 			require.NoError(t, err)
 			assert.Equal(t, map[string]string{"key1": "value1", "key2": "value2"}, baz)
-
 		})
 	})
 
@@ -70,12 +70,12 @@ func TestFactory(t *testing.T) {
 
 		got, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
-			WorkspaceID: internal.String("ws-123"),
+			WorkspaceID: resource.ParseID("ws-123"),
 		})
 		require.NoError(t, err)
 
 		assert.Equal(t, int64(1), got.Serial)
-		assert.Equal(t, "ws-123", got.WorkspaceID)
+		assert.Equal(t, resource.ParseID("ws-123"), got.WorkspaceID)
 		assert.Empty(t, got.Outputs)
 		// status should be pending because state is yet to be uploaded
 		assert.Equal(t, Pending, got.Status)
@@ -88,13 +88,13 @@ func TestFactory(t *testing.T) {
 		got, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state,
-			WorkspaceID: internal.String("ws-123"),
+			WorkspaceID: resource.ParseID("ws-123"),
 		})
 		require.NoError(t, err)
 
 		assert.Equal(t, int64(1), got.Serial)
 		assert.Equal(t, state, got.State)
-		assert.Equal(t, "ws-123", got.WorkspaceID)
+		assert.Equal(t, resource.ParseID("ws-123"), got.WorkspaceID)
 
 		// status should be finalized because state has been uploaded
 		assert.Equal(t, Finalized, got.Status)
@@ -106,7 +106,7 @@ func TestFactory(t *testing.T) {
 		_, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state,
-			WorkspaceID: internal.String("ws-123"),
+			WorkspaceID: resource.ParseID("ws-123"),
 		})
 		require.NoError(t, err)
 	})
@@ -127,7 +127,7 @@ func TestFactory(t *testing.T) {
 		_, err = f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state2,
-			WorkspaceID: internal.String("ws-123"),
+			WorkspaceID: resource.ParseID("ws-123"),
 		})
 		require.Equal(t, ErrSerialMD5Mismatch, err)
 	})
@@ -138,7 +138,7 @@ func TestFactory(t *testing.T) {
 		_, err := f.new(ctx, CreateStateVersionOptions{
 			Serial:      internal.Int64(1),
 			State:       state,
-			WorkspaceID: internal.String("ws-123"),
+			WorkspaceID: resource.ParseID("ws-123"),
 		})
 		require.Equal(t, ErrSerialNotGreaterThanCurrent, err)
 	})
@@ -147,13 +147,13 @@ func TestFactory(t *testing.T) {
 		// seed db with a state version - it should be this version that we'll
 		// rollback to.
 		f := factory{&fakeDB{version: &Version{
-			ID:          "sv-123",
+			ID:          resource.ParseID("sv-123"),
 			Serial:      1,
 			State:       state,
-			WorkspaceID: "ws-123",
+			WorkspaceID: resource.ParseID("ws-123"),
 		}}}
 
-		got, err := f.rollback(ctx, "sv-123")
+		got, err := f.rollback(ctx, resource.ParseID("sv-123"))
 		require.NoError(t, err)
 
 		// should create an identical state version to the one used to seed the
@@ -161,8 +161,8 @@ func TestFactory(t *testing.T) {
 		assert.Regexp(t, "sv-.+", got.ID)
 		assert.NotEqual(t, "sv-123", got.ID)
 
-		assert.Equal(t, "ws-123", got.WorkspaceID) // same workspace ID
-		assert.Equal(t, int64(1), got.Serial)      // same serial
-		assert.Equal(t, state, got.State)          // same state
+		assert.Equal(t, resource.ParseID("ws-123"), got.WorkspaceID) // same workspace ID
+		assert.Equal(t, int64(1), got.Serial)                        // same serial
+		assert.Equal(t, state, got.State)                            // same state
 	})
 }

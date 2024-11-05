@@ -31,12 +31,12 @@ type (
 
 func (row pgRow) toVersion() *Version {
 	sv := Version{
-		ID:          row.StateVersionID.String,
+		ID:          resource.ParseID(row.StateVersionID.String),
 		CreatedAt:   row.CreatedAt.Time.UTC(),
 		Serial:      int64(row.Serial.Int32),
 		State:       row.State,
 		Status:      Status(row.Status.String),
-		WorkspaceID: row.WorkspaceID.String,
+		WorkspaceID: resource.ParseID(row.WorkspaceID.String),
 		Outputs:     make(map[string]*Output, len(row.StateVersionOutputs)),
 	}
 	for _, r := range row.StateVersionOutputs {
@@ -108,7 +108,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.ID, opts 
 
 	rows, err := q.FindStateVersionsByWorkspaceID(ctx, sqlc.FindStateVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.ID(workspaceID),
-		Limit:       sql.GetLimit(opts.PageOptions),
+		Limit:       sql.GetLimit(opts),
 		Offset:      sql.GetOffset(opts),
 	})
 	if err != nil {

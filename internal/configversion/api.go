@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
@@ -21,12 +20,12 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) download(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	resp, err := a.DownloadConfig(r.Context(), resource.ID{Kind: ConfigVersionKind, ID: id})
+	resp, err := a.DownloadConfig(r.Context(), id)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

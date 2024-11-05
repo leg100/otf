@@ -21,12 +21,12 @@ type outputRow struct {
 // output.
 func (row outputRow) toOutput() *Output {
 	return &Output{
-		ID:             row.StateVersionOutputID.String,
+		ID:             resource.ParseID(row.StateVersionOutputID.String),
 		Sensitive:      row.Sensitive.Bool,
 		Type:           row.Type.String,
 		Value:          row.Value,
 		Name:           row.Name.String,
-		StateVersionID: row.StateVersionID.String,
+		StateVersionID: resource.ParseID(row.StateVersionID.String),
 	}
 }
 

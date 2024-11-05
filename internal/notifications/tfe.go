@@ -83,7 +83,7 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -131,7 +131,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) verifyNotification(w http.ResponseWriter, r *http.Request) {}
 
 func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
