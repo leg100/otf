@@ -51,7 +51,7 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -209,7 +209,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := decode.Param("team_id", r)
+	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

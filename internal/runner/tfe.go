@@ -96,7 +96,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -128,7 +128,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -181,7 +181,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -218,7 +218,7 @@ func (a *tfe) toPool(from *Pool) *types.AgentPool {
 
 // Agent token handlers
 func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -240,7 +240,7 @@ func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getAgentToken(w http.ResponseWriter, r *http.Request) {
-	tokenID, err := decode.Param("token_id", r)
+	tokenID, err := decode.ID("token_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -256,7 +256,7 @@ func (a *tfe) getAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -290,7 +290,7 @@ func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
-	tokenID, err := decode.Param("token_id", r)
+	tokenID, err := decode.ID("token_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

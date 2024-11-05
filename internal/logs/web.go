@@ -46,7 +46,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.svc.Tail(r.Context(), internal.GetChunkOptions{
+	ch, err := h.svc.Tail(r.Context(), GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,

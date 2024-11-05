@@ -2,6 +2,7 @@ package logs
 
 import (
 	"context"
+	"fmt"
 	"html/template"
 
 	term2html "github.com/buildkite/terminal-to-html"
@@ -12,12 +13,15 @@ import (
 const (
 	STX = 0x02 // marks the beginning of logs for a phase
 	ETX = 0x03 // marks the end of logs for a phase
+
+	ChunkKind resource.Kind = "chunk"
 )
 
 type (
 	// Chunk is a section of logs for a phase.
 	Chunk struct {
-		ID     resource.ID        `json:"id"`     // Uniquely identifies the chunk.
+		resource.ID `json:"id"` // Uniquely identifies the chunk.
+
 		RunID  resource.ID        `json:"run_id"` // ID of run that generated the chunk
 		Phase  internal.PhaseType `json:"phase"`  // Phase that generated the chunk
 		Offset int                `json:"offset"` // Position within logs.
@@ -42,6 +46,20 @@ type (
 		PutChunk(ctx context.Context, opts PutChunkOptions) error
 	}
 )
+
+func newChunk(opts PutChunkOptions) (Chunk, error) {
+	if len(opts.Data) == 0 {
+		return Chunk{}, fmt.Errorf("cowardly refusing to create empty log chunk")
+	}
+	chunk := Chunk{
+		ID:     resource.NewID(ChunkKind),
+		RunID:  opts.RunID,
+		Phase:  opts.Phase,
+		Offset: opts.Offset,
+		Data:   opts.Data,
+	}
+	return chunk, nil
+}
 
 // Cut returns a new, smaller chunk.
 func (c Chunk) Cut(opts GetChunkOptions) Chunk {

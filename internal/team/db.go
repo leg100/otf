@@ -29,7 +29,7 @@ type TeamRow struct {
 
 func (row TeamRow) ToTeam() *Team {
 	to := Team{
-		ID:           row.TeamID.String,
+		ID:           resource.ParseID(row.TeamID.String),
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Name:         row.Name.String,
 		Organization: row.OrganizationName.String,
@@ -182,9 +182,9 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*
 		return nil, nil
 	}
 	ot := &Token{
-		ID:        result[0].TeamTokenID.String,
+		ID:        resource.ParseID(result[0].TeamTokenID.String),
 		CreatedAt: result[0].CreatedAt.Time.UTC(),
-		TeamID:    result[0].TeamID.String,
+		TeamID:    resource.ParseID(result[0].TeamID.String),
 	}
 	if result[0].Expiry.Valid {
 		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
@@ -192,8 +192,8 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*
 	return ot, nil
 }
 
-func (db *pgdb) deleteTeamToken(ctx context.Context, team string) error {
-	_, err := db.Querier(ctx).DeleteTeamTokenByID(ctx, sql.String(team))
+func (db *pgdb) deleteTeamToken(ctx context.Context, teamID resource.ID) error {
+	_, err := db.Querier(ctx).DeleteTeamTokenByID(ctx, sql.ID(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}

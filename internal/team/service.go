@@ -25,8 +25,8 @@ type (
 	Service struct {
 		logr.Logger
 
-		organization authz.Authorizer // authorizes org access
-		team         authz.Authorizer // authorizes team access
+		organization *organization.Authorizer // authorizes org access
+		team         authz.Authorizer         // authorizes team access
 
 		db     *pgdb
 		web    *webHandlers

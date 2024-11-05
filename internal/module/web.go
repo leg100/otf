@@ -317,7 +317,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("module_id", r)
+	id, err := decode.ID("module_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

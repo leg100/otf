@@ -29,7 +29,6 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/teams/{team_id}/authentication-token", a.createTeamToken).Methods("POST")
 	r.HandleFunc("/teams/{team_id}/authentication-token", a.getTeamToken).Methods("GET")
 	r.HandleFunc("/teams/{team_id}/authentication-token", a.deleteTeamToken).Methods("DELETE")
-
 }
 
 func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +70,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -149,7 +148,7 @@ func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -163,7 +162,7 @@ func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -200,7 +199,7 @@ func (a *tfe) convertTeam(from *Team) *types.Team {
 }
 
 func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -229,7 +228,7 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -254,7 +253,7 @@ func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteTeamToken(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

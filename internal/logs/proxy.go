@@ -22,7 +22,7 @@ type (
 
 	proxydb interface {
 		getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
-		put(ctx context.Context, opts PutChunkOptions) (string, error)
+		put(ctx context.Context, chunk Chunk) error
 	}
 )
 
@@ -86,10 +86,9 @@ func (p *proxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 }
 
 // put writes a chunk of data to the db
-func (p *proxy) put(ctx context.Context, opts PutChunkOptions) error {
+func (p *proxy) put(ctx context.Context, chunk Chunk) error {
 	// db triggers an event, which proxy listens for to populate its cache
-	_, err := p.db.put(ctx, opts)
-	return err
+	return p.db.put(ctx, chunk)
 }
 
 // cacheKey generates a key for caching log chunks.

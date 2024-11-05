@@ -152,7 +152,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
-	providerID, err := decode.Param("vcs_provider_id", r)
+	providerID, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -232,7 +232,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("vcs_provider_id", r)
+	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -251,7 +251,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("vcs_provider_id", r)
+	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

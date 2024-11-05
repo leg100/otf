@@ -148,7 +148,7 @@ func (h *webHandlers) createAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -215,7 +215,7 @@ func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -305,7 +305,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -322,7 +322,7 @@ func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -352,7 +352,7 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 // agent token handlers
 
 func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -377,7 +377,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("token_id", r)
+	id, err := decode.ID("token_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

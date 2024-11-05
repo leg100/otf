@@ -23,14 +23,14 @@ WHERE chunk_id = $1
 `
 
 type FindLogChunkByIDRow struct {
-	ChunkID pgtype.Int4
+	ChunkID pgtype.Text
 	RunID   pgtype.Text
 	Phase   pgtype.Text
 	Chunk   []byte
 	Offset  pgtype.Int4
 }
 
-func (q *Queries) FindLogChunkByID(ctx context.Context, chunkID pgtype.Int4) (FindLogChunkByIDRow, error) {
+func (q *Queries) FindLogChunkByID(ctx context.Context, chunkID pgtype.Text) (FindLogChunkByIDRow, error) {
 	row := q.db.QueryRow(ctx, findLogChunkByID, chunkID)
 	var i FindLogChunkByIDRow
 	err := row.Scan(
@@ -51,7 +51,7 @@ FROM (
     FROM logs
     WHERE run_id = $1
     AND   phase  = $2
-    ORDER BY chunk_id
+    ORDER BY _offset
 ) c
 GROUP BY run_id, phase
 `
@@ -69,8 +69,9 @@ func (q *Queries) FindLogs(ctx context.Context, arg FindLogsParams) ([]byte, err
 	return string_agg, err
 }
 
-const insertLogChunk = `-- name: InsertLogChunk :one
+const insertLogChunk = `-- name: InsertLogChunk :exec
 INSERT INTO logs (
+    chunk_id,
     run_id,
     phase,
     chunk,
@@ -79,28 +80,28 @@ INSERT INTO logs (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
 )
-RETURNING chunk_id
 `
 
 type InsertLogChunkParams struct {
-	RunID  pgtype.Text
-	Phase  pgtype.Text
-	Chunk  []byte
-	Offset pgtype.Int4
+	ChunkID pgtype.Text
+	RunID   pgtype.Text
+	Phase   pgtype.Text
+	Chunk   []byte
+	Offset  pgtype.Int4
 }
 
-func (q *Queries) InsertLogChunk(ctx context.Context, arg InsertLogChunkParams) (pgtype.Int4, error) {
-	row := q.db.QueryRow(ctx, insertLogChunk,
+func (q *Queries) InsertLogChunk(ctx context.Context, arg InsertLogChunkParams) error {
+	_, err := q.db.Exec(ctx, insertLogChunk,
+		arg.ChunkID,
 		arg.RunID,
 		arg.Phase,
 		arg.Chunk,
 		arg.Offset,
 	)
-	var chunk_id pgtype.Int4
-	err := row.Scan(&chunk_id)
-	return chunk_id, err
+	return err
 }
 
 const insertPhaseStatusTimestamp = `-- name: InsertPhaseStatusTimestamp :exec

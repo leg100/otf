@@ -110,7 +110,7 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

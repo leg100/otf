@@ -96,6 +96,7 @@ type Job struct {
 	Status   pgtype.Text
 	RunnerID pgtype.Text
 	Signaled pgtype.Bool
+	JobID    pgtype.Text
 }
 
 type JobPhase struct {
@@ -114,9 +115,9 @@ type LatestTerraformVersion struct {
 type Log struct {
 	RunID   pgtype.Text
 	Phase   pgtype.Text
-	ChunkID pgtype.Int4
 	Chunk   []byte
 	Offset  pgtype.Int4
+	ChunkID pgtype.Text
 }
 
 type Module struct {

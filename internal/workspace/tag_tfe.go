@@ -83,7 +83,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
-	tagID, err := decode.Param("tag_id", r)
+	tagID, err := decode.ID("tag_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -115,7 +115,7 @@ func (a *tfe) removeTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagOperation) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -145,7 +145,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 }
 
 func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

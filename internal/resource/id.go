@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -41,12 +42,18 @@ func ConvertID(id ID, to Kind) ID {
 	return ID{Kind: to, ID: id.ID}
 }
 
-func ParseID(s string) (ID, error) {
-	matches := idRegex.FindStringSubmatch(s)
-	if matches == nil {
-		return ID{}, fmt.Errorf("failed to parse resource ID: %s", s)
-	}
-	return ID{Kind: Kind(matches[1]), ID: matches[2]}, nil
+// ParseID parses the ID from a string representation. No validation is
+// performed.
+//
+// TODO(@leg100): perform validation and change signature to return error when validation
+// fails. I'm hesistant to do this just yet because this function is used
+// heavily to unmarshal IDs from the DB and it's a PITA to check errors every
+// time. It might be better to find a way of implementing the database/sql.Scan
+// interface, and getting that to work with sqlc; or to wait until IDs are
+// migrated over to use UUIDs, which would change a lot of things...
+func ParseID(s string) ID {
+	kind, id, _ := strings.Cut(s, "-")
+	return ID{Kind: Kind(kind), ID: id}
 }
 
 func (id ID) String() string {
@@ -55,11 +62,7 @@ func (id ID) String() string {
 
 func (id *ID) UnmarshalText(text []byte) error {
 	s := string(text)
-	x, err := ParseID(s)
-	if err != nil {
-		return fmt.Errorf("failed to parse resource ID: %s", s)
-	}
-	*id = x
+	*id = ParseID(s)
 	return nil
 }
 

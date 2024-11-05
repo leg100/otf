@@ -3,8 +3,6 @@ package logs
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
@@ -18,38 +16,27 @@ type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
 }
 
-// put persists a chunk of logs to the DB and returns the chunk updated with a
-// unique identifier
-
-// put persists data to the DB and returns a unique identifier for the chunk
-func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string, error) {
-	if len(opts.Data) == 0 {
-		return "", fmt.Errorf("refusing to persist empty chunk")
-	}
-	id, err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
-		RunID:  sql.ID(opts.RunID),
-		Phase:  sql.String(string(opts.Phase)),
-		Chunk:  opts.Data,
-		Offset: sql.Int4(opts.Offset),
+func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
+	err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
+		RunID:  sql.ID(chunk.RunID),
+		Phase:  sql.String(string(chunk.Phase)),
+		Chunk:  chunk.Data,
+		Offset: sql.Int4(chunk.Offset),
 	})
 	if err != nil {
-		return "", sql.Error(err)
+		return sql.Error(err)
 	}
-	return strconv.Itoa(int(id.Int32)), nil
+	return nil
 }
 
-func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (internal.Chunk, error) {
-	id, err := strconv.Atoi(chunkID)
+func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error) {
+	chunk, err := db.Querier(ctx).FindLogChunkByID(ctx, sql.ID(chunkID))
 	if err != nil {
-		return internal.Chunk{}, err
+		return Chunk{}, sql.Error(err)
 	}
-	chunk, err := db.Querier(ctx).FindLogChunkByID(ctx, sql.Int4(id))
-	if err != nil {
-		return internal.Chunk{}, sql.Error(err)
-	}
-	return internal.Chunk{
+	return Chunk{
 		ID:     chunkID,
-		RunID:  chunk.RunID.String,
+		RunID:  resource.ParseID(chunk.RunID.String),
 		Phase:  internal.PhaseType(chunk.Phase.String),
 		Data:   chunk.Chunk,
 		Offset: int(chunk.Offset.Int32),

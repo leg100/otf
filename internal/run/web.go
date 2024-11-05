@@ -148,7 +148,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -193,7 +193,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 // getWidget renders a run "widget", i.e. the container that
 // contains info about a run. Intended for use with an ajax request.
 func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -211,7 +211,7 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -231,7 +231,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -246,7 +246,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -261,7 +261,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -276,7 +276,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -291,7 +291,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

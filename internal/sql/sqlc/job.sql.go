@@ -313,7 +313,7 @@ SET status   = $1,
     runner_id = $3
 WHERE run_id = $4
 AND   phase = $5
-RETURNING run_id, phase, status, runner_id, signaled
+RETURNING run_id, phase, status, runner_id, signaled, job_id
 `
 
 type UpdateJobParams struct {
@@ -339,6 +339,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.Status,
 		&i.RunnerID,
 		&i.Signaled,
+		&i.JobID,
 	)
 	return i, err
 }

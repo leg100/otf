@@ -9,21 +9,23 @@ INSERT INTO phase_status_timestamps (
     sqlc.arg('phase'),
     sqlc.arg('status'),
     sqlc.arg('timestamp')
-);
+)
+;
 
--- name: InsertLogChunk :one
+-- name: InsertLogChunk :exec
 INSERT INTO logs (
+    chunk_id,
     run_id,
     phase,
     chunk,
     _offset
 ) VALUES (
+    sqlc.arg('chunk_id'),
     sqlc.arg('run_id'),
     sqlc.arg('phase'),
     sqlc.arg('chunk'),
     sqlc.arg('offset')
 )
-RETURNING chunk_id
 ;
 
 -- FindLogs retrieves all the logs for the given run and phase.
@@ -36,7 +38,7 @@ FROM (
     FROM logs
     WHERE run_id = sqlc.arg('run_id')
     AND   phase  = sqlc.arg('phase')
-    ORDER BY chunk_id
+    ORDER BY _offset
 ) c
 GROUP BY run_id, phase
 ;

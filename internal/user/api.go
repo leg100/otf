@@ -78,7 +78,7 @@ func (a *api) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
-	teamID, err := decode.Param("team_id", r)
+	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		return err
 	}

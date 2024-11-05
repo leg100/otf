@@ -37,7 +37,7 @@ type row struct {
 // organization.
 func (r row) toOrganization() *Organization {
 	org := &Organization{
-		ID:                         resource.ID{Kind: OrganizationKind, ID: r.OrganizationID.String},
+		ID:                         resource.ParseID(r.OrganizationID.String),
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		Name:                       r.Name.String,

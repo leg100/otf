@@ -92,7 +92,7 @@ type (
 
 	ConnectOptions struct {
 		RepoPath      *string
-		VCSProviderID *string
+		VCSProviderID *resource.ID
 
 		Branch        *string
 		TagsRegex     *string
@@ -103,7 +103,7 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
-		AgentPoolID                *string
+		AgentPoolID                *resource.ID
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
@@ -131,7 +131,7 @@ type (
 	}
 
 	UpdateOptions struct {
-		AgentPoolID                *string `json:"agent-pool-id,omitempty"`
+		AgentPoolID                *resource.ID `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string

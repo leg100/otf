@@ -63,7 +63,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -153,7 +153,7 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -258,7 +258,7 @@ func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

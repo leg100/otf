@@ -131,7 +131,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *api) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("module_version_id", r)
+	id, err := decode.ID("module_version_id", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

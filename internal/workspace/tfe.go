@@ -241,7 +241,7 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
+	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -275,7 +275,7 @@ func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.Param("workspace_id", r)
+	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

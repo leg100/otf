@@ -44,10 +44,11 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
 	}
-	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
-		ID:     tt.ID,
-		Expiry: opts.Expiry,
-	})
+	var newTokenOptions []tokens.NewTokenOption
+	if opts.Expiry != nil {
+		newTokenOptions = append(newTokenOptions, tokens.WithExpiry(*opts.Expiry))
+	}
+	token, err := f.tokens.NewToken(tt.ID, newTokenOptions...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,8 +57,8 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 
 func (t *Token) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", t.ID),
-		slog.String("team_id", t.TeamID),
+		slog.String("id", t.ID.String()),
+		slog.String("team_id", t.TeamID.String()),
 	}
 	if t.Expiry != nil {
 		attrs = append(attrs, slog.Time("expiry", *t.Expiry))

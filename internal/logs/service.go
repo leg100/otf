@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -28,7 +29,7 @@ type (
 	chunkproxy interface {
 		Start(ctx context.Context) error
 		get(ctx context.Context, opts GetChunkOptions) (Chunk, error)
-		put(ctx context.Context, opts PutChunkOptions) error
+		put(ctx context.Context, chunk Chunk) error
 	}
 
 	Options struct {
@@ -60,7 +61,8 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, chunkID string, action sql.Action) (Chunk, error) {
+		ChunkKind,
+		func(ctx context.Context, chunkID resource.ID, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
 				return Chunk{ID: chunkID}, nil
 			}
@@ -105,7 +107,17 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		return err
 	}
 
-	if err := s.chunkproxy.put(ctx, opts); err != nil {
+	err = func() error {
+		chunk, err := newChunk(opts)
+		if err != nil {
+			return err
+		}
+		if err := s.chunkproxy.put(ctx, chunk); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
 		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}

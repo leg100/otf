@@ -84,7 +84,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created team: "+team.Name)
-	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +104,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +138,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := decode.Param("team_id", r)
+	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

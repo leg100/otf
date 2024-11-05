@@ -246,7 +246,7 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
 func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("plan_id", r)
+	id, err := decode.ID("plan_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -272,7 +272,7 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
 func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("plan_id", r)
+	id, err := decode.ID("plan_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -291,7 +291,7 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("apply_id", r)
+	id, err := decode.ID("apply_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
