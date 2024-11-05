@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -76,7 +77,7 @@ func TestMetricsCollector_update(t *testing.T) {
 	})
 	mc.update(pubsub.Event[*Run]{
 		Type:    pubsub.DeletedEvent,
-		Payload: &Run{ID: "run-4"},
+		Payload: &Run{ID: resource.ParseID("run-4")},
 	})
 
 	assert.Len(t, mc.currentStatuses, 3)

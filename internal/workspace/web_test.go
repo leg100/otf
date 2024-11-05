@@ -33,7 +33,7 @@ func TestNewWorkspaceHandler(t *testing.T) {
 }
 
 func TestWorkspace_Create(t *testing.T) {
-	ws := &Workspace{ID: "ws-123"}
+	ws := &Workspace{ID: resource.ParseID("ws-123")}
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -59,7 +59,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 		workspace *Workspace
 	}{
 		{
-			"unlocked", &Workspace{ID: "ws-unlocked"},
+			"unlocked", &Workspace{ID: resource.ParseID("ws-unlocked")},
 		},
 		{
 			"locked", &Workspace{ID: "ws-locked", Lock: &Lock{id: "janitor", LockKind: UserLock}},
@@ -74,7 +74,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 
 			q := "/?workspace_id=ws-123"
 			r := httptest.NewRequest("GET", q, nil)
-			r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+			r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: resource.ParseID("janitor")}))
 			w := httptest.NewRecorder()
 			app.getWorkspace(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
@@ -83,7 +83,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 }
 
 func TestWorkspace_GetByName(t *testing.T) {
-	ws := &Workspace{ID: "ws-123"}
+	ws := &Workspace{ID: resource.ParseID("ws-123")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -111,7 +111,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	}{
 		{
 			name: "default",
-			ws:   &Workspace{ID: "ws-123"},
+			ws:   &Workspace{ID: resource.ParseID("ws-123")},
 			user: user.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				// always show built-in owners permission
@@ -127,7 +127,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "with policy",
-			ws:   &Workspace{ID: "ws-123"},
+			ws:   &Workspace{ID: resource.ParseID("ws-123")},
 			user: user.SiteAdmin,
 			policy: authz.WorkspacePolicy{
 				Permissions: []authz.WorkspacePermission{
@@ -136,10 +136,10 @@ func TestEditWorkspaceHandler(t *testing.T) {
 				},
 			},
 			teams: []*team.Team{
-				{ID: "team-1", Name: "bosses"},
-				{ID: "team-2", Name: "stewards"},
-				{ID: "team-3", Name: "cleaners"},
-				{ID: "team-4", Name: "workers"},
+				{ID: resource.ParseID("team-1", Name: "bosses")},
+				{ID: resource.ParseID("team-2", Name: "stewards")},
+				{ID: resource.ParseID("team-3", Name: "cleaners")},
+				{ID: resource.ParseID("team-4", Name: "workers")},
 			},
 			want: func(t *testing.T, doc *html.Node) {
 				// tabulate existing assigned permissions
@@ -162,7 +162,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "connected repo",
-			ws:   &Workspace{ID: "ws-123", Connection: &Connection{Repo: "leg100/otf"}},
+			ws:   &Workspace{ID: resource.ParseID("ws-123", Connection: &Connection{Repo: "leg100/otf")}},
 			user: user.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				got := htmlquery.FindOne(doc, "//button[@id='disconnect-workspace-repo-button']")
@@ -201,7 +201,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 }
 
 func TestUpdateWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -264,7 +264,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 }
 
 func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
-	ws := &Workspace{ID: "ws-foo", LatestRun: &LatestRun{Status: "applied", ID: "run-123"}}
+	ws := &Workspace{ID: resource.ParseID("ws-foo", LatestRun: &LatestRun{Status: "applied", ID: "run-123")}}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -278,7 +278,7 @@ func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 }
 
 func TestDeleteWorkspace(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -296,7 +296,7 @@ func TestDeleteWorkspace(t *testing.T) {
 }
 
 func TestLockWorkspace(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -318,7 +318,7 @@ func TestLockWorkspace(t *testing.T) {
 }
 
 func TestUnlockWorkspace(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -340,7 +340,7 @@ func TestUnlockWorkspace(t *testing.T) {
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -361,7 +361,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -387,7 +387,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -414,7 +414,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: resource.ParseID("ws-123", Organization: "acme-corp")}
 	app := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		client:   &FakeService{Workspaces: []*Workspace{ws}},
@@ -441,16 +441,16 @@ func TestFilterUnassigned(t *testing.T) {
 		{TeamID: "workers", Role: rbac.WorkspacePlanRole},
 	}}
 	teams := []*team.Team{
-		{ID: "owners"},
-		{ID: "bosses"},
-		{ID: "stewards"},
-		{ID: "cleaners"},
-		{ID: "workers"},
+		{ID: resource.ParseID("owners")},
+		{ID: resource.ParseID("bosses")},
+		{ID: resource.ParseID("stewards")},
+		{ID: resource.ParseID("cleaners")},
+		{ID: resource.ParseID("workers")},
 	}
 	want := []*team.Team{
-		{ID: "owners"},
-		{ID: "stewards"},
-		{ID: "cleaners"},
+		{ID: resource.ParseID("owners")},
+		{ID: resource.ParseID("stewards")},
+		{ID: resource.ParseID("cleaners")},
 	}
 	got := filterUnassigned(policy, teams)
 	assert.Equal(t, want, got)

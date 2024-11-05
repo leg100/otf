@@ -197,7 +197,7 @@ func (s UserSpec) LogValue() slog.Value {
 		return slog.String("username", *s.Username).Value
 	}
 	if s.UserID != nil {
-		return slog.String("id", *s.UserID).Value
+		return slog.String("id", s.UserID.String()).Value
 	}
 	if s.AuthenticationTokenID != nil {
 		return slog.String("token_id", "*****").Value

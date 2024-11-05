@@ -221,7 +221,7 @@ func Test_mergeVariables(t *testing.T) {
 					Category: CategoryTerraform,
 				},
 			},
-			run: run.Run{WorkspaceID: "ws-123", Variables: []run.Variable{{Key: "run", Value: "true"}}},
+			run: run.Run{WorkspaceID: resource.ParseID("ws-123", Variables: []run.Variable{{Key: "run", Value: "true")}}},
 			want: []*Variable{
 				{
 					Key:      "global",
@@ -272,7 +272,7 @@ func Test_mergeVariables(t *testing.T) {
 					},
 				},
 			},
-			run: run.Run{WorkspaceID: "ws-123"},
+			run: run.Run{WorkspaceID: resource.ParseID("ws-123")},
 			want: []*Variable{
 				{
 					Key:      "foo",

@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func TestReporter_HandleRun(t *testing.T) {
 		},
 		{
 			name: "skip run with config not from a VCS repo",
-			run:  &Run{ID: "run-123"},
+			run:  &Run{ID: resource.ParseID("run-123")},
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: nil,
 			},

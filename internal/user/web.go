@@ -43,7 +43,7 @@ type usersClient interface {
 }
 
 type tokensClient interface {
-	StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error
+	StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
 }
 
 type teamsClient interface {
@@ -142,9 +142,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.tokens.StartSession(w, r, tokens.StartSessionOptions{
-		UserID: SiteAdminID,
-	})
+	err = h.tokens.StartSession(w, r, SiteAdminID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -185,7 +183,7 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "added team member: "+*params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +203,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "removed team member: "+params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
@@ -268,7 +266,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		CanDelete         bool
 		IsOwner           bool
 	}{
-		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
+		OrganizationPage: organization.NewPage(r, team.ID.String(), team.Organization),
 		Team:             team,
 		Members:          members,
 		CanUpdateTeam:    user.CanAccessOrganization(rbac.UpdateTeamAction, team.Organization),
@@ -281,7 +279,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Name:        "username",
 			Available:   nonMemberUsernames,
 			Existing:    usernames,
-			Action:      paths.AddMemberTeam(team.ID),
+			Action:      paths.AddMemberTeam(team.ID.String()),
 			Placeholder: "Add user",
 			Width:       html.WideDropDown,
 		},
@@ -340,8 +338,8 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
-	id := r.FormValue("id")
-	if id == "" {
+	id, err := decode.ID("id", r)
+	if err != nil {
 		h.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}

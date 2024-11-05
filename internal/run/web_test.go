@@ -19,13 +19,13 @@ func TestListRunsHandler(t *testing.T) {
 		runs[i-1] = &Run{ID: fmt.Sprintf("run-%d", i)}
 	}
 	h := newTestWebHandlers(t,
-		withWorkspace(&workspace.Workspace{ID: "ws-123"}),
+		withWorkspace(&workspace.Workspace{ID: resource.ParseID("ws-123")}),
 		withRuns(runs...),
 	)
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1", nil)
-		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: resource.ParseID("janitor")}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -35,7 +35,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("second page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2", nil)
-		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: resource.ParseID("janitor")}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -45,7 +45,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("last page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3", nil)
-		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+		r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: resource.ParseID("janitor")}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -56,8 +56,8 @@ func TestListRunsHandler(t *testing.T) {
 
 func TestWeb_GetHandler(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withWorkspace(&workspace.Workspace{ID: "ws-123"}),
-		withRuns((&Run{ID: "run-123", WorkspaceID: "ws-1"}).updateStatus(RunPending, nil)),
+		withWorkspace(&workspace.Workspace{ID: resource.ParseID("ws-123")}),
+		withRuns((&Run{ID: resource.ParseID("run-123", WorkspaceID: "ws-1")}).updateStatus(RunPending, nil)),
 	)
 
 	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
@@ -67,7 +67,7 @@ func TestWeb_GetHandler(t *testing.T) {
 }
 
 func TestRuns_CancelHandler(t *testing.T) {
-	h := newTestWebHandlers(t, withRuns(&Run{ID: "run-1"}))
+	h := newTestWebHandlers(t, withRuns(&Run{ID: resource.ParseID("run-1")}))
 
 	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
@@ -77,7 +77,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withRuns(&Run{ID: "run-1"}),
+		withRuns(&Run{ID: resource.ParseID("run-1")}),
 		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &workspace.Connection{}}),
 	)
 
@@ -90,7 +90,7 @@ func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 
 func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withRuns(&Run{ID: "run-1"}),
+		withRuns(&Run{ID: resource.ParseID("run-1")}),
 	)
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=false"

@@ -38,7 +38,7 @@ func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOpt
 		Description: opts.Description,
 		Username:    username,
 	}
-	token, err := f.tokens.NewToken(tokens.NewTokenOptions{ID: ut.ID})
+	token, err := f.tokens.NewToken(ut.ID)
 	if err != nil {
 		return nil, nil, err
 	}

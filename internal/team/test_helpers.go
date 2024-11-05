@@ -14,7 +14,7 @@ func (f *fakeService) Create(context.Context, string, CreateTeamOptions) (*Team,
 	return f.team, nil
 }
 
-func (f *fakeService) Update(context.Context, string, UpdateTeamOptions) (*Team, error) {
+func (f *fakeService) Update(context.Context, resource.ID, UpdateTeamOptions) (*Team, error) {
 	return f.team, nil
 }
 
@@ -22,7 +22,7 @@ func (f *fakeService) Get(context.Context, string, string) (*Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeService) GetByID(context.Context, string) (*Team, error) {
+func (f *fakeService) GetByID(context.Context, resource.ID) (*Team, error) {
 	return f.team, nil
 }
 

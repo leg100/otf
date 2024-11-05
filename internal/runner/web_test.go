@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebHandlers_createAgentPool(t *testing.T) {
 	svc := &fakeService{
-		pool: &Pool{ID: "pool-123"},
+		pool: &Pool{ID: resource.ParseID("pool-123")},
 	}
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
@@ -35,7 +36,7 @@ func TestWebHandlers_listAgentPools(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		svc: &fakeService{
-			pool: &Pool{ID: "pool-123"},
+			pool: &Pool{ID: resource.ParseID("pool-123")},
 		},
 	}
 	q := "/?organization_name=acme-org"

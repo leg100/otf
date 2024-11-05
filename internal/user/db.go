@@ -24,7 +24,7 @@ type dbresult struct {
 
 func (result dbresult) toUser() *User {
 	user := User{
-		ID:        result.UserID.String,
+		ID:        resource.ParseID(result.UserID.String),
 		CreatedAt: result.CreatedAt.Time.UTC(),
 		UpdatedAt: result.UpdatedAt.Time.UTC(),
 		Username:  result.Username.String,
@@ -232,7 +232,7 @@ func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserTok
 	tokens := make([]*UserToken, len(result))
 	for i, row := range result {
 		tokens[i] = &UserToken{
-			ID:          row.TokenID.String,
+			ID:          resource.ParseID(row.TokenID.String),
 			CreatedAt:   row.CreatedAt.Time.UTC(),
 			Description: row.Description.String,
 			Username:    row.Username.String,
@@ -247,7 +247,7 @@ func (db *pgdb) getUserToken(ctx context.Context, id resource.ID) (*UserToken, e
 		return nil, sql.Error(err)
 	}
 	return &UserToken{
-		ID:          row.TokenID.String,
+		ID:          resource.ParseID(row.TokenID.String),
 		CreatedAt:   row.CreatedAt.Time.UTC(),
 		Description: row.Description.String,
 		Username:    row.Username.String,

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -187,7 +188,7 @@ func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, stri
 }
 
 func (f *fakeFactoryConfigurationVersionService) Create(context.Context, string, configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
-	return &configversion.ConfigurationVersion{ID: "created"}, nil
+	return &configversion.ConfigurationVersion{ID: resource.ParseID("created")}, nil
 }
 
 func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, string, []byte) error {

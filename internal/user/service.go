@@ -210,7 +210,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 }
 
 func (a *Service) Delete(ctx context.Context, username string) error {
-	subject, err := a.site.CanAccess(ctx, rbac.DeleteUserAction, "")
+	subject, err := a.site.CanAccess(ctx, rbac.DeleteUserAction, resource.ID{})
 	if err != nil {
 		return err
 	}

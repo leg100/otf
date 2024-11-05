@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,7 +69,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	}{
 		{
 			"unlocked state",
-			&Workspace{ID: "ws-123"},
+			&Workspace{ID: resource.ParseID("ws-123")},
 			&fakeSubject{canLock: true},
 			LockButton{
 				State:  "unlocked",
@@ -78,7 +79,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to lock",
-			&Workspace{ID: "ws-123"},
+			&Workspace{ID: resource.ParseID("ws-123")},
 			&fakeSubject{},
 			LockButton{
 				State:    "unlocked",

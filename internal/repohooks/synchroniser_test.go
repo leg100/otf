@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ func TestSynchroniser(t *testing.T) {
 		},
 		{
 			name:  "new hook",
-			cloud: vcs.Webhook{ID: "123"}, // new id that cloud returns
+			cloud: vcs.Webhook{ID: resource.ParseID("123")}, // new id that cloud returns
 			got: &hook{
 				endpoint: "fake-host.org/xyz",
 			},

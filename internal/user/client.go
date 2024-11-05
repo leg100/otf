@@ -43,7 +43,7 @@ func (c *client) Delete(ctx context.Context, username string) error {
 
 // AddTeamMembership adds users to a team via HTTP.
 func (c *client) AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error {
-	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID))
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
 	req, err := c.NewRequest("POST", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,
 	})
@@ -58,7 +58,7 @@ func (c *client) AddTeamMembership(ctx context.Context, teamID resource.ID, user
 
 // RemoveTeamMembership removes users from a team via HTTP.
 func (c *client) RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error {
-	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID))
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
 	req, err := c.NewRequest("DELETE", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,
 	})

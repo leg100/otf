@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestScheduler(t *testing.T) {
 			queues:       make(map[string]eventHandler),
 			queueFactory: qf,
 		}
-		want := &workspace.Workspace{ID: "ws-123"}
+		want := &workspace.Workspace{ID: resource.ParseID("ws-123")}
 		err := scheduler.handleWorkspaceEvent(ctx, pubsub.Event[*workspace.Workspace]{
 			Payload: want,
 		})
@@ -42,7 +43,7 @@ func TestScheduler(t *testing.T) {
 			},
 		}
 		err := scheduler.handleWorkspaceEvent(ctx, pubsub.Event[*workspace.Workspace]{
-			Payload: &workspace.Workspace{ID: "ws-123"},
+			Payload: &workspace.Workspace{ID: resource.ParseID("ws-123")},
 			Type:    pubsub.DeletedEvent,
 		})
 		require.NoError(t, err)
@@ -52,7 +53,7 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("relay run to queue", func(t *testing.T) {
 		q := &fakeQueue{}
-		want := &run.Run{WorkspaceID: "ws-123"}
+		want := &run.Run{WorkspaceID: resource.ParseID("ws-123")}
 		scheduler := scheduler{
 			Logger: logr.Discard(),
 			queues: map[string]eventHandler{

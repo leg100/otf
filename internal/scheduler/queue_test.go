@@ -17,7 +17,7 @@ func TestQueue(t *testing.T) {
 	defer cancel()
 
 	t.Run("handle several runs", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
+		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
 		run1 := &otfrun.Run{ID: "run-1", WorkspaceID: "ws-123", Status: otfrun.RunPending}
 		run2 := &otfrun.Run{ID: "run-2", WorkspaceID: "ws-123", Status: otfrun.RunPending}
 		run3 := &otfrun.Run{ID: "run-3", WorkspaceID: "ws-123", Status: otfrun.RunPending}
@@ -77,7 +77,7 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
+		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
 		run := &otfrun.Run{Status: otfrun.RunPending, WorkspaceID: "ws-123", PlanOnly: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
@@ -90,7 +90,7 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("user locked", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
+		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
 		run := &otfrun.Run{ID: "run-123", WorkspaceID: "ws-123", Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
@@ -115,7 +115,7 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
+		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
 		run := &otfrun.Run{WorkspaceID: "ws-123", Status: otfrun.RunPlanning}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
@@ -127,7 +127,7 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		run := &otfrun.Run{WorkspaceID: "ws-123"}
+		run := &otfrun.Run{WorkspaceID: resource.ParseID("ws-123")}
 		ws := &workspace.Workspace{ID: "ws-123", LatestRun: &workspace.LatestRun{ID: run.ID}}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)

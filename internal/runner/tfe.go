@@ -50,7 +50,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 		fs := []struct {
 			ID resource.ID `jsonapi:"primary,feature-sets"`
 		}{
-			{ID: "fs-123"},
+			{ID: resource.ParseID("fs-123")},
 		}
 		a.RespondWithPage(w, r, &fs, &resource.Pagination{})
 	})

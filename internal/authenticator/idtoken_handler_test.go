@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func Test_idtokenHandler_getUsername(t *testing.T) {
 	// setup id token verifier
 	fakeVerifier := func(t *testing.T, aud string, key *rsa.PrivateKey) *oidc.IDTokenVerifier {
 		keySet := &oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{key.Public()}}
-		return oidc.NewVerifier("", keySet, &oidc.Config{ClientID: "otf"})
+		return oidc.NewVerifier("", keySet, &oidc.Config{ClientID: resource.ParseID("otf")})
 	}
 	// setup handler to parse the 'name' claim
 	username, err := newUsernameClaim("name")

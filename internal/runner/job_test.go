@@ -14,7 +14,7 @@ func Test_jobSpecFromString(t *testing.T) {
 	}{
 		{
 			spec: "run-grDQCjrQne1EUIGW/plan",
-			want: JobSpec{RunID: "run-grDQCjrQne1EUIGW", Phase: "plan"},
+			want: JobSpec{RunID: resource.ParseID("run-grDQCjrQne1EUIGW", Phase: "plan")},
 		},
 		{
 			spec:    "grDQCjrQne1EUIGW/plan",
