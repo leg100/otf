@@ -18,7 +18,7 @@ type (
 	cache struct {
 		mu      sync.Mutex
 		clients map[string]*clientEntry // keyed by url
-		configs map[string]*Config      // keyed by config ID
+		configs map[resource.ID]*Config // keyed by config ID
 
 		clientFactory // constructs new clients
 	}
@@ -40,7 +40,7 @@ func newCache(ctx context.Context, db cacheDB, f clientFactory) (*cache, error) 
 		return nil, err
 	}
 	cache := &cache{
-		configs:       make(map[string]*Config, len(configs)),
+		configs:       make(map[resource.ID]*Config, len(configs)),
 		clients:       make(map[string]*clientEntry),
 		clientFactory: f,
 	}

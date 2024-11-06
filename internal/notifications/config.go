@@ -28,6 +28,8 @@ const (
 	TriggerApplying       Trigger = "run:applying"
 	TriggerCompleted      Trigger = "run:completed"
 	TriggerErrored        Trigger = "run:errored"
+
+	NotificationConfigurationKind resource.Kind = "nc"
 )
 
 var (
@@ -129,7 +131,7 @@ func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, erro
 	}
 
 	return &Config{
-		ID:              resource.NewID("nc"),
+		ID:              resource.NewID(NotificationConfigurationKind),
 		CreatedAt:       internal.CurrentTimestamp(nil),
 		UpdatedAt:       internal.CurrentTimestamp(nil),
 		Name:            *opts.Name,
@@ -146,7 +148,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("name", c.Name),
 		slog.Bool("enabled", c.Enabled),
 		slog.Any("triggers", c.Triggers),
-		slog.String("workspace_id", c.WorkspaceID),
+		slog.String("workspace_id", c.WorkspaceID.String()),
 		slog.String("destination", string(c.DestinationType)),
 	}
 	return slog.GroupValue(attrs...)

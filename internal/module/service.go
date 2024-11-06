@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -30,7 +29,7 @@ type (
 
 		db *pgdb
 
-		organization authz.Authorizer
+		organization *organization.Authorizer
 
 		api          *api
 		web          *webHandlers
@@ -277,7 +276,7 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.ID) (*Module, e
 	return module, nil
 }
 
-func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
+func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
 	return s.db.getModuleByConnection(ctx, vcsProviderID, repoPath)
 }
 

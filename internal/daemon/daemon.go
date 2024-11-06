@@ -28,6 +28,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repohooks"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/scheduler"
@@ -479,7 +480,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,
 				Configs:         d.Configs,
-				Cache:           make(map[string]vcs.Status),
+				Cache:           make(map[resource.ID]vcs.Status),
 			},
 		},
 		{

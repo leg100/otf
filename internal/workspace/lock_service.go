@@ -12,9 +12,9 @@ import (
 // Lock locks the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*Workspace, error) {
+func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error) {
 	var (
-		id   string
+		id   resource.ID
 		kind LockKind
 	)
 	if runID != nil {

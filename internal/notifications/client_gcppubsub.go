@@ -87,7 +87,7 @@ func (c *pubsubClient) Publish(ctx context.Context, n *notification) error {
 	// https://cloud.google.com/pubsub/docs/subscription-message-filter#filtering_syntax
 	attrs := map[string]string{
 		"otf.ninja/v1/workspace.name": n.workspace.Name,
-		"otf.ninja/v1/workspace.id":   n.workspace.ID,
+		"otf.ninja/v1/workspace.id":   n.workspace.ID.String(),
 	}
 	for _, tag := range n.workspace.Tags {
 		key := fmt.Sprintf("otf.ninja/v1/tags/%s", tag)

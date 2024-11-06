@@ -31,13 +31,13 @@ type (
 
 func (r pgresult) toNotificationConfiguration() *Config {
 	nc := &Config{
-		ID:              r.NotificationConfigurationID.String,
+		ID:              resource.ParseID(r.NotificationConfigurationID.String),
 		CreatedAt:       r.CreatedAt.Time.UTC(),
 		UpdatedAt:       r.UpdatedAt.Time.UTC(),
 		Name:            r.Name.String,
 		Enabled:         r.Enabled.Bool,
 		DestinationType: Destination(r.DestinationType.String),
-		WorkspaceID:     r.WorkspaceID.String,
+		WorkspaceID:     resource.ParseID(r.WorkspaceID.String),
 	}
 	for _, t := range r.Triggers {
 		nc.Triggers = append(nc.Triggers, Trigger(t.String))

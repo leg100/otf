@@ -3,14 +3,17 @@ package notifications
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCache_New(t *testing.T) {
-	nc1 := newTestConfig(t, "", DestinationSlack, "http://example.com")
-	nc2 := newTestConfig(t, "", DestinationSlack, "http://example.com")
-	nc3 := newTestConfig(t, "", DestinationGCPPubSub, "gcppubsub://project1/topic1")
+	workspaceID := resource.ParseID("ws-123")
+
+	nc1 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")
+	nc2 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")
+	nc3 := newTestConfig(t, workspaceID, DestinationGCPPubSub, "gcppubsub://project1/topic1")
 
 	cache := newTestCache(t, nil, nc1, nc2, nc3)
 
@@ -19,9 +22,11 @@ func TestCache_New(t *testing.T) {
 }
 
 func TestCache_AddRemove(t *testing.T) {
+	workspaceID := resource.ParseID("ws-123")
+
 	cache := newTestCache(t, nil)
-	nc1 := newTestConfig(t, "", DestinationSlack, "http://example.com")
-	nc2 := newTestConfig(t, "", DestinationSlack, "http://example.com")
+	nc1 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")
+	nc2 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")
 
 	err := cache.add(nc1)
 	require.NoError(t, err)

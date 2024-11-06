@@ -123,7 +123,7 @@ func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 
 func (m *Module) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", m.ID),
+		slog.String("id", m.ID.String()),
 		slog.String("organization", m.Organization),
 		slog.String("name", m.Name),
 		slog.String("provider", m.Provider),
@@ -166,8 +166,8 @@ func (m *Module) Latest() *ModuleVersion {
 
 func (v *ModuleVersion) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
-		slog.String("module_id", v.ModuleID),
+		slog.String("id", v.ID.String()),
+		slog.String("module_id", v.ModuleID.String()),
 		slog.String("version", v.Version),
 		slog.String("status", string(v.Status)),
 	}

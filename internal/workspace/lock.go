@@ -4,11 +4,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
-)
-
-const (
-	UserLock LockKind = iota
-	RunLock
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -17,12 +13,8 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings#locking
 	Lock struct {
-		id       string // ID of entity holding lock
-		LockKind        // kind of entity holding lock
+		resource.ID // ID of entity holding lock
 	}
-
-	// kind of entity holding a lock
-	LockKind int
 
 	LockButton struct {
 		State    string // locked or unlocked
@@ -41,7 +33,7 @@ func (ws *Workspace) Locked() bool {
 }
 
 // Enlock locks the workspace
-func (ws *Workspace) Enlock(id string, kind LockKind) error {
+func (ws *Workspace) Enlock(id resource.ID) error {
 	if ws.Lock == nil {
 		ws.Lock = &Lock{
 			id:       id,
@@ -58,7 +50,7 @@ func (ws *Workspace) Enlock(id string, kind LockKind) error {
 }
 
 // Unlock the workspace.
-func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
+func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 	if ws.Lock == nil {
 		return ErrWorkspaceAlreadyUnlocked
 	}
@@ -100,16 +92,16 @@ func lockButtonHelper(ws *Workspace, policy authz.WorkspacePolicy, user authz.Su
 			return btn
 		}
 		// Determine message to show
-		switch ws.Lock.LockKind {
+		switch ws.Lock.Kind {
 		case UserLock, RunLock:
-			btn.Message = "locked by: " + ws.Lock.id
+			btn.Message = "locked by: " + ws.Lock.id.String()
 		default:
-			btn.Message = "locked by unknown entity: " + ws.Lock.id
+			btn.Message = "locked by unknown entity: " + ws.Lock.id.String()
 		}
 		// also show message as button tooltip
 		btn.Tooltip = btn.Message
 		// A user can unlock their own lock
-		if ws.Lock.LockKind == UserLock && ws.Lock.id == user.String() {
+		if ws.Lock.LockKind == UserLock && ws.Lock.id.String() == user.String() {
 			return btn
 		}
 		// User is going to need the force unlock permission

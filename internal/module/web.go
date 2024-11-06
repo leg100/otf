@@ -51,7 +51,7 @@ type (
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
-		Get(context.Context, string) (*vcsprovider.VCSProvider, error)
+		Get(context.Context, resource.ID) (*vcsprovider.VCSProvider, error)
 		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
 		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
@@ -152,7 +152,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		ModuleStatusSetupComplete ModuleStatus
 		ModuleVersionStatusOK     ModuleVersionStatus
 	}{
-		OrganizationPage:          organization.NewPage(r, module.ID, module.Organization),
+		OrganizationPage:          organization.NewPage(r, module.ID.String(), module.Organization),
 		Module:                    module,
 		TerraformModule:           tfmod,
 		Readme:                    readme,

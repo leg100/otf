@@ -92,7 +92,7 @@ func (db *pgdb) getModuleByID(ctx context.Context, id resource.ID) (*Module, err
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
+func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
 	row, err := db.Querier(ctx).FindModuleByConnection(ctx, sqlc.FindModuleByConnectionParams{
 		VCSProviderID: sql.ID(vcsProviderID),
 		RepoPath:      sql.String(repoPath),
@@ -165,7 +165,7 @@ func (db *pgdb) getTarball(ctx context.Context, versionID resource.ID) ([]byte, 
 // toModule converts a database row into a module
 func (row moduleRow) toModule() *Module {
 	module := &Module{
-		ID:           row.ModuleID.String,
+		ID:           resource.ParseID(row.ModuleID.String),
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		UpdatedAt:    row.UpdatedAt.Time.UTC(),
 		Name:         row.Name.String,
@@ -175,7 +175,7 @@ func (row moduleRow) toModule() *Module {
 	}
 	if row.VCSProviderID.Valid && row.RepoPath.Valid {
 		module.Connection = &connections.Connection{
-			VCSProviderID: row.VCSProviderID.String,
+			VCSProviderID: resource.ParseID(row.VCSProviderID.String),
 			Repo:          row.RepoPath.String,
 		}
 	}
@@ -185,11 +185,11 @@ func (row moduleRow) toModule() *Module {
 	sort.Sort(byVersion(row.ModuleVersions))
 	for i := len(row.ModuleVersions) - 1; i >= 0; i-- {
 		module.Versions = append(module.Versions, ModuleVersion{
-			ID:          row.ModuleVersions[i].ModuleVersionID.String,
+			ID:          resource.ParseID(row.ModuleVersions[i].ModuleVersionID.String),
 			Version:     row.ModuleVersions[i].Version.String,
 			CreatedAt:   row.ModuleVersions[i].CreatedAt.Time.UTC(),
 			UpdatedAt:   row.ModuleVersions[i].UpdatedAt.Time.UTC(),
-			ModuleID:    row.ModuleVersions[i].ModuleID.String,
+			ModuleID:    resource.ParseID(row.ModuleVersions[i].ModuleID.String),
 			Status:      ModuleVersionStatus(row.ModuleVersions[i].Status.String),
 			StatusError: row.ModuleVersions[i].StatusError.String,
 		})
