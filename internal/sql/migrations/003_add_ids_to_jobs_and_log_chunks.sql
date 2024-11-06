@@ -31,7 +31,16 @@ ALTER TABLE logs ADD chunk_id TEXT;
 UPDATE logs SET chunk_id = 'chunk-' || substr(md5(random()::text), 0, 17);
 ALTER TABLE logs ADD PRIMARY KEY (chunk_id);
 
+-- Change workspace's lock_username column to lock_user_id
+ALTER TABLE workspaces DROP COLUMN lock_username;
+ALTER TABLE workspaces ADD COLUMN lock_user_id TEXT;
+ALTER TABLE workspaces ADD FOREIGN KEY (lock_user_id) REFERENCES users(user_id);
+
 ---- create above / drop below ----
+
+ALTER TABLE workspaces DROP COLUMN lock_user_id;
+ALTER TABLE workspaces ADD COLUMN lock_username TEXT;
+ALTER TABLE workspaces ADD FOREIGN KEY (lock_username) REFERENCES users(username);
 
 ALTER TABLE logs DROP chunk_id;
 ALTER TABLE logs ADD chunk_id INT GENERATED ALWAYS AS IDENTITY;

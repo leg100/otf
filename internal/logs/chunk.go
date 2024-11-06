@@ -13,8 +13,6 @@ import (
 const (
 	STX = 0x02 // marks the beginning of logs for a phase
 	ETX = 0x03 // marks the end of logs for a phase
-
-	ChunkKind resource.Kind = "chunk"
 )
 
 type (
@@ -52,7 +50,7 @@ func newChunk(opts PutChunkOptions) (Chunk, error) {
 		return Chunk{}, fmt.Errorf("cowardly refusing to create empty log chunk")
 	}
 	chunk := Chunk{
-		ID:     resource.NewID(ChunkKind),
+		ID:     resource.NewID(resource.ChunkKind),
 		RunID:  opts.RunID,
 		Phase:  opts.Phase,
 		Offset: opts.Offset,

@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
-	"github.com/leg100/otf/internal/team"
 )
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
@@ -49,7 +48,7 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID)
 			return authz.WorkspacePolicy{}, err
 		}
 		policy.Permissions = append(policy.Permissions, authz.WorkspacePermission{
-			TeamID: resource.ID{Kind: team.TeamKind, ID: perm.TeamID.String},
+			TeamID: resource.ID{Kind: resource.TeamKind, ID: perm.TeamID.String},
 			Role:   role,
 		})
 	}

@@ -28,8 +28,6 @@ const (
 	TriggerApplying       Trigger = "run:applying"
 	TriggerCompleted      Trigger = "run:completed"
 	TriggerErrored        Trigger = "run:errored"
-
-	NotificationConfigurationKind resource.Kind = "nc"
 )
 
 var (

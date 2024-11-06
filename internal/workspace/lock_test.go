@@ -10,22 +10,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	janitorTestID = resource.NewID(resource.UserKind)
+	runTestID1    = resource.NewID(resource.RunKind)
+	runTestID2    = resource.NewID(resource.RunKind)
+)
+
 func TestWorkspace_Lock(t *testing.T) {
-	t.Run("lock an unlocked workspace", func(t *testing.T) {
-		ws := &Workspace{}
-		err := ws.Enlock("janitor", UserLock)
+	t.Run("lock an unlocked lock", func(t *testing.T) {
+		lock := &lock{}
+		err := lock.Enlock(janitorTestID)
 		require.NoError(t, err)
-		assert.True(t, ws.Locked())
+		assert.True(t, lock.Locked())
 	})
 	t.Run("replace run lock with another run lock", func(t *testing.T) {
-		ws := &Workspace{Lock: &Lock{id: "run-123", LockKind: RunLock}}
-		err := ws.Enlock("run-456", RunLock)
+		lock := &lock{ID: &runTestID1}
+		err := lock.Enlock(runTestID2)
 		require.NoError(t, err)
-		assert.True(t, ws.Locked())
+		assert.True(t, lock.Locked())
 	})
 	t.Run("user cannot lock a locked workspace", func(t *testing.T) {
-		ws := &Workspace{Lock: &Lock{id: "run-123", LockKind: RunLock}}
-		err := ws.Enlock("janitor", UserLock)
+		lock := &lock{ID: &runTestID1}
+		err := lock.Enlock(janitorTestID)
 		require.Equal(t, ErrWorkspaceAlreadyLocked, err)
 	})
 }
@@ -36,24 +42,24 @@ func TestWorkspace_Unlock(t *testing.T) {
 		require.Equal(t, ErrWorkspaceAlreadyUnlocked, err)
 	})
 	t.Run("user can unlock their own lock", func(t *testing.T) {
-		ws := &Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}}
+		ws := &Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}}
 		err := ws.Unlock("janitor", UserLock, false)
 		require.NoError(t, err)
 		assert.False(t, ws.Locked())
 	})
 	t.Run("user cannot unlock another user's lock", func(t *testing.T) {
-		ws := &Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}}
+		ws := &Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}}
 		err := ws.Unlock("burglar", UserLock, false)
 		require.Equal(t, ErrWorkspaceLockedByDifferentUser, err)
 	})
 	t.Run("user can unlock a lock by force", func(t *testing.T) {
-		ws := &Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}}
+		ws := &Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}}
 		err := ws.Unlock("headmaster", UserLock, true)
 		require.NoError(t, err)
 		assert.False(t, ws.Locked())
 	})
 	t.Run("run can unlock its own lock", func(t *testing.T) {
-		ws := &Workspace{Lock: &Lock{id: "run-123", LockKind: RunLock}}
+		ws := &Workspace{Lock: &lock{id: "run-123", LockKind: RunLock}}
 		err := ws.Unlock("run-123", RunLock, false)
 		require.NoError(t, err)
 		assert.False(t, ws.Locked())
@@ -91,7 +97,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to unlock",
-			&Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}},
+			&Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}},
 			&fakeSubject{},
 			LockButton{
 				State:    "locked",
@@ -103,7 +109,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"user can unlock their own lock",
-			&Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}},
+			&Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}},
 			&fakeSubject{id: "janitor", canUnlock: true},
 			LockButton{
 				State:   "locked",
@@ -115,7 +121,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"can unlock lock held by a different user",
-			&Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}},
+			&Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}},
 			&fakeSubject{id: "burglar", canUnlock: true},
 			LockButton{
 				State:    "locked",
@@ -128,7 +134,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"user can force unlock",
-			&Workspace{Lock: &Lock{id: "janitor", LockKind: UserLock}},
+			&Workspace{Lock: &lock{id: "janitor", LockKind: UserLock}},
 			&fakeSubject{id: "headmaster", canUnlock: true, canForceUnlock: true},
 			LockButton{
 				State:   "locked",

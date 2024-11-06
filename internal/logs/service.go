@@ -61,7 +61,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		ChunkKind,
+		resource.ChunkKind,
 		func(ctx context.Context, chunkID resource.ID, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
 				return Chunk{ID: chunkID}, nil

@@ -8,8 +8,6 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-const UserTokenKind resource.Kind = "ut"
-
 type (
 	// UserToken provides information about an API token for a user.
 	UserToken struct {
@@ -33,7 +31,7 @@ type (
 
 func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
-		ID:          resource.NewID(UserTokenKind),
+		ID:          resource.NewID(resource.UserTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		Username:    username,

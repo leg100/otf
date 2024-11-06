@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	AgentTokenKind resource.Kind = "at"
-
 	defaultJobTokenExpiry = 60 * time.Minute
 )
 

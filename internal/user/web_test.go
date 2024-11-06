@@ -11,9 +11,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -163,7 +163,7 @@ func TestUserDiff(t *testing.T) {
 
 type fakeTokensService struct{}
 
-func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
+func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

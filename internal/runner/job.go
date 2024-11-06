@@ -11,8 +11,6 @@ import (
 	otfrun "github.com/leg100/otf/internal/run"
 )
 
-const JobKind resource.Kind = "job"
-
 var (
 	ErrInvalidJobStateTransition = errors.New("invalid job state transition")
 	ErrMalformedJobSpecString    = errors.New("malformed stringified job spec")

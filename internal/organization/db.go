@@ -180,7 +180,10 @@ type tokenRow struct {
 
 func (result tokenRow) toToken() *OrganizationToken {
 	ot := &OrganizationToken{
-		ID:           resource.ID{Kind: OrganizationTokenKind, ID: result.OrganizationTokenID.String},
+		ID: resource.ID{
+			Kind: resource.OrganizationTokenKind,
+			ID:   result.OrganizationTokenID.String,
+		},
 		CreatedAt:    result.CreatedAt.Time.UTC(),
 		Organization: result.OrganizationName.String,
 	}

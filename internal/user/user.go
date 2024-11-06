@@ -14,13 +14,10 @@ import (
 	"github.com/leg100/otf/internal/team"
 )
 
-const (
-	SiteAdminUsername               = "site-admin"
-	UserKind          resource.Kind = "user"
-)
+const SiteAdminUsername = "site-admin"
 
 var (
-	SiteAdminID               = resource.ID{Kind: UserKind, ID: "user-site-admin"}
+	SiteAdminID               = resource.ID{Kind: resource.UserKind, ID: "user-site-admin"}
 	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
 	_           authz.Subject = (*User)(nil)
 )

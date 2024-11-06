@@ -75,7 +75,7 @@ func (q *Queries) DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Te
 
 const findWorkspaceByID = `-- name: FindWorkspaceByID :one
 SELECT
-    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
         SELECT array_agg(name)::text[]
         FROM tags
@@ -86,8 +86,6 @@ SELECT
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
-LEFT JOIN users ul ON w.lock_username = ul.username
-LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = $1
@@ -118,12 +116,12 @@ type FindWorkspaceByIDRow struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
 	VCSProviderID              pgtype.Text
@@ -158,12 +156,12 @@ func (q *Queries) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (FindWo
 		&i.LatestRunID,
 		&i.OrganizationName,
 		&i.Branch,
-		&i.LockUsername,
 		&i.CurrentStateVersionID,
 		&i.TriggerPatterns,
 		&i.VCSTagsRegex,
 		&i.AllowCLIApply,
 		&i.AgentPoolID,
+		&i.LockUserID,
 		&i.Tags,
 		&i.LatestRunStatus,
 		&i.VCSProviderID,
@@ -174,7 +172,7 @@ func (q *Queries) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (FindWo
 
 const findWorkspaceByIDForUpdate = `-- name: FindWorkspaceByIDForUpdate :one
 SELECT
-    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
         SELECT array_agg(name)::text[]
         FROM tags
@@ -216,12 +214,12 @@ type FindWorkspaceByIDForUpdateRow struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
 	VCSProviderID              pgtype.Text
@@ -256,12 +254,12 @@ func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Text
 		&i.LatestRunID,
 		&i.OrganizationName,
 		&i.Branch,
-		&i.LockUsername,
 		&i.CurrentStateVersionID,
 		&i.TriggerPatterns,
 		&i.VCSTagsRegex,
 		&i.AllowCLIApply,
 		&i.AgentPoolID,
+		&i.LockUserID,
 		&i.Tags,
 		&i.LatestRunStatus,
 		&i.VCSProviderID,
@@ -272,7 +270,7 @@ func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Text
 
 const findWorkspaceByName = `-- name: FindWorkspaceByName :one
 SELECT
-    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
         SELECT array_agg(name)::text[]
         FROM tags
@@ -320,12 +318,12 @@ type FindWorkspaceByNameRow struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
 	VCSProviderID              pgtype.Text
@@ -360,12 +358,12 @@ func (q *Queries) FindWorkspaceByName(ctx context.Context, arg FindWorkspaceByNa
 		&i.LatestRunID,
 		&i.OrganizationName,
 		&i.Branch,
-		&i.LockUsername,
 		&i.CurrentStateVersionID,
 		&i.TriggerPatterns,
 		&i.VCSTagsRegex,
 		&i.AllowCLIApply,
 		&i.AgentPoolID,
+		&i.LockUserID,
 		&i.Tags,
 		&i.LatestRunStatus,
 		&i.VCSProviderID,
@@ -376,7 +374,7 @@ func (q *Queries) FindWorkspaceByName(ctx context.Context, arg FindWorkspaceByNa
 
 const findWorkspaces = `-- name: FindWorkspaces :many
 SELECT
-    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
         SELECT array_agg(name)::text[]
         FROM tags
@@ -433,12 +431,12 @@ type FindWorkspacesRow struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
 	VCSProviderID              pgtype.Text
@@ -485,12 +483,12 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 			&i.LatestRunID,
 			&i.OrganizationName,
 			&i.Branch,
-			&i.LockUsername,
 			&i.CurrentStateVersionID,
 			&i.TriggerPatterns,
 			&i.VCSTagsRegex,
 			&i.AllowCLIApply,
 			&i.AgentPoolID,
+			&i.LockUserID,
 			&i.Tags,
 			&i.LatestRunStatus,
 			&i.VCSProviderID,
@@ -508,7 +506,7 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 
 const findWorkspacesByConnection = `-- name: FindWorkspacesByConnection :many
 SELECT
-    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
         SELECT array_agg(name)::text[]
         FROM tags
@@ -519,8 +517,6 @@ SELECT
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
-LEFT JOIN users ul ON w.lock_username = ul.username
-LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE rc.vcs_provider_id = $1
@@ -557,12 +553,12 @@ type FindWorkspacesByConnectionRow struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
 	VCSProviderID              pgtype.Text
@@ -603,12 +599,12 @@ func (q *Queries) FindWorkspacesByConnection(ctx context.Context, arg FindWorksp
 			&i.LatestRunID,
 			&i.OrganizationName,
 			&i.Branch,
-			&i.LockUsername,
 			&i.CurrentStateVersionID,
 			&i.TriggerPatterns,
 			&i.VCSTagsRegex,
 			&i.AllowCLIApply,
 			&i.AgentPoolID,
+			&i.LockUserID,
 			&i.Tags,
 			&i.LatestRunStatus,
 			&i.VCSProviderID,
@@ -626,7 +622,7 @@ func (q *Queries) FindWorkspacesByConnection(ctx context.Context, arg FindWorksp
 
 const findWorkspacesByUsername = `-- name: FindWorkspacesByUsername :many
 SELECT
-    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.lock_username, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id,
+    w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
         SELECT array_agg(name)::text[]
         FROM tags
@@ -682,12 +678,12 @@ type FindWorkspacesByUsernameRow struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
 	VCSProviderID              pgtype.Text
@@ -733,12 +729,12 @@ func (q *Queries) FindWorkspacesByUsername(ctx context.Context, arg FindWorkspac
 			&i.LatestRunID,
 			&i.OrganizationName,
 			&i.Branch,
-			&i.LockUsername,
 			&i.CurrentStateVersionID,
 			&i.TriggerPatterns,
 			&i.VCSTagsRegex,
 			&i.AllowCLIApply,
 			&i.AgentPoolID,
+			&i.LockUserID,
 			&i.Tags,
 			&i.LatestRunStatus,
 			&i.VCSProviderID,
@@ -985,18 +981,18 @@ func (q *Queries) UpdateWorkspaceLatestRun(ctx context.Context, arg UpdateWorksp
 const updateWorkspaceLockByID = `-- name: UpdateWorkspaceLockByID :exec
 UPDATE workspaces
 SET
-    lock_username = $1,
+    lock_user_id = $1,
     lock_run_id = $2
 WHERE workspace_id = $3
 `
 
 type UpdateWorkspaceLockByIDParams struct {
-	Username    pgtype.Text
+	UserID      pgtype.Text
 	RunID       pgtype.Text
 	WorkspaceID pgtype.Text
 }
 
 func (q *Queries) UpdateWorkspaceLockByID(ctx context.Context, arg UpdateWorkspaceLockByIDParams) error {
-	_, err := q.db.Exec(ctx, updateWorkspaceLockByID, arg.Username, arg.RunID, arg.WorkspaceID)
+	_, err := q.db.Exec(ctx, updateWorkspaceLockByID, arg.UserID, arg.RunID, arg.WorkspaceID)
 	return err
 }

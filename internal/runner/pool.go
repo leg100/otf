@@ -10,8 +10,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-const AgentPoolKind resource.Kind = "ap"
-
 var (
 	ErrCannotDeletePoolReferencedByWorkspaces = errors.New("agent pool is still being used by workspaces in your organization. You must switch your workspaces to a different agent pool or execution mode before you can delete this agent pool")
 	ErrWorkspaceNotAllowedToUsePool           = errors.New("access to this agent pool is not allowed - you must explictly grant access to the workspace first")

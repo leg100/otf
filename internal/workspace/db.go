@@ -42,12 +42,12 @@ type (
 		LatestRunID                pgtype.Text
 		OrganizationName           pgtype.Text
 		Branch                     pgtype.Text
-		LockUsername               pgtype.Text
 		CurrentStateVersionID      pgtype.Text
 		TriggerPatterns            []pgtype.Text
 		VCSTagsRegex               pgtype.Text
 		AllowCLIApply              pgtype.Bool
 		AgentPoolID                pgtype.Text
+		LockUserID                 pgtype.Text
 		Tags                       []pgtype.Text
 		LatestRunStatus            pgtype.Text
 		VCSProviderID              pgtype.Text
@@ -57,7 +57,7 @@ type (
 
 func (r pgresult) toWorkspace() (*Workspace, error) {
 	ws := Workspace{
-		ID:                         resource.ID{Kind: WorkspaceKind, ID: r.WorkspaceID.String},
+		ID:                         resource.ID{Kind: resource.WorkspaceKind, ID: r.WorkspaceID.String},
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		AllowDestroyPlan:           r.AllowDestroyPlan.Bool,
@@ -105,16 +105,12 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.LockUsername.Valid {
-		ws.Lock = &Lock{
-			id:       r.LockUsername.String,
-			LockKind: UserLock,
-		}
+	if r.LockUserID.Valid {
+		lockID := resource.ParseID(r.LockUserID.String)
+		ws.Lock.ID = &lockID
 	} else if r.LockRunID.Valid {
-		ws.Lock = &Lock{
-			id:       r.LockRunID.String,
-			LockKind: RunLock,
-		}
+		lockID := resource.ParseID(r.LockRunID.String)
+		ws.Lock.ID = &lockID
 	}
 
 	return &ws, nil

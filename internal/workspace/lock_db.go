@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -29,12 +28,13 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 		params := sqlc.UpdateWorkspaceLockByIDParams{
 			WorkspaceID: sql.ID(ws.ID),
 		}
-		if ws.Lock != nil {
-			if ws.Lock.LockKind == RunLock {
-				params.RunID = pgtype.Text{String: ws.Lock.id, Valid: true}
-			} else if ws.Lock.LockKind == UserLock {
-				params.Username = pgtype.Text{String: ws.Lock.id, Valid: true}
-			} else {
+		if ws.Lock.ID != nil {
+			switch ws.Lock.Kind {
+			case resource.RunKind:
+				params.RunID = sql.ID(*ws.Lock.ID)
+			case resource.UserKind:
+				params.UserID = sql.ID(*ws.Lock.ID)
+			default:
 				return ErrWorkspaceInvalidLock
 			}
 		}

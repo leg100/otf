@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -68,8 +69,8 @@ type (
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
 		Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
-		Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*Workspace, error)
-		Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error)
 
 		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
 		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
@@ -257,7 +258,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := authz.SubjectFromContext(r.Context())
+	user, err := user.UserFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

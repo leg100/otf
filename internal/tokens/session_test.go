@@ -24,7 +24,7 @@ func TestService_StartSession(t *testing.T) {
 		},
 	}
 
-	userID := resource.NewID(resource.Kind("user"))
+	userID := resource.NewID(resource.UserKind)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)

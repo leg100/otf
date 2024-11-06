@@ -29,8 +29,6 @@ const (
 	// defaultRefresh specifies that the state be refreshed prior to running a
 	// plan
 	defaultRefresh = true
-
-	RunKind resource.Kind = "run"
 )
 
 var ErrInvalidRunStateTransition = errors.New("invalid run state transition")

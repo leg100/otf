@@ -31,11 +31,11 @@ func (f *fakeService) Delete(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeService) AddTeamMembership(context.Context, string, []string) error {
+func (f *fakeService) AddTeamMembership(context.Context, resource.ID, []string) error {
 	return nil
 }
 
-func (f *fakeService) RemoveTeamMembership(context.Context, string, []string) error {
+func (f *fakeService) RemoveTeamMembership(context.Context, resource.ID, []string) error {
 	return nil
 }
 
@@ -47,7 +47,7 @@ func (f *fakeService) ListTokens(context.Context) ([]*UserToken, error) {
 	return []*UserToken{f.ut}, nil
 }
 
-func (f *fakeService) DeleteToken(context.Context, string) error {
+func (f *fakeService) DeleteToken(context.Context, resource.ID) error {
 	return nil
 }
 
@@ -59,6 +59,6 @@ func (f *fakeTeamService) Get(context.Context, string, string) (*team.Team, erro
 	return f.team, nil
 }
 
-func (f *fakeTeamService) GetByID(context.Context, string) (*team.Team, error) {
+func (f *fakeTeamService) GetByID(context.Context, resource.ID) (*team.Team, error) {
 	return f.team, nil
 }

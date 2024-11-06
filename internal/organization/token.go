@@ -10,8 +10,6 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-const OrganizationTokenKind resource.Kind = "ot"
-
 type (
 	// OrganizationToken provides information about an API token for an organization
 	OrganizationToken struct {
@@ -39,7 +37,7 @@ type (
 
 func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
-		ID:           resource.NewID(OrganizationTokenKind),
+		ID:           resource.NewID(resource.OrganizationTokenKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,

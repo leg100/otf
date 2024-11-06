@@ -11,8 +11,6 @@ import (
 const (
 	DefaultSessionTimeout    = 20160
 	DefaultSessionExpiration = 20160
-
-	OrganizationKind resource.Kind = "org"
 )
 
 type (

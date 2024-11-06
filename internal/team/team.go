@@ -10,8 +10,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-const TeamKind resource.Kind = "team"
-
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {

@@ -439,12 +439,12 @@ type Workspace struct {
 	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	LockUsername               pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                pgtype.Text
+	LockUserID                 pgtype.Text
 }
 
 type WorkspacePermission struct {

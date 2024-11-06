@@ -23,8 +23,6 @@ const (
 
 	DefaultAllowDestroyPlan = true
 	MinTerraformVersion     = "1.2.0"
-
-	WorkspaceKind resource.Kind = "ws"
 )
 
 var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
@@ -56,7 +54,7 @@ type (
 		Organization               string        `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun    `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string      `jsonapi:"attribute" json:"tags"`
-		Lock                       *Lock         `jsonapi:"attribute" json:"lock"`
+		Lock                       lock          `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
