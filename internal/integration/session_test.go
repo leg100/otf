@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,9 +17,7 @@ func TestSession(t *testing.T) {
 		want := userFromContext(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
-		err := svc.Tokens.StartSession(w, r, tokens.StartSessionOptions{
-			UserID: &want.Username,
-		})
+		err := svc.Tokens.StartSession(w, r, want.ID)
 		require.NoError(t, err)
 		cookies := w.Result().Cookies()
 		require.Equal(t, 1, len(cookies))

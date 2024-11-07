@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/workspace"
@@ -24,13 +25,13 @@ func TestRunError(t *testing.T) {
 
 	// create a daemon and start an agent
 	daemon, org, ctx := setup(t, nil)
-	agent, _ := daemon.startAgent(t, ctx, org.Name, "", "", runner.Config{})
+	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", runner.Config{})
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {
 		name   string
 		mode   workspace.ExecutionMode
-		poolID *string
+		poolID *resource.ID
 	}{
 		{
 			"execute run via daemon", workspace.RemoteExecutionMode, nil,

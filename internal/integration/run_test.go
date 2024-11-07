@@ -146,7 +146,7 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by workspace id",
-				opts: otfrun.ListOptions{WorkspaceID: internal.String(ws1.ID)},
+				opts: otfrun.ListOptions{WorkspaceID: &ws1.ID},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)

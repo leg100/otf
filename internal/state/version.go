@@ -35,7 +35,8 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          resource.ID        `jsonapi:"primary,state-versions"`
+		resource.ID `jsonapi:"primary,state-versions"`
+
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
@@ -45,7 +46,8 @@ type (
 	}
 
 	Output struct {
-		ID             resource.ID
+		resource.ID
+
 		Name           string
 		Type           string
 		Value          json.RawMessage
@@ -113,7 +115,7 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 // newWithoutValidation creates a state version without validating the options.
 func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
-		ID:          resource.NewID("sv"),
+		ID:          resource.NewID(resource.StateVersionKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Serial:      *opts.Serial,
 		State:       opts.State,
@@ -152,7 +154,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 			return nil, err
 		}
 		outputs[k] = &Output{
-			ID:             resource.NewID("wsout"),
+			ID:             resource.NewID(resource.StateVersionOutputKind),
 			Name:           k,
 			Type:           typ,
 			Value:          v.Value,

@@ -44,20 +44,20 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	})
 	require.NoError(t, err)
 	out = daemon.otfcli(t, ctx, "workspaces", "edit", "--organization", org.Name,
-		ws1.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID)
+		ws1.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID.String())
 	assert.Equal(t, "updated workspace\n", out)
 	assert.Equal(t, workspace.AgentExecutionMode, daemon.getWorkspace(t, ctx, ws1.ID).ExecutionMode)
 
 	// lock/unlock/force-unlock workspace
 	daemon.otfcli(t, ctx, "workspaces", "lock", ws1.Name, "--organization", org.Name)
-	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
+	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
 
 	daemon.otfcli(t, ctx, "workspaces", "unlock", ws1.Name, "--organization", org.Name)
-	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
+	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
 
 	daemon.otfcli(t, ctx, "workspaces", "lock", ws1.Name, "--organization", org.Name)
-	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
+	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
 
 	daemon.otfcli(t, ctx, "workspaces", "unlock", ws1.Name, "--organization", org.Name, "--force")
-	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
+	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
 }

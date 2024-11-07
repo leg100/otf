@@ -17,6 +17,8 @@ const (
 	NotificationConfigurationKind Kind = "nc"
 	AgentPoolKind                 Kind = "ap"
 	RunnerKind                    Kind = "runner"
+	StateVersionKind              Kind = "sv"
+	StateVersionOutputKind        Kind = "wsout"
 
 	OrganizationTokenKind Kind = "ot"
 	UserTokenKind         Kind = "ut"

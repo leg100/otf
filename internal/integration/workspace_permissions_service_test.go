@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +71,8 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 	})
 
 	t.Run("workspace not found", func(t *testing.T) {
-		_, err := svc.Workspaces.GetPolicy(ctx, "non-existent")
+		nonExistentID := resource.NewID(resource.WorkspaceKind)
+		_, err := svc.Workspaces.GetPolicy(ctx, nonExistentID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
 	})
 }

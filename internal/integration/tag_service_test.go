@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,7 +104,7 @@ func TestIntegration_TagService(t *testing.T) {
 		tag := list.Items[0]
 
 		// add tag to ws2 and ws3
-		err = svc.Workspaces.TagWorkspaces(ctx, tag.ID, []string{ws2.ID, ws3.ID})
+		err = svc.Workspaces.TagWorkspaces(ctx, tag.ID, []resource.ID{ws2.ID, ws3.ID})
 		require.NoError(t, err)
 
 		// check ws2 is tagged
@@ -135,7 +136,7 @@ func TestIntegration_TagService(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 3, len(list.Items))
 
-		err = svc.Workspaces.DeleteTags(ctx, ws.Organization, []string{
+		err = svc.Workspaces.DeleteTags(ctx, ws.Organization, []resource.ID{
 			list.Items[0].ID,
 			list.Items[1].ID,
 			list.Items[2].ID,

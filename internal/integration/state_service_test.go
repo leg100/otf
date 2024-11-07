@@ -22,7 +22,7 @@ func TestIntegration_StateService(t *testing.T) {
 
 		_, err = svc.State.Create(ctx, state.CreateStateVersionOptions{
 			State:       file,
-			WorkspaceID: internal.String(ws.ID),
+			WorkspaceID: ws.ID,
 			// serial matches that in ./testdata/terraform.tfstate
 			Serial: internal.Int64(9),
 		})
@@ -42,7 +42,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.State.Get(ctx, "sv-99999")
+		_, err := svc.State.Get(ctx, resource.NewID(resource.StateVersionKind))
 		require.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
@@ -63,7 +63,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get current not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.State.GetCurrent(ctx, "ws-99999")
+		_, err := svc.State.GetCurrent(ctx, resource.NewID(resource.WorkspaceKind))
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
@@ -84,7 +84,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("list not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.State.List(ctx, "ws-does-not-exist", resource.PageOptions{})
+		_, err := svc.State.List(ctx, resource.NewID(resource.WorkspaceKind), resource.PageOptions{})
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
