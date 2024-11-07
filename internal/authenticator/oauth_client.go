@@ -166,6 +166,10 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := a.users.GetUser(r.Context(), user.UserSpec{Username: &username})
 	if err == internal.ErrResourceNotFound {
 		user, err = a.users.Create(r.Context(), username)
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError, false)
+			return
+		}
 	}
 	// Lookup user in db, to retrieve user id to embed in session token
 	// Get or create user.

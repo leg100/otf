@@ -16,11 +16,13 @@ func TestQueue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	wsID := resource.NewID(resource.WorkspaceKind)
+
 	t.Run("handle several runs", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
-		run1 := &otfrun.Run{ID: "run-1", WorkspaceID: "ws-123", Status: otfrun.RunPending}
-		run2 := &otfrun.Run{ID: "run-2", WorkspaceID: "ws-123", Status: otfrun.RunPending}
-		run3 := &otfrun.Run{ID: "run-3", WorkspaceID: "ws-123", Status: otfrun.RunPending}
+		ws := &workspace.Workspace{ID: wsID}
+		run1 := &otfrun.Run{ID: "run-1", WorkspaceID: wsID, Status: otfrun.RunPending}
+		run2 := &otfrun.Run{ID: "run-2", WorkspaceID: wsID, Status: otfrun.RunPending}
+		run3 := &otfrun.Run{ID: "run-3", WorkspaceID: wsID, Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run1, run2, run3)
 		q := newTestQueue(app, ws)
 
@@ -29,7 +31,7 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run1.ID, q.current.ID)
-		assert.True(t, q.ws.Locked())
+		assert.True(t, q.ws.Lock.Locked())
 
 		// enqueue run2, check it is in queue
 		err = q.handleRun(ctx, run2)
@@ -37,7 +39,7 @@ func TestQueue(t *testing.T) {
 		if assert.Equal(t, 1, len(q.queue)) {
 			assert.Equal(t, run2.ID, q.queue[0].ID)
 		}
-		assert.True(t, q.ws.Locked())
+		assert.True(t, q.ws.Lock.Locked())
 
 		// enqueue run3, check it is in queue
 		err = q.handleRun(ctx, run3)
@@ -45,7 +47,7 @@ func TestQueue(t *testing.T) {
 		if assert.Equal(t, 2, len(q.queue)) {
 			assert.Equal(t, run3.ID, q.queue[1].ID)
 		}
-		assert.True(t, q.ws.Locked())
+		assert.True(t, q.ws.Lock.Locked())
 
 		// cancel run2, check it is removed from queue and run3 is shuffled forward
 		err = run2.Cancel(false, false)
@@ -55,7 +57,7 @@ func TestQueue(t *testing.T) {
 		if assert.Equal(t, 1, len(q.queue)) {
 			assert.Equal(t, run3.ID, q.queue[0].ID)
 		}
-		assert.True(t, q.ws.Locked())
+		assert.True(t, q.ws.Lock.Locked())
 
 		// cancel run1; check run3 takes its place as current run
 		err = run1.Cancel(false, false)
@@ -64,7 +66,7 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run3.ID, q.current.ID)
-		assert.True(t, q.ws.Locked())
+		assert.True(t, q.ws.Lock.Locked())
 
 		// cancel run3; check everything is empty and workspace is unlocked
 		err = run3.Cancel(false, false)
@@ -73,12 +75,12 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Nil(t, q.current)
-		assert.False(t, q.ws.Locked())
+		assert.False(t, q.ws.Lock.Locked())
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
-		run := &otfrun.Run{Status: otfrun.RunPending, WorkspaceID: "ws-123", PlanOnly: true}
+		ws := &workspace.Workspace{ID: wsID}
+		run := &otfrun.Run{Status: otfrun.RunPending, WorkspaceID: wsID, PlanOnly: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -90,8 +92,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("user locked", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
-		run := &otfrun.Run{ID: "run-123", WorkspaceID: "ws-123", Status: otfrun.RunPending}
+		ws := &workspace.Workspace{ID: wsID}
+		run := &otfrun.Run{ID: "run-123", WorkspaceID: wsID, Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -115,8 +117,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: resource.ParseID("ws-123")}
-		run := &otfrun.Run{WorkspaceID: "ws-123", Status: otfrun.RunPlanning}
+		ws := &workspace.Workspace{ID: wsID}
+		run := &otfrun.Run{WorkspaceID: wsID, Status: otfrun.RunPlanning}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -127,8 +129,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		run := &otfrun.Run{WorkspaceID: resource.ParseID("ws-123")}
-		ws := &workspace.Workspace{ID: "ws-123", LatestRun: &workspace.LatestRun{ID: run.ID}}
+		run := &otfrun.Run{WorkspaceID: wsID}
+		ws := &workspace.Workspace{ID: wsID, LatestRun: &workspace.LatestRun{ID: run.ID}}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
