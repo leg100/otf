@@ -9,6 +9,7 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,8 +18,8 @@ import (
 func TestClient_UnmarshalResponse(t *testing.T) {
 	want := types.WorkspaceList{
 		Items: []*types.Workspace{
-			{ID: "ws-1", Outputs: []*types.WorkspaceOutput{}},
-			{ID: "ws-2", Outputs: []*types.WorkspaceOutput{}},
+			{ID: resource.NewID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
+			{ID: resource.NewID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
 		},
 		Pagination: &types.Pagination{},
 	}
