@@ -72,7 +72,7 @@ func (c *Client) Update(ctx context.Context, workspaceID resource.ID, opts Updat
 	return &ws, nil
 }
 
-func (c *Client) Lock(ctx context.Context, workspaceID resource.ID, runID *string) (*Workspace, error) {
+func (c *Client) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.NewRequest("POST", path, nil)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c *Client) Lock(ctx context.Context, workspaceID resource.ID, runID *strin
 	return &ws, nil
 }
 
-func (c *Client) Unlock(ctx context.Context, workspaceID resource.ID, runID *string, force bool) (*Workspace, error) {
+func (c *Client) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error) {
 	var u string
 	if force {
 		u = fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)

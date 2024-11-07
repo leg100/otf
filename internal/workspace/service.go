@@ -52,6 +52,7 @@ type (
 		OrganizationService *organization.Service
 		VCSProviderService  *vcsprovider.Service
 		TeamService         *team.Service
+		UserService         *user.Service
 		ConnectionService   *connections.Service
 	}
 )
@@ -74,6 +75,9 @@ func NewService(opts Options) *Service {
 		teams:        opts.TeamService,
 		vcsproviders: opts.VCSProviderService,
 		client:       &svc,
+		uiHelpers: &uiHelpers{
+			service: opts.UserService,
+		},
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,

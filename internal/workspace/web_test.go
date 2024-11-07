@@ -55,15 +55,17 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
+	janitorTestID = resource.NewID(resource.UserKind)
+
 	tests := []struct {
 		name      string
 		workspace *Workspace
 	}{
 		{
-			"unlocked", &Workspace{ID: resource.ParseID("ws-unlocked")},
+			"unlocked", &Workspace{ID: resource.ParseID("ws-unlocked"), Lock: &lock{}},
 		},
 		{
-			"locked", &Workspace{ID: resource.ParseID("ws-locked"), Lock: &lock{id: "janitor", LockKind: UserLock}},
+			"locked", &Workspace{ID: resource.ParseID("ws-locked"), Lock: &lock{ID: &janitorTestID}},
 		},
 	}
 	for _, tt := range tests {

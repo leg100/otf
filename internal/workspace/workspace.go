@@ -54,7 +54,7 @@ type (
 		Organization               string        `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun    `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string      `jsonapi:"attribute" json:"tags"`
-		Lock                       lock          `jsonapi:"attribute" json:"lock"`
+		Lock                       *lock         `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -192,6 +192,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		TerraformVersion:   releases.DefaultTerraformVersion,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
+		Lock:               &lock{},
 	}
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err

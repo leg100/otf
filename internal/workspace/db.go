@@ -80,6 +80,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       sql.FromStringArray(r.Tags),
+		Lock:                       &lock{},
 	}
 	if r.AgentPoolID.Valid {
 		agentPoolIDValue := resource.ParseID(r.AgentPoolID.String)

@@ -217,6 +217,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:           responder,
 		ConnectionService:   connectionService,
 		TeamService:         teamService,
+		UserService:         userService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 	})

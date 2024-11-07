@@ -44,6 +44,7 @@ const (
 type (
 	webHandlers struct {
 		html.Renderer
+		*uiHelpers
 
 		teams        webTeamClient
 		vcsproviders webVCSProvidersClient
@@ -289,6 +290,12 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lockButton, err := h.lockButtonHelper(r.Context(), ws.ID, ws.Lock, policy, user)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	h.Render("workspace_get.tmpl", w, struct {
 		WorkspacePage
 		LockButton
@@ -304,7 +311,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		TagsDropdown       html.DropdownUI
 	}{
 		WorkspacePage:      NewPage(r, ws.Name, ws),
-		LockButton:         lockButtonHelper(ws, policy, user),
+		LockButton:         lockButton,
 		VCSProvider:        provider,
 		CanApply:           user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 		CanAddTags:         user.CanAccessWorkspace(rbac.AddTagsAction, policy),
