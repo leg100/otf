@@ -69,7 +69,7 @@ func (m *RunnerMeta) register(opts registerOptions) error {
 	if m.ID != resource.EmptyID {
 		return errors.New("runner has already registered")
 	}
-	m.ID = resource.NewID(RunnerKind)
+	m.ID = resource.NewID(resource.RunnerKind)
 	m.Name = opts.Name
 	m.Version = opts.Version
 	m.MaxJobs = opts.Concurrency

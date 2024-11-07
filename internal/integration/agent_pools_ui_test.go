@@ -68,7 +68,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		// grant and assign workspace to agent pool, and create agent token.
 		//
 		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 		// grant access to specific workspace
 		err = page.Locator(`input#workspaces-specific`).Click()
@@ -120,7 +120,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		screenshot(t, page, "agent_pool_workspace_granted_and_assigned")
@@ -161,10 +161,10 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, token)
 
 		// start agent up, configured to use token.
-		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, runner.Config{})
+		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, nil, token, runner.Config{})
 
 		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		// confirm agent is listed
@@ -182,7 +182,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		})
 
 		// go to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		// delete the token
@@ -218,7 +218,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		// delete the pool

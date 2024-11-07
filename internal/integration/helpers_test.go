@@ -21,12 +21,12 @@ func integrationTest(t *testing.T) {
 	}
 }
 
-func runURL(hostname, runID resource.ID) string {
-	return "https://" + hostname + "/app/runs/" + runID
+func runURL(hostname string, runID resource.ID) string {
+	return fmt.Sprintf("https://%s/app/runs/%s", hostname, runID)
 }
 
-func runsURL(hostname, workspaceID resource.ID) string {
-	return "https://" + hostname + "/app/workspaces/" + workspaceID + "/runs"
+func runsURL(hostname string, workspaceID resource.ID) string {
+	return fmt.Sprintf("https://%s/app/workspaces/%s/runs", hostname, workspaceID)
 }
 
 func workspaceURL(hostname, org, name string) string {

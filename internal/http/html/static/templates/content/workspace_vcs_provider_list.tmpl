@@ -15,7 +15,7 @@
 
   <div id="content-list">
     {{ range .Items }}
-      {{ $path := (printf "%s?vcs_provider_id=%s" (setupConnectionRepoWorkspacePath $.Workspace.ID) .ID.String) }}
+      {{ $path := (printf "%s?vcs_provider_id=%s" (setupConnectionRepoWorkspacePath $.Workspace.ID.String) .ID.String) }}
       <div class="widget" x-data="block_link($el, '{{ $path }}')" id="{{ .ID }}">
         <div>
           <span class="font-semibold">{{ .String }}</span>

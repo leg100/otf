@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
@@ -68,7 +69,7 @@ func screenshot(t *testing.T, page playwright.Page, path string) {
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, workspaceName, teamID, role string) {
+func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, workspaceName string, teamID resource.ID, role string) {
 	t.Helper()
 
 	// go to workspace
@@ -93,7 +94,7 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 	})
 	require.NoError(t, err)
 
-	selectValues = []string{string(teamID)}
+	selectValues = []string{teamID.String()}
 	_, err = page.Locator(`//select[@id="permissions-add-select-team"]`).SelectOption(playwright.SelectOptionValues{
 		Values: &selectValues,
 	})

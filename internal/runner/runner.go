@@ -22,10 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	DefaultMaxJobs               = 5
-	RunnerKind     resource.Kind = "runner"
-)
+const DefaultMaxJobs = 5
 
 var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 

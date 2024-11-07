@@ -129,7 +129,7 @@ func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, erro
 	}
 
 	return &Config{
-		ID:              resource.NewID(NotificationConfigurationKind),
+		ID:              resource.NewID(resource.NotificationConfigurationKind),
 		CreatedAt:       internal.CurrentTimestamp(nil),
 		UpdatedAt:       internal.CurrentTimestamp(nil),
 		Name:            *opts.Name,

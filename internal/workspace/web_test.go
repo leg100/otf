@@ -360,7 +360,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSProviders(w, r)
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {

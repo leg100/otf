@@ -29,6 +29,7 @@ type Subject interface {
 
 	IsOwner(organization string) bool
 	IsSiteAdmin() bool
+	GetID() resource.ID
 
 	Organizations() []string
 
@@ -92,7 +93,7 @@ func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return
 func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
 func (s *Superuser) Organizations() []string                            { return nil }
 func (s *Superuser) String() string                                     { return s.Username }
-func (s *Superuser) ID() string                                         { return s.Username }
+func (s *Superuser) GetID() resource.ID                                 { return resource.NewID(resource.UserKind) }
 func (s *Superuser) IsSiteAdmin() bool                                  { return true }
 func (s *Superuser) IsOwner(string) bool                                { return true }
 

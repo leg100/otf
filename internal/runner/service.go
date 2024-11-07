@@ -94,7 +94,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"agent_pools",
-		AgentPoolKind,
+		resource.AgentPoolKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Pool, error) {
 			if action == sql.DeleteAction {
 				return &Pool{ID: id}, nil
@@ -106,7 +106,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runners",
-		RunnerKind,
+		resource.RunnerKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*RunnerMeta, error) {
 			if action == sql.DeleteAction {
 				return &RunnerMeta{ID: id}, nil
@@ -118,7 +118,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"jobs",
-		JobKind,
+		resource.JobKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Job, error) {
 			if action == sql.DeleteAction {
 				return &Job{ID: id}, nil
@@ -128,7 +128,7 @@ func NewService(opts ServiceOptions) *Service {
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
-	opts.TokensService.RegisterKind(AgentTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(resource.AgentTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
 		if err != nil {
 			return nil, err
@@ -167,7 +167,7 @@ func NewService(opts ServiceOptions) *Service {
 	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
-	opts.TokensService.RegisterKind(JobKind, func(ctx context.Context, jobID resource.ID) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(resource.JobKind, func(ctx context.Context, jobID resource.ID) (authz.Subject, error) {
 		return svc.getJob(ctx, jobID)
 	})
 	return svc

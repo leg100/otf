@@ -20,7 +20,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	tests := []struct {
 		name string
 		lock *lock
-		user *user.User
+		user authz.Subject
 		want LockButton
 	}{
 		{
@@ -72,7 +72,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		{
 			"cannot unlock lock held by a different user",
 			&lock{ID: &privilegedUser.ID},
-			privilegedUser2,
+			&fakeUser{canUnlock: true},
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
@@ -98,7 +98,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			helpers := &uiHelpers{
-				service: &fakeUIHelpersService{"janitor"},
+				service: &fakeUIHelpersService{},
 			}
 			workspaceID := resource.ParseID("ws-123")
 			got, err := helpers.lockButtonHelper(context.Background(), workspaceID, tt.lock, authz.WorkspacePolicy{}, tt.user)
@@ -108,22 +108,20 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	}
 }
 
-type fakeUIHelpersService struct {
-	username string
-}
+type fakeUIHelpersService struct{}
 
 func (f *fakeUIHelpersService) GetUser(context.Context, user.UserSpec) (*user.User, error) {
-	return &user.User{Username: f.username}, nil
+	return &user.User{Username: "janitor"}, nil
 }
 
 type fakeUser struct {
-	id                                 string
+	id                                 resource.ID
 	canUnlock, canForceUnlock, canLock bool
 
 	authz.Subject
 }
 
-func (f *fakeUser) String() string { return f.id }
+func (f *fakeUser) GetID() resource.ID { return f.id }
 
 func (f *fakeUser) CanAccessWorkspace(action rbac.Action, _ authz.WorkspacePolicy) bool {
 	switch action {

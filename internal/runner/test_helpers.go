@@ -29,7 +29,7 @@ func (f *fakeService) listAgentPoolsByOrganization(context.Context, string, list
 	return []*Pool{f.pool}, nil
 }
 
-func (f *fakeService) GetAgentPool(context.Context, string) (*Pool, error) {
+func (f *fakeService) GetAgentPool(context.Context, resource.ID) (*Pool, error) {
 	return f.pool, nil
 }
 
@@ -37,19 +37,19 @@ func (f *fakeService) deleteAgentPool(ctx context.Context, poolID resource.ID) (
 	return nil, nil
 }
 
-func (f *fakeService) CreateAgentToken(context.Context, string, CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (f *fakeService) CreateAgentToken(context.Context, resource.ID, CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	return f.at, f.token, nil
 }
 
-func (f *fakeService) ListAgentTokens(context.Context, string) ([]*agentToken, error) {
+func (f *fakeService) ListAgentTokens(context.Context, resource.ID) ([]*agentToken, error) {
 	return []*agentToken{f.at}, nil
 }
 
-func (f *fakeService) GetAgentToken(context.Context, string) (*agentToken, error) {
+func (f *fakeService) GetAgentToken(context.Context, resource.ID) (*agentToken, error) {
 	return f.at, nil
 }
 
-func (f *fakeService) DeleteAgentToken(context.Context, string) (*agentToken, error) {
+func (f *fakeService) DeleteAgentToken(context.Context, resource.ID) (*agentToken, error) {
 	return f.at, nil
 }
 

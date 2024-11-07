@@ -5,9 +5,11 @@ import (
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -29,10 +31,10 @@ func TestIntegration_RunAPI(t *testing.T) {
 	)
 	_, token := daemon.createToken(t, ctx, nil)
 
-	tfeClient, err := tfe.NewClient(&tfe.Config{
-		Address:           daemon.System.URL("/"),
-		Token:             string(token),
-		RetryServerErrors: true,
+	tfeClient, err := api.NewClient(api.Config{
+		URL:           daemon.System.URL("/"),
+		Token:         string(token),
+		RetryRequests: true,
 	})
 	require.NoError(t, err)
 
@@ -54,7 +56,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 
 		created, err := tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
 			// no config version ID specified
-			Workspace: &tfe.Workspace{
+			Workspace: &tfeapi.Workspace{
 				ID: ws.ID,
 			},
 		})

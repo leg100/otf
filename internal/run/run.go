@@ -153,7 +153,7 @@ type (
 // newRun creates a new run with defaults.
 func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
-		ID:                     resource.NewID(RunKind),
+		ID:                     resource.NewID(resource.RunKind),
 		CreatedAt:              internal.CurrentTimestamp(opts.now),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,

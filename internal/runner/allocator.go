@@ -89,9 +89,9 @@ func (a *allocator) Start(ctx context.Context) error {
 	}
 }
 
-func (a *allocator) seed(agents []*RunnerMeta, jobs []*Job) {
-	a.runners = make(map[resource.ID]*RunnerMeta, len(agents))
-	for _, runner := range agents {
+func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
+	a.runners = make(map[resource.ID]*RunnerMeta, len(runners))
+	for _, runner := range runners {
 		a.runners[runner.ID] = runner
 	}
 	a.jobs = make(map[resource.ID]*Job, len(jobs))
@@ -123,7 +123,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			reallocate = true
 		case JobFinished, JobCanceled, JobErrored:
 			// job has completed: remove and adjust number of current jobs
-			// agents has
+			// runner has
 			delete(a.jobs, job.ID)
 			a.runners[*job.RunnerID].CurrentJobs--
 			continue

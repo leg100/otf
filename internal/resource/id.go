@@ -69,6 +69,11 @@ func (id *ID) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// GetID allows the user of an interface to retrieve the ID.
+func (id ID) GetID() ID {
+	return id
+}
+
 // GenerateRandomStringFromAlphabet generates a random string of a given size
 // using characters from the given alphabet.
 func GenerateRandomStringFromAlphabet(size int, alphabet string) string {

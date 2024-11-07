@@ -34,7 +34,7 @@ func TestIntegration_Agents(t *testing.T) {
 		Name:          internal.String("ws-1"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
-		AgentPoolID:   internal.String(pool1.ID),
+		AgentPoolID:   &pool1.ID,
 	})
 	require.NoError(t, err)
 
@@ -43,14 +43,14 @@ func TestIntegration_Agents(t *testing.T) {
 		Name:          internal.String("ws-2"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
-		AgentPoolID:   internal.String(pool2.ID),
+		AgentPoolID:   &pool2.ID,
 	})
 	require.NoError(t, err)
 
 	// start agents up
-	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, pool1.ID, "", runner.Config{})
+	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, &pool1.ID, "", runner.Config{})
 	defer shutdown1()
-	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, pool2.ID, "", runner.Config{})
+	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, &pool2.ID, "", runner.Config{})
 	defer shutdown2()
 
 	// watch job events

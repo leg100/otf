@@ -12,10 +12,11 @@ const (
 	RunKind                       Kind = "run"
 	JobKind                       Kind = "job"
 	ChunkKind                     Kind = "chunk"
-	AgentPoolKind                 Kind = "ap"
 	UserKind                      Kind = "user"
 	TeamKind                      Kind = "team"
 	NotificationConfigurationKind Kind = "nc"
+	AgentPoolKind                 Kind = "ap"
+	RunnerKind                    Kind = "runner"
 
 	OrganizationTokenKind Kind = "ot"
 	UserTokenKind         Kind = "ut"

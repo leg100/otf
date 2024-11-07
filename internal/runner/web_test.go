@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"testing"
 
@@ -63,19 +64,21 @@ func TestWebHandlers_createAgentToken(t *testing.T) {
 }
 
 func TestAgentToken_DeleteHandler(t *testing.T) {
+	agentPoolID := resource.NewID(resource.AgentPoolKind)
+
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		svc: &fakeService{
 			at: &agentToken{
-				AgentPoolID: "pool-123",
+				AgentPoolID: agentPoolID,
 			},
 		},
 	}
-	q := "/?token_id=at-123"
+	q := fmt.Sprintf("/?token_id=%s", agentPoolID)
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 
 	h.deleteAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
+	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID.String()))
 }

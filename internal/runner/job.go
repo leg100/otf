@@ -64,7 +64,7 @@ type Job struct {
 
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
-		ID:           resource.NewID(JobKind),
+		ID:           resource.NewID(resource.JobKind),
 		RunID:        run.ID,
 		Phase:        run.Phase(),
 		Status:       JobUnallocated,

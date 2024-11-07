@@ -56,7 +56,7 @@ func (f *tokenFactory) NewAgentToken(poolID resource.ID, opts CreateAgentTokenOp
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
 	at := agentToken{
-		ID:          resource.NewID(AgentTokenKind),
+		ID:          resource.NewID(resource.AgentTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		AgentPoolID: poolID,

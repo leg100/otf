@@ -35,7 +35,7 @@ func (h *uiHelpers) lockButtonHelper(
 	workspaceID resource.ID,
 	lock *lock,
 	policy authz.WorkspacePolicy,
-	user *userpkg.User,
+	user authz.Subject,
 ) (LockButton, error) {
 	var btn LockButton
 
@@ -65,7 +65,7 @@ func (h *uiHelpers) lockButtonHelper(
 		// also show message as button tooltip
 		btn.Tooltip = btn.Message
 		// A user can unlock their own lock
-		if *lock.ID == user.ID {
+		if *lock.ID == user.GetID() {
 			return btn, nil
 		}
 		// User is going to need the force unlock permission
