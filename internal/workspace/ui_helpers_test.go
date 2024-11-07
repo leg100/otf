@@ -13,18 +13,20 @@ import (
 )
 
 func TestWorkspace_LockButtonHelper(t *testing.T) {
-	janitorTestID = resource.NewID(resource.UserKind)
+	privilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
+	privilegedUser2 := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
+	unprivilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: false}
 
 	tests := []struct {
 		name string
 		lock *lock
-		user *fakeUser
+		user *user.User
 		want LockButton
 	}{
 		{
 			"unlocked state",
 			&lock{},
-			&fakeUser{canLock: true},
+			privilegedUser,
 			LockButton{
 				State:  "unlocked",
 				Text:   "Lock",
@@ -34,7 +36,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		{
 			"insufficient permissions to lock",
 			&lock{},
-			&fakeUser{},
+			unprivilegedUser,
 			LockButton{
 				State:    "unlocked",
 				Text:     "Lock",
@@ -45,8 +47,8 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to unlock",
-			&lock{ID: &janitorTestID},
-			&fakeUser{},
+			&lock{ID: &privilegedUser.ID},
+			unprivilegedUser,
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
@@ -57,8 +59,8 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"user can unlock their own lock",
-			&lock{ID: &janitorTestID},
-			&fakeUser{id: "janitor", canUnlock: true},
+			&lock{ID: &privilegedUser.ID},
+			privilegedUser,
 			LockButton{
 				State:   "locked",
 				Text:    "Unlock",
@@ -68,9 +70,9 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			},
 		},
 		{
-			"can unlock lock held by a different user",
-			&lock{ID: &janitorTestID},
-			&fakeUser{id: "burglar", canUnlock: true},
+			"cannot unlock lock held by a different user",
+			&lock{ID: &privilegedUser.ID},
+			privilegedUser2,
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
@@ -81,9 +83,9 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			},
 		},
 		{
-			"user can force unlock",
-			&lock{ID: &janitorTestID},
-			&fakeUser{id: "headmaster", canUnlock: true, canForceUnlock: true},
+			"user can force unlock lock held by different user",
+			&lock{ID: &privilegedUser.ID},
+			privilegedUser2,
 			LockButton{
 				State:   "locked",
 				Text:    "Force unlock",
