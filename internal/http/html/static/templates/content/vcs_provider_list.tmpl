@@ -35,7 +35,7 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div x-data="block_link($el, '{{ editVCSProviderPath .ID }}')" id="{{ .ID.String }}" class="widget">
+  <div x-data="block_link($el, '{{ editVCSProviderPath .ID.String }}')" id="{{ .ID.String }}" class="widget">
     <div>
       <span>
         <a id="edit-vcs-provider-link" href="{{ editVCSProviderPath .ID.String }}">{{ .String }}</a>

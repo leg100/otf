@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
-const (
-	// base58 alphabet
-	base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-	// length of id part of ID
-	idLength = 16
-)
+// base58 alphabet
+const base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 var (
 	// EmptyID for use in comparisons to check whether ID has been
@@ -21,8 +16,6 @@ var (
 	EmptyID = ID{}
 	// ReStringID is a regular expression used to validate common string ID patterns.
 	ReStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
-	// regex for valid ID
-	idRegex = regexp.MustCompile(`^[a-z]{2,}-[` + base58 + `]{` + strconv.Itoa(idLength) + `}`)
 )
 
 // ID uniquely identifies an OTF resource.
@@ -64,6 +57,8 @@ func (id ID) String() string {
 }
 
 func (id *ID) UnmarshalText(text []byte) error {
+	// string also makes a copy which is necessary in order to retain the data
+	// after returning.
 	s := string(text)
 	*id = ParseID(s)
 	return nil

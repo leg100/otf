@@ -435,6 +435,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
+		AgentPoolID:          from.AgentPoolID,
 		AutoApply:            from.AutoApply,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,
@@ -442,7 +443,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		Environment:          from.Environment,
 		ExecutionMode:        string(from.ExecutionMode),
 		GlobalRemoteState:    from.GlobalRemoteState,
-		Locked:               from.Lock.Locked(),
+		Locked:               from.Locked(),
 		MigrationEnvironment: from.MigrationEnvironment,
 		Name:                 from.Name,
 		// Operations is deprecated but clients and go-tfe tests still use it
@@ -460,9 +461,6 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
-	}
-	if from.AgentPoolID != nil {
-		to.AgentPoolID = *from.AgentPoolID
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true

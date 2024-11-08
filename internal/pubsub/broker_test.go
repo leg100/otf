@@ -20,7 +20,7 @@ func fooGetter(ctx context.Context, id resource.ID, action sql.Action) (*foo, er
 
 func TestBroker_Subscribe(t *testing.T) {
 	ctx := context.Background()
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", "foo", nil)
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", resource.Kind("foo"), nil)
 
 	sub, unsub := broker.Subscribe(ctx)
 	assert.Equal(t, 1, len(broker.subs))
@@ -32,7 +32,7 @@ func TestBroker_Subscribe(t *testing.T) {
 
 func TestBroker_UnsubscribeViaContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", "foo", nil)
+	broker := NewBroker[*foo](logr.Discard(), &fakeListener{}, "foos", resource.Kind("foo"), nil)
 
 	sub, _ := broker.Subscribe(ctx)
 	assert.Equal(t, 1, len(broker.subs))
@@ -59,7 +59,7 @@ func TestBroker_forward(t *testing.T) {
 
 func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 	ctx := context.Background()
-	broker := NewBroker(logr.Discard(), &fakeListener{}, "foos", "foo", fooGetter)
+	broker := NewBroker(logr.Discard(), &fakeListener{}, "foos", resource.Kind("foo"), fooGetter)
 
 	broker.Subscribe(ctx)
 	assert.Equal(t, 1, len(broker.subs))

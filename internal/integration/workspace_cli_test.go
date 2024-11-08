@@ -50,14 +50,14 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 
 	// lock/unlock/force-unlock workspace
 	daemon.otfcli(t, ctx, "workspaces", "lock", ws1.Name, "--organization", org.Name)
-	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
+	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
 
 	daemon.otfcli(t, ctx, "workspaces", "unlock", ws1.Name, "--organization", org.Name)
-	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
+	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
 
 	daemon.otfcli(t, ctx, "workspaces", "lock", ws1.Name, "--organization", org.Name)
-	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
+	assert.True(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
 
 	daemon.otfcli(t, ctx, "workspaces", "unlock", ws1.Name, "--organization", org.Name, "--force")
-	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Lock.Locked())
+	assert.False(t, daemon.getWorkspace(t, ctx, ws1.ID).Locked())
 }

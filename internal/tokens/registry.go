@@ -51,7 +51,7 @@ func (r *registry) GetSubject(ctx context.Context, jwtSubject resource.ID) (auth
 
 	subjectGetter, ok := r.kinds[jwtSubject.Kind]
 	if !ok {
-		return nil, fmt.Errorf("unknown authentication token kind")
+		return nil, fmt.Errorf("unknown authentication token kind: %s", jwtSubject.Kind)
 	}
 	return subjectGetter(ctx, jwtSubject)
 }
