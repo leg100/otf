@@ -89,26 +89,3 @@ func (h *uiHelpers) lockButtonHelper(
 		return btn, nil
 	}
 }
-
-type fakeSubject struct {
-	id                                 string
-	canUnlock, canForceUnlock, canLock bool
-
-	authz.Subject
-}
-
-func (f *fakeSubject) String() string { return f.id }
-
-func (f *fakeSubject) CanAccessWorkspace(action rbac.Action, _ authz.WorkspacePolicy) bool {
-	switch action {
-	case rbac.UnlockWorkspaceAction:
-		return f.canUnlock
-	case rbac.ForceUnlockWorkspaceAction:
-		return f.canForceUnlock
-	case rbac.LockWorkspaceAction:
-		return f.canLock
-	default:
-		return false
-
-	}
-}
