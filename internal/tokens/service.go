@@ -13,7 +13,6 @@ type (
 		logr.Logger
 		*tokenFactory
 		*registry
-		*sessionFactory
 
 		site authz.Authorizer // authorizes site access
 
@@ -38,7 +37,6 @@ func NewService(opts Options) (*Service, error) {
 		return nil, err
 	}
 	svc.tokenFactory = &tokenFactory{key: key}
-	svc.sessionFactory = &sessionFactory{tokenFactory: svc.tokenFactory}
 	svc.registry = &registry{
 		kinds: make(map[resource.Kind]SubjectGetter),
 	}
