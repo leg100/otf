@@ -70,7 +70,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		Name:                   *opts.Name,
 		CreatedAt:              internal.CurrentTimestamp(nil),
 		UpdatedAt:              internal.CurrentTimestamp(nil),
-		ID:                     resource.NewID("org"),
+		ID:                     resource.NewID(resource.OrganizationKind),
 		Email:                  opts.Email,
 		CollaboratorAuthPolicy: opts.CollaboratorAuthPolicy,
 	}

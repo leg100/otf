@@ -151,7 +151,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
-	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.String(id.ID))
+	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.ID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

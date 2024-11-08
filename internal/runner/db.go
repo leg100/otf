@@ -66,6 +66,8 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	}
 	if meta.AgentPool != nil {
 		params.AgentPoolID = sql.ID(meta.AgentPool.ID)
+	} else {
+		params.AgentPoolID = sql.NullString()
 	}
 	return db.Querier(ctx).InsertRunner(ctx, params)
 }

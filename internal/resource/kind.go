@@ -15,7 +15,7 @@ const (
 	UserKind                      Kind = "user"
 	TeamKind                      Kind = "team"
 	NotificationConfigurationKind Kind = "nc"
-	AgentPoolKind                 Kind = "ap"
+	AgentPoolKind                 Kind = "apool"
 	RunnerKind                    Kind = "runner"
 	StateVersionKind              Kind = "sv"
 	StateVersionOutputKind        Kind = "wsout"

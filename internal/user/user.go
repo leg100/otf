@@ -59,7 +59,7 @@ type (
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        resource.NewID("user"),
+		ID:        resource.NewID(resource.UserKind),
 		Username:  username,
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
