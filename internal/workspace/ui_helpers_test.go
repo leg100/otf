@@ -13,19 +13,20 @@ import (
 )
 
 func TestWorkspace_LockButtonHelper(t *testing.T) {
+	wsID := resource.ParseID("ws-123")
 	privilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
 	privilegedUser2 := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
 	unprivilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: false}
 
 	tests := []struct {
 		name string
-		lock *lock
+		ws   *Workspace
 		user authz.Subject
 		want LockButton
 	}{
 		{
 			"unlocked state",
-			&lock{},
+			&Workspace{ID: wsID},
 			privilegedUser,
 			LockButton{
 				State:  "unlocked",
@@ -35,7 +36,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to lock",
-			&lock{},
+			&Workspace{ID: wsID},
 			unprivilegedUser,
 			LockButton{
 				State:    "unlocked",
@@ -47,7 +48,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to unlock",
-			&lock{ID: &privilegedUser.ID},
+			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
 			unprivilegedUser,
 			LockButton{
 				State:    "locked",
@@ -59,7 +60,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"user can unlock their own lock",
-			&lock{ID: &privilegedUser.ID},
+			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
 			privilegedUser,
 			LockButton{
 				State:   "locked",
@@ -71,7 +72,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"cannot unlock lock held by a different user",
-			&lock{ID: &privilegedUser.ID},
+			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
 			&fakeUser{canUnlock: true},
 			LockButton{
 				State:    "locked",
@@ -84,7 +85,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"user can force unlock lock held by different user",
-			&lock{ID: &privilegedUser.ID},
+			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
 			privilegedUser2,
 			LockButton{
 				State:   "locked",
@@ -100,8 +101,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			helpers := &uiHelpers{
 				service: &fakeUIHelpersService{},
 			}
-			workspaceID := resource.ParseID("ws-123")
-			got, err := helpers.lockButtonHelper(context.Background(), workspaceID, tt.lock, authz.WorkspacePolicy{}, tt.user)
+			got, err := helpers.lockButtonHelper(context.Background(), tt.ws, authz.WorkspacePolicy{}, tt.user)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

@@ -28,7 +28,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *reso
 		id = user.ID
 	}
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Lock.Enlock(id)
+		return ws.Enlock(id)
 	})
 	if err != nil {
 		s.Error(err, "locking workspace", "subject", id, "workspace", workspaceID)
@@ -65,7 +65,7 @@ func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *re
 	}
 
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Lock.Unlock(id, force)
+		return ws.Unlock(id, force)
 	})
 	if err != nil {
 		s.Error(err, "unlocking workspace", "subject", id, "workspace", workspaceID, "forced", force)

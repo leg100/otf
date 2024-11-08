@@ -80,7 +80,6 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       sql.FromStringArray(r.Tags),
-		Lock:                       &lock{},
 	}
 	if r.AgentPoolID.Valid {
 		agentPoolIDValue := resource.ParseID(r.AgentPoolID.String)
@@ -108,10 +107,10 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 	if r.LockUserID.Valid {
 		lockID := resource.ParseID(r.LockUserID.String)
-		ws.Lock.ID = &lockID
+		ws.Lock = &lockID
 	} else if r.LockRunID.Valid {
 		lockID := resource.ParseID(r.LockRunID.String)
-		ws.Lock.ID = &lockID
+		ws.Lock = &lockID
 	}
 
 	return &ws, nil

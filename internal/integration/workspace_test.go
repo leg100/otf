@@ -402,12 +402,12 @@ func TestWorkspace(t *testing.T) {
 
 		got, err := svc.Workspaces.Lock(ctx, ws.ID, nil)
 		require.NoError(t, err)
-		assert.True(t, got.Lock.Locked())
+		assert.True(t, got.Locked())
 
 		t.Run("unlock", func(t *testing.T) {
 			got, err := svc.Workspaces.Unlock(ctx, ws.ID, nil, false)
 			require.NoError(t, err)
-			assert.False(t, got.Lock.Locked())
+			assert.False(t, got.Locked())
 		})
 	})
 

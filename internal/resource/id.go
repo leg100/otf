@@ -57,6 +57,8 @@ func (id ID) String() string {
 }
 
 func (id *ID) UnmarshalText(text []byte) error {
+	// string also makes a copy which is necessary in order to retain the data
+	// after returning.
 	s := string(text)
 	*id = ParseID(s)
 	return nil

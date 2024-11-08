@@ -32,17 +32,16 @@ type LockButton struct {
 // locking/unlocking the workspace.
 func (h *uiHelpers) lockButtonHelper(
 	ctx context.Context,
-	workspaceID resource.ID,
-	lock *lock,
+	ws *Workspace,
 	policy authz.WorkspacePolicy,
 	user authz.Subject,
 ) (LockButton, error) {
 	var btn LockButton
 
-	if lock.Locked() {
+	if ws.Locked() {
 		btn.State = "locked"
 		btn.Text = "Unlock"
-		btn.Action = paths.UnlockWorkspace(workspaceID.String())
+		btn.Action = paths.UnlockWorkspace(ws.ID.String())
 		// A user needs at least the unlock permission
 		if !user.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy) {
 			btn.Tooltip = "insufficient permissions"
@@ -52,26 +51,26 @@ func (h *uiHelpers) lockButtonHelper(
 		// Report who/what has locked the workspace. If it is a user then fetch
 		// their username.
 		var lockedBy string
-		if lock.Kind == resource.UserKind {
-			lockUser, err := h.service.GetUser(ctx, userpkg.UserSpec{UserID: lock.ID})
+		if ws.Lock.Kind == resource.UserKind {
+			lockUser, err := h.service.GetUser(ctx, userpkg.UserSpec{UserID: ws.Lock})
 			if err != nil {
 				return LockButton{}, nil
 			}
 			lockedBy = lockUser.Username
 		} else {
-			lockedBy = lock.String()
+			lockedBy = ws.Lock.String()
 		}
 		btn.Message = fmt.Sprintf("locked by: %s", lockedBy)
 		// also show message as button tooltip
 		btn.Tooltip = btn.Message
 		// A user can unlock their own lock
-		if *lock.ID == user.GetID() {
+		if *ws.Lock == user.GetID() {
 			return btn, nil
 		}
 		// User is going to need the force unlock permission
 		if user.CanAccessWorkspace(rbac.ForceUnlockWorkspaceAction, policy) {
 			btn.Text = "Force unlock"
-			btn.Action = paths.ForceUnlockWorkspace(workspaceID.String())
+			btn.Action = paths.ForceUnlockWorkspace(ws.ID.String())
 			return btn, nil
 		}
 		// User cannot unlock
@@ -80,7 +79,7 @@ func (h *uiHelpers) lockButtonHelper(
 	} else {
 		btn.State = "unlocked"
 		btn.Text = "Lock"
-		btn.Action = paths.LockWorkspace(workspaceID.String())
+		btn.Action = paths.LockWorkspace(ws.ID.String())
 		// User needs at least the lock permission
 		if !user.CanAccessWorkspace(rbac.LockWorkspaceAction, policy) {
 			btn.Disabled = true

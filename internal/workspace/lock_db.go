@@ -28,12 +28,12 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 		params := sqlc.UpdateWorkspaceLockByIDParams{
 			WorkspaceID: sql.ID(ws.ID),
 		}
-		if ws.Lock.ID != nil {
+		if ws.Locked() {
 			switch ws.Lock.Kind {
 			case resource.RunKind:
-				params.RunID = sql.ID(*ws.Lock.ID)
+				params.RunID = sql.IDPtr(ws.Lock)
 			case resource.UserKind:
-				params.UserID = sql.ID(*ws.Lock.ID)
+				params.UserID = sql.IDPtr(ws.Lock)
 			default:
 				return ErrWorkspaceInvalidLock
 			}

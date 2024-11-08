@@ -443,7 +443,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		Environment:          from.Environment,
 		ExecutionMode:        string(from.ExecutionMode),
 		GlobalRemoteState:    from.GlobalRemoteState,
-		Locked:               from.Lock.Locked(),
+		Locked:               from.Locked(),
 		MigrationEnvironment: from.MigrationEnvironment,
 		Name:                 from.Name,
 		// Operations is deprecated but clients and go-tfe tests still use it

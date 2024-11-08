@@ -54,7 +54,7 @@ type (
 		Organization               string        `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun    `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string      `jsonapi:"attribute" json:"tags"`
-		Lock                       *lock         `jsonapi:"attribute" json:"lock"`
+		Lock                       *resource.ID  `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -192,7 +192,6 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		TerraformVersion:   releases.DefaultTerraformVersion,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
-		Lock:               &lock{},
 	}
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
@@ -276,6 +275,57 @@ func (ws *Workspace) String() string { return ws.Organization + "/" + ws.Name }
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
 	return []string{"local", "remote", "agent"}
+}
+
+func (ws *Workspace) Locked() bool {
+	return ws.Lock != nil
+}
+
+// Enlock locks the workspace with the given ID. The ID must be either a run or user ID.
+func (ws *Workspace) Enlock(id resource.ID) error {
+	switch id.Kind {
+	case resource.UserKind, resource.RunKind:
+	default:
+		return errors.New("workspace can only be locked by a user or a run")
+	}
+	if ws.Lock == nil {
+		// is unlocked
+		ws.Lock = &id
+		return nil
+	}
+	// a run can replace another run holding a lock
+	if ws.Lock.Kind == resource.RunKind && id.Kind == resource.RunKind {
+		ws.Lock = &id
+		return nil
+	}
+	return ErrWorkspaceAlreadyLocked
+}
+
+// Unlock the workspace with the given ID. The ID must be either a run or user
+// ID.
+func (ws *Workspace) Unlock(id resource.ID, force bool) error {
+	switch id.Kind {
+	case resource.UserKind, resource.RunKind:
+	default:
+		return errors.New("workspace can only be unlocked by a user or a run")
+	}
+	if ws.Lock == nil {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+	// user/run can unlock its own lock
+	if *ws.Lock == id {
+		ws.Lock = nil
+		return nil
+	}
+	// otherwise it has been unlocked by force
+	if force {
+		ws.Lock = nil
+		return nil
+	}
+	if ws.Kind == resource.RunKind {
+		return ErrWorkspaceLockedByRun
+	}
+	return ErrWorkspaceLockedByDifferentUser
 }
 
 // LogValue implements slog.LogValuer.

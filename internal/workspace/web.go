@@ -290,7 +290,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lockButton, err := h.lockButtonHelper(r.Context(), ws.ID, ws.Lock, policy, user)
+	lockButton, err := h.lockButtonHelper(r.Context(), ws, policy, user)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

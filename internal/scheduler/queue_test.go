@@ -32,7 +32,7 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run1.ID, q.current.ID)
-		assert.True(t, q.ws.Lock.Locked())
+		assert.True(t, q.ws.Locked())
 
 		// enqueue run2, check it is in queue
 		err = q.handleRun(ctx, run2)
@@ -40,7 +40,7 @@ func TestQueue(t *testing.T) {
 		if assert.Equal(t, 1, len(q.queue)) {
 			assert.Equal(t, run2.ID, q.queue[0].ID)
 		}
-		assert.True(t, q.ws.Lock.Locked())
+		assert.True(t, q.ws.Locked())
 
 		// enqueue run3, check it is in queue
 		err = q.handleRun(ctx, run3)
@@ -48,7 +48,7 @@ func TestQueue(t *testing.T) {
 		if assert.Equal(t, 2, len(q.queue)) {
 			assert.Equal(t, run3.ID, q.queue[1].ID)
 		}
-		assert.True(t, q.ws.Lock.Locked())
+		assert.True(t, q.ws.Locked())
 
 		// cancel run2, check it is removed from queue and run3 is shuffled forward
 		err = run2.Cancel(false, false)
@@ -58,7 +58,7 @@ func TestQueue(t *testing.T) {
 		if assert.Equal(t, 1, len(q.queue)) {
 			assert.Equal(t, run3.ID, q.queue[0].ID)
 		}
-		assert.True(t, q.ws.Lock.Locked())
+		assert.True(t, q.ws.Locked())
 
 		// cancel run1; check run3 takes its place as current run
 		err = run1.Cancel(false, false)
@@ -67,7 +67,7 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run3.ID, q.current.ID)
-		assert.True(t, q.ws.Lock.Locked())
+		assert.True(t, q.ws.Locked())
 
 		// cancel run3; check everything is empty and workspace is unlocked
 		err = run3.Cancel(false, false)
@@ -76,7 +76,7 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Nil(t, q.current)
-		assert.False(t, q.ws.Lock.Locked())
+		assert.False(t, q.ws.Locked())
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestQueue(t *testing.T) {
 
 		// user locks workspace; new run should be made the current run but should not
 		// be scheduled nor replace the user lock
-		err := ws.Lock.Enlock(userID)
+		err := ws.Enlock(userID)
 		require.NoError(t, err)
 		err = q.handleRun(ctx, run)
 		require.NoError(t, err)
@@ -109,7 +109,7 @@ func TestQueue(t *testing.T) {
 		assert.Equal(t, resource.UserKind, q.ws.Lock.Kind)
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
-		err = ws.Lock.Unlock(userID, false)
+		err = ws.Unlock(userID, false)
 		require.NoError(t, err)
 		err = q.handleWorkspace(ctx, ws)
 		require.NoError(t, err)
@@ -182,14 +182,14 @@ type fakeWorkspaceService struct {
 }
 
 func (f *fakeWorkspaceService) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*workspace.Workspace, error) {
-	if err := f.ws.Lock.Enlock(*runID); err != nil {
+	if err := f.ws.Enlock(*runID); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
 func (f *fakeWorkspaceService) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*workspace.Workspace, error) {
-	if err := f.ws.Lock.Unlock(*runID, false); err != nil {
+	if err := f.ws.Unlock(*runID, false); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
