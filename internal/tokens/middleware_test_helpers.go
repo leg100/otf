@@ -55,7 +55,7 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 		key:    key,
 		registry: &registry{
 			kinds: map[resource.Kind]SubjectGetter{
-				"test-kind": func(context.Context, resource.ID) (authz.Subject, error) {
+				"test": func(context.Context, resource.ID) (authz.Subject, error) {
 					return &authz.Superuser{}, nil
 				},
 			},
