@@ -15,7 +15,7 @@ func TestAgentTokenNewCommand(t *testing.T) {
 		},
 	}
 	cmd := cli.agentTokenNewCommand()
-	cmd.SetArgs([]string{"testing", "--agent-pool-id", "pool-123", "--description", "my new token"})
+	cmd.SetArgs([]string{"--agent-pool-id", "pool-123", "--description", "my new token"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())

@@ -139,8 +139,12 @@ func NewService(opts ServiceOptions) *Service {
 		if err != nil {
 			return nil, err
 		}
-		if runnerID := headers.Get(runnerIDHeader); runnerID != "" {
-			runner, err := svc.getRunner(ctx, resource.ParseID(runnerID))
+		if runnerIDValue := headers.Get(runnerIDHeaderKey); runnerIDValue != "" {
+			runnerID, err := resource.ParseID(runnerIDValue)
+			if err != nil {
+				return nil, err
+			}
+			runner, err := svc.getRunner(ctx, runnerID)
 			if err != nil {
 				return nil, fmt.Errorf("retrieving runner corresponding to ID found in http header: %w", err)
 			}

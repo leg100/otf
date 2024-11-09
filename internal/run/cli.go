@@ -56,7 +56,11 @@ func (a *CLI) runDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			run, err := a.client.Get(cmd.Context(), resource.ParseID(args[0]))
+			id, err := resource.ParseID(args[0])
+			if err != nil {
+				return err
+			}
+			run, err := a.client.Get(cmd.Context(), id)
 			if err != nil {
 				return errors.Wrap(err, "retrieving run")
 			}

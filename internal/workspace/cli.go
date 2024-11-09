@@ -131,7 +131,10 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 				opts.ExecutionMode = (*ExecutionMode)(&mode)
 			}
 			if poolID != "" {
-				poolResourceID := resource.ParseID(poolID)
+				poolResourceID, err := resource.ParseID(poolID)
+				if err != nil {
+					return err
+				}
 				opts.AgentPoolID = &poolResourceID
 			}
 			ws, err := a.client.GetByName(cmd.Context(), organization, name)

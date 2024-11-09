@@ -107,18 +107,13 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		return err
 	}
 
-	err = func() error {
-		chunk, err := newChunk(opts)
-		if err != nil {
-			return err
-		}
-		if err := s.chunkproxy.put(ctx, chunk); err != nil {
-			return err
-		}
-		return nil
-	}()
+	chunk, err := newChunk(opts)
 	if err != nil {
-		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+		s.Error(err, "creating log chunk", "run_id", opts, "phase", opts.Phase, "offset", opts.Offset)
+		return err
+	}
+	if err := s.put(ctx, chunk); err != nil {
+		s.Error(err, "writing logs", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
 	s.V(3).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)

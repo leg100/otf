@@ -429,7 +429,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		Apply: &types.Apply{ID: resource.ConvertID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &types.User{
-			ID:       resource.ParseID("user-123"),
+			ID:       resource.ID{Kind: resource.UserKind, ID: "123"},
 			Username: "otf",
 		},
 		ConfigurationVersion: &types.ConfigurationVersion{

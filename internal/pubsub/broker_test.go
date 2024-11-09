@@ -68,7 +68,7 @@ func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 	// deliberating publish more than subBufferSize events to trigger broker to
 	// unsubscribe the sub
 	for i := 0; i < subBufferSize+1; i++ {
-		broker.forward(ctx, "bar", sql.InsertAction)
+		broker.forward(ctx, "foo-123", sql.InsertAction)
 	}
 	assert.Equal(t, 0, len(broker.subs))
 }

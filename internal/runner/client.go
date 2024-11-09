@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-const runnerIDHeader = "otf-agent-id"
+const runnerIDHeaderKey = "otf-agent-id"
 
 type client interface {
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
@@ -37,7 +37,7 @@ func (c *remoteClient) newRequest(method, path string, v interface{}) (*retryabl
 		return nil, err
 	}
 	if c.agentID != nil {
-		req.Header.Add(runnerIDHeader, c.agentID.String())
+		req.Header.Add(runnerIDHeaderKey, c.agentID.String())
 	}
 	return req, err
 }

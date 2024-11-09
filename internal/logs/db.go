@@ -18,10 +18,11 @@ type pgdb struct {
 
 func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
 	err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
-		RunID:  chunk.RunID,
-		Phase:  sql.String(string(chunk.Phase)),
-		Chunk:  chunk.Data,
-		Offset: sql.Int4(chunk.Offset),
+		ChunkID: chunk.ID,
+		RunID:   chunk.RunID,
+		Phase:   sql.String(string(chunk.Phase)),
+		Chunk:   chunk.Data,
+		Offset:  sql.Int4(chunk.Offset),
 	})
 	if err != nil {
 		return sql.Error(err)

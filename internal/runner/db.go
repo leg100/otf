@@ -171,6 +171,7 @@ type jobResult struct {
 
 func (r jobResult) toJob() *Job {
 	job := &Job{
+		ID:           r.JobID,
 		RunID:        r.RunID,
 		Phase:        internal.PhaseType(r.Phase.String),
 		Status:       JobStatus(r.Status.String),
@@ -360,7 +361,7 @@ type poolresult struct {
 	AllowedWorkspaceIds []pgtype.Text
 }
 
-func (r poolresult) toPool() *Pool {
+func (r poolresult) toPool() (*Pool, error) {
 	pool := &Pool{
 		ID:                 r.AgentPoolID,
 		Name:               r.Name.String,
@@ -370,13 +371,21 @@ func (r poolresult) toPool() *Pool {
 	}
 	pool.AssignedWorkspaces = make([]resource.ID, len(r.WorkspaceIds))
 	for i, wid := range r.WorkspaceIds {
-		pool.AssignedWorkspaces[i] = resource.ParseID(wid.String)
+		var err error
+		pool.AssignedWorkspaces[i], err = resource.ParseID(wid.String)
+		if err != nil {
+			return nil, err
+		}
 	}
 	pool.AllowedWorkspaces = make([]resource.ID, len(r.AllowedWorkspaceIds))
 	for i, wid := range r.AllowedWorkspaceIds {
-		pool.AllowedWorkspaces[i] = resource.ParseID(wid.String)
+		var err error
+		pool.AllowedWorkspaces[i], err = resource.ParseID(wid.String)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return pool
+	return pool, nil
 }
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
@@ -447,7 +456,7 @@ func (db *db) getPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return poolresult(result).toPool(), nil
+	return poolresult(result).toPool()
 }
 
 func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool, error) {
@@ -455,7 +464,7 @@ func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool,
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return poolresult(result).toPool(), nil
+	return poolresult(result).toPool()
 }
 
 func (db *db) listPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
@@ -470,7 +479,11 @@ func (db *db) listPoolsByOrganization(ctx context.Context, organization string, 
 	}
 	pools := make([]*Pool, len(rows))
 	for i, r := range rows {
-		pools[i] = poolresult(r).toPool()
+		var err error
+		pools[i], err = poolresult(r).toPool()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return pools, nil
 }

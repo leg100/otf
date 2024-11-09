@@ -100,7 +100,11 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 // forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
 func (b *Broker[T]) forward(ctx context.Context, rowID string, action sql.Action) {
-	id := resource.ParseID(rowID)
+	id, err := resource.ParseID(rowID)
+	if err != nil {
+		b.Error(err, "parsing ID for database event", "table", b.table, "id", rowID, "action", action)
+		return
+	}
 
 	var event Event[T]
 	payload, err := b.getter(ctx, id, action)

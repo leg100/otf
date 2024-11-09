@@ -179,8 +179,7 @@ func (m *middleware) parseIDFromJWT(token []byte) (resource.ID, error) {
 	if err != nil {
 		return resource.ID{}, err
 	}
-	subject := resource.ParseID(parsed.Subject())
-	return subject, nil
+	return resource.ParseID(parsed.Subject())
 }
 
 func isProtectedPath(path string) bool {
