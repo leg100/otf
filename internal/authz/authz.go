@@ -29,7 +29,6 @@ type Subject interface {
 
 	IsOwner(organization string) bool
 	IsSiteAdmin() bool
-	GetID() resource.ID
 
 	Organizations() []string
 

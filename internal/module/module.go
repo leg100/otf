@@ -31,8 +31,7 @@ var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
 	Module struct {
-		resource.ID
-
+		ID           resource.ID
 		CreatedAt    time.Time
 		UpdatedAt    time.Time
 		Name         string
@@ -46,8 +45,7 @@ type (
 	ModuleStatus string
 
 	ModuleVersion struct {
-		resource.ID
-
+		ID          resource.ID
 		ModuleID    resource.ID
 		Version     string
 		CreatedAt   time.Time

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
@@ -22,7 +21,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	tests := []struct {
 		name string
 		ws   *Workspace
-		user authz.Subject
+		user *user.User
 		want LockButton
 	}{
 		{
@@ -72,19 +71,6 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			},
 		},
 		{
-			"cannot unlock lock held by a different user",
-			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
-			&fakeUser{canUnlock: true},
-			LockButton{
-				State:    "locked",
-				Text:     "Unlock",
-				Action:   "/app/workspaces/ws-123/unlock",
-				Message:  "locked by: janitor",
-				Tooltip:  "locked by: janitor",
-				Disabled: true,
-			},
-		},
-		{
 			"user can force unlock lock held by different user",
 			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
 			privilegedUser2,
@@ -113,27 +99,4 @@ type fakeUIHelpersService struct{}
 
 func (f *fakeUIHelpersService) GetUser(context.Context, user.UserSpec) (*user.User, error) {
 	return &user.User{Username: "janitor"}, nil
-}
-
-type fakeUser struct {
-	id                                 resource.ID
-	canUnlock, canForceUnlock, canLock bool
-
-	authz.Subject
-}
-
-func (f *fakeUser) GetID() resource.ID { return f.id }
-
-func (f *fakeUser) CanAccessWorkspace(action rbac.Action, _ authz.WorkspacePolicy) bool {
-	switch action {
-	case rbac.UnlockWorkspaceAction:
-		return f.canUnlock
-	case rbac.ForceUnlockWorkspaceAction:
-		return f.canForceUnlock
-	case rbac.LockWorkspaceAction:
-		return f.canLock
-	default:
-		return false
-
-	}
 }

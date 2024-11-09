@@ -13,11 +13,10 @@ import (
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		resource.ID `jsonapi:"primary,teams"`
-
-		CreatedAt    time.Time `jsonapi:"attribute" json:"created-at"`
-		Name         string    `jsonapi:"attribute" json:"name"`
-		Organization string    `jsonapi:"attribute" json:"organization"`
+		ID           resource.ID `jsonapi:"primary,teams"`
+		CreatedAt    time.Time   `jsonapi:"attribute" json:"created-at"`
+		Name         string      `jsonapi:"attribute" json:"name"`
+		Organization string      `jsonapi:"attribute" json:"organization"`
 
 		Access OrganizationAccess
 

@@ -30,8 +30,7 @@ var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		resource.ID `jsonapi:"primary,workspaces"`
-
+		ID                         resource.ID   `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
 		AgentPoolID                *resource.ID  `jsonapi:"attribute" json:"agent-pool-id"`
@@ -317,12 +316,12 @@ func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 		ws.Lock = nil
 		return nil
 	}
-	// otherwise it has been unlocked by force
+	// otherwise it has to be unlocked by force
 	if force {
 		ws.Lock = nil
 		return nil
 	}
-	if ws.Kind == resource.RunKind {
+	if ws.Lock.Kind == resource.RunKind {
 		return ErrWorkspaceLockedByRun
 	}
 	return ErrWorkspaceLockedByDifferentUser
@@ -410,10 +409,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	// (a) tags-regex
 	// (b) trigger-patterns
 	// (c) always-trigger=true
-	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
+	if (opts.ConnectOptions != nil && opts.TagsRegex != nil) && opts.TriggerPatterns != nil {
 		return nil, ErrTagsRegexAndTriggerPatterns
 	}
-	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+	if (opts.ConnectOptions != nil && opts.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
 		return nil, ErrTagsRegexAndAlwaysTrigger
 	}
 	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {

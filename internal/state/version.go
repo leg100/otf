@@ -35,8 +35,7 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		resource.ID `jsonapi:"primary,state-versions"`
-
+		ID          resource.ID        `jsonapi:"primary,state-versions"`
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
@@ -46,8 +45,7 @@ type (
 	}
 
 	Output struct {
-		resource.ID
-
+		ID             resource.ID
 		Name           string
 		Type           string
 		Value          json.RawMessage
@@ -198,6 +196,8 @@ func (f *factory) rollback(ctx context.Context, svID resource.ID) (*Version, err
 		Serial:      &sv.Serial,
 	})
 }
+
+func (v *Version) String() string { return v.ID.String() }
 
 func (v *Version) File() (*File, error) {
 	var f File

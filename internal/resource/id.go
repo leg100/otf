@@ -51,9 +51,14 @@ func (id ID) String() string {
 	return fmt.Sprintf("%s-%s", id.Kind, id.ID)
 }
 
+func (id *ID) MarshalText() ([]byte, error) {
+	if id == nil {
+		return nil, nil
+	}
+	return []byte(id.String()), nil
+}
+
 func (id *ID) UnmarshalText(text []byte) error {
-	// string also makes a copy which is necessary in order to retain the data
-	// after returning.
 	s := string(text)
 	x, err := ParseID(s)
 	if err != nil {
@@ -84,11 +89,6 @@ func (id *ID) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return id.String(), nil
-}
-
-// GetID allows the user of an interface to retrieve the ID.
-func (id ID) GetID() ID {
-	return id
 }
 
 // GenerateRandomStringFromAlphabet generates a random string of a given size

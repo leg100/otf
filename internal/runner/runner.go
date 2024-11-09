@@ -91,7 +91,8 @@ func newRunner(
 		// here are also logged on the service endpoints, resulting in duplicate
 		// logs.
 		r.v = 1
-		// Distinguish log messages on server runner from other components.
+		// Distinguish log messages in server runner component from other
+		// components.
 		r.logger = logger.WithValues("component", "runner")
 	}
 	if cfg.Debug {

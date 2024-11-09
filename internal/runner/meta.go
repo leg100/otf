@@ -15,8 +15,7 @@ import (
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	resource.ID `jsonapi:"primary,agents"`
-
+	ID resource.ID `jsonapi:"primary,runners"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -40,11 +39,11 @@ type RunnerMeta struct {
 
 type RunnerMetaAgentPool struct {
 	// ID of agent's pool.
-	ID resource.ID `jsonapi:"attribute" json:"id"`
+	ID resource.ID `json:"id"`
 	// Name of agent's pool
-	Name string `jsonapi:"attribute" json:"name"`
+	Name string `json:"name"`
 	// Agent pool's organization.
-	OrganizationName string `jsonapi:"attribute" json:"organization-name"`
+	OrganizationName string `json:"organization-name"`
 }
 
 type registerOptions struct {
@@ -146,6 +145,7 @@ func (m *RunnerMeta) IsSiteAdmin() bool   { return true }
 func (m *RunnerMeta) IsOwner(string) bool { return true }
 
 func (m *RunnerMeta) Organizations() []string { return nil }
+func (m *RunnerMeta) String() string          { return m.ID.String() }
 
 func (*RunnerMeta) CanAccessSite(action rbac.Action) bool {
 	return false

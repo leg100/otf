@@ -16,11 +16,10 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		resource.ID `jsonapi:"primary,organizations"`
-
-		CreatedAt time.Time `jsonapi:"attribute" json:"created-at"`
-		UpdatedAt time.Time `jsonapi:"attribute" json:"updated-at"`
-		Name      string    `jsonapi:"attribute" json:"name"`
+		ID        resource.ID `jsonapi:"primary,organizations"`
+		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time   `jsonapi:"attribute" json:"updated-at"`
+		Name      string      `jsonapi:"attribute" json:"name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests

@@ -41,8 +41,7 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		resource.ID `jsonapi:"primary,runs"`
-
+		ID                     resource.ID             `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
 		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
@@ -302,6 +301,10 @@ func (r *Run) InProgress() bool {
 	default:
 		return false
 	}
+}
+
+func (r *Run) String() string {
+	return r.ID.String()
 }
 
 // Cancel run. Depending upon whether the run is currently in-progress, the run

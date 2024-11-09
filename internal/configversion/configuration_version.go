@@ -28,8 +28,7 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		resource.ID
-
+		ID                resource.ID
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
 		Source            Source
