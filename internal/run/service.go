@@ -597,7 +597,7 @@ func (s *Service) createApplyReport(ctx context.Context, runID resource.ID) (Rep
 
 func (s *Service) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	data, err := s.db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
-		RunID: sql.ID(runID),
+		RunID: runID,
 		Phase: sql.String(string(phase)),
 	})
 	if err != nil {

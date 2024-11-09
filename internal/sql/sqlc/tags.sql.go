@@ -47,13 +47,13 @@ RETURNING tag_id
 `
 
 type DeleteTagParams struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (pgtype.Text, error) {
+func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteTag, arg.TagID, arg.OrganizationName)
-	var tag_id pgtype.Text
+	var tag_id resource.ID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -92,12 +92,12 @@ AND   t.organization_name = $2
 `
 
 type FindTagByIDParams struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	OrganizationName pgtype.Text
 }
 
 type FindTagByIDRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -134,7 +134,7 @@ type FindTagByNameParams struct {
 }
 
 type FindTagByNameRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -173,7 +173,7 @@ type FindTagsParams struct {
 }
 
 type FindTagsRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -226,7 +226,7 @@ type FindWorkspaceTagsParams struct {
 }
 
 type FindWorkspaceTagsRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -270,7 +270,7 @@ INSERT INTO tags (
 `
 
 type InsertTagParams struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 }

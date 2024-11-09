@@ -225,8 +225,8 @@ func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource
 	err := pdb.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		for _, wid := range workspaceIDs {
 			err := pdb.Querier(ctx).InsertVariableSetWorkspace(ctx, sqlc.InsertVariableSetWorkspaceParams{
-				VariableSetID: sql.ID(setID),
-				WorkspaceID:   sql.ID(wid),
+				VariableSetID: setID,
+				WorkspaceID:   wid,
 			})
 			if err != nil {
 				return err
@@ -238,7 +238,7 @@ func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource
 }
 
 func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.ID) error {
-	err := pdb.Querier(ctx).DeleteVariableSetWorkspaces(ctx, sql.ID(setID))
+	err := pdb.Querier(ctx).DeleteVariableSetWorkspaces(ctx, setID)
 	return sql.Error(err)
 }
 
@@ -246,8 +246,8 @@ func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource
 	err := pdb.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Querier(ctx).DeleteVariableSetWorkspace(ctx, sqlc.DeleteVariableSetWorkspaceParams{
-				VariableSetID: sql.ID(setID),
-				WorkspaceID:   sql.ID(wid),
+				VariableSetID: setID,
+				WorkspaceID:   wid,
 			})
 			if err != nil {
 				return err
@@ -260,7 +260,7 @@ func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource
 
 func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
 	err := pdb.Querier(ctx).InsertVariable(ctx, sqlc.InsertVariableParams{
-		VariableID:  sql.ID(v.ID),
+		VariableID:  v.ID,
 		Key:         sql.String(v.Key),
 		Value:       sql.String(v.Value),
 		Description: sql.String(v.Description),
@@ -274,7 +274,7 @@ func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
 
 func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {
 	_, err := pdb.Querier(ctx).UpdateVariableByID(ctx, sqlc.UpdateVariableByIDParams{
-		VariableID:  sql.ID(v.ID),
+		VariableID:  v.ID,
 		Key:         sql.String(v.Key),
 		Value:       sql.String(v.Value),
 		Description: sql.String(v.Description),
@@ -287,6 +287,6 @@ func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {
 }
 
 func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.ID) error {
-	_, err := pdb.Querier(ctx).DeleteVariableByID(ctx, sql.ID(variableID))
+	_, err := pdb.Querier(ctx).DeleteVariableByID(ctx, variableID)
 	return sql.Error(err)
 }

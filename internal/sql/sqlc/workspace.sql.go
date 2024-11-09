@@ -117,7 +117,7 @@ type FindWorkspaceByIDRow struct {
 	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      pgtype.Text
+	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
@@ -215,7 +215,7 @@ type FindWorkspaceByIDForUpdateRow struct {
 	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      pgtype.Text
+	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
@@ -319,7 +319,7 @@ type FindWorkspaceByNameRow struct {
 	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      pgtype.Text
+	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
@@ -432,7 +432,7 @@ type FindWorkspacesRow struct {
 	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      pgtype.Text
+	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
@@ -554,7 +554,7 @@ type FindWorkspacesByConnectionRow struct {
 	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      pgtype.Text
+	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
@@ -679,7 +679,7 @@ type FindWorkspacesByUsernameRow struct {
 	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      pgtype.Text
+	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
@@ -952,7 +952,7 @@ RETURNING workspace_id
 `
 
 type UpdateWorkspaceCurrentStateVersionIDParams struct {
-	StateVersionID pgtype.Text
+	StateVersionID *resource.ID
 	WorkspaceID    resource.ID
 }
 

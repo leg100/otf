@@ -244,7 +244,7 @@ WITH inserted AS (
 SELECT
     w.repohook_id,
     w.vcs_id,
-    w.vcs_provider_id,
+    v.vcs_provider_id,
     w.secret,
     w.repo_path,
     v.vcs_kind
@@ -263,7 +263,7 @@ type InsertRepohookParams struct {
 type InsertRepohookRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text

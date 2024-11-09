@@ -13,7 +13,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 	var ws *Workspace
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// retrieve workspace
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, sql.ID(workspaceID))
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 		}
 		// persist to db
 		params := sqlc.UpdateWorkspaceLockByIDParams{
-			WorkspaceID: sql.ID(ws.ID),
+			WorkspaceID: ws.ID,
 		}
 		if ws.Locked() {
 			switch ws.Lock.Kind {

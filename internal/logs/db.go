@@ -18,7 +18,7 @@ type pgdb struct {
 
 func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
 	err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
-		RunID:  sql.ID(chunk.RunID),
+		RunID:  chunk.RunID,
 		Phase:  sql.String(string(chunk.Phase)),
 		Chunk:  chunk.Data,
 		Offset: sql.Int4(chunk.Offset),
@@ -30,7 +30,7 @@ func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
 }
 
 func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error) {
-	chunk, err := db.Querier(ctx).FindLogChunkByID(ctx, sql.ID(chunkID))
+	chunk, err := db.Querier(ctx).FindLogChunkByID(ctx, chunkID)
 	if err != nil {
 		return Chunk{}, sql.Error(err)
 	}
@@ -45,7 +45,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error
 
 func (db *pgdb) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	data, err := db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
-		RunID: sql.ID(runID),
+		RunID: runID,
 		Phase: sql.String(string(phase)),
 	})
 	if err != nil {

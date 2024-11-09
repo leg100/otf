@@ -229,6 +229,10 @@ sql:
             go_type:
               import: "github.com/leg100/otf/internal/resource"
               type: "ID"
+          - column: "tags.tag_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
           - column: "team_memberships.team_id"
             go_type:
               import: "github.com/leg100/otf/internal/resource"
@@ -286,6 +290,11 @@ sql:
               import: "github.com/leg100/otf/internal/resource"
               type: "ID"
           - column: "workspaces.agent_pool_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "workspaces.current_state_version_id"
             go_type:
               import: "github.com/leg100/otf/internal/resource"
               type: "ID"
