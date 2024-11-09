@@ -7,7 +7,6 @@ import (
 
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -176,7 +175,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 		// shut agent down and wait for it to exit
 		shutdownAgent()
-		testutils.Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
+		Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
 			return event.Payload.Status == runner.RunnerExited
 		})
 
@@ -228,7 +227,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// confirm pool was deleted
-		testutils.Wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
+		Wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
 			return event.Type == pubsub.DeletedEvent
 		})
 	})

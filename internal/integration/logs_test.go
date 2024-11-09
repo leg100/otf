@@ -7,8 +7,8 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -169,7 +169,7 @@ func TestClusterLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	want1 := logs.Chunk{
-		ID:    resource.ParseID("1"),
+		ID:    testutils.ParseID(t, "1"),
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
 		Data:  []byte("\x02hello"),
@@ -177,7 +177,7 @@ func TestClusterLogs(t *testing.T) {
 	require.Equal(t, want1, <-sub)
 
 	want2 := logs.Chunk{
-		ID:     resource.ParseID("2"),
+		ID:     testutils.ParseID(t, "2"),
 		RunID:  run.ID,
 		Phase:  internal.PlanPhase,
 		Data:   []byte(" world\x03"),

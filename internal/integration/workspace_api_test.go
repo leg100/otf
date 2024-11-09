@@ -11,7 +11,6 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -103,7 +102,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	runsSub, runsUnsub := daemon.Runs.Watch(ctx)
 	defer runsUnsub()
 
-	_, err = daemon.Runs.Create(ctx, resource.ParseID(ws.ID), run.CreateOptions{})
+	_, err = daemon.Runs.Create(ctx, testutils.ParseID(t, ws.ID), run.CreateOptions{})
 	require.NoError(t, err)
 
 	for event := range runsSub {

@@ -48,9 +48,9 @@ func (a *tfe) addHandlers(r *mux.Router) {
 		// tests expect one feature set to be returned but don't check contents
 		// so return the bare minimum.
 		fs := []struct {
-			ID resource.ID `jsonapi:"primary,feature-sets"`
+			ID string `jsonapi:"primary,feature-sets"`
 		}{
-			{ID: resource.ParseID("fs-123")},
+			{ID: "fs-123"},
 		}
 		a.RespondWithPage(w, r, &fs, &resource.Pagination{})
 	})

@@ -6,13 +6,14 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewWorkspace(t *testing.T) {
-	agentPoolID := resource.ParseID("apool-123")
-	vcsProviderID := resource.ParseID("vcs-123")
+	agentPoolID := testutils.ParseID(t, "apool-123")
+	vcsProviderID := testutils.ParseID(t, "vcs-123")
 
 	tests := []struct {
 		name string
@@ -177,8 +178,8 @@ func TestNewWorkspace(t *testing.T) {
 }
 
 func TestWorkspace_UpdateError(t *testing.T) {
-	agentPoolID := resource.ParseID("apool-123")
-	vcsProviderID := resource.ParseID("vcs-123")
+	agentPoolID := testutils.ParseID(t, "apool-123")
+	vcsProviderID := testutils.ParseID(t, "vcs-123")
 
 	tests := []struct {
 		name string
@@ -375,7 +376,7 @@ func TestWorkspace_Update(t *testing.T) {
 }
 
 func TestWorkspace_UpdateConnection(t *testing.T) {
-	vcsProviderID := resource.ParseID("vcs-123")
+	vcsProviderID := testutils.ParseID(t, "vcs-123")
 
 	tests := []struct {
 		name string
@@ -415,7 +416,7 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 				Organization: "acme",
 				Connection: &Connection{
 					Repo:          "leg100/otf",
-					VCSProviderID: resource.ParseID("vcs-123"),
+					VCSProviderID: testutils.ParseID(t, "vcs-123"),
 				},
 			},
 			opts: UpdateOptions{

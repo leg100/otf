@@ -10,22 +10,22 @@ import (
 func TestVariableSet_checkGlobalConflicts(t *testing.T) {
 	organizationSets := []*VariableSet{
 		{
-			ID:     resource.ParseID("non-global"),
+			ID:     resource.NewID(resource.VariableSetKind),
 			Global: false,
 			Variables: []*Variable{
 				{
-					ID:       resource.ParseID("non-global-foo"),
+					ID:       resource.NewID(resource.VariableKind),
 					Key:      "foo",
 					Category: CategoryTerraform,
 				},
 			},
 		},
 		{
-			ID:     resource.ParseID("global-with-foo"),
+			ID:     resource.NewID(resource.VariableSetKind),
 			Global: true,
 			Variables: []*Variable{
 				{
-					ID:       resource.ParseID("global-foo"),
+					ID:       resource.NewID(resource.VariableKind),
 					Key:      "foo",
 					Category: CategoryTerraform,
 				},

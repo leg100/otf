@@ -3,13 +3,13 @@ package notifications
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCache_New(t *testing.T) {
-	workspaceID := resource.ParseID("ws-123")
+	workspaceID := testutils.ParseID(t, "ws-123")
 
 	nc1 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")
 	nc2 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")
@@ -22,7 +22,7 @@ func TestCache_New(t *testing.T) {
 }
 
 func TestCache_AddRemove(t *testing.T) {
-	workspaceID := resource.ParseID("ws-123")
+	workspaceID := testutils.ParseID(t, "ws-123")
 
 	cache := newTestCache(t, nil)
 	nc1 := newTestConfig(t, workspaceID, DestinationSlack, "http://example.com")

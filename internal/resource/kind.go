@@ -21,6 +21,8 @@ const (
 	RunnerKind                    Kind = "runner"
 	StateVersionKind              Kind = "sv"
 	StateVersionOutputKind        Kind = "wsout"
+	VariableSetKind               Kind = "varset"
+	VariableKind                  Kind = "var"
 
 	OrganizationTokenKind Kind = "ot"
 	UserTokenKind         Kind = "ut"

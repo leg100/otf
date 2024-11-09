@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,7 +53,7 @@ func TestBroker_forward(t *testing.T) {
 	broker.forward(ctx, "foo-bar", sql.InsertAction)
 	want := Event[*foo]{
 		Type:    CreatedEvent,
-		Payload: &foo{id: resource.ParseID("foo-bar")},
+		Payload: &foo{id: testutils.ParseID(t, "foo-bar")},
 	}
 	assert.Equal(t, want, <-sub)
 }

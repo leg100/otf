@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +15,7 @@ func TestProxy_Get(t *testing.T) {
 	ctx := context.Background()
 
 	opts := GetChunkOptions{
-		RunID:  resource.ParseID("run-123"),
+		RunID:  testutils.ParseID(t, "run-123"),
 		Phase:  internal.PlanPhase,
 		Offset: 3,
 		Limit:  4,
@@ -28,7 +28,7 @@ func TestProxy_Get(t *testing.T) {
 		got, err := proxy.get(ctx, opts)
 		require.NoError(t, err)
 
-		want := Chunk{RunID: resource.ParseID("run-123"), Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
+		want := Chunk{RunID: testutils.ParseID(t, "run-123"), Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
 		assert.Equal(t, want, got)
 	})
 
@@ -40,7 +40,7 @@ func TestProxy_Get(t *testing.T) {
 		got, err := proxy.get(ctx, opts)
 		require.NoError(t, err)
 
-		want := Chunk{RunID: resource.ParseID("run-123"), Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
+		want := Chunk{RunID: testutils.ParseID(t, "run-123"), Phase: internal.PlanPhase, Offset: 3, Data: []byte("lo w")}
 		assert.Equal(t, want, got)
 
 		// cache should be populated now

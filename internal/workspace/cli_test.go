@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func TestWorkspaceEdit(t *testing.T) {
 }
 
 func TestWorkspaceShow(t *testing.T) {
-	ws := &Workspace{ID: resource.ParseID("ws-123")}
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 	app := &CLI{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -61,8 +61,8 @@ func TestWorkspaceShow(t *testing.T) {
 }
 
 func TestWorkspaceList(t *testing.T) {
-	ws1 := &Workspace{ID: resource.ParseID("ws-123")}
-	ws2 := &Workspace{ID: resource.ParseID("ws-123")}
+	ws1 := &Workspace{ID: testutils.ParseID(t, "ws-123")}
+	ws2 := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 	app := &CLI{
 		client: &FakeService{Workspaces: []*Workspace{ws1, ws2}},
 	}
@@ -84,7 +84,7 @@ func TestWorkspaceList(t *testing.T) {
 }
 
 func TestWorkspaceLock(t *testing.T) {
-	ws := &Workspace{ID: resource.ParseID("ws-123")}
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 	app := &CLI{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -113,7 +113,7 @@ func TestWorkspaceLock(t *testing.T) {
 }
 
 func TestWorkspaceUnlock(t *testing.T) {
-	ws := &Workspace{ID: resource.ParseID("ws-123")}
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 	app := &CLI{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}

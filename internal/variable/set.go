@@ -36,7 +36,7 @@ type (
 
 func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
 	return &VariableSet{
-		ID:           resource.NewID("varset"),
+		ID:           resource.NewID(resource.VariableSetKind),
 		Name:         opts.Name,
 		Description:  opts.Description,
 		Global:       opts.Global,

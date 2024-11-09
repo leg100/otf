@@ -19,10 +19,11 @@ import (
 
 func TestListModules(t *testing.T) {
 	h := newTestWebHandlers(t, withMod(&Module{}))
+	user := &user.User{ID: resource.NewID(resource.UserKind)}
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: resource.ParseID("janitor")}))
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 	w := httptest.NewRecorder()
 	h.list(w, r)
 	if !assert.Equal(t, 200, w.Code) {

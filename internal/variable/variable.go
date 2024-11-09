@@ -32,7 +32,8 @@ var (
 
 type (
 	Variable struct {
-		ID          resource.ID      `jsonapi:"primary,variables"`
+		resource.ID `jsonapi:"primary,variables"`
+
 		Key         string           `jsonapi:"attribute" json:"key"`
 		Value       string           `jsonapi:"attribute" json:"value"`
 		Description string           `jsonapi:"attribute" json:"description"`
@@ -78,7 +79,7 @@ type (
 
 func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID: resource.NewID("var"),
+		ID: resource.NewID(resource.VariableKind),
 	}
 	if opts.generateVersion == nil {
 		opts.generateVersion = versionGenerator

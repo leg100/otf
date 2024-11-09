@@ -9,13 +9,14 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
 func TestOAuthClient_requestHandler(t *testing.T) {
-	client := newTestOAuthServerClient(t, resource.ParseID("user-bobby"))
+	client := newTestOAuthServerClient(t, testutils.ParseID(t, "user-bobby"))
 
 	r := httptest.NewRequest("GET", "/auth", nil)
 	w := httptest.NewRecorder()
@@ -33,7 +34,7 @@ func TestOAuthClient_requestHandler(t *testing.T) {
 }
 
 func TestOAuthClient_callbackHandler(t *testing.T) {
-	client := newTestOAuthServerClient(t, resource.ParseID("user-bobby"))
+	client := newTestOAuthServerClient(t, testutils.ParseID(t, "user-bobby"))
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
 	w := httptest.NewRecorder()

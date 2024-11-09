@@ -25,13 +25,13 @@ func TestCLI_State(t *testing.T) {
 			{
 				"three state versions",
 				newFakeCLI(
-					&workspace.Workspace{ID: resource.ParseID("ws-123")},
-					withStateVersion(&Version{ID: resource.ParseID("sv-3"), WorkspaceID: resource.ParseID("ws-123")}),
+					&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")},
+					withStateVersion(&Version{ID: testutils.ParseID(t, "sv-3"), WorkspaceID: testutils.ParseID(t, "ws-123")}),
 					withStateVersionList(resource.NewPage(
 						[]*Version{
-							{ID: resource.ParseID("sv-3")},
-							{ID: resource.ParseID("sv-2")},
-							{ID: resource.ParseID("sv-1")},
+							{ID: testutils.ParseID(t, "sv-3")},
+							{ID: testutils.ParseID(t, "sv-2")},
+							{ID: testutils.ParseID(t, "sv-1")},
 						},
 						resource.PageOptions{},
 						nil,
@@ -41,7 +41,7 @@ func TestCLI_State(t *testing.T) {
 			},
 			{
 				"zero state versions",
-				newFakeCLI(&workspace.Workspace{ID: resource.ParseID("ws-123")}),
+				newFakeCLI(&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")}),
 				"No state versions found\n",
 			},
 		}
@@ -84,7 +84,7 @@ func TestCLI_State(t *testing.T) {
 	})
 
 	t.Run("rollback", func(t *testing.T) {
-		sv := &Version{ID: resource.ParseID("sv-456")}
+		sv := &Version{ID: testutils.ParseID(t, "sv-456")}
 		cmd := newFakeCLI(nil, withStateVersion(sv)).stateRollbackCommand()
 
 		cmd.SetArgs([]string{"sv-123"})

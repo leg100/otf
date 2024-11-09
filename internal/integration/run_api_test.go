@@ -6,7 +6,6 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
@@ -69,7 +68,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 			case run.RunPlanned:
 				// run should have planned two resources (defined in the config from the
 				// github repo)
-				planned, err := daemon.Runs.Get(ctx, resource.ParseID(created.ID))
+				planned, err := daemon.Runs.Get(ctx, testutils.ParseID(t, created.ID))
 				require.NoError(t, err)
 
 				assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)

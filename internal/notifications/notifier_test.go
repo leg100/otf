@@ -7,16 +7,16 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNotifier_handleRun(t *testing.T) {
 	ctx := context.Background()
-	ws1 := resource.ParseID("ws-matching")
-	ws2 := resource.ParseID("ws-zzz")
+	ws1 := testutils.ParseID(t, "ws-matching")
+	ws2 := testutils.ParseID(t, "ws-zzz")
 
 	queuedRun := &run.Run{
 		Status:      run.RunPlanQueued,
@@ -93,7 +93,7 @@ func TestNotifier_handleRun(t *testing.T) {
 // notifications
 func TestNotifier_handleRun_multiple(t *testing.T) {
 	ctx := context.Background()
-	ws1 := resource.ParseID("ws-123")
+	ws1 := testutils.ParseID(t, "ws-123")
 
 	planningRun := &run.Run{
 		Status:      run.RunPlanning,
@@ -118,7 +118,7 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 
 func TestNotifier_handleConfig(t *testing.T) {
 	ctx := context.Background()
-	ws1 := resource.ParseID("ws-123")
+	ws1 := testutils.ParseID(t, "ws-123")
 
 	notifier := &Notifier{
 		Logger:     logr.Discard(),

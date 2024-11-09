@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,12 +65,12 @@ func TestAllocator_allocate(t *testing.T) {
 				{ID: runner1ID, Status: RunnerIdle, MaxJobs: 1},
 			},
 			job: &Job{
-				RunID:  resource.ParseID("run-123"),
+				RunID:  testutils.ParseID(t, "run-123"),
 				Phase:  internal.PlanPhase,
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				RunID:    resource.ParseID("run-123"),
+				RunID:    testutils.ParseID(t, "run-123"),
 				Phase:    internal.PlanPhase,
 				Status:   JobAllocated,
 				RunnerID: &runner1ID,
@@ -100,7 +101,7 @@ func TestAllocator_allocate(t *testing.T) {
 		},
 		{
 			name:  "allocate job to pool agent",
-			pools: []*Pool{{ID: resource.ParseID("pool-1")}},
+			pools: []*Pool{{ID: testutils.ParseID(t, "pool-1")}},
 			runners: []*RunnerMeta{
 				{
 					ID:        runner1ID,

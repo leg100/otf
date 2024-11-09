@@ -7,13 +7,14 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspace_LockButtonHelper(t *testing.T) {
-	wsID := resource.ParseID("ws-123")
+	wsID := testutils.ParseID(t, "ws-123")
 	privilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
 	privilegedUser2 := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
 	unprivilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: false}

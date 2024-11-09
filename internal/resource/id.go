@@ -36,22 +36,16 @@ func ConvertID(id ID, to Kind) ID {
 	return ID{Kind: to, ID: id.ID}
 }
 
-// ParseID parses the ID from a string representation. No validation is
-// performed.
-//
-// TODO(@leg100): perform validation and change signature to return error when
-// validation fails. I'm hesistant to do this just yet because this function is
-// used heavily to both unmarshal IDs from the DB and in tests, and it's a PITA
-// to check errors every time. It might be better to find a way of implementing
-// the database/sql.Scan interface, and getting that to work with sqlc; or to
-// wait until IDs are migrated over to use UUIDs, which would change a lot of
-// things...
-func ParseID(s string) ID {
-	kind, id, _ := strings.Cut(s, "-")
-	return ID{Kind: Kind(kind), ID: id}
+// ParseID parses the ID from a string representation.
+func ParseID(s string) (ID, error) {
+	parts := strings.Split(s, "-")
+	if len(parts) != 2 {
+		return ID{}, fmt.Errorf("malformed ID: %s", s)
+	}
+	kind := parts[0]
+	id := parts[1]
+	return ID{Kind: Kind(kind), ID: id}, nil
 }
-
-func IDPtr(id ID) *ID { return &id }
 
 func (id ID) String() string {
 	return fmt.Sprintf("%s-%s", id.Kind, id.ID)
@@ -61,22 +55,34 @@ func (id *ID) UnmarshalText(text []byte) error {
 	// string also makes a copy which is necessary in order to retain the data
 	// after returning.
 	s := string(text)
-	*id = ParseID(s)
+	x, err := ParseID(s)
+	if err != nil {
+		return err
+	}
+	*id = x
 	return nil
 }
 
 func (id *ID) Scan(text any) error {
+	if text == nil {
+		return nil
+	}
 	s, ok := text.(string)
 	if !ok {
 		return fmt.Errorf("expected database value to be a string: %#v", text)
 	}
-	// string also makes a copy which is necessary in order to retain the data
-	// after returning
-	*id = ParseID(s)
+	x, err := ParseID(s)
+	if err != nil {
+		return err
+	}
+	*id = x
 	return nil
 }
 
-func (id ID) Value() (driver.Value, error) {
+func (id *ID) Value() (driver.Value, error) {
+	if id == nil {
+		return nil, nil
+	}
 	return id.String(), nil
 }
 

@@ -110,9 +110,12 @@ func TestFactory(t *testing.T) {
 	})
 
 	t.Run("pull from vcs", func(t *testing.T) {
+		workspaceID := resource.NewID(resource.WorkspaceKind)
+
 		f := newTestFactory(
 			&organization.Organization{},
 			&workspace.Workspace{
+				ID:         workspaceID,
 				Connection: &workspace.Connection{},
 			},
 			&configversion.ConfigurationVersion{},
@@ -122,9 +125,9 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
-		// fake config version service sets the config version ID to "created"
-		// if it was newly created
-		assert.Equal(t, resource.ParseID("created"), got.ConfigurationVersionID)
+		// fake config version service sets the config version ID to the
+		// workspace ID if it was newly created
+		assert.Equal(t, workspaceID, got.ConfigurationVersionID)
 	})
 
 	t.Run("get latest version", func(t *testing.T) {
@@ -187,8 +190,8 @@ func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, reso
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) Create(context.Context, resource.ID, configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
-	return &configversion.ConfigurationVersion{ID: resource.ParseID("created")}, nil
+func (f *fakeFactoryConfigurationVersionService) Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
+	return &configversion.ConfigurationVersion{ID: workspaceID}, nil
 }
 
 func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, resource.ID, []byte) error {

@@ -13,7 +13,7 @@ import (
 
 func TestWebHandlers_createAgentPool(t *testing.T) {
 	svc := &fakeService{
-		pool: &Pool{ID: resource.ParseID("pool-123")},
+		pool: &Pool{ID: testutils.ParseID(t, "pool-123")},
 	}
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
@@ -37,7 +37,7 @@ func TestWebHandlers_listAgentPools(t *testing.T) {
 	h := &webHandlers{
 		Renderer: testutils.NewRenderer(t),
 		svc: &fakeService{
-			pool: &Pool{ID: resource.ParseID("pool-123")},
+			pool: &Pool{ID: testutils.ParseID(t, "pool-123")},
 		},
 	}
 	q := "/?organization_name=acme-org"

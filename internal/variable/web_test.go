@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,7 +89,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
-			fakeWebApp(t, resource.ParseID("ws-123"), v).updateWorkspaceVariable(w, r)
+			fakeWebApp(t, testutils.ParseID(t, "ws-123"), v).updateWorkspaceVariable(w, r)
 
 			if assert.Equal(t, 302, w.Code, "got body: %s", w.Body.String()) {
 				redirect, err := w.Result().Location()
