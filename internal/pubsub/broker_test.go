@@ -49,7 +49,7 @@ func TestBroker_forward(t *testing.T) {
 	sub, unsub := broker.Subscribe(ctx)
 	defer unsub()
 
-	broker.forward(ctx, "bar", sql.InsertAction)
+	broker.forward(ctx, "foo-bar", sql.InsertAction)
 	want := Event[*foo]{
 		Type:    CreatedEvent,
 		Payload: &foo{id: resource.ParseID("foo-bar")},
