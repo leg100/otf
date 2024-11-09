@@ -14,15 +14,7 @@ import (
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
-const (
-	WorkspaceConnection ConnectionType = iota
-	ModuleConnection
-)
-
 type (
-	// ConnectionType identifies the OTF resource type in a VCS connection.
-	ConnectionType int
-
 	// Connection is a connection between a VCS repo and an OTF resource.
 	Connection struct {
 		VCSProviderID resource.ID
@@ -30,17 +22,13 @@ type (
 	}
 
 	ConnectOptions struct {
-		ConnectionType // OTF resource type
-
 		VCSProviderID resource.ID // vcs provider of repo
-		ResourceID    resource.ID // ID of OTF resource
+		ResourceID    resource.ID // ID of OTF resource to connect.
 		RepoPath      string
 	}
 
 	DisconnectOptions struct {
-		ConnectionType // OTF resource type
-
-		ResourceID resource.ID // ID of OTF resource
+		ResourceID resource.ID // ID of OTF resource to disconnect
 	}
 
 	SynchroniseOptions struct {

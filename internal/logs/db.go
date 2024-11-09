@@ -36,7 +36,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error
 	}
 	return Chunk{
 		ID:     chunkID,
-		RunID:  resource.ParseID(chunk.RunID.String),
+		RunID:  chunk.RunID,
 		Phase:  internal.PhaseType(chunk.Phase.String),
 		Data:   chunk.Chunk,
 		Offset: int(chunk.Offset.Int32),

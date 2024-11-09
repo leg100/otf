@@ -132,10 +132,9 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 	)
 	setup := func() (err error) {
 		mod.Connection, err = s.connections.Connect(ctx, connections.ConnectOptions{
-			ConnectionType: connections.ModuleConnection,
-			ResourceID:     mod.ID,
-			VCSProviderID:  opts.VCSProviderID,
-			RepoPath:       string(opts.Repo),
+			ResourceID:    mod.ID,
+			VCSProviderID: opts.VCSProviderID,
+			RepoPath:      string(opts.Repo),
 		})
 		if err != nil {
 			return err
@@ -296,8 +295,7 @@ func (s *Service) DeleteModule(ctx context.Context, id resource.ID) (*Module, er
 		// disconnect module prior to deletion
 		if module.Connection != nil {
 			err := s.connections.Disconnect(ctx, connections.DisconnectOptions{
-				ConnectionType: connections.ModuleConnection,
-				ResourceID:     module.ID,
+				ResourceID: module.ID,
 			})
 			if err != nil {
 				return err

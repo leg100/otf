@@ -20,14 +20,14 @@ type (
 
 	// moduleRow is a row from a database query for modules.
 	moduleRow struct {
-		ModuleID         pgtype.Text
+		ModuleID         resource.ID
 		CreatedAt        pgtype.Timestamptz
 		UpdatedAt        pgtype.Timestamptz
 		Name             pgtype.Text
 		Provider         pgtype.Text
 		Status           pgtype.Text
 		OrganizationName pgtype.Text
-		VCSProviderID    pgtype.Text
+		VCSProviderID    resource.ID
 		RepoPath         pgtype.Text
 		ModuleVersions   []sqlc.ModuleVersion
 	}
@@ -165,7 +165,7 @@ func (db *pgdb) getTarball(ctx context.Context, versionID resource.ID) ([]byte, 
 // toModule converts a database row into a module
 func (row moduleRow) toModule() *Module {
 	module := &Module{
-		ID:           resource.ParseID(row.ModuleID.String),
+		ID:           row.ModuleID,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		UpdatedAt:    row.UpdatedAt.Time.UTC(),
 		Name:         row.Name.String,
@@ -173,9 +173,9 @@ func (row moduleRow) toModule() *Module {
 		Status:       ModuleStatus(row.Status.String),
 		Organization: row.OrganizationName.String,
 	}
-	if row.VCSProviderID.Valid && row.RepoPath.Valid {
+	if row.RepoPath.Valid {
 		module.Connection = &connections.Connection{
-			VCSProviderID: resource.ParseID(row.VCSProviderID.String),
+			VCSProviderID: row.VCSProviderID,
 			Repo:          row.RepoPath.String,
 		}
 	}
@@ -185,11 +185,11 @@ func (row moduleRow) toModule() *Module {
 	sort.Sort(byVersion(row.ModuleVersions))
 	for i := len(row.ModuleVersions) - 1; i >= 0; i-- {
 		module.Versions = append(module.Versions, ModuleVersion{
-			ID:          resource.ParseID(row.ModuleVersions[i].ModuleVersionID.String),
+			ID:          row.ModuleVersions[i].ModuleVersionID,
 			Version:     row.ModuleVersions[i].Version.String,
 			CreatedAt:   row.ModuleVersions[i].CreatedAt.Time.UTC(),
 			UpdatedAt:   row.ModuleVersions[i].UpdatedAt.Time.UTC(),
-			ModuleID:    resource.ParseID(row.ModuleVersions[i].ModuleID.String),
+			ModuleID:    row.ModuleVersions[i].ModuleID,
 			Status:      ModuleVersionStatus(row.ModuleVersions[i].Status.String),
 			StatusError: row.ModuleVersions[i].StatusError.String,
 		})

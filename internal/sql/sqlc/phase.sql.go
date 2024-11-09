@@ -24,14 +24,14 @@ WHERE chunk_id = $1
 `
 
 type FindLogChunkByIDRow struct {
-	ChunkID pgtype.Text
+	ChunkID resource.ID
 	RunID   resource.ID
 	Phase   pgtype.Text
 	Chunk   []byte
 	Offset  pgtype.Int4
 }
 
-func (q *Queries) FindLogChunkByID(ctx context.Context, chunkID pgtype.Text) (FindLogChunkByIDRow, error) {
+func (q *Queries) FindLogChunkByID(ctx context.Context, chunkID resource.ID) (FindLogChunkByIDRow, error) {
 	row := q.db.QueryRow(ctx, findLogChunkByID, chunkID)
 	var i FindLogChunkByIDRow
 	err := row.Scan(
@@ -87,7 +87,7 @@ INSERT INTO logs (
 `
 
 type InsertLogChunkParams struct {
-	ChunkID pgtype.Text
+	ChunkID resource.ID
 	RunID   resource.ID
 	Phase   pgtype.Text
 	Chunk   []byte

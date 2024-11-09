@@ -173,7 +173,7 @@ func (db *pgdb) deleteVersion(ctx context.Context, id resource.ID) error {
 
 func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.ID) error {
 	_, err := db.Querier(ctx).UpdateWorkspaceCurrentStateVersionID(ctx, sqlc.UpdateWorkspaceCurrentStateVersionIDParams{
-		StateVersionID: svID,
+		StateVersionID: &svID,
 		WorkspaceID:    workspaceID,
 	})
 	if err != nil {

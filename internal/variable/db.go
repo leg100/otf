@@ -50,7 +50,7 @@ func (row VariableRow) convert() *Variable {
 	}
 }
 
-func (row VariableSetRow) convert() *VariableSet {
+func (row VariableSetRow) convert() (*VariableSet, error) {
 	set := &VariableSet{
 		ID:           row.VariableSetID,
 		Global:       row.Global.Bool,
@@ -64,9 +64,11 @@ func (row VariableSetRow) convert() *VariableSet {
 	}
 	set.Workspaces = make([]resource.ID, len(row.WorkspaceIds))
 	for i, wid := range row.WorkspaceIds {
-		set.Workspaces[i] = wid
+		if err := set.Workspaces[i].Scan(wid); err != nil {
+			return nil, err
+		}
 	}
-	return set
+	return set, nil
 }
 
 func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.ID, v *Variable) error {
@@ -162,7 +164,7 @@ func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*Variab
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return VariableSetRow(row).convert(), nil
+	return VariableSetRow(row).convert()
 }
 
 func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error) {
@@ -170,7 +172,7 @@ func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID reso
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return VariableSetRow(row).convert(), nil
+	return VariableSetRow(row).convert()
 }
 
 func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
@@ -181,7 +183,11 @@ func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*
 
 	sets := make([]*VariableSet, len(rows))
 	for i, row := range rows {
-		sets[i] = VariableSetRow(row).convert()
+		var err error
+		sets[i], err = VariableSetRow(row).convert()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return sets, nil
 }
@@ -194,7 +200,11 @@ func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID re
 
 	sets := make([]*VariableSet, len(rows))
 	for i, row := range rows {
-		sets[i] = VariableSetRow(row).convert()
+		var err error
+		sets[i], err = VariableSetRow(row).convert()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return sets, nil
 }

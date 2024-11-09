@@ -14,6 +14,8 @@ const (
 	ChunkKind                     Kind = "chunk"
 	UserKind                      Kind = "user"
 	TeamKind                      Kind = "team"
+	ModuleKind                    Kind = "mod"
+	ModuleVersionKind             Kind = "modver"
 	NotificationConfigurationKind Kind = "nc"
 	AgentPoolKind                 Kind = "apool"
 	RunnerKind                    Kind = "runner"

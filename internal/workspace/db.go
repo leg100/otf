@@ -42,7 +42,7 @@ type (
 		LatestRunID                *resource.ID
 		OrganizationName           pgtype.Text
 		Branch                     pgtype.Text
-		CurrentStateVersionID      pgtype.Text
+		CurrentStateVersionID      *resource.ID
 		TriggerPatterns            []pgtype.Text
 		VCSTagsRegex               pgtype.Text
 		AllowCLIApply              pgtype.Bool

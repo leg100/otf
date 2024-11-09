@@ -17,27 +17,27 @@ type (
 	}
 
 	pgresult struct {
-		NotificationConfigurationID pgtype.Text
+		NotificationConfigurationID resource.ID
 		CreatedAt                   pgtype.Timestamptz
 		UpdatedAt                   pgtype.Timestamptz
 		Name                        pgtype.Text
 		URL                         pgtype.Text
 		Triggers                    []pgtype.Text
 		DestinationType             pgtype.Text
-		WorkspaceID                 pgtype.Text
+		WorkspaceID                 resource.ID
 		Enabled                     pgtype.Bool
 	}
 )
 
 func (r pgresult) toNotificationConfiguration() *Config {
 	nc := &Config{
-		ID:              resource.ParseID(r.NotificationConfigurationID.String),
+		ID:              r.NotificationConfigurationID,
 		CreatedAt:       r.CreatedAt.Time.UTC(),
 		UpdatedAt:       r.UpdatedAt.Time.UTC(),
 		Name:            r.Name.String,
 		Enabled:         r.Enabled.Bool,
 		DestinationType: Destination(r.DestinationType.String),
-		WorkspaceID:     resource.ParseID(r.WorkspaceID.String),
+		WorkspaceID:     r.WorkspaceID,
 	}
 	for _, t := range r.Triggers {
 		nc.Triggers = append(nc.Triggers, Trigger(t.String))

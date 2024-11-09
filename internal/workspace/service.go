@@ -329,10 +329,9 @@ func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connecti
 	}
 
 	_, err = s.connections.Connect(ctx, connections.ConnectOptions{
-		ConnectionType: connections.WorkspaceConnection,
-		ResourceID:     workspaceID,
-		VCSProviderID:  connection.VCSProviderID,
-		RepoPath:       connection.Repo,
+		ResourceID:    workspaceID,
+		VCSProviderID: connection.VCSProviderID,
+		RepoPath:      connection.Repo,
 	})
 	if err != nil {
 		s.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", connection.Repo)
@@ -350,8 +349,7 @@ func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error
 	}
 
 	err = s.connections.Disconnect(ctx, connections.DisconnectOptions{
-		ConnectionType: connections.WorkspaceConnection,
-		ResourceID:     workspaceID,
+		ResourceID: workspaceID,
 	})
 	if err != nil {
 		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)

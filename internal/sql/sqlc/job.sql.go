@@ -31,8 +31,8 @@ AND   j.status = 'allocated'
 `
 
 type FindAllocatedJobsRow struct {
-	JobID            pgtype.Text
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
@@ -94,8 +94,8 @@ RETURNING
 `
 
 type FindAndUpdateSignaledJobsRow struct {
-	JobID            pgtype.Text
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
@@ -154,8 +154,8 @@ WHERE j.job_id = $1
 `
 
 type FindJobRow struct {
-	JobID            pgtype.Text
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
@@ -165,7 +165,7 @@ type FindJobRow struct {
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindJob(ctx context.Context, jobID pgtype.Text) (FindJobRow, error) {
+func (q *Queries) FindJob(ctx context.Context, jobID resource.ID) (FindJobRow, error) {
 	row := q.db.QueryRow(ctx, findJob, jobID)
 	var i FindJobRow
 	err := row.Scan(
@@ -201,8 +201,8 @@ FOR UPDATE OF j
 `
 
 type FindJobForUpdateRow struct {
-	JobID            pgtype.Text
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
@@ -212,7 +212,7 @@ type FindJobForUpdateRow struct {
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindJobForUpdate(ctx context.Context, jobID pgtype.Text) (FindJobForUpdateRow, error) {
+func (q *Queries) FindJobForUpdate(ctx context.Context, jobID resource.ID) (FindJobForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findJobForUpdate, jobID)
 	var i FindJobForUpdateRow
 	err := row.Scan(
@@ -249,13 +249,13 @@ FOR UPDATE OF j
 `
 
 type FindJobForUpdateByRunPhaseParams struct {
-	RunID pgtype.Text
+	RunID resource.ID
 	Phase pgtype.Text
 }
 
 type FindJobForUpdateByRunPhaseRow struct {
-	JobID            pgtype.Text
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
@@ -299,8 +299,8 @@ JOIN workspaces w USING (workspace_id)
 `
 
 type FindJobsRow struct {
-	JobID            pgtype.Text
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
@@ -355,8 +355,8 @@ INSERT INTO jobs (
 `
 
 type InsertJobParams struct {
-	JobID  pgtype.Text
-	RunID  pgtype.Text
+	JobID  resource.ID
+	RunID  resource.ID
 	Phase  pgtype.Text
 	Status pgtype.Text
 }
@@ -384,7 +384,7 @@ type UpdateJobParams struct {
 	Status   pgtype.Text
 	Signaled pgtype.Bool
 	RunnerID *resource.ID
-	JobID    pgtype.Text
+	JobID    resource.ID
 }
 
 func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, error) {

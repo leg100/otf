@@ -92,12 +92,12 @@ type IngressAttribute struct {
 }
 
 type Job struct {
-	RunID    pgtype.Text
+	RunID    resource.ID
 	Phase    pgtype.Text
 	Status   pgtype.Text
 	RunnerID *resource.ID
 	Signaled pgtype.Bool
-	JobID    pgtype.Text
+	JobID    resource.ID
 }
 
 type JobPhase struct {
@@ -118,7 +118,7 @@ type Log struct {
 	Phase   pgtype.Text
 	Chunk   []byte
 	Offset  pgtype.Int4
-	ChunkID pgtype.Text
+	ChunkID resource.ID
 }
 
 type Module struct {
