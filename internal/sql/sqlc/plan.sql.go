@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const getPlanBinByID = `-- name: GetPlanBinByID :one
@@ -17,7 +18,7 @@ FROM plans
 WHERE run_id = $1
 `
 
-func (q *Queries) GetPlanBinByID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
+func (q *Queries) GetPlanBinByID(ctx context.Context, runID resource.ID) ([]byte, error) {
 	row := q.db.QueryRow(ctx, getPlanBinByID, runID)
 	var plan_bin []byte
 	err := row.Scan(&plan_bin)
@@ -30,7 +31,7 @@ FROM plans
 WHERE run_id = $1
 `
 
-func (q *Queries) GetPlanJSONByID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
+func (q *Queries) GetPlanJSONByID(ctx context.Context, runID resource.ID) ([]byte, error) {
 	row := q.db.QueryRow(ctx, getPlanJSONByID, runID)
 	var plan_json []byte
 	err := row.Scan(&plan_json)
@@ -48,7 +49,7 @@ INSERT INTO plans (
 `
 
 type InsertPlanParams struct {
-	RunID  pgtype.Text
+	RunID  resource.ID
 	Status pgtype.Text
 }
 
@@ -66,12 +67,12 @@ RETURNING run_id
 
 type UpdatePlanBinByIDParams struct {
 	PlanBin []byte
-	RunID   pgtype.Text
+	RunID   resource.ID
 }
 
-func (q *Queries) UpdatePlanBinByID(ctx context.Context, arg UpdatePlanBinByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdatePlanBinByID(ctx context.Context, arg UpdatePlanBinByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updatePlanBinByID, arg.PlanBin, arg.RunID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -85,12 +86,12 @@ RETURNING run_id
 
 type UpdatePlanJSONByIDParams struct {
 	PlanJSON []byte
-	RunID    pgtype.Text
+	RunID    resource.ID
 }
 
-func (q *Queries) UpdatePlanJSONByID(ctx context.Context, arg UpdatePlanJSONByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdatePlanJSONByID(ctx context.Context, arg UpdatePlanJSONByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updatePlanJSONByID, arg.PlanJSON, arg.RunID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -104,12 +105,12 @@ RETURNING run_id
 
 type UpdatePlanStatusByIDParams struct {
 	Status pgtype.Text
-	RunID  pgtype.Text
+	RunID  resource.ID
 }
 
-func (q *Queries) UpdatePlanStatusByID(ctx context.Context, arg UpdatePlanStatusByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdatePlanStatusByID(ctx context.Context, arg UpdatePlanStatusByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updatePlanStatusByID, arg.Status, arg.RunID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -137,10 +138,10 @@ type UpdatePlannedChangesByIDParams struct {
 	OutputAdditions      interface{}
 	OutputChanges        interface{}
 	OutputDestructions   interface{}
-	RunID                pgtype.Text
+	RunID                resource.ID
 }
 
-func (q *Queries) UpdatePlannedChangesByID(ctx context.Context, arg UpdatePlannedChangesByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdatePlannedChangesByID(ctx context.Context, arg UpdatePlannedChangesByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updatePlannedChangesByID,
 		arg.ResourceAdditions,
 		arg.ResourceChanges,
@@ -150,7 +151,7 @@ func (q *Queries) UpdatePlannedChangesByID(ctx context.Context, arg UpdatePlanne
 		arg.OutputDestructions,
 		arg.RunID,
 	)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }

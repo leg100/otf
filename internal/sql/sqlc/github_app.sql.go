@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteGithubApp = `-- name: DeleteGithubApp :one
@@ -105,7 +106,7 @@ type InsertGithubAppInstallParams struct {
 	InstallID     pgtype.Int8
 	Username      pgtype.Text
 	Organization  pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 }
 
 func (q *Queries) InsertGithubAppInstall(ctx context.Context, arg InsertGithubAppInstallParams) error {

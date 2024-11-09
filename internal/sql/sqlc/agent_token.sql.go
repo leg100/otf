@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteAgentTokenByID = `-- name: DeleteAgentTokenByID :one
@@ -18,9 +19,9 @@ WHERE agent_token_id = $1
 RETURNING agent_token_id
 `
 
-func (q *Queries) DeleteAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteAgentTokenByID(ctx context.Context, agentTokenID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteAgentTokenByID, agentTokenID)
-	var agent_token_id pgtype.Text
+	var agent_token_id resource.ID
 	err := row.Scan(&agent_token_id)
 	return agent_token_id, err
 }
@@ -31,7 +32,7 @@ FROM agent_tokens
 WHERE agent_token_id = $1
 `
 
-func (q *Queries) FindAgentTokenByID(ctx context.Context, agentTokenID pgtype.Text) (AgentToken, error) {
+func (q *Queries) FindAgentTokenByID(ctx context.Context, agentTokenID resource.ID) (AgentToken, error) {
 	row := q.db.QueryRow(ctx, findAgentTokenByID, agentTokenID)
 	var i AgentToken
 	err := row.Scan(
@@ -50,7 +51,7 @@ WHERE agent_pool_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) FindAgentTokensByAgentPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]AgentToken, error) {
+func (q *Queries) FindAgentTokensByAgentPoolID(ctx context.Context, agentPoolID resource.ID) ([]AgentToken, error) {
 	rows, err := q.db.Query(ctx, findAgentTokensByAgentPoolID, agentPoolID)
 	if err != nil {
 		return nil, err
@@ -90,10 +91,10 @@ INSERT INTO agent_tokens (
 `
 
 type InsertAgentTokenParams struct {
-	AgentTokenID pgtype.Text
+	AgentTokenID resource.ID
 	CreatedAt    pgtype.Timestamptz
 	Description  pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  resource.ID
 }
 
 func (q *Queries) InsertAgentToken(ctx context.Context, arg InsertAgentTokenParams) error {

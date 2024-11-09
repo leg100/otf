@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteRepohookByID = `-- name: DeleteRepohookByID :one
@@ -47,7 +48,7 @@ WHERE w.repohook_id = $1
 type FindRepohookByIDRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -83,13 +84,13 @@ AND   w.vcs_provider_id = $2
 
 type FindRepohookByRepoAndProviderParams struct {
 	RepoPath      pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 }
 
 type FindRepohookByRepoAndProviderRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -137,7 +138,7 @@ JOIN vcs_providers v USING (vcs_provider_id)
 type FindRepohooksRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -190,7 +191,7 @@ WHERE NOT EXISTS (
 type FindUnreferencedRepohooksRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -254,7 +255,7 @@ JOIN vcs_providers v USING (vcs_provider_id)
 type InsertRepohookParams struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 }

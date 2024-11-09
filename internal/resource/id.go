@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -62,6 +63,21 @@ func (id *ID) UnmarshalText(text []byte) error {
 	s := string(text)
 	*id = ParseID(s)
 	return nil
+}
+
+func (id *ID) Scan(text any) error {
+	s, ok := text.(string)
+	if !ok {
+		return fmt.Errorf("expected database value to be a string: %#v", text)
+	}
+	// string also makes a copy which is necessary in order to retain the data
+	// after returning
+	*id = ParseID(s)
+	return nil
+}
+
+func (id ID) Value() (driver.Value, error) {
+	return id.String(), nil
 }
 
 // GetID allows the user of an interface to retrieve the ID.

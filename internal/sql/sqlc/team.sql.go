@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteTeamByID = `-- name: DeleteTeamByID :one
@@ -18,9 +19,9 @@ WHERE team_id = $1
 RETURNING team_id
 `
 
-func (q *Queries) DeleteTeamByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteTeamByID(ctx context.Context, teamID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteTeamByID, teamID)
-	var team_id pgtype.Text
+	var team_id resource.ID
 	err := row.Scan(&team_id)
 	return team_id, err
 }
@@ -31,7 +32,7 @@ FROM teams
 WHERE team_id = $1
 `
 
-func (q *Queries) FindTeamByID(ctx context.Context, teamID pgtype.Text) (Team, error) {
+func (q *Queries) FindTeamByID(ctx context.Context, teamID resource.ID) (Team, error) {
 	row := q.db.QueryRow(ctx, findTeamByID, teamID)
 	var i Team
 	err := row.Scan(
@@ -58,7 +59,7 @@ WHERE team_id = $1
 FOR UPDATE OF t
 `
 
-func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (Team, error) {
+func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, teamID resource.ID) (Team, error) {
 	row := q.db.QueryRow(ctx, findTeamByIDForUpdate, teamID)
 	var i Team
 	err := row.Scan(
@@ -117,7 +118,7 @@ JOIN team_tokens tt USING (team_id)
 WHERE tt.team_token_id = $1
 `
 
-func (q *Queries) FindTeamByTokenID(ctx context.Context, tokenID pgtype.Text) (Team, error) {
+func (q *Queries) FindTeamByTokenID(ctx context.Context, tokenID resource.ID) (Team, error) {
 	row := q.db.QueryRow(ctx, findTeamByTokenID, tokenID)
 	var i Team
 	err := row.Scan(
@@ -207,7 +208,7 @@ INSERT INTO teams (
 `
 
 type InsertTeamParams struct {
-	ID                              pgtype.Text
+	ID                              resource.ID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	OrganizationName                pgtype.Text
@@ -265,10 +266,10 @@ type UpdateTeamByIDParams struct {
 	PermissionManageProviders       pgtype.Bool
 	PermissionManagePolicies        pgtype.Bool
 	PermissionManagePolicyOverrides pgtype.Bool
-	TeamID                          pgtype.Text
+	TeamID                          resource.ID
 }
 
-func (q *Queries) UpdateTeamByID(ctx context.Context, arg UpdateTeamByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateTeamByID(ctx context.Context, arg UpdateTeamByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateTeamByID,
 		arg.Name,
 		arg.Visibility,
@@ -281,7 +282,7 @@ func (q *Queries) UpdateTeamByID(ctx context.Context, arg UpdateTeamByIDParams) 
 		arg.PermissionManagePolicyOverrides,
 		arg.TeamID,
 	)
-	var team_id pgtype.Text
+	var team_id resource.ID
 	err := row.Scan(&team_id)
 	return team_id, err
 }

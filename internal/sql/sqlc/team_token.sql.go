@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteTeamTokenByID = `-- name: DeleteTeamTokenByID :one
@@ -18,9 +19,9 @@ WHERE team_id = $1
 RETURNING team_token_id
 `
 
-func (q *Queries) DeleteTeamTokenByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteTeamTokenByID(ctx context.Context, teamID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteTeamTokenByID, teamID)
-	var team_token_id pgtype.Text
+	var team_token_id resource.ID
 	err := row.Scan(&team_token_id)
 	return team_token_id, err
 }
@@ -31,7 +32,7 @@ FROM team_tokens
 WHERE team_id = $1
 `
 
-func (q *Queries) FindTeamTokensByID(ctx context.Context, teamID pgtype.Text) ([]TeamToken, error) {
+func (q *Queries) FindTeamTokensByID(ctx context.Context, teamID resource.ID) ([]TeamToken, error) {
 	rows, err := q.db.Query(ctx, findTeamTokensByID, teamID)
 	if err != nil {
 		return nil, err
@@ -75,9 +76,9 @@ INSERT INTO team_tokens (
 `
 
 type InsertTeamTokenParams struct {
-	TeamTokenID pgtype.Text
+	TeamTokenID resource.ID
 	CreatedAt   pgtype.Timestamptz
-	TeamID      pgtype.Text
+	TeamID      resource.ID
 	Expiry      pgtype.Timestamptz
 }
 

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteWorkspacePermissionByID = `-- name: DeleteWorkspacePermissionByID :exec
@@ -19,8 +20,8 @@ AND team_id = $2
 `
 
 type DeleteWorkspacePermissionByIDParams struct {
-	WorkspaceID pgtype.Text
-	TeamID      pgtype.Text
+	WorkspaceID resource.ID
+	TeamID      resource.ID
 }
 
 func (q *Queries) DeleteWorkspacePermissionByID(ctx context.Context, arg DeleteWorkspacePermissionByIDParams) error {
@@ -34,7 +35,7 @@ FROM workspace_permissions
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]WorkspacePermission, error) {
+func (q *Queries) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID resource.ID) ([]WorkspacePermission, error) {
 	rows, err := q.db.Query(ctx, findWorkspacePermissionsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
@@ -67,8 +68,8 @@ INSERT INTO workspace_permissions (
 `
 
 type UpsertWorkspacePermissionParams struct {
-	WorkspaceID pgtype.Text
-	TeamID      pgtype.Text
+	WorkspaceID resource.ID
+	TeamID      resource.ID
 	Role        pgtype.Text
 }
 

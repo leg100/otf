@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteVariableByID = `-- name: DeleteVariableByID :one
@@ -18,7 +19,7 @@ WHERE variable_id = $1
 RETURNING variable_id, key, value, description, category, sensitive, hcl, version_id
 `
 
-func (q *Queries) DeleteVariableByID(ctx context.Context, variableID pgtype.Text) (Variable, error) {
+func (q *Queries) DeleteVariableByID(ctx context.Context, variableID resource.ID) (Variable, error) {
 	row := q.db.QueryRow(ctx, deleteVariableByID, variableID)
 	var i Variable
 	err := row.Scan(
@@ -40,7 +41,7 @@ FROM variables
 WHERE variable_id = $1
 `
 
-func (q *Queries) FindVariable(ctx context.Context, variableID pgtype.Text) (Variable, error) {
+func (q *Queries) FindVariable(ctx context.Context, variableID resource.ID) (Variable, error) {
 	row := q.db.QueryRow(ctx, findVariable, variableID)
 	var i Variable
 	err := row.Scan(
@@ -79,7 +80,7 @@ INSERT INTO variables (
 `
 
 type InsertVariableParams struct {
-	VariableID  pgtype.Text
+	VariableID  resource.ID
 	Key         pgtype.Text
 	Value       pgtype.Text
 	Description pgtype.Text
@@ -125,10 +126,10 @@ type UpdateVariableByIDParams struct {
 	Sensitive   pgtype.Bool
 	VersionID   pgtype.Text
 	HCL         pgtype.Bool
-	VariableID  pgtype.Text
+	VariableID  resource.ID
 }
 
-func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateVariableByID,
 		arg.Key,
 		arg.Value,
@@ -139,7 +140,7 @@ func (q *Queries) UpdateVariableByID(ctx context.Context, arg UpdateVariableByID
 		arg.HCL,
 		arg.VariableID,
 	)
-	var variable_id pgtype.Text
+	var variable_id resource.ID
 	err := row.Scan(&variable_id)
 	return variable_id, err
 }

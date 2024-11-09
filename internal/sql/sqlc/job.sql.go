@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const findAllocatedJobs = `-- name: FindAllocatedJobs :many
@@ -35,13 +36,13 @@ type FindAllocatedJobsRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID pgtype.Text) ([]FindAllocatedJobsRow, error) {
+func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID *resource.ID) ([]FindAllocatedJobsRow, error) {
 	rows, err := q.db.Query(ctx, findAllocatedJobs, runnerID)
 	if err != nil {
 		return nil, err
@@ -98,14 +99,14 @@ type FindAndUpdateSignaledJobsRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
 // Find signaled jobs and then immediately update signal with null.
-func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype.Text) ([]FindAndUpdateSignaledJobsRow, error) {
+func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID *resource.ID) ([]FindAndUpdateSignaledJobsRow, error) {
 	rows, err := q.db.Query(ctx, findAndUpdateSignaledJobs, runnerID)
 	if err != nil {
 		return nil, err
@@ -158,9 +159,9 @@ type FindJobRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
@@ -205,9 +206,9 @@ type FindJobForUpdateRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
@@ -258,9 +259,9 @@ type FindJobForUpdateByRunPhaseRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
@@ -303,9 +304,9 @@ type FindJobsRow struct {
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
@@ -382,7 +383,7 @@ RETURNING run_id, phase, status, runner_id, signaled, job_id
 type UpdateJobParams struct {
 	Status   pgtype.Text
 	Signaled pgtype.Bool
-	RunnerID pgtype.Text
+	RunnerID *resource.ID
 	JobID    pgtype.Text
 }
 

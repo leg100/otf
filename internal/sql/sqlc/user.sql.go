@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteUserByID = `-- name: DeleteUserByID :one
@@ -18,9 +19,9 @@ WHERE user_id = $1
 RETURNING user_id
 `
 
-func (q *Queries) DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteUserByID(ctx context.Context, userID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteUserByID, userID)
-	var user_id pgtype.Text
+	var user_id resource.ID
 	err := row.Scan(&user_id)
 	return user_id, err
 }
@@ -32,9 +33,9 @@ WHERE username = $1
 RETURNING user_id
 `
 
-func (q *Queries) DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteUserByUsername(ctx context.Context, username pgtype.Text) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteUserByUsername, username)
-	var user_id pgtype.Text
+	var user_id resource.ID
 	err := row.Scan(&user_id)
 	return user_id, err
 }
@@ -55,7 +56,7 @@ WHERE t.token_id = $1
 `
 
 type FindUserByAuthenticationTokenIDRow struct {
-	UserID    pgtype.Text
+	UserID    resource.ID
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -63,7 +64,7 @@ type FindUserByAuthenticationTokenIDRow struct {
 	Teams     []Team
 }
 
-func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID pgtype.Text) (FindUserByAuthenticationTokenIDRow, error) {
+func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, tokenID resource.ID) (FindUserByAuthenticationTokenIDRow, error) {
 	row := q.db.QueryRow(ctx, findUserByAuthenticationTokenID, tokenID)
 	var i FindUserByAuthenticationTokenIDRow
 	err := row.Scan(
@@ -92,7 +93,7 @@ WHERE u.user_id = $1
 `
 
 type FindUserByIDRow struct {
-	UserID    pgtype.Text
+	UserID    resource.ID
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -100,7 +101,7 @@ type FindUserByIDRow struct {
 	Teams     []Team
 }
 
-func (q *Queries) FindUserByID(ctx context.Context, userID pgtype.Text) (FindUserByIDRow, error) {
+func (q *Queries) FindUserByID(ctx context.Context, userID resource.ID) (FindUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, findUserByID, userID)
 	var i FindUserByIDRow
 	err := row.Scan(
@@ -129,7 +130,7 @@ WHERE u.username = $1
 `
 
 type FindUserByUsernameRow struct {
-	UserID    pgtype.Text
+	UserID    resource.ID
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -165,7 +166,7 @@ FROM users u
 `
 
 type FindUsersRow struct {
-	UserID    pgtype.Text
+	UserID    resource.ID
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -218,7 +219,7 @@ GROUP BY u.user_id
 `
 
 type FindUsersByOrganizationRow struct {
-	UserID    pgtype.Text
+	UserID    resource.ID
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -271,7 +272,7 @@ GROUP BY u.user_id
 `
 
 type FindUsersByTeamIDRow struct {
-	UserID    pgtype.Text
+	UserID    resource.ID
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -279,7 +280,7 @@ type FindUsersByTeamIDRow struct {
 	Teams     []Team
 }
 
-func (q *Queries) FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) ([]FindUsersByTeamIDRow, error) {
+func (q *Queries) FindUsersByTeamID(ctx context.Context, teamID resource.ID) ([]FindUsersByTeamIDRow, error) {
 	rows, err := q.db.Query(ctx, findUsersByTeamID, teamID)
 	if err != nil {
 		return nil, err
@@ -321,7 +322,7 @@ INSERT INTO users (
 `
 
 type InsertUserParams struct {
-	ID        pgtype.Text
+	ID        resource.ID
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	Username  pgtype.Text

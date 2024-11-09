@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteTeamMembership = `-- name: DeleteTeamMembership :many
@@ -27,7 +28,7 @@ RETURNING tm.username
 `
 
 type DeleteTeamMembershipParams struct {
-	TeamID    pgtype.Text
+	TeamID    resource.ID
 	Usernames []pgtype.Text
 }
 
@@ -64,7 +65,7 @@ RETURNING username
 `
 
 type InsertTeamMembershipParams struct {
-	TeamID    pgtype.Text
+	TeamID    resource.ID
 	Usernames []pgtype.Text
 }
 

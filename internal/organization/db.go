@@ -21,7 +21,7 @@ type (
 
 // row is the row result of a database query for organizations
 type row struct {
-	OrganizationID             pgtype.Text
+	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       pgtype.Text
@@ -37,7 +37,7 @@ type row struct {
 // organization.
 func (r row) toOrganization() *Organization {
 	org := &Organization{
-		ID:                         resource.ParseID(r.OrganizationID.String),
+		ID:                         r.OrganizationID,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		Name:                       r.Name.String,
@@ -68,7 +68,7 @@ type pgdb struct {
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	err := db.Querier(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
-		ID:                         sql.ID(org.ID),
+		ID:                         org.ID,
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
 		Name:                       sql.String(org.Name),
@@ -151,7 +151,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
-	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.ID(id))
+	r, err := db.Querier(ctx).FindOrganizationByID(ctx, id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -172,7 +172,7 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 
 // tokenRow is the row result of a database query for organization tokens
 type tokenRow struct {
-	OrganizationTokenID pgtype.Text        `json:"organization_token_id"`
+	OrganizationTokenID resource.ID        `json:"organization_token_id"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
 	Expiry              pgtype.Timestamptz `json:"expiry"`
@@ -180,10 +180,7 @@ type tokenRow struct {
 
 func (result tokenRow) toToken() *OrganizationToken {
 	ot := &OrganizationToken{
-		ID: resource.ID{
-			Kind: resource.OrganizationTokenKind,
-			ID:   result.OrganizationTokenID.String,
-		},
+		ID:           result.OrganizationTokenID,
 		CreatedAt:    result.CreatedAt.Time.UTC(),
 		Organization: result.OrganizationName.String,
 	}
@@ -195,7 +192,7 @@ func (result tokenRow) toToken() *OrganizationToken {
 
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
 	err := db.Querier(ctx).UpsertOrganizationToken(ctx, sqlc.UpsertOrganizationTokenParams{
-		OrganizationTokenID: sql.ID(token.ID),
+		OrganizationTokenID: token.ID,
 		OrganizationName:    sql.String(token.Organization),
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
 		Expiry:              sql.TimestamptzPtr(token.Expiry),
@@ -224,7 +221,7 @@ func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string)
 }
 
 func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
-	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, sql.ID(tokenID))
+	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, tokenID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}

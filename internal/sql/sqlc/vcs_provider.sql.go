@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteVCSProviderByID = `-- name: DeleteVCSProviderByID :one
@@ -18,9 +19,9 @@ WHERE vcs_provider_id = $1
 RETURNING vcs_provider_id
 `
 
-func (q *Queries) DeleteVCSProviderByID(ctx context.Context, vcsProviderID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteVCSProviderByID(ctx context.Context, vcsProviderID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteVCSProviderByID, vcsProviderID)
-	var vcs_provider_id pgtype.Text
+	var vcs_provider_id resource.ID
 	err := row.Scan(&vcs_provider_id)
 	return vcs_provider_id, err
 }
@@ -36,7 +37,7 @@ WHERE v.vcs_provider_id = $1
 `
 
 type FindVCSProviderRow struct {
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -47,7 +48,7 @@ type FindVCSProviderRow struct {
 	GithubAppInstall *GithubAppInstall
 }
 
-func (q *Queries) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderRow, error) {
+func (q *Queries) FindVCSProvider(ctx context.Context, vcsProviderID resource.ID) (FindVCSProviderRow, error) {
 	row := q.db.QueryRow(ctx, findVCSProvider, vcsProviderID)
 	var i FindVCSProviderRow
 	err := row.Scan(
@@ -76,7 +77,7 @@ FOR UPDATE OF v
 `
 
 type FindVCSProviderForUpdateRow struct {
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -87,7 +88,7 @@ type FindVCSProviderForUpdateRow struct {
 	GithubAppInstall *GithubAppInstall
 }
 
-func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderForUpdateRow, error) {
+func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID resource.ID) (FindVCSProviderForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findVCSProviderForUpdate, vcsProviderID)
 	var i FindVCSProviderForUpdateRow
 	err := row.Scan(
@@ -114,7 +115,7 @@ LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USI
 `
 
 type FindVCSProvidersRow struct {
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -166,7 +167,7 @@ WHERE gi.install_id = $1
 `
 
 type FindVCSProvidersByGithubAppInstallIDRow struct {
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -218,7 +219,7 @@ WHERE v.organization_name = $1
 `
 
 type FindVCSProvidersByOrganizationRow struct {
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -280,7 +281,7 @@ INSERT INTO vcs_providers (
 `
 
 type InsertVCSProviderParams struct {
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
@@ -312,7 +313,7 @@ RETURNING vcs_provider_id, token, created_at, name, vcs_kind, organization_name,
 type UpdateVCSProviderParams struct {
 	Name          pgtype.Text
 	Token         pgtype.Text
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 }
 
 func (q *Queries) UpdateVCSProvider(ctx context.Context, arg UpdateVCSProviderParams) (VCSProvider, error) {

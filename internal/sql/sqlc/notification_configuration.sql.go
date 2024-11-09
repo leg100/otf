@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteNotificationConfigurationByID = `-- name: DeleteNotificationConfigurationByID :one
@@ -17,9 +18,9 @@ WHERE notification_configuration_id = $1
 RETURNING notification_configuration_id
 `
 
-func (q *Queries) DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteNotificationConfigurationByID, notificationConfigurationID)
-	var notification_configuration_id pgtype.Text
+	var notification_configuration_id resource.ID
 	err := row.Scan(&notification_configuration_id)
 	return notification_configuration_id, err
 }
@@ -65,7 +66,7 @@ FROM notification_configurations
 WHERE notification_configuration_id = $1
 `
 
-func (q *Queries) FindNotificationConfiguration(ctx context.Context, notificationConfigurationID pgtype.Text) (NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfiguration(ctx context.Context, notificationConfigurationID resource.ID) (NotificationConfiguration, error) {
 	row := q.db.QueryRow(ctx, findNotificationConfiguration, notificationConfigurationID)
 	var i NotificationConfiguration
 	err := row.Scan(
@@ -89,7 +90,7 @@ WHERE notification_configuration_id = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID pgtype.Text) (NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID resource.ID) (NotificationConfiguration, error) {
 	row := q.db.QueryRow(ctx, findNotificationConfigurationForUpdate, notificationConfigurationID)
 	var i NotificationConfiguration
 	err := row.Scan(
@@ -112,7 +113,7 @@ FROM notification_configurations
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID resource.ID) ([]NotificationConfiguration, error) {
 	rows, err := q.db.Query(ctx, findNotificationConfigurationsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
@@ -167,7 +168,7 @@ INSERT INTO notification_configurations (
 `
 
 type InsertNotificationConfigurationParams struct {
-	NotificationConfigurationID pgtype.Text
+	NotificationConfigurationID resource.ID
 	CreatedAt                   pgtype.Timestamptz
 	UpdatedAt                   pgtype.Timestamptz
 	Name                        pgtype.Text
@@ -175,7 +176,7 @@ type InsertNotificationConfigurationParams struct {
 	Triggers                    []pgtype.Text
 	DestinationType             pgtype.Text
 	Enabled                     pgtype.Bool
-	WorkspaceID                 pgtype.Text
+	WorkspaceID                 resource.ID
 }
 
 func (q *Queries) InsertNotificationConfiguration(ctx context.Context, arg InsertNotificationConfigurationParams) error {
@@ -211,10 +212,10 @@ type UpdateNotificationConfigurationByIDParams struct {
 	Name                        pgtype.Text
 	Triggers                    []pgtype.Text
 	URL                         pgtype.Text
-	NotificationConfigurationID pgtype.Text
+	NotificationConfigurationID resource.ID
 }
 
-func (q *Queries) UpdateNotificationConfigurationByID(ctx context.Context, arg UpdateNotificationConfigurationByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateNotificationConfigurationByID(ctx context.Context, arg UpdateNotificationConfigurationByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateNotificationConfigurationByID,
 		arg.UpdatedAt,
 		arg.Enabled,
@@ -223,7 +224,7 @@ func (q *Queries) UpdateNotificationConfigurationByID(ctx context.Context, arg U
 		arg.URL,
 		arg.NotificationConfigurationID,
 	)
-	var notification_configuration_id pgtype.Text
+	var notification_configuration_id resource.ID
 	err := row.Scan(&notification_configuration_id)
 	return notification_configuration_id, err
 }

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const findLogChunkByID = `-- name: FindLogChunkByID :one
@@ -24,7 +25,7 @@ WHERE chunk_id = $1
 
 type FindLogChunkByIDRow struct {
 	ChunkID pgtype.Text
-	RunID   pgtype.Text
+	RunID   resource.ID
 	Phase   pgtype.Text
 	Chunk   []byte
 	Offset  pgtype.Int4
@@ -57,7 +58,7 @@ GROUP BY run_id, phase
 `
 
 type FindLogsParams struct {
-	RunID pgtype.Text
+	RunID resource.ID
 	Phase pgtype.Text
 }
 
@@ -87,7 +88,7 @@ INSERT INTO logs (
 
 type InsertLogChunkParams struct {
 	ChunkID pgtype.Text
-	RunID   pgtype.Text
+	RunID   resource.ID
 	Phase   pgtype.Text
 	Chunk   []byte
 	Offset  pgtype.Int4
@@ -119,7 +120,7 @@ INSERT INTO phase_status_timestamps (
 `
 
 type InsertPhaseStatusTimestampParams struct {
-	RunID     pgtype.Text
+	RunID     resource.ID
 	Phase     pgtype.Text
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz

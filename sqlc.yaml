@@ -73,6 +73,262 @@ sql:
             go_type:
               type: "AgentPool"
               pointer: true
+          - column: "agent_pools.agent_pool_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "agent_pool_allowed_workspaces.agent_pool_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "agent_pool_allowed_workspaces.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "agent_tokens.agent_token_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "agent_tokens.agent_pool_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "applies.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "configuration_version_status_timestamps.configuration_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "configuration_versions.configuration_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "configuration_versions.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "github_app_installs.vcs_provider_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "ingress_attributes.configuration_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "jobs.runner_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "logs.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "module_tarballs.module_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "module_versions.module_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "module_versions.module_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "modules.module_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "notification_configurations.notification_configuration_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "notification_configurations.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "organization_tokens.organization_token_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "organizations.organization_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "phase_status_timestamps.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "plans.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "repo_connections.module_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "repo_connections.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "repo_connections.vcs_provider_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "repohooks.vcs_provider_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "run_status_timestamps.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "run_variables.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "runs.run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "runs.configuration_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "runs.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "runners.runner_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "runners.agent_pool_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "state_version_outputs.state_version_output_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "state_version_outputs.state_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "state_versions.state_version_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "state_versions.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "team_memberships.team_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "team_tokens.team_token_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "team_tokens.team_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "teams.team_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "tokens.token_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "users.user_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "variable_set_variables.variable_set_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "variable_set_variables.variable_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "variable_set_workspaces.variable_set_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "variable_set_workspaces.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "variable_sets.variable_set_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "variables.variable_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "vcs_providers.vcs_provider_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspaces.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspaces.agent_pool_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "workspaces.lock_run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "workspaces.lock_user_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "workspaces.latest_run_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+              pointer: true
+          - column: "workspace_permissions.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspace_permissions.team_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspace_tags.tag_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspace_tags.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspace_variables.workspace_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
+          - column: "workspace_variables.variable_id"
+            go_type:
+              import: "github.com/leg100/otf/internal/resource"
+              type: "ID"
         initialisms:
           - "id"
           - "vcs"

@@ -18,7 +18,7 @@ type db struct {
 // runners
 
 type runnerMetaResult struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -26,14 +26,14 @@ type runnerMetaResult struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *sqlc.AgentPool
 	CurrentJobs  int64
 }
 
 func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 	meta := &RunnerMeta{
-		ID:           resource.ParseID(r.RunnerID.String),
+		ID:           r.RunnerID,
 		Name:         r.Name.String,
 		Version:      r.Version.String,
 		MaxJobs:      int(r.MaxJobs.Int32),
@@ -45,7 +45,7 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 	}
 	if r.AgentPool != nil {
 		meta.AgentPool = &RunnerMetaAgentPool{
-			ID:               resource.ParseID(r.AgentPool.AgentPoolID.String),
+			ID:               r.AgentPool.AgentPoolID,
 			Name:             r.AgentPool.Name.String,
 			OrganizationName: r.AgentPool.OrganizationName.String,
 		}
@@ -55,7 +55,7 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 
 func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	params := sqlc.InsertRunnerParams{
-		RunnerID:     sql.ID(meta.ID),
+		RunnerID:     meta.ID,
 		Name:         sql.String(meta.Name),
 		Version:      sql.String(meta.Version),
 		MaxJobs:      sql.Int4(meta.MaxJobs),
@@ -65,16 +65,14 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 		LastStatusAt: sql.Timestamptz(meta.LastStatusAt),
 	}
 	if meta.AgentPool != nil {
-		params.AgentPoolID = sql.ID(meta.AgentPool.ID)
-	} else {
-		params.AgentPoolID = sql.NullString()
+		params.AgentPoolID = &meta.AgentPool.ID
 	}
 	return db.Querier(ctx).InsertRunner(ctx, params)
 }
 
-func (db *db) update(ctx context.Context, agentID resource.ID, fn func(*RunnerMeta) error) error {
+func (db *db) update(ctx context.Context, runnerID resource.ID, fn func(*RunnerMeta) error) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindRunnerByIDForUpdate(ctx, sql.ID(agentID))
+		result, err := q.FindRunnerByIDForUpdate(ctx, runnerID)
 		if err != nil {
 			return err
 		}
@@ -83,7 +81,7 @@ func (db *db) update(ctx context.Context, agentID resource.ID, fn func(*RunnerMe
 			return err
 		}
 		_, err = q.UpdateRunner(ctx, sqlc.UpdateRunnerParams{
-			RunnerID:     sql.ID(agent.ID),
+			RunnerID:     agent.ID,
 			Status:       sql.String(string(agent.Status)),
 			LastPingAt:   sql.Timestamptz(agent.LastPingAt),
 			LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
@@ -96,8 +94,8 @@ func (db *db) update(ctx context.Context, agentID resource.ID, fn func(*RunnerMe
 	return nil
 }
 
-func (db *db) get(ctx context.Context, agentID resource.ID) (*RunnerMeta, error) {
-	result, err := db.Querier(ctx).FindRunnerByID(ctx, sql.ID(agentID))
+func (db *db) get(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
+	result, err := db.Querier(ctx).FindRunnerByID(ctx, runnerID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -141,7 +139,7 @@ func (db *db) listRunnersByOrganization(ctx context.Context, organization string
 }
 
 func (db *db) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
-	rows, err := db.Querier(ctx).FindRunnersByPoolID(ctx, sql.ID(poolID))
+	rows, err := db.Querier(ctx).FindRunnersByPoolID(ctx, poolID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -152,8 +150,8 @@ func (db *db) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*Run
 	return runners, nil
 }
 
-func (db *db) deleteRunner(ctx context.Context, agentID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteRunner(ctx, sql.ID(agentID))
+func (db *db) deleteRunner(ctx context.Context, runnerID resource.ID) error {
+	_, err := db.Querier(ctx).DeleteRunner(ctx, runnerID)
 	return sql.Error(err)
 }
 
@@ -359,7 +357,7 @@ func (db *db) deleteAgentToken(ctx context.Context, id resource.ID) error {
 // agent pools
 
 type poolresult struct {
-	AgentPoolID         pgtype.Text
+	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
@@ -370,7 +368,7 @@ type poolresult struct {
 
 func (r poolresult) toPool() *Pool {
 	pool := &Pool{
-		ID:                 resource.ParseID(r.AgentPoolID.String),
+		ID:                 r.AgentPoolID,
 		Name:               r.Name.String,
 		CreatedAt:          r.CreatedAt.Time.UTC(),
 		Organization:       r.OrganizationName.String,
@@ -390,7 +388,7 @@ func (r poolresult) toPool() *Pool {
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		err := db.Querier(ctx).InsertAgentPool(ctx, sqlc.InsertAgentPoolParams{
-			AgentPoolID:        sql.ID(pool.ID),
+			AgentPoolID:        pool.ID,
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
 			OrganizationName:   sql.String(pool.Organization),
@@ -418,7 +416,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 
 func (db *db) updatePool(ctx context.Context, pool *Pool) error {
 	_, err := db.Querier(ctx).UpdateAgentPool(ctx, sqlc.UpdateAgentPoolParams{
-		PoolID:             sql.ID(pool.ID),
+		PoolID:             pool.ID,
 		Name:               sql.String(pool.Name),
 		OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 	})
@@ -451,7 +449,7 @@ func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, works
 }
 
 func (db *db) getPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
-	result, err := db.Querier(ctx).FindAgentPool(ctx, sql.ID(poolID))
+	result, err := db.Querier(ctx).FindAgentPool(ctx, poolID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -484,7 +482,7 @@ func (db *db) listPoolsByOrganization(ctx context.Context, organization string, 
 }
 
 func (db *db) deleteAgentPool(ctx context.Context, poolID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteAgentPool(ctx, sql.ID(poolID))
+	_, err := db.Querier(ctx).DeleteAgentPool(ctx, poolID)
 	if err != nil {
 		return sql.Error(err)
 	}

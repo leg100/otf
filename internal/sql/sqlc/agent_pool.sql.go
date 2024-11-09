@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteAgentPool = `-- name: DeleteAgentPool :one
@@ -18,7 +19,7 @@ WHERE agent_pool_id = $1
 RETURNING agent_pool_id, name, created_at, organization_name, organization_scoped
 `
 
-func (q *Queries) DeleteAgentPool(ctx context.Context, poolID pgtype.Text) (AgentPool, error) {
+func (q *Queries) DeleteAgentPool(ctx context.Context, poolID resource.ID) (AgentPool, error) {
 	row := q.db.QueryRow(ctx, deleteAgentPool, poolID)
 	var i AgentPool
 	err := row.Scan(
@@ -39,8 +40,8 @@ AND workspace_id = $2
 `
 
 type DeleteAgentPoolAllowedWorkspaceParams struct {
-	PoolID      pgtype.Text
-	WorkspaceID pgtype.Text
+	PoolID      resource.ID
+	WorkspaceID resource.ID
 }
 
 func (q *Queries) DeleteAgentPoolAllowedWorkspace(ctx context.Context, arg DeleteAgentPoolAllowedWorkspaceParams) error {
@@ -66,7 +67,7 @@ GROUP BY ap.agent_pool_id
 `
 
 type FindAgentPoolRow struct {
-	AgentPoolID         pgtype.Text
+	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
@@ -75,7 +76,7 @@ type FindAgentPoolRow struct {
 	AllowedWorkspaceIds []pgtype.Text
 }
 
-func (q *Queries) FindAgentPool(ctx context.Context, poolID pgtype.Text) (FindAgentPoolRow, error) {
+func (q *Queries) FindAgentPool(ctx context.Context, poolID resource.ID) (FindAgentPoolRow, error) {
 	row := q.db.QueryRow(ctx, findAgentPool, poolID)
 	var i FindAgentPoolRow
 	err := row.Scan(
@@ -109,7 +110,7 @@ GROUP BY ap.agent_pool_id
 `
 
 type FindAgentPoolByAgentTokenIDRow struct {
-	AgentPoolID         pgtype.Text
+	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
@@ -118,7 +119,7 @@ type FindAgentPoolByAgentTokenIDRow struct {
 	AllowedWorkspaceIds []pgtype.Text
 }
 
-func (q *Queries) FindAgentPoolByAgentTokenID(ctx context.Context, agentTokenID pgtype.Text) (FindAgentPoolByAgentTokenIDRow, error) {
+func (q *Queries) FindAgentPoolByAgentTokenID(ctx context.Context, agentTokenID resource.ID) (FindAgentPoolByAgentTokenIDRow, error) {
 	row := q.db.QueryRow(ctx, findAgentPoolByAgentTokenID, agentTokenID)
 	var i FindAgentPoolByAgentTokenIDRow
 	err := row.Scan(
@@ -150,7 +151,7 @@ ORDER BY ap.created_at DESC
 `
 
 type FindAgentPoolsRow struct {
-	AgentPoolID         pgtype.Text
+	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
@@ -223,7 +224,7 @@ type FindAgentPoolsByOrganizationParams struct {
 }
 
 type FindAgentPoolsByOrganizationRow struct {
-	AgentPoolID         pgtype.Text
+	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
@@ -286,7 +287,7 @@ INSERT INTO agent_pools (
 `
 
 type InsertAgentPoolParams struct {
-	AgentPoolID        pgtype.Text
+	AgentPoolID        resource.ID
 	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
 	OrganizationName   pgtype.Text
@@ -315,8 +316,8 @@ INSERT INTO agent_pool_allowed_workspaces (
 `
 
 type InsertAgentPoolAllowedWorkspaceParams struct {
-	PoolID      pgtype.Text
-	WorkspaceID pgtype.Text
+	PoolID      resource.ID
+	WorkspaceID resource.ID
 }
 
 func (q *Queries) InsertAgentPoolAllowedWorkspace(ctx context.Context, arg InsertAgentPoolAllowedWorkspaceParams) error {
@@ -335,7 +336,7 @@ RETURNING agent_pool_id, name, created_at, organization_name, organization_scope
 type UpdateAgentPoolParams struct {
 	Name               pgtype.Text
 	OrganizationScoped pgtype.Bool
-	PoolID             pgtype.Text
+	PoolID             resource.ID
 }
 
 func (q *Queries) UpdateAgentPool(ctx context.Context, arg UpdateAgentPoolParams) (AgentPool, error) {

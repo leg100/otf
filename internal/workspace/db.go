@@ -18,7 +18,7 @@ type (
 
 	// pgresult represents the result of a database query for a workspace.
 	pgresult struct {
-		WorkspaceID                pgtype.Text
+		WorkspaceID                resource.ID
 		CreatedAt                  pgtype.Timestamptz
 		UpdatedAt                  pgtype.Timestamptz
 		AllowDestroyPlan           pgtype.Bool
@@ -38,26 +38,26 @@ type (
 		TerraformVersion           pgtype.Text
 		TriggerPrefixes            []pgtype.Text
 		WorkingDirectory           pgtype.Text
-		LockRunID                  pgtype.Text
-		LatestRunID                pgtype.Text
+		LockRunID                  *resource.ID
+		LatestRunID                *resource.ID
 		OrganizationName           pgtype.Text
 		Branch                     pgtype.Text
 		CurrentStateVersionID      pgtype.Text
 		TriggerPatterns            []pgtype.Text
 		VCSTagsRegex               pgtype.Text
 		AllowCLIApply              pgtype.Bool
-		AgentPoolID                pgtype.Text
-		LockUserID                 pgtype.Text
+		AgentPoolID                *resource.ID
+		LockUserID                 *resource.ID
 		Tags                       []pgtype.Text
 		LatestRunStatus            pgtype.Text
-		VCSProviderID              pgtype.Text
+		VCSProviderID              resource.ID
 		RepoPath                   pgtype.Text
 	}
 )
 
 func (r pgresult) toWorkspace() (*Workspace, error) {
 	ws := Workspace{
-		ID:                         resource.ID{Kind: resource.WorkspaceKind, ID: r.WorkspaceID.String},
+		ID:                         r.WorkspaceID,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		AllowDestroyPlan:           r.AllowDestroyPlan.Bool,
@@ -80,16 +80,12 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       sql.FromStringArray(r.Tags),
+		AgentPoolID:                r.AgentPoolID,
 	}
-	if r.AgentPoolID.Valid {
-		agentPoolIDValue := resource.ParseID(r.AgentPoolID.String)
-		ws.AgentPoolID = &agentPoolIDValue
-	}
-
-	if r.VCSProviderID.Valid && r.RepoPath.Valid {
+	if r.RepoPath.Valid {
 		ws.Connection = &Connection{
 			AllowCLIApply: r.AllowCLIApply.Bool,
-			VCSProviderID: resource.ParseID(r.VCSProviderID.String),
+			VCSProviderID: r.VCSProviderID,
 			Repo:          r.RepoPath.String,
 			Branch:        r.Branch.String,
 		}
@@ -98,19 +94,17 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.LatestRunID.Valid && r.LatestRunStatus.Valid {
+	if r.LatestRunID != nil {
 		ws.LatestRun = &LatestRun{
-			ID:     resource.ParseID(r.LatestRunID.String),
+			ID:     *r.LatestRunID,
 			Status: runStatus(r.LatestRunStatus.String),
 		}
 	}
 
-	if r.LockUserID.Valid {
-		lockID := resource.ParseID(r.LockUserID.String)
-		ws.Lock = &lockID
-	} else if r.LockRunID.Valid {
-		lockID := resource.ParseID(r.LockRunID.String)
-		ws.Lock = &lockID
+	if r.LockUserID != nil {
+		ws.Lock = r.LockRunID
+	} else if r.LockRunID != nil {
+		ws.Lock = r.LockRunID
 	}
 
 	return &ws, nil
@@ -119,10 +113,10 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	q := db.Querier(ctx)
 	params := sqlc.InsertWorkspaceParams{
-		ID:                         sql.ID(ws.ID),
+		ID:                         ws.ID,
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		AgentPoolID:                sql.IDPtr(ws.AgentPoolID),
+		AgentPoolID:                ws.AgentPoolID,
 		AllowCLIApply:              sql.Bool(false),
 		AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 		AutoApply:                  sql.Bool(ws.AutoApply),
@@ -160,7 +154,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(*Wo
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
 		// retrieve workspace
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, sql.ID(workspaceID))
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -174,7 +168,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(*Wo
 		}
 		// persist update
 		params := sqlc.UpdateWorkspaceByIDParams{
-			AgentPoolID:                sql.IDPtr(ws.AgentPoolID),
+			AgentPoolID:                ws.AgentPoolID,
 			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 			AllowCLIApply:              sql.Bool(false),
 			AutoApply:                  sql.Bool(ws.AutoApply),
@@ -192,7 +186,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(*Wo
 			VCSTagsRegex:               sql.StringPtr(nil),
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
 			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-			ID:                         sql.ID(ws.ID),
+			ID:                         ws.ID,
 		}
 		if ws.Connection != nil {
 			params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
@@ -210,8 +204,8 @@ func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID resource.I
 	q := db.Querier(ctx)
 
 	err := q.UpdateWorkspaceLatestRun(ctx, sqlc.UpdateWorkspaceLatestRunParams{
-		RunID:       sql.ID(runID),
-		WorkspaceID: sql.ID(workspaceID),
+		RunID:       &runID,
+		WorkspaceID: workspaceID,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -268,7 +262,7 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID,
 	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspacesByConnection(ctx, sqlc.FindWorkspacesByConnectionParams{
-		VCSProviderID: sql.ID(vcsProviderID),
+		VCSProviderID: vcsProviderID,
 		RepoPath:      sql.String(repoPath),
 	})
 	if err != nil {
@@ -320,7 +314,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 
 func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	q := db.Querier(ctx)
-	result, err := q.FindWorkspaceByID(ctx, sql.ID(workspaceID))
+	result, err := q.FindWorkspaceByID(ctx, workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -341,7 +335,7 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 
 func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 	q := db.Querier(ctx)
-	err := q.DeleteWorkspaceByID(ctx, sql.ID(workspaceID))
+	err := q.DeleteWorkspaceByID(ctx, workspaceID)
 	if err != nil {
 		return sql.Error(err)
 	}

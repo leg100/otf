@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteOrganiationTokenByName = `-- name: DeleteOrganiationTokenByName :one
@@ -18,9 +19,9 @@ WHERE organization_name = $1
 RETURNING organization_token_id
 `
 
-func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, organizationName pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, organizationName pgtype.Text) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteOrganiationTokenByName, organizationName)
-	var organization_token_id pgtype.Text
+	var organization_token_id resource.ID
 	err := row.Scan(&organization_token_id)
 	return organization_token_id, err
 }
@@ -62,7 +63,7 @@ FROM organization_tokens
 WHERE organization_token_id = $1
 `
 
-func (q *Queries) FindOrganizationTokensByID(ctx context.Context, organizationTokenID pgtype.Text) (OrganizationToken, error) {
+func (q *Queries) FindOrganizationTokensByID(ctx context.Context, organizationTokenID resource.ID) (OrganizationToken, error) {
 	row := q.db.QueryRow(ctx, findOrganizationTokensByID, organizationTokenID)
 	var i OrganizationToken
 	err := row.Scan(
@@ -110,7 +111,7 @@ INSERT INTO organization_tokens (
 `
 
 type UpsertOrganizationTokenParams struct {
-	OrganizationTokenID pgtype.Text
+	OrganizationTokenID resource.ID
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	Expiry              pgtype.Timestamptz

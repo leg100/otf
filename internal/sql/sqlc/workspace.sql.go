@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const countWorkspaces = `-- name: CountWorkspaces :one
@@ -68,7 +69,7 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Text) error {
+func (q *Queries) DeleteWorkspaceByID(ctx context.Context, workspaceID resource.ID) error {
 	_, err := q.db.Exec(ctx, deleteWorkspaceByID, workspaceID)
 	return err
 }
@@ -92,7 +93,7 @@ WHERE w.workspace_id = $1
 `
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                pgtype.Text
+	WorkspaceID                resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -112,23 +113,23 @@ type FindWorkspaceByIDRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  pgtype.Text
-	LatestRunID                pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                pgtype.Text
-	LockUserID                 pgtype.Text
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              pgtype.Text
+	VCSProviderID              resource.ID
 	RepoPath                   pgtype.Text
 }
 
-func (q *Queries) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (FindWorkspaceByIDRow, error) {
+func (q *Queries) FindWorkspaceByID(ctx context.Context, id resource.ID) (FindWorkspaceByIDRow, error) {
 	row := q.db.QueryRow(ctx, findWorkspaceByID, id)
 	var i FindWorkspaceByIDRow
 	err := row.Scan(
@@ -190,7 +191,7 @@ FOR UPDATE OF w
 `
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                pgtype.Text
+	WorkspaceID                resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -210,23 +211,23 @@ type FindWorkspaceByIDForUpdateRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  pgtype.Text
-	LatestRunID                pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                pgtype.Text
-	LockUserID                 pgtype.Text
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              pgtype.Text
+	VCSProviderID              resource.ID
 	RepoPath                   pgtype.Text
 }
 
-func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Text) (FindWorkspaceByIDForUpdateRow, error) {
+func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, id resource.ID) (FindWorkspaceByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findWorkspaceByIDForUpdate, id)
 	var i FindWorkspaceByIDForUpdateRow
 	err := row.Scan(
@@ -294,7 +295,7 @@ type FindWorkspaceByNameParams struct {
 }
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                pgtype.Text
+	WorkspaceID                resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -314,19 +315,19 @@ type FindWorkspaceByNameRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  pgtype.Text
-	LatestRunID                pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                pgtype.Text
-	LockUserID                 pgtype.Text
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              pgtype.Text
+	VCSProviderID              resource.ID
 	RepoPath                   pgtype.Text
 }
 
@@ -407,7 +408,7 @@ type FindWorkspacesParams struct {
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                pgtype.Text
+	WorkspaceID                resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -427,19 +428,19 @@ type FindWorkspacesRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  pgtype.Text
-	LatestRunID                pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                pgtype.Text
-	LockUserID                 pgtype.Text
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              pgtype.Text
+	VCSProviderID              resource.ID
 	RepoPath                   pgtype.Text
 }
 
@@ -524,12 +525,12 @@ AND   rc.repo_path = $2
 `
 
 type FindWorkspacesByConnectionParams struct {
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	RepoPath      pgtype.Text
 }
 
 type FindWorkspacesByConnectionRow struct {
-	WorkspaceID                pgtype.Text
+	WorkspaceID                resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -549,19 +550,19 @@ type FindWorkspacesByConnectionRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  pgtype.Text
-	LatestRunID                pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                pgtype.Text
-	LockUserID                 pgtype.Text
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              pgtype.Text
+	VCSProviderID              resource.ID
 	RepoPath                   pgtype.Text
 }
 
@@ -654,7 +655,7 @@ type FindWorkspacesByUsernameParams struct {
 }
 
 type FindWorkspacesByUsernameRow struct {
-	WorkspaceID                pgtype.Text
+	WorkspaceID                resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -674,19 +675,19 @@ type FindWorkspacesByUsernameRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  pgtype.Text
-	LatestRunID                pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                pgtype.Text
-	LockUserID                 pgtype.Text
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              pgtype.Text
+	VCSProviderID              resource.ID
 	RepoPath                   pgtype.Text
 }
 
@@ -809,10 +810,10 @@ INSERT INTO workspaces (
 `
 
 type InsertWorkspaceParams struct {
-	ID                         pgtype.Text
+	ID                         resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AgentPoolID                pgtype.Text
+	AgentPoolID                *resource.ID
 	AllowCLIApply              pgtype.Bool
 	AllowDestroyPlan           pgtype.Bool
 	AutoApply                  pgtype.Bool
@@ -895,7 +896,7 @@ RETURNING workspace_id
 `
 
 type UpdateWorkspaceByIDParams struct {
-	AgentPoolID                pgtype.Text
+	AgentPoolID                *resource.ID
 	AllowDestroyPlan           pgtype.Bool
 	AllowCLIApply              pgtype.Bool
 	AutoApply                  pgtype.Bool
@@ -913,10 +914,10 @@ type UpdateWorkspaceByIDParams struct {
 	VCSTagsRegex               pgtype.Text
 	WorkingDirectory           pgtype.Text
 	UpdatedAt                  pgtype.Timestamptz
-	ID                         pgtype.Text
+	ID                         resource.ID
 }
 
-func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateWorkspaceByID,
 		arg.AgentPoolID,
 		arg.AllowDestroyPlan,
@@ -938,7 +939,7 @@ func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceBy
 		arg.UpdatedAt,
 		arg.ID,
 	)
-	var workspace_id pgtype.Text
+	var workspace_id resource.ID
 	err := row.Scan(&workspace_id)
 	return workspace_id, err
 }
@@ -952,12 +953,12 @@ RETURNING workspace_id
 
 type UpdateWorkspaceCurrentStateVersionIDParams struct {
 	StateVersionID pgtype.Text
-	WorkspaceID    pgtype.Text
+	WorkspaceID    resource.ID
 }
 
-func (q *Queries) UpdateWorkspaceCurrentStateVersionID(ctx context.Context, arg UpdateWorkspaceCurrentStateVersionIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateWorkspaceCurrentStateVersionID(ctx context.Context, arg UpdateWorkspaceCurrentStateVersionIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateWorkspaceCurrentStateVersionID, arg.StateVersionID, arg.WorkspaceID)
-	var workspace_id pgtype.Text
+	var workspace_id resource.ID
 	err := row.Scan(&workspace_id)
 	return workspace_id, err
 }
@@ -969,8 +970,8 @@ WHERE workspace_id = $2
 `
 
 type UpdateWorkspaceLatestRunParams struct {
-	RunID       pgtype.Text
-	WorkspaceID pgtype.Text
+	RunID       *resource.ID
+	WorkspaceID resource.ID
 }
 
 func (q *Queries) UpdateWorkspaceLatestRun(ctx context.Context, arg UpdateWorkspaceLatestRunParams) error {
@@ -987,9 +988,9 @@ WHERE workspace_id = $3
 `
 
 type UpdateWorkspaceLockByIDParams struct {
-	UserID      pgtype.Text
-	RunID       pgtype.Text
-	WorkspaceID pgtype.Text
+	UserID      *resource.ID
+	RunID       *resource.ID
+	WorkspaceID resource.ID
 }
 
 func (q *Queries) UpdateWorkspaceLockByID(ctx context.Context, arg UpdateWorkspaceLockByIDParams) error {

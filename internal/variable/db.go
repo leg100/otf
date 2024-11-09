@@ -16,7 +16,7 @@ type (
 	}
 
 	VariableRow struct {
-		VariableID  pgtype.Text
+		VariableID  resource.ID
 		Key         pgtype.Text
 		Value       pgtype.Text
 		Description pgtype.Text
@@ -27,7 +27,7 @@ type (
 	}
 
 	VariableSetRow struct {
-		VariableSetID    pgtype.Text
+		VariableSetID    resource.ID
 		Global           pgtype.Bool
 		Name             pgtype.Text
 		Description      pgtype.Text
@@ -39,7 +39,7 @@ type (
 
 func (row VariableRow) convert() *Variable {
 	return &Variable{
-		ID:          resource.ParseID(row.VariableID.String),
+		ID:          row.VariableID,
 		Key:         row.Key.String,
 		Value:       row.Value.String,
 		Description: row.Description.String,
@@ -52,7 +52,7 @@ func (row VariableRow) convert() *Variable {
 
 func (row VariableSetRow) convert() *VariableSet {
 	set := &VariableSet{
-		ID:           resource.ParseID(row.VariableSetID.String),
+		ID:           row.VariableSetID,
 		Global:       row.Global.Bool,
 		Description:  row.Description.String,
 		Name:         row.Name.String,
@@ -64,7 +64,7 @@ func (row VariableSetRow) convert() *VariableSet {
 	}
 	set.Workspaces = make([]resource.ID, len(row.WorkspaceIds))
 	for i, wid := range row.WorkspaceIds {
-		set.Workspaces[i] = resource.ParseID(wid.String)
+		set.Workspaces[i] = wid
 	}
 	return set
 }
@@ -75,15 +75,15 @@ func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resour
 			return err
 		}
 		return q.InsertWorkspaceVariable(ctx, sqlc.InsertWorkspaceVariableParams{
-			VariableID:  sql.ID(v.ID),
-			WorkspaceID: sql.ID(workspaceID),
+			VariableID:  v.ID,
+			WorkspaceID: workspaceID,
 		})
 	})
 	return sql.Error(err)
 }
 
 func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error) {
-	rows, err := pdb.Querier(ctx).FindWorkspaceVariablesByWorkspaceID(ctx, sql.ID(workspaceID))
+	rows, err := pdb.Querier(ctx).FindWorkspaceVariablesByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -96,32 +96,32 @@ func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resourc
 }
 
 func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
-	row, err := pdb.Querier(ctx).FindWorkspaceVariableByVariableID(ctx, sql.ID(variableID))
+	row, err := pdb.Querier(ctx).FindWorkspaceVariableByVariableID(ctx, variableID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 
 	return &WorkspaceVariable{
-		WorkspaceID: resource.ParseID(row.WorkspaceID.String),
+		WorkspaceID: row.WorkspaceID,
 		Variable:    VariableRow(row.Variable).convert(),
 	}, nil
 }
 
 func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
-	row, err := pdb.Querier(ctx).DeleteWorkspaceVariableByID(ctx, sql.ID(variableID))
+	row, err := pdb.Querier(ctx).DeleteWorkspaceVariableByID(ctx, variableID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 
 	return &WorkspaceVariable{
-		WorkspaceID: resource.ParseID(row.WorkspaceID.String),
+		WorkspaceID: row.WorkspaceID,
 		Variable:    VariableRow(row.Variable).convert(),
 	}, nil
 }
 
 func (pdb *pgdb) createVariableSet(ctx context.Context, set *VariableSet) error {
 	err := pdb.Querier(ctx).InsertVariableSet(ctx, sqlc.InsertVariableSetParams{
-		VariableSetID:    sql.ID(set.ID),
+		VariableSetID:    set.ID,
 		Name:             sql.String(set.Name),
 		Description:      sql.String(set.Description),
 		Global:           sql.Bool(set.Global),
@@ -136,7 +136,7 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, set *VariableSet) error 
 			Name:          sql.String(set.Name),
 			Description:   sql.String(set.Description),
 			Global:        sql.Bool(set.Global),
-			VariableSetID: sql.ID(set.ID),
+			VariableSetID: set.ID,
 		})
 		if err != nil {
 			return err
@@ -158,7 +158,7 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, set *VariableSet) error 
 }
 
 func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
-	row, err := pdb.Querier(ctx).FindVariableSetBySetID(ctx, sql.ID(setID))
+	row, err := pdb.Querier(ctx).FindVariableSetBySetID(ctx, setID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -166,7 +166,7 @@ func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*Variab
 }
 
 func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error) {
-	row, err := pdb.Querier(ctx).FindVariableSetByVariableID(ctx, sql.ID(variableID))
+	row, err := pdb.Querier(ctx).FindVariableSetByVariableID(ctx, variableID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -187,7 +187,7 @@ func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*
 }
 
 func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error) {
-	rows, err := pdb.Querier(ctx).FindVariableSetsByWorkspace(ctx, sql.ID(workspaceID))
+	rows, err := pdb.Querier(ctx).FindVariableSetsByWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -200,7 +200,7 @@ func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID re
 }
 
 func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.ID) error {
-	_, err := pdb.Querier(ctx).DeleteVariableSetByID(ctx, sql.ID(setID))
+	_, err := pdb.Querier(ctx).DeleteVariableSetByID(ctx, setID)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -213,8 +213,8 @@ func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.ID, v *Var
 			return err
 		}
 		err := q.InsertVariableSetVariable(ctx, sqlc.InsertVariableSetVariableParams{
-			VariableSetID: sql.ID(setID),
-			VariableID:    sql.ID(v.ID),
+			VariableSetID: setID,
+			VariableID:    v.ID,
 		})
 		return err
 	})

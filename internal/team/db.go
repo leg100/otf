@@ -13,7 +13,7 @@ import (
 
 // TeamRow represents the result of a database query for a team.
 type TeamRow struct {
-	TeamID                          pgtype.Text
+	TeamID                          resource.ID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
@@ -29,7 +29,7 @@ type TeamRow struct {
 
 func (row TeamRow) ToTeam() *Team {
 	to := Team{
-		ID:           resource.ParseID(row.TeamID.String),
+		ID:           row.TeamID,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Name:         row.Name.String,
 		Organization: row.OrganizationName.String,
@@ -57,7 +57,7 @@ type pgdb struct {
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	err := db.Querier(ctx).InsertTeam(ctx, sqlc.InsertTeamParams{
-		ID:                              sql.ID(team.ID),
+		ID:                              team.ID,
 		Name:                            sql.String(team.Name),
 		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
 		OrganizationName:                sql.String(team.Organization),
@@ -79,7 +79,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(*Tea
 		var err error
 
 		// retrieve team
-		result, err := q.FindTeamByIDForUpdate(ctx, sql.ID(teamID))
+		result, err := q.FindTeamByIDForUpdate(ctx, teamID)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(*Tea
 		}
 		// persist update
 		_, err = q.UpdateTeamByID(ctx, sqlc.UpdateTeamByIDParams{
-			TeamID:                          sql.ID(teamID),
+			TeamID:                          teamID,
 			Name:                            sql.String(team.Name),
 			Visibility:                      sql.String(team.Visibility),
 			SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
@@ -122,7 +122,7 @@ func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, 
 }
 
 func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) {
-	result, err := db.Querier(ctx).FindTeamByID(ctx, sql.ID(id))
+	result, err := db.Querier(ctx).FindTeamByID(ctx, id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -130,7 +130,7 @@ func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) 
 }
 
 func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
-	result, err := db.Querier(ctx).FindTeamByTokenID(ctx, sql.ID(tokenID))
+	result, err := db.Querier(ctx).FindTeamByTokenID(ctx, tokenID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -151,7 +151,7 @@ func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, er
 }
 
 func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteTeamByID(ctx, sql.ID(teamID))
+	_, err := db.Querier(ctx).DeleteTeamByID(ctx, teamID)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -164,8 +164,8 @@ func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.ID) error {
 
 func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
 	err := db.Querier(ctx).InsertTeamToken(ctx, sqlc.InsertTeamTokenParams{
-		TeamTokenID: sql.ID(token.ID),
-		TeamID:      sql.ID(token.TeamID),
+		TeamTokenID: token.ID,
+		TeamID:      token.TeamID,
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
 		Expiry:      sql.TimestamptzPtr(token.Expiry),
 	})
@@ -174,7 +174,7 @@ func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
 
 func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*Token, error) {
 	// query only returns 0 or 1 tokens
-	result, err := db.Querier(ctx).FindTeamTokensByID(ctx, sql.ID(teamID))
+	result, err := db.Querier(ctx).FindTeamTokensByID(ctx, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -182,9 +182,9 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*
 		return nil, nil
 	}
 	ot := &Token{
-		ID:        resource.ParseID(result[0].TeamTokenID.String),
+		ID:        result[0].TeamTokenID,
 		CreatedAt: result[0].CreatedAt.Time.UTC(),
-		TeamID:    resource.ParseID(result[0].TeamID.String),
+		TeamID:    result[0].TeamID,
 	}
 	if result[0].Expiry.Valid {
 		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
@@ -193,7 +193,7 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*
 }
 
 func (db *pgdb) deleteTeamToken(ctx context.Context, teamID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteTeamTokenByID(ctx, sql.ID(teamID))
+	_, err := db.Querier(ctx).DeleteTeamTokenByID(ctx, teamID)
 	if err != nil {
 		return sql.Error(err)
 	}

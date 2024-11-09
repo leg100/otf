@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const countRuns = `-- name: CountRuns :one
@@ -61,9 +62,9 @@ WHERE run_id = $1
 RETURNING run_id
 `
 
-func (q *Queries) DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteRunByID(ctx context.Context, runID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteRunByID, runID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -144,7 +145,7 @@ WHERE runs.run_id = $1
 `
 
 type FindRunByIDRow struct {
-	RunID                  pgtype.Text
+	RunID                  resource.ID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -161,8 +162,8 @@ type FindRunByIDRow struct {
 	PlanResourceReport     *Report
 	PlanOutputReport       *Report
 	ApplyResourceReport    *Report
-	ConfigurationVersionID pgtype.Text
-	WorkspaceID            pgtype.Text
+	ConfigurationVersionID resource.ID
+	WorkspaceID            resource.ID
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
@@ -178,7 +179,7 @@ type FindRunByIDRow struct {
 	IngressAttributes      *IngressAttribute
 }
 
-func (q *Queries) FindRunByID(ctx context.Context, runID pgtype.Text) (FindRunByIDRow, error) {
+func (q *Queries) FindRunByID(ctx context.Context, runID resource.ID) (FindRunByIDRow, error) {
 	row := q.db.QueryRow(ctx, findRunByID, runID)
 	var i FindRunByIDRow
 	err := row.Scan(
@@ -295,7 +296,7 @@ FOR UPDATE OF runs, plans, applies
 `
 
 type FindRunByIDForUpdateRow struct {
-	RunID                  pgtype.Text
+	RunID                  resource.ID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -312,8 +313,8 @@ type FindRunByIDForUpdateRow struct {
 	PlanResourceReport     *Report
 	PlanOutputReport       *Report
 	ApplyResourceReport    *Report
-	ConfigurationVersionID pgtype.Text
-	WorkspaceID            pgtype.Text
+	ConfigurationVersionID resource.ID
+	WorkspaceID            resource.ID
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
@@ -329,7 +330,7 @@ type FindRunByIDForUpdateRow struct {
 	IngressAttributes      *IngressAttribute
 }
 
-func (q *Queries) FindRunByIDForUpdate(ctx context.Context, runID pgtype.Text) (FindRunByIDForUpdateRow, error) {
+func (q *Queries) FindRunByIDForUpdate(ctx context.Context, runID resource.ID) (FindRunByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findRunByIDForUpdate, runID)
 	var i FindRunByIDForUpdateRow
 	err := row.Scan(
@@ -469,7 +470,7 @@ type FindRunsParams struct {
 }
 
 type FindRunsRow struct {
-	RunID                  pgtype.Text
+	RunID                  resource.ID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -486,8 +487,8 @@ type FindRunsRow struct {
 	PlanResourceReport     *Report
 	PlanOutputReport       *Report
 	ApplyResourceReport    *Report
-	ConfigurationVersionID pgtype.Text
-	WorkspaceID            pgtype.Text
+	ConfigurationVersionID resource.ID
+	WorkspaceID            resource.ID
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
@@ -573,7 +574,7 @@ FROM runs
 WHERE run_id = $1
 `
 
-func (q *Queries) GetLockFileByID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
+func (q *Queries) GetLockFileByID(ctx context.Context, runID resource.ID) ([]byte, error) {
 	row := q.db.QueryRow(ctx, getLockFileByID, runID)
 	var lock_file []byte
 	err := row.Scan(&lock_file)
@@ -621,7 +622,7 @@ INSERT INTO runs (
 `
 
 type InsertRunParams struct {
-	ID                     pgtype.Text
+	ID                     resource.ID
 	CreatedAt              pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
 	PositionInQueue        pgtype.Int4
@@ -633,8 +634,8 @@ type InsertRunParams struct {
 	TargetAddrs            []pgtype.Text
 	AutoApply              pgtype.Bool
 	PlanOnly               pgtype.Bool
-	ConfigurationVersionID pgtype.Text
-	WorkspaceID            pgtype.Text
+	ConfigurationVersionID resource.ID
+	WorkspaceID            resource.ID
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
 	AllowEmptyApply        pgtype.Bool
@@ -676,7 +677,7 @@ INSERT INTO run_status_timestamps (
 `
 
 type InsertRunStatusTimestampParams struct {
-	ID        pgtype.Text
+	ID        resource.ID
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
@@ -699,7 +700,7 @@ INSERT INTO run_variables (
 `
 
 type InsertRunVariableParams struct {
-	RunID pgtype.Text
+	RunID resource.ID
 	Key   pgtype.Text
 	Value pgtype.Text
 }
@@ -718,12 +719,12 @@ RETURNING run_id
 
 type PutLockFileParams struct {
 	LockFile []byte
-	RunID    pgtype.Text
+	RunID    resource.ID
 }
 
-func (q *Queries) PutLockFile(ctx context.Context, arg PutLockFileParams) (pgtype.Text, error) {
+func (q *Queries) PutLockFile(ctx context.Context, arg PutLockFileParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, putLockFile, arg.LockFile, arg.RunID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -738,12 +739,12 @@ RETURNING run_id
 
 type UpdateCancelSignaledAtParams struct {
 	CancelSignaledAt pgtype.Timestamptz
-	ID               pgtype.Text
+	ID               resource.ID
 }
 
-func (q *Queries) UpdateCancelSignaledAt(ctx context.Context, arg UpdateCancelSignaledAtParams) (pgtype.Text, error) {
+func (q *Queries) UpdateCancelSignaledAt(ctx context.Context, arg UpdateCancelSignaledAtParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateCancelSignaledAt, arg.CancelSignaledAt, arg.ID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -758,12 +759,12 @@ RETURNING run_id
 
 type UpdateRunStatusParams struct {
 	Status pgtype.Text
-	ID     pgtype.Text
+	ID     resource.ID
 }
 
-func (q *Queries) UpdateRunStatus(ctx context.Context, arg UpdateRunStatusParams) (pgtype.Text, error) {
+func (q *Queries) UpdateRunStatus(ctx context.Context, arg UpdateRunStatusParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateRunStatus, arg.Status, arg.ID)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }

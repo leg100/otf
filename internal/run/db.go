@@ -23,7 +23,7 @@ type (
 
 	// pgresult is the result of a database query for a run.
 	pgresult struct {
-		RunID                  pgtype.Text
+		RunID                  resource.ID
 		CreatedAt              pgtype.Timestamptz
 		CancelSignaledAt       pgtype.Timestamptz
 		IsDestroy              pgtype.Bool
@@ -40,8 +40,8 @@ type (
 		PlanResourceReport     *sqlc.Report
 		PlanOutputReport       *sqlc.Report
 		ApplyResourceReport    *sqlc.Report
-		ConfigurationVersionID pgtype.Text
-		WorkspaceID            pgtype.Text
+		ConfigurationVersionID resource.ID
+		WorkspaceID            resource.ID
 		PlanOnly               pgtype.Bool
 		CreatedBy              pgtype.Text
 		TerraformVersion       pgtype.Text
@@ -60,7 +60,7 @@ type (
 
 func (result pgresult) toRun() *Run {
 	run := Run{
-		ID:                     resource.ParseID(result.RunID.String),
+		ID:                     result.RunID,
 		CreatedAt:              result.CreatedAt.Time.UTC(),
 		IsDestroy:              result.IsDestroy.Bool,
 		PositionInQueue:        int(result.PositionInQueue.Int32),
@@ -77,18 +77,18 @@ func (result pgresult) toRun() *Run {
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest.Bool,
 		Organization:           result.OrganizationName.String,
-		WorkspaceID:            resource.ParseID(result.WorkspaceID.String),
-		ConfigurationVersionID: resource.ParseID(result.ConfigurationVersionID.String),
+		WorkspaceID:            result.WorkspaceID,
+		ConfigurationVersionID: result.ConfigurationVersionID,
 		CostEstimationEnabled:  result.CostEstimationEnabled.Bool,
 		Plan: Phase{
-			RunID:          resource.ParseID(result.RunID.String),
+			RunID:          result.RunID,
 			PhaseType:      internal.PlanPhase,
 			Status:         PhaseStatus(result.PlanStatus.String),
 			ResourceReport: reportFromDB(result.PlanResourceReport),
 			OutputReport:   reportFromDB(result.PlanOutputReport),
 		},
 		Apply: Phase{
-			RunID:          resource.ParseID(result.RunID.String),
+			RunID:          result.RunID,
 			PhaseType:      internal.ApplyPhase,
 			Status:         PhaseStatus(result.ApplyStatus.String),
 			ResourceReport: reportFromDB(result.ApplyResourceReport),
@@ -152,7 +152,7 @@ func (result pgresult) toRun() *Run {
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		err := q.InsertRun(ctx, sqlc.InsertRunParams{
-			ID:                     sql.ID(run.ID),
+			ID:                     run.ID,
 			CreatedAt:              sql.Timestamptz(run.CreatedAt),
 			IsDestroy:              sql.Bool(run.IsDestroy),
 			PositionInQueue:        sql.Int4(0),
@@ -166,13 +166,13 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			PlanOnly:               sql.Bool(run.PlanOnly),
 			AllowEmptyApply:        sql.Bool(run.AllowEmptyApply),
 			TerraformVersion:       sql.String(run.TerraformVersion),
-			ConfigurationVersionID: sql.ID(run.ConfigurationVersionID),
-			WorkspaceID:            sql.ID(run.WorkspaceID),
+			ConfigurationVersionID: run.ConfigurationVersionID,
+			WorkspaceID:            run.WorkspaceID,
 			CreatedBy:              sql.StringPtr(run.CreatedBy),
 		})
 		for _, v := range run.Variables {
 			err = q.InsertRunVariable(ctx, sqlc.InsertRunVariableParams{
-				RunID: sql.ID(run.ID),
+				RunID: run.ID,
 				Key:   sql.String(v.Key),
 				Value: sql.String(v.Value),
 			})
@@ -184,14 +184,14 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			return fmt.Errorf("inserting run: %w", err)
 		}
 		err = q.InsertPlan(ctx, sqlc.InsertPlanParams{
-			RunID:  sql.ID(run.ID),
+			RunID:  run.ID,
 			Status: sql.String(string(run.Plan.Status)),
 		})
 		if err != nil {
 			return fmt.Errorf("inserting plan: %w", err)
 		}
 		err = q.InsertApply(ctx, sqlc.InsertApplyParams{
-			RunID:  sql.ID(run.ID),
+			RunID:  run.ID,
 			Status: sql.String(string(run.Apply.Status)),
 		})
 		if err != nil {
@@ -215,7 +215,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Ru
 	var run *Run
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// select ...for update
-		result, err := q.FindRunByIDForUpdate(ctx, sql.ID(runID))
+		result, err := q.FindRunByIDForUpdate(ctx, runID)
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -234,7 +234,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Ru
 		if run.Status != runStatus {
 			_, err := q.UpdateRunStatus(ctx, sqlc.UpdateRunStatusParams{
 				Status: sql.String(string(run.Status)),
-				ID:     sql.ID(run.ID),
+				ID:     run.ID,
 			})
 			if err != nil {
 				return err
@@ -248,7 +248,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Ru
 		if run.Plan.Status != planStatus {
 			_, err := q.UpdatePlanStatusByID(ctx, sqlc.UpdatePlanStatusByIDParams{
 				Status: sql.String(string(run.Plan.Status)),
-				RunID:  sql.ID(run.ID),
+				RunID:  run.ID,
 			})
 			if err != nil {
 				return err
@@ -262,7 +262,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Ru
 		if run.Apply.Status != applyStatus {
 			_, err := q.UpdateApplyStatusByID(ctx, sqlc.UpdateApplyStatusByIDParams{
 				Status: sql.String(string(run.Apply.Status)),
-				RunID:  sql.ID(run.ID),
+				RunID:  run.ID,
 			})
 			if err != nil {
 				return err
@@ -276,7 +276,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Ru
 		if run.CancelSignaledAt != cancelSignaledAt && run.CancelSignaledAt != nil {
 			_, err := q.UpdateCancelSignaledAt(ctx, sqlc.UpdateCancelSignaledAtParams{
 				CancelSignaledAt: sql.Timestamptz(*run.CancelSignaledAt),
-				ID:               sql.ID(run.ID),
+				ID:               run.ID,
 			})
 			if err != nil {
 				return err
@@ -290,7 +290,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Ru
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.ID, resource, output Report) error {
 	_, err := db.Querier(ctx).UpdatePlannedChangesByID(ctx, sqlc.UpdatePlannedChangesByIDParams{
-		RunID:                sql.ID(runID),
+		RunID:                runID,
 		ResourceAdditions:    sql.Int4(resource.Additions),
 		ResourceChanges:      sql.Int4(resource.Changes),
 		ResourceDestructions: sql.Int4(resource.Destructions),
@@ -306,7 +306,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.ID, resourc
 
 func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.ID, report Report) error {
 	_, err := db.Querier(ctx).UpdateAppliedChangesByID(ctx, sqlc.UpdateAppliedChangesByIDParams{
-		RunID:        sql.ID(runID),
+		RunID:        runID,
 		Additions:    sql.Int4(report.Additions),
 		Changes:      sql.Int4(report.Changes),
 		Destructions: sql.Int4(report.Destructions),
@@ -382,7 +382,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 
 // GetRun retrieves a run using the get options
 func (db *pgdb) GetRun(ctx context.Context, runID resource.ID) (*Run, error) {
-	result, err := db.Querier(ctx).FindRunByID(ctx, sql.ID(runID))
+	result, err := db.Querier(ctx).FindRunByID(ctx, runID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -396,13 +396,13 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.ID, file []byte,
 	case PlanFormatBinary:
 		_, err := q.UpdatePlanBinByID(ctx, sqlc.UpdatePlanBinByIDParams{
 			PlanBin: file,
-			RunID:   sql.ID(runID),
+			RunID:   runID,
 		})
 		return err
 	case PlanFormatJSON:
 		_, err := q.UpdatePlanJSONByID(ctx, sqlc.UpdatePlanJSONByIDParams{
 			PlanJSON: file,
-			RunID:    sql.ID(runID),
+			RunID:    runID,
 		})
 		return err
 	default:
@@ -415,9 +415,9 @@ func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.ID, format PlanF
 	q := db.Querier(ctx)
 	switch format {
 	case PlanFormatBinary:
-		return q.GetPlanBinByID(ctx, sql.ID(runID))
+		return q.GetPlanBinByID(ctx, runID)
 	case PlanFormatJSON:
-		return q.GetPlanJSONByID(ctx, sql.ID(runID))
+		return q.GetPlanJSONByID(ctx, runID)
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
@@ -425,21 +425,21 @@ func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.ID, format PlanF
 
 // GetLockFile retrieves the lock file for the run
 func (db *pgdb) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
-	return db.Querier(ctx).GetLockFileByID(ctx, sql.ID(runID))
+	return db.Querier(ctx).GetLockFileByID(ctx, runID)
 }
 
 // SetLockFile sets the lock file for the run
 func (db *pgdb) SetLockFile(ctx context.Context, runID resource.ID, lockFile []byte) error {
 	_, err := db.Querier(ctx).PutLockFile(ctx, sqlc.PutLockFileParams{
 		LockFile: lockFile,
-		RunID:    sql.ID(runID),
+		RunID:    runID,
 	})
 	return err
 }
 
 // DeleteRun deletes a run from the DB
 func (db *pgdb) DeleteRun(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteRunByID(ctx, sql.ID(id))
+	_, err := db.Querier(ctx).DeleteRunByID(ctx, id)
 	return err
 }
 
@@ -449,7 +449,7 @@ func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
 		return err
 	}
 	err = db.Querier(ctx).InsertRunStatusTimestamp(ctx, sqlc.InsertRunStatusTimestampParams{
-		ID:        sql.ID(run.ID),
+		ID:        run.ID,
 		Status:    sql.String(string(run.Status)),
 		Timestamp: sql.Timestamptz(ts),
 	})
@@ -462,7 +462,7 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 		return err
 	}
 	err = db.Querier(ctx).InsertPhaseStatusTimestamp(ctx, sqlc.InsertPhaseStatusTimestampParams{
-		RunID:     sql.ID(phase.RunID),
+		RunID:     phase.RunID,
 		Phase:     sql.String(string(phase.PhaseType)),
 		Status:    sql.String(string(phase.Status)),
 		Timestamp: sql.Timestamptz(ts),

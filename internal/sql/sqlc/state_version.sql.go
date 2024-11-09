@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const countStateVersionsByWorkspaceID = `-- name: CountStateVersionsByWorkspaceID :one
@@ -18,7 +19,7 @@ WHERE workspace_id = $1
 AND status = 'finalized'
 `
 
-func (q *Queries) CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int64, error) {
+func (q *Queries) CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID resource.ID) (int64, error) {
 	row := q.db.QueryRow(ctx, countStateVersionsByWorkspaceID, workspaceID)
 	var count int64
 	err := row.Scan(&count)
@@ -32,9 +33,9 @@ WHERE state_version_id = $1
 RETURNING state_version_id
 `
 
-func (q *Queries) DeleteStateVersionByID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteStateVersionByID(ctx context.Context, stateVersionID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteStateVersionByID, stateVersionID)
-	var state_version_id pgtype.Text
+	var state_version_id resource.ID
 	err := row.Scan(&state_version_id)
 	return state_version_id, err
 }
@@ -46,7 +47,7 @@ WHERE workspace_id = $1
 AND status = 'pending'
 `
 
-func (q *Queries) DiscardPendingStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) error {
+func (q *Queries) DiscardPendingStateVersionsByWorkspaceID(ctx context.Context, workspaceID resource.ID) error {
 	_, err := q.db.Exec(ctx, discardPendingStateVersionsByWorkspaceID, workspaceID)
 	return err
 }
@@ -66,16 +67,16 @@ WHERE w.workspace_id = $1
 `
 
 type FindCurrentStateVersionByWorkspaceIDRow struct {
-	StateVersionID      pgtype.Text
+	StateVersionID      resource.ID
 	CreatedAt           pgtype.Timestamptz
 	Serial              pgtype.Int4
 	State               []byte
-	WorkspaceID         pgtype.Text
+	WorkspaceID         resource.ID
 	Status              pgtype.Text
 	StateVersionOutputs []StateVersionOutput
 }
 
-func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindCurrentStateVersionByWorkspaceIDRow, error) {
+func (q *Queries) FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID resource.ID) (FindCurrentStateVersionByWorkspaceIDRow, error) {
 	row := q.db.QueryRow(ctx, findCurrentStateVersionByWorkspaceID, workspaceID)
 	var i FindCurrentStateVersionByWorkspaceIDRow
 	err := row.Scan(
@@ -104,16 +105,16 @@ WHERE sv.state_version_id = $1
 `
 
 type FindStateVersionByIDRow struct {
-	StateVersionID      pgtype.Text
+	StateVersionID      resource.ID
 	CreatedAt           pgtype.Timestamptz
 	Serial              pgtype.Int4
 	State               []byte
-	WorkspaceID         pgtype.Text
+	WorkspaceID         resource.ID
 	Status              pgtype.Text
 	StateVersionOutputs []StateVersionOutput
 }
 
-func (q *Queries) FindStateVersionByID(ctx context.Context, id pgtype.Text) (FindStateVersionByIDRow, error) {
+func (q *Queries) FindStateVersionByID(ctx context.Context, id resource.ID) (FindStateVersionByIDRow, error) {
 	row := q.db.QueryRow(ctx, findStateVersionByID, id)
 	var i FindStateVersionByIDRow
 	err := row.Scan(
@@ -143,16 +144,16 @@ FOR UPDATE OF sv
 `
 
 type FindStateVersionByIDForUpdateRow struct {
-	StateVersionID      pgtype.Text
+	StateVersionID      resource.ID
 	CreatedAt           pgtype.Timestamptz
 	Serial              pgtype.Int4
 	State               []byte
-	WorkspaceID         pgtype.Text
+	WorkspaceID         resource.ID
 	Status              pgtype.Text
 	StateVersionOutputs []StateVersionOutput
 }
 
-func (q *Queries) FindStateVersionByIDForUpdate(ctx context.Context, id pgtype.Text) (FindStateVersionByIDForUpdateRow, error) {
+func (q *Queries) FindStateVersionByIDForUpdate(ctx context.Context, id resource.ID) (FindStateVersionByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findStateVersionByIDForUpdate, id)
 	var i FindStateVersionByIDForUpdateRow
 	err := row.Scan(
@@ -173,7 +174,7 @@ FROM state_versions
 WHERE state_version_id = $1
 `
 
-func (q *Queries) FindStateVersionStateByID(ctx context.Context, id pgtype.Text) ([]byte, error) {
+func (q *Queries) FindStateVersionStateByID(ctx context.Context, id resource.ID) ([]byte, error) {
 	row := q.db.QueryRow(ctx, findStateVersionStateByID, id)
 	var state []byte
 	err := row.Scan(&state)
@@ -198,17 +199,17 @@ OFFSET $2::int
 `
 
 type FindStateVersionsByWorkspaceIDParams struct {
-	WorkspaceID pgtype.Text
+	WorkspaceID resource.ID
 	Offset      pgtype.Int4
 	Limit       pgtype.Int4
 }
 
 type FindStateVersionsByWorkspaceIDRow struct {
-	StateVersionID      pgtype.Text
+	StateVersionID      resource.ID
 	CreatedAt           pgtype.Timestamptz
 	Serial              pgtype.Int4
 	State               []byte
-	WorkspaceID         pgtype.Text
+	WorkspaceID         resource.ID
 	Status              pgtype.Text
 	StateVersionOutputs []StateVersionOutput
 }
@@ -260,12 +261,12 @@ INSERT INTO state_versions (
 `
 
 type InsertStateVersionParams struct {
-	ID          pgtype.Text
+	ID          resource.ID
 	CreatedAt   pgtype.Timestamptz
 	Serial      pgtype.Int4
 	State       []byte
 	Status      pgtype.Text
-	WorkspaceID pgtype.Text
+	WorkspaceID resource.ID
 }
 
 func (q *Queries) InsertStateVersion(ctx context.Context, arg InsertStateVersionParams) error {
@@ -288,7 +289,7 @@ WHERE state_version_id = $2
 
 type UpdateStateParams struct {
 	State          []byte
-	StateVersionID pgtype.Text
+	StateVersionID resource.ID
 }
 
 func (q *Queries) UpdateState(ctx context.Context, arg UpdateStateParams) error {
