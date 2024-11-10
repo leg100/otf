@@ -319,6 +319,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Renderer:        renderer,
 		HostnameService: hostnameService,
 		TokensService:   tokensService,
+		UserService:     userService,
 		OpaqueHandlerConfigs: []authenticator.OpaqueHandlerConfig{
 			{
 				ClientConstructor: github.NewOAuthClient,

@@ -16,7 +16,7 @@
               <span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
               <s>
             {{ end }}
-            <a class="underline" href="{{ $.EditPath .ID.String }}">{{ .Key }}</a>
+            <a class="underline" href="{{ $.EditPath .ID }}">{{ .Key }}</a>
             {{ if $.IsOverwritten . }}
               </s>
             {{ end }}
@@ -25,7 +25,7 @@
           <td class="p-2">{{ .Category }}</td>
           <td class="p-2 text-right">
             {{ if $.CanDeleteVariable }}
-              <form action="{{ $.DeletePath .ID.String }}" method="POST">
+              <form action="{{ $.DeletePath .ID }}" method="POST">
                 <button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
               </form>
             {{ end }}

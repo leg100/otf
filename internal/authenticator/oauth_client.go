@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -163,18 +164,22 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
-	user, err := a.users.GetUser(r.Context(), user.UserSpec{Username: &username})
+
+	// Retrieve user with extracted username, creating the user if necessary.
+	// Use privileged context to authorize access to user service endpoints.
+	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
+	user, err := a.users.GetUser(ctx, user.UserSpec{Username: &username})
 	if err == internal.ErrResourceNotFound {
-		user, err = a.users.Create(r.Context(), username)
-		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError, false)
-			return
-		}
+		user, err = a.users.Create(ctx, username)
 	}
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		return
+	}
+
 	// Lookup user in db, to retrieve user id to embed in session token
 	// Get or create user.
-	err = a.sessions.StartSession(w, r, user.ID)
-	if err != nil {
+	if err := a.sessions.StartSession(w, r, user.ID); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}

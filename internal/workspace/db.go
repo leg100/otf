@@ -102,7 +102,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	}
 
 	if r.LockUserID != nil {
-		ws.Lock = r.LockRunID
+		ws.Lock = r.LockUserID
 	} else if r.LockRunID != nil {
 		ws.Lock = r.LockRunID
 	}

@@ -64,7 +64,7 @@ func (row VariableSetRow) convert() (*VariableSet, error) {
 	}
 	set.Workspaces = make([]resource.ID, len(row.WorkspaceIds))
 	for i, wid := range row.WorkspaceIds {
-		if err := set.Workspaces[i].Scan(wid); err != nil {
+		if err := set.Workspaces[i].Scan(wid.String); err != nil {
 			return nil, err
 		}
 	}

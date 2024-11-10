@@ -34,7 +34,7 @@ type (
 
 	userService interface {
 		GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error)
-		Create(ctx context.Context, username string) (*user.User, error)
+		Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error)
 	}
 )
 

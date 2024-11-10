@@ -288,7 +288,6 @@ func (ws *Workspace) Enlock(id resource.ID) error {
 		return errors.New("workspace can only be locked by a user or a run")
 	}
 	if ws.Lock == nil {
-		// is unlocked
 		ws.Lock = &id
 		return nil
 	}
