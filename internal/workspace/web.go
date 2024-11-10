@@ -426,9 +426,9 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	poolsUrl := paths.PoolsWorkspace(workspaceID.String())
+	poolsURL := paths.PoolsWorkspace(workspaceID.String())
 	if workspace.AgentPoolID != nil {
-		poolsUrl += "?agent_pool_id=" + workspace.AgentPoolID.String()
+		poolsURL += "?agent_pool_id=" + workspace.AgentPoolID.String()
 	}
 
 	h.Render("workspace_edit.tmpl", w, struct {
@@ -469,7 +469,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerTags:     VCSTriggerTags,
 		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		CanDeleteWorkspace: user.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
-		PoolsURL:           poolsUrl,
+		PoolsURL:           poolsURL,
 	})
 }
 

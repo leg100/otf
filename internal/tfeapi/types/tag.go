@@ -20,9 +20,15 @@ type (
 		Organization *Organization `jsonapi:"relationship" json:"organization"`
 	}
 
-	// Tag is owned by an organization and applied to workspaces. Used for grouping and search.
-	Tag struct {
-		ID   resource.ID `jsonapi:"primary,tags"`
-		Name string      `jsonapi:"attr,name,omitempty"`
+	// TagSpec is owned by an organization and applied to workspaces. Used for
+	// grouping and search. Only one of ID or name must be specified.
+	TagSpec struct {
+		// Type is a public field utilized by JSON:API to set the resource type via
+		// the field tag.  It is not a user-defined value and does not need to be
+		// set.  https://jsonapi.org/format/#crud-creating
+		Type string `jsonapi:"primary,tags"`
+
+		ID   *resource.ID `jsonapi:"attribute" json:"id"`
+		Name string       `jsonapi:"attribute" json:"name,omitempty"`
 	}
 )

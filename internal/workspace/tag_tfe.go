@@ -120,13 +120,17 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Tag
+	var params []*types.TagSpec
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
+
 	// convert from json:api structs to tag specs
-	specs := toTagSpecs(params)
+	specs := make([]TagSpec, len(params))
+	for i, tag := range params {
+		specs[i] = TagSpec{ID: tag.ID, Name: tag.Name}
+	}
 
 	switch op {
 	case addTags:
@@ -179,14 +183,4 @@ func (a *tfe) toTag(from *Tag) *types.OrganizationTag {
 			Name: from.Organization,
 		},
 	}
-}
-
-func toTagSpecs(from []*types.Tag) (to []TagSpec) {
-	for _, tag := range from {
-		to = append(to, TagSpec{
-			ID:   &tag.ID,
-			Name: tag.Name,
-		})
-	}
-	return
 }

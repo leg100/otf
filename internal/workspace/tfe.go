@@ -81,8 +81,11 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		TriggerPrefixes:            params.TriggerPrefixes,
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
-		// convert from json:api structs to tag specs
-		Tags: toTagSpecs(params.Tags),
+	}
+	// convert from json:api structs to tag specs
+	opts.Tags = make([]TagSpec, len(params.Tags))
+	for i, tag := range params.Tags {
+		opts.Tags[i] = TagSpec{ID: tag.ID, Name: tag.Name}
 	}
 	// Always trigger runs if neither trigger patterns nor tags regex are set
 	if len(params.TriggerPatterns) == 0 && (params.VCSRepo == nil || params.VCSRepo.TagsRegex == nil) {
