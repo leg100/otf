@@ -2,6 +2,7 @@ package module
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -120,7 +121,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	signed, err := h.Sign("/modules/download/"+version.ID+".tar.gz", time.Hour)
+	signed, err := h.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Hour)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -131,7 +132,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *api) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("module_version_id", r)
+	id, err := decode.ID("module_version_id", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

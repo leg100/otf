@@ -10,26 +10,29 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
 
 const (
-	SiteAdminID       = "user-site-admin"
 	SiteAdminUsername = "site-admin"
 )
 
 var (
-	SiteAdmin               = User{ID: SiteAdminID, Username: SiteAdminUsername}
-	_         authz.Subject = (*User)(nil)
+	// SiteAdminID is the hardcoded user id for the site admin user. The ID must
+	// be the same as the hardcoded value in the database migrations.
+	SiteAdminID               = resource.MustHardcodeID(resource.UserKind, "36atQC2oGQng7pVz")
+	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
+	_           authz.Subject = (*User)(nil)
 )
 
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        string    `jsonapi:"primary,users"`
-		CreatedAt time.Time `jsonapi:"attribute" json:"created-at"`
-		UpdatedAt time.Time `jsonapi:"attribute" json:"updated-at"`
-		SiteAdmin bool      `jsonapi:"attribute" json:"site-admin"`
+		ID        resource.ID `jsonapi:"primary,users"`
+		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time   `jsonapi:"attribute" json:"updated-at"`
+		SiteAdmin bool        `jsonapi:"attribute" json:"site-admin"`
 
 		// username is globally unique
 		Username string `jsonapi:"attribute" json:"username"`
@@ -51,15 +54,15 @@ type (
 	}
 
 	UserSpec struct {
-		UserID                *string
+		UserID                *resource.ID
 		Username              *string
-		AuthenticationTokenID *string
+		AuthenticationTokenID *resource.ID
 	}
 )
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        internal.NewID("user"),
+		ID:        resource.NewID(resource.UserKind),
 		Username:  username,
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
@@ -79,7 +82,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
-func (u *User) IsTeamMember(teamID string) bool {
+func (u *User) IsTeamMember(teamID resource.ID) bool {
 	for _, t := range u.Teams {
 		if t.ID == teamID {
 			return true
@@ -138,7 +141,7 @@ func (u *User) CanAccessSite(action rbac.Action) bool {
 	return u.IsSiteAdmin()
 }
 
-func (u *User) CanAccessTeam(action rbac.Action, teamID string) bool {
+func (u *User) CanAccessTeam(action rbac.Action, teamID resource.ID) bool {
 	// coarser-grained site-level perms take precedence
 	if u.CanAccessSite(action) {
 		return true
@@ -194,7 +197,7 @@ func (s UserSpec) LogValue() slog.Value {
 		return slog.String("username", *s.Username).Value
 	}
 	if s.UserID != nil {
-		return slog.String("id", *s.UserID).Value
+		return slog.String("id", s.UserID.String()).Value
 	}
 	if s.AuthenticationTokenID != nil {
 		return slog.String("token_id", "*****").Value

@@ -3,10 +3,12 @@
 
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 type (
 	// OrganizationTag represents a Terraform Enterprise Organization tag
 	OrganizationTag struct {
-		ID string `jsonapi:"primary,tags"`
+		ID resource.ID `jsonapi:"primary,tags"`
 
 		// Optional:
 		Name string `jsonapi:"attribute" json:"name,omitempty"`
@@ -18,9 +20,21 @@ type (
 		Organization *Organization `jsonapi:"relationship" json:"organization"`
 	}
 
-	// Tag is owned by an organization and applied to workspaces. Used for grouping and search.
+	// Tag is owned by an organization and applied to workspaces. Used for
+	// grouping and search. Only one of ID or name must be specified.
 	Tag struct {
-		ID   string `jsonapi:"primary,tags"`
-		Name string `jsonapi:"attr,name,omitempty"`
+		ID   *resource.ID `jsonapi:"primary,tags"`
+		Name string       `jsonapi:"attribute" json:"name,omitempty"`
 	}
 )
+
+// UnmarshalID helps datadog/jsonapi to unmarshal the ID in a serialized tag -
+// either the ID or the name is set, and datadog/jsonapi otherwise gets upset
+// when ID is unset.
+func (t *Tag) UnmarshalID(id string) error {
+	if id == "" {
+		return nil
+	}
+	t.ID = new(resource.ID)
+	return t.ID.UnmarshalText([]byte(id))
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/spf13/cobra"
 )
@@ -79,8 +80,8 @@ type membershipCLI struct {
 }
 
 type membershipCLIClient interface {
-	AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
 }
 
 type teamsCLIClient interface {

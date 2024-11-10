@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -17,17 +18,17 @@ type (
 func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 	q := db.Querier(ctx)
 	params := sqlc.InsertRepoConnectionParams{
-		VCSProviderID: sql.String(opts.VCSProviderID),
+		VCSProviderID: opts.VCSProviderID,
 		RepoPath:      sql.String(opts.RepoPath),
 	}
 
-	switch opts.ConnectionType {
-	case WorkspaceConnection:
-		params.WorkspaceID = sql.String(opts.ResourceID)
-	case ModuleConnection:
-		params.ModuleID = sql.String(opts.ResourceID)
+	switch opts.ResourceID.Kind() {
+	case resource.WorkspaceKind:
+		params.WorkspaceID = &opts.ResourceID
+	case resource.ModuleKind:
+		params.ModuleID = &opts.ResourceID
 	default:
-		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
+		return fmt.Errorf("unsupported connection kind: %s", opts.ResourceID.Kind())
 	}
 
 	if err := q.InsertRepoConnection(ctx, params); err != nil {
@@ -38,13 +39,13 @@ func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 
 func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err error) {
 	q := db.Querier(ctx)
-	switch opts.ConnectionType {
-	case WorkspaceConnection:
-		_, err = q.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
-	case ModuleConnection:
-		_, err = q.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
+	switch opts.ResourceID.Kind() {
+	case resource.WorkspaceKind:
+		_, err = q.DeleteWorkspaceConnectionByID(ctx, &opts.ResourceID)
+	case resource.ModuleKind:
+		_, err = q.DeleteModuleConnectionByID(ctx, &opts.ResourceID)
 	default:
-		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
+		return fmt.Errorf("unknown connection kind: %v", opts.ResourceID)
 	}
 	return err
 }

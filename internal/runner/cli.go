@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ type (
 	}
 
 	agentCLIService interface {
-		CreateAgentToken(ctx context.Context, poolID string, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+		CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	}
 )
 
@@ -51,8 +52,8 @@ func (a *agentCLI) agentTokenCommand() *cobra.Command {
 
 func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 	var (
-		poolID string
-		opts   = CreateAgentTokenOptions{}
+		poolIDStr string
+		opts      = CreateAgentTokenOptions{}
 	)
 	cmd := &cobra.Command{
 		Use:           "new",
@@ -60,6 +61,10 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			poolID, err := resource.ParseID(poolIDStr)
+			if err != nil {
+				return err
+			}
 			_, token, err := a.CreateAgentToken(cmd.Context(), poolID, opts)
 			if err != nil {
 				return err
@@ -70,7 +75,7 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&poolID, "agent-pool-id", "", "ID of the agent pool in which the token is to be created.")
+	cmd.Flags().StringVar(&poolIDStr, "agent-pool-id", "", "ID of the agent pool in which the token is to be created.")
 	cmd.MarkFlagRequired("agent-pool-id")
 
 	cmd.Flags().StringVar(&opts.Description, "description", "", "Provide a description for the token.")

@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -26,10 +27,10 @@ type webHandlers struct {
 type webClient interface {
 	Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
 	Get(ctx context.Context, organization, team string) (*Team, error)
-	GetByID(ctx context.Context, teamID string) (*Team, error)
+	GetByID(ctx context.Context, teamID resource.ID) (*Team, error)
 	List(ctx context.Context, organization string) ([]*Team, error)
-	Update(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
-	Delete(ctx context.Context, teamID string) error
+	Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
+	Delete(ctx context.Context, teamID resource.ID) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -83,12 +84,12 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created team: "+team.Name)
-	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID string `schema:"team_id,required"`
+		TeamID resource.ID `schema:"team_id,required"`
 		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -103,7 +104,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +138,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := decode.Param("team_id", r)
+	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

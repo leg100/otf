@@ -3,7 +3,11 @@
 
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 // CostEstimateStatus represents a costEstimate state.
 type CostEstimateStatus string
@@ -20,7 +24,7 @@ const (
 
 // CostEstimate represents a Terraform Enterprise costEstimate.
 type CostEstimate struct {
-	ID                      string                        `jsonapi:"primary,cost-estimates"`
+	ID                      resource.ID                   `jsonapi:"primary,cost-estimates"`
 	DeltaMonthlyCost        string                        `jsonapi:"attribute" json:"delta-monthly-cost"`
 	ErrorMessage            string                        `jsonapi:"attribute" json:"error-message"`
 	MatchedResourcesCount   int                           `jsonapi:"attribute" json:"matched-resources-count"`

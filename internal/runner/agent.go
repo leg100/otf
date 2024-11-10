@@ -34,6 +34,7 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 	apiClient, err := otfapi.NewClient(otfapi.Config{
 		URL:           opts.URL,
 		Token:         opts.Token,
+		Logger:        logger,
 		RetryRequests: true,
 	})
 	if err != nil {

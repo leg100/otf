@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const findStateVersionOutputByID = `-- name: FindStateVersionOutputByID :one
@@ -17,7 +18,7 @@ FROM state_version_outputs
 WHERE state_version_output_id = $1
 `
 
-func (q *Queries) FindStateVersionOutputByID(ctx context.Context, id pgtype.Text) (StateVersionOutput, error) {
+func (q *Queries) FindStateVersionOutputByID(ctx context.Context, id resource.ID) (StateVersionOutput, error) {
 	row := q.db.QueryRow(ctx, findStateVersionOutputByID, id)
 	var i StateVersionOutput
 	err := row.Scan(
@@ -50,12 +51,12 @@ INSERT INTO state_version_outputs (
 `
 
 type InsertStateVersionOutputParams struct {
-	ID             pgtype.Text
+	ID             resource.ID
 	Name           pgtype.Text
 	Sensitive      pgtype.Bool
 	Type           pgtype.Text
 	Value          []byte
-	StateVersionID pgtype.Text
+	StateVersionID resource.ID
 }
 
 func (q *Queries) InsertStateVersionOutput(ctx context.Context, arg InsertStateVersionOutputParams) error {

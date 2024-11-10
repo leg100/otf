@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 var (
@@ -13,9 +15,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID                         string                `jsonapi:"primary,workspaces"`
+	ID                         resource.ID           `jsonapi:"primary,workspaces"`
 	Actions                    *WorkspaceActions     `jsonapi:"attribute" json:"actions"`
-	AgentPoolID                string                `jsonapi:"attribute" json:"agent-pool-id"`
+	AgentPoolID                *resource.ID          `jsonapi:"attribute" json:"agent-pool-id"`
 	AllowDestroyPlan           bool                  `jsonapi:"attribute" json:"allow-destroy-plan"`
 	AutoApply                  bool                  `jsonapi:"attribute" json:"auto-apply"`
 	CanQueueDestroyPlan        bool                  `jsonapi:"attribute" json:"can-queue-destroy-plan"`
@@ -56,11 +58,11 @@ type Workspace struct {
 }
 
 type WorkspaceOutput struct {
-	ID        string `jsonapi:"primary,workspace-outputs"`
-	Name      string `jsonapi:"attribute" json:"name"`
-	Sensitive bool   `jsonapi:"attribute" json:"sensitive"`
-	Type      string `jsonapi:"attribute" json:"output-type"`
-	Value     any    `jsonapi:"attribute" json:"value"`
+	ID        resource.ID `jsonapi:"primary,workspace-outputs"`
+	Name      string      `jsonapi:"attribute" json:"name"`
+	Sensitive bool        `jsonapi:"attribute" json:"sensitive"`
+	Type      string      `jsonapi:"attribute" json:"output-type"`
+	Value     any         `jsonapi:"attribute" json:"value"`
 }
 
 // WorkspaceList represents a list of workspaces.
@@ -71,14 +73,14 @@ type WorkspaceList struct {
 
 // VCSRepo contains the configuration of a VCS integration.
 type VCSRepo struct {
-	Branch            string `json:"branch"`
-	DisplayIdentifier string `json:"display-identifier"`
-	Identifier        string `json:"identifier"`
-	IngressSubmodules bool   `json:"ingress-submodules"`
-	OAuthTokenID      string `json:"oauth-token-id"`
-	RepositoryHTTPURL string `json:"repository-http-url"`
-	TagsRegex         string `json:"tags-regex"`
-	ServiceProvider   string `json:"service-provider"`
+	Branch            string      `json:"branch"`
+	DisplayIdentifier string      `json:"display-identifier"`
+	Identifier        string      `json:"identifier"`
+	IngressSubmodules bool        `json:"ingress-submodules"`
+	OAuthTokenID      resource.ID `json:"oauth-token-id"`
+	RepositoryHTTPURL string      `json:"repository-http-url"`
+	TagsRegex         string      `json:"tags-regex"`
+	ServiceProvider   string      `json:"service-provider"`
 }
 
 // WorkspaceActions represents the workspace actions.
@@ -117,7 +119,7 @@ type WorkspaceListOptions struct {
 	WildcardName string `schema:"search[wildcard-name],omitempty"`
 
 	// Optional: A filter string to list all the workspaces linked to a given project id in the organization.
-	ProjectID string `schema:"filter[project][id],omitempty"`
+	ProjectID resource.ID `schema:"filter[project][id],omitempty"`
 
 	// Optional: A list of relations to include. See available resources https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
 	// Include []WSIncludeOpt `url:"include,omitempty"`
@@ -134,7 +136,7 @@ type WorkspaceCreateOptions struct {
 	// belonging to the workspace's organization. This value must not be
 	// specified if execution-mode is set to remote or local or if operations is
 	// set to true.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
+	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
 
 	// Whether destroy plans can be queued on the workspace.
 	AllowDestroyPlan *bool `jsonapi:"attribute" json:"allow-destroy-plan,omitempty"`
@@ -240,7 +242,7 @@ type WorkspaceUpdateOptions struct {
 	// belonging to the workspace's organization. This value must not be
 	// specified if execution-mode is set to remote or local or if operations is
 	// set to true.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
+	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
 
 	// Whether destroy plans can be queued on the workspace.
 	AllowDestroyPlan *bool `jsonapi:"attribute" json:"allow-destroy-plan,omitempty"`
@@ -333,11 +335,11 @@ func (opts *WorkspaceUpdateOptions) Validate() error {
 // VCSRepoOptions is used by workspaces, policy sets, and registry modules
 // VCSRepoOptions represents the configuration options of a VCS integration.
 type VCSRepoOptions struct {
-	Branch            *string `json:"branch,omitempty"`
-	Identifier        *string `json:"identifier,omitempty"`
-	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
-	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
-	TagsRegex         *string `json:"tags-regex,omitempty"`
+	Branch            *string      `json:"branch,omitempty"`
+	Identifier        *string      `json:"identifier,omitempty"`
+	IngressSubmodules *bool        `json:"ingress-submodules,omitempty"`
+	OAuthTokenID      *resource.ID `json:"oauth-token-id,omitempty"`
+	TagsRegex         *string      `json:"tags-regex,omitempty"`
 }
 
 // VCSRepoOptionsJSON wraps VCSRepoOptions and implements json.Unmarshaler in order to differentiate

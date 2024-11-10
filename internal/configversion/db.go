@@ -18,13 +18,13 @@ type pgdb struct {
 func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
 	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		err := q.InsertConfigurationVersion(ctx, sqlc.InsertConfigurationVersionParams{
-			ID:            sql.String(cv.ID),
+			ID:            cv.ID,
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
 			AutoQueueRuns: sql.Bool(cv.AutoQueueRuns),
 			Source:        sql.String(string(cv.Source)),
 			Speculative:   sql.Bool(cv.Speculative),
 			Status:        sql.String(string(cv.Status)),
-			WorkspaceID:   sql.String(cv.WorkspaceID),
+			WorkspaceID:   cv.WorkspaceID,
 		})
 		if err != nil {
 			return err
@@ -46,7 +46,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 				Identifier:             sql.String(ia.Repo),
 				IsPullRequest:          sql.Bool(ia.IsPullRequest),
 				OnDefaultBranch:        sql.Bool(ia.OnDefaultBranch),
-				ConfigurationVersionID: sql.String(cv.ID),
+				ConfigurationVersionID: cv.ID,
 			})
 			if err != nil {
 				return err
@@ -61,10 +61,10 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 	})
 }
 
-func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
+func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
 	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// select ...for update
-		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
+		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -77,17 +77,17 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn fu
 	})
 }
 
-func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	q := db.Querier(ctx)
 	rows, err := q.FindConfigurationVersionsByWorkspaceID(ctx, sqlc.FindConfigurationVersionsByWorkspaceIDParams{
-		WorkspaceID: sql.String(workspaceID),
-		Limit:       opts.GetLimit(),
-		Offset:      opts.GetOffset(),
+		WorkspaceID: workspaceID,
+		Limit:       sql.GetLimit(opts.PageOptions),
+		Offset:      sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountConfigurationVersionsByWorkspaceID(ctx, sql.String(workspaceID))
+	count, err := q.CountConfigurationVersionsByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -102,13 +102,13 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
 	q := db.Querier(ctx)
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
+		result, err := q.FindConfigurationVersionByID(ctx, *opts.ID)
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return pgRow(result).toConfigVersion(), nil
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID))
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -118,16 +118,16 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 	}
 }
 
-func (db *pgdb) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	cfg, err := db.Querier(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
+func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
+	cfg, err := db.Querier(ctx).DownloadConfigurationVersion(ctx, id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return cfg, nil
 }
 
-func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id string) error {
-	_, err := db.Querier(ctx).DeleteConfigurationVersionByID(ctx, sql.String(id))
+func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.ID) error {
+	_, err := db.Querier(ctx).DeleteConfigurationVersionByID(ctx, id)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -140,7 +140,7 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 		return err
 	}
 	_, err = db.Querier(ctx).InsertConfigurationVersionStatusTimestamp(ctx, sqlc.InsertConfigurationVersionStatusTimestampParams{
-		ID:        sql.String(cv.ID),
+		ID:        cv.ID,
 		Status:    sql.String(string(cv.Status)),
 		Timestamp: sql.Timestamptz(sts),
 	})
@@ -149,27 +149,27 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 
 // pgRow represents the result of a database query for a configuration version.
 type pgRow struct {
-	ConfigurationVersionID pgtype.Text
+	ConfigurationVersionID resource.ID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
-	WorkspaceID            pgtype.Text
+	WorkspaceID            resource.ID
 	StatusTimestamps       []sqlc.ConfigurationVersionStatusTimestamp
 	IngressAttributes      *sqlc.IngressAttribute
 }
 
 func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	cv := ConfigurationVersion{
-		ID:               result.ConfigurationVersionID.String,
+		ID:               result.ConfigurationVersionID,
 		CreatedAt:        result.CreatedAt.Time.UTC(),
 		AutoQueueRuns:    result.AutoQueueRuns.Bool,
 		Speculative:      result.Speculative.Bool,
 		Source:           Source(result.Source.String),
 		Status:           ConfigurationStatus(result.Status.String),
 		StatusTimestamps: unmarshalStatusTimestampRows(result.StatusTimestamps),
-		WorkspaceID:      result.WorkspaceID.String,
+		WorkspaceID:      result.WorkspaceID,
 	}
 	if result.IngressAttributes != nil {
 		cv.IngressAttributes = NewIngressFromRow(result.IngressAttributes)

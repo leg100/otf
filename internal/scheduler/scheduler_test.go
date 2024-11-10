@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -16,15 +17,16 @@ import (
 // forwarding events to the queue handlers.
 func TestScheduler(t *testing.T) {
 	ctx := context.Background()
+	wsID := resource.NewID(resource.WorkspaceKind)
 
 	t.Run("create workspace queue", func(t *testing.T) {
 		qf := &fakeQueueFactory{}
 		scheduler := scheduler{
 			Logger:       logr.Discard(),
-			queues:       make(map[string]eventHandler),
+			queues:       make(map[resource.ID]eventHandler),
 			queueFactory: qf,
 		}
-		want := &workspace.Workspace{ID: "ws-123"}
+		want := &workspace.Workspace{ID: wsID}
 		err := scheduler.handleWorkspaceEvent(ctx, pubsub.Event[*workspace.Workspace]{
 			Payload: want,
 		})
@@ -37,12 +39,12 @@ func TestScheduler(t *testing.T) {
 	t.Run("delete workspace queue", func(t *testing.T) {
 		scheduler := scheduler{
 			Logger: logr.Discard(),
-			queues: map[string]eventHandler{
-				"ws-123": &fakeQueue{},
+			queues: map[resource.ID]eventHandler{
+				wsID: &fakeQueue{},
 			},
 		}
 		err := scheduler.handleWorkspaceEvent(ctx, pubsub.Event[*workspace.Workspace]{
-			Payload: &workspace.Workspace{ID: "ws-123"},
+			Payload: &workspace.Workspace{ID: wsID},
 			Type:    pubsub.DeletedEvent,
 		})
 		require.NoError(t, err)
@@ -52,11 +54,11 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("relay run to queue", func(t *testing.T) {
 		q := &fakeQueue{}
-		want := &run.Run{WorkspaceID: "ws-123"}
+		want := &run.Run{WorkspaceID: wsID}
 		scheduler := scheduler{
 			Logger: logr.Discard(),
-			queues: map[string]eventHandler{
-				"ws-123": q,
+			queues: map[resource.ID]eventHandler{
+				wsID: q,
 			},
 		}
 		err := scheduler.handleRunEvent(ctx, pubsub.Event[*run.Run]{

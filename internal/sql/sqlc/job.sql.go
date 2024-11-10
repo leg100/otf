@@ -9,10 +9,12 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const findAllocatedJobs = `-- name: FindAllocatedJobs :many
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -29,17 +31,18 @@ AND   j.status = 'allocated'
 `
 
 type FindAllocatedJobsRow struct {
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID pgtype.Text) ([]FindAllocatedJobsRow, error) {
+func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID *resource.ID) ([]FindAllocatedJobsRow, error) {
 	rows, err := q.db.Query(ctx, findAllocatedJobs, runnerID)
 	if err != nil {
 		return nil, err
@@ -49,6 +52,7 @@ func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID pgtype.Text) (
 	for rows.Next() {
 		var i FindAllocatedJobsRow
 		if err := rows.Scan(
+			&i.JobID,
 			&i.RunID,
 			&i.Phase,
 			&i.Status,
@@ -78,6 +82,7 @@ AND   j.runner_id = $1
 AND   j.status = 'running'
 AND   j.signaled IS NOT NULL
 RETURNING
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -89,18 +94,19 @@ RETURNING
 `
 
 type FindAndUpdateSignaledJobsRow struct {
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
 // Find signaled jobs and then immediately update signal with null.
-func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype.Text) ([]FindAndUpdateSignaledJobsRow, error) {
+func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID *resource.ID) ([]FindAndUpdateSignaledJobsRow, error) {
 	rows, err := q.db.Query(ctx, findAndUpdateSignaledJobs, runnerID)
 	if err != nil {
 		return nil, err
@@ -110,6 +116,7 @@ func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype
 	for rows.Next() {
 		var i FindAndUpdateSignaledJobsRow
 		if err := rows.Scan(
+			&i.JobID,
 			&i.RunID,
 			&i.Phase,
 			&i.Status,
@@ -131,6 +138,7 @@ func (q *Queries) FindAndUpdateSignaledJobs(ctx context.Context, runnerID pgtype
 
 const findJob = `-- name: FindJob :one
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -142,30 +150,26 @@ SELECT
 FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
-WHERE j.run_id = $1
-AND   phase = $2
+WHERE j.job_id = $1
 `
 
-type FindJobParams struct {
-	RunID pgtype.Text
-	Phase pgtype.Text
-}
-
 type FindJobRow struct {
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindJob(ctx context.Context, arg FindJobParams) (FindJobRow, error) {
-	row := q.db.QueryRow(ctx, findJob, arg.RunID, arg.Phase)
+func (q *Queries) FindJob(ctx context.Context, jobID resource.ID) (FindJobRow, error) {
+	row := q.db.QueryRow(ctx, findJob, jobID)
 	var i FindJobRow
 	err := row.Scan(
+		&i.JobID,
 		&i.RunID,
 		&i.Phase,
 		&i.Status,
@@ -180,6 +184,54 @@ func (q *Queries) FindJob(ctx context.Context, arg FindJobParams) (FindJobRow, e
 
 const findJobForUpdate = `-- name: FindJobForUpdate :one
 SELECT
+    j.job_id,
+    j.run_id,
+    j.phase,
+    j.status,
+    j.signaled,
+    j.runner_id,
+    w.agent_pool_id,
+    r.workspace_id,
+    w.organization_name
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+WHERE j.job_id = $1
+FOR UPDATE OF j
+`
+
+type FindJobForUpdateRow struct {
+	JobID            resource.ID
+	RunID            resource.ID
+	Phase            pgtype.Text
+	Status           pgtype.Text
+	Signaled         pgtype.Bool
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
+	OrganizationName pgtype.Text
+}
+
+func (q *Queries) FindJobForUpdate(ctx context.Context, jobID resource.ID) (FindJobForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, findJobForUpdate, jobID)
+	var i FindJobForUpdateRow
+	err := row.Scan(
+		&i.JobID,
+		&i.RunID,
+		&i.Phase,
+		&i.Status,
+		&i.Signaled,
+		&i.RunnerID,
+		&i.AgentPoolID,
+		&i.WorkspaceID,
+		&i.OrganizationName,
+	)
+	return i, err
+}
+
+const findJobForUpdateByRunPhase = `-- name: FindJobForUpdateByRunPhase :one
+SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -192,30 +244,32 @@ FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.run_id = $1
-AND   phase = $2
+AND   j.phase = $2
 FOR UPDATE OF j
 `
 
-type FindJobForUpdateParams struct {
-	RunID pgtype.Text
+type FindJobForUpdateByRunPhaseParams struct {
+	RunID resource.ID
 	Phase pgtype.Text
 }
 
-type FindJobForUpdateRow struct {
-	RunID            pgtype.Text
+type FindJobForUpdateByRunPhaseRow struct {
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) FindJobForUpdate(ctx context.Context, arg FindJobForUpdateParams) (FindJobForUpdateRow, error) {
-	row := q.db.QueryRow(ctx, findJobForUpdate, arg.RunID, arg.Phase)
-	var i FindJobForUpdateRow
+func (q *Queries) FindJobForUpdateByRunPhase(ctx context.Context, arg FindJobForUpdateByRunPhaseParams) (FindJobForUpdateByRunPhaseRow, error) {
+	row := q.db.QueryRow(ctx, findJobForUpdateByRunPhase, arg.RunID, arg.Phase)
+	var i FindJobForUpdateByRunPhaseRow
 	err := row.Scan(
+		&i.JobID,
 		&i.RunID,
 		&i.Phase,
 		&i.Status,
@@ -230,6 +284,7 @@ func (q *Queries) FindJobForUpdate(ctx context.Context, arg FindJobForUpdatePara
 
 const findJobs = `-- name: FindJobs :many
 SELECT
+    j.job_id,
     j.run_id,
     j.phase,
     j.status,
@@ -244,13 +299,14 @@ JOIN workspaces w USING (workspace_id)
 `
 
 type FindJobsRow struct {
-	RunID            pgtype.Text
+	JobID            resource.ID
+	RunID            resource.ID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         pgtype.Text
-	AgentPoolID      pgtype.Text
-	WorkspaceID      pgtype.Text
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
 	OrganizationName pgtype.Text
 }
 
@@ -264,6 +320,7 @@ func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 	for rows.Next() {
 		var i FindJobsRow
 		if err := rows.Scan(
+			&i.JobID,
 			&i.RunID,
 			&i.Phase,
 			&i.Status,
@@ -285,24 +342,32 @@ func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 
 const insertJob = `-- name: InsertJob :exec
 INSERT INTO jobs (
+    job_id,
     run_id,
     phase,
     status
 ) VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 )
 `
 
 type InsertJobParams struct {
-	RunID  pgtype.Text
+	JobID  resource.ID
+	RunID  resource.ID
 	Phase  pgtype.Text
 	Status pgtype.Text
 }
 
 func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
-	_, err := q.db.Exec(ctx, insertJob, arg.RunID, arg.Phase, arg.Status)
+	_, err := q.db.Exec(ctx, insertJob,
+		arg.JobID,
+		arg.RunID,
+		arg.Phase,
+		arg.Status,
+	)
 	return err
 }
 
@@ -311,17 +376,15 @@ UPDATE jobs
 SET status   = $1,
     signaled = $2,
     runner_id = $3
-WHERE run_id = $4
-AND   phase = $5
-RETURNING run_id, phase, status, runner_id, signaled
+WHERE job_id = $4
+RETURNING run_id, phase, status, runner_id, signaled, job_id
 `
 
 type UpdateJobParams struct {
 	Status   pgtype.Text
 	Signaled pgtype.Bool
-	RunnerID pgtype.Text
-	RunID    pgtype.Text
-	Phase    pgtype.Text
+	RunnerID *resource.ID
+	JobID    resource.ID
 }
 
 func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, error) {
@@ -329,8 +392,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		arg.Status,
 		arg.Signaled,
 		arg.RunnerID,
-		arg.RunID,
-		arg.Phase,
+		arg.JobID,
 	)
 	var i Job
 	err := row.Scan(
@@ -339,6 +401,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.Status,
 		&i.RunnerID,
 		&i.Signaled,
+		&i.JobID,
 	)
 	return i, err
 }

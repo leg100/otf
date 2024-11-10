@@ -8,7 +8,7 @@ package sqlc
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteWorkspaceVariableByID = `-- name: DeleteWorkspaceVariableByID :one
@@ -19,11 +19,11 @@ RETURNING wv.workspace_id, (v.*)::"variables" AS variable
 `
 
 type DeleteWorkspaceVariableByIDRow struct {
-	WorkspaceID pgtype.Text
+	WorkspaceID resource.ID
 	Variable    Variable
 }
 
-func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text) (DeleteWorkspaceVariableByIDRow, error) {
+func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, variableID resource.ID) (DeleteWorkspaceVariableByIDRow, error) {
 	row := q.db.QueryRow(ctx, deleteWorkspaceVariableByID, variableID)
 	var i DeleteWorkspaceVariableByIDRow
 	err := row.Scan(&i.WorkspaceID, &i.Variable)
@@ -40,11 +40,11 @@ WHERE v.variable_id = $1
 `
 
 type FindWorkspaceVariableByVariableIDRow struct {
-	WorkspaceID pgtype.Text
+	WorkspaceID resource.ID
 	Variable    Variable
 }
 
-func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, variableID pgtype.Text) (FindWorkspaceVariableByVariableIDRow, error) {
+func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, variableID resource.ID) (FindWorkspaceVariableByVariableIDRow, error) {
 	row := q.db.QueryRow(ctx, findWorkspaceVariableByVariableID, variableID)
 	var i FindWorkspaceVariableByVariableIDRow
 	err := row.Scan(&i.WorkspaceID, &i.Variable)
@@ -58,7 +58,7 @@ JOIN variables v USING (variable_id)
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]Variable, error) {
+func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, workspaceID resource.ID) ([]Variable, error) {
 	rows, err := q.db.Query(ctx, findWorkspaceVariablesByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
@@ -98,8 +98,8 @@ INSERT INTO workspace_variables (
 `
 
 type InsertWorkspaceVariableParams struct {
-	VariableID  pgtype.Text
-	WorkspaceID pgtype.Text
+	VariableID  resource.ID
+	WorkspaceID resource.ID
 }
 
 func (q *Queries) InsertWorkspaceVariable(ctx context.Context, arg InsertWorkspaceVariableParams) error {

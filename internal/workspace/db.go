@@ -18,7 +18,7 @@ type (
 
 	// pgresult represents the result of a database query for a workspace.
 	pgresult struct {
-		WorkspaceID                pgtype.Text
+		WorkspaceID                resource.ID
 		CreatedAt                  pgtype.Timestamptz
 		UpdatedAt                  pgtype.Timestamptz
 		AllowDestroyPlan           pgtype.Bool
@@ -38,26 +38,26 @@ type (
 		TerraformVersion           pgtype.Text
 		TriggerPrefixes            []pgtype.Text
 		WorkingDirectory           pgtype.Text
-		LockRunID                  pgtype.Text
-		LatestRunID                pgtype.Text
+		LockRunID                  *resource.ID
+		LatestRunID                *resource.ID
 		OrganizationName           pgtype.Text
 		Branch                     pgtype.Text
-		LockUsername               pgtype.Text
-		CurrentStateVersionID      pgtype.Text
+		CurrentStateVersionID      *resource.ID
 		TriggerPatterns            []pgtype.Text
 		VCSTagsRegex               pgtype.Text
 		AllowCLIApply              pgtype.Bool
-		AgentPoolID                pgtype.Text
+		AgentPoolID                *resource.ID
+		LockUserID                 *resource.ID
 		Tags                       []pgtype.Text
 		LatestRunStatus            pgtype.Text
-		VCSProviderID              pgtype.Text
+		VCSProviderID              resource.ID
 		RepoPath                   pgtype.Text
 	}
 )
 
 func (r pgresult) toWorkspace() (*Workspace, error) {
 	ws := Workspace{
-		ID:                         r.WorkspaceID.String,
+		ID:                         r.WorkspaceID,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		AllowDestroyPlan:           r.AllowDestroyPlan.Bool,
@@ -80,15 +80,12 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       sql.FromStringArray(r.Tags),
+		AgentPoolID:                r.AgentPoolID,
 	}
-	if r.AgentPoolID.Valid {
-		ws.AgentPoolID = &r.AgentPoolID.String
-	}
-
-	if r.VCSProviderID.Valid && r.RepoPath.Valid {
+	if r.RepoPath.Valid {
 		ws.Connection = &Connection{
 			AllowCLIApply: r.AllowCLIApply.Bool,
-			VCSProviderID: r.VCSProviderID.String,
+			VCSProviderID: r.VCSProviderID,
 			Repo:          r.RepoPath.String,
 			Branch:        r.Branch.String,
 		}
@@ -97,23 +94,17 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.LatestRunID.Valid && r.LatestRunStatus.Valid {
+	if r.LatestRunID != nil {
 		ws.LatestRun = &LatestRun{
-			ID:     r.LatestRunID.String,
+			ID:     *r.LatestRunID,
 			Status: runStatus(r.LatestRunStatus.String),
 		}
 	}
 
-	if r.LockUsername.Valid {
-		ws.Lock = &Lock{
-			id:       r.LockUsername.String,
-			LockKind: UserLock,
-		}
-	} else if r.LockRunID.Valid {
-		ws.Lock = &Lock{
-			id:       r.LockRunID.String,
-			LockKind: RunLock,
-		}
+	if r.LockUserID != nil {
+		ws.Lock = r.LockUserID
+	} else if r.LockRunID != nil {
+		ws.Lock = r.LockRunID
 	}
 
 	return &ws, nil
@@ -122,10 +113,10 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	q := db.Querier(ctx)
 	params := sqlc.InsertWorkspaceParams{
-		ID:                         sql.String(ws.ID),
+		ID:                         ws.ID,
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+		AgentPoolID:                ws.AgentPoolID,
 		AllowCLIApply:              sql.Bool(false),
 		AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 		AutoApply:                  sql.Bool(ws.AutoApply),
@@ -158,12 +149,12 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
+func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		var err error
 		// retrieve workspace
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -177,7 +168,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 		}
 		// persist update
 		params := sqlc.UpdateWorkspaceByIDParams{
-			AgentPoolID:                sql.StringPtr(ws.AgentPoolID),
+			AgentPoolID:                ws.AgentPoolID,
 			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 			AllowCLIApply:              sql.Bool(false),
 			AutoApply:                  sql.Bool(ws.AutoApply),
@@ -195,7 +186,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			VCSTagsRegex:               sql.StringPtr(nil),
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
 			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-			ID:                         sql.String(ws.ID),
+			ID:                         ws.ID,
 		}
 		if ws.Connection != nil {
 			params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
@@ -209,12 +200,12 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 }
 
 // setCurrentRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
 	q := db.Querier(ctx)
 
 	err := q.UpdateWorkspaceLatestRun(ctx, sqlc.UpdateWorkspaceLatestRunParams{
-		RunID:       sql.String(runID),
-		WorkspaceID: sql.String(workspaceID),
+		RunID:       &runID,
+		WorkspaceID: workspaceID,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -241,8 +232,8 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 		OrganizationNames: sql.StringArray([]string{organization}),
 		Search:            sql.String(opts.Search),
 		Tags:              sql.StringArray(tags),
-		Limit:             opts.GetLimit(),
-		Offset:            opts.GetOffset(),
+		Limit:             sql.GetLimit(opts.PageOptions),
+		Offset:            sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -267,11 +258,11 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
 	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspacesByConnection(ctx, sqlc.FindWorkspacesByConnectionParams{
-		VCSProviderID: sql.String(vcsProviderID),
+		VCSProviderID: vcsProviderID,
 		RepoPath:      sql.String(repoPath),
 	})
 	if err != nil {
@@ -295,8 +286,8 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	rows, err := q.FindWorkspacesByUsername(ctx, sqlc.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
 		Username:         sql.String(username),
-		Limit:            opts.GetLimit(),
-		Offset:           opts.GetOffset(),
+		Limit:            sql.GetLimit(opts),
+		Offset:           sql.GetOffset(opts),
 	})
 	if err != nil {
 		return nil, err
@@ -321,9 +312,9 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	return resource.NewPage(items, opts, internal.Int64(count)), nil
 }
 
-func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	q := db.Querier(ctx)
-	result, err := q.FindWorkspaceByID(ctx, sql.String(workspaceID))
+	result, err := q.FindWorkspaceByID(ctx, workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -342,9 +333,9 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 	return pgresult(result).toWorkspace()
 }
 
-func (db *pgdb) delete(ctx context.Context, workspaceID string) error {
+func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 	q := db.Querier(ctx)
-	err := q.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
+	err := q.DeleteWorkspaceByID(ctx, workspaceID)
 	if err != nil {
 		return sql.Error(err)
 	}

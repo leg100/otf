@@ -3,19 +3,21 @@
 
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 // VariableSet represents a Terraform Enterprise variable set.
 type VariableSet struct {
-	ID          string `jsonapi:"primary,varsets"`
-	Name        string `jsonapi:"attribute" json:"name"`
-	Description string `jsonapi:"attribute" json:"description"`
-	Global      bool   `jsonapi:"attribute" json:"global"`
+	ID          resource.ID `jsonapi:"primary,varsets"`
+	Name        string      `jsonapi:"attribute" json:"name"`
+	Description string      `jsonapi:"attribute" json:"description"`
+	Global      bool        `jsonapi:"attribute" json:"global"`
 
 	// Relations
 	Organization *Organization          `jsonapi:"relationship" json:"organization"`
 	Workspaces   []*Workspace           `jsonapi:"relationship" json:"workspaces,omitempty"`
 	Variables    []*VariableSetVariable `jsonapi:"relationship" json:"vars,omitempty"`
 
-	//Projects     []*Project             `jsonapi:"relationship" json:"projects,omitempty"`
+	// Projects     []*Project             `jsonapi:"relationship" json:"projects,omitempty"`
 }
 
 type VariableSetVariable struct {

@@ -30,7 +30,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
-	var opts internal.GetChunkOptions
+	var opts GetChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -47,7 +47,7 @@ func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
-	var opts internal.PutChunkOptions
+	var opts PutChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

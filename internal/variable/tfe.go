@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 
@@ -46,7 +47,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -72,7 +73,7 @@ func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
+	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -87,7 +88,7 @@ func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -107,7 +108,7 @@ func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
+	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -134,7 +135,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
+	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -170,7 +171,7 @@ func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -214,7 +215,7 @@ func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listWorkspaceVariableSets(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -235,7 +236,7 @@ func (a *tfe) listWorkspaceVariableSets(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *tfe) getVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -251,7 +252,7 @@ func (a *tfe) getVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -266,7 +267,7 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listVariableSetVariables(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -287,7 +288,7 @@ func (a *tfe) listVariableSetVariables(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -315,7 +316,7 @@ func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
+	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -344,7 +345,7 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *tfe) getVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
+	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -361,7 +362,7 @@ func (a *tfe) getVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
+	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -375,17 +376,17 @@ func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 	var params []*types.Workspace
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
-		tfeapi.Error(w, err)
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	workspaceIDs := make([]string, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -400,7 +401,7 @@ func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.Param("varset_id", r)
+	setID, err := decode.ID("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -410,7 +411,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]string, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -424,7 +425,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID string) *types.WorkspaceVariable {
+func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.ID) *types.WorkspaceVariable {
 	return &types.WorkspaceVariable{
 		Variable: a.convertVariable(from, true),
 		Workspace: &types.Workspace{
@@ -461,7 +462,7 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	return to
 }
 
-func (a *tfe) convertVariableSetVariable(from *Variable, setID string) *types.VariableSetVariable {
+func (a *tfe) convertVariableSetVariable(from *Variable, setID resource.ID) *types.VariableSetVariable {
 	return &types.VariableSetVariable{
 		Variable:    a.convertVariable(from, true),
 		VariableSet: &types.VariableSet{ID: setID},

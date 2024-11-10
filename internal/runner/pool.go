@@ -20,8 +20,8 @@ type (
 	// Pool is a group of remote runners sharing one or more tokens, assigned to
 	// an organization or particular workspaces within the organization.
 	Pool struct {
-		// Unique system-wide ID
-		ID        string
+		resource.ID
+
 		Name      string
 		CreatedAt time.Time
 		// Pool belongs to an organization with this name.
@@ -31,10 +31,10 @@ type (
 		OrganizationScoped bool
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
-		AllowedWorkspaces []string
+		AllowedWorkspaces []resource.ID
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
-		AssignedWorkspaces []string
+		AssignedWorkspaces []resource.ID
 	}
 
 	CreateAgentPoolOptions struct {
@@ -44,17 +44,17 @@ type (
 		// defaults to true
 		OrganizationScoped *bool
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []string
+		AllowedWorkspaces []resource.ID
 	}
 
 	updatePoolOptions struct {
 		Name               *string
 		OrganizationScoped *bool `schema:"organization_scoped"`
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []string `schema:"allowed_workspaces"`
+		AllowedWorkspaces []resource.ID `schema:"allowed_workspaces"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AssignedWorkspaces.
-		AssignedWorkspaces []string `schema:"assigned_workspaces"`
+		AssignedWorkspaces []resource.ID `schema:"assigned_workspaces"`
 	}
 
 	listPoolOptions struct {
@@ -63,7 +63,7 @@ type (
 		// Filter pools to those accessible to the named workspace. Optional.
 		AllowedWorkspaceName *string
 		// Filter pools to those accessible to the workspace with the given ID. Optional.
-		AllowedWorkspaceID *string
+		AllowedWorkspaceID *resource.ID
 	}
 )
 
@@ -77,7 +77,7 @@ func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 		return nil, errors.New("organization must not be empty")
 	}
 	pool := &Pool{
-		ID:                 internal.NewID("apool"),
+		ID:                 resource.NewID("apool"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		Name:               opts.Name,
 		Organization:       opts.Organization,
@@ -117,7 +117,7 @@ func (p *Pool) update(opts updatePoolOptions) error {
 
 func (p *Pool) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", p.ID),
+		slog.String("id", p.ID.String()),
 		slog.String("name", p.Name),
 		slog.String("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),

@@ -55,6 +55,10 @@ func main() {
 	}
 	var types []string
 	for _, override := range cfg.SQL[0].Gen.Go.Overrides {
+		// Ignore overrides that don't specify a database type.
+		if override.DbType == "" {
+			continue
+		}
 		// Ignore overrides of built-in types like int, bool, etc.
 		if slices.Contains(ignoreBuiltinTypes, override.DbType) {
 			continue

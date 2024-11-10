@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -22,7 +23,7 @@ type (
 		logr.Logger
 
 		site              authz.Authorizer
-		organization      authz.Authorizer
+		organization      *organization.Authorizer
 		db                *pgdb
 		web               *webHandlers
 		api               *tfe
@@ -127,7 +128,7 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider,
 	return provider, nil
 }
 
-func (a *Service) Update(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error) {
+func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error) {
 	var (
 		subject authz.Subject
 		before  VCSProvider
@@ -170,7 +171,7 @@ func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider
 }
 
 func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, "")
+	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, resource.ID{})
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +201,7 @@ func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, instal
 	return providers, nil
 }
 
-func (a *Service) Get(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -218,7 +219,7 @@ func (a *Service) Get(ctx context.Context, id string) (*VCSProvider, error) {
 	return provider, nil
 }
 
-func (a *Service) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+func (a *Service) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
 	provider, err := a.Get(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -226,7 +227,7 @@ func (a *Service) GetVCSClient(ctx context.Context, providerID string) (vcs.Clie
 	return provider.NewClient()
 }
 
-func (a *Service) Delete(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, error) {
 	var (
 		provider *VCSProvider
 		subject  authz.Subject

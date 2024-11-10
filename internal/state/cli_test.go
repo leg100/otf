@@ -25,13 +25,13 @@ func TestCLI_State(t *testing.T) {
 			{
 				"three state versions",
 				newFakeCLI(
-					&workspace.Workspace{ID: "ws-123"},
-					withStateVersion(&Version{ID: "sv-3", WorkspaceID: "ws-123"}),
+					&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")},
+					withStateVersion(&Version{ID: testutils.ParseID(t, "sv-3"), WorkspaceID: testutils.ParseID(t, "ws-123")}),
 					withStateVersionList(resource.NewPage(
 						[]*Version{
-							{ID: "sv-3"},
-							{ID: "sv-2"},
-							{ID: "sv-1"},
+							{ID: testutils.ParseID(t, "sv-3")},
+							{ID: testutils.ParseID(t, "sv-2")},
+							{ID: testutils.ParseID(t, "sv-1")},
 						},
 						resource.PageOptions{},
 						nil,
@@ -41,7 +41,7 @@ func TestCLI_State(t *testing.T) {
 			},
 			{
 				"zero state versions",
-				newFakeCLI(&workspace.Workspace{ID: "ws-123"}),
+				newFakeCLI(&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")}),
 				"No state versions found\n",
 			},
 		}
@@ -84,7 +84,7 @@ func TestCLI_State(t *testing.T) {
 	})
 
 	t.Run("rollback", func(t *testing.T) {
-		sv := &Version{ID: "sv-456"}
+		sv := &Version{ID: testutils.ParseID(t, "sv-456")}
 		cmd := newFakeCLI(nil, withStateVersion(sv)).stateRollbackCommand()
 
 		cmd.SetArgs([]string{"sv-123"})
@@ -133,26 +133,26 @@ func withState(state []byte) fakeCLIOption {
 	}
 }
 
-func (f *fakeCLIService) List(context.Context, string, resource.PageOptions) (*resource.Page[*Version], error) {
+func (f *fakeCLIService) List(context.Context, resource.ID, resource.PageOptions) (*resource.Page[*Version], error) {
 	return f.stateVersionList, nil
 }
 
-func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID string) (*Version, error) {
+func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	if f.stateVersion == nil {
 		return nil, internal.ErrResourceNotFound
 	}
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Delete(ctx context.Context, svID string) error {
+func (f *fakeCLIService) Delete(ctx context.Context, svID resource.ID) error {
 	return nil
 }
 
-func (f *fakeCLIService) Rollback(ctx context.Context, svID string) (*Version, error) {
+func (f *fakeCLIService) Rollback(ctx context.Context, svID resource.ID) (*Version, error) {
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Download(ctx context.Context, svID string) ([]byte, error) {
+func (f *fakeCLIService) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
 	return f.state, nil
 }
 

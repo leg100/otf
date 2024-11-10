@@ -5,14 +5,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"slices"
 	"strings"
 
-	"log/slog"
-
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"golang.org/x/exp/maps"
 )
@@ -33,7 +32,7 @@ var (
 
 type (
 	Variable struct {
-		ID          string           `jsonapi:"primary,variables"`
+		ID          resource.ID      `jsonapi:"primary,variables"`
 		Key         string           `jsonapi:"attribute" json:"key"`
 		Value       string           `jsonapi:"attribute" json:"value"`
 		Description string           `jsonapi:"attribute" json:"description"`
@@ -48,7 +47,7 @@ type (
 
 	WorkspaceVariable struct {
 		*Variable
-		WorkspaceID string
+		WorkspaceID resource.ID
 	}
 
 	CreateVariableOptions struct {
@@ -79,7 +78,7 @@ type (
 
 func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID: internal.NewID("var"),
+		ID: resource.NewID(resource.VariableKind),
 	}
 	if opts.generateVersion == nil {
 		opts.generateVersion = versionGenerator
@@ -133,7 +132,7 @@ func versionGenerator() string {
 
 func (v *Variable) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
+		slog.String("id", v.ID.String()),
 		slog.String("key", v.Key),
 		slog.Bool("sensitive", v.Sensitive),
 	}

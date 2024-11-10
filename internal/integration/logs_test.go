@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ func TestLogs(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.Logs.PutChunk(ctx, internal.PutChunkOptions{
+		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
 			RunID: run.ID,
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -30,7 +31,7 @@ func TestLogs(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.Logs.PutChunk(ctx, internal.PutChunkOptions{
+		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
 			RunID: run.ID,
 			Phase: internal.PlanPhase,
 		})
@@ -41,7 +42,7 @@ func TestLogs(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.Logs.PutChunk(ctx, internal.PutChunkOptions{
+		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
 			RunID: run.ID,
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -50,16 +51,16 @@ func TestLogs(t *testing.T) {
 
 		tests := []struct {
 			name string
-			opts internal.GetChunkOptions
-			want internal.Chunk
+			opts logs.GetChunkOptions
+			want logs.Chunk
 		}{
 			{
 				name: "entire chunk",
-				opts: internal.GetChunkOptions{
+				opts: logs.GetChunkOptions{
 					RunID: run.ID,
 					Phase: internal.PlanPhase,
 				},
-				want: internal.Chunk{
+				want: logs.Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("\x02hello world\x03"),
@@ -68,12 +69,12 @@ func TestLogs(t *testing.T) {
 			},
 			{
 				name: "first chunk",
-				opts: internal.GetChunkOptions{
+				opts: logs.GetChunkOptions{
 					RunID: run.ID,
 					Phase: internal.PlanPhase,
 					Limit: 4,
 				},
-				want: internal.Chunk{
+				want: logs.Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("\x02hel"),
@@ -82,13 +83,13 @@ func TestLogs(t *testing.T) {
 			},
 			{
 				name: "intermediate chunk",
-				opts: internal.GetChunkOptions{
+				opts: logs.GetChunkOptions{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Offset: 4,
 					Limit:  3,
 				},
-				want: internal.Chunk{
+				want: logs.Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("lo "),
@@ -97,12 +98,12 @@ func TestLogs(t *testing.T) {
 			},
 			{
 				name: "last chunk",
-				opts: internal.GetChunkOptions{
+				opts: logs.GetChunkOptions{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Offset: 7,
 				},
-				want: internal.Chunk{
+				want: logs.Chunk{
 					RunID:  run.ID,
 					Phase:  internal.PlanPhase,
 					Data:   []byte("world\x03"),
@@ -143,14 +144,14 @@ func TestClusterLogs(t *testing.T) {
 	run := local.createRun(t, ctx, nil, nil)
 
 	// follow run's plan logs on remote node
-	sub, err := remote.Logs.Tail(ctx, internal.GetChunkOptions{
+	sub, err := remote.Logs.Tail(ctx, logs.GetChunkOptions{
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
 	})
 	require.NoError(t, err)
 
 	// upload first chunk to local node
-	err = local.Logs.PutChunk(ctx, internal.PutChunkOptions{
+	err = local.Logs.PutChunk(ctx, logs.PutChunkOptions{
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
 		Data:  []byte("\x02hello"),
@@ -158,7 +159,7 @@ func TestClusterLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	// upload second and last chunk to local node
-	err = local.Logs.PutChunk(ctx, internal.PutChunkOptions{
+	err = local.Logs.PutChunk(ctx, logs.PutChunkOptions{
 		RunID:  run.ID,
 		Phase:  internal.PlanPhase,
 		Data:   []byte(" world\x03"),
@@ -166,20 +167,14 @@ func TestClusterLogs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want1 := internal.Chunk{
-		ID:    "1",
-		RunID: run.ID,
-		Phase: internal.PlanPhase,
-		Data:  []byte("\x02hello"),
-	}
-	require.Equal(t, want1, <-sub)
+	got := <-sub
+	assert.Equal(t, run.ID, got.RunID)
+	assert.Equal(t, internal.PlanPhase, got.Phase)
+	assert.Equal(t, []byte("\x02hello"), got.Data)
 
-	want2 := internal.Chunk{
-		ID:     "2",
-		RunID:  run.ID,
-		Phase:  internal.PlanPhase,
-		Data:   []byte(" world\x03"),
-		Offset: 6,
-	}
-	require.Equal(t, want2, <-sub)
+	got = <-sub
+	assert.Equal(t, run.ID, got.RunID)
+	assert.Equal(t, internal.PlanPhase, got.Phase)
+	assert.Equal(t, []byte(" world\x03"), got.Data)
+	assert.Equal(t, 6, got.Offset)
 }

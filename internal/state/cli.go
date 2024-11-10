@@ -20,11 +20,11 @@ type CLI struct {
 }
 
 type cliStateService interface {
-	List(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetCurrent(ctx context.Context, workspaceID string) (*Version, error)
-	Download(ctx context.Context, versionID string) ([]byte, error)
-	Rollback(ctx context.Context, versionID string) (*Version, error)
-	Delete(ctx context.Context, versionID string) error
+	List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error)
+	Download(ctx context.Context, versionID resource.ID) ([]byte, error)
+	Rollback(ctx context.Context, versionID resource.ID) (*Version, error)
+	Delete(ctx context.Context, versionID resource.ID) error
 }
 
 type cliWorkspaceService interface {
@@ -87,7 +87,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				return fmt.Errorf("listing state versions: %w", err)
 			}
 			for _, sv := range list {
-				fmt.Fprintf(out, sv.ID)
+				fmt.Fprint(out, sv)
 				if current.ID == sv.ID {
 					fmt.Fprintf(out, " (current)")
 				}
@@ -114,7 +114,11 @@ func (a *CLI) stateDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := a.state.Delete(cmd.Context(), args[0]); err != nil {
+			id, err := resource.ParseID(args[0])
+			if err != nil {
+				return err
+			}
+			if err := a.state.Delete(cmd.Context(), id); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted state version: %s\n", args[0])
@@ -131,7 +135,11 @@ func (a *CLI) stateDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			state, err := a.state.Download(cmd.Context(), args[0])
+			id, err := resource.ParseID(args[0])
+			if err != nil {
+				return err
+			}
+			state, err := a.state.Download(cmd.Context(), id)
 			if err != nil {
 				return err
 			}
@@ -153,7 +161,11 @@ func (a *CLI) stateRollbackCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := a.state.Rollback(cmd.Context(), args[0])
+			id, err := resource.ParseID(args[0])
+			if err != nil {
+				return err
+			}
+			_, err = a.state.Rollback(cmd.Context(), id)
 			if err != nil {
 				return err
 			}

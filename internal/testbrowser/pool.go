@@ -128,13 +128,15 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 		user, err := otfuser.UserFromContext(user)
 		require.NoError(t, err)
 
-		token, err := p.tokens.NewSessionToken(user.Username, internal.CurrentTimestamp(nil).Add(time.Hour))
+		token, err := p.tokens.NewToken(user.ID, tokens.WithExpiry(
+			internal.CurrentTimestamp(nil).Add(time.Hour),
+		))
 		require.NoError(t, err)
 
 		err = browserCtx.AddCookies([]playwright.OptionalCookie{
 			{
 				Name:   "session",
-				Value:  token,
+				Value:  string(token),
 				Domain: internal.String("127.0.0.1"),
 				Path:   internal.String("/"),
 			},

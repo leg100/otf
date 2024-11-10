@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const countTags = `-- name: CountTags :one
@@ -30,7 +31,7 @@ FROM workspace_tags wt
 WHERE wt.workspace_id = $1
 `
 
-func (q *Queries) CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (int64, error) {
+func (q *Queries) CountWorkspaceTags(ctx context.Context, workspaceID resource.ID) (int64, error) {
 	row := q.db.QueryRow(ctx, countWorkspaceTags, workspaceID)
 	var count int64
 	err := row.Scan(&count)
@@ -46,13 +47,13 @@ RETURNING tag_id
 `
 
 type DeleteTagParams struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	OrganizationName pgtype.Text
 }
 
-func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (pgtype.Text, error) {
+func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteTag, arg.TagID, arg.OrganizationName)
-	var tag_id pgtype.Text
+	var tag_id resource.ID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -66,13 +67,13 @@ RETURNING tag_id
 `
 
 type DeleteWorkspaceTagParams struct {
-	WorkspaceID pgtype.Text
-	TagID       pgtype.Text
+	WorkspaceID resource.ID
+	TagID       resource.ID
 }
 
-func (q *Queries) DeleteWorkspaceTag(ctx context.Context, arg DeleteWorkspaceTagParams) (pgtype.Text, error) {
+func (q *Queries) DeleteWorkspaceTag(ctx context.Context, arg DeleteWorkspaceTagParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteWorkspaceTag, arg.WorkspaceID, arg.TagID)
-	var tag_id pgtype.Text
+	var tag_id resource.ID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -91,12 +92,12 @@ AND   t.organization_name = $2
 `
 
 type FindTagByIDParams struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	OrganizationName pgtype.Text
 }
 
 type FindTagByIDRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -133,7 +134,7 @@ type FindTagByNameParams struct {
 }
 
 type FindTagByNameRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -172,7 +173,7 @@ type FindTagsParams struct {
 }
 
 type FindTagsRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -219,13 +220,13 @@ OFFSET $2::int
 `
 
 type FindWorkspaceTagsParams struct {
-	WorkspaceID pgtype.Text
+	WorkspaceID resource.ID
 	Offset      pgtype.Int4
 	Limit       pgtype.Int4
 }
 
 type FindWorkspaceTagsRow struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 	InstanceCount    int64
@@ -269,7 +270,7 @@ INSERT INTO tags (
 `
 
 type InsertTagParams struct {
-	TagID            pgtype.Text
+	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 }
@@ -292,13 +293,13 @@ RETURNING tag_id
 `
 
 type InsertWorkspaceTagParams struct {
-	TagID       pgtype.Text
-	WorkspaceID pgtype.Text
+	TagID       resource.ID
+	WorkspaceID resource.ID
 }
 
-func (q *Queries) InsertWorkspaceTag(ctx context.Context, arg InsertWorkspaceTagParams) (pgtype.Text, error) {
+func (q *Queries) InsertWorkspaceTag(ctx context.Context, arg InsertWorkspaceTagParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, insertWorkspaceTag, arg.TagID, arg.WorkspaceID)
-	var tag_id pgtype.Text
+	var tag_id resource.ID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -315,13 +316,13 @@ RETURNING tag_id
 `
 
 type InsertWorkspaceTagByNameParams struct {
-	WorkspaceID pgtype.Text
+	WorkspaceID resource.ID
 	TagName     pgtype.Text
 }
 
-func (q *Queries) InsertWorkspaceTagByName(ctx context.Context, arg InsertWorkspaceTagByNameParams) (pgtype.Text, error) {
+func (q *Queries) InsertWorkspaceTagByName(ctx context.Context, arg InsertWorkspaceTagByNameParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, insertWorkspaceTagByName, arg.WorkspaceID, arg.TagName)
-	var tag_id pgtype.Text
+	var tag_id resource.ID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }

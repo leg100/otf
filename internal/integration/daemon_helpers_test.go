@@ -21,6 +21,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
@@ -182,7 +183,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	return ws
 }
 
-func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID string) *workspace.Workspace {
+func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID resource.ID) *workspace.Workspace {
 	t.Helper()
 
 	ws, err := s.Workspaces.Get(ctx, workspaceID)
@@ -316,7 +317,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	}
 
 	run, err := s.Runs.Create(ctx, ws.ID, run.CreateOptions{
-		ConfigurationVersionID: internal.String(cv.ID),
+		ConfigurationVersionID: &cv.ID,
 	})
 	require.NoError(t, err)
 	return run
@@ -350,7 +351,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 
 	sv, err := s.State.Create(ctx, state.CreateStateVersionOptions{
 		State:       file,
-		WorkspaceID: internal.String(ws.ID),
+		WorkspaceID: ws.ID,
 		// serial matches that in ./testdata/terraform.tfstate
 		Serial: internal.Int64(9),
 	})
@@ -358,7 +359,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
-func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID string) *state.Version {
+func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID resource.ID) *state.Version {
 	t.Helper()
 
 	sv, err := s.State.GetCurrent(ctx, wsID)
@@ -402,7 +403,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org string, poolID *resource.ID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -416,15 +417,15 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org, poolID, 
 	}
 
 	if token == "" {
-		if poolID == "" {
+		if poolID == nil {
 			pool, err := s.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
 				Name:         uuid.NewString(),
 				Organization: org,
 			})
 			require.NoError(t, err)
-			poolID = pool.ID
+			poolID = &pool.ID
 		}
-		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, poolID, runner.CreateAgentTokenOptions{
+		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, *poolID, runner.CreateAgentTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

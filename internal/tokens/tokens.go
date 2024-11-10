@@ -4,38 +4,36 @@ package tokens
 import (
 	"time"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 type (
-	// the Kind of authentication token: user session, user token, agent token, etc
-	Kind string
+	NewTokenOption func(*jwt.Builder) *jwt.Builder
 
-	NewTokenOptions struct {
-		Kind    Kind
-		Subject string
-		Expiry  *time.Time
-		Claims  map[string]string
-	}
-
-	// factory constructs new tokens using a jwk
-	factory struct {
+	// tokenFactory constructs new tokens using a JWK
+	tokenFactory struct {
 		key jwk.Key
 	}
 )
 
-func (f *factory) NewToken(opts NewTokenOptions) ([]byte, error) {
-	builder := jwt.NewBuilder().
-		Subject(opts.Subject).
-		Claim("kind", opts.Kind).
-		IssuedAt(time.Now())
-	for k, v := range opts.Claims {
-		builder = builder.Claim(k, v)
+func WithExpiry(exp time.Time) NewTokenOption {
+	return func(builder *jwt.Builder) *jwt.Builder {
+		return builder.Expiration(exp)
 	}
-	if opts.Expiry != nil {
-		builder = builder.Expiration(*opts.Expiry)
+}
+
+func (f *tokenFactory) NewToken(subjectID resource.ID, opts ...NewTokenOption) ([]byte, error) {
+	builder := jwt.NewBuilder().
+		Subject(subjectID.String()).
+		IssuedAt(time.Now())
+	//for k, v := range opts.Claims {
+	//	builder = builder.Claim(k, v)
+	//}
+	for _, fn := range opts {
+		builder = fn(builder)
 	}
 	token, err := builder.Build()
 	if err != nil {

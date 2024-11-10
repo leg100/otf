@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -181,6 +183,8 @@ EOTT
 }
 
 func Test_mergeVariables(t *testing.T) {
+	testWorkspaceID := testutils.ParseID(t, "ws-123")
+
 	tests := []struct {
 		name               string
 		sets               []*VariableSet
@@ -204,7 +208,7 @@ func Test_mergeVariables(t *testing.T) {
 				},
 				{
 					Name:       "workspace-scoped",
-					Workspaces: []string{"ws-123"},
+					Workspaces: []resource.ID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "workspace-scoped",
@@ -221,7 +225,7 @@ func Test_mergeVariables(t *testing.T) {
 					Category: CategoryTerraform,
 				},
 			},
-			run: run.Run{WorkspaceID: "ws-123", Variables: []run.Variable{{Key: "run", Value: "true"}}},
+			run: run.Run{WorkspaceID: testutils.ParseID(t, "ws-123"), Variables: []run.Variable{{Key: "run", Value: "true"}}},
 			want: []*Variable{
 				{
 					Key:      "global",
@@ -251,7 +255,7 @@ func Test_mergeVariables(t *testing.T) {
 			sets: []*VariableSet{
 				{
 					Name:       "set_A",
-					Workspaces: []string{"ws-123"},
+					Workspaces: []resource.ID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",
@@ -262,7 +266,7 @@ func Test_mergeVariables(t *testing.T) {
 				},
 				{
 					Name:       "set_B",
-					Workspaces: []string{"ws-123"},
+					Workspaces: []resource.ID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",
@@ -272,7 +276,7 @@ func Test_mergeVariables(t *testing.T) {
 					},
 				},
 			},
-			run: run.Run{WorkspaceID: "ws-123"},
+			run: run.Run{WorkspaceID: testutils.ParseID(t, "ws-123")},
 			want: []*Variable{
 				{
 					Key:      "foo",
@@ -293,7 +297,7 @@ func Test_mergeVariables(t *testing.T) {
 					// below.
 					Name:       "a - global with workspaces",
 					Global:     true,
-					Workspaces: []string{"ws-123"},
+					Workspaces: []resource.ID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",
@@ -304,7 +308,7 @@ func Test_mergeVariables(t *testing.T) {
 				},
 				{
 					Name:       "b - workspace-scoped",
-					Workspaces: []string{"ws-123"},
+					Workspaces: []resource.ID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",

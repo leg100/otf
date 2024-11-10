@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"golang.org/x/exp/maps"
 )
@@ -34,29 +35,29 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          string             `jsonapi:"primary,state-versions"`
+		ID          resource.ID        `jsonapi:"primary,state-versions"`
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
 		Status      Status             `jsonapi:"attribute" json:"status"`
 		Outputs     map[string]*Output `jsonapi:"attribute" json:"outputs"`
-		WorkspaceID string             `jsonapi:"attribute" json:"workspace-id"`
+		WorkspaceID resource.ID        `jsonapi:"attribute" json:"workspace-id"`
 	}
 
 	Output struct {
-		ID             string
+		ID             resource.ID
 		Name           string
 		Type           string
 		Value          json.RawMessage
 		Sensitive      bool
-		StateVersionID string
+		StateVersionID resource.ID
 	}
 
 	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {
-		State       []byte  // Terraform state file. Optional.
-		WorkspaceID *string // ID of state version's workspace. Required.
-		Serial      *int64  // State serial number. Required.
+		State       []byte      // Terraform state file. Optional.
+		WorkspaceID resource.ID // ID of state version's workspace. Required.
+		Serial      *int64      // State serial number. Required.
 	}
 
 	// factory creates state versions - creation requires pre-requisite checking
@@ -70,24 +71,21 @@ type (
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
-		getVersion(ctx context.Context, svID string) (*Version, error)
-		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
-		updateCurrentVersion(context.Context, string, string) error
-		uploadStateAndFinalize(ctx context.Context, svID string, state []byte) error
-		discardPending(ctx context.Context, workspaceID string) error
+		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
+		getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
+		updateCurrentVersion(context.Context, resource.ID, resource.ID) error
+		uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error
+		discardPending(ctx context.Context, workspaceID resource.ID) error
 	}
 )
 
 // new create a new state version
 func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	if opts.WorkspaceID == nil {
-		return nil, &internal.ErrMissingParameter{Parameter: "workspace_id"}
-	}
 	if opts.Serial == nil {
 		return nil, &internal.ErrMissingParameter{Parameter: "serial"}
 	}
 	// Serial should be greater than or equal to current serial
-	current, err := f.db.getCurrentVersion(ctx, *opts.WorkspaceID)
+	current, err := f.db.getCurrentVersion(ctx, opts.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// this is the first state version for workspace, so set current serial
 		// to a negative number to ensure tests below succeed.
@@ -115,12 +113,12 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 // newWithoutValidation creates a state version without validating the options.
 func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
-		ID:          internal.NewID("sv"),
+		ID:          resource.NewID(resource.StateVersionKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Serial:      *opts.Serial,
 		State:       opts.State,
 		Status:      Pending,
-		WorkspaceID: *opts.WorkspaceID,
+		WorkspaceID: opts.WorkspaceID,
 	}
 	err := f.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		if err := f.db.createVersion(ctx, &sv); err != nil {
@@ -154,7 +152,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 			return nil, err
 		}
 		outputs[k] = &Output{
-			ID:             internal.NewID("wsout"),
+			ID:             resource.NewID(resource.StateVersionOutputKind),
 			Name:           k,
 			Type:           typ,
 			Value:          v.Value,
@@ -187,19 +185,19 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 	return sv, err
 }
 
-func (f *factory) rollback(ctx context.Context, svID string) (*Version, error) {
+func (f *factory) rollback(ctx context.Context, svID resource.ID) (*Version, error) {
 	sv, err := f.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err
 	}
 	return f.newWithoutValidation(ctx, CreateStateVersionOptions{
 		State:       sv.State,
-		WorkspaceID: &sv.WorkspaceID,
+		WorkspaceID: sv.WorkspaceID,
 		Serial:      &sv.Serial,
 	})
 }
 
-func (v *Version) String() string { return v.ID }
+func (v *Version) String() string { return v.ID.String() }
 
 func (v *Version) File() (*File, error) {
 	var f File
@@ -211,10 +209,10 @@ func (v *Version) File() (*File, error) {
 
 func (v *Version) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
+		slog.String("id", v.ID.String()),
 		slog.Int64("serial", v.Serial),
 		slog.String("status", string(v.Status)),
-		slog.String("workspace_id", v.WorkspaceID),
+		slog.String("workspace_id", v.WorkspaceID.String()),
 	}
 	return slog.GroupValue(attrs...)
 }

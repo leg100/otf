@@ -2,7 +2,7 @@
 
 {{ define "content-header-title" }}
   <a href="{{ variableSetsPath .VariableSet.Organization }}">variable sets</a> /
-  <a href="{{ editVariableSetPath .VariableSet.ID }}">{{ .VariableSet.Name }}</a> /
+  <a href="{{ editVariableSetPath .VariableSet.ID.String }}">{{ .VariableSet.Name }}</a> /
   variables /
   {{ .Variable.ID }} /
   edit

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -27,18 +28,18 @@ type (
 	}
 
 	factoryWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	factoryConfigClient interface {
-		Create(ctx context.Context, workspaceID string, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
-		GetLatest(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id string, config []byte) error
+		Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID resource.ID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.ID, config []byte) error
 	}
 
 	factoryVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	factoryReleasesClient interface {
@@ -47,7 +48,7 @@ type (
 )
 
 // NewRun constructs a new run using the provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
 	ws, err := f.workspaces.Get(ctx, workspaceID)
 	if err != nil {
 		return nil, err

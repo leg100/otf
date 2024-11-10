@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // unexported key types prevents collisions
@@ -22,7 +23,7 @@ const (
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
 	CanAccessSite(action rbac.Action) bool
-	CanAccessTeam(action rbac.Action, id string) bool
+	CanAccessTeam(action rbac.Action, id resource.ID) bool
 	CanAccessOrganization(action rbac.Action, name string) bool
 	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
@@ -37,7 +38,7 @@ type Subject interface {
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
 	Organization string
-	WorkspaceID  string
+	WorkspaceID  resource.ID
 	Permissions  []WorkspacePermission
 
 	// Whether workspace permits its state to be consumed by all workspaces in
@@ -47,7 +48,7 @@ type WorkspacePolicy struct {
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	TeamID string
+	TeamID resource.ID
 	Role   rbac.Role
 }
 
@@ -86,12 +87,12 @@ type Superuser struct {
 }
 
 func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
-func (*Superuser) CanAccessTeam(rbac.Action, string) bool               { return true }
+func (*Superuser) CanAccessTeam(rbac.Action, resource.ID) bool          { return true }
 func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
 func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
 func (s *Superuser) Organizations() []string                            { return nil }
 func (s *Superuser) String() string                                     { return s.Username }
-func (s *Superuser) ID() string                                         { return s.Username }
+func (s *Superuser) GetID() resource.ID                                 { return resource.NewID(resource.UserKind) }
 func (s *Superuser) IsSiteAdmin() bool                                  { return true }
 func (s *Superuser) IsOwner(string) bool                                { return true }
 
@@ -101,7 +102,7 @@ type Nobody struct {
 }
 
 func (*Nobody) CanAccessSite(action rbac.Action) bool                { return false }
-func (*Nobody) CanAccessTeam(rbac.Action, string) bool               { return false }
+func (*Nobody) CanAccessTeam(rbac.Action, resource.ID) bool          { return false }
 func (*Nobody) CanAccessOrganization(rbac.Action, string) bool       { return false }
 func (*Nobody) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return false }
 func (s *Nobody) Organizations() []string                            { return nil }

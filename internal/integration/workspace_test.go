@@ -66,8 +66,7 @@ func TestWorkspace(t *testing.T) {
 
 		t.Run("delete workspace connection", func(t *testing.T) {
 			err := daemon.Connections.Disconnect(ctx, connections.DisconnectOptions{
-				ConnectionType: connections.WorkspaceConnection,
-				ResourceID:     ws.ID,
+				ResourceID: ws.ID,
 			})
 			require.NoError(t, err)
 		})
@@ -110,10 +109,9 @@ func TestWorkspace(t *testing.T) {
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
 		got, err := svc.Connections.Connect(ctx, connections.ConnectOptions{
-			ConnectionType: connections.WorkspaceConnection,
-			VCSProviderID:  vcsprov.ID,
-			ResourceID:     ws.ID,
-			RepoPath:       "test/dummy",
+			VCSProviderID: vcsprov.ID,
+			ResourceID:    ws.ID,
+			RepoPath:      "test/dummy",
 		})
 		require.NoError(t, err)
 		want := &connections.Connection{VCSProviderID: vcsprov.ID, Repo: "test/dummy"}
@@ -121,8 +119,7 @@ func TestWorkspace(t *testing.T) {
 
 		t.Run("delete workspace connection", func(t *testing.T) {
 			err := svc.Connections.Disconnect(ctx, connections.DisconnectOptions{
-				ConnectionType: connections.WorkspaceConnection,
-				ResourceID:     ws.ID,
+				ResourceID: ws.ID,
 			})
 			require.NoError(t, err)
 		})

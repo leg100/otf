@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -15,11 +16,14 @@ func TestQueue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	wsID := resource.NewID(resource.WorkspaceKind)
+	userID := resource.NewID(resource.UserKind)
+
 	t.Run("handle several runs", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
-		run1 := &otfrun.Run{ID: "run-1", WorkspaceID: "ws-123", Status: otfrun.RunPending}
-		run2 := &otfrun.Run{ID: "run-2", WorkspaceID: "ws-123", Status: otfrun.RunPending}
-		run3 := &otfrun.Run{ID: "run-3", WorkspaceID: "ws-123", Status: otfrun.RunPending}
+		ws := &workspace.Workspace{ID: wsID}
+		run1 := &otfrun.Run{ID: resource.NewID(resource.RunKind), WorkspaceID: wsID, Status: otfrun.RunPending}
+		run2 := &otfrun.Run{ID: resource.NewID(resource.RunKind), WorkspaceID: wsID, Status: otfrun.RunPending}
+		run3 := &otfrun.Run{ID: resource.NewID(resource.RunKind), WorkspaceID: wsID, Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run1, run2, run3)
 		q := newTestQueue(app, ws)
 
@@ -76,8 +80,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &otfrun.Run{Status: otfrun.RunPending, WorkspaceID: "ws-123", PlanOnly: true}
+		ws := &workspace.Workspace{ID: wsID}
+		run := &otfrun.Run{Status: otfrun.RunPending, WorkspaceID: wsID, PlanOnly: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -89,33 +93,33 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("user locked", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &otfrun.Run{ID: "run-123", WorkspaceID: "ws-123", Status: otfrun.RunPending}
+		ws := &workspace.Workspace{ID: wsID}
+		run := &otfrun.Run{ID: resource.NewID(resource.RunKind), WorkspaceID: wsID, Status: otfrun.RunPending}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
 		// user locks workspace; new run should be made the current run but should not
 		// be scheduled nor replace the user lock
-		err := ws.Enlock("bobby", workspace.UserLock)
+		err := ws.Enlock(userID)
 		require.NoError(t, err)
 		err = q.handleRun(ctx, run)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, workspace.UserLock, q.ws.Lock.LockKind)
+		assert.Equal(t, resource.UserKind, q.ws.Lock.Kind())
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
-		err = ws.Unlock("bobby", workspace.UserLock, false)
+		err = ws.Unlock(userID, false)
 		require.NoError(t, err)
 		err = q.handleWorkspace(ctx, ws)
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, workspace.RunLock, q.ws.Lock.LockKind)
+		assert.Equal(t, resource.RunKind, q.ws.Lock.Kind())
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
-		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &otfrun.Run{WorkspaceID: "ws-123", Status: otfrun.RunPlanning}
+		ws := &workspace.Workspace{ID: wsID}
+		run := &otfrun.Run{WorkspaceID: wsID, Status: otfrun.RunPlanning}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -126,8 +130,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		run := &otfrun.Run{WorkspaceID: "ws-123"}
-		ws := &workspace.Workspace{ID: "ws-123", LatestRun: &workspace.LatestRun{ID: run.ID}}
+		run := &otfrun.Run{WorkspaceID: wsID}
+		ws := &workspace.Workspace{ID: wsID, LatestRun: &workspace.LatestRun{ID: run.ID}}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -151,21 +155,21 @@ func newTestQueue(services *fakeQueueServices, ws *workspace.Workspace) *queue {
 
 type fakeQueueServices struct {
 	ws      *workspace.Workspace
-	runs    map[string]*otfrun.Run // mock run db
-	current []string               // list of IDs of runs that have been set as the current run
+	runs    map[resource.ID]*otfrun.Run // mock run db
+	current []resource.ID               // list of IDs of runs that have been set as the current run
 
 	runClient
 }
 
 func newFakeQueueApp(ws *workspace.Workspace, runs ...*otfrun.Run) *fakeQueueServices {
-	db := make(map[string]*otfrun.Run, len(runs))
+	db := make(map[resource.ID]*otfrun.Run, len(runs))
 	for _, r := range runs {
 		db[r.ID] = r
 	}
 	return &fakeQueueServices{ws: ws, runs: db}
 }
 
-func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*otfrun.Run, error) {
+func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID resource.ID) (*otfrun.Run, error) {
 	f.runs[runID].Status = otfrun.RunPlanQueued
 	return f.runs[runID], nil
 }
@@ -177,21 +181,21 @@ type fakeWorkspaceService struct {
 	workspaceClient
 }
 
-func (f *fakeWorkspaceService) Lock(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
-	if err := f.ws.Enlock(*runID, workspace.RunLock); err != nil {
+func (f *fakeWorkspaceService) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*workspace.Workspace, error) {
+	if err := f.ws.Enlock(*runID); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeWorkspaceService) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
-	if err := f.ws.Unlock(*runID, workspace.RunLock, false); err != nil {
+func (f *fakeWorkspaceService) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*workspace.Workspace, error) {
+	if err := f.ws.Unlock(*runID, false); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeWorkspaceService) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) SetCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*workspace.Workspace, error) {
 	f.ws.LatestRun = &workspace.LatestRun{ID: runID}
 	return f.ws, nil
 }

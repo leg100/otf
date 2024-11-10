@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteModuleConnectionByID = `-- name: DeleteModuleConnectionByID :one
@@ -18,7 +19,7 @@ WHERE module_id = $1
 RETURNING module_id, workspace_id, repo_path, vcs_provider_id
 `
 
-func (q *Queries) DeleteModuleConnectionByID(ctx context.Context, moduleID pgtype.Text) (RepoConnection, error) {
+func (q *Queries) DeleteModuleConnectionByID(ctx context.Context, moduleID *resource.ID) (RepoConnection, error) {
 	row := q.db.QueryRow(ctx, deleteModuleConnectionByID, moduleID)
 	var i RepoConnection
 	err := row.Scan(
@@ -37,7 +38,7 @@ WHERE workspace_id = $1
 RETURNING module_id, workspace_id, repo_path, vcs_provider_id
 `
 
-func (q *Queries) DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (RepoConnection, error) {
+func (q *Queries) DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID *resource.ID) (RepoConnection, error) {
 	row := q.db.QueryRow(ctx, deleteWorkspaceConnectionByID, workspaceID)
 	var i RepoConnection
 	err := row.Scan(
@@ -64,10 +65,10 @@ INSERT INTO repo_connections (
 `
 
 type InsertRepoConnectionParams struct {
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	RepoPath      pgtype.Text
-	WorkspaceID   pgtype.Text
-	ModuleID      pgtype.Text
+	WorkspaceID   *resource.ID
+	ModuleID      *resource.ID
 }
 
 func (q *Queries) InsertRepoConnection(ctx context.Context, arg InsertRepoConnectionParams) error {

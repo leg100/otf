@@ -22,7 +22,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.Param("run_id", r)
+	runID, err := decode.ID("run_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

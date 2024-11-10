@@ -3,7 +3,7 @@
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
   /
   vcs providers
 {{ end }}
@@ -15,7 +15,7 @@
 
   <div id="content-list">
     {{ range .Items }}
-      {{ $path := (printf "%s?vcs_provider_id=%s" (setupConnectionRepoWorkspacePath $.Workspace.ID) .ID) }}
+      {{ $path := (printf "%s?vcs_provider_id=%s" (setupConnectionRepoWorkspacePath $.Workspace.ID.String) .ID.String) }}
       <div class="widget" x-data="block_link($el, '{{ $path }}')" id="{{ .ID }}">
         <div>
           <span class="font-semibold">{{ .String }}</span>

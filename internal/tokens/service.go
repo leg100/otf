@@ -4,15 +4,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
 type (
 	Service struct {
 		logr.Logger
-		*factory
+		*tokenFactory
 		*registry
-		*sessionFactory
 
 		site authz.Authorizer // authorizes site access
 
@@ -36,10 +36,9 @@ func NewService(opts Options) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc.factory = &factory{key: key}
-	svc.sessionFactory = &sessionFactory{factory: svc.factory}
+	svc.tokenFactory = &tokenFactory{key: key}
 	svc.registry = &registry{
-		kinds: make(map[Kind]SubjectGetter),
+		kinds: make(map[resource.Kind]SubjectGetter),
 	}
 	svc.middleware = newMiddleware(middlewareOptions{
 		Logger:          opts.Logger,

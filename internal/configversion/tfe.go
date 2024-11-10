@@ -33,14 +33,14 @@ type tfe struct {
 
 // tfeConfigsClient gives the tfe handlers access to config version services
 type tfeClient interface {
-	Create(ctx context.Context, workspaceID string, opts CreateOptions) (*ConfigurationVersion, error)
-	Get(ctx context.Context, id string) (*ConfigurationVersion, error)
-	GetLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-	List(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
-	Delete(ctx context.Context, cvID string) error
+	Create(ctx context.Context, workspaceid resource.ID, opts CreateOptions) (*ConfigurationVersion, error)
+	Get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error)
+	GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error)
+	List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
+	Delete(ctx context.Context, cvID resource.ID) error
 
-	UploadConfig(ctx context.Context, id string, config []byte) error
-	DownloadConfig(ctx context.Context, id string) ([]byte, error)
+	UploadConfig(ctx context.Context, id resource.ID, config []byte) error
+	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -56,7 +56,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -116,8 +116,8 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID          string `schema:"workspace_id,required"`
-		resource.PageOptions        // Pagination
+		WorkspaceID          resource.ID `schema:"workspace_id,required"`
+		resource.PageOptions             // Pagination
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
@@ -143,7 +143,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 
 func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id, err := decode.Param("id", r)
+		id, err := decode.ID("id", r)
 		if err != nil {
 			tfeapi.Error(w, err)
 			return
@@ -173,7 +173,7 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 }
 
 func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -191,7 +191,8 @@ func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
-	// v must be a struct with a field named ConfigurationVersionID of kind string
+	// v must be a struct with a field named ConfigurationVersionID of kind
+	// resource.ID
 	if dst.Kind() != reflect.Struct {
 		return nil, nil
 	}
@@ -199,10 +200,11 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !id.IsValid() {
 		return nil, nil
 	}
-	if id.Kind() != reflect.String {
+	resourceID, ok := id.Interface().(resource.ID)
+	if !ok {
 		return nil, nil
 	}
-	cv, err := a.Get(ctx, id.String())
+	cv, err := a.Get(ctx, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +226,7 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 		return nil, err
 	}
 	return []any{&types.IngressAttributes{
-		ID:        internal.ConvertID(cv.ID, "ia"),
+		ID:        resource.ConvertID(cv.ID, IngressAttributesKind),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
 	}}, nil
@@ -242,7 +244,7 @@ func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *types.Confi
 	}
 	if from.IngressAttributes != nil {
 		to.IngressAttributes = &types.IngressAttributes{
-			ID: internal.ConvertID(from.ID, "ia"),
+			ID: resource.ConvertID(from.ID, "ia"),
 		}
 	}
 	for _, ts := range from.StatusTimestamps {

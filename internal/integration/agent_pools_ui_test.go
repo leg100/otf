@@ -7,7 +7,6 @@ import (
 
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,7 +20,6 @@ func TestAgentPoolsUI(t *testing.T) {
 
 	// create some workspaces to assign to pool
 	ws1 := daemon.createWorkspace(t, ctx, org)
-	// ws2 := daemon.createWorkspace(t, ctx, org)
 
 	// subscribe to agent pool events
 	poolsSub, unsub := daemon.Runners.WatchAgentPools(ctx)
@@ -68,7 +66,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		// grant and assign workspace to agent pool, and create agent token.
 		//
 		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 		// grant access to specific workspace
 		err = page.Locator(`input#workspaces-specific`).Click()
@@ -120,7 +118,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		screenshot(t, page, "agent_pool_workspace_granted_and_assigned")
@@ -161,10 +159,10 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, token)
 
 		// start agent up, configured to use token.
-		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, "", token, runner.Config{})
+		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, nil, token, runner.Config{})
 
 		// go back to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		// confirm agent is listed
@@ -177,12 +175,12 @@ func TestAgentPoolsUI(t *testing.T) {
 
 		// shut agent down and wait for it to exit
 		shutdownAgent()
-		testutils.Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
+		Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
 			return event.Payload.Status == runner.RunnerExited
 		})
 
 		// go to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		// delete the token
@@ -218,7 +216,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to agent pool
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/agent-pools/" + created.Payload.ID)
+		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))
 		require.NoError(t, err)
 
 		// delete the pool
@@ -229,7 +227,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// confirm pool was deleted
-		testutils.Wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
+		Wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
 			return event.Type == pubsub.DeletedEvent
 		})
 	})

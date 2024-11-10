@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 )
 
@@ -38,7 +39,7 @@ var (
 type (
 	// Config represents a Notification Configuration.
 	Config struct {
-		ID              string
+		ID              resource.ID
 		CreatedAt       time.Time
 		UpdatedAt       time.Time
 		DestinationType Destination
@@ -47,7 +48,7 @@ type (
 		Token           string
 		Triggers        []Trigger
 		URL             *string
-		WorkspaceID     string
+		WorkspaceID     resource.ID
 	}
 
 	// Trigger is the event triggering a notification
@@ -96,7 +97,7 @@ type (
 	}
 )
 
-func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
+func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, error) {
 	if opts.DestinationType != DestinationGeneric &&
 		opts.DestinationType != DestinationEmail &&
 		opts.DestinationType != DestinationSlack &&
@@ -128,7 +129,7 @@ func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 	}
 
 	return &Config{
-		ID:              internal.NewID("nc"),
+		ID:              resource.NewID(resource.NotificationConfigurationKind),
 		CreatedAt:       internal.CurrentTimestamp(nil),
 		UpdatedAt:       internal.CurrentTimestamp(nil),
 		Name:            *opts.Name,
@@ -145,7 +146,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("name", c.Name),
 		slog.Bool("enabled", c.Enabled),
 		slog.Any("triggers", c.Triggers),
-		slog.String("workspace_id", c.WorkspaceID),
+		slog.String("workspace_id", c.WorkspaceID.String()),
 		slog.String("destination", string(c.DestinationType)),
 	}
 	return slog.GroupValue(attrs...)

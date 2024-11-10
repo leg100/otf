@@ -20,7 +20,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) getState(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
+	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

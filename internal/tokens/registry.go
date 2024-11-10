@@ -6,48 +6,52 @@ import (
 	"sync"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 )
 
-// registry provides a means of registering different kinds of tokens with the
-// authentication middleware, e.g. user tokens, team tokens, etc.
-//
-// Note: the registry provides a level of indirection, helping to not only avoid
-// package import cycles, but also keep the this package focused on token
-// generation and verification for subjects, and leaving the particular handling
-// of the different types of subjects - organizations, teams, users, etc, - to
-// other packages.
-type registry struct {
-	SiteToken string
-	SiteAdmin authz.Subject
+type (
+	// registry provides a means of registering different kinds of tokens with the
+	// authentication middleware, e.g. user tokens, team tokens, etc.
+	//
+	// Note: the registry provides a level of indirection, helping to not only avoid
+	// package import cycles, but also keep the this package focused on token
+	// generation and verification for subjects, and leaving the particular handling
+	// of the different types of subjects - organizations, teams, users, etc, - to
+	// other packages.
+	registry struct {
+		GetOrCreateUser
 
-	kinds                    map[Kind]SubjectGetter
-	mu                       sync.Mutex
-	uiSubjectGetterOrCreator UISubjectGetterOrCreator
-}
+		SiteToken string
+		SiteAdmin authz.Subject
 
-// SubjectGetter retrieves an OTF subject given the jwtSubject string, which is the
-// value of the 'subject' field parsed from a JWT.
-type SubjectGetter func(ctx context.Context, jwtSubject string) (authz.Subject, error)
+		kinds map[resource.Kind]SubjectGetter
+		mu    sync.Mutex
+	}
 
-// UISubjectGetterOrCreator retrieves the OTF subject with the given login that
-// is attempting to access the UI. If the subject does not exist it is created.
-type UISubjectGetterOrCreator func(ctx context.Context, login string) (authz.Subject, error)
+	// SubjectGetter retrieves an OTF subject given the jwtSubject string, which is the
+	// value of the 'subject' field parsed from a JWT.
+	SubjectGetter func(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error)
+
+	// GetOrCreateUser retrieves the user with the given username. If the
+	// user does not exist it is created.
+	GetOrCreateUser func(ctx context.Context, username string) (authz.Subject, error)
+)
 
 // RegisterKind registers a kind of authentication token, providing a func that
 // can retrieve the OTF subject indicated in the token.
-func (r *registry) RegisterKind(k Kind, fn SubjectGetter) {
+func (r *registry) RegisterKind(k resource.Kind, fn SubjectGetter) {
 	r.mu.Lock()
 	r.kinds[k] = fn
 	r.mu.Unlock()
 }
 
-func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (authz.Subject, error) {
+func (r *registry) GetSubject(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	subjectGetter, ok := r.kinds[k]
+	subjectGetter, ok := r.kinds[jwtSubject.Kind()]
 	if !ok {
-		return nil, fmt.Errorf("unknown authentication token kind")
+		return nil, fmt.Errorf("unknown authentication token kind: %s", jwtSubject.Kind())
 	}
 	return subjectGetter(ctx, jwtSubject)
 }
@@ -57,12 +61,4 @@ func (r *registry) GetSubject(ctx context.Context, k Kind, jwtSubject string) (a
 func (r *registry) RegisterSiteToken(token string, siteAdmin authz.Subject) {
 	r.SiteToken = token
 	r.SiteAdmin = siteAdmin
-}
-
-func (r *registry) RegisterUISubjectGetterOrCreator(fn UISubjectGetterOrCreator) {
-	r.uiSubjectGetterOrCreator = fn
-}
-
-func (r *registry) GetOrCreateUISubject(ctx context.Context, login string) (authz.Subject, error) {
-	return r.uiSubjectGetterOrCreator(ctx, login)
 }

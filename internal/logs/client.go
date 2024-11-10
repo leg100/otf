@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 )
 
@@ -14,8 +13,8 @@ type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) PutChunk(ctx context.Context, opts internal.PutChunkOptions) error {
-	u := fmt.Sprintf("runs/%s/logs/%s", url.QueryEscape(opts.RunID), url.QueryEscape(string(opts.Phase)))
+func (c *Client) PutChunk(ctx context.Context, opts PutChunkOptions) error {
+	u := fmt.Sprintf("runs/%s/logs/%s", url.QueryEscape(opts.RunID.String()), url.QueryEscape(string(opts.Phase)))
 	req, err := c.NewRequest("PUT", u, opts.Data)
 	if err != nil {
 		return err

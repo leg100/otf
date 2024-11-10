@@ -63,7 +63,7 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	}
 }
 
-func (f *fakeWebServices) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
+func (f *fakeWebServices) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
 	return f.runs[0], nil
 }
 
@@ -75,16 +75,16 @@ func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebServices) getLogs(context.Context, string, internal.PhaseType) ([]byte, error) {
+func (f *fakeWebServices) getLogs(context.Context, resource.ID, internal.PhaseType) ([]byte, error) {
 	return nil, nil
 }
 
-func (f *fakeWebServices) Cancel(context.Context, string) error { return nil }
+func (f *fakeWebServices) Cancel(context.Context, resource.ID) error { return nil }
 
-func (f *fakeWebServices) Get(ctx context.Context, runID string) (*Run, error) {
+func (f *fakeWebServices) Get(ctx context.Context, runID resource.ID) (*Run, error) {
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) Apply(ctx context.Context, runID string) error {
+func (f *fakeWebServices) Apply(ctx context.Context, runID resource.ID) error {
 	return nil
 }

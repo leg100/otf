@@ -10,12 +10,12 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	// Unique system-wide ID
-	ID string `jsonapi:"primary,agents"`
+	ID resource.ID `jsonapi:"primary,runners"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -39,11 +39,11 @@ type RunnerMeta struct {
 
 type RunnerMetaAgentPool struct {
 	// ID of agent's pool.
-	ID string `jsonapi:"attribute" json:"id"`
+	ID resource.ID `json:"id"`
 	// Name of agent's pool
-	Name string `jsonapi:"attribute" json:"name"`
+	Name string `json:"name"`
 	// Agent pool's organization.
-	OrganizationName string `jsonapi:"attribute" json:"organization-name"`
+	OrganizationName string `json:"organization-name"`
 }
 
 type registerOptions struct {
@@ -61,14 +61,14 @@ type registerOptions struct {
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
 	// versions.
-	CurrentJobs []JobSpec `json:"current-jobs,omitempty"`
+	CurrentJobs []resource.ID `json:"current-jobs,omitempty"`
 }
 
 func (m *RunnerMeta) register(opts registerOptions) error {
-	if m.ID != "" {
+	if m.ID != resource.EmptyID {
 		return errors.New("runner has already registered")
 	}
-	m.ID = internal.NewID("runner")
+	m.ID = resource.NewID(resource.RunnerKind)
 	m.Name = opts.Name
 	m.Version = opts.Version
 	m.MaxJobs = opts.Concurrency
@@ -119,7 +119,7 @@ func (m *RunnerMeta) IsAgent() bool {
 
 func (m *RunnerMeta) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", m.ID),
+		slog.String("id", m.ID.String()),
 		slog.Bool("agent", m.IsAgent()),
 		slog.String("status", string(m.Status)),
 		slog.String("ip_address", m.IPAddress.String()),
@@ -135,24 +135,23 @@ func (m *RunnerMeta) LogValue() slog.Value {
 
 func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", m.ID),
+		slog.String("id", m.ID.String()),
 		slog.String("name", m.Name),
 		slog.String("organization", m.OrganizationName),
 	)
 }
 
-func (m *RunnerMeta) String() string { return m.ID }
-
 func (m *RunnerMeta) IsSiteAdmin() bool   { return true }
 func (m *RunnerMeta) IsOwner(string) bool { return true }
 
 func (m *RunnerMeta) Organizations() []string { return nil }
+func (m *RunnerMeta) String() string          { return m.ID.String() }
 
 func (*RunnerMeta) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (*RunnerMeta) CanAccessTeam(rbac.Action, string) bool {
+func (*RunnerMeta) CanAccessTeam(rbac.Action, resource.ID) bool {
 	return false
 }
 
@@ -189,12 +188,12 @@ func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 	return meta, nil
 }
 
-func authorizeRunner(ctx context.Context, id string) error {
+func authorizeRunner(ctx context.Context, id resource.ID) error {
 	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return err
 	}
-	if id != "" && id != runner.ID {
+	if id != runner.ID {
 		return internal.ErrAccessNotPermitted
 	}
 	return nil

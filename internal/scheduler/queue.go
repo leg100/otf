@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -146,9 +147,9 @@ func (q *queue) scheduleRun(ctx context.Context, run *otfrun.Run) error {
 		return nil
 	}
 
-	// if workspace is userLocked by a user then do not schedule;
+	// if workspace is locked by a user then do not schedule;
 	// instead wait for an unlock event to arrive.
-	if q.ws.Lock != nil && q.ws.Lock.LockKind == workspace.UserLock {
+	if q.ws.Lock != nil && q.ws.Lock.Kind() == resource.UserKind {
 		q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)
 		return nil
 	}

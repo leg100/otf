@@ -5,20 +5,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"log/slog"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
 	// VCSProvider provides authenticated access to a VCS.
 	VCSProvider struct {
-		ID           string
+		ID           resource.ID
 		Name         string
 		CreatedAt    time.Time
 		Organization string // name of OTF organization
@@ -73,7 +73,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 
 func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
-		ID:                  internal.NewID("vcs"),
+		ID:                  resource.NewID("vcs"),
 		Name:                opts.Name,
 		CreatedAt:           internal.CurrentTimestamp(nil),
 		Organization:        opts.Organization,
@@ -105,7 +105,7 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 	return provider, nil
 }
 
-func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id string, createdAt time.Time) (*VCSProvider, error) {
+func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id resource.ID, createdAt time.Time) (*VCSProvider, error) {
 	provider, err := f.newWithGithubCredentials(ctx, opts, creds)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (t *VCSProvider) Update(opts UpdateOptions) error {
 // LogValue implements slog.LogValuer.
 func (t *VCSProvider) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", t.ID),
+		slog.String("id", t.ID.String()),
 		slog.String("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind)),

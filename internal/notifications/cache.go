@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -16,7 +18,7 @@ type (
 	cache struct {
 		mu      sync.Mutex
 		clients map[string]*clientEntry // keyed by url
-		configs map[string]*Config      // keyed by config ID
+		configs map[resource.ID]*Config // keyed by config ID
 
 		clientFactory // constructs new clients
 	}
@@ -38,7 +40,7 @@ func newCache(ctx context.Context, db cacheDB, f clientFactory) (*cache, error) 
 		return nil, err
 	}
 	cache := &cache{
-		configs:       make(map[string]*Config, len(configs)),
+		configs:       make(map[resource.ID]*Config, len(configs)),
 		clients:       make(map[string]*clientEntry),
 		clientFactory: f,
 	}
@@ -84,7 +86,7 @@ func (c *cache) add(cfg *Config) error {
 	return nil
 }
 
-func (c *cache) remove(id string) error {
+func (c *cache) remove(id resource.ID) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

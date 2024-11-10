@@ -37,7 +37,7 @@ type (
 		logr.Logger
 
 		site                authz.Authorizer
-		organization        authz.Authorizer
+		organization        *organization.Authorizer
 		workspaceAuthorizer authz.Authorizer
 		*authorizer
 
@@ -125,7 +125,8 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runs",
-		func(ctx context.Context, id string, action sql.Action) (*Run, error) {
+		resource.RunKind,
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Run, error) {
 			if action == sql.DeleteAction {
 				return &Run{ID: id}, nil
 			}
@@ -153,7 +154,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
+func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
 	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -175,7 +176,7 @@ func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOpt
 }
 
 // Get retrieves a run from the db.
-func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
+func (s *Service) Get(ctx context.Context, runID resource.ID) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -213,7 +214,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 		subject, authErr = s.organization.CanAccess(ctx, rbac.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, authErr = s.site.CanAccess(ctx, rbac.ListRunsAction, "")
+		subject, authErr = s.site.CanAccess(ctx, rbac.ListRunsAction, resource.ID{})
 	}
 	if authErr != nil {
 		return nil, authErr
@@ -233,7 +234,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 // EnqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (s *Service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err error) {
+func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run, err error) {
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// TODO: this does not need to be part of the tx
 		subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
@@ -264,7 +265,7 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
-func (s *Service) Delete(ctx context.Context, runID string) error {
+func (s *Service) Delete(ctx context.Context, runID resource.ID) error {
 	run, err := s.db.GetRun(ctx, runID)
 	if err != nil {
 		return err
@@ -284,7 +285,7 @@ func (s *Service) Delete(ctx context.Context, runID string) error {
 }
 
 // StartPhase starts a run phase.
-func (s *Service) StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
+func (s *Service) StartPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Start()
 	})
@@ -305,7 +306,7 @@ func (s *Service) StartPhase(ctx context.Context, runID string, phase internal.P
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (s *Service) FinishPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
@@ -354,7 +355,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 		_, err = s.organization.CanAccess(ctx, rbac.WatchAction, *opts.Organization)
 	} else {
 		// caller must have site-level read permissions
-		_, err = s.site.CanAccess(ctx, rbac.WatchAction, "")
+		_, err = s.site.CanAccess(ctx, rbac.WatchAction, resource.ID{})
 	}
 	if err != nil {
 		return nil, err
@@ -386,7 +387,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 }
 
 // Apply enqueues an apply for the run.
-func (s *Service) Apply(ctx context.Context, runID string) error {
+func (s *Service) Apply(ctx context.Context, runID resource.ID) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		// TODO: this does not need to be part of the tx
 		subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
@@ -418,7 +419,7 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 }
 
 // Discard discards the run.
-func (s *Service) Discard(ctx context.Context, runID string) error {
+func (s *Service) Discard(ctx context.Context, runID resource.ID) error {
 	subject, err := s.CanAccess(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -437,7 +438,7 @@ func (s *Service) Discard(ctx context.Context, runID string) error {
 	return err
 }
 
-func (s *Service) Cancel(ctx context.Context, runID string) error {
+func (s *Service) Cancel(ctx context.Context, runID resource.ID) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 		if err != nil {
@@ -473,7 +474,7 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 }
 
 // ForceCancel forcefully cancels a run.
-func (s *Service) ForceCancel(ctx context.Context, runID string) error {
+func (s *Service) ForceCancel(ctx context.Context, runID resource.ID) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		subject, err := s.CanAccess(ctx, rbac.ForceCancelRunAction, runID)
 		if err != nil {
@@ -502,12 +503,12 @@ func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
 
-func planFileCacheKey(f PlanFormat, id string) string {
+func planFileCacheKey(f PlanFormat, id resource.ID) string {
 	return fmt.Sprintf("%s.%s", id, f)
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s *Service) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+func (s *Service) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -531,7 +532,7 @@ func (s *Service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (s *Service) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
+func (s *Service) UploadPlanFile(ctx context.Context, runID resource.ID, plan []byte, format PlanFormat) error {
 	subject, err := s.CanAccess(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -552,7 +553,7 @@ func (s *Service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 }
 
 // createReports creates reports of changes for the phase.
-func (s *Service) createReports(ctx context.Context, runID string, phase internal.PhaseType) (resource Report, output Report, err error) {
+func (s *Service) createReports(ctx context.Context, runID resource.ID, phase internal.PhaseType) (resource Report, output Report, err error) {
 	switch phase {
 	case internal.PlanPhase:
 		resource, output, err = s.createPlanReports(ctx, runID)
@@ -564,7 +565,7 @@ func (s *Service) createReports(ctx context.Context, runID string, phase interna
 	return resource, output, err
 }
 
-func (s *Service) createPlanReports(ctx context.Context, runID string) (resources Report, outputs Report, err error) {
+func (s *Service) createPlanReports(ctx context.Context, runID resource.ID) (resources Report, outputs Report, err error) {
 	plan, err := s.GetPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return Report{}, Report{}, err
@@ -579,7 +580,7 @@ func (s *Service) createPlanReports(ctx context.Context, runID string) (resource
 	return resourceReport, outputReport, nil
 }
 
-func (s *Service) createApplyReport(ctx context.Context, runID string) (Report, error) {
+func (s *Service) createApplyReport(ctx context.Context, runID resource.ID) (Report, error) {
 	logs, err := s.getLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return Report{}, err
@@ -594,9 +595,9 @@ func (s *Service) createApplyReport(ctx context.Context, runID string) (Report, 
 	return report, nil
 }
 
-func (s *Service) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+func (s *Service) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	data, err := s.db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
-		RunID: sql.String(runID),
+		RunID: runID,
 		Phase: sql.String(string(phase)),
 	})
 	if err != nil {

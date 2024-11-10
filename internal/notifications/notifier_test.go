@@ -8,46 +8,49 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNotifier_handleRun(t *testing.T) {
 	ctx := context.Background()
+	ws1 := testutils.ParseID(t, "ws-matching")
+	ws2 := testutils.ParseID(t, "ws-zzz")
 
 	queuedRun := &run.Run{
 		Status:      run.RunPlanQueued,
-		WorkspaceID: "ws-matching",
+		WorkspaceID: ws1,
 	}
 	planningRun := &run.Run{
 		Status:      run.RunPlanning,
-		WorkspaceID: "ws-matching",
+		WorkspaceID: ws1,
 	}
 	disabledConfig := &Config{
 		URL:         internal.String(""),
-		WorkspaceID: "ws-matching",
+		WorkspaceID: ws1,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
 	enabledConfig := &Config{
 		URL:         internal.String(""),
-		WorkspaceID: "ws-matching",
+		WorkspaceID: ws1,
 		Enabled:     true,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
 	configWithNoTriggers := &Config{
 		URL:         internal.String(""),
 		Enabled:     true,
-		WorkspaceID: "ws-matching",
+		WorkspaceID: ws1,
 	}
 	configWithDifferentTriggers := &Config{
 		URL:         internal.String(""),
 		Enabled:     true,
-		WorkspaceID: "ws-matching",
+		WorkspaceID: ws1,
 		Triggers:    []Trigger{TriggerApplying},
 	}
 	configForDifferentWorkspace := &Config{
 		URL:         internal.String(""),
-		WorkspaceID: "ws-zzz",
+		WorkspaceID: ws2,
 		Enabled:     true,
 		Triggers:    []Trigger{TriggerPlanning},
 	}
@@ -90,12 +93,14 @@ func TestNotifier_handleRun(t *testing.T) {
 // notifications
 func TestNotifier_handleRun_multiple(t *testing.T) {
 	ctx := context.Background()
+	ws1 := testutils.ParseID(t, "ws-123")
+
 	planningRun := &run.Run{
 		Status:      run.RunPlanning,
-		WorkspaceID: "ws-123",
+		WorkspaceID: ws1,
 	}
-	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "", TriggerPlanning)
-	config2 := newTestConfig(t, "ws-123", DestinationSlack, "", TriggerPlanning)
+	config1 := newTestConfig(t, ws1, DestinationGCPPubSub, "", TriggerPlanning)
+	config2 := newTestConfig(t, ws1, DestinationSlack, "", TriggerPlanning)
 
 	published := make(chan *run.Run, 2)
 	notifier := &Notifier{
@@ -113,6 +118,8 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 
 func TestNotifier_handleConfig(t *testing.T) {
 	ctx := context.Background()
+	ws1 := testutils.ParseID(t, "ws-123")
+
 	notifier := &Notifier{
 		Logger:     logr.Discard(),
 		workspaces: &fakeWorkspaceService{},
@@ -121,14 +128,14 @@ func TestNotifier_handleConfig(t *testing.T) {
 	}
 
 	// Add config, should result in cache size of 1
-	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj1/topic1", TriggerPlanning)
+	config1 := newTestConfig(t, ws1, DestinationGCPPubSub, "gcppubsub://proj1/topic1", TriggerPlanning)
 	err := notifier.handleConfig(ctx, pubsub.Event[*Config]{Payload: config1, Type: pubsub.CreatedEvent})
 	require.NoError(t, err)
 	assert.Len(t, notifier.cache.configs, 1)
 	assert.Len(t, notifier.cache.clients, 1)
 
 	// Update config url, cache size should still be 1
-	updated := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj2/topic2", TriggerPlanning)
+	updated := newTestConfig(t, ws1, DestinationGCPPubSub, "gcppubsub://proj2/topic2", TriggerPlanning)
 	updated.ID = config1.ID
 	err = notifier.handleConfig(ctx, pubsub.Event[*Config]{Payload: updated, Type: pubsub.UpdatedEvent})
 	require.NoError(t, err)

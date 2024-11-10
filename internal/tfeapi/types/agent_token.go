@@ -3,15 +3,19 @@
 
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 // AgentToken represents a TFE agent token.
 type AgentToken struct {
-	ID          string    `jsonapi:"primary,authentication-tokens"`
-	CreatedAt   time.Time `jsonapi:"attribute" json:"created-at"`
-	Description string    `jsonapi:"attribute" json:"description"`
-	LastUsedAt  time.Time `jsonapi:"attribute" json:"last-used-at"`
-	Token       string    `jsonapi:"attribute" json:"token"`
+	ID          resource.ID `jsonapi:"primary,authentication-tokens"`
+	CreatedAt   time.Time   `jsonapi:"attribute" json:"created-at"`
+	Description string      `jsonapi:"attribute" json:"description"`
+	LastUsedAt  time.Time   `jsonapi:"attribute" json:"last-used-at"`
+	Token       string      `jsonapi:"attribute" json:"token"`
 }
 
 // AgentTokenCreateOptions represents the options for creating a new otf agent token.

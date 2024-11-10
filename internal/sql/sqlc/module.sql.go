@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteModuleByID = `-- name: DeleteModuleByID :one
@@ -18,9 +19,9 @@ WHERE module_id = $1
 RETURNING module_id
 `
 
-func (q *Queries) DeleteModuleByID(ctx context.Context, moduleID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteModuleByID(ctx context.Context, moduleID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteModuleByID, moduleID)
-	var module_id pgtype.Text
+	var module_id resource.ID
 	err := row.Scan(&module_id)
 	return module_id, err
 }
@@ -32,9 +33,9 @@ WHERE module_version_id = $1
 RETURNING module_version_id
 `
 
-func (q *Queries) DeleteModuleVersionByID(ctx context.Context, moduleVersionID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteModuleVersionByID(ctx context.Context, moduleVersionID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteModuleVersionByID, moduleVersionID)
-	var module_version_id pgtype.Text
+	var module_version_id resource.ID
 	err := row.Scan(&module_version_id)
 	return module_version_id, err
 }
@@ -63,19 +64,19 @@ AND   r.repo_path = $2
 `
 
 type FindModuleByConnectionParams struct {
-	VCSProviderID pgtype.Text
+	VCSProviderID resource.ID
 	RepoPath      pgtype.Text
 }
 
 type FindModuleByConnectionRow struct {
-	ModuleID         pgtype.Text
+	ModuleID         resource.ID
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
 	OrganizationName pgtype.Text
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersion
 }
@@ -121,19 +122,19 @@ WHERE m.module_id = $1
 `
 
 type FindModuleByIDRow struct {
-	ModuleID         pgtype.Text
+	ModuleID         resource.ID
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
 	OrganizationName pgtype.Text
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersion
 }
 
-func (q *Queries) FindModuleByID(ctx context.Context, id pgtype.Text) (FindModuleByIDRow, error) {
+func (q *Queries) FindModuleByID(ctx context.Context, id resource.ID) (FindModuleByIDRow, error) {
 	row := q.db.QueryRow(ctx, findModuleByID, id)
 	var i FindModuleByIDRow
 	err := row.Scan(
@@ -175,19 +176,19 @@ WHERE mv.module_version_id = $1
 `
 
 type FindModuleByModuleVersionIDRow struct {
-	ModuleID         pgtype.Text
+	ModuleID         resource.ID
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
 	OrganizationName pgtype.Text
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersion
 }
 
-func (q *Queries) FindModuleByModuleVersionID(ctx context.Context, moduleVersionID pgtype.Text) (FindModuleByModuleVersionIDRow, error) {
+func (q *Queries) FindModuleByModuleVersionID(ctx context.Context, moduleVersionID resource.ID) (FindModuleByModuleVersionIDRow, error) {
 	row := q.db.QueryRow(ctx, findModuleByModuleVersionID, moduleVersionID)
 	var i FindModuleByModuleVersionIDRow
 	err := row.Scan(
@@ -236,14 +237,14 @@ type FindModuleByNameParams struct {
 }
 
 type FindModuleByNameRow struct {
-	ModuleID         pgtype.Text
+	ModuleID         resource.ID
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
 	OrganizationName pgtype.Text
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersion
 }
@@ -272,7 +273,7 @@ FROM module_tarballs
 WHERE module_version_id = $1
 `
 
-func (q *Queries) FindModuleTarball(ctx context.Context, moduleVersionID pgtype.Text) ([]byte, error) {
+func (q *Queries) FindModuleTarball(ctx context.Context, moduleVersionID resource.ID) ([]byte, error) {
 	row := q.db.QueryRow(ctx, findModuleTarball, moduleVersionID)
 	var tarball []byte
 	err := row.Scan(&tarball)
@@ -300,7 +301,7 @@ INSERT INTO modules (
 `
 
 type InsertModuleParams struct {
-	ID               pgtype.Text
+	ID               resource.ID
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -335,12 +336,12 @@ RETURNING module_version_id
 
 type InsertModuleTarballParams struct {
 	Tarball         []byte
-	ModuleVersionID pgtype.Text
+	ModuleVersionID resource.ID
 }
 
-func (q *Queries) InsertModuleTarball(ctx context.Context, arg InsertModuleTarballParams) (pgtype.Text, error) {
+func (q *Queries) InsertModuleTarball(ctx context.Context, arg InsertModuleTarballParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, insertModuleTarball, arg.Tarball, arg.ModuleVersionID)
-	var module_version_id pgtype.Text
+	var module_version_id resource.ID
 	err := row.Scan(&module_version_id)
 	return module_version_id, err
 }
@@ -365,11 +366,11 @@ RETURNING module_version_id, version, created_at, updated_at, status, status_err
 `
 
 type InsertModuleVersionParams struct {
-	ModuleVersionID pgtype.Text
+	ModuleVersionID resource.ID
 	Version         pgtype.Text
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
-	ModuleID        pgtype.Text
+	ModuleID        resource.ID
 	Status          pgtype.Text
 }
 
@@ -418,14 +419,14 @@ WHERE m.organization_name = $1
 `
 
 type ListModulesByOrganizationRow struct {
-	ModuleID         pgtype.Text
+	ModuleID         resource.ID
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
 	OrganizationName pgtype.Text
-	VCSProviderID    pgtype.Text
+	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersion
 }
@@ -470,12 +471,12 @@ RETURNING module_id
 
 type UpdateModuleStatusByIDParams struct {
 	Status   pgtype.Text
-	ModuleID pgtype.Text
+	ModuleID resource.ID
 }
 
-func (q *Queries) UpdateModuleStatusByID(ctx context.Context, arg UpdateModuleStatusByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateModuleStatusByID(ctx context.Context, arg UpdateModuleStatusByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateModuleStatusByID, arg.Status, arg.ModuleID)
-	var module_id pgtype.Text
+	var module_id resource.ID
 	err := row.Scan(&module_id)
 	return module_id, err
 }
@@ -492,7 +493,7 @@ RETURNING module_version_id, version, created_at, updated_at, status, status_err
 type UpdateModuleVersionStatusByIDParams struct {
 	Status          pgtype.Text
 	StatusError     pgtype.Text
-	ModuleVersionID pgtype.Text
+	ModuleVersionID resource.ID
 }
 
 func (q *Queries) UpdateModuleVersionStatusByID(ctx context.Context, arg UpdateModuleVersionStatusByIDParams) (ModuleVersion, error) {

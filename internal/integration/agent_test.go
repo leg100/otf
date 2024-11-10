@@ -6,7 +6,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +33,7 @@ func TestIntegration_Agents(t *testing.T) {
 		Name:          internal.String("ws-1"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
-		AgentPoolID:   internal.String(pool1.ID),
+		AgentPoolID:   &pool1.ID,
 	})
 	require.NoError(t, err)
 
@@ -43,14 +42,14 @@ func TestIntegration_Agents(t *testing.T) {
 		Name:          internal.String("ws-2"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
-		AgentPoolID:   internal.String(pool2.ID),
+		AgentPoolID:   &pool2.ID,
 	})
 	require.NoError(t, err)
 
 	// start agents up
-	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, pool1.ID, "", runner.Config{})
+	agent1, shutdown1 := daemon.startAgent(t, ctx, org.Name, &pool1.ID, "", runner.Config{})
 	defer shutdown1()
-	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, pool2.ID, "", runner.Config{})
+	agent2, shutdown2 := daemon.startAgent(t, ctx, org.Name, &pool2.ID, "", runner.Config{})
 	defer shutdown2()
 
 	// watch job events
@@ -61,7 +60,7 @@ func TestIntegration_Agents(t *testing.T) {
 	_ = daemon.createRun(t, ctx, ws1, nil)
 
 	// wait for job to be allocated to agent1
-	testutils.Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
+	Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobAllocated &&
 			*event.Payload.RunnerID == agent1.ID
 	})
@@ -70,7 +69,7 @@ func TestIntegration_Agents(t *testing.T) {
 	_ = daemon.createRun(t, ctx, ws2, nil)
 
 	// wait for job to be allocated to agent2
-	testutils.Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
+	Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobAllocated &&
 			*event.Payload.RunnerID == agent2.ID
 	})

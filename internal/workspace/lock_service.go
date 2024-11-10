@@ -5,20 +5,17 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 )
 
 // Lock locks the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (s *Service) Lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
-	var (
-		id   string
-		kind LockKind
-	)
+func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error) {
+	var id resource.ID
 	if runID != nil {
 		id = *runID
-		kind = RunLock
 	} else {
 		subject, err := s.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 		if err != nil {
@@ -28,12 +25,10 @@ func (s *Service) Lock(ctx context.Context, workspaceID string, runID *string) (
 		if !ok {
 			return nil, fmt.Errorf("only a run or a user can lock a workspace")
 		}
-		id = user.Username
-		kind = UserLock
+		id = user.ID
 	}
-
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Enlock(id, kind)
+		return ws.Enlock(id)
 	})
 	if err != nil {
 		s.Error(err, "locking workspace", "subject", id, "workspace", workspaceID)
@@ -47,14 +42,10 @@ func (s *Service) Lock(ctx context.Context, workspaceID string, runID *string) (
 // Unlock unlocks the workspace. A workspace can only be unlocked on behalf of a run or
 // a user. If the former then runID must be non-nil; otherwise a user is
 // extracted from the context.
-func (s *Service) Unlock(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
-	var (
-		id   string
-		kind LockKind
-	)
+func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error) {
+	var id resource.ID
 	if runID != nil {
 		id = *runID
-		kind = RunLock
 	} else {
 		var action rbac.Action
 		if force {
@@ -70,12 +61,11 @@ func (s *Service) Unlock(ctx context.Context, workspaceID string, runID *string,
 		if !ok {
 			return nil, fmt.Errorf("only a run or a user can unlock a workspace")
 		}
-		id = user.Username
-		kind = UserLock
+		id = user.ID
 	}
 
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Unlock(id, kind, force)
+		return ws.Unlock(id, force)
 	})
 	if err != nil {
 		s.Error(err, "unlocking workspace", "subject", id, "workspace", workspaceID, "forced", force)

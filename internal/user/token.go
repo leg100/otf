@@ -4,15 +4,15 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
-
-const UserTokenKind tokens.Kind = "user_token"
 
 type (
 	// UserToken provides information about an API token for a user.
 	UserToken struct {
-		ID          string
+		resource.ID
+
 		CreatedAt   time.Time
 		Description string
 		Username    string // Token belongs to a user
@@ -31,15 +31,12 @@ type (
 
 func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
-		ID:          internal.NewID("ut"),
+		ID:          resource.NewID(resource.UserTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		Username:    username,
 	}
-	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
-		Subject: ut.ID,
-		Kind:    UserTokenKind,
-	})
+	token, err := f.tokens.NewToken(ut.ID)
 	if err != nil {
 		return nil, nil, err
 	}

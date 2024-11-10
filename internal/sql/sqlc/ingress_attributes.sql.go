@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const insertIngressAttributes = `-- name: InsertIngressAttributes :exec
@@ -59,7 +60,7 @@ type InsertIngressAttributesParams struct {
 	Tag                    pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID pgtype.Text
+	ConfigurationVersionID resource.ID
 }
 
 func (q *Queries) InsertIngressAttributes(ctx context.Context, arg InsertIngressAttributesParams) error {

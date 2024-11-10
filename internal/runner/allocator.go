@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // AllocatorLockID guarantees only one allocator on a cluster is running at any
@@ -21,9 +22,9 @@ type allocator struct {
 	// allocating jobs to runners.
 	client allocatorClient
 	// runners to allocate jobs to, keyed by runner ID
-	runners map[string]*RunnerMeta
+	runners map[resource.ID]*RunnerMeta
 	// jobs awaiting allocation to an runner, keyed by job ID
-	jobs map[JobSpec]*Job
+	jobs map[resource.ID]*Job
 }
 
 type allocatorClient interface {
@@ -33,8 +34,8 @@ type allocatorClient interface {
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
-	allocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error)
-	reallocateJob(ctx context.Context, spec JobSpec, runnerID string) (*Job, error)
+	allocateJob(ctx context.Context, jobID, runnerID resource.ID) (*Job, error)
+	reallocateJob(ctx context.Context, jobID, runnerID resource.ID) (*Job, error)
 }
 
 // Start the allocator. Should be invoked in a go routine.
@@ -77,9 +78,9 @@ func (a *allocator) Start(ctx context.Context) error {
 			}
 			switch event.Type {
 			case pubsub.DeletedEvent:
-				delete(a.jobs, event.Payload.Spec)
+				delete(a.jobs, event.Payload.ID)
 			default:
-				a.jobs[event.Payload.Spec] = event.Payload
+				a.jobs[event.Payload.ID] = event.Payload
 			}
 		}
 		if err := a.allocate(ctx); err != nil {
@@ -88,14 +89,14 @@ func (a *allocator) Start(ctx context.Context) error {
 	}
 }
 
-func (a *allocator) seed(agents []*RunnerMeta, jobs []*Job) {
-	a.runners = make(map[string]*RunnerMeta, len(agents))
-	for _, runner := range agents {
+func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
+	a.runners = make(map[resource.ID]*RunnerMeta, len(runners))
+	for _, runner := range runners {
 		a.runners[runner.ID] = runner
 	}
-	a.jobs = make(map[JobSpec]*Job, len(jobs))
+	a.jobs = make(map[resource.ID]*Job, len(jobs))
 	for _, job := range jobs {
-		a.jobs[job.Spec] = job
+		a.jobs[job.ID] = job
 	}
 }
 
@@ -122,8 +123,8 @@ func (a *allocator) allocate(ctx context.Context) error {
 			reallocate = true
 		case JobFinished, JobCanceled, JobErrored:
 			// job has completed: remove and adjust number of current jobs
-			// agents has
-			delete(a.jobs, job.Spec)
+			// runner has
+			delete(a.jobs, job.ID)
 			a.runners[*job.RunnerID].CurrentJobs--
 			continue
 		default:
@@ -176,18 +177,18 @@ func (a *allocator) allocate(ctx context.Context) error {
 		)
 		if reallocate {
 			from := *job.RunnerID
-			updatedJob, err = a.client.reallocateJob(ctx, job.Spec, runner.ID)
+			updatedJob, err = a.client.reallocateJob(ctx, job.ID, runner.ID)
 			if err != nil {
 				return err
 			}
 			a.runners[from].CurrentJobs--
 		} else {
-			updatedJob, err = a.client.allocateJob(ctx, job.Spec, runner.ID)
+			updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
 			if err != nil {
 				return err
 			}
 		}
-		a.jobs[job.Spec] = updatedJob
+		a.jobs[job.ID] = updatedJob
 		a.runners[runner.ID].CurrentJobs++
 	}
 	return nil

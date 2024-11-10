@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -62,13 +63,13 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var params []struct {
-		ID string `jsonapi:"primary,tags"`
+		ID resource.ID `jsonapi:"primary,tags"`
 	}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	tagIDs := make([]string, len(params))
+	tagIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		tagIDs[i] = p.ID
 	}
@@ -82,7 +83,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
-	tagID, err := decode.Param("tag_id", r)
+	tagID, err := decode.ID("tag_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -92,7 +93,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]string, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		workspaceIDs[i] = p.ID
 	}
@@ -114,7 +115,7 @@ func (a *tfe) removeTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagOperation) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -124,8 +125,12 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		tfeapi.Error(w, err)
 		return
 	}
+
 	// convert from json:api structs to tag specs
-	specs := toTagSpecs(params)
+	specs := make([]TagSpec, len(params))
+	for i, tag := range params {
+		specs[i] = TagSpec{ID: tag.ID, Name: tag.Name}
+	}
 
 	switch op {
 	case addTags:
@@ -144,7 +149,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 }
 
 func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -178,14 +183,4 @@ func (a *tfe) toTag(from *Tag) *types.OrganizationTag {
 			Name: from.Organization,
 		},
 	}
-}
-
-func toTagSpecs(from []*types.Tag) (to []TagSpec) {
-	for _, tag := range from {
-		to = append(to, TagSpec{
-			ID:   tag.ID,
-			Name: tag.Name,
-		})
-	}
-	return
 }

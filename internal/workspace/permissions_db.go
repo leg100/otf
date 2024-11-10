@@ -5,14 +5,15 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
 	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
-		WorkspaceID: sql.String(workspaceID),
-		TeamID:      sql.String(teamID),
+		WorkspaceID: workspaceID,
+		TeamID:      teamID,
 		Role:        sql.String(role.String()),
 	})
 	if err != nil {
@@ -21,17 +22,17 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID 
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (authz.WorkspacePolicy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
 	q := db.Querier(ctx)
 
 	// Retrieve not only permissions but the workspace too, so that:
 	// (1) we ensure that workspace exists and return not found if not
 	// (2) we retrieve the name of the organization, which is part of a policy
-	ws, err := q.FindWorkspaceByID(ctx, sql.String(workspaceID))
+	ws, err := q.FindWorkspaceByID(ctx, workspaceID)
 	if err != nil {
 		return authz.WorkspacePolicy{}, sql.Error(err)
 	}
-	perms, err := q.FindWorkspacePermissionsByWorkspaceID(ctx, sql.String(workspaceID))
+	perms, err := q.FindWorkspacePermissionsByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return authz.WorkspacePolicy{}, sql.Error(err)
 	}
@@ -47,18 +48,17 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (aut
 			return authz.WorkspacePolicy{}, err
 		}
 		policy.Permissions = append(policy.Permissions, authz.WorkspacePermission{
-			TeamID: perm.TeamID.String,
+			TeamID: perm.TeamID,
 			Role:   role,
 		})
 	}
 	return policy, nil
 }
 
-// TODO: rename team param to teamID if indeed it is the team ID.
-func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
+func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	err := db.Querier(ctx).DeleteWorkspacePermissionByID(ctx, sqlc.DeleteWorkspacePermissionByIDParams{
-		WorkspaceID: sql.String(workspaceID),
-		TeamID:      sql.String(team),
+		WorkspaceID: workspaceID,
+		TeamID:      teamID,
 	})
 	if err != nil {
 		return sql.Error(err)

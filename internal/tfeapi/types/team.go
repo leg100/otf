@@ -1,9 +1,11 @@
 package types
 
+import "github.com/leg100/otf/internal/resource"
+
 type (
 	// Team represents an otf team.
 	Team struct {
-		ID                 string              `jsonapi:"primary,teams"`
+		ID                 resource.ID         `jsonapi:"primary,teams"`
 		Name               string              `jsonapi:"attribute" json:"name"`
 		OrganizationAccess *OrganizationAccess `jsonapi:"attribute" json:"organization-access"`
 		Visibility         string              `jsonapi:"attribute" json:"visibility"`

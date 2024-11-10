@@ -55,7 +55,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		created, err := tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
 			// no config version ID specified
 			Workspace: &tfe.Workspace{
-				ID: ws.ID,
+				ID: ws.ID.String(),
 			},
 		})
 		require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 			case run.RunPlanned:
 				// run should have planned two resources (defined in the config from the
 				// github repo)
-				planned, err := daemon.Runs.Get(ctx, created.ID)
+				planned, err := daemon.Runs.Get(ctx, testutils.ParseID(t, created.ID))
 				require.NoError(t, err)
 
 				assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)

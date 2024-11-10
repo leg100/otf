@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, RunPending, got.Status)
@@ -44,7 +45,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -58,7 +59,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{PlanOnly: internal.Bool(true)})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{PlanOnly: internal.Bool(true)})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -72,7 +73,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.AutoApply)
@@ -86,7 +87,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{
 			AutoApply: internal.Bool(true),
 		})
 		require.NoError(t, err)
@@ -102,28 +103,31 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.CostEstimationEnabled)
 	})
 
 	t.Run("pull from vcs", func(t *testing.T) {
+		workspaceID := resource.NewID(resource.WorkspaceKind)
+
 		f := newTestFactory(
 			&organization.Organization{},
 			&workspace.Workspace{
+				ID:         workspaceID,
 				Connection: &workspace.Connection{},
 			},
 			&configversion.ConfigurationVersion{},
 			"",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
-		// fake config version service sets the config version ID to "created"
-		// if it was newly created
-		assert.Equal(t, "created", got.ConfigurationVersionID)
+		// fake config version service sets the config version ID to the
+		// workspace ID if it was newly created
+		assert.Equal(t, workspaceID, got.ConfigurationVersionID)
 	})
 
 	t.Run("get latest version", func(t *testing.T) {
@@ -134,7 +138,7 @@ func TestFactory(t *testing.T) {
 			"1.2.3",
 		)
 
-		got, err := f.NewRun(ctx, "", CreateOptions{})
+		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, "1.2.3", got.TerraformVersion)
@@ -174,27 +178,27 @@ func (f *fakeFactoryOrganizationService) Get(context.Context, string) (*organiza
 	return f.org, nil
 }
 
-func (f *fakeFactoryWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
+func (f *fakeFactoryWorkspaceService) Get(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) Get(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) Get(context.Context, resource.ID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, string) (*configversion.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, resource.ID) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) Create(context.Context, string, configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
-	return &configversion.ConfigurationVersion{ID: "created"}, nil
+func (f *fakeFactoryConfigurationVersionService) Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
+	return &configversion.ConfigurationVersion{ID: workspaceID}, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, string, []byte) error {
+func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, resource.ID, []byte) error {
 	return nil
 }
 
-func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, string) (vcs.Client, error) {
+func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, resource.ID) (vcs.Client, error) {
 	return &fakeFactoryCloudClient{}, nil
 }
 

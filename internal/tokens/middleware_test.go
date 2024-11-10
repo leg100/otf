@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMiddleware(t *testing.T) {
 	secret := testutils.NewSecret(t)
+	testID := resource.NewID(resource.Kind("test"))
 
 	t.Run("skip non-protected path", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/login", nil)
@@ -46,7 +48,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid API token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := newTestJWT(t, secret, Kind("test-kind"), time.Hour)
+		token := newTestJWT(t, secret, testID, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
@@ -55,7 +57,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("invalid jwt", func(t *testing.T) {
 		differentSecret := testutils.NewSecret(t)
-		token := newTestJWT(t, differentSecret, Kind("test-kind"), time.Hour)
+		token := newTestJWT(t, differentSecret, testID, time.Hour)
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
@@ -65,7 +67,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := newTestJWT(t, secret, Kind("test-kind"), time.Hour)
+		token := newTestJWT(t, secret, testID, time.Hour)
 		r.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &authz.Superuser{})).ServeHTTP(w, r)
@@ -74,7 +76,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("expired user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := newTestJWT(t, secret, Kind("test-kind"), -time.Hour)
+		token := newTestJWT(t, secret, testID, -time.Hour)
 		r.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)

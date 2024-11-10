@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ func TestTail(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("receive chunk event", func(t *testing.T) {
-		sub := make(chan pubsub.Event[internal.Chunk])
+		sub := make(chan pubsub.Event[Chunk])
 		app := &Service{
 			chunkproxy: &fakeTailProxy{},
 			broker:     &fakeSubService{stream: sub},
@@ -23,38 +24,38 @@ func TestTail(t *testing.T) {
 			run:        &fakeAuthorizer{},
 		}
 
-		stream, err := app.Tail(ctx, internal.GetChunkOptions{
-			RunID: "run-123",
+		stream, err := app.Tail(ctx, GetChunkOptions{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
 
-		want := internal.Chunk{
-			RunID:  "run-123",
+		want := Chunk{
+			RunID:  testutils.ParseID(t, "run-123"),
 			Phase:  internal.PlanPhase,
 			Data:   []byte("\x02hello world\x03"),
 			Offset: 6,
 		}
-		sub <- pubsub.Event[internal.Chunk]{Payload: want}
+		sub <- pubsub.Event[Chunk]{Payload: want}
 		require.Equal(t, want, <-stream)
 	})
 
 	t.Run("receive existing chunk", func(t *testing.T) {
-		want := internal.Chunk{
-			RunID: "run-123",
+		want := Chunk{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
 		svc := &Service{
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker: &fakeSubService{
-				stream: make(chan pubsub.Event[internal.Chunk]),
+				stream: make(chan pubsub.Event[Chunk]),
 			},
 			Logger: logr.Discard(),
 			run:    &fakeAuthorizer{},
 		}
-		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
-			RunID: "run-123",
+		stream, err := svc.Tail(ctx, GetChunkOptions{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
@@ -63,12 +64,12 @@ func TestTail(t *testing.T) {
 
 	t.Run("receive existing chunk and overlapping published chunk", func(t *testing.T) {
 		// send first chunk
-		want := internal.Chunk{
-			RunID: "run-123",
+		want := Chunk{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		sub := make(chan pubsub.Event[internal.Chunk])
+		sub := make(chan pubsub.Event[Chunk])
 		svc := &Service{
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker:     &fakeSubService{stream: sub},
@@ -76,8 +77,8 @@ func TestTail(t *testing.T) {
 			run:        &fakeAuthorizer{},
 		}
 
-		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
-			RunID: "run-123",
+		stream, err := svc.Tail(ctx, GetChunkOptions{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
@@ -86,9 +87,9 @@ func TestTail(t *testing.T) {
 		require.Equal(t, want, <-stream)
 
 		// send second, overlapping, chunk
-		sub <- pubsub.Event[internal.Chunk]{
-			Payload: internal.Chunk{
-				RunID:  "run-123",
+		sub <- pubsub.Event[Chunk]{
+			Payload: Chunk{
+				RunID:  testutils.ParseID(t, "run-123"),
 				Phase:  internal.PlanPhase,
 				Data:   []byte("lo world\x03"),
 				Offset: 4,
@@ -96,8 +97,8 @@ func TestTail(t *testing.T) {
 		}
 
 		// receive non-overlapping part of second chunk.
-		want = internal.Chunk{
-			RunID:  "run-123",
+		want = Chunk{
+			RunID:  testutils.ParseID(t, "run-123"),
 			Phase:  internal.PlanPhase,
 			Data:   []byte(" world\x03"),
 			Offset: 6,
@@ -106,12 +107,12 @@ func TestTail(t *testing.T) {
 	})
 
 	t.Run("ignore duplicate chunk", func(t *testing.T) {
-		want := internal.Chunk{
-			RunID: "run-123",
+		want := Chunk{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		sub := make(chan pubsub.Event[internal.Chunk])
+		sub := make(chan pubsub.Event[Chunk])
 		svc := &Service{
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker:     &fakeSubService{stream: sub},
@@ -119,8 +120,8 @@ func TestTail(t *testing.T) {
 			run:        &fakeAuthorizer{},
 		}
 
-		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
-			RunID: "run-123",
+		stream, err := svc.Tail(ctx, GetChunkOptions{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
@@ -129,28 +130,28 @@ func TestTail(t *testing.T) {
 		require.Equal(t, want, <-stream)
 
 		// publish duplicate chunk
-		sub <- pubsub.Event[internal.Chunk]{
-			Payload: internal.Chunk{
-				RunID: "run-123",
+		sub <- pubsub.Event[Chunk]{
+			Payload: Chunk{
+				RunID: testutils.ParseID(t, "run-123"),
 				Phase: internal.PlanPhase,
 				Data:  []byte("\x02hello"),
 			},
 		}
 
 		// publish non-duplicate chunk
-		want = internal.Chunk{
-			RunID:  "run-123",
+		want = Chunk{
+			RunID:  testutils.ParseID(t, "run-123"),
 			Phase:  internal.PlanPhase,
 			Data:   []byte(" world\x03"),
 			Offset: 6,
 		}
-		sub <- pubsub.Event[internal.Chunk]{Payload: want}
+		sub <- pubsub.Event[Chunk]{Payload: want}
 		// dup event is skipped and non-dup is received
 		assert.Equal(t, want, <-stream)
 	})
 
 	t.Run("ignore chunk for other run", func(t *testing.T) {
-		sub := make(chan pubsub.Event[internal.Chunk])
+		sub := make(chan pubsub.Event[Chunk])
 		svc := &Service{
 			chunkproxy: &fakeTailProxy{},
 			broker:     &fakeSubService{stream: sub},
@@ -158,28 +159,28 @@ func TestTail(t *testing.T) {
 			run:        &fakeAuthorizer{},
 		}
 
-		stream, err := svc.Tail(ctx, internal.GetChunkOptions{
-			RunID: "run-123",
+		stream, err := svc.Tail(ctx, GetChunkOptions{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 		})
 		require.NoError(t, err)
 
 		// publish chunk for other run
-		sub <- pubsub.Event[internal.Chunk]{
-			Payload: internal.Chunk{
-				RunID: "run-456",
+		sub <- pubsub.Event[Chunk]{
+			Payload: Chunk{
+				RunID: testutils.ParseID(t, "run-456"),
 				Phase: internal.PlanPhase,
 				Data:  []byte("workers of the world, unite"),
 			},
 		}
 
 		// publish chunk for tailed run
-		want := internal.Chunk{
-			RunID: "run-123",
+		want := Chunk{
+			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		sub <- pubsub.Event[internal.Chunk]{Payload: want}
+		sub <- pubsub.Event[Chunk]{Payload: want}
 		// chunk for other run is skipped but chunk for this run is received
 		assert.Equal(t, want, <-stream)
 	})

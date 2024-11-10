@@ -21,6 +21,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -101,7 +102,7 @@ type (
 	}
 
 	operationJobsClient interface {
-		finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) error
+		finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
 	}
 
 	// downloader downloads terraform versions
@@ -110,32 +111,32 @@ type (
 	}
 
 	runClient interface {
-		Get(ctx context.Context, runID string) (*run.Run, error)
-		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
-		UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
-		GetLockFile(ctx context.Context, id string) ([]byte, error)
-		UploadLockFile(ctx context.Context, id string, lockFile []byte) error
+		Get(ctx context.Context, runID resource.ID) (*run.Run, error)
+		GetPlanFile(ctx context.Context, id resource.ID, format run.PlanFormat) ([]byte, error)
+		UploadPlanFile(ctx context.Context, id resource.ID, plan []byte, format run.PlanFormat) error
+		GetLockFile(ctx context.Context, id resource.ID) ([]byte, error)
+		UploadLockFile(ctx context.Context, id resource.ID, lockFile []byte) error
 	}
 
 	workspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	variablesClient interface {
-		ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
+		ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*variable.Variable, error)
 	}
 
 	configClient interface {
-		DownloadConfig(ctx context.Context, id string) ([]byte, error)
+		DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 	}
 
 	stateClient interface {
 		Create(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrent(ctx context.Context, workspaceID string) ([]byte, error)
+		DownloadCurrent(ctx context.Context, workspaceID resource.ID) ([]byte, error)
 	}
 
 	logsClient interface {
-		PutChunk(ctx context.Context, opts internal.PutChunkOptions) error
+		PutChunk(ctx context.Context, opts logs.PutChunkOptions) error
 	}
 
 	hostnameClient interface {
@@ -211,14 +212,14 @@ func (o *operation) doAndFinish() {
 		opts.Status = JobFinished
 		o.V(0).Info("finished job successfully")
 	}
-	if err := o.jobs.finishJob(o.ctx, o.job.Spec, opts); err != nil {
+	if err := o.jobs.finishJob(o.ctx, o.job.ID, opts); err != nil {
 		o.Error(err, "sending job status", "status", opts.Status)
 	}
 }
 
 // do executes the job
 func (o *operation) do() error {
-	run, err := o.runs.Get(o.ctx, o.job.Spec.RunID)
+	run, err := o.runs.Get(o.ctx, o.job.RunID)
 	if err != nil {
 		return err
 	}
@@ -610,7 +611,7 @@ func (o *operation) uploadState(ctx context.Context) error {
 		return err
 	}
 	_, err = o.state.Create(ctx, state.CreateStateVersionOptions{
-		WorkspaceID: &o.run.WorkspaceID,
+		WorkspaceID: o.run.WorkspaceID,
 		State:       statefile,
 		Serial:      &f.Serial,
 	})

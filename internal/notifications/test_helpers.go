@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -42,7 +43,7 @@ func newTestCache(t *testing.T, f clientFactory, configs ...*Config) *cache {
 	return cache
 }
 
-func newTestConfig(t *testing.T, workspaceID string, dst Destination, url string, triggers ...Trigger) *Config {
+func newTestConfig(t *testing.T, workspaceID resource.ID, dst Destination, url string, triggers ...Trigger) *Config {
 	cfg, err := NewConfig(workspaceID, CreateConfigOptions{
 		Name:            internal.String(uuid.NewString()),
 		DestinationType: dst,
@@ -58,7 +59,7 @@ func (db *fakeCacheDB) listAll(context.Context) ([]*Config, error) {
 	return db.configs, nil
 }
 
-func (db *fakeWorkspaceService) Get(context.Context, string) (*workspace.Workspace, error) {
+func (db *fakeWorkspaceService) Get(context.Context, resource.ID) (*workspace.Workspace, error) {
 	return nil, nil
 }
 

@@ -54,5 +54,4 @@ func (h *Handlers) AddHandlers(r *mux.Router) {
 			next.ServeHTTP(w, r)
 		})
 	})
-
 }

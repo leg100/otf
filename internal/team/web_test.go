@@ -35,7 +35,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		team := &Team{Name: "acme-org", ID: "team-123"}
+		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
 			teams:    &fakeService{team: team},
@@ -45,11 +45,11 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 		h.updateTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Team(team.ID))
+		testutils.AssertRedirect(t, w, paths.Team(team.ID.String()))
 	})
 
 	t.Run("list", func(t *testing.T) {
-		team := &Team{Name: "acme-org", ID: "team-123"}
+		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
 			teams:    &fakeService{team: team},
@@ -67,7 +67,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		team := &Team{Name: "acme-org", ID: "team-123", Organization: "acme-org"}
+		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: "acme-org"}
 		h := &webHandlers{
 			Renderer: testutils.NewRenderer(t),
 			teams:    &fakeService{team: team},

@@ -131,7 +131,7 @@ func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getOAuthClient(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("oauth_client_id", r)
+	id, err := decode.ID("oauth_client_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -147,7 +147,7 @@ func (a *tfe) getOAuthClient(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("oauth_client_id", r)
+	id, err := decode.ID("oauth_client_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

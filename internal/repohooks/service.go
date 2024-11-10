@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
@@ -39,7 +40,7 @@ type (
 	}
 
 	CreateRepohookOptions struct {
-		VCSProviderID string // vcs provider of repo
+		VCSProviderID resource.ID // vcs provider of repo
 		RepoPath      string
 	}
 )

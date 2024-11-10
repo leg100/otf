@@ -30,10 +30,10 @@ var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         string        `jsonapi:"primary,workspaces"`
+		ID                         resource.ID   `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
-		AgentPoolID                *string       `jsonapi:"attribute" json:"agent-pool-id"`
+		AgentPoolID                *resource.ID  `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool          `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool          `jsonapi:"attribute" json:"auto_apply"`
 		CanQueueDestroyPlan        bool          `jsonapi:"attribute" json:"can_queue_destroy_plan"`
@@ -53,7 +53,7 @@ type (
 		Organization               string        `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun    `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string      `jsonapi:"attribute" json:"tags"`
-		Lock                       *Lock         `jsonapi:"attribute" json:"lock"`
+		Lock                       *resource.ID  `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -79,7 +79,7 @@ type (
 		// exclusive with TriggerPatterns.
 		TagsRegex string
 
-		VCSProviderID string
+		VCSProviderID resource.ID
 		Repo          string
 
 		// By default, once a workspace is connected to a repo it is not
@@ -90,7 +90,7 @@ type (
 
 	ConnectOptions struct {
 		RepoPath      *string
-		VCSProviderID *string
+		VCSProviderID *resource.ID
 
 		Branch        *string
 		TagsRegex     *string
@@ -101,7 +101,7 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
-		AgentPoolID                *string
+		AgentPoolID                *resource.ID
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
@@ -129,7 +129,7 @@ type (
 	}
 
 	UpdateOptions struct {
-		AgentPoolID                *string `json:"agent-pool-id,omitempty"`
+		AgentPoolID                *resource.ID `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string
@@ -183,7 +183,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 
 	ws := Workspace{
-		ID:                 internal.NewID("ws"),
+		ID:                 resource.NewID("ws"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
@@ -276,10 +276,60 @@ func (ws *Workspace) ExecutionModes() []string {
 	return []string{"local", "remote", "agent"}
 }
 
+func (ws *Workspace) Locked() bool {
+	return ws.Lock != nil
+}
+
+// Enlock locks the workspace with the given ID. The ID must be either a run or user ID.
+func (ws *Workspace) Enlock(id resource.ID) error {
+	switch id.Kind() {
+	case resource.UserKind, resource.RunKind:
+	default:
+		return errors.New("workspace can only be locked by a user or a run")
+	}
+	if ws.Lock == nil {
+		ws.Lock = &id
+		return nil
+	}
+	// a run can replace another run holding a lock
+	if ws.Lock.Kind() == resource.RunKind && id.Kind() == resource.RunKind {
+		ws.Lock = &id
+		return nil
+	}
+	return ErrWorkspaceAlreadyLocked
+}
+
+// Unlock the workspace with the given ID. The ID must be either a run or user
+// ID.
+func (ws *Workspace) Unlock(id resource.ID, force bool) error {
+	switch id.Kind() {
+	case resource.UserKind, resource.RunKind:
+	default:
+		return errors.New("workspace can only be unlocked by a user or a run")
+	}
+	if ws.Lock == nil {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+	// user/run can unlock its own lock
+	if *ws.Lock == id {
+		ws.Lock = nil
+		return nil
+	}
+	// otherwise it has to be unlocked by force
+	if force {
+		ws.Lock = nil
+		return nil
+	}
+	if ws.Lock.Kind() == resource.RunKind {
+		return ErrWorkspaceLockedByRun
+	}
+	return ErrWorkspaceLockedByDifferentUser
+}
+
 // LogValue implements slog.LogValuer.
 func (ws *Workspace) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.String("id", ws.ID),
+		slog.String("id", ws.ID.String()),
 		slog.String("organization", ws.Organization),
 		slog.String("name", ws.Name),
 	)
@@ -358,10 +408,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	// (a) tags-regex
 	// (b) trigger-patterns
 	// (c) always-trigger=true
-	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
+	if (opts.ConnectOptions != nil && opts.TagsRegex != nil) && opts.TriggerPatterns != nil {
 		return nil, ErrTagsRegexAndTriggerPatterns
 	}
-	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+	if (opts.ConnectOptions != nil && opts.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
 		return nil, ErrTagsRegexAndAlwaysTrigger
 	}
 	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
@@ -456,7 +506,7 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 }
 
 func (ws *Workspace) setName(name string) error {
-	if !internal.ReStringID.MatchString(name) {
+	if !resource.ReStringID.MatchString(name) {
 		return internal.ErrInvalidName
 	}
 	ws.Name = name
@@ -466,7 +516,7 @@ func (ws *Workspace) setName(name string) error {
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *string) (bool, error) {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.ID) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done

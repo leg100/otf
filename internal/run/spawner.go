@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -26,22 +27,22 @@ type (
 	}
 
 	spawnerWorkspaceClient interface {
-		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*workspace.Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*workspace.Workspace, error)
 	}
 
 	spawnerConfigClient interface {
-		Create(ctx context.Context, workspaceID string, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
-		GetLatest(ctx context.Context, workspaceID string) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id string, config []byte) error
+		Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID resource.ID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.ID, config []byte) error
 	}
 
 	spawnerVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	spawnerRunClient interface {
-		Create(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
 	}
 )
 
@@ -186,7 +187,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
-				// ID     string
+				// ID     resource.ID
 				Branch: event.Branch,
 				// CloneURL          string
 				// CommitMessage     string
@@ -221,7 +222,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 		if err := s.configs.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		runOpts.ConfigurationVersionID = internal.String(cv.ID)
+		runOpts.ConfigurationVersionID = &cv.ID
 		_, err = s.runs.Create(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err

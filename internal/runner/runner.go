@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
@@ -90,7 +91,8 @@ func newRunner(
 		// here are also logged on the service endpoints, resulting in duplicate
 		// logs.
 		r.v = 1
-		// Distinguish log messages on server runner from other components.
+		// Distinguish log messages in server runner component from other
+		// components.
 		r.logger = logger.WithValues("component", "runner")
 	}
 	if cfg.Debug {
@@ -116,7 +118,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
 
 	// initialize terminator
-	terminator := &terminator{mapping: make(map[JobSpec]cancelable)}
+	terminator := &terminator{mapping: make(map[resource.ID]cancelable)}
 
 	// register runner with server, which responds with an updated runner
 	// registrationMetadata, including a unique ID.
@@ -203,7 +205,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			}
 		}()
 
-		// fetch jobs allocated to this runner and launch workers to do jobs; also
+		// fetch jobs allocated to this runner and spawn operations to do jobs; also
 		// handle cancelation signals for jobs
 		for {
 			processJobs := func() (err error) {
@@ -217,38 +219,38 @@ func (r *Runner) Start(ctx context.Context) error {
 					if j.Status == JobAllocated {
 						r.logger.V(r.v).Info("received job", "job", j)
 						// start job and receive job token in return
-						token, err := r.client.startJob(ctx, j.Spec)
+						token, err := r.client.startJob(ctx, j.ID)
 						if err != nil {
 							if ctx.Err() != nil {
+								// context cancelled means process is shutting
+								// down.
 								return nil
 							}
-							r.logger.Error(err, "starting job and retrieving job token")
-							continue
+							return fmt.Errorf("starting job and retrieving job token: %w", err)
 						}
 						op, err := r.spawner.newOperation(j, token)
 						if err != nil {
-							r.logger.Error(err, "spawning job operation")
-							continue
+							return fmt.Errorf("spawning job operation: %w", err)
 						}
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.
-						terminator.checkIn(j.Spec, op)
+						terminator.checkIn(j.ID, op)
 						op.V(0).Info("started job")
 						g.Go(func() error {
 							op.doAndFinish()
-							terminator.checkOut(op.job.Spec)
+							terminator.checkOut(op.job.ID)
 							return nil
 						})
 					} else if j.Signaled != nil {
 						r.logger.V(r.v).Info("received cancelation signal", "force", *j.Signaled, "job", j)
-						terminator.cancel(j.Spec, *j.Signaled, true)
+						terminator.cancel(j.ID, *j.Signaled, true)
 					}
 				}
 				return nil
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 			_ = backoff.RetryNotify(processJobs, policy, func(err error, next time.Duration) {
-				r.logger.Error(err, "waiting for next job", "backoff", next)
+				r.logger.Error(err, "processing jobs", "backoff", next)
 			})
 			// only stop retrying if context is canceled
 			if ctx.Err() != nil {

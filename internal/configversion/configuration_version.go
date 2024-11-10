@@ -19,20 +19,23 @@ const (
 
 	// Default maximum config size is 10mb.
 	DefaultConfigMaxSize int64 = 1024 * 1024 * 10
+
+	ConfigVersionKind     = "cv"
+	IngressAttributesKind = "ia"
 )
 
 type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                string
+		ID                resource.ID
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []ConfigurationVersionStatusTimestamp
-		WorkspaceID       string
+		WorkspaceID       resource.ID
 		IngressAttributes *IngressAttributes
 	}
 
@@ -67,10 +70,10 @@ type (
 	// version. Either ID *or* WorkspaceID must be specfiied.
 	ConfigurationVersionGetOptions struct {
 		// ID of config version to retrieve
-		ID *string
+		ID *resource.ID
 
 		// Get latest config version for this workspace ID
-		WorkspaceID *string
+		WorkspaceID *resource.ID
 
 		// A list of relations to include
 		Include *string `schema:"include"`
@@ -86,7 +89,7 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     string
+		// ID     resource.ID
 		Branch string
 		// CloneURL          string
 		// CommitMessage     string
@@ -108,9 +111,9 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID string, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            internal.NewID("cv"),
+		ID:            resource.NewID(ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,
@@ -132,8 +135,6 @@ func NewConfigurationVersion(workspaceID string, opts CreateOptions) (*Configura
 	}
 	return &cv, nil
 }
-
-func (cv *ConfigurationVersion) String() string { return cv.ID }
 
 func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
 	for _, sts := range cv.StatusTimestamps {

@@ -1,6 +1,10 @@
 package runner
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 // cancelable is something that is cancelable, either forcefully or gracefully.
 type cancelable interface {
@@ -10,29 +14,29 @@ type cancelable interface {
 // terminator handles canceling jobs
 type terminator struct {
 	// mapping maps job to a cancelable operation executing the job.
-	mapping map[JobSpec]cancelable
+	mapping map[resource.ID]cancelable
 	mu      sync.RWMutex
 }
 
-func (t *terminator) checkIn(spec JobSpec, job cancelable) {
+func (t *terminator) checkIn(jobID resource.ID, job cancelable) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	t.mapping[spec] = job
+	t.mapping[jobID] = job
 }
 
-func (t *terminator) checkOut(spec JobSpec) {
+func (t *terminator) checkOut(jobID resource.ID) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	delete(t.mapping, spec)
+	delete(t.mapping, jobID)
 }
 
-func (t *terminator) cancel(spec JobSpec, force, sendSignal bool) {
+func (t *terminator) cancel(jobID resource.ID, force, sendSignal bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if job, ok := t.mapping[spec]; ok {
+	if job, ok := t.mapping[jobID]; ok {
 		job.cancel(force, sendSignal)
 	}
 }

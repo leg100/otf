@@ -65,7 +65,7 @@ func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("team_id", r)
+	id, err := decode.ID("team_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

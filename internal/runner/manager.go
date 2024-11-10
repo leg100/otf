@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 )
 
 var (
@@ -30,8 +31,8 @@ type manager struct {
 
 type managerClient interface {
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
-	updateStatus(ctx context.Context, runnerID string, status RunnerStatus) error
-	deleteRunner(ctx context.Context, runnerID string) error
+	updateStatus(ctx context.Context, runnerID resource.ID, status RunnerStatus) error
+	deleteRunner(ctx context.Context, runnerID resource.ID) error
 }
 
 func newManager(s *Service) *manager {

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -124,9 +125,13 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (authz.
 	}
 	email, ok := payload.Claims["email"]
 	if !ok {
-		return nil, fmt.Errorf("IAP token is missing email claim")
+		return nil, errors.New("IAP token is missing email claim")
 	}
-	return m.GetOrCreateUISubject(ctx, email.(string))
+	emailString, ok := email.(string)
+	if !ok {
+		return nil, fmt.Errorf("expected IAP token email to be a string: %#v", email)
+	}
+	return m.GetOrCreateUser(ctx, emailString)
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.Subject, error) {
@@ -135,22 +140,14 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (authz.S
 		return nil, fmt.Errorf("malformed bearer token")
 	}
 	token := splitToken[1]
-
 	if m.SiteToken != "" && m.SiteToken == token {
 		return m.SiteAdmin, nil
 	}
-	//
-	// parse jwt and verify signature
-	parsed, err := jwt.Parse([]byte(token), jwt.WithKey(jwa.HS256, m.key))
+	id, err := m.parseIDFromJWT([]byte(token))
 	if err != nil {
 		return nil, err
 	}
-	kindClaim, ok := parsed.Get("kind")
-	if !ok {
-		return nil, fmt.Errorf("missing claim: kind")
-	}
-	kind := Kind(kindClaim.(string))
-	return m.GetSubject(ctx, kind, parsed.Subject())
+	return m.GetSubject(ctx, id)
 }
 
 func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (authz.Subject, bool) {
@@ -160,7 +157,7 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 		return nil, false
 	}
 	// parse jwt from cookie and verify signature
-	token, err := jwt.Parse([]byte(cookie.Value), jwt.WithKey(jwa.HS256, m.key))
+	id, err := m.parseIDFromJWT([]byte(cookie.Value))
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired()) {
 			html.FlashError(w, "session expired")
@@ -169,12 +166,20 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 		}
 		return nil, false
 	}
-	user, err := m.GetOrCreateUISubject(ctx, token.Subject())
+	user, err := m.GetSubject(ctx, id)
 	if err != nil {
 		html.FlashError(w, "unable to find user: "+err.Error())
 		return nil, false
 	}
 	return user, true
+}
+
+func (m *middleware) parseIDFromJWT(token []byte) (resource.ID, error) {
+	parsed, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, m.key))
+	if err != nil {
+		return resource.ID{}, err
+	}
+	return resource.ParseID(parsed.Subject())
 }
 
 func isProtectedPath(path string) bool {

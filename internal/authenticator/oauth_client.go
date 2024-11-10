@@ -10,10 +10,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )
 
@@ -29,21 +31,21 @@ type (
 	}
 
 	sessionStarter interface {
-		StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error
+		StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
 	}
 
 	// OAuthClient performs the client role in an oauth handshake, requesting
 	// authorization from the user to access their account details on a particular
 	// cloud.
 	OAuthClient struct {
+		OAuthConfig
 		// extract username from token
 		tokenHandler
 		// for retrieving OTF system hostname to construct redirect URLs
 		*internal.HostnameService
 
-		OAuthConfig
-
 		sessions sessionStarter
+		users    userService
 	}
 
 	// OAuthConfig is configuration for constructing an OAuth client
@@ -62,9 +64,9 @@ func newOAuthClient(
 	handler tokenHandler,
 	hostnameService *internal.HostnameService,
 	tokensService sessionStarter,
+	userService userService,
 	cfg OAuthConfig,
 ) (*OAuthClient, error) {
-
 	if cfg.ClientID == "" && cfg.ClientSecret != "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
@@ -89,6 +91,7 @@ func newOAuthClient(
 		tokenHandler:    handler,
 		HostnameService: hostnameService,
 		sessions:        tokensService,
+		users:           userService,
 		OAuthConfig:     cfg,
 	}, nil
 }
@@ -120,7 +123,9 @@ func (a *OAuthClient) requestHandler(w http.ResponseWriter, r *http.Request) {
 // the code it receives for an access token, which it then uses to retrieve its
 // corresponding username and start a new OTF user session.
 func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
-	getToken := func() (*oauth2.Token, error) {
+	// Get token; if there is an error, return user to login page along with
+	// flash error.
+	token, err := func() (*oauth2.Token, error) {
 		// Parse query string
 		var resp struct {
 			AuthCode         string `schema:"code"`
@@ -147,10 +152,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		// for testing purposes).
 		ctx := contextWithClient(r.Context(), a.SkipTLSVerification)
 		return a.config().Exchange(ctx, resp.AuthCode)
-	}
-	// Get token; if there is an error, return user to login page along with
-	// flash error.
-	token, err := getToken()
+	}()
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
@@ -162,8 +164,22 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
-	err = a.sessions.StartSession(w, r, tokens.StartSessionOptions{Username: &username})
+
+	// Retrieve user with extracted username, creating the user if necessary.
+	// Use privileged context to authorize access to user service endpoints.
+	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
+	user, err := a.users.GetUser(ctx, user.UserSpec{Username: &username})
+	if err == internal.ErrResourceNotFound {
+		user, err = a.users.Create(ctx, username)
+	}
 	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		return
+	}
+
+	// Lookup user in db, to retrieve user id to embed in session token
+	// Get or create user.
+	if err := a.sessions.StartSession(w, r, user.ID); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}

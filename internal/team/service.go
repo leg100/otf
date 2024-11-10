@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -24,8 +25,8 @@ type (
 	Service struct {
 		logr.Logger
 
-		organization authz.Authorizer // authorizes org access
-		team         authz.Authorizer // authorizes team access
+		organization *organization.Authorizer // authorizes org access
+		team         authz.Authorizer         // authorizes team access
 
 		db     *pgdb
 		web    *webHandlers
@@ -89,7 +90,7 @@ func NewService(opts Options) *Service {
 	})
 	// Register with auth middleware the team token kind and a means of
 	// retrieving team corresponding to token.
-	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID string) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
 
@@ -137,7 +138,7 @@ func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *Service) Update(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -195,7 +196,7 @@ func (a *Service) Get(ctx context.Context, organization, name string) (*Team, er
 	return team, nil
 }
 
-func (a *Service) GetByID(ctx context.Context, teamID string) (*Team, error) {
+func (a *Service) GetByID(ctx context.Context, teamID resource.ID) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -212,7 +213,7 @@ func (a *Service) GetByID(ctx context.Context, teamID string) (*Team, error) {
 	return team, nil
 }
 
-func (a *Service) Delete(ctx context.Context, teamID string) error {
+func (a *Service) Delete(ctx context.Context, teamID resource.ID) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -239,7 +240,7 @@ func (a *Service) Delete(ctx context.Context, teamID string) error {
 	return nil
 }
 
-func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID string) (*Team, error) {
+func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
 	team, err := a.db.getTeamByTokenID(ctx, tokenID)
 	if err != nil {
 		a.Error(err, "retrieving team by team token ID", "token_id", tokenID)

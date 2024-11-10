@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -217,7 +218,7 @@ type fakeSpawnerRunClient struct {
 	spawned bool
 }
 
-func (f *fakeSpawnerRunClient) Create(context.Context, string, CreateOptions) (*Run, error) {
+func (f *fakeSpawnerRunClient) Create(context.Context, resource.ID, CreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }
@@ -227,7 +228,7 @@ type fakeSpawnerVCSProviderClient struct {
 	pullFiles []string
 }
 
-func (f *fakeSpawnerVCSProviderClient) GetVCSClient(context.Context, string) (vcs.Client, error) {
+func (f *fakeSpawnerVCSProviderClient) GetVCSClient(context.Context, resource.ID) (vcs.Client, error) {
 	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
 }
 

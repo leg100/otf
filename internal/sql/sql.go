@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // Bool converts a go-boolean into a postgres non-null boolean
@@ -112,6 +113,30 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 		return pgtype.Timestamptz{Time: *t, Valid: true}
 	}
 	return pgtype.Timestamptz{}
+}
+
+// ID converts a resource ID into an ID suitable for postgres.
+func ID(s resource.ID) pgtype.Text {
+	return pgtype.Text{String: s.String(), Valid: true}
+}
+
+// IDPtr converts a resource ID pointer into an ID suitable for postgres.
+func IDPtr(s *resource.ID) pgtype.Text {
+	if s != nil {
+		return pgtype.Text{String: s.String(), Valid: true}
+	}
+	return pgtype.Text{}
+}
+
+// GetOffset calculates the offset for use in SQL queries.
+func GetOffset(opts resource.PageOptions) pgtype.Int4 {
+	opts = opts.Normalize()
+	return Int4((opts.PageNumber - 1) * opts.PageSize)
+}
+
+// GetLimit calculates the limit for use in SQL queries.
+func GetLimit(opts resource.PageOptions) pgtype.Int4 {
+	return Int4(opts.Normalize().PageSize)
 }
 
 func Error(err error) error {

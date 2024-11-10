@@ -10,6 +10,7 @@ import (
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -112,7 +113,7 @@ func (f *fakeService) List(context.Context, string) ([]*VCSProvider, error) {
 	return []*VCSProvider{f.provider}, nil
 }
 
-func (f *fakeService) Delete(context.Context, string) (*VCSProvider, error) {
+func (f *fakeService) Delete(context.Context, resource.ID) (*VCSProvider, error) {
 	return f.provider, nil
 }
 

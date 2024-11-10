@@ -81,8 +81,11 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		TriggerPrefixes:            params.TriggerPrefixes,
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
-		// convert from json:api structs to tag specs
-		Tags: toTagSpecs(params.Tags),
+	}
+	// convert from json:api structs to tag specs
+	opts.Tags = make([]TagSpec, len(params.Tags))
+	for i, tag := range params.Tags {
+		opts.Tags[i] = TagSpec{ID: tag.ID, Name: tag.Name}
 	}
 	// Always trigger runs if neither trigger patterns nor tags regex are set
 	if len(params.TriggerPatterns) == 0 && (params.VCSRepo == nil || params.VCSRepo.TagsRegex == nil) {
@@ -129,7 +132,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
+	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -212,7 +215,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 //
 // TODO: support updating workspace's vcs repo.
 func (a *tfe) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -241,7 +244,7 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
+	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -275,7 +278,7 @@ func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.Param("workspace_id", r)
+	id, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -301,7 +304,7 @@ func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 }
 
 func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -335,7 +338,7 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
+func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.ID) {
 	params := types.WorkspaceUpdateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
@@ -435,6 +438,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
+		AgentPoolID:          from.AgentPoolID,
 		AutoApply:            from.AutoApply,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,
@@ -460,9 +464,6 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
-	}
-	if from.AgentPoolID != nil {
-		to.AgentPoolID = *from.AgentPoolID
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true

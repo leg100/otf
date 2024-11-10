@@ -99,7 +99,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		// check attributes include workspace metadata
 		want := map[string]string{
 			"otf.ninja/v1/workspace.name": ws.Name,
-			"otf.ninja/v1/workspace.id":   ws.ID,
+			"otf.ninja/v1/workspace.id":   ws.ID.String(),
 			"otf.ninja/v1/tags/foo":       "true",
 			"otf.ninja/v1/tags/bar":       "true",
 		}

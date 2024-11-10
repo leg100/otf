@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
@@ -21,7 +22,7 @@ type (
 	hookRow struct {
 		RepohookID    pgtype.UUID `json:"repohook_id"`
 		VCSID         pgtype.Text `json:"vcs_id"`
-		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+		VCSProviderID resource.ID `json:"vcs_provider_id"`
 		Secret        pgtype.Text `json:"secret"`
 		RepoPath      pgtype.Text `json:"repo_path"`
 		VCSKind       pgtype.Text `json:"vcs_kind"`
@@ -34,7 +35,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Querier(ctx)
 	result, err := q.FindRepohookByRepoAndProvider(ctx, sqlc.FindRepohookByRepoAndProviderParams{
 		RepoPath:      sql.String(hook.repoPath),
-		VCSProviderID: sql.String(hook.vcsProviderID),
+		VCSProviderID: hook.vcsProviderID,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -50,7 +51,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 		Secret:        sql.String(hook.secret),
 		RepoPath:      sql.String(hook.repoPath),
 		VCSID:         sql.StringPtr(hook.cloudID),
-		VCSProviderID: sql.String(hook.vcsProviderID),
+		VCSProviderID: hook.vcsProviderID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("inserting webhook into db: %w", sql.Error(err))
@@ -126,7 +127,7 @@ func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
 func (db *db) fromRow(row hookRow) (*hook, error) {
 	opts := newRepohookOptions{
 		id:              internal.UUID(row.RepohookID.Bytes),
-		vcsProviderID:   row.VCSProviderID.String,
+		vcsProviderID:   row.VCSProviderID,
 		secret:          internal.String(row.Secret.String),
 		repoPath:        row.RepoPath.String,
 		cloud:           vcs.Kind(row.VCSKind.String),

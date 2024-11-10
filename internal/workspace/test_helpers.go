@@ -16,7 +16,7 @@ type FakeService struct {
 	Policy     authz.WorkspacePolicy
 }
 
-func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
 	return f.Workspaces, nil
 }
 
@@ -24,7 +24,7 @@ func (f *FakeService) Create(context.Context, CreateOptions) (*Workspace, error)
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Update(_ context.Context, _ string, opts UpdateOptions) (*Workspace, error) {
+func (f *FakeService) Update(_ context.Context, _ resource.ID, opts UpdateOptions) (*Workspace, error) {
 	f.Workspaces[0].Update(opts)
 	return f.Workspaces[0], nil
 }
@@ -33,7 +33,7 @@ func (f *FakeService) List(ctx context.Context, opts ListOptions) (*resource.Pag
 	return resource.NewPage(f.Workspaces, opts.PageOptions, nil), nil
 }
 
-func (f *FakeService) Get(context.Context, string) (*Workspace, error) {
+func (f *FakeService) Get(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -41,15 +41,15 @@ func (f *FakeService) GetByName(context.Context, string, string) (*Workspace, er
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Delete(context.Context, string) (*Workspace, error) {
+func (f *FakeService) Delete(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Lock(context.Context, string, *string) (*Workspace, error) {
+func (f *FakeService) Lock(context.Context, resource.ID, *resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Unlock(context.Context, string, *string, bool) (*Workspace, error) {
+func (f *FakeService) Unlock(context.Context, resource.ID, *resource.ID, bool) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -57,23 +57,23 @@ func (f *FakeService) ListTags(context.Context, string, ListTagsOptions) (*resou
 	return nil, nil
 }
 
-func (f *FakeService) GetPolicy(context.Context, string) (authz.WorkspacePolicy, error) {
+func (f *FakeService) GetPolicy(context.Context, resource.ID) (authz.WorkspacePolicy, error) {
 	return f.Policy, nil
 }
 
-func (f *FakeService) AddTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (f *FakeService) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	return nil
 }
 
-func (f *FakeService) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+func (f *FakeService) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
 	return nil
 }
 
-func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID string, role rbac.Role) error {
+func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
 	return nil
 }
 
-func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID string) error {
+func (f *FakeService) UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	return nil
 }
 
@@ -82,7 +82,7 @@ type fakeVCSProviderService struct {
 	repos     []string
 }
 
-func (f *fakeVCSProviderService) Get(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.ID) (*vcsprovider.VCSProvider, error) {
 	return f.providers[0], nil
 }
 
@@ -90,7 +90,7 @@ func (f *fakeVCSProviderService) List(context.Context, string) ([]*vcsprovider.V
 	return f.providers, nil
 }
 
-func (f *fakeVCSProviderService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+func (f *fakeVCSProviderService) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
 	return &fakeVCSClient{repos: f.repos}, nil
 }
 

@@ -10,6 +10,7 @@ import (
 	"net/netip"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteRunner = `-- name: DeleteRunner :one
@@ -19,7 +20,7 @@ WHERE runner_id = $1
 RETURNING runner_id, name, version, max_jobs, ip_address, last_ping_at, last_status_at, status, agent_pool_id
 `
 
-func (q *Queries) DeleteRunner(ctx context.Context, runnerID pgtype.Text) (Runner, error) {
+func (q *Queries) DeleteRunner(ctx context.Context, runnerID resource.ID) (Runner, error) {
 	row := q.db.QueryRow(ctx, deleteRunner, runnerID)
 	var i Runner
 	err := row.Scan(
@@ -52,7 +53,7 @@ WHERE a.runner_id = $1
 `
 
 type FindRunnerByIDRow struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -60,12 +61,12 @@ type FindRunnerByIDRow struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindRunnerByID(ctx context.Context, runnerID pgtype.Text) (FindRunnerByIDRow, error) {
+func (q *Queries) FindRunnerByID(ctx context.Context, runnerID resource.ID) (FindRunnerByIDRow, error) {
 	row := q.db.QueryRow(ctx, findRunnerByID, runnerID)
 	var i FindRunnerByIDRow
 	err := row.Scan(
@@ -100,7 +101,7 @@ FOR UPDATE OF a
 `
 
 type FindRunnerByIDForUpdateRow struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -108,12 +109,12 @@ type FindRunnerByIDForUpdateRow struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindRunnerByIDForUpdate(ctx context.Context, runnerID pgtype.Text) (FindRunnerByIDForUpdateRow, error) {
+func (q *Queries) FindRunnerByIDForUpdate(ctx context.Context, runnerID resource.ID) (FindRunnerByIDForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, findRunnerByIDForUpdate, runnerID)
 	var i FindRunnerByIDForUpdateRow
 	err := row.Scan(
@@ -147,7 +148,7 @@ ORDER BY a.last_ping_at DESC
 `
 
 type FindRunnersRow struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -155,7 +156,7 @@ type FindRunnersRow struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
@@ -208,7 +209,7 @@ ORDER BY last_ping_at DESC
 `
 
 type FindRunnersByOrganizationRow struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -216,7 +217,7 @@ type FindRunnersByOrganizationRow struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
@@ -269,7 +270,7 @@ ORDER BY last_ping_at DESC
 `
 
 type FindRunnersByPoolIDRow struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -277,12 +278,12 @@ type FindRunnersByPoolIDRow struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindRunnersByPoolID(ctx context.Context, agentPoolID pgtype.Text) ([]FindRunnersByPoolIDRow, error) {
+func (q *Queries) FindRunnersByPoolID(ctx context.Context, agentPoolID resource.ID) ([]FindRunnersByPoolIDRow, error) {
 	rows, err := q.db.Query(ctx, findRunnersByPoolID, agentPoolID)
 	if err != nil {
 		return nil, err
@@ -329,7 +330,7 @@ ORDER BY last_ping_at DESC
 `
 
 type FindServerRunnersRow struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -337,7 +338,7 @@ type FindServerRunnersRow struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
@@ -399,7 +400,7 @@ INSERT INTO runners (
 `
 
 type InsertRunnerParams struct {
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -407,7 +408,7 @@ type InsertRunnerParams struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentPoolID  *resource.ID
 }
 
 func (q *Queries) InsertRunner(ctx context.Context, arg InsertRunnerParams) error {
@@ -438,7 +439,7 @@ type UpdateRunnerParams struct {
 	Status       pgtype.Text
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
-	RunnerID     pgtype.Text
+	RunnerID     resource.ID
 }
 
 func (q *Queries) UpdateRunner(ctx context.Context, arg UpdateRunnerParams) (Runner, error) {

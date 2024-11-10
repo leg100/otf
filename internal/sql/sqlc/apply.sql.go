@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const insertApply = `-- name: InsertApply :exec
@@ -22,7 +23,7 @@ INSERT INTO applies (
 `
 
 type InsertApplyParams struct {
-	RunID  pgtype.Text
+	RunID  resource.ID
 	Status pgtype.Text
 }
 
@@ -43,20 +44,20 @@ RETURNING run_id
 `
 
 type UpdateAppliedChangesByIDParams struct {
-	RunID        pgtype.Text
+	RunID        resource.ID
 	Additions    pgtype.Int4
 	Changes      pgtype.Int4
 	Destructions pgtype.Int4
 }
 
-func (q *Queries) UpdateAppliedChangesByID(ctx context.Context, arg UpdateAppliedChangesByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateAppliedChangesByID(ctx context.Context, arg UpdateAppliedChangesByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateAppliedChangesByID,
 		arg.RunID,
 		arg.Additions,
 		arg.Changes,
 		arg.Destructions,
 	)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -69,13 +70,13 @@ RETURNING run_id
 `
 
 type UpdateApplyStatusByIDParams struct {
-	RunID  pgtype.Text
+	RunID  resource.ID
 	Status pgtype.Text
 }
 
-func (q *Queries) UpdateApplyStatusByID(ctx context.Context, arg UpdateApplyStatusByIDParams) (pgtype.Text, error) {
+func (q *Queries) UpdateApplyStatusByID(ctx context.Context, arg UpdateApplyStatusByIDParams) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, updateApplyStatusByID, arg.RunID, arg.Status)
-	var run_id pgtype.Text
+	var run_id resource.ID
 	err := row.Scan(&run_id)
 	return run_id, err
 }

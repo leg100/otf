@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const deleteTokenByID = `-- name: DeleteTokenByID :one
@@ -18,9 +19,9 @@ WHERE token_id = $1
 RETURNING token_id
 `
 
-func (q *Queries) DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error) {
+func (q *Queries) DeleteTokenByID(ctx context.Context, tokenID resource.ID) (resource.ID, error) {
 	row := q.db.QueryRow(ctx, deleteTokenByID, tokenID)
-	var token_id pgtype.Text
+	var token_id resource.ID
 	err := row.Scan(&token_id)
 	return token_id, err
 }
@@ -31,7 +32,7 @@ FROM tokens
 WHERE token_id = $1
 `
 
-func (q *Queries) FindTokenByID(ctx context.Context, tokenID pgtype.Text) (Token, error) {
+func (q *Queries) FindTokenByID(ctx context.Context, tokenID resource.ID) (Token, error) {
 	row := q.db.QueryRow(ctx, findTokenByID, tokenID)
 	var i Token
 	err := row.Scan(
@@ -89,7 +90,7 @@ INSERT INTO tokens (
 `
 
 type InsertTokenParams struct {
-	TokenID     pgtype.Text
+	TokenID     resource.ID
 	CreatedAt   pgtype.Timestamptz
 	Description pgtype.Text
 	Username    pgtype.Text

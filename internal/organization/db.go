@@ -21,7 +21,7 @@ type (
 
 // row is the row result of a database query for organizations
 type row struct {
-	OrganizationID             pgtype.Text
+	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       pgtype.Text
@@ -37,7 +37,7 @@ type row struct {
 // organization.
 func (r row) toOrganization() *Organization {
 	org := &Organization{
-		ID:                         r.OrganizationID.String,
+		ID:                         r.OrganizationID,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		Name:                       r.Name.String,
@@ -68,7 +68,7 @@ type pgdb struct {
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	err := db.Querier(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
-		ID:                         sql.String(org.ID),
+		ID:                         org.ID,
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
 		Name:                       sql.String(org.Name),
@@ -124,8 +124,8 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 
 	rows, err := q.FindOrganizations(ctx, sqlc.FindOrganizationsParams{
 		Names:  sql.StringArray(opts.names),
-		Limit:  opts.GetLimit(),
-		Offset: opts.GetOffset(),
+		Limit:  sql.GetLimit(opts.PageOptions),
+		Offset: sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, err
@@ -150,8 +150,8 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
-	r, err := db.Querier(ctx).FindOrganizationByID(ctx, sql.String(id))
+func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
+	r, err := db.Querier(ctx).FindOrganizationByID(ctx, id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -172,7 +172,7 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 
 // tokenRow is the row result of a database query for organization tokens
 type tokenRow struct {
-	OrganizationTokenID pgtype.Text        `json:"organization_token_id"`
+	OrganizationTokenID resource.ID        `json:"organization_token_id"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
 	Expiry              pgtype.Timestamptz `json:"expiry"`
@@ -180,7 +180,7 @@ type tokenRow struct {
 
 func (result tokenRow) toToken() *OrganizationToken {
 	ot := &OrganizationToken{
-		ID:           result.OrganizationTokenID.String,
+		ID:           result.OrganizationTokenID,
 		CreatedAt:    result.CreatedAt.Time.UTC(),
 		Organization: result.OrganizationName.String,
 	}
@@ -192,7 +192,7 @@ func (result tokenRow) toToken() *OrganizationToken {
 
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
 	err := db.Querier(ctx).UpsertOrganizationToken(ctx, sqlc.UpsertOrganizationTokenParams{
-		OrganizationTokenID: sql.String(token.ID),
+		OrganizationTokenID: token.ID,
 		OrganizationName:    sql.String(token.Organization),
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
 		Expiry:              sql.TimestamptzPtr(token.Expiry),
@@ -220,20 +220,12 @@ func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string)
 	return items, nil
 }
 
-func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
-	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID))
+func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
+	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, tokenID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	ot := &OrganizationToken{
-		ID:           result.OrganizationTokenID.String,
-		CreatedAt:    result.CreatedAt.Time.UTC(),
-		Organization: result.OrganizationName.String,
-	}
-	if result.Expiry.Valid {
-		ot.Expiry = internal.Time(result.Expiry.Time.UTC())
-	}
-	return ot, nil
+	return tokenRow(result).toToken(), nil
 }
 
 func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {

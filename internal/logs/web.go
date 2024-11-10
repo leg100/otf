@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -21,7 +22,7 @@ type (
 	}
 
 	tailService interface {
-		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
+		Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
 	}
 )
 
@@ -34,7 +35,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		// ID of run to tail
-		RunID string `schema:"run_id,required"`
+		RunID resource.ID `schema:"run_id,required"`
 		// Phase to tail. Must be either plan or apply.
 		Phase internal.PhaseType `schema:"phase,required"`
 		// Offset is number of bytes into logs to start tailing from
@@ -45,7 +46,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.svc.Tail(r.Context(), internal.GetChunkOptions{
+	ch, err := h.svc.Tail(r.Context(), GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,

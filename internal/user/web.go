@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -33,22 +32,22 @@ type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
 	ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
-	ListTeamUsers(ctx context.Context, teamID string) ([]*User, error)
+	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
-	AddTeamMembership(ctx context.Context, teamID string, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID string, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
 
 	CreateToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*UserToken, error)
-	DeleteToken(ctx context.Context, tokenID string) error
+	DeleteToken(ctx context.Context, tokenID resource.ID) error
 }
 
 type tokensClient interface {
-	StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error
+	StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
 }
 
 type teamsClient interface {
-	GetByID(ctx context.Context, teamID string) (*otfteam.Team, error)
+	GetByID(ctx context.Context, teamID resource.ID) (*otfteam.Team, error)
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -143,9 +142,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.tokens.StartSession(w, r, tokens.StartSessionOptions{
-		Username: internal.String(SiteAdminUsername),
-	})
+	err = h.tokens.StartSession(w, r, SiteAdminID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -171,8 +168,8 @@ func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string  `schema:"team_id,required"`
-		Username *string `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username *string     `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -186,13 +183,13 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "added team member: "+*params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string `schema:"team_id,required"`
-		Username string `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -206,11 +203,11 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "removed team member: "+params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
 }
 
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := decode.Param("team_id", r)
+	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -269,7 +266,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		CanDelete         bool
 		IsOwner           bool
 	}{
-		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
+		OrganizationPage: organization.NewPage(r, team.ID.String(), team.Organization),
 		Team:             team,
 		Members:          members,
 		CanUpdateTeam:    user.CanAccessOrganization(rbac.UpdateTeamAction, team.Organization),
@@ -282,7 +279,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Name:        "username",
 			Available:   nonMemberUsernames,
 			Existing:    usernames,
-			Action:      paths.AddMemberTeam(team.ID),
+			Action:      paths.AddMemberTeam(team.ID.String()),
 			Placeholder: "Add user",
 			Width:       html.WideDropDown,
 		},
@@ -341,8 +338,8 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
-	id := r.FormValue("id")
-	if id == "" {
+	id, err := decode.ID("id", r)
+	if err != nil {
 		h.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}

@@ -27,7 +27,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -62,7 +62,7 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -83,7 +83,7 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -131,7 +131,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) verifyNotification(w http.ResponseWriter, r *http.Request) {}
 
 func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -23,11 +24,11 @@ func (f *fakeService) PublishModule(context.Context, PublishOptions) (*Module, e
 	return f.mod, nil
 }
 
-func (f *fakeService) GetModuleByID(context.Context, string) (*Module, error) {
+func (f *fakeService) GetModuleByID(context.Context, resource.ID) (*Module, error) {
 	return f.mod, nil
 }
 
-func (f *fakeService) DeleteModule(context.Context, string) (*Module, error) {
+func (f *fakeService) DeleteModule(context.Context, resource.ID) (*Module, error) {
 	return f.mod, nil
 }
 
@@ -35,7 +36,7 @@ func (f *fakeService) ListModules(context.Context, ListModulesOptions) ([]*Modul
 	return []*Module{f.mod}, nil
 }
 
-func (f *fakeService) Get(context.Context, string) (*vcsprovider.VCSProvider, error) {
+func (f *fakeService) Get(context.Context, resource.ID) (*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs[0], nil
 }
 
@@ -43,11 +44,11 @@ func (f *fakeService) List(context.Context, string) ([]*vcsprovider.VCSProvider,
 	return f.vcsprovs, nil
 }
 
-func (f *fakeService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
+func (f *fakeService) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
 	return &fakeModulesCloudClient{repos: f.repos}, nil
 }
 
-func (f *fakeService) GetModuleInfo(context.Context, string) (*TerraformModule, error) {
+func (f *fakeService) GetModuleInfo(context.Context, resource.ID) (*TerraformModule, error) {
 	return unmarshalTerraformModule(f.tarball)
 }
 

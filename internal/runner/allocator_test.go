@@ -7,164 +7,182 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAllocator_seed(t *testing.T) {
-	agent1 := &RunnerMeta{ID: "agent-1", Status: RunnerIdle, MaxJobs: 5}
-	agent2 := &RunnerMeta{ID: "agent-2", Status: RunnerIdle, MaxJobs: 5}
+	agent1 := &RunnerMeta{ID: resource.NewID(resource.RunnerKind), Status: RunnerIdle, MaxJobs: 5}
+	agent2 := &RunnerMeta{ID: resource.NewID(resource.RunnerKind), Status: RunnerIdle, MaxJobs: 5}
 
 	job1 := &Job{
-		Spec:   JobSpec{RunID: "run-1", Phase: internal.PlanPhase},
+		RunID:  resource.NewID(resource.RunKind),
+		Phase:  internal.PlanPhase,
 		Status: JobUnallocated,
 	}
 	job2 := &Job{
-		Spec:     JobSpec{RunID: "run-2", Phase: internal.PlanPhase},
+		RunID:    resource.NewID(resource.RunKind),
+		Phase:    internal.PlanPhase,
 		Status:   JobAllocated,
-		RunnerID: internal.String("agent-2"),
+		RunnerID: &agent2.ID,
 	}
 
 	a := &allocator{}
 	a.seed([]*RunnerMeta{agent1, agent2}, []*Job{job1, job2})
 
 	if assert.Len(t, a.runners, 2) {
-		assert.Contains(t, a.runners, "agent-1")
-		assert.Contains(t, a.runners, "agent-2")
+		assert.Contains(t, a.runners, agent1.ID)
+		assert.Contains(t, a.runners, agent2.ID)
 	}
 }
 
 func TestAllocator_allocate(t *testing.T) {
 	now := internal.CurrentTimestamp(nil)
 
+	runner1ID := resource.NewID(resource.RunnerKind)
+	runner2ID := resource.NewID(resource.RunnerKind)
+	pool1ID := resource.NewID(resource.AgentPoolKind)
+	job1ID := resource.NewID(resource.JobKind)
+
 	tests := []struct {
 		name string
 		// seed allocator with pools
 		pools []*Pool
-		// seed allocator with agents
-		agents []*RunnerMeta
+		// seed allocator with runners
+		runners []*RunnerMeta
 		// seed allocator with job
 		job *Job
 		// want this job after allocation
 		wantJob *Job
-		// want these agents after allocation
-		wantAgents map[string]*RunnerMeta
+		// want these runners after allocation
+		wantRunners map[resource.ID]*RunnerMeta
 	}{
 		{
-			name: "allocate job to server agent",
-			agents: []*RunnerMeta{
-				{ID: "agent-idle", Status: RunnerIdle, MaxJobs: 1},
+			name: "allocate job to server runner",
+			runners: []*RunnerMeta{
+				{ID: runner1ID, Status: RunnerIdle, MaxJobs: 1},
 			},
 			job: &Job{
-				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				RunID:  testutils.ParseID(t, "run-123"),
+				Phase:  internal.PlanPhase,
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				RunID:    testutils.ParseID(t, "run-123"),
+				Phase:    internal.PlanPhase,
 				Status:   JobAllocated,
-				RunnerID: internal.String("agent-idle"),
+				RunnerID: &runner1ID,
 			},
-			wantAgents: map[string]*RunnerMeta{
-				"agent-idle": {ID: "agent-idle", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
+			wantRunners: map[resource.ID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
 		},
 		{
 			name: "allocate job to agent that has pinged more recently than another",
-			agents: []*RunnerMeta{
-				{ID: "agent-new", Status: RunnerIdle, MaxJobs: 1, LastPingAt: now},
-				{ID: "agent-old", Status: RunnerIdle, MaxJobs: 1, LastPingAt: now.Add(-time.Second)},
+			runners: []*RunnerMeta{
+				{ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, LastPingAt: now},
+				{ID: runner2ID, Status: RunnerIdle, MaxJobs: 1, LastPingAt: now.Add(-time.Second)},
 			},
 			job: &Job{
-				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:     job1ID,
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:       job1ID,
 				Status:   JobAllocated,
-				RunnerID: internal.String("agent-new"),
+				RunnerID: &runner1ID,
 			},
-			wantAgents: map[string]*RunnerMeta{
-				"agent-new": {ID: "agent-new", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, LastPingAt: now},
-				"agent-old": {ID: "agent-old", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 0, LastPingAt: now.Add(-time.Second)},
+			wantRunners: map[resource.ID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, LastPingAt: now},
+				runner2ID: {ID: runner2ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 0, LastPingAt: now.Add(-time.Second)},
 			},
 		},
 		{
 			name:  "allocate job to pool agent",
-			pools: []*Pool{{ID: "pool-1"}},
-			agents: []*RunnerMeta{
-				{ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, AgentPool: &RunnerMetaAgentPool{ID: "pool-1"}},
+			pools: []*Pool{{ID: testutils.ParseID(t, "pool-1")}},
+			runners: []*RunnerMeta{
+				{
+					ID:        runner1ID,
+					Status:    RunnerIdle,
+					MaxJobs:   1,
+					AgentPool: &RunnerMetaAgentPool{ID: pool1ID},
+				},
 			},
 			job: &Job{
-				Spec:        JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:          job1ID,
+				Phase:       internal.PlanPhase,
 				Status:      JobUnallocated,
-				AgentPoolID: internal.String("pool-1"),
+				AgentPoolID: &pool1ID,
 			},
 			wantJob: &Job{
-				Spec:        JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:          job1ID,
+				Phase:       internal.PlanPhase,
 				Status:      JobAllocated,
-				AgentPoolID: internal.String("pool-1"),
-				RunnerID:    internal.String("agent-1"),
+				AgentPoolID: &pool1ID,
+				RunnerID:    &runner1ID,
 			},
-			wantAgents: map[string]*RunnerMeta{
-				"agent-1": {ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, AgentPool: &RunnerMetaAgentPool{ID: "pool-1"}},
+			wantRunners: map[resource.ID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1, AgentPool: &RunnerMetaAgentPool{ID: pool1ID}},
 			},
 		},
 		{
 			name:  "do not allocate job to agent with insufficient capacity",
-			pools: []*Pool{{ID: "pool-1"}},
-			agents: []*RunnerMeta{
-				{ID: "agent-1", Status: RunnerIdle, CurrentJobs: 1, MaxJobs: 1},
+			pools: []*Pool{{ID: pool1ID}},
+			runners: []*RunnerMeta{
+				{ID: runner1ID, Status: RunnerIdle, CurrentJobs: 1, MaxJobs: 1},
 			},
 			job: &Job{
-				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:     job1ID,
 				Status: JobUnallocated,
 			},
 			wantJob: &Job{
-				Spec:   JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:     job1ID,
 				Status: JobUnallocated,
 			},
-			wantAgents: map[string]*RunnerMeta{
-				"agent-1": {ID: "agent-1", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
+			wantRunners: map[resource.ID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
 		},
 		{
 			name: "re-allocate job from unresponsive agent",
-			agents: []*RunnerMeta{
-				{ID: "agent-unknown", Status: RunnerUnknown, CurrentJobs: 1},
-				{ID: "agent-idle", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 0},
+			runners: []*RunnerMeta{
+				{ID: runner1ID, Status: RunnerUnknown, CurrentJobs: 1},
+				{ID: runner2ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 0},
 			},
 			job: &Job{
-				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:       job1ID,
 				Status:   JobAllocated,
-				RunnerID: internal.String("agent-unknown"),
+				RunnerID: &runner1ID,
 			},
 			wantJob: &Job{
-				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:       job1ID,
 				Status:   JobAllocated,
-				RunnerID: internal.String("agent-idle"),
+				RunnerID: &runner2ID,
 			},
-			wantAgents: map[string]*RunnerMeta{
-				"agent-unknown": {ID: "agent-unknown", Status: RunnerUnknown, CurrentJobs: 0},
-				"agent-idle":    {ID: "agent-idle", Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
+			wantRunners: map[resource.ID]*RunnerMeta{
+				runner1ID: {ID: runner1ID, Status: RunnerUnknown, CurrentJobs: 0},
+				runner2ID: {ID: runner2ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
 		},
 		{
-			name:   "de-allocate finished job",
-			agents: []*RunnerMeta{{ID: "agent-1", CurrentJobs: 1}},
+			name:    "de-allocate finished job",
+			runners: []*RunnerMeta{{ID: runner1ID, CurrentJobs: 1}},
 			job: &Job{
-				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:       job1ID,
 				Status:   JobFinished,
-				RunnerID: internal.String("agent-1"),
+				RunnerID: &runner1ID,
 			},
-			wantJob:    nil,
-			wantAgents: map[string]*RunnerMeta{"agent-1": {ID: "agent-1", CurrentJobs: 0}},
+			wantJob:     nil,
+			wantRunners: map[resource.ID]*RunnerMeta{runner1ID: {ID: runner1ID, CurrentJobs: 0}},
 		},
 		{
 			name: "ignore running job",
 			job: &Job{
-				Spec:     JobSpec{RunID: "run-123", Phase: internal.PlanPhase},
+				ID:       job1ID,
 				Status:   JobRunning,
-				RunnerID: internal.String("agent-1"),
+				RunnerID: &runner1ID,
 			},
 		},
 	}
@@ -176,18 +194,18 @@ func TestAllocator_allocate(t *testing.T) {
 					job: tt.job,
 				},
 			}
-			a.seed(tt.agents, []*Job{tt.job})
+			a.seed(tt.runners, []*Job{tt.job})
 			err := a.allocate(context.Background())
 			require.NoError(t, err)
 			// check agents
-			if assert.Equal(t, len(tt.wantAgents), len(a.runners)) {
-				for id, want := range tt.wantAgents {
+			if assert.Equal(t, len(tt.wantRunners), len(a.runners)) {
+				for id, want := range tt.wantRunners {
 					assert.Equal(t, want, a.runners[id])
 				}
 			}
 			// check job
 			if tt.wantJob != nil {
-				assert.Equal(t, tt.wantJob, a.jobs[tt.wantJob.Spec])
+				assert.Equal(t, tt.wantJob, a.jobs[tt.wantJob.ID])
 			}
 		})
 	}

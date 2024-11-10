@@ -1,9 +1,11 @@
 package workspace
 
+import "github.com/leg100/otf/internal/resource"
+
 type (
 	// LatestRun is a summary of the latest run for a workspace
 	LatestRun struct {
-		ID     string
+		ID     resource.ID
 		Status runStatus
 	}
 

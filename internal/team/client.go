@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
@@ -45,8 +46,8 @@ func (c *Client) Get(ctx context.Context, organization, name string) (*Team, err
 }
 
 // Delete deletes a team via HTTP/JSONAPI.
-func (c *Client) Delete(ctx context.Context, id string) error {
-	u := fmt.Sprintf("teams/%s", url.QueryEscape(id))
+func (c *Client) Delete(ctx context.Context, id resource.ID) error {
+	u := fmt.Sprintf("teams/%s", url.QueryEscape(id.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err

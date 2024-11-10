@@ -3,9 +3,8 @@
 package notifications
 
 import (
-	"net/url"
-
 	"log/slog"
+	"net/url"
 
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/run"
@@ -24,8 +23,8 @@ type notification struct {
 
 func (n *notification) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("run", n.run.ID),
-		slog.String("workspace_id", n.workspace.ID),
+		slog.String("run", n.run.ID.String()),
+		slog.String("workspace_id", n.workspace.ID.String()),
 		slog.String("trigger", string(n.trigger)),
 		slog.String("destination", string(n.config.DestinationType)),
 	}
@@ -41,7 +40,7 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 	}
 	return &GenericPayload{
 		PayloadVersion:              1,
-		NotificationConfigurationID: "",
+		NotificationConfigurationID: n.config.ID,
 		RunURL:                      n.runURL(),
 		RunID:                       n.run.ID,
 		RunCreatedAt:                n.run.CreatedAt,
@@ -59,6 +58,6 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 }
 
 func (n *notification) runURL() string {
-	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID)}
+	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID.String())}
 	return u.String()
 }

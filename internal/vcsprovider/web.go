@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -27,10 +28,10 @@ type webHandlers struct {
 
 type webClient interface {
 	Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
-	Update(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error)
-	Get(ctx context.Context, id string) (*VCSProvider, error)
+	Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error)
+	Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 	List(ctx context.Context, organization string) ([]*VCSProvider, error)
-	Delete(ctx context.Context, id string) (*VCSProvider, error)
+	Delete(ctx context.Context, id resource.ID) (*VCSProvider, error)
 }
 
 type webGithubAppClient interface {
@@ -151,7 +152,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
-	providerID, err := decode.Param("vcs_provider_id", r)
+	providerID, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -171,16 +172,16 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
 		VCSProvider:      provider,
-		FormAction:       paths.UpdateVCSProvider(providerID),
+		FormAction:       paths.UpdateVCSProvider(providerID.String()),
 		EditMode:         true,
 	})
 }
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID    string `schema:"vcs_provider_id,required"`
-		Token string `schema:"token"`
-		Name  string `schema:"name"`
+		ID    resource.ID `schema:"vcs_provider_id,required"`
+		Token string      `schema:"token"`
+		Name  string      `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -231,7 +232,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("vcs_provider_id", r)
+	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -250,7 +251,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("vcs_provider_id", r)
+	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

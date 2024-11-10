@@ -39,7 +39,7 @@ func TestIntegration_StateCLI(t *testing.T) {
 		// permitting the test to delete the previous version.
 		_ = daemon.createStateVersion(t, ctx, ws)
 
-		got := daemon.otfcli(t, ctx, "state", "delete", sv.ID)
+		got := daemon.otfcli(t, ctx, "state", "delete", sv.ID.String())
 
 		want := fmt.Sprintf("Deleted state version: %s\n", sv.ID)
 		assert.Equal(t, want, got)
@@ -49,7 +49,7 @@ func TestIntegration_StateCLI(t *testing.T) {
 		sv := daemon.createStateVersion(t, ctx, nil)
 		want := unmarshalState(t, sv.State)
 
-		out := daemon.otfcli(t, ctx, "state", "download", sv.ID)
+		out := daemon.otfcli(t, ctx, "state", "download", sv.ID.String())
 		got := unmarshalState(t, []byte(out))
 
 		assert.Equal(t, want, got)
@@ -59,7 +59,7 @@ func TestIntegration_StateCLI(t *testing.T) {
 		rollbackTo := daemon.createStateVersion(t, ctx, nil)
 		current := daemon.createStateVersion(t, ctx, nil)
 
-		gotOut := daemon.otfcli(t, ctx, "state", "rollback", rollbackTo.ID)
+		gotOut := daemon.otfcli(t, ctx, "state", "rollback", rollbackTo.ID.String())
 		require.Equal(t, "Successfully rolled back state\n", gotOut)
 
 		// should be new current state

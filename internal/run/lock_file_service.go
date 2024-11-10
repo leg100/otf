@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func lockFileCacheKey(runID string) string {
+func lockFileCacheKey(runID resource.ID) string {
 	return fmt.Sprintf("%s.terraform.lock.hcl", runID)
 }
 
 // GetLockFile returns the lock file for the run.
-func (s *Service) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
+func (s *Service) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetLockFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -36,7 +37,7 @@ func (s *Service) GetLockFile(ctx context.Context, runID string) ([]byte, error)
 }
 
 // UploadLockFile persists the lock file for a run.
-func (s *Service) UploadLockFile(ctx context.Context, runID string, file []byte) error {
+func (s *Service) UploadLockFile(ctx context.Context, runID resource.ID, file []byte) error {
 	subject, err := s.CanAccess(ctx, rbac.UploadLockFileAction, runID)
 	if err != nil {
 		return err

@@ -6,15 +6,15 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
-
-const OrganizationTokenKind tokens.Kind = "organization_token"
 
 type (
 	// OrganizationToken provides information about an API token for an organization
 	OrganizationToken struct {
-		ID        string
+		resource.ID
+
 		CreatedAt time.Time
 		// Token belongs to an organization
 		Organization string
@@ -37,16 +37,16 @@ type (
 
 func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
-		ID:           internal.NewID("ot"),
+		ID:           resource.NewID(resource.OrganizationTokenKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
 	}
-	token, err := f.tokens.NewToken(tokens.NewTokenOptions{
-		Subject: ot.ID,
-		Kind:    OrganizationTokenKind,
-		Expiry:  opts.Expiry,
-	})
+	var newTokenOptions []tokens.NewTokenOption
+	if opts.Expiry != nil {
+		newTokenOptions = append(newTokenOptions, tokens.WithExpiry(*opts.Expiry))
+	}
+	token, err := f.tokens.NewToken(ot.ID, newTokenOptions...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -58,7 +58,7 @@ func (u *OrganizationToken) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (u *OrganizationToken) CanAccessTeam(rbac.Action, string) bool {
+func (u *OrganizationToken) CanAccessTeam(rbac.Action, resource.ID) bool {
 	// only be used for organization-scoped resources.
 	return false
 }
@@ -87,7 +87,6 @@ func (u *OrganizationToken) IsOwner(organization string) bool {
 }
 
 func (u *OrganizationToken) IsSiteAdmin() bool { return false }
-func (u *OrganizationToken) String() string    { return u.ID }
 
 func (u *OrganizationToken) Organizations() []string {
 	return []string{u.Organization}

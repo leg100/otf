@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,10 +38,10 @@ func newFakeCLI(run *Run, tarball []byte) *CLI {
 	}
 }
 
-func (f *fakeCLIService) Get(context.Context, string) (*Run, error) {
+func (f *fakeCLIService) Get(context.Context, resource.ID) (*Run, error) {
 	return f.run, nil
 }
 
-func (f *fakeCLIService) DownloadConfig(context.Context, string) ([]byte, error) {
+func (f *fakeCLIService) DownloadConfig(context.Context, resource.ID) ([]byte, error) {
 	return f.tarball, nil
 }

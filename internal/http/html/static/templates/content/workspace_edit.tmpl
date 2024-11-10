@@ -3,7 +3,7 @@
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
   /
   settings
 {{ end }}
@@ -15,13 +15,13 @@
 {{ define "content" }}
   <div class="mt-3">
     {{ with .Workspace.Connection }}
-      <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
+      <form action="{{ disconnectWorkspacePath $.Workspace.ID.String }}" method="POST">
         <button class="btn" id="disconnect-workspace-repo-button">
           Disconnect from {{ .Repo }} ({{ $.VCSProvider.String }})
         </button>
       </form>
     {{ else }}
-      <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
+      <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID.String }}" method="GET">
         <button class="btn" id="list-workspace-vcs-providers-button">
           Connect to VCS
         </button>
@@ -29,7 +29,7 @@
     {{ end }}
   </div>
   <hr class="my-4">
-  <form class="flex flex-col gap-5" action="{{ updateWorkspacePath .Workspace.ID }}" method="POST">
+  <form class="flex flex-col gap-5" action="{{ updateWorkspacePath .Workspace.ID.String }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
       <input class="text-input w-80" type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
@@ -58,7 +58,7 @@
         <div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-gray-100 p-2 gap-2">
           <div class="flex items-center gap-2">
             <label class="text-md" for="agent-pool-id">Agent pool</label>
-            <div hx-get="{{ poolsWorkspacePath .Workspace.ID }}?agent_pool_id={{ default "" .Workspace.AgentPoolID }}" hx-trigger="load" hx-swap="innerHTML"></div>
+            <div hx-get="{{ .PoolsURL }}" hx-trigger="load" hx-swap="innerHTML"></div>
           </div>
           <span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href="{{ agentPoolsPath .Workspace.Organization }}">here</a>.</span>
         </div>
@@ -206,9 +206,9 @@
               {{ continue }}
             {{ end }}
             <tr class="border-b" id="permissions-{{ .Team.Name }}">
-              <td class="p-2"><a href="{{ teamPath .Team.ID }}">{{ .Team.Name }}</a></td>
+              <td class="p-2"><a href="{{ teamPath .Team.ID.String }}">{{ .Team.Name }}</a></td>
               <td class="p-2">
-                <form class="" action="{{ setPermissionWorkspacePath $.Workspace.ID }}" method="POST">
+                <form class="" action="{{ setPermissionWorkspacePath $.Workspace.ID.String }}" method="POST">
                   <input name="team_id" value="{{ .Team.ID }}" type="hidden">
                   <select name="role" id="role-select">
                     {{ $currentRole := .Role.String }}
@@ -220,7 +220,7 @@
                 </form>
               </td>
               <td>
-                <form class="" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
+                <form class="" action="{{ unsetPermissionWorkspacePath $.Workspace.ID.String }}" method="POST">
                   <input name="team_id" value="{{ .Team.ID }}" type="hidden">
                   <button class="btn-danger">Remove</button>
                 </form>
@@ -228,7 +228,7 @@
             </tr>
           {{ end }}
           <tr class="border-b">
-            <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Workspace.ID }}" method="POST"></form>
+            <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Workspace.ID.String }}" method="POST"></form>
             <td class="p-2">
               <select form="permissions-add-form" name="team_id" id="permissions-add-select-team">
                 <option value="">--team--</option>
@@ -255,7 +255,7 @@
     <hr class="my-4">
     <h3 class="font-semibold text-lg">Advanced</h3>
     <div class="flex flex-col gap-4 mt-2 mb-6">
-      <form action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
+      <form action="{{ startRunWorkspacePath .Workspace.ID.String }}" method="POST">
         <button id="queue-destroy-plan-button" class="btn-danger" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
           Queue destroy plan
         </button>
@@ -263,7 +263,7 @@
         <input name="operation" value="destroy-all" type="hidden">
       </form>
       {{ if .CanDeleteWorkspace }}
-        <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
+        <form action="{{ deleteWorkspacePath .Workspace.ID.String }}" method="POST">
           <button id="delete-workspace-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
             Delete workspace
           </button>

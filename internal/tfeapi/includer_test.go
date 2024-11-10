@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,17 +13,23 @@ import (
 func TestIncluder(t *testing.T) {
 	type (
 		baz struct {
-			ID string
+			ID resource.ID
 		}
 		bar struct {
 			Baz baz
-			ID  string
+			ID  resource.ID
 		}
 		foo struct {
 			Bar bar
-			ID  string
+			ID  resource.ID
 		}
 	)
+	fooResource := foo{ID: resource.NewID("foo")}
+	fooResource2 := foo{ID: resource.NewID("foo")}
+	barResource := bar{ID: resource.NewID("bar")}
+	barResource2 := bar{ID: resource.NewID("bar")}
+	bazResource := baz{ID: resource.NewID("baz")}
+
 	tests := []struct {
 		name          string
 		query         string
@@ -33,90 +40,90 @@ func TestIncluder(t *testing.T) {
 		{
 			name:     "simple include",
 			query:    "/foo?include=bar",
-			resource: &foo{ID: "foo-1"},
+			resource: &fooResource,
 			registrations: map[IncludeName][]IncludeFunc{
 				IncludeName("bar"): {
 					func(_ context.Context, v any) ([]any, error) {
-						assert.Equal(t, &foo{ID: "foo-1"}, v)
-						return []any{&bar{ID: "bar-1"}}, nil
+						assert.Equal(t, &fooResource, v)
+						return []any{&barResource}, nil
 					},
 				},
 			},
-			want: []any{&bar{ID: "bar-1"}},
+			want: []any{&barResource},
 		},
 		{
 			name:     "multiple includes",
 			query:    "/foo?include=bar,baz",
-			resource: &foo{ID: "foo-1"},
+			resource: &fooResource,
 			registrations: map[IncludeName][]IncludeFunc{
 				IncludeName("bar"): {
 					func(_ context.Context, v any) ([]any, error) {
-						assert.Equal(t, &foo{ID: "foo-1"}, v)
-						return []any{&bar{ID: "bar-1"}}, nil
+						assert.Equal(t, &fooResource, v)
+						return []any{&barResource}, nil
 					},
 				},
 				IncludeName("baz"): {
 					func(_ context.Context, v any) ([]any, error) {
-						assert.Equal(t, &foo{ID: "foo-1"}, v)
-						return []any{&baz{"baz-1"}}, nil
+						assert.Equal(t, &fooResource, v)
+						return []any{&bazResource}, nil
 					},
 				},
 			},
-			want: []any{&bar{ID: "bar-1"}, &baz{"baz-1"}},
+			want: []any{&barResource, &bazResource},
 		},
 		{
 			name:     "include transitive relation",
 			query:    "/foo?include=bar.baz",
-			resource: &foo{ID: "foo-1"},
+			resource: &fooResource,
 			registrations: map[IncludeName][]IncludeFunc{
 				IncludeName("bar"): {
 					func(_ context.Context, v any) ([]any, error) {
-						assert.Equal(t, &foo{ID: "foo-1"}, v)
-						return []any{&bar{ID: "bar-1"}}, nil
+						assert.Equal(t, &fooResource, v)
+						return []any{&barResource}, nil
 					},
 				},
 				IncludeName("baz"): {
 					func(_ context.Context, v any) ([]any, error) {
-						assert.Equal(t, &bar{ID: "bar-1"}, v)
-						return []any{&baz{"baz-1"}}, nil
+						assert.Equal(t, &barResource, v)
+						return []any{&bazResource}, nil
 					},
 				},
 			},
-			want: []any{&bar{ID: "bar-1"}, &baz{"baz-1"}},
+			want: []any{&barResource, &bazResource},
 		},
 		{
 			name:     "multiple resources",
 			query:    "/foo?include=bar",
-			resource: []any{foo{ID: "foo-1"}, foo{ID: "foo-2"}},
+			resource: []any{fooResource, fooResource2},
 			registrations: map[IncludeName][]IncludeFunc{
 				IncludeName("bar"): {
 					func(_ context.Context, v any) ([]any, error) {
-						return []any{&bar{ID: "bar-1"}}, nil
+						return []any{&barResource}, nil
 					},
 				},
 			},
-			want: []any{&bar{ID: "bar-1"}, &bar{ID: "bar-1"}},
+			want: []any{&barResource, &barResource},
 		},
 		{
 			name:     "multiple registrations for same include",
 			query:    "/foo?include=bar",
-			resource: &foo{ID: "foo-1"},
+			resource: &fooResource,
 			registrations: map[IncludeName][]IncludeFunc{
 				IncludeName("bar"): {
 					func(_ context.Context, v any) ([]any, error) {
-						return []any{&bar{ID: "bar-1"}}, nil
+						return []any{&barResource}, nil
 					},
 					func(_ context.Context, v any) ([]any, error) {
-						return []any{&bar{ID: "bar-2"}}, nil
+						return []any{&barResource2}, nil
 					},
 				},
 			},
-			want: []any{&bar{ID: "bar-1"}, &bar{ID: "bar-2"}},
+			want: []any{&barResource, &barResource2},
 		},
 		{
 			name:     "registered func returns nil",
 			query:    "/?include=bar",
-			resource: &foo{ID: "foo-1"},
+			resource: &fooResource,
 			registrations: map[IncludeName][]IncludeFunc{
 				IncludeName("bar"): {
 					func(_ context.Context, v any) ([]any, error) {
@@ -141,5 +148,4 @@ func TestIncluder(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-
 }

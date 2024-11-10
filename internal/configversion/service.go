@@ -75,7 +75,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOptions) (*ConfigurationVersion, error) {
+func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOpt
 	return cv, nil
 }
 
-func (s *Service) List(ctx context.Context, workspaceID string, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (s *Service) List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (s *Service) List(ctx context.Context, workspaceID string, opts ListOptions
 	return cvl, nil
 }
 
-func (s *Service) Get(ctx context.Context, cvID string) (*ConfigurationVersion, error) {
+func (s *Service) Get(ctx context.Context, cvID resource.ID) (*ConfigurationVersion, error) {
 	subject, err := s.canAccess(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (s *Service) Get(ctx context.Context, cvID string) (*ConfigurationVersion, 
 	return cv, nil
 }
 
-func (s *Service) GetLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error) {
+func (s *Service) GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID string) (*Configura
 	return cv, nil
 }
 
-func (s *Service) Delete(ctx context.Context, cvID string) error {
+func (s *Service) Delete(ctx context.Context, cvID resource.ID) error {
 	subject, err := s.canAccess(ctx, rbac.DeleteConfigurationVersionAction, cvID)
 	if err != nil {
 		return err
@@ -155,7 +155,7 @@ func (s *Service) Delete(ctx context.Context, cvID string) error {
 	return nil
 }
 
-func (s *Service) canAccess(ctx context.Context, action rbac.Action, cvID string) (authz.Subject, error) {
+func (s *Service) canAccess(ctx context.Context, action rbac.Action, cvID resource.ID) (authz.Subject, error) {
 	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		return nil, err

@@ -44,7 +44,7 @@ func TestIntegration_WorkspaceCLI(t *testing.T) {
 	})
 	require.NoError(t, err)
 	out = daemon.otfcli(t, ctx, "workspaces", "edit", "--organization", org.Name,
-		ws1.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID)
+		ws1.Name, "--execution-mode", "agent", "--agent-pool-id", pool.ID.String())
 	assert.Equal(t, "updated workspace\n", out)
 	assert.Equal(t, workspace.AgentExecutionMode, daemon.getWorkspace(t, ctx, ws1.ID).ExecutionMode)
 

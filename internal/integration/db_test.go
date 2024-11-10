@@ -50,7 +50,7 @@ func TestTx(t *testing.T) {
 
 	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
 		err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
-			ID:                         sql.String(org.ID),
+			ID:                         org.ID,
 			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
 			Name:                       sql.String(org.Name),
@@ -67,22 +67,22 @@ func TestTx(t *testing.T) {
 
 		// this should succeed because it is using the same querier from the
 		// same tx
-		_, err = q.FindOrganizationByID(txCtx, sql.String(org.ID))
+		_, err = q.FindOrganizationByID(txCtx, org.ID)
 		assert.NoError(t, err)
 
 		// this should succeed because it is using the same ctx from the same tx
-		_, err = db.Querier(txCtx).FindOrganizationByID(txCtx, sql.String(org.ID))
+		_, err = db.Querier(txCtx).FindOrganizationByID(txCtx, org.ID)
 		assert.NoError(t, err)
 
 		err = db.Tx(txCtx, func(ctx context.Context, q *sqlc.Queries) error {
 			// this should succeed because it is using a child tx via the
 			// querier
-			_, err = q.FindOrganizationByID(ctx, sql.String(org.ID))
+			_, err = q.FindOrganizationByID(ctx, org.ID)
 			assert.NoError(t, err)
 
 			// this should succeed because it is using a child tx via the
 			// context
-			_, err = db.Querier(ctx).FindOrganizationByID(ctx, sql.String(org.ID))
+			_, err = db.Querier(ctx).FindOrganizationByID(ctx, org.ID)
 			assert.NoError(t, err)
 
 			return nil
@@ -90,7 +90,7 @@ func TestTx(t *testing.T) {
 		require.NoError(t, err)
 
 		// this should fail because it is using a different ctx
-		_, err = db.Querier(ctx).FindOrganizationByID(txCtx, sql.String(org.ID))
+		_, err = db.Querier(ctx).FindOrganizationByID(txCtx, org.ID)
 		assert.ErrorIs(t, err, pgx.ErrNoRows)
 
 		return nil

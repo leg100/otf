@@ -1,10 +1,13 @@
-package internal
+package logs
 
 import (
 	"context"
+	"fmt"
 	"html/template"
 
 	term2html "github.com/buildkite/terminal-to-html"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const (
@@ -15,31 +18,46 @@ const (
 type (
 	// Chunk is a section of logs for a phase.
 	Chunk struct {
-		ID     string    `json:"id"`     // Uniquely identifies the chunk.
-		RunID  string    `json:"run_id"` // ID of run that generated the chunk
-		Phase  PhaseType `json:"phase"`  // Phase that generated the chunk
-		Offset int       `json:"offset"` // Position within logs.
-		Data   []byte    `json:"data"`   // The log data
+		resource.ID `json:"id"` // Uniquely identifies the chunk.
+
+		RunID  resource.ID        `json:"run_id"` // ID of run that generated the chunk
+		Phase  internal.PhaseType `json:"phase"`  // Phase that generated the chunk
+		Offset int                `json:"offset"` // Position within logs.
+		Data   []byte             `json:"data"`   // The log data
 	}
 
 	PutChunkOptions struct {
-		RunID  string    `schema:"run_id,required"`
-		Phase  PhaseType `schema:"phase,required"`
-		Offset int       `schema:"offset,required"`
+		RunID  resource.ID        `schema:"run_id,required"`
+		Phase  internal.PhaseType `schema:"phase,required"`
+		Offset int                `schema:"offset,required"`
 		Data   []byte
 	}
 
 	GetChunkOptions struct {
-		RunID  string    `schema:"run_id"`
-		Phase  PhaseType `schema:"phase"`
-		Limit  int       `schema:"limit"`  // size of the chunk to retrieve
-		Offset int       `schema:"offset"` // position in overall data to seek from.
+		RunID  resource.ID        `schema:"run_id"`
+		Phase  internal.PhaseType `schema:"phase"`
+		Limit  int                `schema:"limit"`  // size of the chunk to retrieve
+		Offset int                `schema:"offset"` // position in overall data to seek from.
 	}
 
 	PutChunkService interface {
 		PutChunk(ctx context.Context, opts PutChunkOptions) error
 	}
 )
+
+func newChunk(opts PutChunkOptions) (Chunk, error) {
+	if len(opts.Data) == 0 {
+		return Chunk{}, fmt.Errorf("cowardly refusing to create empty log chunk")
+	}
+	chunk := Chunk{
+		ID:     resource.NewID(resource.ChunkKind),
+		RunID:  opts.RunID,
+		Phase:  opts.Phase,
+		Offset: opts.Offset,
+		Data:   opts.Data,
+	}
+	return chunk, nil
+}
 
 // Cut returns a new, smaller chunk.
 func (c Chunk) Cut(opts GetChunkOptions) Chunk {

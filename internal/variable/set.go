@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
 	// VariableSet is a set of variables
 	VariableSet struct {
-		ID           string
+		ID           resource.ID
 		Name         string
 		Description  string
 		Global       bool
-		Workspaces   []string // workspace IDs
-		Organization string   // org name
+		Workspaces   []resource.ID
+		Organization string // org name
 		Variables    []*Variable
 	}
 
@@ -23,20 +23,20 @@ type (
 		Name        string
 		Description string
 		Global      bool
-		Workspaces  []string // workspace IDs
+		Workspaces  []resource.ID
 	}
 
 	UpdateVariableSetOptions struct {
 		Name        *string
 		Description *string
 		Global      *bool
-		Workspaces  []string // workspace IDs
+		Workspaces  []resource.ID
 	}
 )
 
 func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
 	return &VariableSet{
-		ID:           internal.NewID("varset"),
+		ID:           resource.NewID(resource.VariableSetKind),
 		Name:         opts.Name,
 		Description:  opts.Description,
 		Global:       opts.Global,
@@ -46,7 +46,7 @@ func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, e
 
 func (s *VariableSet) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", s.ID),
+		slog.String("id", s.ID.String()),
 		slog.String("name", s.Name),
 		slog.String("organization", s.Organization),
 		slog.Bool("global", s.Global),
@@ -66,7 +66,7 @@ func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVa
 	return v, nil
 }
 
-func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID resource.ID, opts UpdateVariableOptions) (*Variable, error) {
 	v := s.getVariable(variableID)
 	if v == nil {
 		return nil, fmt.Errorf("cannot find variable %s in set", v.ID)
@@ -99,7 +99,7 @@ func (s *VariableSet) updateProperties(organizationSets []*VariableSet, opts Upd
 	return nil
 }
 
-func (s *VariableSet) getVariable(variableID string) *Variable {
+func (s *VariableSet) getVariable(variableID resource.ID) *Variable {
 	for _, v := range s.Variables {
 		if v.ID == variableID {
 			return v

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -35,20 +36,20 @@ type (
 		//
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		//
-		// key is the run ID.
-		Cache map[string]vcs.Status
+		// Key is the run ID.
+		Cache map[resource.ID]vcs.Status
 	}
 
 	reporterWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	reporterConfigClient interface {
-		Get(ctx context.Context, id string) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	reporterRunClient interface {
@@ -148,7 +149,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
-		TargetURL:   r.URL(paths.Run(run.ID)),
+		TargetURL:   r.URL(paths.Run(run.ID.String())),
 	})
 	if err != nil {
 		return err

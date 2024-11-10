@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -49,8 +49,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string `schema:"team_id,required"`
-		Username string `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -67,8 +67,8 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string `schema:"team_id,required"`
-		Username string `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -110,7 +110,7 @@ func (a *tfe) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
-	teamID, err := decode.Param("team_id", r)
+	teamID, err := decode.ID("team_id", r)
 	if err != nil {
 		return err
 	}
@@ -152,9 +152,9 @@ func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	membership := &types.OrganizationMembership{
-		ID: internal.NewID("ou"),
+		ID: resource.NewID("ou"),
 		User: &types.User{
-			ID: internal.NewID("user"),
+			ID: resource.NewID("user"),
 		},
 		Organization: &types.Organization{
 			Name: org,

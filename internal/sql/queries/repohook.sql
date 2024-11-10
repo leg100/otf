@@ -18,7 +18,7 @@ WITH inserted AS (
 SELECT
     w.repohook_id,
     w.vcs_id,
-    w.vcs_provider_id,
+    v.vcs_provider_id,
     w.secret,
     w.repo_path,
     v.vcs_kind

@@ -7,15 +7,16 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		ID           string    `jsonapi:"primary,teams"`
-		CreatedAt    time.Time `jsonapi:"attribute" json:"created-at"`
-		Name         string    `jsonapi:"attribute" json:"name"`
-		Organization string    `jsonapi:"attribute" json:"organization"`
+		ID           resource.ID `jsonapi:"primary,teams"`
+		CreatedAt    time.Time   `jsonapi:"attribute" json:"created-at"`
+		Name         string      `jsonapi:"attribute" json:"name"`
+		Organization string      `jsonapi:"attribute" json:"organization"`
 
 		Access OrganizationAccess
 
@@ -87,7 +88,7 @@ func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 	}
 
 	team := &Team{
-		ID:           internal.NewID("team"),
+		ID:           resource.NewID("team"),
 		Name:         *opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: organization,
@@ -132,7 +133,7 @@ func (t *Team) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (t *Team) CanAccessTeam(action rbac.Action, id string) bool {
+func (t *Team) CanAccessTeam(action rbac.Action, id resource.ID) bool {
 	// team can access self
 	return t.ID == id
 }

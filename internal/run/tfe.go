@@ -19,6 +19,8 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+var tfeUser = resource.MustHardcodeID(resource.UserKind, "123")
+
 type tfe struct {
 	*Service
 	internal.Signer
@@ -102,7 +104,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -179,7 +181,7 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 }
 
 func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -194,7 +196,7 @@ func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -209,7 +211,7 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -228,7 +230,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("id", r)
+	id, err := decode.ID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -246,14 +248,14 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
 func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("plan_id", r)
+	id, err := decode.ID("plan_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := a.Get(r.Context(), internal.ConvertID(id, "run"))
+	run, err := a.Get(r.Context(), resource.ConvertID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -272,14 +274,14 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
 func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("plan_id", r)
+	id, err := decode.ID("plan_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := a.GetPlanFile(r.Context(), internal.ConvertID(id, "run"), PlanFormatJSON)
+	json, err := a.GetPlanFile(r.Context(), resource.ConvertID(id, "run"), PlanFormatJSON)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -291,14 +293,14 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("apply_id", r)
+	id, err := decode.ID("apply_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := a.Get(r.Context(), internal.ConvertID(id, "run"))
+	run, err := a.Get(r.Context(), resource.ConvertID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -425,11 +427,11 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		TargetAddrs:      from.TargetAddrs,
 		TerraformVersion: from.TerraformVersion,
 		// Relations
-		Plan:  &types.Plan{ID: internal.ConvertID(from.ID, "plan")},
-		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
+		Plan:  &types.Plan{ID: resource.ConvertID(from.ID, "plan")},
+		Apply: &types.Apply{ID: resource.ConvertID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &types.User{
-			ID:       "user-123",
+			ID:       tfeUser,
 			Username: "otf",
 		},
 		ConfigurationVersion: &types.ConfigurationVersion{
@@ -442,7 +444,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		to.Variables[i] = types.RunVariable{Key: from.Key, Value: from.Value}
 	}
 	if from.CostEstimationEnabled {
-		to.CostEstimate = &types.CostEstimate{ID: internal.ConvertID(from.ID, "ce")}
+		to.CostEstimate = &types.CostEstimate{ID: resource.ConvertID(from.ID, "ce")}
 	}
 	//
 	// go-tfe integration tests expect this parameter to be set even if a run
@@ -470,7 +472,7 @@ func (a *tfe) toPlan(plan Phase, r *http.Request) (*types.Plan, error) {
 	}
 
 	return &types.Plan{
-		ID:               internal.ConvertID(plan.RunID, "plan"),
+		ID:               resource.ConvertID(plan.RunID, "plan"),
 		HasChanges:       plan.HasChanges(),
 		LogReadURL:       logURL,
 		ResourceReport:   a.toResourceReport(plan.ResourceReport),
@@ -486,7 +488,7 @@ func (a *tfe) toApply(apply Phase, r *http.Request) (*types.Apply, error) {
 	}
 
 	return &types.Apply{
-		ID:               internal.ConvertID(apply.RunID, "apply"),
+		ID:               resource.ConvertID(apply.RunID, "apply"),
 		LogReadURL:       logURL,
 		ResourceReport:   a.toResourceReport(apply.ResourceReport),
 		Status:           string(apply.Status),

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -18,10 +19,11 @@ import (
 
 func TestListModules(t *testing.T) {
 	h := newTestWebHandlers(t, withMod(&Module{}))
+	user := &user.User{ID: resource.NewID(resource.UserKind)}
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{ID: "janitor"}))
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 	w := httptest.NewRecorder()
 	h.list(w, r)
 	if !assert.Equal(t, 200, w.Code) {
@@ -135,7 +137,7 @@ func TestWeb_Publish(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Module(mod.ID), redirect.Path)
+		assert.Equal(t, paths.Module(mod.ID.String()), redirect.Path)
 	}
 }
 

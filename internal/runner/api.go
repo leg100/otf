@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
@@ -22,9 +23,14 @@ type (
 		Status RunnerStatus `json:"status"`
 	}
 
+	startJobParams struct {
+		JobID resource.ID `json:"job_id"`
+	}
+
 	finishJobParams struct {
-		JobSpec
 		finishJobOptions
+
+		JobID resource.ID `json:"job_id"`
 	}
 )
 
@@ -69,14 +75,14 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	// retrieve runner, which contains ID of calling agent
 	runner, err := runnerFromContext(r.Context())
-	if err != nil || runner.ID == "" {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	jobs, err := a.Service.getJobs(r.Context(), runner.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -87,14 +93,14 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 	// retrieve runner, which contains ID of calling agent
 	runner, err := runnerFromContext(r.Context())
-	if err != nil || runner.ID == "" {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	var params updateAgentStatusParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -110,9 +116,9 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.Param("pool_id", r)
+	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts CreateAgentTokenOptions
@@ -129,12 +135,12 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
-	var spec JobSpec
-	if err := json.NewDecoder(r.Body).Decode(&spec); err != nil {
-		tfeapi.Error(w, err)
+	var params startJobParams
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	token, err := a.Service.startJob(r.Context(), spec)
+	token, err := a.Service.startJob(r.Context(), params.JobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -145,10 +151,10 @@ func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
 func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 	var params finishJobParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		tfeapi.Error(w, err)
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	err := a.Service.finishJob(r.Context(), params.JobSpec, params.finishJobOptions)
+	err := a.Service.finishJob(r.Context(), params.JobID, params.finishJobOptions)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -41,7 +41,7 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     string                  `jsonapi:"primary,runs"`
+		ID                     resource.ID             `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
 		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
@@ -58,8 +58,8 @@ type (
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
 		Source                 Source                  `jsonapi:"attribute" json:"source"`
 		Status                 Status                  `jsonapi:"attribute" json:"status"`
-		WorkspaceID            string                  `jsonapi:"attribute" json:"workspace_id"`
-		ConfigurationVersionID string                  `jsonapi:"attribute" json:"configuration_version_id"`
+		WorkspaceID            resource.ID             `jsonapi:"attribute" json:"workspace_id"`
+		ConfigurationVersionID resource.ID             `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
 		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
@@ -104,7 +104,7 @@ type (
 		// Specifies the configuration version to use for this run. If the
 		// configuration version ID is nil, the run will be created using the
 		// workspace's latest configuration version.
-		ConfigurationVersionID *string
+		ConfigurationVersionID *resource.ID
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
@@ -125,7 +125,7 @@ type (
 	ListOptions struct {
 		resource.PageOptions
 		// Filter by workspace ID
-		WorkspaceID *string `schema:"workspace_id,omitempty"`
+		WorkspaceID *resource.ID `schema:"workspace_id,omitempty"`
 		// Filter by organization name
 		Organization *string `schema:"organization_name,omitempty"`
 		// Filter by workspace name
@@ -144,15 +144,15 @@ type (
 
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
-		Organization *string `schema:"organization_name,omitempty"` // filter by organization name
-		WorkspaceID  *string `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
+		Organization *string      `schema:"organization_name,omitempty"` // filter by organization name
+		WorkspaceID  *resource.ID `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
 
 // newRun creates a new run with defaults.
 func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
-		ID:                     internal.NewID("run"),
+		ID:                     resource.NewID(resource.RunKind),
 		CreatedAt:              internal.CurrentTimestamp(opts.now),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,
@@ -202,8 +202,6 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	}
 	return &run
 }
-
-func (r *Run) String() string { return r.ID }
 
 func (r *Run) Queued() bool {
 	return r.Status == RunPlanQueued || r.Status == RunApplyQueued
@@ -303,6 +301,10 @@ func (r *Run) InProgress() bool {
 	default:
 		return false
 	}
+}
+
+func (r *Run) String() string {
+	return r.ID.String()
 }
 
 // Cancel run. Depending upon whether the run is currently in-progress, the run

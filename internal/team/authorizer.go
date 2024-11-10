@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // authorizer authorizes access to a team
@@ -14,7 +15,7 @@ type authorizer struct {
 	logr.Logger
 }
 
-func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, teamID string) (authz.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, teamID resource.ID) (authz.Subject, error) {
 	subj, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

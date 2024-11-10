@@ -3,9 +3,8 @@ package module
 
 import (
 	"errors"
-	"time"
-
 	"log/slog"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
@@ -32,7 +31,7 @@ var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
 	Module struct {
-		ID           string
+		ID           resource.ID
 		CreatedAt    time.Time
 		UpdatedAt    time.Time
 		Name         string
@@ -46,8 +45,8 @@ type (
 	ModuleStatus string
 
 	ModuleVersion struct {
-		ID          string
-		ModuleID    string
+		ID          resource.ID
+		ModuleID    resource.ID
 		Version     string
 		CreatedAt   time.Time
 		UpdatedAt   time.Time
@@ -60,10 +59,10 @@ type (
 
 	PublishOptions struct {
 		Repo          Repo
-		VCSProviderID string
+		VCSProviderID resource.ID
 	}
 	PublishVersionOptions struct {
-		ModuleID string
+		ModuleID resource.ID
 		Version  string
 		Ref      string
 		Repo     Repo
@@ -75,11 +74,11 @@ type (
 		Organization string
 	}
 	CreateModuleVersionOptions struct {
-		ModuleID string
+		ModuleID resource.ID
 		Version  string
 	}
 	UpdateModuleVersionStatusOptions struct {
-		ID     string
+		ID     resource.ID
 		Status ModuleVersionStatus
 		Error  string
 	}
@@ -99,7 +98,7 @@ type (
 
 func newModule(opts CreateOptions) *Module {
 	return &Module{
-		ID:           internal.NewID("mod"),
+		ID:           resource.NewID(resource.ModuleKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		UpdatedAt:    internal.CurrentTimestamp(nil),
 		Name:         opts.Name,
@@ -111,7 +110,7 @@ func newModule(opts CreateOptions) *Module {
 
 func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
-		ID:        internal.NewID("modver"),
+		ID:        resource.NewID(resource.ModuleVersionKind),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
 		ModuleID:  opts.ModuleID,
@@ -124,7 +123,7 @@ func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 
 func (m *Module) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", m.ID),
+		slog.String("id", m.ID.String()),
 		slog.String("organization", m.Organization),
 		slog.String("name", m.Name),
 		slog.String("provider", m.Provider),
@@ -167,8 +166,8 @@ func (m *Module) Latest() *ModuleVersion {
 
 func (v *ModuleVersion) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
-		slog.String("module_id", v.ModuleID),
+		slog.String("id", v.ID.String()),
+		slog.String("module_id", v.ModuleID.String()),
 		slog.String("version", v.Version),
 		slog.String("status", string(v.Status)),
 	}

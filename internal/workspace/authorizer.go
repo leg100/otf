@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // authorizer authorizes access to a workspace
@@ -16,7 +17,7 @@ type authorizer struct {
 	db *pgdb
 }
 
-func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID string) (authz.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID resource.ID) (authz.Subject, error) {
 	subj, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

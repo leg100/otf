@@ -49,14 +49,14 @@ func TestIntegration_RunCancel(t *testing.T) {
 
 	// start an external agent (it's the only way to specify a separate bin
 	// directory currently).
-	agent, _ := daemon.startAgent(t, ctx, org.Name, "", "", runner.Config{TerraformBinDir: bins})
+	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", runner.Config{TerraformBinDir: bins})
 
 	// create workspace specifying that it use an external agent.
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:          internal.String("ws-1"),
 		Organization:  internal.String(org.Name),
 		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
-		AgentPoolID:   internal.String(agent.AgentPool.ID),
+		AgentPoolID:   &agent.AgentPool.ID,
 	})
 	require.NoError(t, err)
 

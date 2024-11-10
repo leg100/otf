@@ -109,8 +109,6 @@ SELECT
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
-LEFT JOIN users ul ON w.lock_username = ul.username
-LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE rc.vcs_provider_id = sqlc.arg('vcs_provider_id')
@@ -187,8 +185,6 @@ SELECT
     rc.vcs_provider_id,
     rc.repo_path
 FROM workspaces w
-LEFT JOIN users ul ON w.lock_username = ul.username
-LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = sqlc.arg('id')
@@ -239,7 +235,7 @@ RETURNING workspace_id;
 -- name: UpdateWorkspaceLockByID :exec
 UPDATE workspaces
 SET
-    lock_username = sqlc.arg('username'),
+    lock_user_id = sqlc.arg('user_id'),
     lock_run_id = sqlc.arg('run_id')
 WHERE workspace_id = sqlc.arg('workspace_id');
 
