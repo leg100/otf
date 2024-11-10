@@ -19,6 +19,8 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
+var tfeUser = resource.MustHardcodeID(resource.UserKind, "123")
+
 type tfe struct {
 	*Service
 	internal.Signer
@@ -429,7 +431,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		Apply: &types.Apply{ID: resource.ConvertID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &types.User{
-			ID:       resource.ID{Kind: resource.UserKind, ID: "123"},
+			ID:       tfeUser,
 			Username: "otf",
 		},
 		ConfigurationVersion: &types.ConfigurationVersion{

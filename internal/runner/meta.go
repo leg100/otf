@@ -61,7 +61,7 @@ type registerOptions struct {
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
 	// versions.
-	CurrentJobs []JobSpec `json:"current-jobs,omitempty"`
+	CurrentJobs []resource.ID `json:"current-jobs,omitempty"`
 }
 
 func (m *RunnerMeta) register(opts registerOptions) error {

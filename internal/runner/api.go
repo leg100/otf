@@ -82,7 +82,7 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 
 	jobs, err := a.Service.getJobs(r.Context(), runner.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 
 	var params updateAgentStatusParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (a *api) updateAgentStatus(w http.ResponseWriter, r *http.Request) {
 func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts CreateAgentTokenOptions
@@ -135,12 +135,12 @@ func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
-	jobID, err := decode.ID("job_id", r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	var params startJobParams
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	token, err := a.Service.startJob(r.Context(), jobID)
+	token, err := a.Service.startJob(r.Context(), params.JobID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -151,7 +151,7 @@ func (a *api) startJob(w http.ResponseWriter, r *http.Request) {
 func (a *api) finishJob(w http.ResponseWriter, r *http.Request) {
 	var params finishJobParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		tfeapi.Error(w, err)
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	err := a.Service.finishJob(r.Context(), params.JobID, params.finishJobOptions)

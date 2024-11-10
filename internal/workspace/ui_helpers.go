@@ -51,7 +51,7 @@ func (h *uiHelpers) lockButtonHelper(
 		// Report who/what has locked the workspace. If it is a user then fetch
 		// their username.
 		var lockedBy string
-		if ws.Lock.Kind == resource.UserKind {
+		if ws.Lock.Kind() == resource.UserKind {
 			lockUser, err := h.service.GetUser(ctx, userpkg.UserSpec{UserID: ws.Lock})
 			if err != nil {
 				return LockButton{}, nil

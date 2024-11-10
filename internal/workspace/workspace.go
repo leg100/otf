@@ -282,7 +282,7 @@ func (ws *Workspace) Locked() bool {
 
 // Enlock locks the workspace with the given ID. The ID must be either a run or user ID.
 func (ws *Workspace) Enlock(id resource.ID) error {
-	switch id.Kind {
+	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
 		return errors.New("workspace can only be locked by a user or a run")
@@ -293,7 +293,7 @@ func (ws *Workspace) Enlock(id resource.ID) error {
 		return nil
 	}
 	// a run can replace another run holding a lock
-	if ws.Lock.Kind == resource.RunKind && id.Kind == resource.RunKind {
+	if ws.Lock.Kind() == resource.RunKind && id.Kind() == resource.RunKind {
 		ws.Lock = &id
 		return nil
 	}
@@ -303,7 +303,7 @@ func (ws *Workspace) Enlock(id resource.ID) error {
 // Unlock the workspace with the given ID. The ID must be either a run or user
 // ID.
 func (ws *Workspace) Unlock(id resource.ID, force bool) error {
-	switch id.Kind {
+	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
 		return errors.New("workspace can only be unlocked by a user or a run")
@@ -321,7 +321,7 @@ func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 		ws.Lock = nil
 		return nil
 	}
-	if ws.Lock.Kind == resource.RunKind {
+	if ws.Lock.Kind() == resource.RunKind {
 		return ErrWorkspaceLockedByRun
 	}
 	return ErrWorkspaceLockedByDifferentUser

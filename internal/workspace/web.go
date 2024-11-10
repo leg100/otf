@@ -426,6 +426,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	poolsUrl := paths.PoolsWorkspace(workspaceID.String())
+	if workspace.AgentPoolID != nil {
+		poolsUrl += "?agent_pool_id=" + workspace.AgentPoolID.String()
+	}
+
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
 		Assigned           []perm
@@ -442,6 +447,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerAlways   string
 		VCSTriggerPatterns string
 		VCSTriggerTags     string
+		PoolsURL           string
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID.String(), workspace),
 		Assigned:      perms,
@@ -463,13 +469,14 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerTags:     VCSTriggerTags,
 		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		CanDeleteWorkspace: user.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
+		PoolsURL:           poolsUrl,
 	})
 }
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID       resource.ID `schema:"agent_pool_id"`
-		AutoApply         bool        `schema:"auto_apply"`
+		AgentPoolID       *resource.ID `schema:"agent_pool_id"`
+		AutoApply         bool         `schema:"auto_apply"`
 		Name              string
 		Description       string
 		ExecutionMode     ExecutionMode `schema:"execution_mode"`
@@ -532,7 +539,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	// only set agent pool ID if execution mode is set to agent
 	if params.ExecutionMode == AgentExecutionMode {
-		opts.AgentPoolID = &params.AgentPoolID
+		opts.AgentPoolID = params.AgentPoolID
 	}
 
 	ws, err = h.client.Update(r.Context(), params.WorkspaceID, opts)

@@ -29,7 +29,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 			WorkspaceID: ws.ID,
 		}
 		if ws.Locked() {
-			switch ws.Lock.Kind {
+			switch ws.Lock.Kind() {
 			case resource.RunKind:
 				params.RunID = ws.Lock
 			case resource.UserKind:

@@ -27,19 +27,10 @@ const (
 	JobCanceled    JobStatus = "canceled"
 )
 
-// JobSpec uniquely identifies a job.
-type JobSpec struct {
-	// ID of the run that this job is for.
-	RunID resource.ID `json:"run_id"`
-	// Phase of run that this job is for.
-	Phase internal.PhaseType `json:"phase"`
-}
-
 // Job is the unit of work corresponding to a run phase. A job is allocated to
 // a runner, which then executes the work through to completion.
 type Job struct {
-	resource.ID `jsonapi:"primary,jobs"`
-
+	ID resource.ID `jsonapi:"primary,jobs"`
 	// ID of the run that this job is for.
 	RunID resource.ID `jsonapi:"attribute" json:"run_id"`
 	// Phase of run that this job is for.
@@ -93,6 +84,7 @@ func (j *Job) Organizations() []string { return nil }
 
 func (j *Job) IsSiteAdmin() bool   { return false }
 func (j *Job) IsOwner(string) bool { return false }
+func (j *Job) String() string      { return j.ID.String() }
 
 func (j *Job) CanAccessSite(action rbac.Action) bool {
 	return false

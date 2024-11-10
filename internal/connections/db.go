@@ -22,13 +22,13 @@ func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 		RepoPath:      sql.String(opts.RepoPath),
 	}
 
-	switch opts.ResourceID.Kind {
+	switch opts.ResourceID.Kind() {
 	case resource.WorkspaceKind:
 		params.WorkspaceID = &opts.ResourceID
 	case resource.ModuleKind:
 		params.ModuleID = &opts.ResourceID
 	default:
-		return fmt.Errorf("unsupported connection kind: %s", opts.ResourceID.Kind)
+		return fmt.Errorf("unsupported connection kind: %s", opts.ResourceID.Kind())
 	}
 
 	if err := q.InsertRepoConnection(ctx, params); err != nil {
@@ -39,7 +39,7 @@ func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 
 func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err error) {
 	q := db.Querier(ctx)
-	switch opts.ResourceID.Kind {
+	switch opts.ResourceID.Kind() {
 	case resource.WorkspaceKind:
 		_, err = q.DeleteWorkspaceConnectionByID(ctx, &opts.ResourceID)
 	case resource.ModuleKind:

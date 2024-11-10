@@ -21,7 +21,7 @@ const (
 var (
 	// SiteAdminID is the hardcoded user id for the site admin user. The ID must
 	// be the same as the hardcoded value in the database migrations.
-	SiteAdminID               = resource.ID{Kind: resource.UserKind, ID: "36atQC2oGQng7pVz"}
+	SiteAdminID               = resource.MustHardcodeID(resource.UserKind, "36atQC2oGQng7pVz")
 	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
 	_           authz.Subject = (*User)(nil)
 )

@@ -106,7 +106,7 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, resource.UserKind, q.ws.Lock.Kind)
+		assert.Equal(t, resource.UserKind, q.ws.Lock.Kind())
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
 		err = ws.Unlock(userID, false)
@@ -114,7 +114,7 @@ func TestQueue(t *testing.T) {
 		err = q.handleWorkspace(ctx, ws)
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, resource.RunKind, q.ws.Lock.Kind)
+		assert.Equal(t, resource.RunKind, q.ws.Lock.Kind())
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {

@@ -205,7 +205,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			}
 		}()
 
-		// fetch jobs allocated to this runner and launch workers to do jobs; also
+		// fetch jobs allocated to this runner and spawn operations to do jobs; also
 		// handle cancelation signals for jobs
 		for {
 			processJobs := func() (err error) {
@@ -222,15 +222,15 @@ func (r *Runner) Start(ctx context.Context) error {
 						token, err := r.client.startJob(ctx, j.ID)
 						if err != nil {
 							if ctx.Err() != nil {
+								// context cancelled means process is shutting
+								// down.
 								return nil
 							}
-							r.logger.Error(err, "starting job and retrieving job token")
-							continue
+							return fmt.Errorf("starting job and retrieving job token: %w", err)
 						}
 						op, err := r.spawner.newOperation(j, token)
 						if err != nil {
-							r.logger.Error(err, "spawning job operation")
-							continue
+							return fmt.Errorf("spawning job operation: %w", err)
 						}
 						// check operation in with the terminator, so that if a cancelation signal
 						// arrives it can be handled accordingly for the duration of the operation.
@@ -250,7 +250,7 @@ func (r *Runner) Start(ctx context.Context) error {
 			}
 			policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 			_ = backoff.RetryNotify(processJobs, policy, func(err error, next time.Duration) {
-				r.logger.Error(err, "waiting for next job", "backoff", next)
+				r.logger.Error(err, "processing jobs", "backoff", next)
 			})
 			// only stop retrying if context is canceled
 			if ctx.Err() != nil {

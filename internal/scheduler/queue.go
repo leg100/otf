@@ -149,7 +149,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *otfrun.Run) error {
 
 	// if workspace is locked by a user then do not schedule;
 	// instead wait for an unlock event to arrive.
-	if q.ws.Lock != nil && q.ws.Lock.Kind == resource.UserKind {
+	if q.ws.Lock != nil && q.ws.Lock.Kind() == resource.UserKind {
 		q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)
 		return nil
 	}

@@ -21,19 +21,28 @@ var (
 
 // ID uniquely identifies an OTF resource.
 type ID struct {
-	Kind Kind
-	ID   string
+	kind Kind
+	id   string
 }
 
 // NewID constructs a resource ID
 func NewID(kind Kind) ID {
-	return ID{Kind: kind, ID: GenerateRandomStringFromAlphabet(16, base58)}
+	return ID{kind: kind, id: GenerateRandomStringFromAlphabet(16, base58)}
 }
 
 // ConvertID converts an ID for use with a different resource kind, e.g. convert
 // run-123 to plan-123.
 func ConvertID(id ID, to Kind) ID {
-	return ID{Kind: to, ID: id.ID}
+	return ID{kind: to, id: id.id}
+}
+
+func MustHardcodeID(kind Kind, suffix string) ID {
+	s := fmt.Sprintf("%s-%s", kind, suffix)
+	id, err := ParseID(s)
+	if err != nil {
+		panic("failed to parse hardcoded ID: " + err.Error())
+	}
+	return id
 }
 
 // ParseID parses the ID from a string representation.
@@ -43,22 +52,32 @@ func ParseID(s string) (ID, error) {
 		return ID{}, fmt.Errorf("malformed ID: %s", s)
 	}
 	kind := parts[0]
+	if len(kind) < 2 {
+		return ID{}, fmt.Errorf("kind must be at least 2 characters: %s", s)
+	}
 	id := parts[1]
-	return ID{Kind: Kind(kind), ID: id}, nil
+	if len(id) < 1 {
+		return ID{}, fmt.Errorf("id suffix must be at least 1 character: %s", s)
+	}
+	return ID{kind: Kind(kind), id: id}, nil
 }
 
 func (id ID) String() string {
-	return fmt.Sprintf("%s-%s", id.Kind, id.ID)
+	return fmt.Sprintf("%s-%s", id.kind, id.id)
 }
 
-func (id *ID) MarshalText() ([]byte, error) {
-	if id == nil {
-		return nil, nil
-	}
+func (id ID) Kind() Kind {
+	return id.kind
+}
+
+func (id ID) MarshalText() ([]byte, error) {
 	return []byte(id.String()), nil
 }
 
 func (id *ID) UnmarshalText(text []byte) error {
+	if text == nil {
+		return nil
+	}
 	s := string(text)
 	x, err := ParseID(s)
 	if err != nil {

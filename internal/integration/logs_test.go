@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -168,20 +167,14 @@ func TestClusterLogs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want1 := logs.Chunk{
-		ID:    testutils.ParseID(t, "1"),
-		RunID: run.ID,
-		Phase: internal.PlanPhase,
-		Data:  []byte("\x02hello"),
-	}
-	require.Equal(t, want1, <-sub)
+	got := <-sub
+	assert.Equal(t, run.ID, got.RunID)
+	assert.Equal(t, internal.PlanPhase, got.Phase)
+	assert.Equal(t, []byte("\x02hello"), got.Data)
 
-	want2 := logs.Chunk{
-		ID:     testutils.ParseID(t, "2"),
-		RunID:  run.ID,
-		Phase:  internal.PlanPhase,
-		Data:   []byte(" world\x03"),
-		Offset: 6,
-	}
-	require.Equal(t, want2, <-sub)
+	got = <-sub
+	assert.Equal(t, run.ID, got.RunID)
+	assert.Equal(t, internal.PlanPhase, got.Phase)
+	assert.Equal(t, []byte(" world\x03"), got.Data)
+	assert.Equal(t, 6, got.Offset)
 }
