@@ -75,7 +75,7 @@ func (id ID) MarshalText() ([]byte, error) {
 }
 
 func (id *ID) UnmarshalText(text []byte) error {
-	if text == nil {
+	if len(text) == 0 {
 		return nil
 	}
 	s := string(text)

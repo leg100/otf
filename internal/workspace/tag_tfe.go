@@ -120,7 +120,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.TagSpec
+	var params []*types.Tag
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return

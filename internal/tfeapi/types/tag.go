@@ -20,15 +20,21 @@ type (
 		Organization *Organization `jsonapi:"relationship" json:"organization"`
 	}
 
-	// TagSpec is owned by an organization and applied to workspaces. Used for
+	// Tag is owned by an organization and applied to workspaces. Used for
 	// grouping and search. Only one of ID or name must be specified.
-	TagSpec struct {
-		// Type is a public field utilized by JSON:API to set the resource type via
-		// the field tag.  It is not a user-defined value and does not need to be
-		// set.  https://jsonapi.org/format/#crud-creating
-		Type string `jsonapi:"primary,tags"`
-
-		ID   *resource.ID `jsonapi:"attribute" json:"id"`
+	Tag struct {
+		ID   *resource.ID `jsonapi:"primary,tags"`
 		Name string       `jsonapi:"attribute" json:"name,omitempty"`
 	}
 )
+
+// UnmarshalID helps datadog/jsonapi to unmarshal the ID in a serialized tag -
+// either the ID or the name is set, and datadog/jsonapi otherwise gets upset
+// when ID is unset.
+func (t *Tag) UnmarshalID(id string) error {
+	if id == "" {
+		return nil
+	}
+	t.ID = new(resource.ID)
+	return t.ID.UnmarshalText([]byte(id))
+}

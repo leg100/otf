@@ -163,3 +163,11 @@ actions:
 .PHONY: install-linter
 install-linter:
 	go install honnef.co/go/tools/cmd/staticcheck@latest
+
+.PHONY: debug
+debug:
+	dlv debug --headless --api-version=2 --listen=127.0.0.1:4300 ./cmd/otfd/main.go
+
+.PHONY: connect
+connect:
+	dlv connect 127.0.0.1:4300 .

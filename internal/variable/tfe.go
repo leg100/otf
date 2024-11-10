@@ -383,7 +383,7 @@ func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 	var params []*types.Workspace
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
-		tfeapi.Error(w, err)
+		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
 	workspaceIDs := make([]resource.ID, len(params))

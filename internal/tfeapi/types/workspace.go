@@ -228,7 +228,7 @@ type WorkspaceCreateOptions struct {
 
 	// A list of tags to attach to the workspace. If the tag does not already
 	// exist, it is created and added to the workspace.
-	Tags []*TagSpec `jsonapi:"relationship" json:"tags,omitempty"`
+	Tags []*Tag `jsonapi:"relationship" json:"tags,omitempty"`
 }
 
 // WorkspaceUpdateOptions represents the options for updating a workspace.
