@@ -227,7 +227,13 @@ func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMe
 }
 
 func (s *Service) getRunner(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
-	return s.db.get(ctx, runnerID)
+	runner, err := s.db.get(ctx, runnerID)
+	if err != nil {
+		s.Error(err, "retrieving runner", "runner_id", runnerID)
+		return nil, err
+	}
+	s.V(9).Info("retrieved runner", "runner", runner)
+	return runner, err
 }
 
 func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to RunnerStatus) error {
