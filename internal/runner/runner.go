@@ -117,8 +117,14 @@ func newRunner(
 func (r *Runner) Start(ctx context.Context) error {
 	r.logger.V(r.v).Info("starting runner", "version", internal.Version)
 
-	// initialize terminator
+	// Initialize terminator, which is responsible for terminating jobs in
+	// response to cancelation signals.
 	terminator := &terminator{mapping: make(map[resource.ID]cancelable)}
+
+	// Authenticate as unregistered runner with the registration endpoint. This
+	// is only necessary for the server runner; the agent runner relies on
+	// middleware to authenticate as an unregistered runner on the server.
+	ctx = authz.AddSubjectToContext(ctx, &unregistered{})
 
 	// register runner with server, which responds with an updated runner
 	// registrationMetadata, including a unique ID.
@@ -151,10 +157,10 @@ func (r *Runner) Start(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
+			r.logger.V(r.v).Info("sending final status update before shutting down")
+
 			if updateErr := r.client.updateStatus(ctx, registrationMetadata.ID, RunnerExited); updateErr != nil {
 				err = fmt.Errorf("sending final status update: %w", updateErr)
-			} else {
-				r.logger.V(r.v).Info("sent final status update", "status", "exited")
 			}
 		}()
 

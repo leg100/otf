@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/netip"
 	"time"
@@ -44,6 +43,8 @@ type RunnerMetaAgentPool struct {
 	Name string `json:"name"`
 	// Agent pool's organization.
 	OrganizationName string `json:"organization-name"`
+	// ID of agent token that was used to authenticate runner.
+	TokenID resource.ID `json:"token-id"`
 }
 
 type registerOptions struct {
@@ -64,20 +65,21 @@ type registerOptions struct {
 	CurrentJobs []resource.ID `json:"current-jobs,omitempty"`
 }
 
-func (m *RunnerMeta) register(opts registerOptions) error {
-	if m.ID != resource.EmptyID {
-		return errors.New("runner has already registered")
+// register registers an unregistered runner, constructing a RunnerMeta which
+// provides info about the newly registered runner.
+func register(runner *unregistered, opts registerOptions) (*RunnerMeta, error) {
+	meta := &RunnerMeta{
+		ID:        resource.NewID(resource.RunnerKind),
+		Name:      opts.Name,
+		Version:   opts.Version,
+		MaxJobs:   opts.Concurrency,
+		AgentPool: runner.pool,
 	}
-	m.ID = resource.NewID(resource.RunnerKind)
-	m.Name = opts.Name
-	m.Version = opts.Version
-	m.MaxJobs = opts.Concurrency
-
-	if err := m.setStatus(RunnerIdle, true); err != nil {
-		return err
+	if err := meta.setStatus(RunnerIdle, true); err != nil {
+		return nil, err
 	}
 	if opts.IPAddress != nil {
-		m.IPAddress = *opts.IPAddress
+		meta.IPAddress = *opts.IPAddress
 	} else {
 		// IP address not provided: try to get local IP address used for
 		// outbound comms, and if that fails, use localhost
@@ -85,10 +87,10 @@ func (m *RunnerMeta) register(opts registerOptions) error {
 		if err != nil {
 			ip = netip.IPv6Loopback()
 		}
-		m.IPAddress = ip
+		meta.IPAddress = ip
 	}
 
-	return nil
+	return meta, nil
 }
 
 func (m *RunnerMeta) setStatus(status RunnerStatus, ping bool) error {
@@ -138,6 +140,7 @@ func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 		slog.String("id", m.ID.String()),
 		slog.String("name", m.Name),
 		slog.String("organization", m.OrganizationName),
+		slog.String("token-id", m.TokenID.String()),
 	)
 }
 

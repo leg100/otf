@@ -1,9 +1,6 @@
 package runner
 
 import (
-	"context"
-
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/releases"
 )
@@ -24,13 +21,8 @@ type ServerRunnerOptions struct {
 	Jobs       operationJobsClient
 }
 
-// ServerRunner is a runner built into the otfd server prcess.
-type ServerRunner struct {
-	*Runner
-}
-
 // NewServerRunner constructs a server runner.
-func NewServerRunner(opts ServerRunnerOptions) (*ServerRunner, error) {
+func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 	daemon, err := newRunner(
 		opts.Logger,
 		opts.Runners,
@@ -53,15 +45,7 @@ func NewServerRunner(opts ServerRunnerOptions) (*ServerRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ServerRunner{Runner: daemon}, nil
-}
-
-// Start the server runner daemon.
-func (d *ServerRunner) Start(ctx context.Context) error {
-	// Authenticate as runner with server endpoints.
-	ctx = authz.AddSubjectToContext(ctx, d.RunnerMeta)
-
-	return d.Runner.Start(ctx)
+	return daemon, nil
 }
 
 type localOperationSpawner struct {

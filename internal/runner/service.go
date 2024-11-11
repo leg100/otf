@@ -24,10 +24,7 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-var (
-	ErrInvalidStateTransition   = errors.New("invalid runner state transition")
-	ErrUnauthorizedRegistration = errors.New("unauthorized runner registration")
-)
+var ErrInvalidStateTransition = errors.New("invalid runner state transition")
 
 type (
 	Service struct {
@@ -129,12 +126,14 @@ func NewService(opts ServiceOptions) *Service {
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
 	opts.TokensService.RegisterKind(resource.AgentTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
+		// Fetch agent pool corresponding to the provided token. This
+		// effectively authenticates the token.
 		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
 		if err != nil {
 			return nil, err
 		}
-		// if the runner has registered then it should be sending its ID in an
-		// http header
+		// if the runner has already registered then it should be sending its ID
+		// in an http header
 		headers, err := otfhttp.HeadersFromContext(ctx)
 		if err != nil {
 			return nil, err
@@ -152,10 +151,11 @@ func NewService(opts ServiceOptions) *Service {
 		}
 		// Agent runner hasn't registered yet, so set subject to a runner with a
 		// agent pool info, which will be used when registering the runner below.
-		return &RunnerMeta{AgentPool: &RunnerMetaAgentPool{
+		return &unregistered{pool: &RunnerMetaAgentPool{
 			ID:               pool.ID,
 			Name:             pool.Name,
 			OrganizationName: pool.Organization,
+			TokenID:          tokenID,
 		}}, nil
 	})
 	// create jobs when a plan or apply is enqueued
@@ -206,17 +206,22 @@ func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], fun
 
 func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
 	runner, err := func() (*RunnerMeta, error) {
-		runner, err := runnerFromContext(ctx)
+		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {
-			return nil, ErrUnauthorizedRegistration
-		}
-		if err := runner.register(opts); err != nil {
 			return nil, err
 		}
-		if err := s.db.create(ctx, runner); err != nil {
+		unregistered, ok := subject.(*unregistered)
+		if !ok {
+			return nil, internal.ErrAccessNotPermitted
+		}
+		registered, err := register(unregistered, opts)
+		if err != nil {
 			return nil, err
 		}
-		return runner, nil
+		if err := s.db.create(ctx, registered); err != nil {
+			return nil, err
+		}
+		return registered, nil
 	}()
 	if err != nil {
 		s.Error(err, "registering runner")
