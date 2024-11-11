@@ -86,7 +86,12 @@ func (j *Job) IsSiteAdmin() bool   { return false }
 func (j *Job) IsOwner(string) bool { return false }
 func (j *Job) String() string      { return j.ID.String() }
 
-func (j *Job) CanAccessSite(action rbac.Action) bool {
+type Policy struct {
+	Organization string
+	ResourceID   *resource.ID
+}
+
+func (j *Job) CanAccessSite(action rbac.Action, policy Policy) bool {
 	return false
 }
 
