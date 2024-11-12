@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -21,9 +20,8 @@ import (
 type (
 	Service struct {
 		logr.Logger
+		*authz.Authorizer
 
-		site              authz.Authorizer
-		organization      *organization.Authorizer
 		db                *pgdb
 		web               *webHandlers
 		api               *tfe
@@ -46,6 +44,7 @@ type (
 		GithubHostname      string
 		GitlabHostname      string
 		SkipTLSVerification bool
+		Authorizer          *authz.Authorizer
 	}
 )
 
@@ -59,9 +58,8 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
+		Authorizer:      opts.Authorizer,
 		githubapps:      opts.GithubAppService,
-		site:            &authz.SiteAuthorizer{Logger: opts.Logger},
-		organization:    &organization.Authorizer{Logger: opts.Logger},
 		factory:         &factory,
 		db: &pgdb{
 			DB:      opts.DB,
@@ -110,7 +108,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateVCSProviderAction, opts.Organization)
+	subject, err := a.CanAccess(ctx, rbac.CreateVCSProviderAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +133,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 		after   *VCSProvider
 	)
 	err := a.db.update(ctx, id, func(provider *VCSProvider) (err error) {
-		subject, err = a.organization.CanAccess(ctx, rbac.UpdateVariableSetAction, provider.Organization)
+		subject, err = a.CanAccess(ctx, rbac.UpdateVariableSetAction, &authz.AccessRequest{Organization: provider.Organization})
 		if err != nil {
 			return err
 		}
@@ -156,7 +154,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 }
 
 func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	subject, err := a.CanAccess(ctx, rbac.ListVCSProvidersAction, &authz.AccessRequest{Organization: &organization})
+	subject, err := a.CanAccess(ctx, rbac.ListVCSProvidersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +208,7 @@ func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.GetVCSProviderAction, provider.Organization)
+	subject, err := a.CanAccess(ctx, rbac.GetVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +238,7 @@ func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, err
 			return err
 		}
 
-		subject, err = a.organization.CanAccess(ctx, rbac.DeleteVCSProviderAction, provider.Organization)
+		subject, err = a.CanAccess(ctx, rbac.DeleteVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
 		if err != nil {
 			return err
 		}

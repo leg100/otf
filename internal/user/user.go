@@ -125,7 +125,7 @@ func (u *User) IsSiteAdmin() bool {
 
 func (u *User) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 	if req == nil {
-		// Nil req means site-level access is being requested
+		// nil req means site-level access is being requested
 		switch action {
 		case rbac.GetGithubAppAction:
 			return true

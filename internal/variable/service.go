@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -20,20 +19,19 @@ import (
 type (
 	Service struct {
 		logr.Logger
+		*authz.Authorizer
 
-		db           *pgdb
-		web          *web
-		tfeapi       *tfe
-		api          *api
-		workspace    authz.Authorizer
-		organization *organization.Authorizer
-		runs         runClient
+		db     *pgdb
+		web    *web
+		tfeapi *tfe
+		api    *api
+		runs   runClient
 	}
 
 	Options struct {
-		WorkspaceAuthorizer authz.Authorizer
-		WorkspaceService    *workspace.Service
-		RunClient           runClient
+		WorkspaceService *workspace.Service
+		RunClient        runClient
+		Authorizer       *authz.Authorizer
 
 		*sql.DB
 		*tfeapi.Responder
@@ -48,11 +46,10 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:       opts.Logger,
-		db:           &pgdb{opts.DB},
-		workspace:    opts.WorkspaceAuthorizer,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		runs:         opts.RunClient,
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db:         &pgdb{opts.DB},
+		runs:       opts.RunClient,
 	}
 
 	svc.web = &web{
@@ -139,7 +136,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resour
 			return err
 		}
 
-		subject, err = s.workspace.CanAccess(ctx, rbac.UpdateWorkspaceVariableAction, before.WorkspaceID)
+		subject, err = s.CanAccess(ctx, rbac.UpdateWorkspaceVariableAction, &authz.AccessRequest{ID: &before.WorkspaceID})
 		if err != nil {
 			return err
 		}
@@ -193,7 +190,7 @@ func (s *Service) GetWorkspaceVariable(ctx context.Context, variableID resource.
 		return nil, err
 	}
 
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListWorkspaceVariablesAction, wv.WorkspaceID)
+	subject, err := s.CanAccess(ctx, rbac.ListWorkspaceVariablesAction, &authz.AccessRequest{ID: &wv.WorkspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +211,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 			return err
 		}
 
-		subject, err = s.workspace.CanAccess(ctx, rbac.DeleteWorkspaceVariableAction, wv.WorkspaceID)
+		subject, err = s.CanAccess(ctx, rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &wv.WorkspaceID})
 		if err != nil {
 			return err
 		}
@@ -230,7 +227,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 }
 
 func (s *Service) createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateVariableSetAction, &authz.AccessRequest{Organization: &organization})
+	subject, err := s.CanAccess(ctx, rbac.CreateVariableSetAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +269,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.ID, opts
 			return err
 		}
 
-		subject, err = s.organization.CanAccess(ctx, rbac.UpdateVariableSetAction, before.Organization)
+		subject, err = s.CanAccess(ctx, rbac.UpdateVariableSetAction, &authz.AccessRequest{Organization: before.Organization})
 		if err != nil {
 			return err
 		}
@@ -300,7 +297,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.ID, opts
 }
 
 func (s *Service) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.ListVariableSetsAction, &authz.AccessRequest{Organization: &organization})
+	subject, err := s.CanAccess(ctx, rbac.ListVariableSetsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +335,7 @@ func (s *Service) getVariableSet(ctx context.Context, setID resource.ID) (*Varia
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.GetVariableSetAction, set.Organization)
+	subject, err := s.CanAccess(ctx, rbac.GetVariableSetAction, &authz.AccessRequest{Organization: set.Organization})
 	if err != nil {
 		s.Error(err, "retrieving variable set", "subject", subject, "set", set)
 		return nil, err
@@ -355,7 +352,7 @@ func (s *Service) getVariableSetByVariableID(ctx context.Context, variableID res
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.GetVariableSetVariableAction, set.Organization)
+	subject, err := s.CanAccess(ctx, rbac.GetVariableSetVariableAction, &authz.AccessRequest{Organization: set.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +369,7 @@ func (s *Service) deleteVariableSet(ctx context.Context, setID resource.ID) (*Va
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.DeleteVariableSetAction, set.Organization)
+	subject, err := s.CanAccess(ctx, rbac.DeleteVariableSetAction, &authz.AccessRequest{Organization: set.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +395,7 @@ func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.
 			return err
 		}
 
-		subject, err = s.organization.CanAccess(ctx, rbac.AddVariableToSetAction, set.Organization)
+		subject, err = s.CanAccess(ctx, rbac.AddVariableToSetAction, &authz.AccessRequest{Organization: set.Organization})
 		if err != nil {
 			return err
 		}
@@ -440,7 +437,7 @@ func (s *Service) updateVariableSetVariable(ctx context.Context, variableID reso
 		if err != nil {
 			return err
 		}
-		subject, err = s.organization.CanAccess(ctx, rbac.UpdateVariableSetAction, set.Organization)
+		subject, err = s.CanAccess(ctx, rbac.UpdateVariableSetAction, &authz.AccessRequest{Organization: set.Organization})
 		if err != nil {
 			return err
 		}
@@ -477,7 +474,7 @@ func (s *Service) deleteVariableSetVariable(ctx context.Context, variableID reso
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.RemoveVariableFromSetAction, set.Organization)
+	subject, err := s.CanAccess(ctx, rbac.RemoveVariableFromSetAction, &authz.AccessRequest{Organization: set.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +497,7 @@ func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.ID, w
 		return err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.ApplyVariableSetToWorkspacesAction, set.Organization)
+	subject, err := s.CanAccess(ctx, rbac.ApplyVariableSetToWorkspacesAction, &authz.AccessRequest{Organization: set.Organization})
 	if err != nil {
 		return err
 	}
@@ -521,7 +518,7 @@ func (s *Service) deleteSetFromWorkspaces(ctx context.Context, setID resource.ID
 		return err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.DeleteVariableSetFromWorkspacesAction, set.Organization)
+	subject, err := s.CanAccess(ctx, rbac.DeleteVariableSetFromWorkspacesAction, &authz.AccessRequest{Organization: set.Organization})
 	if err != nil {
 		return err
 	}

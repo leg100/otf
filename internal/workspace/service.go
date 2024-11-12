@@ -24,10 +24,7 @@ import (
 type (
 	Service struct {
 		logr.Logger
-
-		site             authz.Authorizer
-		organization     *organization.Authorizer
-		authz.Authorizer // workspace authorizer
+		*authz.Authorizer
 
 		db          *pgdb
 		web         *webHandlers
@@ -45,6 +42,7 @@ type (
 		*sql.DB
 		*sql.Listener
 		*tfeapi.Responder
+		*authz.Authorizer
 		html.Renderer
 
 		logr.Logger
@@ -60,15 +58,10 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger: opts.Logger,
-		Authorizer: &authorizer{
-			Logger: opts.Logger,
-			db:     db,
-		},
-		db:           db,
-		connections:  opts.ConnectionService,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &authz.SiteAuthorizer{Logger: opts.Logger},
+		Logger:      opts.Logger,
+		Authorizer:  opts.Authorizer,
+		db:          db,
+		connections: opts.ConnectionService,
 	}
 	svc.web = &webHandlers{
 		Renderer:     opts.Renderer,
@@ -103,6 +96,14 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
+	// TODO: provide comment
+	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.ID) (string, error) {
+		ws, err := svc.db.get(ctx, id)
+		if err != nil {
+			return "", err
+		}
+		return ws.Organization, nil
+	})
 	return &svc
 }
 
@@ -125,7 +126,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization)
+	subject, err := s.CanAccess(ctx, rbac.CreateWorkspaceAction, &authz.AccessRequest{Organization: ws.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 }
 
 func (s *Service) Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +222,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := s.organization.CanAccess(ctx, rbac.ListWorkspacesAction, *opts.Organization)
+		_, err := s.CanAccess(ctx, rbac.ListWorkspacesAction, &authz.AccessRequest{Organization: *opts.Organization})
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
@@ -249,7 +250,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 }
 
 func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +295,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts Upda
 }
 
 func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

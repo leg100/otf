@@ -37,8 +37,18 @@ func (a *Authorizer) RegisterAuthorizer(kind resource.Kind, authorizer ResourceA
 	a.resourceAuthorizers[kind] = authorizer
 }
 
+// RegisterOrganizationResolver registers with the authorizer the ability to
+// resolve access requests for a specific resource kind to the name of the
+// organization the resource belongs to.
+//
+// This is necessary because authorization is determined not only on resource ID
+// but on the name of the organization the resource belongs to.
+func (a *Authorizer) RegisterOrganizationResolver(kind resource.Kind, resolver OrganizationResolver) {
+	a.organizationResolvers[kind] = resolver
+}
+
 // RegisterWorkspaceResolver registers with the authorizer the ability to
-// resolve access requests to a specific resource kind to the workspace ID the
+// resolve access requests for a specific resource kind to the workspace ID the
 // resource belongs to.
 //
 // This is necessary because authorization is often determined based on
@@ -82,6 +92,24 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 			// Authorize workspace ID instead
 			req.ID = &workspaceID
 		}
+		// Then check if the resource kind - including the case where the
+		// resource kind has been resolved to a workspace - is registered for
+		// its ID to be resolved to an oranization name. This is ony necessary
+		// if the organization has not been specified in the access request.
+		if req.Organization == "" {
+			if resolver, ok := a.organizationResolvers[req.ID.Kind()]; ok {
+				organization, err := resolver(ctx, *req.ID)
+				if err != nil {
+					a.Error(err, "authorization failure",
+						"resource", req,
+						"action", action.String(),
+						"subject", subj,
+					)
+					return nil, err
+				}
+				req.Organization = organization
+			}
+		}
 	}
 	// Allow subject to determine whether it is allowed to access resource.
 	if subj.CanAccess(action, req) {
@@ -113,6 +141,8 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 	return nil, internal.ErrAccessNotPermitted
 }
 
+// CanAccessDecision is a helper to boil down an access request to a true/false
+// decision, with any error encountered interpreted as false.
 func (a *Authorizer) CanAccessDecision(ctx context.Context, action rbac.Action, req *AccessRequest) bool {
 	_, err := a.CanAccess(ctx, action, req)
 	return err != nil
@@ -129,14 +159,15 @@ type AccessRequest struct {
 }
 
 func (r *AccessRequest) LogValue() slog.Value {
-	// Compose error message
-	var resource string
 	if r == nil {
-		resource = "site"
-	} else if r.Organization != nil {
-		resource = *r.Organization
-	} else if r.ID != nil {
-		resource = r.ID.String()
+		return slog.StringValue("site")
+	} else {
+		attrs := []slog.Attr{
+			slog.String("organization", r.Organization),
+		}
+		if r.ID != nil {
+			attrs = append(attrs, slog.String("resource_id", r.ID.String()))
+		}
+		return slog.GroupValue(attrs...)
 	}
-	return slog.GroupValue(slog.String("resource", resource))
 }

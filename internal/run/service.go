@@ -35,6 +35,7 @@ type (
 
 	Service struct {
 		logr.Logger
+		*authz.Authorizer
 
 		workspaces             *workspace.Service
 		cache                  internal.Cache
@@ -49,7 +50,6 @@ type (
 		broker                 pubsub.SubscriptionService[*Run]
 
 		*factory
-		*authz.Authorizer
 	}
 
 	Options struct {
@@ -147,7 +147,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
-	subject, err := s.workspaceAuthorizer.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.CreateRunAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -197,13 +197,13 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.workspaceAuthorizer.CanAccess(ctx, rbac.GetWorkspaceAction, workspace.ID)
+		subject, authErr = s.CanAccess(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID})
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.workspaceAuthorizer.CanAccess(ctx, rbac.GetWorkspaceAction, *opts.WorkspaceID)
+		subject, authErr = s.CanAccess(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = s.organization.CanAccess(ctx, rbac.ListRunsAction, *opts.Organization)
+		subject, authErr = s.CanAccess(ctx, rbac.ListRunsAction, &authz.AccessRequest{Organization: *opts.Organization})
 	} else {
 		// subject needs to be site admin to list runs across site
 		subject, authErr = s.CanAccess(ctx, rbac.ListRunsAction, nil)

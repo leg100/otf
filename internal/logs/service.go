@@ -16,8 +16,7 @@ import (
 type (
 	Service struct {
 		logr.Logger
-
-		run authz.Authorizer
+		*authz.Authorizer
 
 		api    *api
 		web    *webHandlers
@@ -39,15 +38,15 @@ type (
 		*sql.Listener
 		internal.Verifier
 
-		RunAuthorizer authz.Authorizer
+		Authorizer *authz.Authorizer
 	}
 )
 
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger: opts.Logger,
-		run:    opts.RunAuthorizer,
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,
@@ -102,7 +101,7 @@ func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, er
 
 // PutChunk writes a chunk of logs for a phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
-	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, opts.RunID)
+	_, err := s.CanAccess(ctx, rbac.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
 	if err != nil {
 		return err
 	}
@@ -124,7 +123,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
-	subject, err := s.run.CanAccess(ctx, rbac.TailLogsAction, opts.RunID)
+	subject, err := s.CanAccess(ctx, rbac.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
 	if err != nil {
 		return nil, err
 	}

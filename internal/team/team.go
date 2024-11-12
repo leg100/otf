@@ -134,7 +134,7 @@ func (t *Team) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 		// Deny all site-level access
 		return false
 	}
-	if req.Organization != nil && t.Organization == *req.Organization {
+	if req.Organization == t.Organization {
 		if t.IsOwners() {
 			// owner team can perform all actions on organization
 			return true
@@ -161,10 +161,6 @@ func (t *Team) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 		// team can access self
 		return t.ID == *req.ID
 	}
-	return false
-}
-
-func (t *Team) CanAccess(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	return false
 }
 

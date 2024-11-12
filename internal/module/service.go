@@ -8,9 +8,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
@@ -26,10 +26,9 @@ type (
 	Service struct {
 		logr.Logger
 		*publisher
+		*authz.Authorizer
 
 		db *pgdb
-
-		organization *organization.Authorizer
 
 		api          *api
 		web          *webHandlers
@@ -45,6 +44,7 @@ type (
 		*surl.Signer
 		html.Renderer
 
+		Authorizer         *authz.Authorizer
 		RepohookService    *repohooks.Service
 		VCSProviderService *vcsprovider.Service
 		ConnectionsService *connections.Service
@@ -55,8 +55,8 @@ type (
 func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:       opts.Logger,
+		Authorizer:   opts.Authorizer,
 		connections:  opts.ConnectionsService,
-		organization: &organization.Authorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB},
 		vcsproviders: opts.VCSProviderService,
 	}
@@ -94,7 +94,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateModuleAction, vcsprov.Organization)
+	subject, err := s.CanAccess(ctx, rbac.CreateModuleAction, &authz.AccessRequest{Organization: vcsprov.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (s *Service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 }
 
 func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateModuleAction, opts.Organization)
+	subject, err := s.CanAccess(ctx, rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 }
 
 func (s *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.ListModulesAction, opts.Organization)
+	subject, err := s.CanAccess(ctx, rbac.ListModulesAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (s *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*
 }
 
 func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.GetModuleAction, opts.Organization)
+	subject, err := s.CanAccess(ctx, rbac.GetModuleAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.ID) (*Module, e
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.GetModuleAction, module.Organization)
+	subject, err := s.CanAccess(ctx, rbac.GetModuleAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (s *Service) DeleteModule(ctx context.Context, id resource.ID) (*Module, er
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.DeleteModuleAction, module.Organization)
+	subject, err := s.CanAccess(ctx, rbac.DeleteModuleAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +317,7 @@ func (s *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateModuleVersionAction, module.Organization)
+	subject, err := s.CanAccess(ctx, rbac.CreateModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +415,7 @@ func (s *Service) deleteVersion(ctx context.Context, versionID resource.ID) (*Mo
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.DeleteModuleVersionAction, module.Organization)
+	subject, err := s.CanAccess(ctx, rbac.DeleteModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}

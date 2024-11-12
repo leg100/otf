@@ -283,7 +283,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 }
 
 func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	_, err := s.organization.CanAccess(ctx, rbac.ListRunnersAction, CanAccess(ctx, rbac.ListRunnersAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListRunnersAction, organization)organization})
+	_, err := s.CanAccess(ctx, rbac.ListRunnersAction, CanAccess(ctx, rbac.ListRunnersAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListRunnersAction, &authz.AccessRequest{Organization: organization)organization}})
 	if err != nil {
 		return nil, err
 	}
@@ -504,7 +504,7 @@ func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.ID, opts
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		subject, err := s.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, pool.Organization)
+		subject, err := s.CanAccess(ctx, rbac.CreateAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -536,7 +536,7 @@ func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.ID) (*agen
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := s.organization.CanAccess(ctx, rbac.GetAgentTokenAction, pool.Organization)
+		subject, err := s.CanAccess(ctx, rbac.GetAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -555,7 +555,7 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*a
 	if err != nil {
 		return nil, err
 	}
-	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentTokensAction, pool.Organization)
+	subject, err := s.CanAccess(ctx, rbac.ListAgentTokensAction, &authz.AccessRequest{Organization: pool.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -580,7 +580,7 @@ func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*a
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := s.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, pool.Organization)
+		subject, err := s.CanAccess(ctx, rbac.DeleteAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -622,7 +622,7 @@ func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 }
 
 func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateAgentPoolAction, opts.Organization)
+	subject, err := s.CanAccess(ctx, rbac.CreateAgentPoolAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -654,7 +654,7 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID resource.ID, opts 
 		if err != nil {
 			return err
 		}
-		subject, err = s.organization.CanAccess(ctx, rbac.UpdateAgentPoolAction, pool.Organization)
+		subject, err = s.CanAccess(ctx, rbac.UpdateAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return err
 		}
@@ -695,7 +695,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
 		return nil, err
 	}
-	subject, err := s.organization.CanAccess(ctx, rbac.GetAgentPoolAction, pool.Organization)
+	subject, err := s.CanAccess(ctx, rbac.GetAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -704,7 +704,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 }
 
 func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentPoolsAction, CanAccess(ctx, rbac.ListAgentPoolsAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListAgentPoolsAction, organization)organization})
+	subject, err := s.CanAccess(ctx, rbac.ListAgentPoolsAction, CanAccess(ctx, rbac.ListAgentPoolsAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListAgentPoolsAction, &authz.AccessRequest{Organization: organization)organization}})
 	if err != nil {
 		return nil, err
 	}
@@ -724,7 +724,7 @@ func (s *Service) deleteAgentPool(ctx context.Context, poolID resource.ID) (*Poo
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := s.organization.CanAccess(ctx, rbac.DeleteAgentPoolAction, pool.Organization)
+		subject, err := s.CanAccess(ctx, rbac.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, err
 		}

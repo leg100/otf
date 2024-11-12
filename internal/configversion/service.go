@@ -17,8 +17,7 @@ import (
 type (
 	Service struct {
 		logr.Logger
-
-		workspace authz.Authorizer
+		*authz.Authorizer
 
 		db     *pgdb
 		cache  internal.Cache
@@ -29,8 +28,8 @@ type (
 	Options struct {
 		logr.Logger
 
-		WorkspaceAuthorizer authz.Authorizer
-		MaxConfigSize       int64
+		MaxConfigSize int64
+		Authorizer    *authz.Authorizer
 
 		internal.Cache
 		*sql.DB
@@ -41,11 +40,9 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger: opts.Logger,
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
 	}
-
-	svc.workspace = opts.WorkspaceAuthorizer
-
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache
 	svc.tfeapi = &tfe{
@@ -66,6 +63,18 @@ func NewService(opts Options) *Service {
 	// Fetch ingress attributes when API requests ingress attributes be included
 	// in the response
 	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
+	// Resolve authorization requests for config version IDs to a workspace IDs
+	opts.Authorizer.RegisterWorkspaceResolver(resource.ConfigVersionKind,
+		func(ctx context.Context, cvID resource.ID) (resource.ID, error) {
+			sv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
+				ID: &cvID,
+			})
+			if err != nil {
+				return resource.ID{}, err
+			}
+			return sv.WorkspaceID, nil
+		},
+	)
 
 	return &svc
 }
@@ -111,7 +120,7 @@ func (s *Service) List(ctx context.Context, workspaceID resource.ID, opts ListOp
 }
 
 func (s *Service) Get(ctx context.Context, cvID resource.ID) (*ConfigurationVersion, error) {
-	subject, err := s.canAccess(ctx, rbac.GetConfigurationVersionAction, cvID)
+	subject, err := s.CanAccess(ctx, rbac.GetConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +150,7 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID resource.ID) (*Conf
 }
 
 func (s *Service) Delete(ctx context.Context, cvID resource.ID) error {
-	subject, err := s.canAccess(ctx, rbac.DeleteConfigurationVersionAction, cvID)
+	subject, err := s.CanAccess(ctx, rbac.DeleteConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
 	if err != nil {
 		return err
 	}
@@ -153,12 +162,4 @@ func (s *Service) Delete(ctx context.Context, cvID resource.ID) error {
 	}
 	s.V(2).Info("deleted configuration version", "id", cvID, "subject", subject)
 	return nil
-}
-
-func (s *Service) canAccess(ctx context.Context, action rbac.Action, cvID resource.ID) (authz.Subject, error) {
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
-	if err != nil {
-		return nil, err
-	}
-	return s.workspace.CanAccess(ctx, action, cv.WorkspaceID)
 }

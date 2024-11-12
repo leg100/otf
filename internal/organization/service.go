@@ -149,7 +149,7 @@ func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organizati
 }
 
 func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
-	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, &authz.AccessRequest{Organization: &name})
+	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, &authz.AccessRequest{Organization: name})
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*O
 }
 
 func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, &authz.AccessRequest{Organization: &name})
+	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, &authz.AccessRequest{Organization: name})
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (s *Service) Delete(ctx context.Context, name string) error {
-	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, &authz.AccessRequest{Organization: &name})
+	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, &authz.AccessRequest{Organization: name})
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 }
 
 func (s *Service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
-	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, &authz.AccessRequest{Organization: &organization})
+	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return Entitlements{}, err
 	}
@@ -261,7 +261,7 @@ func (s *Service) restrictOrganizationCreation(ctx context.Context) (authz.Subje
 // CreateToken creates an organization token. If an organization
 // token already exists it is replaced.
 func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
-	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: &opts.Organization})
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -313,7 +313,7 @@ func (s *Service) ListTokens(ctx context.Context, organization string) ([]*Organ
 }
 
 func (s *Service) DeleteToken(ctx context.Context, organization string) error {
-	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: &organization})
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return err
 	}

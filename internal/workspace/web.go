@@ -49,6 +49,7 @@ type (
 		teams        webTeamClient
 		vcsproviders webVCSProvidersClient
 		client       webClient
+		authorizer   *authz.Authorizer
 	}
 
 	webTeamClient interface {

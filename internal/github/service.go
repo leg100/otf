@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
@@ -20,13 +19,12 @@ type (
 	// Service is the service for github app management
 	Service struct {
 		logr.Logger
+		*authz.Authorizer
 
 		GithubHostname string
 
-		site         authz.Authorizer
-		organization *organization.Authorizer
-		db           *pgdb
-		web          *webHandlers
+		db  *pgdb
+		web *webHandlers
 	}
 
 	Options struct {
@@ -38,6 +36,7 @@ type (
 
 		GithubHostname      string
 		SkipTLSVerification bool
+		Authorizer          *authz.Authorizer
 	}
 )
 
@@ -45,8 +44,7 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:         opts.Logger,
 		GithubHostname: opts.GithubHostname,
-		site:           &authz.SiteAuthorizer{Logger: opts.Logger},
-		organization:   &organization.Authorizer{Logger: opts.Logger},
+		Authorizer:     opts.Authorizer,
 		db:             &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{

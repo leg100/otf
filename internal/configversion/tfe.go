@@ -226,7 +226,7 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 		return nil, err
 	}
 	return []any{&types.IngressAttributes{
-		ID:        resource.ConvertID(cv.ID, IngressAttributesKind),
+		ID:        resource.ConvertID(cv.ID, resource.IngressAttributesKind),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
 	}}, nil

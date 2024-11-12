@@ -137,8 +137,8 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		App:            app,
 		Installations:  installs,
 		GithubHostname: h.GithubHostname,
-		CanCreateApp:   user.CanAccessSite(rbac.CreateGithubAppAction),
-		CanDeleteApp:   user.CanAccessSite(rbac.DeleteGithubAppAction),
+		CanCreateApp:   user.CanAccess(rbac.CreateGithubAppAction, nil),
+		CanDeleteApp:   user.CanAccess(rbac.DeleteGithubAppAction, nil),
 	})
 }
 

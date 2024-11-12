@@ -10,6 +10,8 @@ const (
 	OrganizationKind              Kind = "org"
 	WorkspaceKind                 Kind = "ws"
 	RunKind                       Kind = "run"
+	ConfigVersionKind             Kind = "cv"
+	IngressAttributesKind         Kind = "ia"
 	JobKind                       Kind = "job"
 	ChunkKind                     Kind = "chunk"
 	UserKind                      Kind = "user"

@@ -58,7 +58,7 @@ func (u *OrganizationToken) CanAccess(action rbac.Action, req *authz.AccessReque
 		// Organization token cannot take action on site-level resources
 		return false
 	}
-	if req.Organization != nil && u.Organization != *req.Organization {
+	if req.Organization != u.Organization {
 		// Organization token cannot take action on other organizations
 		return false
 	}
@@ -69,10 +69,6 @@ func (u *OrganizationToken) CanAccess(action rbac.Action, req *authz.AccessReque
 		return false
 	}
 	return true
-}
-
-func (u *OrganizationToken) CanAccess(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	return u.CanAccessOrganization(action, policy.Organization)
 }
 
 func (u *OrganizationToken) IsOwner(organization string) bool {
