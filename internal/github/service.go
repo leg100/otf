@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -65,7 +64,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.CreateGithubAppAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.CreateGithubAppAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +80,7 @@ func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, e
 }
 
 func (a *Service) GetApp(ctx context.Context) (*App, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.GetGithubAppAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.GetGithubAppAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func (a *Service) GetApp(ctx context.Context) (*App, error) {
 }
 
 func (a *Service) DeleteApp(ctx context.Context) error {
-	subject, err := a.site.CanAccess(ctx, rbac.DeleteGithubAppAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.DeleteGithubAppAction, nil)
 	if err != nil {
 		return err
 	}

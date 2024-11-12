@@ -123,59 +123,28 @@ func (u *User) IsSiteAdmin() bool {
 	return u.SiteAdmin || u.ID == SiteAdminID
 }
 
-func (u *User) CanAccessSite(action rbac.Action) bool {
-	switch action {
-	case rbac.GetGithubAppAction:
-		return true
-	case rbac.CreateUserAction, rbac.ListUsersAction:
-		// A user can perform these actions only if they are an owner of at
-		// least one organization. This permits an owner to search users or create
-		// a user before adding them to a team.
-		for _, team := range u.Teams {
-			if team.IsOwners() {
-				return true
+func (u *User) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req == nil {
+		// Nil req means site-level access is being requested
+		switch action {
+		case rbac.GetGithubAppAction:
+			return true
+		case rbac.CreateUserAction, rbac.ListUsersAction:
+			// A user can perform these actions only if they are an owner of at
+			// least one organization. This permits an owner to search users or create
+			// a user before adding them to a team.
+			for _, team := range u.Teams {
+				if team.IsOwners() {
+					return true
+				}
 			}
 		}
+		// Only the site admin can perform all other site-level actions.
+		return u.IsSiteAdmin()
 	}
-	// Otherwise only the site admin can perform site actions.
-	return u.IsSiteAdmin()
-}
-
-func (u *User) CanAccessTeam(action rbac.Action, teamID resource.ID) bool {
-	// coarser-grained site-level perms take precedence
-	if u.CanAccessSite(action) {
-		return true
-	}
+	// All other user perms are inherited from team memberships.
 	for _, team := range u.Teams {
-		if team.ID == teamID {
-			return true
-		}
-	}
-	return false
-}
-
-func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
-	// coarser-grained site-level perms take precedence
-	if u.CanAccessSite(action) {
-		return true
-	}
-	// fallback to finer-grained organization-level perms
-	for _, team := range u.Teams {
-		if team.CanAccessOrganization(action, org) {
-			return true
-		}
-	}
-	return false
-}
-
-func (u *User) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	// coarser-grained organization perms take precedence.
-	if u.CanAccessOrganization(action, policy.Organization) {
-		return true
-	}
-	// fallback to checking finer-grained workspace perms
-	for _, team := range u.Teams {
-		if team.CanAccessWorkspace(action, policy) {
+		if team.CanAccess(action, req) {
 			return true
 		}
 	}

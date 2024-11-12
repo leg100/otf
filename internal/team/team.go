@@ -129,17 +129,12 @@ func (t *Team) IsOwner(organization string) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 
-func (t *Team) CanAccessSite(action rbac.Action) bool {
-	return false
-}
-
-func (t *Team) CanAccessTeam(action rbac.Action, id resource.ID) bool {
-	// team can access self
-	return t.ID == id
-}
-
-func (t *Team) CanAccessOrganization(action rbac.Action, org string) bool {
-	if t.Organization == org {
+func (t *Team) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req == nil {
+		// Deny all site-level access
+		return false
+	}
+	if req.Organization != nil && t.Organization == *req.Organization {
 		if t.IsOwners() {
 			// owner team can perform all actions on organization
 			return true
@@ -158,28 +153,18 @@ func (t *Team) CanAccessOrganization(action rbac.Action, org string) bool {
 			}
 		}
 		if t.Access.ManageModules {
-			if rbac.VCSManagerRole.IsAllowed(action) {
+			if rbac.RegistryManagerRole.IsAllowed(action) {
 				return true
 			}
 		}
+	} else if req.ID != nil && req.ID.Kind() == resource.TeamKind {
+		// team can access self
+		return t.ID == *req.ID
 	}
 	return false
 }
 
-func (t *Team) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	// coarser-grained organization perms take precedence.
-	if t.CanAccessOrganization(action, policy.Organization) {
-		return true
-	}
-	// fallback to checking finer-grained workspace perms
-	if t.Organization != policy.Organization {
-		return false
-	}
-	for _, perm := range policy.Permissions {
-		if t.ID == perm.TeamID {
-			return perm.Role.IsAllowed(action)
-		}
-	}
+func (t *Team) CanAccess(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	return false
 }
 

@@ -95,7 +95,7 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.ID)
 }
 
 func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.CreateWorkspaceVariableAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resour
 }
 
 func (s *Service) ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListWorkspaceVariablesAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.ListWorkspaceVariablesAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 }
 
 func (s *Service) createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateVariableSetAction, organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateVariableSetAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.ID, opts
 }
 
 func (s *Service) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.ListVariableSetsAction, organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.ListVariableSetsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func (s *Service) listVariableSets(ctx context.Context, organization string) ([]
 }
 
 func (s *Service) listWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariableSetsAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.ListVariableSetsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ type (
 )
 
 func (s *Service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.ListTagsAction, organization)
+	subject, err := s.CanAccess(ctx, rbac.ListTagsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *Service) ListTags(ctx context.Context, organization string, opts ListTa
 }
 
 func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
-	subject, err := s.organization.CanAccess(ctx, rbac.DeleteTagsAction, organization)
+	subject, err := s.CanAccess(ctx, rbac.DeleteTagsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return err
 	}

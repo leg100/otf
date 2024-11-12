@@ -135,7 +135,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}{
 		WorkspacePage:      workspace.NewPage(r, "runs", ws),
 		Page:               runs,
-		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+		CanUpdateWorkspace: user.CanAccess(rbac.UpdateWorkspaceAction, policy),
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {

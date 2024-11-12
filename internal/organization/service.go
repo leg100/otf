@@ -22,11 +22,10 @@ type (
 	Service struct {
 		RestrictOrganizationCreation bool
 
-		*Authorizer // authorize access to org
+		*authz.Authorizer
 		logr.Logger
 
 		db           *pgdb
-		site         authz.Authorizer // authorize access to site
 		web          *web
 		tfeapi       *tfe
 		api          *api
@@ -40,6 +39,7 @@ type (
 	Options struct {
 		RestrictOrganizationCreation bool
 		TokensService                *tokens.Service
+		Authorizer                   *authz.Authorizer
 
 		*sql.DB
 		*tfeapi.Responder
@@ -56,11 +56,10 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Authorizer:                   &Authorizer{opts.Logger},
+		Authorizer:                   opts.Authorizer,
 		Logger:                       opts.Logger,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
-		site:                         &authz.SiteAuthorizer{Logger: opts.Logger},
 		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
 	svc.web = &web{
@@ -150,7 +149,7 @@ func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organizati
 }
 
 func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
-	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
+	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, &authz.AccessRequest{Organization: &name})
 	if err != nil {
 		return nil, err
 	}
@@ -180,14 +179,14 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*O
 	if err != nil {
 		return nil, err
 	}
-	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
+	if subject.CanAccess(rbac.ListOrganizationsAction, nil) {
 		return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions})
 	}
 	return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: subject.Organizations()})
 }
 
 func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, name)
+	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, &authz.AccessRequest{Organization: &name})
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +203,7 @@ func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (s *Service) Delete(ctx context.Context, name string) error {
-	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
+	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, &authz.AccessRequest{Organization: &name})
 	if err != nil {
 		return err
 	}
@@ -235,7 +234,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 }
 
 func (s *Service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
-	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
+	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return Entitlements{}, err
 	}
@@ -262,7 +261,7 @@ func (s *Service) restrictOrganizationCreation(ctx context.Context) (authz.Subje
 // CreateToken creates an organization token. If an organization
 // token already exists it is replaced.
 func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
-	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: &opts.Organization})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -314,7 +313,7 @@ func (s *Service) ListTokens(ctx context.Context, organization string) ([]*Organ
 }
 
 func (s *Service) DeleteToken(ctx context.Context, organization string) error {
-	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
+	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return err
 	}

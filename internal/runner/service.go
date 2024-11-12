@@ -283,7 +283,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 }
 
 func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	_, err := s.organization.CanAccess(ctx, rbac.ListRunnersAction, organization)
+	_, err := s.organization.CanAccess(ctx, rbac.ListRunnersAction, CanAccess(ctx, rbac.ListRunnersAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListRunnersAction, organization)organization})
 	if err != nil {
 		return nil, err
 	}
@@ -704,7 +704,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 }
 
 func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
-	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentPoolsAction, organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.ListAgentPoolsAction, CanAccess(ctx, rbac.ListAgentPoolsAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListAgentPoolsAction, organization)organization})
 	if err != nil {
 		return nil, err
 	}

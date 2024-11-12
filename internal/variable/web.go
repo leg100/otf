@@ -219,13 +219,13 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage: workspace.NewPage(r, "variables", ws),
 		WorkspaceVariableTable: workspaceVariableTable{
 			Variables:         variables,
-			CanDeleteVariable: user.CanAccessWorkspace(rbac.DeleteWorkspaceVariableAction, policy),
+			CanDeleteVariable: user.CanAccess(rbac.DeleteWorkspaceVariableAction, policy),
 		},
 		VariableSetTables:  setVariableTables,
 		Policy:             policy,
-		CanCreateVariable:  user.CanAccessWorkspace(rbac.CreateWorkspaceVariableAction, policy),
-		CanDeleteVariable:  user.CanAccessWorkspace(rbac.DeleteWorkspaceVariableAction, policy),
-		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+		CanCreateVariable:  user.CanAccess(rbac.CreateWorkspaceVariableAction, policy),
+		CanDeleteVariable:  user.CanAccess(rbac.DeleteWorkspaceVariableAction, policy),
+		CanUpdateWorkspace: user.CanAccess(rbac.UpdateWorkspaceAction, policy),
 	})
 }
 

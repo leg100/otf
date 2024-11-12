@@ -31,6 +31,7 @@ type (
 	tfe struct {
 		*Service
 		*tfeapi.Responder
+		*authz.Authorizer
 	}
 )
 
@@ -411,25 +412,19 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 }
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error) {
-	subject, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		return nil, err
-	}
-	policy, err := a.GetPolicy(r.Context(), from.ID)
-	if err != nil {
-		return nil, err
-	}
+	ctx := r.Context()
+	accessRequest := &authz.AccessRequest{ID: &from.ID}
 	perms := &types.WorkspacePermissions{
-		CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
-		CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
-		CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
-		CanQueueApply:     subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanQueueDestroy:   subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanQueueRun:       subject.CanAccessWorkspace(rbac.CreateRunAction, policy),
-		CanDestroy:        subject.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
-		CanReadSettings:   subject.CanAccessWorkspace(rbac.GetWorkspaceAction, policy),
-		CanUpdate:         subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
-		CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+		CanLock:           a.CanAccessDecision(ctx, rbac.LockWorkspaceAction, accessRequest),
+		CanUnlock:         a.CanAccessDecision(ctx, rbac.UnlockWorkspaceAction, accessRequest),
+		CanForceUnlock:    a.CanAccessDecision(ctx, rbac.UnlockWorkspaceAction, accessRequest),
+		CanQueueApply:     a.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
+		CanQueueDestroy:   a.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
+		CanQueueRun:       a.CanAccessDecision(ctx, rbac.CreateRunAction, accessRequest),
+		CanDestroy:        a.CanAccessDecision(ctx, rbac.DeleteWorkspaceAction, accessRequest),
+		CanReadSettings:   a.CanAccessDecision(ctx, rbac.GetWorkspaceAction, accessRequest),
+		CanUpdate:         a.CanAccessDecision(ctx, rbac.UpdateWorkspaceAction, accessRequest),
+		CanUpdateVariable: a.CanAccessDecision(ctx, rbac.UpdateWorkspaceAction, accessRequest),
 	}
 
 	to := &types.Workspace{

@@ -237,7 +237,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Listener:             listener,
 		Renderer:             renderer,
 		Responder:            responder,
-		WorkspaceAuthorizer:  workspaceService,
+		Authorizer:           workspaceService,
 		OrganizationService:  orgService,
 		WorkspaceService:     workspaceService,
 		ConfigVersionService: configService,

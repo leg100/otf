@@ -1,12 +1,19 @@
-package workspace
+package policy
 
 import (
 	"context"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
+
+type Service struct {
+	logr.Logger
+
+	db *pgdb
+}
 
 // GetPolicy retrieves a workspace policy.
 //

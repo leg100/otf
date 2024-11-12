@@ -1,4 +1,4 @@
-package workspace
+package policy
 
 import (
 	"context"
@@ -9,6 +9,10 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+type pgdb struct {
+	*sql.DB // provides access to generated SQL queries
+}
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
 	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{

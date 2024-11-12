@@ -3,7 +3,6 @@ package tokens
 import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
@@ -11,10 +10,9 @@ import (
 type (
 	Service struct {
 		logr.Logger
+
 		*tokenFactory
 		*registry
-
-		site authz.Authorizer // authorizes site access
 
 		middleware mux.MiddlewareFunc
 	}
@@ -30,7 +28,6 @@ type (
 func NewService(opts Options) (*Service, error) {
 	svc := Service{
 		Logger: opts.Logger,
-		site:   &authz.SiteAuthorizer{Logger: opts.Logger},
 	}
 	key, err := jwk.FromRaw([]byte(opts.Secret))
 	if err != nil {

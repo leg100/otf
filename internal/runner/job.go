@@ -86,59 +86,39 @@ func (j *Job) IsSiteAdmin() bool   { return false }
 func (j *Job) IsOwner(string) bool { return false }
 func (j *Job) String() string      { return j.ID.String() }
 
-type Policy struct {
-	Organization string
-	ResourceID   *resource.ID
-}
-
-func (j *Job) CanAccessSite(action rbac.Action, policy Policy) bool {
-	return false
-}
-
-func (j *Job) CanAccessOrganization(action rbac.Action, name string) bool {
-	switch action {
-	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
-		return j.Organization == name
-	default:
+func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req.Organization == nil {
+		// Job cannot carry out site-wide actions
 		return false
 	}
-}
-
-func (j *Job) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	if policy.WorkspaceID != j.WorkspaceID {
-		// job is allowed the retrieve the state of *another* workspace only if:
-		// (a) workspace is in the same organization as job, or
-		// (b) workspace has enabled global remote state (permitting organization-wide
-		// state sharing).
+	if *req.Organization != j.Organization {
+		// Job cannot carry out actions on other organizations
+		return false
+	}
+	// Permissible organization actions
+	switch action {
+	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
+		return true
+	}
+	// Permissible workspace actions
+	if req.ID != nil && req.ID == &j.WorkspaceID {
+		// Allow actions on same workspace as job depending on run phase
 		switch action {
-		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
-			if j.Organization == policy.Organization && policy.GlobalRemoteState {
+		case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
+			// any phase
+			return true
+		case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
+			// plan phase
+			if j.Phase == internal.PlanPhase {
+				return true
+			}
+		case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
+			// apply phase
+			if j.Phase == internal.ApplyPhase {
 				return true
 			}
 		}
-		return false
 	}
-	// allow actions on same workspace as job depending on run phase
-	switch action {
-	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
-		// any phase
-		return true
-	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
-		// plan phase
-		if j.Phase == internal.PlanPhase {
-			return true
-		}
-	case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
-		// apply phase
-		if j.Phase == internal.ApplyPhase {
-			return true
-		}
-	}
-	return false
-}
-
-func (j *Job) CanAccessTeam(rbac.Action, resource.ID) bool {
-	// Can't access team level actions
 	return false
 }
 

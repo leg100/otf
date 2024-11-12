@@ -76,7 +76,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.CreateConfigurationVersionAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts Crea
 }
 
 func (s *Service) List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.ListConfigurationVersionsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (s *Service) Get(ctx context.Context, cvID resource.ID) (*ConfigurationVers
 }
 
 func (s *Service) GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.GetConfigurationVersionAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.GetConfigurationVersionAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

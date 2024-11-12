@@ -37,6 +37,7 @@ type (
 		api       *api
 
 		*factory // for creating state versions
+		*authz.Authorizer
 	}
 
 	Options struct {
@@ -48,6 +49,7 @@ type (
 		*surl.Signer
 
 		WorkspaceService *workspace.Service
+		Authorizer       *authz.Authorizer
 	}
 
 	// StateVersionListOptions represents the options for listing state versions.
@@ -61,11 +63,12 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger:    opts.Logger,
-		cache:     opts.Cache,
-		db:        db,
-		workspace: opts.WorkspaceService,
-		factory:   &factory{db},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		cache:      opts.Cache,
+		db:         db,
+		workspace:  opts.WorkspaceService,
+		factory:    &factory{db},
 	}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
@@ -85,6 +88,17 @@ func NewService(opts Options) *Service {
 	// include state version outputs in api responses when requested.
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeWorkspaceCurrentOutputs)
+
+	// Resolve authorization requests to state version IDs to a workspace IDs
+	opts.Authorizer.RegisterWorkspaceResolver(resource.StateVersionKind,
+		func(ctx context.Context, svID resource.ID) (resource.ID, error) {
+			sv, err := db.getVersion(ctx, svID)
+			if err != nil {
+				return resource.ID{}, err
+			}
+			return sv.WorkspaceID, nil
+		},
+	)
 	return &svc
 }
 
@@ -95,7 +109,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	subject, err := a.workspace.CanAccess(ctx, rbac.CreateStateVersionAction, opts.WorkspaceID)
+	subject, err := a.CanAccess(ctx, rbac.CreateStateVersionAction, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +137,7 @@ func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.ID) 
 }
 
 func (a *Service) List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
-	subject, err := a.workspace.CanAccess(ctx, rbac.ListStateVersionsAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.ListStateVersionsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +152,7 @@ func (a *Service) List(ctx context.Context, workspaceID resource.ID, opts resour
 }
 
 func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
-	subject, err := a.workspace.CanAccess(ctx, rbac.GetStateVersionAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.GetStateVersionAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +268,7 @@ func (a *Service) GetOutput(ctx context.Context, outputID resource.ID) (*Output,
 		return nil, err
 	}
 
-	subject, err := a.CanAccess(ctx, rbac.GetStateVersionOutputAction, out.StateVersionID)
+	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionOutputAction, out.StateVersionID)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +277,7 @@ func (a *Service) GetOutput(ctx context.Context, outputID resource.ID) (*Output,
 	return out, nil
 }
 
-func (a *Service) CanAccess(ctx context.Context, action rbac.Action, svID resource.ID) (authz.Subject, error) {
+func (a *Service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID resource.ID) (authz.Subject, error) {
 	sv, err := a.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

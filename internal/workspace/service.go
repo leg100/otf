@@ -202,7 +202,7 @@ func (s *Service) GetByName(ctx context.Context, organization, workspace string)
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *Service) GetByName(ctx context.Context, organization, workspace string)
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, resource.ID{})
+		_, err := s.CanAccess(ctx, rbac.ListWorkspacesAction, nil)
 		if err != nil {
 			return nil, err
 		}

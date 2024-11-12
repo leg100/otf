@@ -156,7 +156,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 }
 
 func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
+	subject, err := a.CanAccess(ctx, rbac.ListVCSProvidersAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider
 }
 
 func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.ListVCSProvidersAction, nil)
 	if err != nil {
 		return nil, err
 	}

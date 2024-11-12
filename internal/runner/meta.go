@@ -147,24 +147,19 @@ func (m *RunnerMeta) IsOwner(string) bool { return true }
 func (m *RunnerMeta) Organizations() []string { return nil }
 func (m *RunnerMeta) String() string          { return m.ID.String() }
 
-func (*RunnerMeta) CanAccessSite(action rbac.Action) bool {
-	return false
-}
-
-func (*RunnerMeta) CanAccessTeam(rbac.Action, resource.ID) bool {
-	return false
-}
-
-func (m *RunnerMeta) CanAccessOrganization(action rbac.Action, name string) bool {
+func (m *RunnerMeta) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-	if m.AgentPool != nil {
-		return m.AgentPool.OrganizationName == name
+
+	if m.IsAgent() {
+		// Agents can only carry out actions on the organization their pool
+		// belongs to.
+		return m.AgentPool.OrganizationName == *req.Organization
 	}
 	return true
 }
 
-func (m *RunnerMeta) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
+func (m *RunnerMeta) CanAccess(action rbac.Action, policy authz.WorkspacePolicy) bool {
 	// only a server-based agent can authenticate as an Agent, and if that is
 	// so, then it can carry out all workspace-based actions.
 	//

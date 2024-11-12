@@ -22,10 +22,7 @@ const (
 
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
-	CanAccessSite(action rbac.Action) bool
-	CanAccessTeam(action rbac.Action, id resource.ID) bool
-	CanAccessOrganization(action rbac.Action, name string) bool
-	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
+	CanAccess(action rbac.Action, req *AccessRequest) bool
 
 	IsOwner(organization string) bool
 	IsSiteAdmin() bool
@@ -86,27 +83,21 @@ type Superuser struct {
 	Username string
 }
 
-func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
-func (*Superuser) CanAccessTeam(rbac.Action, resource.ID) bool          { return true }
-func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
-func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
-func (s *Superuser) Organizations() []string                            { return nil }
-func (s *Superuser) String() string                                     { return s.Username }
-func (s *Superuser) GetID() resource.ID                                 { return resource.NewID(resource.UserKind) }
-func (s *Superuser) IsSiteAdmin() bool                                  { return true }
-func (s *Superuser) IsOwner(string) bool                                { return true }
+func (*Superuser) CanAccess(rbac.Action, *AccessRequest) bool { return true }
+func (s *Superuser) Organizations() []string                  { return nil }
+func (s *Superuser) String() string                           { return s.Username }
+func (s *Superuser) GetID() resource.ID                       { return resource.NewID(resource.UserKind) }
+func (s *Superuser) IsSiteAdmin() bool                        { return true }
+func (s *Superuser) IsOwner(string) bool                      { return true }
 
 // Nobody is a subject with no privileges.
 type Nobody struct {
 	Username string
 }
 
-func (*Nobody) CanAccessSite(action rbac.Action) bool                { return false }
-func (*Nobody) CanAccessTeam(rbac.Action, resource.ID) bool          { return false }
-func (*Nobody) CanAccessOrganization(rbac.Action, string) bool       { return false }
-func (*Nobody) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return false }
-func (s *Nobody) Organizations() []string                            { return nil }
-func (s *Nobody) String() string                                     { return s.Username }
-func (s *Nobody) ID() string                                         { return s.Username }
-func (s *Nobody) IsSiteAdmin() bool                                  { return false }
-func (s *Nobody) IsOwner(string) bool                                { return false }
+func (*Nobody) CanAccess(rbac.Action, *AccessRequest) bool { return true }
+func (s *Nobody) Organizations() []string                  { return nil }
+func (s *Nobody) String() string                           { return s.Username }
+func (s *Nobody) ID() string                               { return s.Username }
+func (s *Nobody) IsSiteAdmin() bool                        { return false }
+func (s *Nobody) IsOwner(string) bool                      { return false }

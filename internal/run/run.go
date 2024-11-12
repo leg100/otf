@@ -458,7 +458,7 @@ func (r *Run) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (r *Run) CanAccessWorkspace(action rbac.Action, policy *authz.WorkspacePolicy) bool {
+func (r *Run) CanAccess(action rbac.Action, policy *authz.WorkspacePolicy) bool {
 	// run can access anything within its workspace
 	return r.WorkspaceID == policy.WorkspaceID
 }

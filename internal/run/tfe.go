@@ -363,11 +363,11 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		return nil, err
 	}
 	perms := &types.RunPermissions{
-		CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
-		CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanForceCancel:  subject.CanAccessWorkspace(rbac.ForceCancelRunAction, policy),
-		CanCancel:       subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
-		CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanDiscard:      subject.CanAccess(rbac.DiscardRunAction, policy),
+		CanForceExecute: subject.CanAccess(rbac.ApplyRunAction, policy),
+		CanForceCancel:  subject.CanAccess(rbac.ForceCancelRunAction, policy),
+		CanCancel:       subject.CanAccess(rbac.CancelRunAction, policy),
+		CanApply:        subject.CanAccess(rbac.ApplyRunAction, policy),
 	}
 
 	var timestamps types.RunStatusTimestamps

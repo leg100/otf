@@ -130,7 +130,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.CreateUserAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 }
 
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.GetUserAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.GetUserAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 // List lists all users.
 func (a *Service) List(ctx context.Context) ([]*User, error) {
-	_, err := a.site.CanAccess(ctx, rbac.ListUsersAction, resource.ID{})
+	_, err := a.CanAccess(ctx, rbac.ListUsersAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
-	_, err := a.organization.CanAccess(ctx, rbac.ListUsersAction, organization)
+	_, err := a.organization.CanAccess(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 }
 
 func (a *Service) Delete(ctx context.Context, username string) error {
-	subject, err := a.site.CanAccess(ctx, rbac.DeleteUserAction, resource.ID{})
+	subject, err := a.CanAccess(ctx, rbac.DeleteUserAction, nil)
 	if err != nil {
 		return err
 	}
