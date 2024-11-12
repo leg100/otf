@@ -48,11 +48,11 @@ func (a *allocator) Start(ctx context.Context) error {
 
 	runners, err := a.client.listRunners(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("seeding allocator with runners: %w", err)
 	}
 	jobs, err := a.client.listJobs(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("seeding allocator with jobs: %w", err)
 	}
 	a.seed(runners, jobs)
 

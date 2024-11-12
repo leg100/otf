@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal/authz"
@@ -54,11 +55,11 @@ func (m *manager) Start(ctx context.Context) error {
 	updateAll := func() error {
 		runners, err := m.client.listRunners(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("retrieving runners to check their status: %w", err)
 		}
 		for _, runner := range runners {
 			if err := m.update(ctx, runner); err != nil {
-				return err
+				return fmt.Errorf("updating runner status: %w", err)
 			}
 		}
 		return nil

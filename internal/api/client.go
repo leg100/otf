@@ -87,17 +87,24 @@ func NewClient(config Config) (*Client, error) {
 		Backoff:      retryablehttp.DefaultBackoff,
 		ErrorHandler: retryablehttp.PassthroughErrorHandler,
 		HTTPClient:   &http.Client{Transport: config.Transport},
-		RetryWaitMin: 100 * time.Millisecond,
-		RetryWaitMax: 400 * time.Millisecond,
+		RetryWaitMin: 500 * time.Millisecond,
+		RetryWaitMax: 30 * time.Second,
 		RetryMax:     30,
 	}
 	if config.RetryRequests {
 		// enable retries
-		client.http.CheckRetry = retryablehttp.DefaultRetryPolicy
-		client.http.RequestLogHook = func(_ retryablehttp.Logger, r *http.Request, n int) {
-			if n > 0 {
-				config.Logger.Error(nil, "retrying request", "url", r.URL, "attempt", n)
+		client.http.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+			retry, retryErr := retryablehttp.ErrorPropagatedRetryPolicy(ctx, resp, err)
+			if retry {
+				// Log retry attempts. The ErrorPropagatedRetryPolicy sometimes
+				// returns an error explaining why it has decided to retry and
+				// if so then report this error rather than the original error.
+				if retryErr != nil {
+					err = retryErr
+				}
+				config.Logger.Error(err, "retrying request")
 			}
+			return retry, retryErr
 		}
 	} else {
 		// disable retries
