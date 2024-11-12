@@ -52,11 +52,8 @@ func (f *fakeRunnerClient) register(ctx context.Context, opts registerOptions) (
 }
 
 func (f *fakeRunnerClient) getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
-	// block until context canceled
-	select {
-	case <-make(chan struct{}):
-	case <-ctx.Done():
-	}
+	// Block until context canceled
+	<-ctx.Done()
 	return nil, nil
 }
 
