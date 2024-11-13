@@ -12,7 +12,6 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -32,8 +31,7 @@ var (
 type (
 	Service struct {
 		logr.Logger
-
-		organization *organization.Authorizer
+		*authz.Authorizer
 
 		tfeapi       *tfe
 		api          *api
@@ -57,6 +55,7 @@ type (
 		RunService       *otfrun.Service
 		WorkspaceService *workspace.Service
 		TokensService    *tokens.Service
+		Authorizer       *authz.Authorizer
 	}
 
 	phaseClient interface {
@@ -68,9 +67,9 @@ type (
 
 func NewService(opts ServiceOptions) *Service {
 	svc := &Service{
-		Logger:       opts.Logger,
-		db:           &db{DB: opts.DB},
-		organization: &organization.Authorizer{Logger: opts.Logger},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db:         &db{DB: opts.DB},
 		tokenFactory: &tokenFactory{
 			tokens: opts.TokensService,
 		},
@@ -283,7 +282,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 }
 
 func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	_, err := s.CanAccess(ctx, rbac.ListRunnersAction, CanAccess(ctx, rbac.ListRunnersAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListRunnersAction, &authz.AccessRequest{Organization: organization)organization}})
+	_, err := s.CanAccess(ctx, rbac.ListRunnersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -704,7 +703,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 }
 
 func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
-	subject, err := s.CanAccess(ctx, rbac.ListAgentPoolsAction, CanAccess(ctx, rbac.ListAgentPoolsAction, organization)authz.AccessRequest{Organization: CanAccess(ctx, rbac.ListAgentPoolsAction, &authz.AccessRequest{Organization: organization)organization}})
+	subject, err := s.CanAccess(ctx, rbac.ListAgentPoolsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}

@@ -322,6 +322,44 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspa
 	return ws, nil
 }
 
+func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
+	subject, err := s.CanAccess(ctx, rbac.SetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.SetWorkspacePermission(ctx, workspaceID, teamID, role); err != nil {
+		s.Error(err, "setting workspace permission", "subject", subject, "workspace", workspaceID)
+		return err
+	}
+
+	s.V(0).Info("set workspace permission", "team_id", teamID, "role", role, "subject", subject, "workspace", workspaceID)
+
+	// TODO: publish event
+
+	return nil
+}
+
+func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error {
+	subject, err := s.CanAccess(ctx, rbac.UnsetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	if err != nil {
+		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
+		return err
+	}
+
+	s.V(0).Info("unset workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
+	// TODO: publish event
+	return s.db.UnsetWorkspacePermission(ctx, workspaceID, teamID)
+}
+
+// GetWorkspacePolicy retrieves the authorization policy for a workspace.
+//
+// NOTE: there is no auth because it is used in the process of making an auth
+// decision.
+func (a *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (*authz.WorkspacePolicy, error) {
+	return a.db.GetWorkspacePolicy(ctx, workspaceID)
+}
+
 // connect connects the workspace to a repo.
 func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connection *Connection) error {
 	subject, err := authz.SubjectFromContext(ctx)

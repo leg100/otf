@@ -73,6 +73,9 @@ sql:
             go_type:
               type: "AgentPool"
               pointer: true
+          - db_type: "workspace_permissions"
+            go_type:
+              type: "WorkspacePermission"
           - column: "agent_pools.agent_pool_id"
             go_type:
               import: "github.com/leg100/otf/internal/resource"

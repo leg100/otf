@@ -32,23 +32,6 @@ type Subject interface {
 	String() string
 }
 
-// WorkspacePolicy binds workspace permissions to a workspace
-type WorkspacePolicy struct {
-	Organization string
-	WorkspaceID  resource.ID
-	Permissions  []WorkspacePermission
-
-	// Whether workspace permits its state to be consumed by all workspaces in
-	// the organization.
-	GlobalRemoteState bool
-}
-
-// WorkspacePermission binds a role to a team.
-type WorkspacePermission struct {
-	TeamID resource.ID
-	Role   rbac.Role
-}
-
 // AddSubjectToContext adds a subject to a context
 func AddSubjectToContext(ctx context.Context, subj Subject) context.Context {
 	return context.WithValue(ctx, subjectCtxKey, subj)

@@ -14,13 +14,23 @@ import (
 // access) and resources (the entities to which access is being requested).
 type Authorizer struct {
 	logr.Logger
+	WorkspacePolicyGetter
 
-	resourceAuthorizers   map[resource.Kind]ResourceAuthorizer
 	organizationResolvers map[resource.Kind]OrganizationResolver
 	workspaceResolvers    map[resource.Kind]WorkspaceResolver
 }
 
-type ResourceAuthorizer func(ctx context.Context, action rbac.Action, id resource.ID) (bool, error)
+func NewAuthorizer(logger logr.Logger) *Authorizer {
+	return &Authorizer{
+		Logger:                logger,
+		organizationResolvers: make(map[resource.Kind]OrganizationResolver),
+		workspaceResolvers:    make(map[resource.Kind]WorkspaceResolver),
+	}
+}
+
+type WorkspacePolicyGetter interface {
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (*WorkspacePolicy, error)
+}
 
 // OrganizationResolver takes the ID of a resource and returns the name of the
 // organization it belongs to.
@@ -29,13 +39,6 @@ type OrganizationResolver func(ctx context.Context, id resource.ID) (string, err
 // WorkspaceResolver takes the ID of a resource and returns the ID of the
 // workspace it belongs to.
 type WorkspaceResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
-
-// RegisterAuthorizer allows authorization to be determined for a specific
-// resource kind. i.e. a workspace policy determining which teams can carry out actions on a
-// workspace.
-func (a *Authorizer) RegisterAuthorizer(kind resource.Kind, authorizer ResourceAuthorizer) {
-	a.resourceAuthorizers[kind] = authorizer
-}
 
 // RegisterOrganizationResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the name of the
@@ -61,11 +64,6 @@ func (a *Authorizer) RegisterWorkspaceResolver(kind resource.Kind, resolver Work
 // resource. The subject is expected to be contained within the context. If the
 // access request is nil then it's assumed the request is for access to the
 // entire site (the highest level).
-//
-// Authorization in OTF works as follows:
-// (i) if the subject allows access then it is allowed.
-// (ii) otherwise specific resource kinds can allow access to subject.
-// (iii) otherwise access is denied.
 func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest) (Subject, error) {
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
@@ -92,6 +90,20 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 			// Authorize workspace ID instead
 			req.ID = &workspaceID
 		}
+		// If the resource kind is a workspace, then fetch its policy.
+		if req.ID.Kind() == resource.WorkspaceKind {
+			policy, err := a.GetWorkspacePolicy(ctx, *req.ID)
+			if err != nil {
+				a.Error(err, "authorization failure fetching workspace policy",
+					"resource", req,
+					"action", action.String(),
+					"subject", subj,
+				)
+				return nil, err
+			}
+			req.WorkspacePolicy = policy
+		}
+
 		// Then check if the resource kind - including the case where the
 		// resource kind has been resolved to a workspace - is registered for
 		// its ID to be resolved to an oranization name. This is ony necessary
@@ -100,7 +112,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 			if resolver, ok := a.organizationResolvers[req.ID.Kind()]; ok {
 				organization, err := resolver(ctx, *req.ID)
 				if err != nil {
-					a.Error(err, "authorization failure",
+					a.Error(err, "authorization failure resolving organization",
 						"resource", req,
 						"action", action.String(),
 						"subject", subj,
@@ -114,24 +126,6 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 	// Allow subject to determine whether it is allowed to access resource.
 	if subj.CanAccess(action, req) {
 		return subj, nil
-	}
-	// Subject hasn't explicitly allowed access so delegate authorization to a
-	// resource kind's specific authorizer, if one has been registered.
-	if req.ID != nil {
-		if authorizer, ok := a.resourceAuthorizers[req.ID.Kind()]; ok {
-			allowed, err := authorizer(ctx, action, *req.ID)
-			if err != nil {
-				a.Error(err, "authorization failure",
-					"resource", req,
-					"action", action.String(),
-					"subject", subj,
-				)
-				return nil, err
-			}
-			if allowed {
-				return subj, nil
-			}
-		}
 	}
 	a.Error(nil, "unauthorized action",
 		"resource", req,
@@ -156,6 +150,23 @@ type AccessRequest struct {
 	// ID of resource to which access is being requested. If nil then the action
 	// is being requested on the organization.
 	ID *resource.ID
+	// WorkspacePolicy specifies workspace-specific permissions for the resource
+	// specified by ID. Only non-nil if ID refers to a workspace.
+	WorkspacePolicy *WorkspacePolicy
+}
+
+// WorkspacePolicy binds workspace permissions to a workspace
+type WorkspacePolicy struct {
+	Permissions []WorkspacePermission
+	// Whether workspace permits its state to be consumed by all workspaces in
+	// the organization.
+	GlobalRemoteState bool
+}
+
+// WorkspacePermission binds a role to a team.
+type WorkspacePermission struct {
+	TeamID resource.ID
+	Role   rbac.Role
 }
 
 func (r *AccessRequest) LogValue() slog.Value {

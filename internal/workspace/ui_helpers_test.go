@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
@@ -88,7 +87,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			helpers := &uiHelpers{
 				service: &fakeUIHelpersService{},
 			}
-			got, err := helpers.lockButtonHelper(context.Background(), tt.ws, authz.WorkspacePolicy{}, tt.user)
+			got, err := helpers.lockButtonHelper(context.Background(), tt.ws, tt.user)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

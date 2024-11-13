@@ -87,11 +87,11 @@ func (j *Job) IsOwner(string) bool { return false }
 func (j *Job) String() string      { return j.ID.String() }
 
 func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
-	if req.Organization == nil {
+	if req == nil {
 		// Job cannot carry out site-wide actions
 		return false
 	}
-	if *req.Organization != j.Organization {
+	if req.Organization != j.Organization {
 		// Job cannot carry out actions on other organizations
 		return false
 	}
@@ -115,6 +115,19 @@ func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 		case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
 			// apply phase
 			if j.Phase == internal.ApplyPhase {
+				return true
+			}
+		}
+	}
+	if req.WorkspacePolicy != nil {
+		// Job is attempting to access another workspace. Check whether
+		// workspace's policy allows it do so.
+		switch action {
+		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
+			if req.WorkspacePolicy.GlobalRemoteState {
+				// Job is allowed to retrieve the state of this workspace
+				// because the workspace has allowed global remote state
+				// sharing.
 				return true
 			}
 		}

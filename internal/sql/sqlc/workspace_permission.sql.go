@@ -29,30 +29,26 @@ func (q *Queries) DeleteWorkspacePermissionByID(ctx context.Context, arg DeleteW
 	return err
 }
 
-const findWorkspacePermissionsByWorkspaceID = `-- name: FindWorkspacePermissionsByWorkspaceID :many
-SELECT workspace_id, team_id, role
-FROM workspace_permissions
-WHERE workspace_id = $1
+const findWorkspacePermissionsAndGlobalRemoteState = `-- name: FindWorkspacePermissionsAndGlobalRemoteState :one
+SELECT
+    w.global_remote_state,
+    array_agg(wp.*)::workspace_permissions[] AS workspace_permissions
+FROM workspaces w
+LEFT JOIN workspace_permissions wp USING (workspace_id)
+WHERE w.workspace_id = $1
+GROUP BY w.workspace_id
 `
 
-func (q *Queries) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID resource.ID) ([]WorkspacePermission, error) {
-	rows, err := q.db.Query(ctx, findWorkspacePermissionsByWorkspaceID, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []WorkspacePermission
-	for rows.Next() {
-		var i WorkspacePermission
-		if err := rows.Scan(&i.WorkspaceID, &i.TeamID, &i.Role); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type FindWorkspacePermissionsAndGlobalRemoteStateRow struct {
+	GlobalRemoteState    pgtype.Bool
+	WorkspacePermissions []WorkspacePermission
+}
+
+func (q *Queries) FindWorkspacePermissionsAndGlobalRemoteState(ctx context.Context, workspaceID resource.ID) (FindWorkspacePermissionsAndGlobalRemoteStateRow, error) {
+	row := q.db.QueryRow(ctx, findWorkspacePermissionsAndGlobalRemoteState, workspaceID)
+	var i FindWorkspacePermissionsAndGlobalRemoteStateRow
+	err := row.Scan(&i.GlobalRemoteState, &i.WorkspacePermissions)
+	return i, err
 }
 
 const upsertWorkspacePermission = `-- name: UpsertWorkspacePermission :exec
