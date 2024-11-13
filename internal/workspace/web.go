@@ -49,7 +49,7 @@ type (
 		teams        webTeamClient
 		vcsproviders webVCSProvidersClient
 		client       webClient
-		authorizer   *authz.Authorizer
+		authorizer   webAuthorizer
 	}
 
 	webTeamClient interface {
@@ -61,6 +61,10 @@ type (
 		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
 
 		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
+	}
+
+	webAuthorizer interface {
+		CanAccessDecision(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 
 	// webClient provides web handlers with access to the workspace service
@@ -172,11 +176,10 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
-	user, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	canCreateWorkspace := h.authorizer.CanAccessDecision(
+		r.Context(),
+		rbac.CreateTeamAction,
+		&authz.AccessRequest{Organization: *params.Organization})
 
 	response := struct {
 		organization.OrganizationPage
@@ -186,7 +189,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		CanCreateWorkspace bool
 	}{
 		OrganizationPage:   organization.NewPage(r, "workspaces", *params.Organization),
-		CanCreateWorkspace: user.CanAccessOrganization(rbac.CreateTeamAction, *params.Organization),
+		CanCreateWorkspace: canCreateWorkspace,
 		Page:               workspaces,
 		TagFilters:         tagfilters(),
 		Search:             params.Search,
@@ -255,11 +258,6 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.client.GetPolicy(r.Context(), id)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	user, err := user.UserFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -291,7 +289,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lockButton, err := h.lockButtonHelper(r.Context(), ws, policy, user)
+	lockButton, err := h.lockButtonHelper(r.Context(), ws, user)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -314,13 +312,13 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage:      NewPage(r, ws.Name, ws),
 		LockButton:         lockButton,
 		VCSProvider:        provider,
-		CanApply:           user.CanAccess(rbac.ApplyRunAction, policy),
-		CanAddTags:         user.CanAccess(rbac.AddTagsAction, policy),
-		CanRemoveTags:      user.CanAccess(rbac.RemoveTagsAction, policy),
-		CanCreateRun:       user.CanAccess(rbac.CreateRunAction, policy),
-		CanLockWorkspace:   user.CanAccess(rbac.LockWorkspaceAction, policy),
-		CanUnlockWorkspace: user.CanAccess(rbac.UnlockWorkspaceAction, policy),
-		CanUpdateWorkspace: user.CanAccess(rbac.UpdateWorkspaceAction, policy),
+		CanApply:           h.authorizer.CanAccessDecision(r.Context(), rbac.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanAddTags:         h.authorizer.CanAccessDecision(r.Context(), rbac.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanRemoveTags:      h.authorizer.CanAccessDecision(r.Context(), rbac.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanCreateRun:       h.authorizer.CanAccessDecision(r.Context(), rbac.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanLockWorkspace:   h.authorizer.CanAccessDecision(r.Context(), rbac.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUnlockWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUpdateWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 		TagsDropdown: html.DropdownUI{
 			Name:        "tag_name",
 			Available:   internal.Diff(getTagNames(), ws.Tags),
@@ -468,8 +466,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerAlways:   VCSTriggerAlways,
 		VCSTriggerPatterns: VCSTriggerPatterns,
 		VCSTriggerTags:     VCSTriggerTags,
-		CanUpdateWorkspace: user.CanAccess(rbac.UpdateWorkspaceAction, policy),
-		CanDeleteWorkspace: user.CanAccess(rbac.DeleteWorkspaceAction, policy),
+		CanUpdateWorkspace: user.CanAccess(rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		CanDeleteWorkspace: user.CanAccess(rbac.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
 		PoolsURL:           poolsURL,
 	})
 }

@@ -30,10 +30,6 @@ func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspac
 	}
 	switch caller := subj.(type) {
 	case *team.Team:
-		if caller.Organization != policy.Organization {
-			// Team cannot access workspace in different organization
-			return false, nil
-		}
 		// Team can only access workspace if a specific permission has been
 		// assigned to the team.
 		for _, perm := range policy.Permissions {
