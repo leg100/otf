@@ -356,8 +356,8 @@ func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resou
 //
 // NOTE: there is no auth because it is used in the process of making an auth
 // decision.
-func (a *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (*authz.WorkspacePolicy, error) {
-	return a.db.GetWorkspacePolicy(ctx, workspaceID)
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 // connect connects the workspace to a repo.

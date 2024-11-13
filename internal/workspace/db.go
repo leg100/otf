@@ -367,19 +367,19 @@ func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamI
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (*authz.WorkspacePolicy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
 	perms, err := db.Querier(ctx).FindWorkspacePermissionsAndGlobalRemoteState(ctx, workspaceID)
 	if err != nil {
-		return nil, sql.Error(err)
+		return authz.WorkspacePolicy{}, sql.Error(err)
 	}
-	p := &authz.WorkspacePolicy{
+	p := authz.WorkspacePolicy{
 		GlobalRemoteState: perms.GlobalRemoteState.Bool,
 		Permissions:       make([]authz.WorkspacePermission, len(perms.WorkspacePermissions)),
 	}
 	for i, perm := range perms.WorkspacePermissions {
 		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
 		if err != nil {
-			return nil, err
+			return authz.WorkspacePolicy{}, err
 		}
 		p.Permissions[i] = authz.WorkspacePermission{
 			TeamID: perm.TeamID,

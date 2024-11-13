@@ -29,7 +29,7 @@ func NewAuthorizer(logger logr.Logger) *Authorizer {
 }
 
 type WorkspacePolicyGetter interface {
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (*WorkspacePolicy, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (WorkspacePolicy, error)
 }
 
 // OrganizationResolver takes the ID of a resource and returns the name of the
@@ -80,7 +80,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 		if resolver, ok := a.workspaceResolvers[req.ID.Kind()]; ok {
 			workspaceID, err := resolver(ctx, *req.ID)
 			if err != nil {
-				a.Error(err, "authorization failure",
+				a.Error(err, "authorization failure resolving workspace ID",
 					"resource", req,
 					"action", action.String(),
 					"subject", subj,
@@ -101,7 +101,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 				)
 				return nil, err
 			}
-			req.WorkspacePolicy = policy
+			req.WorkspacePolicy = &policy
 		}
 
 		// Then check if the resource kind - including the case where the
