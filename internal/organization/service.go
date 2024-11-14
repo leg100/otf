@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -22,11 +23,10 @@ type (
 	Service struct {
 		RestrictOrganizationCreation bool
 
-		*Authorizer // authorize access to org
+		*authz.Authorizer
 		logr.Logger
 
 		db           *pgdb
-		site         authz.Authorizer // authorize access to site
 		web          *web
 		tfeapi       *tfe
 		api          *api
@@ -40,6 +40,7 @@ type (
 	Options struct {
 		RestrictOrganizationCreation bool
 		TokensService                *tokens.Service
+		Authorizer                   *authz.Authorizer
 
 		*sql.DB
 		*tfeapi.Responder
@@ -56,11 +57,10 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Authorizer:                   &Authorizer{opts.Logger},
+		Authorizer:                   opts.Authorizer,
 		Logger:                       opts.Logger,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
-		site:                         &authz.SiteAuthorizer{Logger: opts.Logger},
 		tokenFactory:                 &tokenFactory{tokens: opts.TokensService},
 	}
 	svc.web = &web{
@@ -115,16 +115,17 @@ func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
 func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
-	creator, err := s.restrictOrganizationCreation(ctx)
+	subject, err := s.Authorize(ctx, rbac.CreateOrganizationAction, &authz.AccessRequest{Organization: *opts.Name})
 	if err != nil {
 		return nil, err
 	}
-
+	if err := s.restrictOrganizationCreation(subject); err != nil {
+		return nil, err
+	}
 	org, err := NewOrganization(opts)
 	if err != nil {
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
-
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		if err := s.db.create(ctx, org); err != nil {
 			return err
@@ -137,12 +138,24 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
+		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
 		return nil, sql.Error(err)
 	}
-	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
-
+	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
 	return org, nil
+}
+
+func (s *Service) restrictOrganizationCreation(subject authz.Subject) error {
+	if s.RestrictOrganizationCreation {
+		type user interface {
+			IsSiteAdmin() bool
+		}
+		if user, ok := subject.(user); !ok || !user.IsSiteAdmin() {
+			s.Error(internal.ErrAccessNotPermitted, "cannot create organization because creation is restricted to site admins", "action", rbac.CreateOrganizationAction, "subject", subject)
+			return internal.ErrAccessNotPermitted
+		}
+	}
+	return nil
 }
 
 func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
@@ -150,11 +163,10 @@ func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organizati
 }
 
 func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
-	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
+	subject, err := s.Authorize(ctx, rbac.UpdateOrganizationAction, &authz.AccessRequest{Organization: name})
 	if err != nil {
 		return nil, err
 	}
-
 	org, err := s.db.update(ctx, name, func(org *Organization) error {
 		return org.Update(opts)
 	})
@@ -164,30 +176,40 @@ func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (
 	}
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
-
 	return org, nil
 }
 
-// List lists organizations according to the subject. If the
-// subject has site-wide permission to list organizations then all organizations
-// are listed. Otherwise:
-// Subject is a user: list their organization memberships
-// Subject is an agent: return its organization
-// Subject is an organization token: return its organization
-// Subject is a team: return its organization
+// List organizations. If the subject lacks the ListOrganizationsAction
+// permission then its organization memberships are listed instead.
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
-	subject, err := authz.SubjectFromContext(ctx)
+	orgs, subject, err := func() (*resource.Page[*Organization], authz.Subject, error) {
+		var names []string
+		subject, err := s.Authorize(ctx, rbac.ListOrganizationsAction, nil, authz.WithoutErrorLogging())
+		if errors.Is(err, internal.ErrAccessNotPermitted) {
+			// List subject's organization memberships instead.
+			type memberships interface {
+				Organizations() []string
+			}
+			user, ok := subject.(memberships)
+			if !ok {
+				return nil, subject, err
+			}
+			names = user.Organizations()
+		} else if err != nil {
+			return nil, subject, err
+		}
+		orgs, err := s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: names})
+		return orgs, subject, err
+	}()
 	if err != nil {
-		return nil, err
+		s.Error(err, "listing organizations", "subject", subject)
 	}
-	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
-		return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions})
-	}
-	return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: subject.Organizations()})
+	s.V(9).Info("listed organizations", "subject", subject)
+	return orgs, err
 }
 
 func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, name)
+	subject, err := s.Authorize(ctx, rbac.GetOrganizationAction, &authz.AccessRequest{Organization: name})
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +226,7 @@ func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (s *Service) Delete(ctx context.Context, name string) error {
-	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
+	subject, err := s.Authorize(ctx, rbac.DeleteOrganizationAction, &authz.AccessRequest{Organization: name})
 	if err != nil {
 		return err
 	}
@@ -235,7 +257,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 }
 
 func (s *Service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
-	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
+	_, err := s.Authorize(ctx, rbac.GetEntitlementsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return Entitlements{}, err
 	}
@@ -247,22 +269,10 @@ func (s *Service) GetEntitlements(ctx context.Context, organization string) (Ent
 	return defaultEntitlements(org.ID), nil
 }
 
-func (s *Service) restrictOrganizationCreation(ctx context.Context) (authz.Subject, error) {
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if s.RestrictOrganizationCreation && !subject.IsSiteAdmin() {
-		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
-		return subject, internal.ErrAccessNotPermitted
-	}
-	return subject, nil
-}
-
 // CreateToken creates an organization token. If an organization
 // token already exists it is replaced.
 func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
-	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, opts.Organization)
+	_, err := s.Authorize(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -314,7 +324,7 @@ func (s *Service) ListTokens(ctx context.Context, organization string) ([]*Organ
 }
 
 func (s *Service) DeleteToken(ctx context.Context, organization string) error {
-	_, err := s.CanAccess(ctx, rbac.CreateOrganizationTokenAction, organization)
+	_, err := s.Authorize(ctx, rbac.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return err
 	}

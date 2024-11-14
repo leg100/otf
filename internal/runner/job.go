@@ -66,7 +66,10 @@ func newJob(run *otfrun.Run) *Job {
 
 func (j *Job) LogValue() slog.Value {
 	attrs := []slog.Attr{
+		slog.String("job_id", j.ID.String()),
 		slog.String("run_id", j.RunID.String()),
+		slog.String("workspace_id", j.WorkspaceID.String()),
+		slog.String("organization", j.Organization),
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
@@ -80,60 +83,56 @@ func (j *Job) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (j *Job) Organizations() []string { return nil }
+func (j *Job) String() string { return j.ID.String() }
 
-func (j *Job) IsSiteAdmin() bool   { return false }
-func (j *Job) IsOwner(string) bool { return false }
-func (j *Job) String() string      { return j.ID.String() }
-
-func (j *Job) CanAccessSite(action rbac.Action) bool {
-	return false
-}
-
-func (j *Job) CanAccessOrganization(action rbac.Action, name string) bool {
-	switch action {
-	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
-		return j.Organization == name
-	default:
+func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req == nil {
+		// Job cannot carry out site-wide actions
 		return false
 	}
-}
-
-func (j *Job) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	if policy.WorkspaceID != j.WorkspaceID {
-		// job is allowed the retrieve the state of *another* workspace only if:
-		// (a) workspace is in the same organization as job, or
-		// (b) workspace has enabled global remote state (permitting organization-wide
-		// state sharing).
+	if req.Organization != j.Organization {
+		// Job cannot carry out actions on other organizations
+		return false
+	}
+	// Permissible organization actions on same organization
+	switch action {
+	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
+		return true
+	}
+	// Permissible workspace actions on same workspace.
+	if req.ID != nil && *req.ID == j.WorkspaceID {
+		// Allow actions on same workspace as job depending on run phase
 		switch action {
-		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
-			if j.Organization == policy.Organization && policy.GlobalRemoteState {
+		case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
+			// any phase
+			return true
+		case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
+			// plan phase
+			if j.Phase == internal.PlanPhase {
+				return true
+			}
+		case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
+			// apply phase
+			if j.Phase == internal.ApplyPhase {
 				return true
 			}
 		}
 		return false
 	}
-	// allow actions on same workspace as job depending on run phase
-	switch action {
-	case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
-		// any phase
-		return true
-	case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
-		// plan phase
-		if j.Phase == internal.PlanPhase {
-			return true
-		}
-	case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
-		// apply phase
-		if j.Phase == internal.ApplyPhase {
-			return true
+	// If workspace policy is non-nil then that means the job is trying to
+	// access *another* workspace. Check the policy to determine if it is
+	// allowed to do so.
+	if req.WorkspacePolicy != nil {
+		switch action {
+		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
+			if req.WorkspacePolicy.GlobalRemoteState {
+				// Job is allowed to retrieve the state of this workspace
+				// because the workspace has allowed global remote state
+				// sharing.
+				return true
+			}
 		}
 	}
-	return false
-}
-
-func (j *Job) CanAccessTeam(rbac.Action, resource.ID) bool {
-	// Can't access team level actions
 	return false
 }
 

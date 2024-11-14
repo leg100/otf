@@ -53,18 +53,13 @@ func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions)
 	return &ot, token, nil
 }
 
-func (u *OrganizationToken) CanAccessSite(action rbac.Action) bool {
-	// only be used for organization-scoped resources.
-	return false
-}
-
-func (u *OrganizationToken) CanAccessTeam(rbac.Action, resource.ID) bool {
-	// only be used for organization-scoped resources.
-	return false
-}
-
-func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string) bool {
-	if u.Organization != org {
+func (u *OrganizationToken) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req == nil {
+		// Organization token cannot take action on site-level resources
+		return false
+	}
+	if req.Organization != u.Organization {
+		// Organization token cannot take action on other organizations
 		return false
 	}
 	// can perform most actions in an organization, so it is easier to first refuse
@@ -75,18 +70,6 @@ func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string
 	}
 	return true
 }
-
-func (u *OrganizationToken) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	return u.CanAccessOrganization(action, policy.Organization)
-}
-
-func (u *OrganizationToken) IsOwner(organization string) bool {
-	// an owner would give perms to all actions in org whereas an org token
-	// cannot perform certain actions, so org token is not an owner.
-	return false
-}
-
-func (u *OrganizationToken) IsSiteAdmin() bool { return false }
 
 func (u *OrganizationToken) Organizations() []string {
 	return []string{u.Organization}

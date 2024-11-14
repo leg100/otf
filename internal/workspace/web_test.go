@@ -55,7 +55,7 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	privilegedUser = resource.NewID(resource.UserKind)
+	bobby := &user.User{ID: resource.NewID(resource.UserKind)}
 
 	tests := []struct {
 		name      string
@@ -65,14 +65,19 @@ func TestGetWorkspaceHandler(t *testing.T) {
 			"unlocked", &Workspace{ID: testutils.ParseID(t, "ws-unlocked"), Lock: nil},
 		},
 		{
-			"locked", &Workspace{ID: testutils.ParseID(t, "ws-locked"), Lock: &privilegedUser},
+			"locked", &Workspace{ID: testutils.ParseID(t, "ws-locked"), Lock: &bobby.ID},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &webHandlers{
 				Renderer: testutils.NewRenderer(t),
-				client:   &FakeService{Workspaces: []*Workspace{tt.workspace}},
+				uiHelpers: &uiHelpers{
+					service:    &fakeUIHelpersService{lockedBy: bobby},
+					authorizer: authz.NewAllowAllAuthorizer(),
+				},
+				authorizer: authz.NewAllowAllAuthorizer(),
+				client:     &FakeService{Workspaces: []*Workspace{tt.workspace}},
 			}
 
 			q := "/?workspace_id=ws-123"
@@ -176,7 +181,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &webHandlers{
-				Renderer: testutils.NewRenderer(t),
+				Renderer:   testutils.NewRenderer(t),
+				authorizer: authz.NewAllowAllAuthorizer(),
 				client: &FakeService{
 					Policy:     tt.policy,
 					Workspaces: []*Workspace{tt.ws},
@@ -231,8 +237,9 @@ func TestListWorkspacesHandler(t *testing.T) {
 		workspaces[i-1] = &Workspace{ID: testutils.ParseID(t, fmt.Sprintf("ws-%d", i))}
 	}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: workspaces},
+		Renderer:   testutils.NewRenderer(t),
+		authorizer: authz.NewAllowAllAuthorizer(),
+		client:     &FakeService{Workspaces: workspaces},
 	}
 
 	t.Run("first page", func(t *testing.T) {
@@ -269,8 +276,9 @@ func TestListWorkspacesHandler(t *testing.T) {
 func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-foo"), LatestRun: &LatestRun{Status: "applied", ID: testutils.ParseID(t, "run-123")}}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		Renderer:   testutils.NewRenderer(t),
+		authorizer: authz.NewAllowAllAuthorizer(),
+		client:     &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	r := httptest.NewRequest("GET", "/?organization_name=acme", nil)

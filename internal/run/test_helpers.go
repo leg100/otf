@@ -55,7 +55,8 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	}
 
 	return &webHandlers{
-		Renderer: renderer,
+		Renderer:   renderer,
+		authorizer: authz.NewAllowAllAuthorizer(),
 		workspaces: &workspace.FakeService{
 			Workspaces: []*workspace.Workspace{svc.ws},
 		},

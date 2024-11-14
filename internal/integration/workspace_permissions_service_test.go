@@ -33,7 +33,7 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 		err = svc.Workspaces.UnsetPermission(ctx, ws.ID, team.ID)
 		require.NoError(t, err)
 
-		policy, err := svc.Workspaces.GetPolicy(ctx, ws.ID)
+		policy, err := svc.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Empty(t, policy.Permissions)
 	})
@@ -50,11 +50,9 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 		err = svc.Workspaces.SetPermission(ctx, ws.ID, cherries.ID, rbac.WorkspacePlanRole)
 		require.NoError(t, err)
 
-		got, err := svc.Workspaces.GetPolicy(ctx, ws.ID)
+		got, err := svc.Workspaces.GetWorkspacePolicy(ctx, ws.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, org.Name, got.Organization)
-		assert.Equal(t, ws.ID, got.WorkspaceID)
 		assert.Equal(t, 3, len(got.Permissions))
 		assert.Contains(t, got.Permissions, authz.WorkspacePermission{
 			TeamID: scum.ID,
@@ -72,7 +70,7 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 
 	t.Run("workspace not found", func(t *testing.T) {
 		nonExistentID := resource.NewID(resource.WorkspaceKind)
-		_, err := svc.Workspaces.GetPolicy(ctx, nonExistentID)
+		_, err := svc.Workspaces.GetWorkspacePolicy(ctx, nonExistentID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
 	})
 }

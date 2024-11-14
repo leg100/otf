@@ -27,7 +27,9 @@ type (
 		chunkproxy
 	}
 
-	fakeAuthorizer struct{}
+	fakeAuthorizer struct {
+		authz.Interface
+	}
 )
 
 func newFakeCache(keyvalues ...string) *fakeCache {
@@ -59,7 +61,7 @@ func (f *fakeTailProxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, e
 	return f.chunk, nil
 }
 
-func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, resource.ID) (authz.Subject, error) {
+func (f *fakeAuthorizer) Authorize(context.Context, rbac.Action, *authz.AccessRequest, ...authz.CanAccessOption) (authz.Subject, error) {
 	return &authz.Superuser{}, nil
 }
 

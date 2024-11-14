@@ -125,10 +125,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var canCreate bool
-	if !a.RestrictCreation || subject.CanAccessSite(rbac.CreateOrganizationAction) {
-		canCreate = true
-	}
+	canCreate := !a.RestrictCreation || subject.CanAccess(rbac.CreateOrganizationAction, nil)
 
 	a.Render("organization_list.tmpl", w, struct {
 		html.SitePage

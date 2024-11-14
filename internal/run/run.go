@@ -9,10 +9,8 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
@@ -446,21 +444,6 @@ func (r *Run) EnqueuePlan() error {
 	r.Plan.UpdateStatus(PhaseQueued)
 
 	return nil
-}
-
-func (*Run) CanAccessSite(action rbac.Action) bool {
-	// run cannot carry out site-level actions
-	return false
-}
-
-func (r *Run) CanAccessOrganization(action rbac.Action, name string) bool {
-	// run cannot access organization-level resources
-	return false
-}
-
-func (r *Run) CanAccessWorkspace(action rbac.Action, policy *authz.WorkspacePolicy) bool {
-	// run can access anything within its workspace
-	return r.WorkspaceID == policy.WorkspaceID
 }
 
 func (r *Run) EnqueueApply() error {

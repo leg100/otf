@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -25,11 +24,9 @@ var ErrCannotDeleteOnlyOwner = errors.New("cannot remove the last owner")
 type (
 	Service struct {
 		logr.Logger
+		*authz.Authorizer
 
-		site         authz.Authorizer         // authorizes site access
-		organization *organization.Authorizer // authorizes org access
-		teams        *team.Service
-
+		teams  *team.Service
 		db     *pgdb
 		web    *webHandlers
 		tfeapi *tfe
@@ -42,6 +39,7 @@ type (
 		SiteToken     string
 		TokensService *tokens.Service
 		TeamService   *team.Service
+		Authorizer    *authz.Authorizer
 
 		*sql.DB
 		*tfeapi.Responder
@@ -52,10 +50,9 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:       opts.Logger,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &authz.SiteAuthorizer{Logger: opts.Logger},
-		db:           &pgdb{opts.DB, opts.Logger},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db:         &pgdb{opts.DB, opts.Logger},
 		userTokenFactory: &userTokenFactory{
 			tokens: opts.TokensService,
 		},
@@ -130,7 +127,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, resource.ID{})
+	subject, err := a.Authorize(ctx, rbac.CreateUserAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +145,7 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 }
 
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.GetUserAction, resource.ID{})
+	subject, err := a.Authorize(ctx, rbac.GetUserAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +163,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 // List lists all users.
 func (a *Service) List(ctx context.Context) ([]*User, error) {
-	_, err := a.site.CanAccess(ctx, rbac.ListUsersAction, resource.ID{})
+	_, err := a.Authorize(ctx, rbac.ListUsersAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +173,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
-	_, err := a.organization.CanAccess(ctx, rbac.ListUsersAction, organization)
+	_, err := a.Authorize(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +190,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.ListUsersAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +207,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 }
 
 func (a *Service) Delete(ctx context.Context, username string) error {
-	subject, err := a.site.CanAccess(ctx, rbac.DeleteUserAction, resource.ID{})
+	subject, err := a.Authorize(ctx, rbac.DeleteUserAction, nil)
 	if err != nil {
 		return err
 	}
@@ -234,7 +231,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.ID, use
 		return err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.AddTeamMembershipAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return err
 	}
@@ -273,7 +270,7 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.ID, 
 		return err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.RemoveTeamMembershipAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return err
 	}

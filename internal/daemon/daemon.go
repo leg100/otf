@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
@@ -129,8 +130,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
 
+	authorizer := authz.NewAuthorizer(logger)
+
 	orgService := organization.NewService(organization.Options{
 		Logger:                       logger,
+		Authorizer:                   authorizer,
 		DB:                           db,
 		Listener:                     listener,
 		Renderer:                     renderer,
@@ -141,6 +145,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	teamService := team.NewService(team.Options{
 		Logger:              logger,
+		Authorizer:          authorizer,
 		DB:                  db,
 		Renderer:            renderer,
 		Responder:           responder,
@@ -149,6 +154,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 	userService := user.NewService(user.Options{
 		Logger:        logger,
+		Authorizer:    authorizer,
 		DB:            db,
 		Renderer:      renderer,
 		Responder:     responder,
@@ -163,6 +169,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	githubAppService := github.NewService(github.Options{
 		Logger:              logger,
+		Authorizer:          authorizer,
 		DB:                  db,
 		Renderer:            renderer,
 		HostnameService:     hostnameService,
@@ -174,6 +181,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:              logger,
+		Authorizer:          authorizer,
 		DB:                  db,
 		Renderer:            renderer,
 		Responder:           responder,
@@ -211,6 +219,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
+		Authorizer:          authorizer,
 		DB:                  db,
 		Listener:            listener,
 		Renderer:            renderer,
@@ -222,22 +231,22 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:  vcsProviderService,
 	})
 	configService := configversion.NewService(configversion.Options{
-		Logger:              logger,
-		DB:                  db,
-		WorkspaceAuthorizer: workspaceService,
-		Responder:           responder,
-		Cache:               cache,
-		Signer:              signer,
-		MaxConfigSize:       cfg.MaxConfigSize,
+		Logger:        logger,
+		Authorizer:    authorizer,
+		DB:            db,
+		Responder:     responder,
+		Cache:         cache,
+		Signer:        signer,
+		MaxConfigSize: cfg.MaxConfigSize,
 	})
 
 	runService := run.NewService(run.Options{
 		Logger:               logger,
+		Authorizer:           authorizer,
 		DB:                   db,
 		Listener:             listener,
 		Renderer:             renderer,
 		Responder:            responder,
-		WorkspaceAuthorizer:  workspaceService,
 		OrganizationService:  orgService,
 		WorkspaceService:     workspaceService,
 		ConfigVersionService: configService,
@@ -249,15 +258,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:        tokensService,
 	})
 	logsService := logs.NewService(logs.Options{
-		Logger:        logger,
-		DB:            db,
-		RunAuthorizer: runService,
-		Cache:         cache,
-		Listener:      listener,
-		Verifier:      signer,
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+		Cache:      cache,
+		Listener:   listener,
+		Verifier:   signer,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,
+		Authorizer:         authorizer,
 		DB:                 db,
 		Renderer:           renderer,
 		HostnameService:    hostnameService,
@@ -269,6 +279,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 	stateService := state.NewService(state.Options{
 		Logger:           logger,
+		Authorizer:       authorizer,
 		DB:               db,
 		WorkspaceService: workspaceService,
 		Cache:            cache,
@@ -277,17 +288,18 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Signer:           signer,
 	})
 	variableService := variable.NewService(variable.Options{
-		Logger:              logger,
-		DB:                  db,
-		Renderer:            renderer,
-		Responder:           responder,
-		WorkspaceAuthorizer: workspaceService,
-		WorkspaceService:    workspaceService,
-		RunClient:           runService,
+		Logger:           logger,
+		Authorizer:       authorizer,
+		DB:               db,
+		Renderer:         renderer,
+		Responder:        responder,
+		WorkspaceService: workspaceService,
+		RunClient:        runService,
 	})
 
 	runnerService := runner.NewService(runner.ServiceOptions{
 		Logger:           logger,
+		Authorizer:       authorizer,
 		DB:               db,
 		Renderer:         renderer,
 		Responder:        responder,
@@ -352,11 +364,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	notificationService := notifications.NewService(notifications.Options{
-		Logger:              logger,
-		DB:                  db,
-		Listener:            listener,
-		Responder:           responder,
-		WorkspaceAuthorizer: workspaceService,
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+		Listener:   listener,
+		Responder:  responder,
 	})
 
 	handlers := []internal.Handlers{

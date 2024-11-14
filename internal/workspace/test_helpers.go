@@ -57,7 +57,7 @@ func (f *FakeService) ListTags(context.Context, string, ListTagsOptions) (*resou
 	return nil, nil
 }
 
-func (f *FakeService) GetPolicy(context.Context, resource.ID) (authz.WorkspacePolicy, error) {
+func (f *FakeService) GetWorkspacePolicy(context.Context, resource.ID) (authz.WorkspacePolicy, error) {
 	return f.Policy, nil
 }
 

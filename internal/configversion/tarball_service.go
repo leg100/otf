@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -33,7 +34,7 @@ func (s *Service) UploadConfig(ctx context.Context, cvID resource.ID, config []b
 
 // DownloadConfig retrieves a tarball from the db
 func (s *Service) DownloadConfig(ctx context.Context, cvID resource.ID) ([]byte, error) {
-	subject, err := s.canAccess(ctx, rbac.DownloadConfigurationVersionAction, cvID)
+	subject, err := s.Authorize(ctx, rbac.DownloadConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
 	if err != nil {
 		return nil, err
 	}

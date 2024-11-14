@@ -119,8 +119,6 @@ func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 func (t *Team) String() string                         { return t.Name }
 func (t *Team) OrganizationAccess() OrganizationAccess { return t.Access }
 
-func (t *Team) IsSiteAdmin() bool { return false }
-
 func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
 }
@@ -129,55 +127,48 @@ func (t *Team) IsOwner(organization string) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 
-func (t *Team) CanAccessSite(action rbac.Action) bool {
-	return false
-}
-
-func (t *Team) CanAccessTeam(action rbac.Action, id resource.ID) bool {
-	// team can access self
-	return t.ID == id
-}
-
-func (t *Team) CanAccessOrganization(action rbac.Action, org string) bool {
-	if t.Organization == org {
-		if t.IsOwners() {
-			// owner team can perform all actions on organization
-			return true
-		}
-		if rbac.OrganizationMinPermissions.IsAllowed(action) {
-			return true
-		}
-		if t.Access.ManageWorkspaces {
-			if rbac.WorkspaceManagerRole.IsAllowed(action) {
-				return true
-			}
-		}
-		if t.Access.ManageVCS {
-			if rbac.VCSManagerRole.IsAllowed(action) {
-				return true
-			}
-		}
-		if t.Access.ManageModules {
-			if rbac.VCSManagerRole.IsAllowed(action) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (t *Team) CanAccessWorkspace(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	// coarser-grained organization perms take precedence.
-	if t.CanAccessOrganization(action, policy.Organization) {
-		return true
-	}
-	// fallback to checking finer-grained workspace perms
-	if t.Organization != policy.Organization {
+func (t *Team) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req == nil {
+		// Deny all site-level access
 		return false
 	}
-	for _, perm := range policy.Permissions {
-		if t.ID == perm.TeamID {
-			return perm.Role.IsAllowed(action)
+	if req.Organization != t.Organization {
+		// Deny access to other organizations
+		return false
+	}
+	if t.IsOwners() {
+		// owner team can perform all actions on organization
+		return true
+	}
+	if rbac.OrganizationMinPermissions.IsAllowed(action) {
+		return true
+	}
+	if t.Access.ManageWorkspaces {
+		if rbac.WorkspaceManagerRole.IsAllowed(action) {
+			return true
+		}
+	}
+	if t.Access.ManageVCS {
+		if rbac.VCSManagerRole.IsAllowed(action) {
+			return true
+		}
+	}
+	if t.Access.ManageModules {
+		if rbac.RegistryManagerRole.IsAllowed(action) {
+			return true
+		}
+	}
+	if req.ID != nil && req.ID.Kind() == resource.TeamKind {
+		// team can access self
+		return t.ID == *req.ID
+	}
+	if req.WorkspacePolicy != nil {
+		// Team can only access workspace if a specific permission has been
+		// assigned to the team.
+		for _, perm := range req.WorkspacePolicy.Permissions {
+			if t.ID == perm.TeamID {
+				return perm.Role.IsAllowed(action)
+			}
 		}
 	}
 	return false

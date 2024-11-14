@@ -233,7 +233,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	user, err := authz.SubjectFromContext(r.Context())
+	user, err := UserFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -241,7 +241,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 
 	// get usernames of non-members
 	var nonMemberUsernames []string
-	if user.CanAccessSite(rbac.ListUsersAction) {
+	if user.CanAccess(rbac.ListUsersAction, nil) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -269,11 +269,11 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		OrganizationPage: organization.NewPage(r, team.ID.String(), team.Organization),
 		Team:             team,
 		Members:          members,
-		CanUpdateTeam:    user.CanAccessOrganization(rbac.UpdateTeamAction, team.Organization),
-		CanDeleteTeam:    user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
-		CanAddMember:     user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
-		CanRemoveMember:  user.CanAccessOrganization(rbac.RemoveTeamMembershipAction, team.Organization),
-		CanDelete:        user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
+		CanUpdateTeam:    user.CanAccess(rbac.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanDeleteTeam:    user.CanAccess(rbac.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanAddMember:     user.CanAccess(rbac.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanRemoveMember:  user.CanAccess(rbac.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanDelete:        user.CanAccess(rbac.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
 		IsOwner:          user.IsOwner(team.Organization),
 		AddMemberDropdown: html.DropdownUI{
 			Name:        "username",

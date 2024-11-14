@@ -27,6 +27,7 @@ type webHandlers struct {
 	svc        webClient
 	workspaces *workspacepkg.Service
 	logger     logr.Logger
+	authorizer webAuthorizer
 }
 
 // webClient gives web handlers access to the agents service endpoints
@@ -47,6 +48,10 @@ type webClient interface {
 	GetAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error)
 	ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*agentToken, error)
 	DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error)
+}
+
+type webAuthorizer interface {
+	CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
 }
 
 type (
@@ -227,12 +232,6 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subject, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	// template requires three sets of workspaces:
 	//
 	// (a) assigned workspaces
@@ -295,7 +294,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
 		Pool:                           pool,
-		CanDeleteAgentPool:             subject.CanAccessOrganization(rbac.DeleteAgentPoolAction, pool.Organization),
+		CanDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), rbac.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
 		AllowedButUnassignedWorkspaces: allowedButUnassignedWorkspaces,
 		AssignedWorkspaces:             assignedWorkspaces,
 		AvailableWorkspaces:            availableWorkspaces,

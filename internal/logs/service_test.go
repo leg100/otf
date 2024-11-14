@@ -21,7 +21,7 @@ func TestTail(t *testing.T) {
 			chunkproxy: &fakeTailProxy{},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
-			run:        &fakeAuthorizer{},
+			Interface:  &fakeAuthorizer{},
 		}
 
 		stream, err := app.Tail(ctx, GetChunkOptions{
@@ -51,8 +51,8 @@ func TestTail(t *testing.T) {
 			broker: &fakeSubService{
 				stream: make(chan pubsub.Event[Chunk]),
 			},
-			Logger: logr.Discard(),
-			run:    &fakeAuthorizer{},
+			Logger:    logr.Discard(),
+			Interface: &fakeAuthorizer{},
 		}
 		stream, err := svc.Tail(ctx, GetChunkOptions{
 			RunID: testutils.ParseID(t, "run-123"),
@@ -74,7 +74,7 @@ func TestTail(t *testing.T) {
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
-			run:        &fakeAuthorizer{},
+			Interface:  &fakeAuthorizer{},
 		}
 
 		stream, err := svc.Tail(ctx, GetChunkOptions{
@@ -117,7 +117,7 @@ func TestTail(t *testing.T) {
 			chunkproxy: &fakeTailProxy{chunk: want},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
-			run:        &fakeAuthorizer{},
+			Interface:  &fakeAuthorizer{},
 		}
 
 		stream, err := svc.Tail(ctx, GetChunkOptions{
@@ -156,7 +156,7 @@ func TestTail(t *testing.T) {
 			chunkproxy: &fakeTailProxy{},
 			broker:     &fakeSubService{stream: sub},
 			Logger:     logr.Discard(),
-			run:        &fakeAuthorizer{},
+			Interface:  &fakeAuthorizer{},
 		}
 
 		stream, err := svc.Tail(ctx, GetChunkOptions{

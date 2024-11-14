@@ -16,9 +16,9 @@ func TestService_Watch(t *testing.T) {
 	in := make(chan pubsub.Event[*Run], 1)
 
 	svc := &Service{
-		site:   authz.NewAllowAllAuthorizer(),
-		Logger: logr.Discard(),
-		broker: &fakeSubService{ch: in},
+		Interface: authz.NewAllowAllAuthorizer(),
+		Logger:    logr.Discard(),
+		broker:    &fakeSubService{ch: in},
 	}
 
 	// inject input event

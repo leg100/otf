@@ -179,6 +179,6 @@ func (f *fakeWebService) Delete(context.Context, string) error {
 	return nil
 }
 
-func (s *unprivilegedSubject) CanAccessSite(_ rbac.Action) bool {
+func (s *unprivilegedSubject) CanAccess(rbac.Action, *authz.AccessRequest) bool {
 	return false
 }

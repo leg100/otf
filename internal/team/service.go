@@ -24,9 +24,7 @@ var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be de
 type (
 	Service struct {
 		logr.Logger
-
-		organization *organization.Authorizer // authorizes org access
-		team         authz.Authorizer         // authorizes team access
+		*authz.Authorizer
 
 		db     *pgdb
 		web    *webHandlers
@@ -46,15 +44,15 @@ type (
 
 		OrganizationService *organization.Service
 		TokensService       *tokens.Service
+		Authorizer          *authz.Authorizer
 	}
 )
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:       opts.Logger,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		team:         &authorizer{Logger: opts.Logger},
-		db:           &pgdb{opts.DB, opts.Logger},
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db:         &pgdb{opts.DB, opts.Logger},
 		teamTokenFactory: &teamTokenFactory{
 			tokens: opts.TokensService,
 		},
@@ -93,6 +91,13 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
+	opts.Authorizer.RegisterOrganizationResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (string, error) {
+		team, err := svc.db.getTeamByID(ctx, id)
+		if err != nil {
+			return "", err
+		}
+		return team.Organization, nil
+	})
 
 	return &svc
 }
@@ -104,7 +109,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, organization)
+	subject, err := a.Authorize(ctx, rbac.CreateTeamAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +149,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.organization.CanAccess(ctx, rbac.UpdateTeamAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +169,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 
 // List lists teams in the organization.
 func (a *Service) List(ctx context.Context, organization string) ([]*Team, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.ListTeamsAction, organization)
+	subject, err := a.Authorize(ctx, rbac.ListTeamsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +185,7 @@ func (a *Service) List(ctx context.Context, organization string) ([]*Team, error
 }
 
 func (a *Service) Get(ctx context.Context, organization, name string) (*Team, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, organization)
+	subject, err := a.Authorize(ctx, rbac.GetTeamAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +208,7 @@ func (a *Service) GetByID(ctx context.Context, teamID resource.ID) (*Team, error
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.GetTeamAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +225,7 @@ func (a *Service) Delete(ctx context.Context, teamID resource.ID) error {
 		return err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.DeleteTeamAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return err
 	}
@@ -247,7 +252,7 @@ func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.ID) (*T
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, team.Organization)
+	subject, err := a.Authorize(ctx, rbac.GetTeamAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return nil, err
 	}

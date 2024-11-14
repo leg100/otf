@@ -29,4 +29,6 @@ var tableTypes = []string{
 	"state_version_outputs[]",
 	"agent_pools",
 	"agent_pools[]",
+	"workspace_permissions",
+	"workspace_permissions[]",
 }

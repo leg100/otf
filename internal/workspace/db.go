@@ -5,6 +5,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -340,4 +342,49 @@ func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 		return sql.Error(err)
 	}
 	return nil
+}
+
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
+	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
+		WorkspaceID: workspaceID,
+		TeamID:      teamID,
+		Role:        sql.String(role.String()),
+	})
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
+	err := db.Querier(ctx).DeleteWorkspacePermissionByID(ctx, sqlc.DeleteWorkspacePermissionByIDParams{
+		WorkspaceID: workspaceID,
+		TeamID:      teamID,
+	})
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+	perms, err := db.Querier(ctx).FindWorkspacePermissionsAndGlobalRemoteState(ctx, workspaceID)
+	if err != nil {
+		return authz.WorkspacePolicy{}, sql.Error(err)
+	}
+	p := authz.WorkspacePolicy{
+		GlobalRemoteState: perms.GlobalRemoteState.Bool,
+		Permissions:       make([]authz.WorkspacePermission, len(perms.WorkspacePermissions)),
+	}
+	for i, perm := range perms.WorkspacePermissions {
+		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
+		if err != nil {
+			return authz.WorkspacePolicy{}, err
+		}
+		p.Permissions[i] = authz.WorkspacePermission{
+			TeamID: perm.TeamID,
+			Role:   role,
+		}
+	}
+	return p, nil
 }

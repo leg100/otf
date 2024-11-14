@@ -2,9 +2,11 @@ package workspace
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
@@ -13,21 +15,21 @@ import (
 )
 
 func TestWorkspace_LockButtonHelper(t *testing.T) {
-	wsID := testutils.ParseID(t, "ws-123")
-	privilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
-	privilegedUser2 := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: true}
-	unprivilegedUser := &user.User{ID: resource.NewID(resource.UserKind), SiteAdmin: false}
+	bobby := &user.User{ID: resource.NewID(resource.UserKind), Username: "bobby"}
+	annie := &user.User{ID: resource.NewID(resource.UserKind), Username: "annie"}
 
 	tests := []struct {
-		name string
-		ws   *Workspace
-		user *user.User
-		want LockButton
+		name                   string
+		lockedBy               *user.User
+		currentUser            *user.User
+		currentUserPermissions []rbac.Action
+		want                   LockButton
 	}{
 		{
 			"unlocked state",
-			&Workspace{ID: wsID},
-			privilegedUser,
+			nil,
+			nil,
+			[]rbac.Action{rbac.LockWorkspaceAction},
 			LockButton{
 				State:  "unlocked",
 				Text:   "Lock",
@@ -36,8 +38,9 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to lock",
-			&Workspace{ID: wsID},
-			unprivilegedUser,
+			nil,
+			nil,
+			[]rbac.Action{},
 			LockButton{
 				State:    "unlocked",
 				Text:     "Lock",
@@ -48,8 +51,9 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"insufficient permissions to unlock",
-			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
-			unprivilegedUser,
+			bobby,
+			nil,
+			[]rbac.Action{},
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
@@ -60,43 +64,74 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		},
 		{
 			"user can unlock their own lock",
-			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
-			privilegedUser,
+			bobby,
+			bobby,
+			[]rbac.Action{rbac.UnlockWorkspaceAction},
 			LockButton{
 				State:   "locked",
 				Text:    "Unlock",
-				Message: "locked by: janitor",
-				Tooltip: "locked by: janitor",
+				Message: "locked by: bobby",
+				Tooltip: "locked by: bobby",
 				Action:  "/app/workspaces/ws-123/unlock",
 			},
 		},
 		{
-			"user can force unlock lock held by different user",
-			&Workspace{ID: wsID, Lock: &privilegedUser.ID},
-			privilegedUser2,
+			"user without force-unlock permission cannot force-unlock lock held by different user",
+			bobby,
+			annie,
+			[]rbac.Action{rbac.UnlockWorkspaceAction},
+			LockButton{
+				State:    "locked",
+				Text:     "Unlock",
+				Message:  "locked by: bobby",
+				Tooltip:  "locked by: bobby",
+				Disabled: true,
+				Action:   "/app/workspaces/ws-123/unlock",
+			},
+		},
+		{
+			"user with force-unlock permission can force-unlock lock held by different user",
+			bobby,
+			annie,
+			[]rbac.Action{rbac.UnlockWorkspaceAction, rbac.ForceUnlockWorkspaceAction},
 			LockButton{
 				State:   "locked",
 				Text:    "Force unlock",
 				Action:  "/app/workspaces/ws-123/force-unlock",
-				Message: "locked by: janitor",
-				Tooltip: "locked by: janitor",
+				Message: "locked by: bobby",
+				Tooltip: "locked by: bobby",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			helpers := &uiHelpers{
-				service: &fakeUIHelpersService{},
+				service:    &fakeUIHelpersService{lockedBy: tt.lockedBy},
+				authorizer: &fakeLockButtonAuthorizer{perms: tt.currentUserPermissions},
 			}
-			got, err := helpers.lockButtonHelper(context.Background(), tt.ws, authz.WorkspacePolicy{}, tt.user)
+			ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
+			if tt.lockedBy != nil {
+				ws.Lock = &tt.lockedBy.ID
+			}
+			got, err := helpers.lockButtonHelper(context.Background(), ws, tt.currentUser)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-type fakeUIHelpersService struct{}
+type fakeUIHelpersService struct {
+	lockedBy *user.User
+}
 
 func (f *fakeUIHelpersService) GetUser(context.Context, user.UserSpec) (*user.User, error) {
-	return &user.User{Username: "janitor"}, nil
+	return f.lockedBy, nil
+}
+
+type fakeLockButtonAuthorizer struct {
+	perms []rbac.Action
+}
+
+func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action rbac.Action, _ *authz.AccessRequest) bool {
+	return slices.Contains(f.perms, action)
 }

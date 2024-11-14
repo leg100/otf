@@ -34,6 +34,7 @@ type (
 		client       webModulesClient
 		vcsproviders vcsprovidersClient
 		system       webHostnameClient
+		authorizer   webAuthorizer
 	}
 
 	webHostnameClient interface {
@@ -47,6 +48,10 @@ type (
 		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
 		DeleteModule(ctx context.Context, id resource.ID) (*Module, error)
+	}
+
+	webAuthorizer interface {
+		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
@@ -75,18 +80,11 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	modules, err := h.client.ListModules(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	subject, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	h.Render("module_list.tmpl", w, struct {
 		organization.OrganizationPage
 		Items            []*Module
@@ -94,7 +92,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
 		Items:            modules,
-		CanPublishModule: subject.CanAccessOrganization(rbac.CreateModuleAction, opts.Organization),
+		CanPublishModule: h.authorizer.CanAccess(r.Context(), rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
 	})
 }
 

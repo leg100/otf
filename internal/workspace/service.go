@@ -24,10 +24,7 @@ import (
 type (
 	Service struct {
 		logr.Logger
-
-		site             authz.Authorizer
-		organization     *organization.Authorizer
-		authz.Authorizer // workspace authorizer
+		*authz.Authorizer
 
 		db          *pgdb
 		web         *webHandlers
@@ -45,6 +42,7 @@ type (
 		*sql.DB
 		*sql.Listener
 		*tfeapi.Responder
+		*authz.Authorizer
 		html.Renderer
 
 		logr.Logger
@@ -60,28 +58,26 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger: opts.Logger,
-		Authorizer: &authorizer{
-			Logger: opts.Logger,
-			db:     db,
-		},
-		db:           db,
-		connections:  opts.ConnectionService,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &authz.SiteAuthorizer{Logger: opts.Logger},
+		Logger:      opts.Logger,
+		Authorizer:  opts.Authorizer,
+		db:          db,
+		connections: opts.ConnectionService,
 	}
 	svc.web = &webHandlers{
 		Renderer:     opts.Renderer,
+		authorizer:   opts.Authorizer,
 		teams:        opts.TeamService,
 		vcsproviders: opts.VCSProviderService,
 		client:       &svc,
 		uiHelpers: &uiHelpers{
-			service: opts.UserService,
+			service:    opts.UserService,
+			authorizer: opts.Authorizer,
 		},
 	}
 	svc.tfeapi = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
+		Service:    &svc,
+		Responder:  opts.Responder,
+		Authorizer: opts.Authorizer,
 	}
 	svc.api = &api{
 		Service:   &svc,
@@ -103,6 +99,16 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
+	// Instruct the authorizer to resolve workspace IDs to organization names.
+	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.ID) (string, error) {
+		ws, err := svc.db.get(ctx, id)
+		if err != nil {
+			return "", err
+		}
+		return ws.Organization, nil
+	})
+	// Provide the authorizer with the ability to retrieve workspace policies.
+	opts.Authorizer.WorkspacePolicyGetter = &svc
 	return &svc
 }
 
@@ -125,7 +131,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization)
+	subject, err := s.Authorize(ctx, rbac.CreateWorkspaceAction, &authz.AccessRequest{Organization: ws.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +185,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 }
 
 func (s *Service) Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
+	subject, err := s.Authorize(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +208,7 @@ func (s *Service) GetByName(ctx context.Context, organization, workspace string)
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
+	subject, err := s.Authorize(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 	if err != nil {
 		return nil, err
 	}
@@ -215,13 +221,13 @@ func (s *Service) GetByName(ctx context.Context, organization, workspace string)
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, resource.ID{})
+		_, err := s.Authorize(ctx, rbac.ListWorkspacesAction, nil)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := s.organization.CanAccess(ctx, rbac.ListWorkspacesAction, *opts.Organization)
+		_, err := s.Authorize(ctx, rbac.ListWorkspacesAction, &authz.AccessRequest{Organization: *opts.Organization})
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
@@ -249,7 +255,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 }
 
 func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := s.Authorize(ctx, rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +300,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts Upda
 }
 
 func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
+	subject, err := s.Authorize(ctx, rbac.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -319,6 +325,44 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspa
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 
 	return ws, nil
+}
+
+func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
+	subject, err := s.Authorize(ctx, rbac.SetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.SetWorkspacePermission(ctx, workspaceID, teamID, role); err != nil {
+		s.Error(err, "setting workspace permission", "subject", subject, "workspace", workspaceID)
+		return err
+	}
+
+	s.V(0).Info("set workspace permission", "team_id", teamID, "role", role, "subject", subject, "workspace", workspaceID)
+
+	// TODO: publish event
+
+	return nil
+}
+
+func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error {
+	subject, err := s.Authorize(ctx, rbac.UnsetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	if err != nil {
+		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
+		return err
+	}
+
+	s.V(0).Info("unset workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
+	// TODO: publish event
+	return s.db.UnsetWorkspacePermission(ctx, workspaceID, teamID)
+}
+
+// GetWorkspacePolicy retrieves the authorization policy for a workspace.
+//
+// NOTE: there is no auth because it is used in the process of making an auth
+// decision.
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 // connect connects the workspace to a repo.

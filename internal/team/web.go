@@ -133,7 +133,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "teams", org),
 		Teams:            teams,
-		CanCreateTeam:    subject.CanAccessOrganization(rbac.CreateTeamAction, org),
+		CanCreateTeam:    subject.CanAccess(rbac.CreateTeamAction, &authz.AccessRequest{Organization: org}),
 	})
 }
 
