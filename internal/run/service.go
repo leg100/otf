@@ -181,7 +181,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts Crea
 
 // Get retrieves a run from the db.
 func (s *Service) Get(ctx context.Context, runID resource.ID) (*Run, error) {
-	subject, err := s.CanAccessRun(ctx, authz.GetRunAction, runID)
+	subject, err := s.Authorize(ctx, authz.GetRunAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return nil, err
 	}
@@ -239,12 +239,11 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
 func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run, err error) {
+	subject, err := s.Authorize(ctx, authz.EnqueuePlanAction, &authz.AccessRequest{ID: &runID})
+	if err != nil {
+		return nil, err
+	}
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		// TODO: this does not need to be part of the tx
-		subject, err := s.CanAccessRun(ctx, authz.EnqueuePlanAction, runID)
-		if err != nil {
-			return err
-		}
 		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 			return run.EnqueuePlan()
 		})
@@ -270,7 +269,7 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 }
 
 func (s *Service) Delete(ctx context.Context, runID resource.ID) error {
-	subject, err := s.CanAccessRun(ctx, authz.DeleteRunAction, runID)
+	subject, err := s.Authorize(ctx, authz.DeleteRunAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return err
 	}
@@ -387,12 +386,11 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 
 // Apply enqueues an apply for the run.
 func (s *Service) Apply(ctx context.Context, runID resource.ID) error {
+	subject, err := s.Authorize(ctx, authz.ApplyRunAction, &authz.AccessRequest{ID: &runID})
+	if err != nil {
+		return err
+	}
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		// TODO: this does not need to be part of the tx
-		subject, err := s.CanAccessRun(ctx, authz.ApplyRunAction, runID)
-		if err != nil {
-			return err
-		}
 		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 			return run.EnqueueApply()
 		})
@@ -419,7 +417,7 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 
 // Discard discards the run.
 func (s *Service) Discard(ctx context.Context, runID resource.ID) error {
-	subject, err := s.CanAccessRun(ctx, authz.DiscardRunAction, runID)
+	subject, err := s.Authorize(ctx, authz.DiscardRunAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return err
 	}
@@ -438,11 +436,11 @@ func (s *Service) Discard(ctx context.Context, runID resource.ID) error {
 }
 
 func (s *Service) Cancel(ctx context.Context, runID resource.ID) error {
+	subject, err := s.Authorize(ctx, authz.CancelRunAction, &authz.AccessRequest{ID: &runID})
+	if err != nil {
+		return err
+	}
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		subject, err := s.CanAccessRun(ctx, authz.CancelRunAction, runID)
-		if err != nil {
-			return err
-		}
 		_, isUser := subject.(*user.User)
 
 		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
@@ -474,11 +472,11 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 
 // ForceCancel forcefully cancels a run.
 func (s *Service) ForceCancel(ctx context.Context, runID resource.ID) error {
+	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, &authz.AccessRequest{ID: &runID})
+	if err != nil {
+		return err
+	}
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		subject, err := s.CanAccessRun(ctx, authz.ForceCancelRunAction, runID)
-		if err != nil {
-			return err
-		}
 		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 			return run.Cancel(true, true)
 		})
@@ -508,7 +506,7 @@ func planFileCacheKey(f PlanFormat, id resource.ID) string {
 
 // GetPlanFile returns the plan file for the run.
 func (s *Service) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
-	subject, err := s.CanAccessRun(ctx, authz.GetPlanFileAction, runID)
+	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return nil, err
 	}
@@ -532,7 +530,7 @@ func (s *Service) GetPlanFile(ctx context.Context, runID resource.ID, format Pla
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
 func (s *Service) UploadPlanFile(ctx context.Context, runID resource.ID, plan []byte, format PlanFormat) error {
-	subject, err := s.CanAccessRun(ctx, authz.UploadPlanFileAction, runID)
+	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return err
 	}
@@ -620,12 +618,4 @@ func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) err
 		}
 	}
 	return nil
-}
-
-func (s *Service) CanAccessRun(ctx context.Context, action authz.Action, runID resource.ID) (authz.Subject, error) {
-	run, err := s.db.GetRun(ctx, runID)
-	if err != nil {
-		return nil, err
-	}
-	return s.Authorize(ctx, action, &authz.AccessRequest{ID: &run.WorkspaceID})
 }
