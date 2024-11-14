@@ -115,7 +115,7 @@ func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
 func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
-	subject, err := s.Authorize(ctx, rbac.CreateOrganizationAction, &authz.AccessRequest{Organization: *opts.Name})
+	subject, err := s.Authorize(ctx, rbac.CreateOrganizationAction, nil)
 	if err != nil {
 		return nil, err
 	}
