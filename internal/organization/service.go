@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -166,7 +167,6 @@ func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (
 	if err != nil {
 		return nil, err
 	}
-
 	org, err := s.db.update(ctx, name, func(org *Organization) error {
 		return org.Update(opts)
 	})
@@ -176,26 +176,36 @@ func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (
 	}
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
-
 	return org, nil
 }
 
-// List lists organizations according to the subject. If the
-// subject has site-wide permission to list organizations then all organizations
-// are listed. Otherwise:
-// Subject is a user: list their organization memberships
-// Subject is an agent: return its organization
-// Subject is an organization token: return its organization
-// Subject is a team: return its organization
+// List organizations. If the subject lacks the ListOrganizationsAction
+// permission then its organization memberships are listed instead.
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
-	subject, err := authz.SubjectFromContext(ctx)
+	orgs, subject, err := func() (*resource.Page[*Organization], authz.Subject, error) {
+		var names []string
+		subject, err := s.CanAccess(ctx, rbac.ListOrganizationsAction, nil, authz.WithoutErrorLogging())
+		if errors.Is(err, internal.ErrAccessNotPermitted) {
+			// List subject's organization memberships instead.
+			type memberships interface {
+				Organizations() []string
+			}
+			user, ok := subject.(memberships)
+			if !ok {
+				return nil, subject, err
+			}
+			names = user.Organizations()
+		} else if err != nil {
+			return nil, subject, err
+		}
+		orgs, err := s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: names})
+		return orgs, subject, err
+	}()
 	if err != nil {
-		return nil, err
+		s.Error(err, "listing organizations", "subject", subject)
 	}
-	if subject.CanAccess(rbac.ListOrganizationsAction, nil) {
-		return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions})
-	}
-	return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: subject.Organizations()})
+	s.V(9).Info("listed organizations", "subject", subject)
+	return orgs, err
 }
 
 func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {

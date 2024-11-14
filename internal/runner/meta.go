@@ -141,8 +141,7 @@ func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 	)
 }
 
-func (m *RunnerMeta) Organizations() []string { return nil }
-func (m *RunnerMeta) String() string          { return m.ID.String() }
+func (m *RunnerMeta) String() string { return m.ID.String() }
 
 func (m *RunnerMeta) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 	if req == nil {

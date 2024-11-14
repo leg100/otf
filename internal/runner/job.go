@@ -83,8 +83,6 @@ func (j *Job) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (j *Job) Organizations() []string { return nil }
-
 func (j *Job) String() string { return j.ID.String() }
 
 func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {

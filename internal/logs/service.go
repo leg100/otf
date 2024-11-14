@@ -13,14 +13,10 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
-type Authorizer interface {
-	CanAccess(context.Context, rbac.Action, *authz.AccessRequest) (authz.Subject, error)
-}
-
 type (
 	Service struct {
 		logr.Logger
-		Authorizer
+		authz.Interface
 
 		api    *api
 		web    *webHandlers
@@ -49,8 +45,8 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger:     opts.Logger,
-		Authorizer: opts.Authorizer,
+		Logger:    opts.Logger,
+		Interface: opts.Authorizer,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,

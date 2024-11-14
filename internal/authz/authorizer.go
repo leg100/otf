@@ -26,7 +26,7 @@ type Authorizer struct {
 // the authorizer for tests.
 type Interface interface {
 	// TODO: rename to Authorize
-	CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest) (Subject, error)
+	CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error)
 	// TODO: rename to CanAccess
 	CanAccessDecision(ctx context.Context, action rbac.Action, req *AccessRequest) bool
 }
@@ -71,11 +71,31 @@ func (a *Authorizer) RegisterWorkspaceResolver(kind resource.Kind, resolver Work
 	a.workspaceResolvers[kind] = resolver
 }
 
+// Options for configuring the individual calls of CanAccess.
+
+type CanAccessOption func(*canAccessConfig)
+
+// WithoutErrorLogging disables logging an unauthorized error. This can be
+// useful if just checking if a user can do something.
+func WithoutErrorLogging() CanAccessOption {
+	return func(cfg *canAccessConfig) {
+		cfg.disableLogs = true
+	}
+}
+
+type canAccessConfig struct {
+	disableLogs bool
+}
+
 // CanAccess determines whether the subject can carry out an action on a
 // resource. The subject is expected to be contained within the context. If the
 // access request is nil then it's assumed the request is for access to the
 // entire site (the highest level).
-func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest) (Subject, error) {
+func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error) {
+	var cfg canAccessConfig
+	for _, fn := range opts {
+		fn(&cfg)
+	}
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -128,7 +148,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 		}
 		return nil
 	}()
-	if err != nil {
+	if err != nil && !cfg.disableLogs {
 		a.Error(err, "authorization failure",
 			"resource", req,
 			"action", action.String(),
@@ -141,7 +161,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 // CanAccessDecision is a helper to boil down an access request to a true/false
 // decision, with any error encountered interpreted as false.
 func (a *Authorizer) CanAccessDecision(ctx context.Context, action rbac.Action, req *AccessRequest) bool {
-	_, err := a.CanAccess(ctx, action, req)
+	_, err := a.CanAccess(ctx, action, req, WithoutErrorLogging())
 	return err == nil
 }
 

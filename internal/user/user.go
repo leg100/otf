@@ -129,8 +129,8 @@ func (u *User) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 		return true
 	}
 	switch action {
-	case rbac.GetGithubAppAction:
-		// This action is available to any user.
+	case rbac.CreateOrganizationAction, rbac.GetGithubAppAction:
+		// These actions are available to any user.
 		return true
 	case rbac.CreateUserAction, rbac.ListUsersAction:
 		// A user can perform these actions only if they are an owner of at

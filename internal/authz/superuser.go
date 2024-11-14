@@ -10,5 +10,4 @@ type Superuser struct {
 }
 
 func (*Superuser) CanAccess(rbac.Action, *AccessRequest) bool { return true }
-func (s *Superuser) Organizations() []string                  { return nil }
 func (s *Superuser) String() string                           { return s.Username }

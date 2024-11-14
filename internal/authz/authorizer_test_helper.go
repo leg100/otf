@@ -16,7 +16,7 @@ func NewAllowAllAuthorizer() *allowAllAuthorizer {
 	}
 }
 
-func (a *allowAllAuthorizer) CanAccess(context.Context, rbac.Action, *AccessRequest) (Subject, error) {
+func (a *allowAllAuthorizer) CanAccess(context.Context, rbac.Action, *AccessRequest, ...CanAccessOption) (Subject, error) {
 	return a.User, nil
 }
 
