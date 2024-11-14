@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -357,11 +356,11 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	accessRequest := &authz.AccessRequest{ID: &from.ID}
 	perms := &types.RunPermissions{
-		CanDiscard:      a.authorizer.CanAccess(ctx, rbac.DiscardRunAction, accessRequest),
-		CanForceExecute: a.authorizer.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
-		CanForceCancel:  a.authorizer.CanAccess(ctx, rbac.ForceCancelRunAction, accessRequest),
-		CanCancel:       a.authorizer.CanAccess(ctx, rbac.CancelRunAction, accessRequest),
-		CanApply:        a.authorizer.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
+		CanDiscard:      a.authorizer.CanAccess(ctx, authz.DiscardRunAction, accessRequest),
+		CanForceExecute: a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
+		CanForceCancel:  a.authorizer.CanAccess(ctx, authz.ForceCancelRunAction, accessRequest),
+		CanCancel:       a.authorizer.CanAccess(ctx, authz.CancelRunAction, accessRequest),
+		CanApply:        a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
 	}
 
 	var timestamps types.RunStatusTimestamps

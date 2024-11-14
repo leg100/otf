@@ -6,7 +6,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -344,7 +343,7 @@ func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 	return nil
 }
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
 	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
 		WorkspaceID: workspaceID,
 		TeamID:      teamID,
@@ -377,7 +376,7 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID)
 		Permissions:       make([]authz.WorkspacePermission, len(perms.WorkspacePermissions)),
 	}
 	for i, perm := range perms.WorkspacePermissions {
-		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
+		role, err := authz.WorkspaceRoleFromString(perm.Role.String)
 		if err != nil {
 			return authz.WorkspacePolicy{}, err
 		}

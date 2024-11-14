@@ -9,10 +9,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -137,8 +137,8 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		App:            app,
 		Installations:  installs,
 		GithubHostname: h.GithubHostname,
-		CanCreateApp:   user.CanAccess(rbac.CreateGithubAppAction, nil),
-		CanDeleteApp:   user.CanAccess(rbac.DeleteGithubAppAction, nil),
+		CanCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
+		CanDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
 	})
 }
 

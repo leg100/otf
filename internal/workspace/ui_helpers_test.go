@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
@@ -22,14 +21,14 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		name                   string
 		lockedBy               *user.User
 		currentUser            *user.User
-		currentUserPermissions []rbac.Action
+		currentUserPermissions []authz.Action
 		want                   LockButton
 	}{
 		{
 			"unlocked state",
 			nil,
 			nil,
-			[]rbac.Action{rbac.LockWorkspaceAction},
+			[]authz.Action{authz.LockWorkspaceAction},
 			LockButton{
 				State:  "unlocked",
 				Text:   "Lock",
@@ -40,7 +39,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"insufficient permissions to lock",
 			nil,
 			nil,
-			[]rbac.Action{},
+			[]authz.Action{},
 			LockButton{
 				State:    "unlocked",
 				Text:     "Lock",
@@ -53,7 +52,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"insufficient permissions to unlock",
 			bobby,
 			nil,
-			[]rbac.Action{},
+			[]authz.Action{},
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
@@ -66,7 +65,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"user can unlock their own lock",
 			bobby,
 			bobby,
-			[]rbac.Action{rbac.UnlockWorkspaceAction},
+			[]authz.Action{authz.UnlockWorkspaceAction},
 			LockButton{
 				State:   "locked",
 				Text:    "Unlock",
@@ -79,7 +78,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"user without force-unlock permission cannot force-unlock lock held by different user",
 			bobby,
 			annie,
-			[]rbac.Action{rbac.UnlockWorkspaceAction},
+			[]authz.Action{authz.UnlockWorkspaceAction},
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
@@ -93,7 +92,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			"user with force-unlock permission can force-unlock lock held by different user",
 			bobby,
 			annie,
-			[]rbac.Action{rbac.UnlockWorkspaceAction, rbac.ForceUnlockWorkspaceAction},
+			[]authz.Action{authz.UnlockWorkspaceAction, authz.ForceUnlockWorkspaceAction},
 			LockButton{
 				State:   "locked",
 				Text:    "Force unlock",
@@ -129,9 +128,9 @@ func (f *fakeUIHelpersService) GetUser(context.Context, user.UserSpec) (*user.Us
 }
 
 type fakeLockButtonAuthorizer struct {
-	perms []rbac.Action
+	perms []authz.Action
 }
 
-func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action rbac.Action, _ *authz.AccessRequest) bool {
+func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action authz.Action, _ *authz.AccessRequest) bool {
 	return slices.Contains(f.perms, action)
 }

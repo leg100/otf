@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -101,7 +100,7 @@ func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, er
 
 // PutChunk writes a chunk of logs for a phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
-	_, err := s.Authorize(ctx, rbac.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
+	_, err := s.Authorize(ctx, authz.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
 	if err != nil {
 		return err
 	}
@@ -123,7 +122,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
-	subject, err := s.Authorize(ctx, rbac.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
+	subject, err := s.Authorize(ctx, authz.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
 	if err != nil {
 		return nil, err
 	}

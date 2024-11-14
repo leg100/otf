@@ -1,5 +1,4 @@
-// Package rbac is concerned with authorization
-package rbac
+package authz
 
 import "fmt"
 

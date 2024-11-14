@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -49,7 +48,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
 	}
 )
 
@@ -123,7 +122,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 
 	response := struct {
 		workspace.WorkspacePage

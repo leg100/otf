@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -133,7 +132,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "teams", org),
 		Teams:            teams,
-		CanCreateTeam:    subject.CanAccess(rbac.CreateTeamAction, &authz.AccessRequest{Organization: org}),
+		CanCreateTeam:    subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
 	})
 }
 

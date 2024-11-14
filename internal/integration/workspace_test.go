@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
@@ -325,8 +324,8 @@ func TestWorkspace(t *testing.T) {
 
 		team1 := svc.createTeam(t, ctx, org)
 		team2 := svc.createTeam(t, ctx, org)
-		_ = svc.Workspaces.SetPermission(ctx, ws1.ID, team1.ID, rbac.WorkspacePlanRole)
-		_ = svc.Workspaces.SetPermission(ctx, ws2.ID, team2.ID, rbac.WorkspacePlanRole)
+		_ = svc.Workspaces.SetPermission(ctx, ws1.ID, team1.ID, authz.WorkspacePlanRole)
+		_ = svc.Workspaces.SetPermission(ctx, ws2.ID, team2.ID, authz.WorkspacePlanRole)
 		user1 := svc.createUser(t, user.WithTeams(team1, team2))
 		user2 := svc.createUser(t)
 

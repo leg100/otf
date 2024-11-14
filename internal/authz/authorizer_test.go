@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +14,7 @@ func TestAuthorizer(t *testing.T) {
 	user := &Superuser{}
 	ctx := AddSubjectToContext(context.Background(), user)
 
-	got, err := authorizer.Authorize(ctx, rbac.ListUsersAction, nil)
+	got, err := authorizer.Authorize(ctx, ListUsersAction, nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, user, got)

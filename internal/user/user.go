@@ -9,7 +9,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
@@ -123,16 +122,16 @@ func (u *User) IsSiteAdmin() bool {
 	return u.SiteAdmin || u.ID == SiteAdminID
 }
 
-func (u *User) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	// Site admin can do whatever it wants
 	if u.IsSiteAdmin() {
 		return true
 	}
 	switch action {
-	case rbac.CreateOrganizationAction, rbac.GetGithubAppAction:
+	case authz.CreateOrganizationAction, authz.GetGithubAppAction:
 		// These actions are available to any user.
 		return true
-	case rbac.CreateUserAction, rbac.ListUsersAction:
+	case authz.CreateUserAction, authz.ListUsersAction:
 		// A user can perform these actions only if they are an owner of at
 		// least one organization. This permits an owner to search users or create
 		// a user before adding them to a team.

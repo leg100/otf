@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -15,7 +14,7 @@ func lockFileCacheKey(runID resource.ID) string {
 
 // GetLockFile returns the lock file for the run.
 func (s *Service) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
-	subject, err := s.Authorize(ctx, rbac.GetLockFileAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.GetLockFileAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +38,7 @@ func (s *Service) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, e
 
 // UploadLockFile persists the lock file for a run.
 func (s *Service) UploadLockFile(ctx context.Context, runID resource.ID, file []byte) error {
-	subject, err := s.Authorize(ctx, rbac.UploadLockFileAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.UploadLockFileAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return err
 	}

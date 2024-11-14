@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -125,7 +124,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	canCreate := !a.RestrictCreation || subject.CanAccess(rbac.CreateOrganizationAction, nil)
+	canCreate := !a.RestrictCreation || subject.CanAccess(authz.CreateOrganizationAction, nil)
 
 	a.Render("organization_list.tmpl", w, struct {
 		html.SitePage

@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
@@ -288,7 +287,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 }
 
 func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	_, err := s.Authorize(ctx, rbac.ListRunnersAction, &authz.AccessRequest{Organization: organization})
+	_, err := s.Authorize(ctx, authz.ListRunnersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +508,7 @@ func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.ID, opts
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		subject, err := s.Authorize(ctx, rbac.CreateAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
+		subject, err := s.Authorize(ctx, authz.CreateAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -541,7 +540,7 @@ func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.ID) (*agen
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := s.Authorize(ctx, rbac.GetAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
+		subject, err := s.Authorize(ctx, authz.GetAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -560,7 +559,7 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*a
 	if err != nil {
 		return nil, err
 	}
-	subject, err := s.Authorize(ctx, rbac.ListAgentTokensAction, &authz.AccessRequest{Organization: pool.Organization})
+	subject, err := s.Authorize(ctx, authz.ListAgentTokensAction, &authz.AccessRequest{Organization: pool.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -585,7 +584,7 @@ func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*a
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := s.Authorize(ctx, rbac.DeleteAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
+		subject, err := s.Authorize(ctx, authz.DeleteAgentTokenAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -627,7 +626,7 @@ func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 }
 
 func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error) {
-	subject, err := s.Authorize(ctx, rbac.CreateAgentPoolAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateAgentPoolAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -659,7 +658,7 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID resource.ID, opts 
 		if err != nil {
 			return err
 		}
-		subject, err = s.Authorize(ctx, rbac.UpdateAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
+		subject, err = s.Authorize(ctx, authz.UpdateAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return err
 		}
@@ -700,7 +699,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
 		return nil, err
 	}
-	subject, err := s.Authorize(ctx, rbac.GetAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
+	subject, err := s.Authorize(ctx, authz.GetAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +708,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 }
 
 func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
-	subject, err := s.Authorize(ctx, rbac.ListAgentPoolsAction, &authz.AccessRequest{Organization: organization})
+	subject, err := s.Authorize(ctx, authz.ListAgentPoolsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -729,7 +728,7 @@ func (s *Service) deleteAgentPool(ctx context.Context, poolID resource.ID) (*Poo
 		if err != nil {
 			return nil, nil, err
 		}
-		subject, err := s.Authorize(ctx, rbac.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
+		subject, err := s.Authorize(ctx, authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization})
 		if err != nil {
 			return nil, nil, err
 		}

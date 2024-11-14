@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 	workspacepkg "github.com/leg100/otf/internal/workspace"
@@ -51,7 +50,7 @@ type webClient interface {
 }
 
 type webAuthorizer interface {
-	CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
+	CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
 }
 
 type (
@@ -294,7 +293,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
 		Pool:                           pool,
-		CanDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), rbac.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
+		CanDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
 		AllowedButUnassignedWorkspaces: allowedButUnassignedWorkspaces,
 		AssignedWorkspaces:             assignedWorkspaces,
 		AvailableWorkspaces:            availableWorkspaces,

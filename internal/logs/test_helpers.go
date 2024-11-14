@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -61,7 +60,7 @@ func (f *fakeTailProxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, e
 	return f.chunk, nil
 }
 
-func (f *fakeAuthorizer) Authorize(context.Context, rbac.Action, *authz.AccessRequest, ...authz.CanAccessOption) (authz.Subject, error) {
+func (f *fakeAuthorizer) Authorize(context.Context, authz.Action, *authz.AccessRequest, ...authz.CanAccessOption) (authz.Subject, error) {
 	return &authz.Superuser{}, nil
 }
 

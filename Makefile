@@ -157,7 +157,7 @@ paths:
 # Re-generate RBAC action strings
 .PHONY: actions
 actions:
-	stringer -type Action ./internal/rbac
+	stringer -type Action ./internal/authz
 
 # Install staticcheck linter
 .PHONY: install-linter

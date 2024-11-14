@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -241,7 +240,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 
 	// get usernames of non-members
 	var nonMemberUsernames []string
-	if user.CanAccess(rbac.ListUsersAction, nil) {
+	if user.CanAccess(authz.ListUsersAction, nil) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -269,11 +268,11 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		OrganizationPage: organization.NewPage(r, team.ID.String(), team.Organization),
 		Team:             team,
 		Members:          members,
-		CanUpdateTeam:    user.CanAccess(rbac.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanDeleteTeam:    user.CanAccess(rbac.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanAddMember:     user.CanAccess(rbac.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanRemoveMember:  user.CanAccess(rbac.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanDelete:        user.CanAccess(rbac.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanUpdateTeam:    user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanDeleteTeam:    user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanAddMember:     user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanRemoveMember:  user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		CanDelete:        user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
 		IsOwner:          user.IsOwner(team.Organization),
 		AddMemberDropdown: html.DropdownUI{
 			Name:        "username",

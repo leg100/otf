@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -69,7 +68,7 @@ func (f *FakeService) RemoveTags(ctx context.Context, workspaceID resource.ID, t
 	return nil
 }
 
-func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error {
+func (f *FakeService) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
 	return nil
 }
 

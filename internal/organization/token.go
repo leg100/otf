@@ -5,7 +5,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -53,7 +52,7 @@ func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions)
 	return &ot, token, nil
 }
 
-func (u *OrganizationToken) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	if req == nil {
 		// Organization token cannot take action on site-level resources
 		return false
@@ -65,7 +64,7 @@ func (u *OrganizationToken) CanAccess(action rbac.Action, req *authz.AccessReque
 	// can perform most actions in an organization, so it is easier to first refuse
 	// access to those actions it CANNOT perform.
 	switch action {
-	case rbac.GetRunAction, rbac.ListRunsAction, rbac.ApplyRunAction, rbac.CreateRunAction, rbac.DiscardRunAction, rbac.CancelRunAction, rbac.ForceCancelRunAction, rbac.EnqueuePlanAction, rbac.PutChunkAction, rbac.TailLogsAction, rbac.CreateStateVersionAction, rbac.RollbackStateVersionAction:
+	case authz.GetRunAction, authz.ListRunsAction, authz.ApplyRunAction, authz.CreateRunAction, authz.DiscardRunAction, authz.CancelRunAction, authz.ForceCancelRunAction, authz.EnqueuePlanAction, authz.PutChunkAction, authz.TailLogsAction, authz.CreateStateVersionAction, authz.RollbackStateVersionAction:
 		return false
 	}
 	return true

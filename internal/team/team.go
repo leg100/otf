@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -127,7 +126,7 @@ func (t *Team) IsOwner(organization string) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 
-func (t *Team) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	if req == nil {
 		// Deny all site-level access
 		return false
@@ -140,21 +139,21 @@ func (t *Team) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 		// owner team can perform all actions on organization
 		return true
 	}
-	if rbac.OrganizationMinPermissions.IsAllowed(action) {
+	if authz.OrganizationMinPermissions.IsAllowed(action) {
 		return true
 	}
 	if t.Access.ManageWorkspaces {
-		if rbac.WorkspaceManagerRole.IsAllowed(action) {
+		if authz.WorkspaceManagerRole.IsAllowed(action) {
 			return true
 		}
 	}
 	if t.Access.ManageVCS {
-		if rbac.VCSManagerRole.IsAllowed(action) {
+		if authz.VCSManagerRole.IsAllowed(action) {
 			return true
 		}
 	}
 	if t.Access.ManageModules {
-		if rbac.RegistryManagerRole.IsAllowed(action) {
+		if authz.RegistryManagerRole.IsAllowed(action) {
 			return true
 		}
 	}

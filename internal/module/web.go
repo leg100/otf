@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -51,7 +50,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
 	}
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
@@ -92,7 +91,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
 		Items:            modules,
-		CanPublishModule: h.authorizer.CanAccess(r.Context(), rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
+		CanPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
 	})
 }
 

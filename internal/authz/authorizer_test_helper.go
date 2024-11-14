@@ -2,8 +2,6 @@ package authz
 
 import (
 	"context"
-
-	"github.com/leg100/otf/internal/rbac"
 )
 
 type allowAllAuthorizer struct {
@@ -16,10 +14,10 @@ func NewAllowAllAuthorizer() *allowAllAuthorizer {
 	}
 }
 
-func (a *allowAllAuthorizer) Authorize(context.Context, rbac.Action, *AccessRequest, ...CanAccessOption) (Subject, error) {
+func (a *allowAllAuthorizer) Authorize(context.Context, Action, *AccessRequest, ...CanAccessOption) (Subject, error) {
 	return a.User, nil
 }
 
-func (a *allowAllAuthorizer) CanAccess(context.Context, rbac.Action, *AccessRequest) bool {
+func (a *allowAllAuthorizer) CanAccess(context.Context, Action, *AccessRequest) bool {
 	return true
 }

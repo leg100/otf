@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 )
@@ -85,7 +84,7 @@ func (j *Job) LogValue() slog.Value {
 
 func (j *Job) String() string { return j.ID.String() }
 
-func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	if req == nil {
 		// Job cannot carry out site-wide actions
 		return false
@@ -96,22 +95,22 @@ func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 	}
 	// Permissible organization actions on same organization
 	switch action {
-	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
+	case authz.GetOrganizationAction, authz.GetEntitlementsAction, authz.GetModuleAction, authz.ListModulesAction:
 		return true
 	}
 	// Permissible workspace actions on same workspace.
 	if req.ID != nil && *req.ID == j.WorkspaceID {
 		// Allow actions on same workspace as job depending on run phase
 		switch action {
-		case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
+		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListWorkspaceVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:
 			// any phase
 			return true
-		case rbac.UploadLockFileAction, rbac.UploadPlanFileAction, rbac.ApplyRunAction:
+		case authz.UploadLockFileAction, authz.UploadPlanFileAction, authz.ApplyRunAction:
 			// plan phase
 			if j.Phase == internal.PlanPhase {
 				return true
 			}
-		case rbac.GetLockFileAction, rbac.CreateStateVersionAction:
+		case authz.GetLockFileAction, authz.CreateStateVersionAction:
 			// apply phase
 			if j.Phase == internal.ApplyPhase {
 				return true
@@ -124,7 +123,7 @@ func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 	// allowed to do so.
 	if req.WorkspacePolicy != nil {
 		switch action {
-		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
+		case authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.DownloadStateAction:
 			if req.WorkspacePolicy.GlobalRemoteState {
 				// Job is allowed to retrieve the state of this workspace
 				// because the workspace has allowed global remote state

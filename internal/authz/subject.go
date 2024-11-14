@@ -3,8 +3,6 @@ package authz
 import (
 	"context"
 	"fmt"
-
-	"github.com/leg100/otf/internal/rbac"
 )
 
 // unexported key types prevents collisions
@@ -18,7 +16,7 @@ const (
 
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
-	CanAccess(action rbac.Action, req *AccessRequest) bool
+	CanAccess(action Action, req *AccessRequest) bool
 	String() string
 }
 

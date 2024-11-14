@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -179,6 +178,6 @@ func (f *fakeWebService) Delete(context.Context, string) error {
 	return nil
 }
 
-func (s *unprivilegedSubject) CanAccess(rbac.Action, *authz.AccessRequest) bool {
+func (s *unprivilegedSubject) CanAccess(authz.Action, *authz.AccessRequest) bool {
 	return false
 }

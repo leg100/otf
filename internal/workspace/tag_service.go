@@ -7,7 +7,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -27,7 +26,7 @@ type (
 )
 
 func (s *Service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, rbac.ListTagsAction, &authz.AccessRequest{Organization: organization})
+	subject, err := s.Authorize(ctx, authz.ListTagsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +40,7 @@ func (s *Service) ListTags(ctx context.Context, organization string, opts ListTa
 }
 
 func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
-	subject, err := s.Authorize(ctx, rbac.DeleteTagsAction, &authz.AccessRequest{Organization: organization})
+	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return err
 	}
@@ -62,7 +61,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspac
 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
 		for _, wid := range workspaceIDs {
-			_, err := s.Authorize(ctx, rbac.TagWorkspacesAction, &authz.AccessRequest{ID: &wid})
+			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, &authz.AccessRequest{ID: &wid})
 			if err != nil {
 				return err
 			}
@@ -81,7 +80,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspac
 }
 
 func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, rbac.AddTagsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.AddTagsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return err
 	}
@@ -101,7 +100,7 @@ func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []T
 }
 
 func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, rbac.RemoveTagsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 }
 
 func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, rbac.ListWorkspaceTags, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

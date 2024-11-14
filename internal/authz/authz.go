@@ -1,4 +1,5 @@
-// Package authz handles all things authorization
+// Package authz handles all things authorization, policing who (subjects) can
+// do what (actions) on what (resources).
 package authz
 
 import (

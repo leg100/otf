@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -415,16 +414,16 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 	ctx := r.Context()
 	accessRequest := &authz.AccessRequest{ID: &from.ID}
 	perms := &types.WorkspacePermissions{
-		CanLock:           a.CanAccess(ctx, rbac.LockWorkspaceAction, accessRequest),
-		CanUnlock:         a.CanAccess(ctx, rbac.UnlockWorkspaceAction, accessRequest),
-		CanForceUnlock:    a.CanAccess(ctx, rbac.UnlockWorkspaceAction, accessRequest),
-		CanQueueApply:     a.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
-		CanQueueDestroy:   a.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
-		CanQueueRun:       a.CanAccess(ctx, rbac.CreateRunAction, accessRequest),
-		CanDestroy:        a.CanAccess(ctx, rbac.DeleteWorkspaceAction, accessRequest),
-		CanReadSettings:   a.CanAccess(ctx, rbac.GetWorkspaceAction, accessRequest),
-		CanUpdate:         a.CanAccess(ctx, rbac.UpdateWorkspaceAction, accessRequest),
-		CanUpdateVariable: a.CanAccess(ctx, rbac.UpdateWorkspaceAction, accessRequest),
+		CanLock:           a.CanAccess(ctx, authz.LockWorkspaceAction, accessRequest),
+		CanUnlock:         a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
+		CanForceUnlock:    a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
+		CanQueueApply:     a.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
+		CanQueueDestroy:   a.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
+		CanQueueRun:       a.CanAccess(ctx, authz.CreateRunAction, accessRequest),
+		CanDestroy:        a.CanAccess(ctx, authz.DeleteWorkspaceAction, accessRequest),
+		CanReadSettings:   a.CanAccess(ctx, authz.GetWorkspaceAction, accessRequest),
+		CanUpdate:         a.CanAccess(ctx, authz.UpdateWorkspaceAction, accessRequest),
+		CanUpdateVariable: a.CanAccess(ctx, authz.UpdateWorkspaceAction, accessRequest),
 	}
 
 	to := &types.Workspace{

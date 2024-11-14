@@ -11,7 +11,6 @@ import (
 	"github.com/antchfx/htmlquery"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
@@ -139,8 +138,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			user: user.SiteAdmin,
 			policy: authz.WorkspacePolicy{
 				Permissions: []authz.WorkspacePermission{
-					{TeamID: testutils.ParseID(t, "team-1"), Role: rbac.WorkspaceAdminRole},
-					{TeamID: testutils.ParseID(t, "team-4"), Role: rbac.WorkspacePlanRole},
+					{TeamID: testutils.ParseID(t, "team-1"), Role: authz.WorkspaceAdminRole},
+					{TeamID: testutils.ParseID(t, "team-4"), Role: authz.WorkspacePlanRole},
 				},
 			},
 			teams: []*team.Team{
@@ -448,8 +447,8 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 
 func TestFilterUnassigned(t *testing.T) {
 	policy := authz.WorkspacePolicy{Permissions: []authz.WorkspacePermission{
-		{TeamID: testutils.ParseID(t, "team-bosses"), Role: rbac.WorkspaceAdminRole},
-		{TeamID: testutils.ParseID(t, "team-workers"), Role: rbac.WorkspacePlanRole},
+		{TeamID: testutils.ParseID(t, "team-bosses"), Role: authz.WorkspaceAdminRole},
+		{TeamID: testutils.ParseID(t, "team-workers"), Role: authz.WorkspacePlanRole},
 	}}
 	teams := []*team.Team{
 		{ID: testutils.ParseID(t, "team-owners")},

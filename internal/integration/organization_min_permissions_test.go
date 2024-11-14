@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/authz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +27,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 
 	// Assign read role to guests team. Guests now receive a minimum set of
 	// permissions across the workspace's organization.
-	err = svc.Workspaces.SetPermission(ctx, ws.ID, guests.ID, rbac.WorkspaceReadRole)
+	err = svc.Workspaces.SetPermission(ctx, ws.ID, guests.ID, authz.WorkspaceReadRole)
 	require.NoError(t, err)
 
 	// Guest should be able to get org

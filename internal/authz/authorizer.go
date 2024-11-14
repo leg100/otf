@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -25,8 +24,8 @@ type Authorizer struct {
 // Interface provides an interface for services to use to permit swapping out
 // the authorizer for tests.
 type Interface interface {
-	Authorize(ctx context.Context, action rbac.Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error)
-	CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest) bool
+	Authorize(ctx context.Context, action Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error)
+	CanAccess(ctx context.Context, action Action, req *AccessRequest) bool
 }
 
 func NewAuthorizer(logger logr.Logger) *Authorizer {
@@ -89,7 +88,7 @@ type canAccessConfig struct {
 // resource. The subject is expected to be contained within the context. If the
 // access request is nil then it's assumed the request is for access to the
 // entire site (the highest level).
-func (a *Authorizer) Authorize(ctx context.Context, action rbac.Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error) {
+func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error) {
 	var cfg canAccessConfig
 	for _, fn := range opts {
 		fn(&cfg)
@@ -158,7 +157,7 @@ func (a *Authorizer) Authorize(ctx context.Context, action rbac.Action, req *Acc
 
 // CanAccess is a helper to boil down an access request to a true/false
 // decision, with any error encountered interpreted as false.
-func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest) bool {
+func (a *Authorizer) CanAccess(ctx context.Context, action Action, req *AccessRequest) bool {
 	_, err := a.Authorize(ctx, action, req, WithoutErrorLogging())
 	return err == nil
 }
@@ -187,7 +186,7 @@ type WorkspacePolicy struct {
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
 	TeamID resource.ID
-	Role   rbac.Role
+	Role   Role
 }
 
 func (r *AccessRequest) LogValue() slog.Value {

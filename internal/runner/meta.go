@@ -8,7 +8,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -146,7 +145,7 @@ func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 
 func (m *RunnerMeta) String() string { return m.ID.String() }
 
-func (m *RunnerMeta) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+func (m *RunnerMeta) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	if req == nil {
 		// Don't permit runners to carry out site-level actions
 		return false

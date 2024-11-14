@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -64,7 +63,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
 	}
 
 	// webClient provides web handlers with access to the workspace service
@@ -83,7 +82,7 @@ type (
 		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
 		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
-		SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role rbac.Role) error
+		SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error
 	}
 
@@ -178,7 +177,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	canCreateWorkspace := h.authorizer.CanAccess(
 		r.Context(),
-		rbac.CreateTeamAction,
+		authz.CreateTeamAction,
 		&authz.AccessRequest{Organization: *params.Organization})
 
 	response := struct {
@@ -312,13 +311,13 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage:      NewPage(r, ws.Name, ws),
 		LockButton:         lockButton,
 		VCSProvider:        provider,
-		CanApply:           h.authorizer.CanAccess(r.Context(), rbac.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanAddTags:         h.authorizer.CanAccess(r.Context(), rbac.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanRemoveTags:      h.authorizer.CanAccess(r.Context(), rbac.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanCreateRun:       h.authorizer.CanAccess(r.Context(), rbac.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanLockWorkspace:   h.authorizer.CanAccess(r.Context(), rbac.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUnlockWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanRemoveTags:      h.authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanCreateRun:       h.authorizer.CanAccess(r.Context(), authz.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 		TagsDropdown: html.DropdownUI{
 			Name:        "tag_name",
 			Available:   internal.Diff(getTagNames(), ws.Tags),
@@ -378,7 +377,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	// want current policy permissions to include not only team ID but team name
 	// too for user's benefit
 	type perm struct {
-		Role rbac.Role
+		Role authz.Role
 		Team *team.Team
 	}
 	perms := make([]perm, len(policy.Permissions))
@@ -429,7 +428,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage
 		Assigned           []perm
 		Unassigned         []*team.Team
-		Roles              []rbac.Role
+		Roles              []authz.Role
 		VCSProvider        *vcsprovider.VCSProvider
 		UnassignedTags     []string
 		CanUpdateWorkspace bool
@@ -446,11 +445,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID.String(), workspace),
 		Assigned:      perms,
 		Unassigned:    filterUnassigned(policy, teams),
-		Roles: []rbac.Role{
-			rbac.WorkspaceReadRole,
-			rbac.WorkspacePlanRole,
-			rbac.WorkspaceWriteRole,
-			rbac.WorkspaceAdminRole,
+		Roles: []authz.Role{
+			authz.WorkspaceReadRole,
+			authz.WorkspacePlanRole,
+			authz.WorkspaceWriteRole,
+			authz.WorkspaceAdminRole,
 		},
 		VCSProvider:        provider,
 		UnassignedTags:     internal.Diff(getTagNames(), workspace.Tags),
@@ -461,8 +460,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerAlways:   VCSTriggerAlways,
 		VCSTriggerPatterns: VCSTriggerPatterns,
 		VCSTriggerTags:     VCSTriggerTags,
-		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
-		CanDeleteWorkspace: h.authorizer.CanAccess(r.Context(), rbac.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		CanDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
 		PoolsURL:           poolsURL,
 	})
 }
@@ -733,7 +732,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	role, err := rbac.WorkspaceRoleFromString(params.Role)
+	role, err := authz.WorkspaceRoleFromString(params.Role)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

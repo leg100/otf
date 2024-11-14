@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -108,7 +107,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, rbac.CreateVCSProviderAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := a.Authorize(ctx, authz.CreateVCSProviderAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +132,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 		after   *VCSProvider
 	)
 	err := a.db.update(ctx, id, func(provider *VCSProvider) (err error) {
-		subject, err = a.Authorize(ctx, rbac.UpdateVariableSetAction, &authz.AccessRequest{Organization: provider.Organization})
+		subject, err = a.Authorize(ctx, authz.UpdateVariableSetAction, &authz.AccessRequest{Organization: provider.Organization})
 		if err != nil {
 			return err
 		}
@@ -154,7 +153,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 }
 
 func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, rbac.ListVCSProvidersAction, &authz.AccessRequest{Organization: organization})
+	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +168,7 @@ func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider
 }
 
 func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, rbac.ListVCSProvidersAction, nil)
+	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +207,7 @@ func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, rbac.GetVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
+	subject, err := a.Authorize(ctx, authz.GetVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +237,7 @@ func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, err
 			return err
 		}
 
-		subject, err = a.Authorize(ctx, rbac.DeleteVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
+		subject, err = a.Authorize(ctx, authz.DeleteVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
 		if err != nil {
 			return err
 		}
