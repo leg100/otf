@@ -3,6 +3,7 @@ package user
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ func TestSiteAdminCanAccessOrganization(t *testing.T) {
 	u := User{
 		ID: SiteAdminID,
 	}
-	assert.True(t, u.CanAccessOrganization(rbac.ListRunsAction, "acme-corp"))
+	assert.True(t, u.CanAccess(rbac.ListRunsAction, &authz.AccessRequest{Organization: "acme-corp"}))
 }
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
@@ -24,7 +25,7 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, u.CanAccessOrganization(rbac.ListRunsAction, "acme-corp"))
+	assert.True(t, u.CanAccess(rbac.ListRunsAction, &authz.AccessRequest{Organization: "acme-corp"}))
 }
 
 func TestUser_Organizations(t *testing.T) {

@@ -54,6 +54,7 @@ func NewService(opts Options) *Service {
 
 	svc.web = &web{
 		Renderer:   opts.Renderer,
+		authorizer: opts.Authorizer,
 		workspaces: opts.WorkspaceService,
 		variables:  &svc,
 	}

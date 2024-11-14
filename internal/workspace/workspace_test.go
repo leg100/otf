@@ -437,17 +437,17 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 }
 
 var (
-	privilegedUser = resource.NewID(resource.UserKind)
-	burglarTestID  = resource.NewID(resource.UserKind)
-	runTestID1     = resource.NewID(resource.RunKind)
-	runTestID2     = resource.NewID(resource.RunKind)
+	bobby         = resource.NewID(resource.UserKind)
+	burglarTestID = resource.NewID(resource.UserKind)
+	runTestID1    = resource.NewID(resource.RunKind)
+	runTestID2    = resource.NewID(resource.RunKind)
 )
 
 func TestWorkspace_Lock(t *testing.T) {
 	t.Run("lock an unlocked lock", func(t *testing.T) {
 		ws := &Workspace{}
 		assert.False(t, ws.Locked())
-		err := ws.Enlock(privilegedUser)
+		err := ws.Enlock(bobby)
 		require.NoError(t, err)
 		assert.True(t, ws.Locked())
 	})
@@ -459,29 +459,29 @@ func TestWorkspace_Lock(t *testing.T) {
 	})
 	t.Run("user cannot lock a locked workspace", func(t *testing.T) {
 		ws := &Workspace{Lock: &runTestID1}
-		err := ws.Enlock(privilegedUser)
+		err := ws.Enlock(bobby)
 		require.Equal(t, ErrWorkspaceAlreadyLocked, err)
 	})
 }
 
 func TestWorkspace_Unlock(t *testing.T) {
 	t.Run("cannot unlock workspace already unlocked", func(t *testing.T) {
-		err := (&Workspace{}).Unlock(privilegedUser, false)
+		err := (&Workspace{}).Unlock(bobby, false)
 		require.Equal(t, ErrWorkspaceAlreadyUnlocked, err)
 	})
 	t.Run("user can unlock their own lock", func(t *testing.T) {
-		ws := &Workspace{Lock: &privilegedUser}
-		err := ws.Unlock(privilegedUser, false)
+		ws := &Workspace{Lock: &bobby}
+		err := ws.Unlock(bobby, false)
 		require.NoError(t, err)
 		assert.False(t, ws.Locked())
 	})
 	t.Run("user cannot unlock another user's lock", func(t *testing.T) {
-		ws := &Workspace{Lock: &privilegedUser}
+		ws := &Workspace{Lock: &bobby}
 		err := ws.Unlock(burglarTestID, false)
 		require.Equal(t, ErrWorkspaceLockedByDifferentUser, err)
 	})
 	t.Run("user can unlock a lock by force", func(t *testing.T) {
-		ws := &Workspace{Lock: &privilegedUser}
+		ws := &Workspace{Lock: &bobby}
 		err := ws.Unlock(burglarTestID, true)
 		require.NoError(t, err)
 		assert.False(t, ws.Locked())

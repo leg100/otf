@@ -20,6 +20,15 @@ type Authorizer struct {
 	workspaceResolvers    map[resource.Kind]WorkspaceResolver
 }
 
+// Interface provides an interface for services to use to permit swapping out
+// the authorizer for tests.
+type Interface interface {
+	// TODO: rename to Authorize
+	CanAccess(ctx context.Context, action rbac.Action, req *AccessRequest) (Subject, error)
+	// TODO: rename to CanAccess
+	CanAccessDecision(ctx context.Context, action rbac.Action, req *AccessRequest) bool
+}
+
 func NewAuthorizer(logger logr.Logger) *Authorizer {
 	return &Authorizer{
 		Logger:                logger,
@@ -74,7 +83,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 	if SkipAuthz(ctx) {
 		return subj, nil
 	}
-	if req.ID != nil {
+	if req != nil && req.ID != nil {
 		// Check if resource kind is registered for its ID to be resolved to workspace
 		// ID.
 		if resolver, ok := a.workspaceResolvers[req.ID.Kind()]; ok {
@@ -139,7 +148,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 // decision, with any error encountered interpreted as false.
 func (a *Authorizer) CanAccessDecision(ctx context.Context, action rbac.Action, req *AccessRequest) bool {
 	_, err := a.CanAccess(ctx, action, req)
-	return err != nil
+	return err == nil
 }
 
 // AccessRequest is a request for access to either an organization or an

@@ -32,11 +32,13 @@ func (q *Queries) DeleteWorkspacePermissionByID(ctx context.Context, arg DeleteW
 const findWorkspacePermissionsAndGlobalRemoteState = `-- name: FindWorkspacePermissionsAndGlobalRemoteState :one
 SELECT
     w.global_remote_state,
-    array_agg(wp.*)::workspace_permissions[] AS workspace_permissions
+    (
+        SELECT array_agg(wp.*)::workspace_permissions[]
+        FROM workspace_permissions wp
+        WHERE wp.workspace_id = w.workspace_id
+    ) AS workspace_permissions
 FROM workspaces w
-LEFT JOIN workspace_permissions wp USING (workspace_id)
 WHERE w.workspace_id = $1
-GROUP BY w.workspace_id
 `
 
 type FindWorkspacePermissionsAndGlobalRemoteStateRow struct {

@@ -13,10 +13,14 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
+type Authorizer interface {
+	CanAccess(context.Context, rbac.Action, *authz.AccessRequest) (authz.Subject, error)
+}
+
 type (
 	Service struct {
 		logr.Logger
-		*authz.Authorizer
+		Authorizer
 
 		api    *api
 		web    *webHandlers

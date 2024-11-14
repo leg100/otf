@@ -148,27 +148,20 @@ func (m *RunnerMeta) Organizations() []string { return nil }
 func (m *RunnerMeta) String() string          { return m.ID.String() }
 
 func (m *RunnerMeta) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
+	if req == nil {
+		// Don't permit runners to carry out site-level actions
+		return false
+	}
 	// TODO: permit only those actions that an agent needs to carry out (get
 	// agent jobs, etc).
-
 	if m.IsAgent() {
 		// Agents can only carry out actions on the organization their pool
 		// belongs to.
-		return m.AgentPool.OrganizationName == *req.Organization
+		return m.AgentPool.OrganizationName == req.Organization
+	} else {
+		// Server runners can carry out actions on all organizations.
+		return true
 	}
-	return true
-}
-
-func (m *RunnerMeta) CanAccess(action rbac.Action, policy authz.WorkspacePolicy) bool {
-	// only a server-based agent can authenticate as an Agent, and if that is
-	// so, then it can carry out all workspace-based actions.
-	//
-	// TODO: permit only those actions that an agent needs to carry out (get
-	// agent jobs, etc).
-	if m.AgentPool != nil {
-		return m.AgentPool.OrganizationName == policy.Organization
-	}
-	return true
 }
 
 func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {

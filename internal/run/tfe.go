@@ -27,6 +27,7 @@ type tfe struct {
 	*tfeapi.Responder
 
 	workspaces *workspace.Service
+	authorizer *authz.Authorizer
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -354,20 +355,13 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 
 // toRun converts a run into its equivalent json:api struct
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	policy, err := a.workspaces.GetPolicy(ctx, from.WorkspaceID)
-	if err != nil {
-		return nil, err
-	}
+	accessRequest := &authz.AccessRequest{ID: &from.ID}
 	perms := &types.RunPermissions{
-		CanDiscard:      subject.CanAccess(rbac.DiscardRunAction, policy),
-		CanForceExecute: subject.CanAccess(rbac.ApplyRunAction, policy),
-		CanForceCancel:  subject.CanAccess(rbac.ForceCancelRunAction, policy),
-		CanCancel:       subject.CanAccess(rbac.CancelRunAction, policy),
-		CanApply:        subject.CanAccess(rbac.ApplyRunAction, policy),
+		CanDiscard:      a.authorizer.CanAccessDecision(ctx, rbac.DiscardRunAction, accessRequest),
+		CanForceExecute: a.authorizer.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
+		CanForceCancel:  a.authorizer.CanAccessDecision(ctx, rbac.ForceCancelRunAction, accessRequest),
+		CanCancel:       a.authorizer.CanAccessDecision(ctx, rbac.CancelRunAction, accessRequest),
+		CanApply:        a.authorizer.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
 	}
 
 	var timestamps types.RunStatusTimestamps

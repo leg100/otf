@@ -72,7 +72,7 @@ func (h *uiHelpers) lockButtonHelper(
 			return btn, nil
 		}
 		// User is going to need the force unlock permission
-		if !h.authorizer.CanAccessDecision(ctx, rbac.ForceUnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
+		if h.authorizer.CanAccessDecision(ctx, rbac.ForceUnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
 			btn.Text = "Force unlock"
 			btn.Action = paths.ForceUnlockWorkspace(ws.ID.String())
 			return btn, nil

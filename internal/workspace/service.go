@@ -65,11 +65,13 @@ func NewService(opts Options) *Service {
 	}
 	svc.web = &webHandlers{
 		Renderer:     opts.Renderer,
+		authorizer:   opts.Authorizer,
 		teams:        opts.TeamService,
 		vcsproviders: opts.VCSProviderService,
 		client:       &svc,
 		uiHelpers: &uiHelpers{
-			service: opts.UserService,
+			service:    opts.UserService,
+			authorizer: opts.Authorizer,
 		},
 	}
 	svc.tfeapi = &tfe{
@@ -96,7 +98,7 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
-	// TODO: provide comment
+	// Instruct the authorizer to resolve workspace IDs to organization names.
 	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.ID) (string, error) {
 		ws, err := svc.db.get(ctx, id)
 		if err != nil {
@@ -104,6 +106,8 @@ func NewService(opts Options) *Service {
 		}
 		return ws.Organization, nil
 	})
+	// Provide the authorizer with the ability to retrieve workspace policies.
+	opts.Authorizer.WorkspacePolicyGetter = &svc
 	return &svc
 }
 

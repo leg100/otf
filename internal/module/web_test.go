@@ -163,6 +163,7 @@ func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
 	}
 	return &webHandlers{
 		Renderer:     testutils.NewRenderer(t),
+		authorizer:   authz.NewAllowAllAuthorizer(),
 		system:       &svc,
 		client:       &svc,
 		vcsproviders: &svc,

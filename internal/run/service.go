@@ -35,7 +35,7 @@ type (
 
 	Service struct {
 		logr.Logger
-		*authz.Authorizer
+		authz.Interface
 
 		workspaces             *workspace.Service
 		cache                  internal.Cache
@@ -80,7 +80,7 @@ func NewService(opts Options) *Service {
 		workspaces: opts.WorkspaceService,
 		db:         db,
 		cache:      opts.Cache,
-		Authorizer: opts.Authorizer,
+		Interface:  opts.Authorizer,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -91,6 +91,7 @@ func NewService(opts Options) *Service {
 	}
 	svc.web = &webHandlers{
 		Renderer:   opts.Renderer,
+		authorizer: opts.Authorizer,
 		logger:     opts.Logger,
 		runs:       &svc,
 		workspaces: opts.WorkspaceService,
@@ -339,7 +340,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 		_, err = s.CanAccess(ctx, rbac.WatchAction, &authz.AccessRequest{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = s.CanAccess(ctx, rbac.WatchAction, &authz.AccessRequest{Organization: opts.Organization})
+		_, err = s.CanAccess(ctx, rbac.WatchAction, &authz.AccessRequest{Organization: *opts.Organization})
 	} else {
 		// caller must have site-level read permissions
 		_, err = s.CanAccess(ctx, rbac.WatchAction, nil)

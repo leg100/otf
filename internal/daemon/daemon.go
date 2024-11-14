@@ -206,7 +206,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	connectionService := connections.NewService(ctx, connections.Options{
 		Logger:             logger,
-		Authorizer:         authorizer,
 		DB:                 db,
 		VCSProviderService: vcsProviderService,
 		RepoHooksService:   repoService,
@@ -365,11 +364,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	notificationService := notifications.NewService(notifications.Options{
-		Logger:              logger,
-		DB:                  db,
-		Listener:            listener,
-		Responder:           responder,
-		WorkspaceAuthorizer: workspaceService,
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+		Listener:   listener,
+		Responder:  responder,
 	})
 
 	handlers := []internal.Handlers{

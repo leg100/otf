@@ -26,6 +26,7 @@ type (
 		logger     logr.Logger
 		runs       webRunClient
 		workspaces webWorkspaceClient
+		authorizer webAuthorizer
 	}
 
 	webRunClient interface {
@@ -44,7 +45,11 @@ type (
 
 	webWorkspaceClient interface {
 		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
-		GetPolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
+	}
+
+	webAuthorizer interface {
+		CanAccessDecision(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 )
 
@@ -106,11 +111,6 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.workspaces.GetPolicy(r.Context(), ws.ID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	runs, err := h.runs.List(r.Context(), ListOptions{
 		WorkspaceID: &params.WorkspaceID,
 		PageOptions: resource.PageOptions{
@@ -122,11 +122,8 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+
+	canUpdateWorkspace := h.authorizer.CanAccessDecision(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 
 	response := struct {
 		workspace.WorkspacePage
@@ -135,7 +132,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}{
 		WorkspacePage:      workspace.NewPage(r, "runs", ws),
 		Page:               runs,
-		CanUpdateWorkspace: user.CanAccess(rbac.UpdateWorkspaceAction, policy),
+		CanUpdateWorkspace: canUpdateWorkspace,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {

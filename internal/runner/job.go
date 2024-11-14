@@ -66,7 +66,10 @@ func newJob(run *otfrun.Run) *Job {
 
 func (j *Job) LogValue() slog.Value {
 	attrs := []slog.Attr{
+		slog.String("job_id", j.ID.String()),
 		slog.String("run_id", j.RunID.String()),
+		slog.String("workspace_id", j.WorkspaceID.String()),
+		slog.String("organization", j.Organization),
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
@@ -95,13 +98,13 @@ func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 		// Job cannot carry out actions on other organizations
 		return false
 	}
-	// Permissible organization actions
+	// Permissible organization actions on same organization
 	switch action {
 	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
 		return true
 	}
-	// Permissible workspace actions
-	if req.ID != nil && req.ID == &j.WorkspaceID {
+	// Permissible workspace actions on same workspace.
+	if req.ID != nil && *req.ID == j.WorkspaceID {
 		// Allow actions on same workspace as job depending on run phase
 		switch action {
 		case rbac.DownloadStateAction, rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.GetRunAction, rbac.ListVariableSetsAction, rbac.ListWorkspaceVariablesAction, rbac.PutChunkAction, rbac.DownloadConfigurationVersionAction, rbac.GetPlanFileAction, rbac.CancelRunAction:
@@ -118,10 +121,12 @@ func (j *Job) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
 				return true
 			}
 		}
+		return false
 	}
+	// If workspace policy is non-nil then that means the job is trying to
+	// access *another* workspace. Check the policy to determine if it is
+	// allowed to do so.
 	if req.WorkspacePolicy != nil {
-		// Job is attempting to access another workspace. Check whether
-		// workspace's policy allows it do so.
 		switch action {
 		case rbac.GetStateVersionAction, rbac.GetWorkspaceAction, rbac.DownloadStateAction:
 			if req.WorkspacePolicy.GlobalRemoteState {

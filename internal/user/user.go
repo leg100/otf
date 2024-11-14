@@ -124,23 +124,28 @@ func (u *User) IsSiteAdmin() bool {
 }
 
 func (u *User) CanAccess(action rbac.Action, req *authz.AccessRequest) bool {
-	if req == nil {
-		// nil req means site-level access is being requested
-		switch action {
-		case rbac.GetGithubAppAction:
-			return true
-		case rbac.CreateUserAction, rbac.ListUsersAction:
-			// A user can perform these actions only if they are an owner of at
-			// least one organization. This permits an owner to search users or create
-			// a user before adding them to a team.
-			for _, team := range u.Teams {
-				if team.IsOwners() {
-					return true
-				}
+	// Site admin can do whatever it wants
+	if u.IsSiteAdmin() {
+		return true
+	}
+	switch action {
+	case rbac.GetGithubAppAction:
+		// This action is available to any user.
+		return true
+	case rbac.CreateUserAction, rbac.ListUsersAction:
+		// A user can perform these actions only if they are an owner of at
+		// least one organization. This permits an owner to search users or create
+		// a user before adding them to a team.
+		for _, team := range u.Teams {
+			if team.IsOwners() {
+				return true
 			}
 		}
-		// Only the site admin can perform all other site-level actions.
-		return u.IsSiteAdmin()
+	}
+	if req == nil {
+		// nil req means site-level access is being requested and there are no
+		// further allowed actions that are available to user at the site-level.
+		return false
 	}
 	// All other user perms are inherited from team memberships.
 	for _, team := range u.Teams {

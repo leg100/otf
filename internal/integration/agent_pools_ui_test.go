@@ -93,7 +93,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='granted-workspaces']//a[text()='%s']`, ws1.Name))).ToBeVisible()
 		require.NoError(t, err)
 
-		// go to workspaces
+		// go to workspace
 		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 		require.NoError(t, err)
 
