@@ -141,9 +141,6 @@ func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 	)
 }
 
-func (m *RunnerMeta) IsSiteAdmin() bool   { return true }
-func (m *RunnerMeta) IsOwner(string) bool { return true }
-
 func (m *RunnerMeta) Organizations() []string { return nil }
 func (m *RunnerMeta) String() string          { return m.ID.String() }
 

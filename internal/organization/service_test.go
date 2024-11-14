@@ -1,7 +1,6 @@
 package organization
 
 import (
-	"context"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -17,18 +16,32 @@ func TestAuthorize(t *testing.T) {
 		restrict bool
 		want     error
 	}{
-		{"site admin", &authz.Superuser{}, false, nil},
-		{"restrict to site admin - site admin", &authz.Superuser{}, true, nil},
-		{"restrict to site admin - user", &unprivUser{}, true, internal.ErrAccessNotPermitted},
+		{
+			"anyone can create an organization",
+			&unprivUser{},
+			false,
+			nil,
+		},
+		{
+			"site admin can create an organization when creation is restricted",
+			&siteAdmin{},
+			true,
+			nil,
+		},
+		{
+			"normal users cannot create an organization when creation is restricted",
+			&unprivUser{},
+			true,
+			internal.ErrAccessNotPermitted,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := authz.AddSubjectToContext(context.Background(), tt.subject)
 			svc := &Service{
 				Logger:                       logr.Discard(),
 				RestrictOrganizationCreation: tt.restrict,
 			}
-			_, err := svc.restrictOrganizationCreation(ctx)
+			err := svc.restrictOrganizationCreation(tt.subject)
 			assert.Equal(t, tt.want, err)
 		})
 	}
@@ -39,3 +52,9 @@ type unprivUser struct {
 }
 
 func (s *unprivUser) IsSiteAdmin() bool { return false }
+
+type siteAdmin struct {
+	authz.Subject
+}
+
+func (s *siteAdmin) IsSiteAdmin() bool { return true }

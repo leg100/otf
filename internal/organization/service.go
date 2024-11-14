@@ -114,16 +114,17 @@ func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
 func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization, error) {
-	creator, err := s.restrictOrganizationCreation(ctx)
+	subject, err := s.CanAccess(ctx, rbac.CreateOrganizationAction, &authz.AccessRequest{Organization: *opts.Name})
 	if err != nil {
 		return nil, err
 	}
-
+	if err := s.restrictOrganizationCreation(subject); err != nil {
+		return nil, err
+	}
 	org, err := NewOrganization(opts)
 	if err != nil {
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
-
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		if err := s.db.create(ctx, org); err != nil {
 			return err
@@ -136,12 +137,24 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
+		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
 		return nil, sql.Error(err)
 	}
-	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
-
+	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
 	return org, nil
+}
+
+func (s *Service) restrictOrganizationCreation(subject authz.Subject) error {
+	if s.RestrictOrganizationCreation {
+		type user interface {
+			IsSiteAdmin() bool
+		}
+		if user, ok := subject.(user); !ok || !user.IsSiteAdmin() {
+			s.Error(internal.ErrAccessNotPermitted, "cannot create organization because creation is restricted to site admins", "action", rbac.CreateOrganizationAction, "subject", subject)
+			return internal.ErrAccessNotPermitted
+		}
+	}
+	return nil
 }
 
 func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organization) error) {
@@ -244,18 +257,6 @@ func (s *Service) GetEntitlements(ctx context.Context, organization string) (Ent
 		return Entitlements{}, err
 	}
 	return defaultEntitlements(org.ID), nil
-}
-
-func (s *Service) restrictOrganizationCreation(ctx context.Context) (authz.Subject, error) {
-	subject, err := authz.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if s.RestrictOrganizationCreation && !subject.IsSiteAdmin() {
-		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
-		return subject, internal.ErrAccessNotPermitted
-	}
-	return subject, nil
 }
 
 // CreateToken creates an organization token. If an organization

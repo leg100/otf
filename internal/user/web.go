@@ -233,7 +233,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	user, err := authz.SubjectFromContext(r.Context())
+	user, err := UserFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

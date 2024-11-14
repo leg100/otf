@@ -119,8 +119,6 @@ func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
 func (t *Team) String() string                         { return t.Name }
 func (t *Team) OrganizationAccess() OrganizationAccess { return t.Access }
 
-func (t *Team) IsSiteAdmin() bool { return false }
-
 func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
 }

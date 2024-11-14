@@ -71,14 +71,6 @@ func (u *OrganizationToken) CanAccess(action rbac.Action, req *authz.AccessReque
 	return true
 }
 
-func (u *OrganizationToken) IsOwner(organization string) bool {
-	// an owner would give perms to all actions in org whereas an org token
-	// cannot perform certain actions, so org token is not an owner.
-	return false
-}
-
-func (u *OrganizationToken) IsSiteAdmin() bool { return false }
-
 func (u *OrganizationToken) Organizations() []string {
 	return []string{u.Organization}
 }
