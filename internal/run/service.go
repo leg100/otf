@@ -160,7 +160,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.CreateRunAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, rbac.CreateRunAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -210,16 +210,16 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.CanAccess(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID})
+		subject, authErr = s.Authorize(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID})
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.CanAccess(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
+		subject, authErr = s.Authorize(ctx, rbac.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = s.CanAccess(ctx, rbac.ListRunsAction, &authz.AccessRequest{Organization: *opts.Organization})
+		subject, authErr = s.Authorize(ctx, rbac.ListRunsAction, &authz.AccessRequest{Organization: *opts.Organization})
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, authErr = s.CanAccess(ctx, rbac.ListRunsAction, nil)
+		subject, authErr = s.Authorize(ctx, rbac.ListRunsAction, nil)
 	}
 	if authErr != nil {
 		return nil, authErr
@@ -349,13 +349,13 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = s.CanAccess(ctx, rbac.WatchAction, &authz.AccessRequest{ID: opts.WorkspaceID})
+		_, err = s.Authorize(ctx, rbac.WatchAction, &authz.AccessRequest{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = s.CanAccess(ctx, rbac.WatchAction, &authz.AccessRequest{Organization: *opts.Organization})
+		_, err = s.Authorize(ctx, rbac.WatchAction, &authz.AccessRequest{Organization: *opts.Organization})
 	} else {
 		// caller must have site-level read permissions
-		_, err = s.CanAccess(ctx, rbac.WatchAction, nil)
+		_, err = s.Authorize(ctx, rbac.WatchAction, nil)
 	}
 	if err != nil {
 		return nil, err
@@ -628,5 +628,5 @@ func (s *Service) CanAccessRun(ctx context.Context, action rbac.Action, runID re
 	if err != nil {
 		return nil, err
 	}
-	return s.CanAccess(ctx, action, &authz.AccessRequest{ID: &run.WorkspaceID})
+	return s.Authorize(ctx, action, &authz.AccessRequest{ID: &run.WorkspaceID})
 }

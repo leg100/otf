@@ -95,7 +95,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.CreateModuleAction, &authz.AccessRequest{Organization: vcsprov.Organization})
+	subject, err := s.Authorize(ctx, rbac.CreateModuleAction, &authz.AccessRequest{Organization: vcsprov.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (s *Service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 }
 
 func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module, error) {
-	subject, err := s.CanAccess(ctx, rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := s.Authorize(ctx, rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 }
 
 func (s *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	subject, err := s.CanAccess(ctx, rbac.ListModulesAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := s.Authorize(ctx, rbac.ListModulesAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func (s *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*
 }
 
 func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetModuleAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := s.Authorize(ctx, rbac.GetModuleAction, &authz.AccessRequest{Organization: opts.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.ID) (*Module, e
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.GetModuleAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, rbac.GetModuleAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func (s *Service) DeleteModule(ctx context.Context, id resource.ID) (*Module, er
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.DeleteModuleAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, rbac.DeleteModuleAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +318,7 @@ func (s *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.CreateModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, rbac.CreateModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +416,7 @@ func (s *Service) deleteVersion(ctx context.Context, versionID resource.ID) (*Mo
 		return nil, err
 	}
 
-	subject, err := s.CanAccess(ctx, rbac.DeleteModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, rbac.DeleteModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
 	if err != nil {
 		return nil, err
 	}

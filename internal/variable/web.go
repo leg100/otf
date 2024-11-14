@@ -53,7 +53,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccessDecision(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 
 	workspaceInfo struct {
@@ -213,12 +213,12 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage: workspace.NewPage(r, "variables", ws),
 		WorkspaceVariableTable: workspaceVariableTable{
 			Variables:         variables,
-			CanDeleteVariable: h.authorizer.CanAccessDecision(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		},
 		VariableSetTables:  setVariableTables,
-		CanCreateVariable:  h.authorizer.CanAccessDecision(r.Context(), rbac.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanDeleteVariable:  h.authorizer.CanAccessDecision(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUpdateWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanCreateVariable:  h.authorizer.CanAccess(r.Context(), rbac.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanDeleteVariable:  h.authorizer.CanAccess(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 	})
 }
 
@@ -315,7 +315,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "variable sets", org),
 		VariableSets:     sets,
-		CanCreate:        h.authorizer.CanAccessDecision(r.Context(), rbac.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
+		CanCreate:        h.authorizer.CanAccess(r.Context(), rbac.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
 	})
 }
 
@@ -442,11 +442,11 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		FormAction:          paths.UpdateVariableSet(set.ID.String()),
 		AvailableWorkspaces: availableWorkspaces,
 		ExistingWorkspaces:  existingWorkspaces,
-		CanCreateVariable:   h.authorizer.CanAccessDecision(r.Context(), rbac.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		CanDeleteVariable:   h.authorizer.CanAccessDecision(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+		CanCreateVariable:   h.authorizer.CanAccess(r.Context(), rbac.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+		CanDeleteVariable:   h.authorizer.CanAccess(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		VariableTable: setVariableTable{
 			VariableSet:       set,
-			CanDeleteVariable: h.authorizer.CanAccessDecision(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), rbac.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		},
 	})
 }

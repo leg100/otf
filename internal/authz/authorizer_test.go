@@ -15,7 +15,7 @@ func TestAuthorizer(t *testing.T) {
 	user := &Superuser{}
 	ctx := AddSubjectToContext(context.Background(), user)
 
-	got, err := authorizer.CanAccess(ctx, rbac.ListUsersAction, nil)
+	got, err := authorizer.Authorize(ctx, rbac.ListUsersAction, nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, user, got)

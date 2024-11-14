@@ -64,7 +64,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccessDecision(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 
 	// webClient provides web handlers with access to the workspace service
@@ -176,7 +176,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
-	canCreateWorkspace := h.authorizer.CanAccessDecision(
+	canCreateWorkspace := h.authorizer.CanAccess(
 		r.Context(),
 		rbac.CreateTeamAction,
 		&authz.AccessRequest{Organization: *params.Organization})
@@ -312,13 +312,13 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage:      NewPage(r, ws.Name, ws),
 		LockButton:         lockButton,
 		VCSProvider:        provider,
-		CanApply:           h.authorizer.CanAccessDecision(r.Context(), rbac.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanAddTags:         h.authorizer.CanAccessDecision(r.Context(), rbac.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanRemoveTags:      h.authorizer.CanAccessDecision(r.Context(), rbac.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanCreateRun:       h.authorizer.CanAccessDecision(r.Context(), rbac.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanLockWorkspace:   h.authorizer.CanAccessDecision(r.Context(), rbac.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUnlockWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUpdateWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanApply:           h.authorizer.CanAccess(r.Context(), rbac.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanAddTags:         h.authorizer.CanAccess(r.Context(), rbac.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanRemoveTags:      h.authorizer.CanAccess(r.Context(), rbac.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanCreateRun:       h.authorizer.CanAccess(r.Context(), rbac.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanLockWorkspace:   h.authorizer.CanAccess(r.Context(), rbac.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUnlockWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 		TagsDropdown: html.DropdownUI{
 			Name:        "tag_name",
 			Available:   internal.Diff(getTagNames(), ws.Tags),
@@ -461,8 +461,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerAlways:   VCSTriggerAlways,
 		VCSTriggerPatterns: VCSTriggerPatterns,
 		VCSTriggerTags:     VCSTriggerTags,
-		CanUpdateWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
-		CanDeleteWorkspace: h.authorizer.CanAccessDecision(r.Context(), rbac.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		CanDeleteWorkspace: h.authorizer.CanAccess(r.Context(), rbac.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
 		PoolsURL:           poolsURL,
 	})
 }

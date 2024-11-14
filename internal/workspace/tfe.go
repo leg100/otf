@@ -415,16 +415,16 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 	ctx := r.Context()
 	accessRequest := &authz.AccessRequest{ID: &from.ID}
 	perms := &types.WorkspacePermissions{
-		CanLock:           a.CanAccessDecision(ctx, rbac.LockWorkspaceAction, accessRequest),
-		CanUnlock:         a.CanAccessDecision(ctx, rbac.UnlockWorkspaceAction, accessRequest),
-		CanForceUnlock:    a.CanAccessDecision(ctx, rbac.UnlockWorkspaceAction, accessRequest),
-		CanQueueApply:     a.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
-		CanQueueDestroy:   a.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
-		CanQueueRun:       a.CanAccessDecision(ctx, rbac.CreateRunAction, accessRequest),
-		CanDestroy:        a.CanAccessDecision(ctx, rbac.DeleteWorkspaceAction, accessRequest),
-		CanReadSettings:   a.CanAccessDecision(ctx, rbac.GetWorkspaceAction, accessRequest),
-		CanUpdate:         a.CanAccessDecision(ctx, rbac.UpdateWorkspaceAction, accessRequest),
-		CanUpdateVariable: a.CanAccessDecision(ctx, rbac.UpdateWorkspaceAction, accessRequest),
+		CanLock:           a.CanAccess(ctx, rbac.LockWorkspaceAction, accessRequest),
+		CanUnlock:         a.CanAccess(ctx, rbac.UnlockWorkspaceAction, accessRequest),
+		CanForceUnlock:    a.CanAccess(ctx, rbac.UnlockWorkspaceAction, accessRequest),
+		CanQueueApply:     a.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
+		CanQueueDestroy:   a.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
+		CanQueueRun:       a.CanAccess(ctx, rbac.CreateRunAction, accessRequest),
+		CanDestroy:        a.CanAccess(ctx, rbac.DeleteWorkspaceAction, accessRequest),
+		CanReadSettings:   a.CanAccess(ctx, rbac.GetWorkspaceAction, accessRequest),
+		CanUpdate:         a.CanAccess(ctx, rbac.UpdateWorkspaceAction, accessRequest),
+		CanUpdateVariable: a.CanAccess(ctx, rbac.UpdateWorkspaceAction, accessRequest),
 	}
 
 	to := &types.Workspace{

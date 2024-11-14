@@ -51,7 +51,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccessDecision(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
@@ -92,7 +92,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}{
 		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
 		Items:            modules,
-		CanPublishModule: h.authorizer.CanAccessDecision(r.Context(), rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
+		CanPublishModule: h.authorizer.CanAccess(r.Context(), rbac.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
 	})
 }
 

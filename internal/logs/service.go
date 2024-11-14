@@ -101,7 +101,7 @@ func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, er
 
 // PutChunk writes a chunk of logs for a phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
-	_, err := s.CanAccess(ctx, rbac.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
+	_, err := s.Authorize(ctx, rbac.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
-	subject, err := s.CanAccess(ctx, rbac.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
+	subject, err := s.Authorize(ctx, rbac.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
 	if err != nil {
 		return nil, err
 	}

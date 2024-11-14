@@ -49,7 +49,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccessDecision(context.Context, rbac.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, rbac.Action, *authz.AccessRequest) bool
 	}
 )
 
@@ -123,7 +123,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	canUpdateWorkspace := h.authorizer.CanAccessDecision(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), rbac.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 
 	response := struct {
 		workspace.WorkspacePage

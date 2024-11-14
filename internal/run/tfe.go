@@ -357,11 +357,11 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	accessRequest := &authz.AccessRequest{ID: &from.ID}
 	perms := &types.RunPermissions{
-		CanDiscard:      a.authorizer.CanAccessDecision(ctx, rbac.DiscardRunAction, accessRequest),
-		CanForceExecute: a.authorizer.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
-		CanForceCancel:  a.authorizer.CanAccessDecision(ctx, rbac.ForceCancelRunAction, accessRequest),
-		CanCancel:       a.authorizer.CanAccessDecision(ctx, rbac.CancelRunAction, accessRequest),
-		CanApply:        a.authorizer.CanAccessDecision(ctx, rbac.ApplyRunAction, accessRequest),
+		CanDiscard:      a.authorizer.CanAccess(ctx, rbac.DiscardRunAction, accessRequest),
+		CanForceExecute: a.authorizer.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
+		CanForceCancel:  a.authorizer.CanAccess(ctx, rbac.ForceCancelRunAction, accessRequest),
+		CanCancel:       a.authorizer.CanAccess(ctx, rbac.CancelRunAction, accessRequest),
+		CanApply:        a.authorizer.CanAccess(ctx, rbac.ApplyRunAction, accessRequest),
 	}
 
 	var timestamps types.RunStatusTimestamps

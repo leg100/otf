@@ -34,7 +34,7 @@ func (s *Service) UploadConfig(ctx context.Context, cvID resource.ID, config []b
 
 // DownloadConfig retrieves a tarball from the db
 func (s *Service) DownloadConfig(ctx context.Context, cvID resource.ID) ([]byte, error) {
-	subject, err := s.CanAccess(ctx, rbac.DownloadConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+	subject, err := s.Authorize(ctx, rbac.DownloadConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
 	if err != nil {
 		return nil, err
 	}

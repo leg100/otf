@@ -68,7 +68,7 @@ func (t *Token) LogValue() slog.Value {
 }
 
 func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) (*Token, []byte, error) {
-	_, err := a.CanAccess(ctx, rbac.CreateTeamTokenAction, &authz.AccessRequest{ID: &opts.TeamID})
+	_, err := a.Authorize(ctx, rbac.CreateTeamTokenAction, &authz.AccessRequest{ID: &opts.TeamID})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,7 +90,7 @@ func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 }
 
 func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token, error) {
-	_, err := a.CanAccess(ctx, rbac.GetTeamTokenAction, &authz.AccessRequest{ID: &teamID})
+	_, err := a.Authorize(ctx, rbac.GetTeamTokenAction, &authz.AccessRequest{ID: &teamID})
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token,
 }
 
 func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.ID) error {
-	_, err := a.CanAccess(ctx, rbac.DeleteTeamTokenAction, &authz.AccessRequest{ID: &teamID})
+	_, err := a.Authorize(ctx, rbac.DeleteTeamTokenAction, &authz.AccessRequest{ID: &teamID})
 	if err != nil {
 		return err
 	}

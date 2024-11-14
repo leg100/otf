@@ -127,7 +127,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	subject, err := a.CanAccess(ctx, rbac.CreateUserAction, nil)
+	subject, err := a.Authorize(ctx, rbac.CreateUserAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 }
 
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	subject, err := a.CanAccess(ctx, rbac.GetUserAction, nil)
+	subject, err := a.Authorize(ctx, rbac.GetUserAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 // List lists all users.
 func (a *Service) List(ctx context.Context) ([]*User, error) {
-	_, err := a.CanAccess(ctx, rbac.ListUsersAction, nil)
+	_, err := a.Authorize(ctx, rbac.ListUsersAction, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
-	_, err := a.CanAccess(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: organization})
+	_, err := a.Authorize(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 		return nil, err
 	}
 
-	subject, err := a.CanAccess(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, rbac.ListUsersAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 }
 
 func (a *Service) Delete(ctx context.Context, username string) error {
-	subject, err := a.CanAccess(ctx, rbac.DeleteUserAction, nil)
+	subject, err := a.Authorize(ctx, rbac.DeleteUserAction, nil)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.ID, use
 		return err
 	}
 
-	subject, err := a.CanAccess(ctx, rbac.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, rbac.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.ID, 
 		return err
 	}
 
-	subject, err := a.CanAccess(ctx, rbac.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, rbac.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
 	if err != nil {
 		return err
 	}
