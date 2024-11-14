@@ -43,7 +43,7 @@ func TestIntegration_StateService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
 		_, err := svc.State.Get(ctx, resource.NewID(resource.StateVersionKind))
-		require.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	// Get current creates two state versions and checks the second one is made
@@ -64,7 +64,7 @@ func TestIntegration_StateService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
 		_, err := svc.State.GetCurrent(ctx, resource.NewID(resource.WorkspaceKind))
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestIntegration_StateService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
 		_, err := svc.State.List(ctx, resource.NewID(resource.WorkspaceKind), resource.PageOptions{})
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -98,7 +98,7 @@ func TestIntegration_StateService(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = svc.State.Get(ctx, want.ID)
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 
 		t.Run("deleting current version not allowed", func(t *testing.T) {
 			err := svc.State.Delete(ctx, current.ID)

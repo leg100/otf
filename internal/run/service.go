@@ -101,6 +101,7 @@ func NewService(opts Options) *Service {
 		workspaces: opts.WorkspaceService,
 		Responder:  opts.Responder,
 		Signer:     opts.Signer,
+		authorizer: opts.Authorizer,
 	}
 	svc.api = &api{
 		Service:   &svc,
@@ -130,6 +131,17 @@ func NewService(opts Options) *Service {
 	// Fetch related resources when API requests their inclusion
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
+
+	// Resolve authorization requests for run IDs to a workspace IDs
+	opts.Authorizer.RegisterWorkspaceResolver(resource.RunKind,
+		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
+			run, err := db.GetRun(ctx, runID)
+			if err != nil {
+				return resource.ID{}, err
+			}
+			return run.WorkspaceID, nil
+		},
+	)
 
 	// Subscribe run spawner to incoming vcs events
 	opts.VCSEventSubscriber.Subscribe(spawner.handle)

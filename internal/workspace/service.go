@@ -75,8 +75,9 @@ func NewService(opts Options) *Service {
 		},
 	}
 	svc.tfeapi = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
+		Service:    &svc,
+		Responder:  opts.Responder,
+		Authorizer: opts.Authorizer,
 	}
 	svc.api = &api{
 		Service:   &svc,

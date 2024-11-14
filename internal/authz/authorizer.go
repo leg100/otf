@@ -2,6 +2,8 @@ package authz
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/go-logr/logr"
@@ -83,65 +85,57 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, req *Acc
 	if SkipAuthz(ctx) {
 		return subj, nil
 	}
-	if req != nil && req.ID != nil {
-		// Check if resource kind is registered for its ID to be resolved to workspace
-		// ID.
-		if resolver, ok := a.workspaceResolvers[req.ID.Kind()]; ok {
-			workspaceID, err := resolver(ctx, *req.ID)
-			if err != nil {
-				a.Error(err, "authorization failure resolving workspace ID",
-					"resource", req,
-					"action", action.String(),
-					"subject", subj,
-				)
-				return nil, err
+	// Wrapped in function in order to log error messages uniformly.
+	err = func() error {
+		if req != nil && req.ID != nil {
+			// Check if resource kind is registered for its ID to be resolved to workspace
+			// ID.
+			if resolver, ok := a.workspaceResolvers[req.ID.Kind()]; ok {
+				workspaceID, err := resolver(ctx, *req.ID)
+				if err != nil {
+					return fmt.Errorf("resolving workspace ID: %w", err)
+				}
+				// Authorize workspace ID instead
+				req.ID = &workspaceID
 			}
-			// Authorize workspace ID instead
-			req.ID = &workspaceID
-		}
-		// If the resource kind is a workspace, then fetch its policy.
-		if req.ID.Kind() == resource.WorkspaceKind {
-			policy, err := a.GetWorkspacePolicy(ctx, *req.ID)
-			if err != nil {
-				a.Error(err, "authorization failure fetching workspace policy",
-					"resource", req,
-					"action", action.String(),
-					"subject", subj,
-				)
-				return nil, err
+			// If the resource kind is a workspace, then fetch its policy.
+			if req.ID.Kind() == resource.WorkspaceKind {
+				policy, err := a.GetWorkspacePolicy(ctx, *req.ID)
+				if err != nil {
+					return fmt.Errorf("fetching workspace policy: %w", err)
+				}
+				req.WorkspacePolicy = &policy
 			}
-			req.WorkspacePolicy = &policy
-		}
-
-		// Then check if the resource kind - including the case where the
-		// resource kind has been resolved to a workspace - is registered for
-		// its ID to be resolved to an oranization name. This is ony necessary
-		// if the organization has not been specified in the access request.
-		if req.Organization == "" {
-			if resolver, ok := a.organizationResolvers[req.ID.Kind()]; ok {
+			// Resolve the organization if not already provided. Every resource
+			// belongs to an organization, so there should be a resolver for each
+			// resource kind to resolve the resource ID to the organization it
+			// belongs to.
+			if req.Organization == "" {
+				resolver, ok := a.organizationResolvers[req.ID.Kind()]
+				if !ok {
+					return errors.New("resource kind is missing organization resolver")
+				}
 				organization, err := resolver(ctx, *req.ID)
 				if err != nil {
-					a.Error(err, "authorization failure resolving organization",
-						"resource", req,
-						"action", action.String(),
-						"subject", subj,
-					)
-					return nil, err
+					return fmt.Errorf("resolving organization: %w", err)
 				}
 				req.Organization = organization
 			}
 		}
+		// Subject determines whether it is allowed to access resource.
+		if !subj.CanAccess(action, req) {
+			return internal.ErrAccessNotPermitted
+		}
+		return nil
+	}()
+	if err != nil {
+		a.Error(err, "authorization failure",
+			"resource", req,
+			"action", action.String(),
+			"subject", subj,
+		)
 	}
-	// Allow subject to determine whether it is allowed to access resource.
-	if subj.CanAccess(action, req) {
-		return subj, nil
-	}
-	a.Error(nil, "unauthorized action",
-		"resource", req,
-		"action", action.String(),
-		"subject", subj,
-	)
-	return nil, internal.ErrAccessNotPermitted
+	return subj, err
 }
 
 // CanAccessDecision is a helper to boil down an access request to a true/false
