@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.6](https://github.com/leg100/otf/compare/v0.3.5...v0.3.6) (2024-11-22)
+
+
+### Features
+
+* log the reason why agent is retrying api request ([1d41f61](https://github.com/leg100/otf/commit/1d41f61a1257da0bf473af9efc969f0f21ca78f8))
+
+
+### Bug Fixes
+
+* authorize create-org action on site, not org ([98bd1c6](https://github.com/leg100/otf/commit/98bd1c680e7fef486e622c9d1835d060df444265))
+* only log subsystem start when actually started ([a72fbd0](https://github.com/leg100/otf/commit/a72fbd0cc556f6f4bfbb85f79bef255512b40111))
+* runner unable to re-register ([#707](https://github.com/leg100/otf/issues/707)) ([41f5669](https://github.com/leg100/otf/commit/41f5669ef362dc42507b8a8c61c074e022c9bb02))
+
+
+### Miscellaneous
+
+* update screenshots ([b17ffa4](https://github.com/leg100/otf/commit/b17ffa45394cfa23343637529df4ff46bcac97ab))
+
 ## [0.3.5](https://github.com/leg100/otf/compare/v0.3.4...v0.3.5) (2024-10-30)
 
 
