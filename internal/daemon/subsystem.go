@@ -54,13 +54,15 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	ctx = authz.AddSubjectToContext(ctx, &authz.Superuser{Username: s.Name})
 
 	op := func() (err error) {
+		start := func(ctx context.Context) error {
+			s.V(1).Info("started subsystem", "name", s.Name)
+			return s.System.Start(ctx)
+		}
 		if s.Exclusive {
 			// block on getting an exclusive lock
-			err = s.DB.WaitAndLock(ctx, *s.LockID, func(ctx context.Context) error {
-				return s.System.Start(ctx)
-			})
+			err = s.DB.WaitAndLock(ctx, *s.LockID, start)
 		} else {
-			err = s.System.Start(ctx)
+			err = start(ctx)
 		}
 		if ctx.Err() != nil {
 			// don't return an error if subsystem was terminated via a
@@ -79,6 +81,5 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 			s.Error(err, "restarting subsystem", "name", s.Name, "backoff", next)
 		})
 	})
-	s.V(1).Info("started subsystem", "name", s.Name)
 	return nil
 }
