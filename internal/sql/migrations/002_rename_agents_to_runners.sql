@@ -27,7 +27,7 @@ BEGIN
     RETURN NULL;
 END;
 $$;
-CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION public.runners_notify_event();
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION runners_notify_event();
 
 
 ---- create above / drop below ----
@@ -59,4 +59,4 @@ BEGIN
     RETURN NULL;
 END;
 $$;
-CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON agents FOR EACH ROW EXECUTE FUNCTION public.agents_notify_event();
+CREATE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON agents FOR EACH ROW EXECUTE FUNCTION agents_notify_event();

@@ -6,7 +6,7 @@ ALTER TABLE jobs ADD PRIMARY KEY (job_id);
 ALTER TABLE jobs ADD UNIQUE (run_id, phase);
 
 -- replace job event function to instead provide job_id in payload
-CREATE OR REPLACE FUNCTION public.jobs_notify_event() RETURNS trigger
+CREATE OR REPLACE FUNCTION jobs_notify_event() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 DECLARE
