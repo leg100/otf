@@ -171,3 +171,13 @@ debug:
 .PHONY: connect
 connect:
 	dlv connect 127.0.0.1:4300 .
+
+.PHONY: playwright-deps-ubuntu
+playwright-deps-ubuntu:
+	go get -u github.com/playwright-community/playwright-go@latest
+	go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium --with-deps
+
+.PHONY: playwright-deps-arch
+playwright-deps-arch:
+	go get -u github.com/playwright-community/playwright-go@latest
+	go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium
