@@ -3,17 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  a {
-    @apply hover:underline hover:text-blue-500;
-  }
   [x-cloak] {
     display: none !important;
-  }
-  .btn {
-    @apply font-bold py-1 px-3 bg-gray-200 shadow-sm shadow-slate-500;
-  }
-  .btn:hover {
-    @apply bg-gray-300;
   }
   .btn-danger {
     @apply font-bold py-1 px-3 bg-gray-200 shadow-sm shadow-slate-500 text-red-400;
@@ -21,11 +12,8 @@
   .btn-danger:hover {
     @apply bg-red-400 text-white;
   }
-  .text-input {
-    @apply border py-1 px-2;
-  }
   .form-checkbox {
-    @apply grid grid-cols-[20px_auto] gap-[1px] items-center justify-items-start;
+    @apply grid grid-cols-[20px_auto] gap-x-2 items-center justify-items-start;
   }
   .form-checkbox label {
     @apply font-semibold;

@@ -28,15 +28,15 @@ watch: tailwind-watch modd
 
 .PHONY: modd
 modd:
-	+modd
+	modd
 
 .PHONY: tailwind
 tailwind:
-	npx tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css
+	pnpm exec tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css
 
 .PHONY: tailwind-watch
 tailwind-watch:
-	+npx tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css --watch
+	pnpm exec tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css --watch
 
 .PHONY: test
 test:

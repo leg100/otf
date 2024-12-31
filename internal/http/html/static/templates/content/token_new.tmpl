@@ -1,14 +1,20 @@
 {{ template "layout" . }}
 
 {{ define "content-header-title" }}
-  <div><a href="{{ profilePath }}">profile</a> / <a href="{{ tokensPath }}">tokens</a> / new</div>
+  <div class="breadcrumbs">
+    <ul>
+      <li><a href="{{ profilePath }}">profile</a></li>
+      <li><a href="{{ tokensPath }}">tokens</a></li>
+      <li>new</li>
+    </ul>
+  </div>
 {{ end }}
 
 {{ define "content" }}
   <form class="flex flex-col gap-2" action="{{ createTokenPath }}" method="POST">
     <div class="field">
       <label for="description">Description</label>
-      <textarea class="text-input w-80" name="description" id="description" required></textarea>
+      <textarea class="textarea textarea-bordered text-input w-80" name="description" id="description" required></textarea>
     </div>
     <div>
       <button class="btn">Create token</button>
