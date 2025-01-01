@@ -1,11 +1,13 @@
 {{ template "layout" . }}
 
 {{ define "content-header-title" }}
-  <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
-  /
-  <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
-  /
-  settings
+  <div class="breadcrumbs">
+    <ul>
+      <li><a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a></li>
+      <li><a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a></li>
+      <li>settings</li>
+    </ul>
+  </div>
 {{ end }}
 
 {{ define "content-header-links" }}
@@ -167,14 +169,14 @@
 
     {{ with .Workspace.Connection }}
       <div class="form-checkbox">
-        <input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" {{ checked .AllowCLIApply }}/>
+        <input class="checkbox" type="checkbox" name="allow_cli_apply" id="allow-cli-apply" {{ checked .AllowCLIApply }}/>
         <label for="allow-cli-apply">Allow apply from the CLI</label>
         <span class="description">Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
       </div>
     {{ end }}
 
     <div class="form-checkbox">
-      <input class="" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
+      <input class="checkbox" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
       <label class="font-semibold" for="global-remote-state">Remote state sharing</label>
       <span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
     </div>

@@ -20,7 +20,7 @@
         @click="open = true"
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"
-        class="flex items-center {{ get $width (toString .Width) }} gap-2 bg-white px-2 py-1 border"
+        class="input input-bordered flex items-center {{ get $width (toString .Width) }} gap-2 bg-white px-2 py-1 border"
         placeholder="{{ .Placeholder }}"
         form="search-dropdown"
         >

@@ -14,42 +14,58 @@
   <link rel="stylesheet" href="{{ addHash "/static/css/output.css" }}">
   <title>{{ .Title }} | otf</title>
 </head>
-<body class="flex flex-col m-0 min-h-screen font-sans">
-  <header class="bg-gray-200">
-    <nav class="max-w-4xl flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
-      {{ with .CurrentUser }}
-        <input class="hidden peer" id="hamburger-toggle" type="checkbox">
-        <label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
-          <img src="{{ addHash "/static/images/hamburger.svg" }}" alt="open menu">
-        </label>
-        <label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
-          <img src="{{ addHash "/static/images/cross.svg" }}" alt="close menu">
-        </label>
-      {{ end }}
-
-      {{ if .CurrentUser }}
-        {{ with $.CurrentOrganization }}
-          <div class="flex gap-2 items-center">
-            {{ template "building_icon" }}
-            <a class="link" href="{{ organizationPath . }}">{{ . }}</a>
-          </div>
-        {{ end }}
-      {{ end }}
-
-      <div class="logo md:order-first">
+<body class="flex flex-col mx-4 my-0 min-h-screen font-sans">
+  <header class="navbar bg-base-100 max-w-4xl mx-auto">
+    <div class="navbar-start">
+      <div class="dropdown">
+        <div tabindex="0" role="button" class="btn btn-ghost -ml-4 lg:hidden">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h8m-8 6h16" />
+          </svg>
+        </div>
+        <ul tabindex="0"
+          class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+          <li><a href="{{ adminPath }}">site</a></li>
+          <li><a href="{{ organizationsPath }}">organizations</a></li>
+          <li><a href="{{ profilePath }}">profile</a></li>
+        </ul>
+      </div>
+      <div class="">
         <img src="{{ addHash "/static/images/logo.svg" }}" alt="logo">
       </div>
-
-      {{ with .CurrentUser }}
-        <div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
-          <div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
-            <a class="link" href="{{ adminPath }}">site</a>
-            <a class="link" href="{{ organizationsPath }}">organizations</a>
-            <a class="link" href="{{ profilePath }}">profile</a>
-          </div>
+    </div>
+    {{ if .CurrentUser }}
+      {{ with $.CurrentOrganization }}
+        <div class="navbar-center flex gap-2">
+          <a href="{{ organizationPath . }}">
+            <button class="btn btn-ghost">
+              <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill-rule="evenodd" clip-rule="evenodd">
+                <path d="M16 7h8v17h-24v-24h16v7zm-9 12h-2v4h2v-4zm4 0h-2v4h2v-4zm7 0h-2v4h2v-4zm4-10h-6v8h4v5h2v-13zm-8-7h-12v20h1v-5h10v5h1v-20zm-8 13h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm8-2v2h-2v-2h2zm-14-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm6-2h2v2h-2v-2zm-12-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm-6-3h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2z"/>
+              </svg>
+              {{ . }}
+            </button>
+          </a>
         </div>
       {{ end }}
-    </nav>
+    {{ end }}
+    {{ with .CurrentUser }}
+      <div class="navbar-end hidden lg:flex">
+        <ul class="menu menu-horizontal px-0">
+          <li><a href="{{ adminPath }}">site</a></li>
+          <li><a href="{{ organizationsPath }}">organizations</a></li>
+          <li><a class="-mr-2" href="{{ profilePath }}">profile</a></li>
+        </ul>
+      </div>
+    {{ end }}
   </header>
   <main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
     {{ block "container" . }}

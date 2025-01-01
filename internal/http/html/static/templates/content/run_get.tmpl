@@ -7,18 +7,19 @@
 {{ end }}
 
 {{ define "content-header-title" }}
-  <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
-  /
-  <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
-  /
-  <a href="{{ runsPath .Workspace.ID.String }}">runs</a>
-  /
-  {{ .Run.ID }}
+  <div class="breadcrumbs">
+    <ul>
+      <li><a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a></li>
+      <li><a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a></li>
+      <li><a href="{{ runsPath .Workspace.ID.String }}">runs</a></li>
+      <li>{{ .Run.ID }}</li>
+    </ul>
+  </div>
 {{ end }}
 
 {{ define "content" }}
   <div class="flex gap-4 text-sm">
-    <div>Terraform version: <span class="bg-gray-200 p-0.5">{{ .Run.TerraformVersion }}</span></div>
+    <div>Terraform version: <span class="badge badge-ghost">{{ .Run.TerraformVersion }}</span></div>
     <div id="elapsed-time">Elapsed time: {{ template "running-time" .Run }}</div>
   </div>
   {{ template "period-report" .Run }}

@@ -1,7 +1,12 @@
 {{ template "layout" . }}
 
 {{ define "content-header-title" }}
-  <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
+  <div class="breadcrumbs">
+    <ul>
+      <li><a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a></li>
+      <li>{{ .Workspace.Name }}</li>
+    </ul>
+  </div>
 {{ end }}
 
 {{ define "content-header-links" }}
@@ -31,7 +36,7 @@
         <div>
           <h3 class="font-semibold mb-2">Actions</h3>
           <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID.String }}" method="POST">
-            <select name="operation" id="start-run-operation" onchange="this.form.submit()">
+            <select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
               <option value="" selected>-- start run --</option>
               <option value="plan-only">plan only</option>
               {{ if .CanApply }}
@@ -65,12 +70,22 @@
             {{ range . }}
               <form action="{{ deleteTagWorkspacePath $.Workspace.ID.String }}" method="POST">
                 <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
-                <div class="flex gap-1 items-center tag">
-                  <span>{{ . }}</span>
-                  {{ if $.CanRemoveTags }}
-                    <button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
-                  {{ end }}
-                </div>
+                {{ if $.CanRemoveTags }} {{ end }}
+                <button id="button-remove-tag-{{ . }}" class="btn btn-sm btn-accent">
+                  {{ . }}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </form>
             {{ end }}
           </div>

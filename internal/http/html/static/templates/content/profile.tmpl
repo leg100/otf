@@ -5,7 +5,7 @@
 {{ define "content-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
-  <p>You are logged in as <span class="bg-gray-200">{{ .User.Username }}</span></p>
+  <p>You are logged in as <span class="badge badge-ghost">{{ .User.Username }}</span></p>
   <br>
   <form action="{{ logoutPath }}" method="POST">
     <button class="btn" id="logout">logout</button>

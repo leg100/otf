@@ -1,4 +1,4 @@
-<select id="agent-pool-id" name="agent_pool_id">
+<select class="select" id="agent-pool-id" name="agent_pool_id">
 {{ range .Pools }}
   <option value="{{ .ID }}" {{ selected $.CurrentPoolID .ID }}>{{ .Name }}</option>
 {{ end }}

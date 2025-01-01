@@ -12,7 +12,7 @@
   <form class="" action="{{ updateAgentPoolPath .Pool.ID.String }}" method="POST">
     <div class="field mb-4">
       <label for="name">Name</label>
-      <input class="text-input w-80" type="text" name="name" id="name" value="{{ .Pool.Name }}" required>
+      <input class="input input-bordered w-80" type="text" name="name" id="name" value="{{ .Pool.Name }}" required>
     </div>
     <fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
       <legend class="">Workspaces</legend>
@@ -38,7 +38,7 @@
             >
             <input type="hidden" id="workspaces" name="allowed_workspaces" :value="JSON.stringify(existing)">
             <input
-              class="text-input grow w-80"
+              class="input input-bordered grow w-80"
               type="text"
               id="workspace-input"
               x-ref="workspace_input"
@@ -94,7 +94,7 @@
     <form class="flex flex-col gap-5" action="{{ createAgentTokenPath .Pool.ID.String }}" method="POST">
       <div class="field">
         <label for="new-token-description">Description</label>
-        <input class="text-input w-3/4" rows="3" type="text" name="description" id="new-token-description" required>
+        <input class="input input-bordered w-3/4" rows="3" type="text" name="description" id="new-token-description" required>
         <span class="description">Enter a description to help identify the token.</span>
       </div>
       <div class="field">

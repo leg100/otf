@@ -11,6 +11,7 @@
     <form class="flex flex-col gap-5" action="{{ updateTeamPath .Team.ID.String }}" method="POST">
       <div class="form-checkbox">
         <input
+          class="checkbox"
           type="checkbox"
           name="manage_workspaces"
           id="manage_workspaces"
@@ -23,6 +24,7 @@
       </div>
       <div class="form-checkbox">
         <input
+          class="checkbox"
           type="checkbox"
           name="manage_vcs"
           id="manage_vcs"
@@ -35,6 +37,7 @@
       </div>
       <div class="form-checkbox">
         <input
+          class="checkbox"
           type="checkbox"
           name="manage_modules"
           id="manage_modules"
@@ -58,32 +61,42 @@
     {{ template "search-dropdown" .AddMemberDropdown }}
   {{ end }}
   <div id="content-list">
-    {{ range .Members }}
-      <div id="item-user-{{ .Username }}" class="widget">
-        <div>
-          <span id="username">{{ .Username }}</span>
-        </div>
-        <div>
-          {{ template "identifier" . }}
-          {{ if $.CanRemoveMember }}
-            <form action="{{ removeMemberTeamPath $.Team.ID.String }}" method="POST">
-              <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
-              <button id="remove-member-button" class="btn-danger">
-                Remove member
-              </button>
-            </form>
-          {{ end }}
-        </div>
-      </div>
-    {{ else }}
-      The team currently has no members.
-    {{ end }}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {{ range .Members }}
+        <tr id="item-user-{{ .Username }}">
+          <td id="username">{{ .Username }}</td>
+          <td>
+            {{ template "identifier" . }}
+          </td>
+          <td>
+            {{ if $.CanRemoveMember }}
+              <form action="{{ removeMemberTeamPath $.Team.ID.String }}" method="POST">
+                <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
+                <button id="remove-member-button" class="btn btn-error btn-xs">
+                  Remove member
+                </button>
+              </form>
+            {{ end }}
+          </td>
+        </tr>
+      {{ else }}
+        The team currently has no members.
+      {{ end }}
+    </table>
   </div>
   {{ if and (not .Team.IsOwners) .CanDeleteTeam }}
     <hr class="my-4">
     <h3 class="font-semibold my-2 text-lg">Advanced</h3>
     <form action="{{ deleteTeamPath .Team.ID.String }}" method="POST">
-      <button class="btn-danger"
+      <button class="btn btn-error"
         onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
       <input type="hidden" name="id" value="{{ .Team.ID }}">
     </form>

@@ -33,7 +33,7 @@
         <h3 class="font-semibold">
         <div class="flex flex-col gap-2">
           <label for="usage">Usage</label>
-          <textarea class="text-input font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
+          <textarea class="input input-bordered font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
   module "{{ .Module.Name }}" {
     source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
     version = "{{ .CurrentVersion.Version }}"

@@ -14,17 +14,21 @@
 
 {{ define "content" }}
   <div id="content-list">
-    {{ range .Teams }}
-      <div id="item-team-{{ .Name }}" class="widget" x-data="block_link($el, '{{ teamPath .ID.String }}')">
-        <div>
-          <span>{{ .Name }}</span>
-        </div>
-        <div>
-          {{ template "identifier" . }}
-        </div>
-      </div>
-    {{ else }}
-      No teams currently exist.
-    {{ end }}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+        </tr>
+      </thead>
+      {{ range .Teams }}
+        <tr id="item-team-{{ .Name }}" x-data="block_link($el, '{{ teamPath .ID.String }}')">
+          <td>{{ .Name }}</td>
+          <th>{{ template "identifier" . }}</td>
+        </tr>
+      {{ else }}
+        No teams currently exist.
+      {{ end }}
+    </table>
   </div>
 {{ end }}

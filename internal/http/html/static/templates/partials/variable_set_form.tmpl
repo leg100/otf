@@ -3,21 +3,21 @@
     {{ with .VariableSet }}
       <div class="field">
         <label class="font-semibold" for="name">Name</label>
-        <input class="text-input" type="text" name="name" id="name" value="{{ .Name }}" required placeholder="name">
+        <input class="input input-bordered" type="text" name="name" id="name" value="{{ .Name }}" required placeholder="name">
       </div>
       <div class="field">
         <label class="font-semibold" for="description">Description</label>
-        <textarea class="text-input" type="text" name="description" id="description">{{ .Description }}</textarea>
+        <textarea class="input input-bordered" type="text" name="description" id="description">{{ .Description }}</textarea>
       </div>
       <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
         <legend>Scope</legend>
         <div class="form-checkbox">
-          <input type="radio" name="global" id="global" value="true" {{ checked .Global }} required>
+          <input class="radio" type="radio" name="global" id="global" value="true" {{ checked .Global }} required>
           <label for="global">Global</label>
           <span class="description">All current and future workspaces in this organization will access this variable set.</span>
         </div>
         <div class="form-checkbox">
-          <input class="peer" type="radio" name="global" value="false" id="workspace-scoped" {{ checked (not .Global) }} required>
+          <input class="radio peer" type="radio" name="global" value="false" id="workspace-scoped" {{ checked (not .Global) }} required>
           <label for="workspace-scoped">Apply to specific workspaces</label>
           <span class="col-start-2 description">Only the selected workspaces will access this variable set.</span>
           <script src="{{ addHash "/static/js/dropdown.js" }}"></script>
@@ -33,7 +33,7 @@
               >
               <input type="hidden" id="workspaces" name="workspaces" :value="JSON.stringify(existing)">
               <input
-                class="text-input grow w-80"
+                class="input input-bordered grow w-80"
                 type="text"
                 id="workspace-input"
                 x-ref="workspace_input"

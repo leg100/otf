@@ -1,7 +1,14 @@
 {{ template "layout" . }}
 
 {{ define "content-header-title" }}
-  {{ template "workspace-variables-breadcrumb" . }} / edit
+  <div class="breadcrumbs">
+    <ul>
+      <li><a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a></li>
+      <li><a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a></li>
+      <li><a href="{{ variablesPath .Workspace.ID.String }}">variables</a>
+      <li>edit</li>
+    </ul>
+  </div>
 {{ end }}
 
 {{ define "content" }}
