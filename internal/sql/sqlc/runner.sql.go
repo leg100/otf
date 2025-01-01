@@ -325,6 +325,7 @@ SELECT
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE agent_pool_id IS NULL
 ORDER BY last_ping_at DESC
 `
