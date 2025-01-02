@@ -39,10 +39,22 @@
     </div>
   </form>
   <div id="workspace-listing-container">
-    {{ template "content-list" . }}
+    {{ template "table" . }}
   </div>
 {{ end }}
 
-{{ define "content-list-item" }}
-  {{ template "workspace-item" . }}
+{{ define "table-header" }}
+  <tr>
+    <th>Name</th>
+    <th>ID</th>
+    <th>Latest Run</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr x-data="block_link($el, '{{ workspacePath .ID.String }}')" id="item-workspace-{{ .Name }}">
+    <td>{{ .Name }}</td>
+    <td>{{ template "identifier" . }}</td>
+    <td>{{ template "run-status" .LatestRun }}</td>
+  </tr>
 {{ end }}

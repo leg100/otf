@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
@@ -31,7 +32,7 @@ type stateParams struct {
 
 func (h *webHandlers) getResources(w http.ResponseWriter, r *http.Request) {
 	var params stateParams
-	if err := decode.All(params, r); err != nil {
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -40,14 +41,16 @@ func (h *webHandlers) getResources(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := h.RenderTemplate("state_resources.tmpl", w, f); err != nil {
+	time.Sleep(time.Second)
+	page := resource.NewPage(f.Resources, params.PageOptions, nil)
+	if err := h.RenderTemplate("state_resources.tmpl", w, page); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (h *webHandlers) getOutputs(w http.ResponseWriter, r *http.Request) {
 	var params stateParams
-	if err := decode.All(params, r); err != nil {
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

@@ -11,7 +11,7 @@
 {{ define "table-row" }}
   <tr>
     <td>{{ .Name }}</td>
-    <td>{{ .Type }}</td>
+    <td>{{ call .Type }}</td>
     <td>{{ .Value }}</td>
   </tr>
 {{ end }}

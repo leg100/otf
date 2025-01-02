@@ -63,4 +63,10 @@
   .description {
     @apply text-gray-600 text-sm;
   }
+  .htmx-indicator {
+    display: hidden;
+  }
+  .htmx-indicator .htmx-request {
+    display: inline;
+  }
 }

@@ -28,25 +28,27 @@
         </div>
       </div>
       <div role="tablist" class="tabs tabs-lifted">
-        <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources ({{ len .Resources }})" id="resources-label"/>
+        <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources (0)" id="resources-label"/>
         <div
           role="tabpanel"
-          class="tab-contentbg-base-100 border-base-300 rounded-box p-6"
+          class="tab-content bg-base-100 border-base-300 rounded-box p-6"
           hx-get="{{ resourcesWorkspacePath .Workspace.ID.String }}"
           hx-trigger="load"
           hx-swap="innerHTML"
+          hx-indicator="#spinner"
         >
-        <!-- insert progress thing -->
+          <span id="spinner" class="loading loading-spinner htmx-indicator"></span>
         </div>
-        <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs ({{ len .Outputs }})" id="outputs-label"/>
+        <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs (0)" id="outputs-label"/>
         <div
           role="tabpanel"
-          class="tab-contentbg-base-100 border-base-300 rounded-box p-6"
+          class="tab-content bg-base-100 border-base-300 rounded-box p-6"
           hx-get="{{ outputsWorkspacePath .Workspace.ID.String }}"
           hx-trigger="load"
           hx-swap="innerHTML"
+          hx-indicator="#spinner"
         >
-        <!-- insert progress thing -->
+          <span id="spinner" class="loading loading-spinner htmx-indicator"></span>
         </div>
       </div>
     </div>
