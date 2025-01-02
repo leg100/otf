@@ -207,7 +207,10 @@ var specs = []controllerSpec{
 						name: "delete-tag",
 					},
 					{
-						name: "state",
+						name: "resources",
+					},
+					{
+						name: "outputs",
 					},
 					{
 						name: "pools",

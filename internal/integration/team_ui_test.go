@@ -27,7 +27,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 		err = page.Locator(`//a[text()='teams']`).Click()
 		require.NoError(t, err)
 		// go to owners team page
-		err = page.Locator(`//div[@id='item-team-owners']`).Click()
+		err = page.Locator(`//*[@id='item-team-owners']`).Click()
 		require.NoError(t, err)
 		screenshot(t, page, "owners_team_page")
 
@@ -56,7 +56,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// remove bob from team
-		err = page.Locator(`//div[@id='item-user-bob']//button[@id='remove-member-button']`).Click()
+		err = page.Locator(`//*[@id='item-user-bob']//button[@id='remove-member-button']`).Click()
 		require.NoError(t, err)
 
 		// confirm bob removed

@@ -1,8 +1,8 @@
 {{ define "copyable_content" }}
 <div class="flex gap-1 items-center" x-data="{ open: false }">
-  <a class="shrink-0" @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)">
-    <button x-ref="content" class="btn btn-ghost btn-xs font-mono break-all text-gray-500 text-xs">
-      {{ . }}
+  <a @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)">
+    <button class="flex items-center btn btn-ghost btn-xs h-fit">
+      <span class="font-mono break-all text-gray-500 text-xs" x-ref="content">{{ . }}</span>
       <img id="clipboard-icon" src="{{ addHash "/static/images/clipboard_copy.svg" }}">
     </button>
   </a>

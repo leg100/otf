@@ -1,0 +1,19 @@
+{{ template "table" . }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>Name</th>
+    <th>Provider</th>
+    <th>Type</th>
+    <th>Module</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr>
+    <td>{{ .Name }}</td>
+    <td>{{ .Provider }}</td>
+    <td>{{ .Type }}</td>
+    <td>{{ .ModuleName }}</td>
+  </tr>
+{{ end }}

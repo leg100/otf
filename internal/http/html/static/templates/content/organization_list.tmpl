@@ -9,20 +9,21 @@
 {{ end }}
 
 {{ define "content" }}
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>ID</th>
-      </tr>
-    </thead>
-      {{ range .Items }}
-        <tr id="item-org-{{ .Name }}" x-data="block_link($el, '{{ organizationPath .Name }}')">
-          <td>{{ .Name }}</td>
-          <th>{{ template "identifier" . }}</td>
-        </tr>
-      {{ else }}
-        No organizations currently exist.
-      {{ end }}
-    </table>
+  <div id="organizations-table">
+    {{ template "table" . }}
+  </div>
+{{ end }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>Name</th>
+    <th>ID</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr id="item-org-{{ .Name }}" x-data="block_link($el, '{{ organizationPath .Name }}')">
+    <td>{{ .Name }}</td>
+    <th>{{ template "identifier" . }}</td>
+  </tr>
 {{ end }}

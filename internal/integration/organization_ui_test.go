@@ -15,7 +15,6 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 
 	// test creating/updating/deleting
 	browser.New(t, ctx, func(page playwright.Page) {
-
 		// go to the list of organizations
 		_, err := page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
 		require.NoError(t, err)
@@ -70,7 +69,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should be 100 orgs listed on page one
-		err = expect.Locator(page.Locator(`.widget`)).ToHaveCount(100)
+		err = expect.Locator(page.Locator("//table[@id='organizations-table']/tbody/tr")).ToHaveCount(100)
 		require.NoError(t, err)
 
 		// go to page two
@@ -78,6 +77,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should be one org listed
-		expect.Locator(page.Locator(`.widget`)).ToHaveCount(1)
+		err = expect.Locator(page.Locator("//table[@id='organizations-table']/tbody/tr")).ToHaveCount(1)
+		require.NoError(t, err)
 	})
 }

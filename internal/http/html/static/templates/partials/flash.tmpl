@@ -1,7 +1,11 @@
 {{ define "flash" }}
   {{ range .Flashes }}
-    {{ $flashColors := dict "success" "bg-green-100 border-green-400" "warning" "bg-orange-100 border-orange-400" "error" "bg-red-100 border-red-400" }}
-    <div class="border padding py-0.5 px-1 {{ get $flashColors .Type.String }}" role="alert">
+    {{ $flashColors := dict
+      "success" "bg-green-100 border-green-400"
+      "warning" "bg-orange-100 border-orange-400"
+      "error" "bg-red-100 border-red-400"
+    }}
+    <div class="alert {{ get $flashColors .Type.String }}" role="alert">
       {{ .HTML }}
     </div>
   {{ end }}

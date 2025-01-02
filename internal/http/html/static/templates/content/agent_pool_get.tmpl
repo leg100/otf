@@ -112,7 +112,7 @@
       <div>
         {{ template "identifier" . }}
         <form action="{{ deleteAgentTokenPath .ID.String }}" method="POST">
-          <button id="delete-agent-token-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+          <button id="delete-agent-token-button" class="btn btn-error btn-xs" onclick="return confirm('Are you sure you want to delete?')">delete</button>
         </form>
       </div>
     </div>
@@ -136,7 +136,7 @@
       </ul>
     {{ end }}
     <form class="mt-2" action="{{ deleteAgentPoolPath .Pool.ID.String }}" method="POST">
-      <button id="delete-agent-pool-button" class="btn-danger disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" {{ disabled (gt (len .AssignedWorkspaces) 0) }}>
+      <button id="delete-agent-pool-button" class="btn btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" {{ disabled (gt (len .AssignedWorkspaces) 0) }}>
         Delete agent pool
       </button>
     </form>

@@ -1,5 +1,5 @@
 <div role="tablist" class="tabs tabs-lifted">
-  <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources ({{ len .Resources }})" />
+  <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources ({{ len .Resources }})" id="resources-label"/>
   <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
     <table class="table table-zebra w-full text-left break-words border-collapse" id="resources-table">
       {{ with .Resources }}
@@ -29,7 +29,7 @@
     </table>
   </div>
 
-  <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs ({{ len .Outputs }})" />
+  <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs ({{ len .Outputs }})"  id="outputs-label"/>
   <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
     <table
       class="table table-zebra w-full text-left break-words border-collapse"

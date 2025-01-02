@@ -1525,6 +1525,18 @@ label {
   justify-content: flex-end;
 }
 
+.progress {
+  position: relative;
+  width: 100%;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  overflow: hidden;
+  height: 0.5rem;
+  border-radius: var(--rounded-box, 1rem);
+  background-color: var(--fallback-bc,oklch(var(--bc)/0.2));
+}
+
 .radio {
   flex-shrink: 0;
   --chkbg: var(--bc);
@@ -2275,6 +2287,49 @@ input.tab:checked + .tab-content,
   0% {
     opacity: 0;
   }
+}
+
+.progress::-moz-progress-bar {
+  border-radius: var(--rounded-box, 1rem);
+  background-color: currentColor;
+}
+
+.progress:indeterminate {
+  --progress-color: var(--fallback-bc,oklch(var(--bc)/1));
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--progress-color) -1%,
+    var(--progress-color) 10%,
+    transparent 10%,
+    transparent 90%
+  );
+  background-size: 200%;
+  background-position-x: 15%;
+  animation: progress-loading 5s ease-in-out infinite;
+}
+
+.progress::-webkit-progress-bar {
+  border-radius: var(--rounded-box, 1rem);
+  background-color: transparent;
+}
+
+.progress::-webkit-progress-value {
+  border-radius: var(--rounded-box, 1rem);
+  background-color: currentColor;
+}
+
+.progress:indeterminate::-moz-progress-bar {
+  background-color: transparent;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--progress-color) -1%,
+    var(--progress-color) 10%,
+    transparent 10%,
+    transparent 90%
+  );
+  background-size: 200%;
+  background-position-x: 15%;
+  animation: progress-loading 5s ease-in-out infinite;
 }
 
 @keyframes progress-loading {
@@ -3032,6 +3087,10 @@ input.tab:checked + .tab-content,
   display: table;
 }
 
+.table-row {
+  display: table-row;
+}
+
 .hidden {
   display: none;
 }
@@ -3050,6 +3109,11 @@ input.tab:checked + .tab-content,
 
 .h-6 {
   height: 1.5rem;
+}
+
+.h-fit {
+  height: -moz-fit-content;
+  height: fit-content;
 }
 
 .h-full {
@@ -3150,10 +3214,6 @@ input.tab:checked + .tab-content,
 
 .max-w-\[66\%\] {
   max-width: 66%;
-}
-
-.shrink-0 {
-  flex-shrink: 0;
 }
 
 .grow {
@@ -3388,9 +3448,9 @@ input.tab:checked + .tab-content,
   background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
 }
 
-.bg-red-200 {
+.bg-red-300 {
   --tw-bg-opacity: 1;
-  background-color: rgb(254 202 202 / var(--tw-bg-opacity, 1));
+  background-color: rgb(252 165 165 / var(--tw-bg-opacity, 1));
 }
 
 .bg-violet-100 {
@@ -3416,11 +3476,6 @@ input.tab:checked + .tab-content,
 .bg-yellow-50 {
   --tw-bg-opacity: 1;
   background-color: rgb(254 252 232 / var(--tw-bg-opacity, 1));
-}
-
-.bg-red-300 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(252 165 165 / var(--tw-bg-opacity, 1));
 }
 
 .p-0\.5 {
@@ -3450,11 +3505,6 @@ input.tab:checked + .tab-content,
 .px-0 {
   padding-left: 0px;
   padding-right: 0px;
-}
-
-.px-1 {
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
 }
 
 .px-2 {

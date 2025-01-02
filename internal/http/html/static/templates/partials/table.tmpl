@@ -1,0 +1,15 @@
+{{ define "table" }}
+  <table class="table">
+    <thead>
+      {{ template "table-header" . }}
+    </thead>
+    <tbody>
+      {{ range .Items }}
+        {{ template "table-row" . }}
+      {{ else }}
+        No items currently exist.
+      {{ end }}
+    <tbody>
+  </table>
+  {{ template "page-navigation-links" .Pagination }}
+{{ end }}

@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/leg100/otf/internal/run"
@@ -42,10 +41,10 @@ applied:
 		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//label[@id='resources-label']`)).ToHaveText(regexp.MustCompile(`Resources \(1\)`))
+		err = expect.Locator(page.Locator(`//input[@id='resources-label']`)).ToHaveAttribute("aria-label", "Resources (1)")
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//label[@id='outputs-label']`)).ToHaveText(regexp.MustCompile(`Outputs \(0\)`))
+		err = expect.Locator(page.Locator(`//input[@id='outputs-label']`)).ToHaveAttribute("aria-label", "Outputs (0)")
 		require.NoError(t, err)
 
 		err = expect.Locator(page.Locator(`//table[@id='resources-table']/tbody/tr/td[1]`)).ToHaveText(`test`)

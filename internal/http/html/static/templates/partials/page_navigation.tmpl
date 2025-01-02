@@ -1,9 +1,9 @@
 {{ define "page-navigation-links" }}
   <div class="flex p-4 gap-2 justify-end">
-    {{ with prevPageQuery .Pagination }}
+    {{ with prevPageQuery . }}
       <a id="prev-page-link" href="{{ mergeQuery $.CurrentURL . }}">Previous Page</a>
     {{ end }}
-    {{ with nextPageQuery .Pagination }}
+    {{ with nextPageQuery . }}
       <a id="next-page-link" href="{{ mergeQuery $.CurrentURL . }}">Next Page</a>
     {{ end }}
   </div>

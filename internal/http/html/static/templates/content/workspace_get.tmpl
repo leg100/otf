@@ -27,8 +27,27 @@
           {{ end }}
         </div>
       </div>
-      <div>
-        <div hx-get="{{ stateWorkspacePath .Workspace.ID.String }}" hx-trigger="load" hx-swap="innerHTML"></div>
+      <div role="tablist" class="tabs tabs-lifted">
+        <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources ({{ len .Resources }})" id="resources-label"/>
+        <div
+          role="tabpanel"
+          class="tab-contentbg-base-100 border-base-300 rounded-box p-6"
+          hx-get="{{ resourcesWorkspacePath .Workspace.ID.String }}"
+          hx-trigger="load"
+          hx-swap="innerHTML"
+        >
+        <!-- insert progress thing -->
+        </div>
+        <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs ({{ len .Outputs }})" id="outputs-label"/>
+        <div
+          role="tabpanel"
+          class="tab-contentbg-base-100 border-base-300 rounded-box p-6"
+          hx-get="{{ outputsWorkspacePath .Workspace.ID.String }}"
+          hx-trigger="load"
+          hx-swap="innerHTML"
+        >
+        <!-- insert progress thing -->
+        </div>
       </div>
     </div>
     <div class="flex gap-4 flex-col basis-1/5">

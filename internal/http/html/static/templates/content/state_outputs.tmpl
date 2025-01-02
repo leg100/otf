@@ -1,0 +1,17 @@
+{{ template "table" . }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Value</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr>
+    <td>{{ .Name }}</td>
+    <td>{{ .Type }}</td>
+    <td>{{ .Value }}</td>
+  </tr>
+{{ end }}
