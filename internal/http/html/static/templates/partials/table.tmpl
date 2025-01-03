@@ -1,15 +1,49 @@
 {{ define "table" }}
-  <table class="table">
-    <thead>
-      {{ template "table-header" . }}
-    </thead>
-    <tbody>
-      {{ range .Items }}
-        {{ template "table-row" . }}
-      {{ else }}
-        No items currently exist.
-      {{ end }}
-    <tbody>
-  </table>
-  {{ template "page-navigation-links" .Pagination }}
+  <div id="table-container">
+    <table class="table">
+      <thead>
+        {{ template "table-header" . }}
+      </thead>
+      <tbody>
+        {{ range .Items }}
+          {{ template "table-row" . }}
+        {{ else }}
+          No items currently exist.
+        {{ end }}
+      </tbody>
+    </table>
+    <hr/>
+    <div class="flex justify-between items-center mt-2">
+      <span class="badge badge-ghost badge-lg">
+        {{ .FirstItem }}-{{ .LastItem }} of {{ .TotalCount }}
+      </span>
+      <div class="join">
+        {{ with .PreviousPageLink }}
+          <button
+            class="join-item btn btn-sm"
+            id="prev-page-link"
+            hx-get="{{ . }}"
+            hx-target="closest #table-container"
+            hx-select="#table-container"
+          >
+              «
+          </button>
+        {{ end }}
+        <button class="join-item btn btn-sm" >
+          Page {{ .CurrentPage }}
+        </button>
+        {{ with .NextPageLink }}
+          <button
+            class="join-item btn btn-sm"
+            id="next-page-link"
+            hx-get="{{ . }}"
+            hx-target="closest #table-container"
+            hx-select="#table-container"
+          >
+            »
+          </button>
+        {{ end }}
+      </div>
+    </div>
+  </div>
 {{ end }}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
@@ -36,16 +35,18 @@ func (h *webHandlers) getResources(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+	// temp override number of items in a page to 10
+	// params.PageSize = 10
 	f, err := h.getCurrent(r.Context(), params.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	time.Sleep(time.Second)
-	page := resource.NewPage(f.Resources, params.PageOptions, nil)
-	if err := h.RenderTemplate("state_resources.tmpl", w, page); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	// time.Sleep(time.Second)
+	h.Render("state_resources.tmpl", w, html.Page[Resource]{
+		Page:    resource.NewPage(f.Resources, params.PageOptions, nil),
+		Request: r,
+	})
 }
 
 func (h *webHandlers) getOutputs(w http.ResponseWriter, r *http.Request) {
@@ -75,10 +76,10 @@ func (h *webHandlers) getOutputs(w http.ResponseWriter, r *http.Request) {
 		}
 		i++
 	}
-	page := resource.NewPage(outputs, params.PageOptions, nil)
-	if err := h.RenderTemplate("state_outputs.tmpl", w, page); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	h.Render("state_outputs.tmpl", w, html.Page[output]{
+		Page:    resource.NewPage(outputs, params.PageOptions, nil),
+		Request: r,
+	})
 }
 
 func (h *webHandlers) getCurrent(ctx context.Context, workspaceID resource.ID) (*File, error) {

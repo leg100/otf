@@ -126,19 +126,19 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		workspace.WorkspacePage
-		*resource.Page[*Run]
+		html.Page[*Run]
 		CanUpdateWorkspace bool
 	}{
-		WorkspacePage:      workspace.NewPage(r, "runs", ws),
-		Page:               runs,
+		WorkspacePage: workspace.NewPage(r, "runs", ws),
+		Page: html.Page[*Run]{
+			Page:    runs,
+			Request: r,
+		},
 		CanUpdateWorkspace: canUpdateWorkspace,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		if err := h.RenderTemplate("run_listing.tmpl", w, response); err != nil {
-			h.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		h.Render("run_listing.tmpl", w, response)
 	} else {
 		h.Render("run_list.tmpl", w, response)
 	}

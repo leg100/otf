@@ -12,4 +12,48 @@
 
 {{ define "content-header-links" }}{{ template "workspace-header-links" . }}{{ end }}
 
-{{ define "content" }}{{ template "run-listing" . }}{{ end }}
+{{ define "content" }}
+    {{ template "table" . }}
+{{ end }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>User</th>
+    <th>Status</th>
+    <th>ID</th>
+    <th>Changes</th>
+    <th></th>
+    <th>Created</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr x-data="block_link($el, '{{ runPath .ID.String }}')" id="{{ .ID.String }}">
+    {{ with .IngressAttributes }}
+      {{ with .SenderUsername }}
+        <td class="inline-block max-w-[16rem] truncate">
+          <a id="vcs-username" href="{{ $.IngressAttributes.SenderHTMLURL }}">@{{ . }}</a>
+        </td>
+      {{ end }}
+    {{ else }}
+      {{ with .CreatedBy }}
+        <td class="inline-block max-w-[16rem] truncate" id="run-created-by">
+          @{{ . }}
+        </td>
+      {{ end }}
+    {{ end }}
+    <td>{{ template "run-status" . }}</td>
+    <td>{{ template "identifier" . }}</td>
+    <td>
+      {{ with .Apply.ResourceReport }}
+        {{ template "resource-report" . }}
+      {{ else }}
+        {{ with .Plan.ResourceReport }}
+          {{ template "resource-report" . }}
+        {{ end }}
+      {{ end }}
+    </td>
+    <td>{{ template "run-source" . }}</td>
+    <td>{{ durationRound .CreatedAt }} ago</td>
+  </tr>
+{{ end }}

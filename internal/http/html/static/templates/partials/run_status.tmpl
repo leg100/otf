@@ -7,6 +7,6 @@
       "errored" "bg-red-300"
   }}
   <span id="{{ .ID }}-status" class="badge {{ get $statusColors .Status.String }}">
-    <a href="{{ runPath .ID.String }}">{{ .Status.String | replace "_" " "}}</a>
+    {{ .Status.String | replace "_" " "}}
   </span>
 {{ end }}

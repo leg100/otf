@@ -182,23 +182,23 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		organization.OrganizationPage
-		*resource.Page[*Workspace]
+		html.Page[*Workspace]
 		TagFilters         map[string]bool
 		Search             string
 		CanCreateWorkspace bool
 	}{
 		OrganizationPage:   organization.NewPage(r, "workspaces", *params.Organization),
 		CanCreateWorkspace: canCreateWorkspace,
-		Page:               workspaces,
-		TagFilters:         tagfilters(),
-		Search:             params.Search,
+		Page: html.Page[*Workspace]{
+			Page:    workspaces,
+			Request: r,
+		},
+		TagFilters: tagfilters(),
+		Search:     params.Search,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		if err := h.RenderTemplate("workspace_listing.tmpl", w, response); err != nil {
-			h.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		h.Render("workspace_listing.tmpl", w, response)
 	} else {
 		h.Render("workspace_list.tmpl", w, response)
 	}

@@ -28,27 +28,29 @@
         </div>
       </div>
       <div role="tablist" class="tabs tabs-lifted">
-        <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources (0)" id="resources-label"/>
+        <input type="radio" checked="checked" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Resources" id="resources-label"/>
         <div
           role="tabpanel"
           class="tab-content bg-base-100 border-base-300 rounded-box p-6"
           hx-get="{{ resourcesWorkspacePath .Workspace.ID.String }}"
           hx-trigger="load"
-          hx-swap="innerHTML"
-          hx-indicator="#spinner"
+          hx-target="#resources-tab-content"
+          hx-indicator="#resources-tab-spinner"
         >
-          <span id="spinner" class="loading loading-spinner htmx-indicator"></span>
+          <div id="resources-tab-content"></div>
+          <span id="resources-tab-spinner" class="loading loading-spinner htmx-indicator"></span>
         </div>
-        <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs (0)" id="outputs-label"/>
+        <input type="radio" name="my_tabs_2" role="tab" class="tab whitespace-nowrap" aria-label="Outputs" id="outputs-label"/>
         <div
           role="tabpanel"
           class="tab-content bg-base-100 border-base-300 rounded-box p-6"
           hx-get="{{ outputsWorkspacePath .Workspace.ID.String }}"
           hx-trigger="load"
-          hx-swap="innerHTML"
-          hx-indicator="#spinner"
+          hx-target="#outputs-tab-content"
+          hx-indicator="#outputs-tab-spinner"
         >
-          <span id="spinner" class="loading loading-spinner htmx-indicator"></span>
+          <div id="outputs-tab-content"></div>
+          <span id="outputs-tab-spinner" class="loading loading-spinner htmx-indicator"></span>
         </div>
       </div>
     </div>

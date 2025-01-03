@@ -97,19 +97,14 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		PageNumber int `schema:"page[number]"`
-	}
+	var params resource.PageOptions
 	if err := decode.All(&params, r); err != nil {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	organizations, err := a.svc.List(r.Context(), ListOptions{
-		PageOptions: resource.PageOptions{
-			PageNumber: params.PageNumber,
-			PageSize:   html.PageSize,
-		},
+		PageOptions: params,
 	})
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
@@ -128,11 +123,14 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 
 	a.Render("organization_list.tmpl", w, struct {
 		html.SitePage
-		*resource.Page[*Organization]
+		html.Page[*Organization]
 		CanCreate bool
 	}{
-		SitePage:  html.NewSitePage(r, "organizations"),
-		Page:      organizations,
+		SitePage: html.NewSitePage(r, "organizations"),
+		Page: html.Page[*Organization]{
+			Page:    organizations,
+			Request: r,
+		},
 		CanCreate: canCreate,
 	})
 }
