@@ -55,6 +55,10 @@
   <tr x-data="block_link($el, '{{ workspacePath .ID.String }}')" id="item-workspace-{{ .Name }}">
     <td>{{ .Name }}</td>
     <td>{{ template "identifier" . }}</td>
-    <td>{{ template "run-status" .LatestRun }}</td>
+    <td>
+      {{ with .LatestRun }}
+        {{ template "run-status" . }}
+      {{ end }}
+    </td>
   </tr>
 {{ end }}

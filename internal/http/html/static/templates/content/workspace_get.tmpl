@@ -16,7 +16,27 @@
 {{ define "content" }}
   <div class="flex gap-6 flex-row">
     <div class="grow flex flex-col gap-4 basis-4/5">
-      <div>{{ template "identifier" .Workspace }}</div>
+      <div class="flex flex-wrap gap-4 items-center text-sm">
+        <div>{{ template "copyable_content" .Workspace.ID }}</div>
+        <div>{{ template "workspace_lock" . }}</div>
+        <div class="inline-flex items-center gap-2">
+          <span>Terraform Version</span>
+          <a class="link text-blue-700" href="{{ editWorkspacePath .Workspace.ID.String }}#terraform-version">
+            {{ .Workspace.TerraformVersion }}
+          </a>
+        </div>
+        {{ if .CanCreateRun }}
+          <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID.String }}" method="POST">
+            <select class="select select-bordered select-sm" name="operation" id="start-run-operation" onchange="this.form.submit()">
+              <option value="" selected>start run</option>
+              <option value="plan-only">plan only</option>
+              {{ if .CanApply }}
+                <option value="plan-and-apply">plan and apply</option>
+              {{ end }}
+            </select>
+          </form>
+        {{ end }}
+      </div>
       <div>
         <h3 class="text-lg font-bold my-2">Latest Run</h3>
         <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID.String }}?latest=true" sse-swap="latest-run">
@@ -55,34 +75,6 @@
       </div>
     </div>
     <div class="flex gap-4 flex-col basis-1/5">
-      {{ if .CanCreateRun }}
-        <div>
-          <h3 class="font-semibold mb-2">Actions</h3>
-          <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID.String }}" method="POST">
-            <select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
-              <option value="" selected>-- start run --</option>
-              <option value="plan-only">plan only</option>
-              {{ if .CanApply }}
-                <option value="plan-and-apply">plan and apply</option>
-              {{ end }}
-            </select>
-          </form>
-        </div>
-      {{ end }}
-      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID.String }}#terraform-version">{{ .Workspace.TerraformVersion }}</a></div>
-      <div>
-        <h3 class="font-semibold mb-2">Locking</h3>
-        {{ with .LockButton }}
-          {{ $statusColors := dict "unlocked" "bg-green-200" "locked" "bg-orange-200" }}
-          <div class="flex flex-col gap-2 p-2 {{ get $statusColors .State }}">
-            <span>{{ title .State }}</span>
-            {{ if or $.CanLockWorkspace $.CanUnlockWorkspace }}
-              <form action="{{ .Action }}" method="POST"><button class="btn" {{ disabled .Disabled }}>{{ .Text }}</button></form>
-            {{ end }}
-            <span class="text-sm">{{ .Message }}</span>
-          </div>
-        {{ end }}
-      </div>
       {{ with .Workspace.Connection }}
         <div>Connected to <span class="bg-gray-200">{{ .Repo }} ({{ $.VCSProvider.String }})</span></div>
       {{ end }}
@@ -98,7 +90,7 @@
                   {{ . }}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
+                    class="h-4 w-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor">
@@ -119,4 +111,49 @@
       </div>
     </div>
   </div>
+{{ end }}
+
+
+{{ define "workspace_lock" }}
+  {{ with .LockButton }}
+    <div id="lock" class="flex gap-2 items-center text-sm">
+      {{ if $.Workspace.Locked }}
+          <svg
+              fill="#000000"
+              class="h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 330 330" xml:space="preserve"
+          >
+            <g id="XMLID_509_">
+              <path id="XMLID_510_" d="M65,330h200c8.284,0,15-6.716,15-15V145c0-8.284-6.716-15-15-15h-15V85c0-46.869-38.131-85-85-85
+                S80,38.131,80,85v45H65c-8.284,0-15,6.716-15,15v170C50,323.284,56.716,330,65,330z M180,234.986V255c0,8.284-6.716,15-15,15
+                s-15-6.716-15-15v-20.014c-6.068-4.565-10-11.824-10-19.986c0-13.785,11.215-25,25-25s25,11.215,25,25
+                C190,223.162,186.068,230.421,180,234.986z M110,85c0-30.327,24.673-55,55-55s55,24.673,55,55v45H110V85z"/>
+            </g>
+          </svg>
+          <span class="badge badge-warning">{{ .Message }}</span>
+      {{ else }}
+        <svg
+          fill="#000000"
+          class="h-4 w-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 330 330" xml:space="preserve"
+        >
+          <g id="XMLID_516_">
+            <path id="XMLID_517_" d="M15,160c8.284,0,15-6.716,15-15V85c0-30.327,24.673-55,55-55c30.327,0,55,24.673,55,55v45h-25
+              c-8.284,0-15,6.716-15,15v170c0,8.284,6.716,15,15,15h200c8.284,0,15-6.716,15-15V145c0-8.284-6.716-15-15-15H170V85
+              c0-46.869-38.131-85-85-85S0,38.131,0,85v60C0,153.284,6.716,160,15,160z"/>
+          </g>
+        </svg>
+        <span class="badge bg-green-100">unlocked</span>
+      {{ end }}
+      {{ if or $.CanLockWorkspace $.CanUnlockWorkspace }}
+        <form action="{{ .Action }}" method="POST">
+          <button class="btn btn-bordered btn-xs" {{ disabled .Disabled }}>
+            {{ .Text }}
+          </button>
+        </form>
+      {{ end }}
+    </div>
+  {{ end }}
 {{ end }}

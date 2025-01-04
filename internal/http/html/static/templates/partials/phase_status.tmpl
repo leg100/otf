@@ -2,6 +2,7 @@
   {{ $statusColors := dict
     "finished" "bg-green-200"
     "unreachable" "bg-gray-200"
+    "running" "bg-blue-200"
   }}
   <span id="{{ .PhaseType }}-status" class="badge {{ get $statusColors .Status.String }}" hx-swap-oob="true">{{ .Status.String }}</span>
 {{ end }}

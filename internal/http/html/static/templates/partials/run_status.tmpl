@@ -1,10 +1,11 @@
 {{ define "run-status" }}
   {{
     $statusColors := dict
-      "discarded" "bg-gray-200"
+      "planned" "bg-purple-200"
       "planned_and_finished" "bg-red-100"
       "applied" "bg-green-200"
       "errored" "bg-red-300"
+      "discarded" "bg-gray-200"
   }}
   <span id="{{ .ID }}-status" class="badge {{ get $statusColors .Status.String }}">
     {{ .Status.String | replace "_" " "}}

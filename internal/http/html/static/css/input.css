@@ -24,9 +24,6 @@
   input.error {
     @apply border-2 border-red-400 shadow-sm shadow-red-200;
   }
-  select {
-    @apply py-2 px-4 bg-gray-200 shadow-sm shadow-slate-500 cursor-pointer;
-  }
   input[type="radio"], input[type="checkbox"] {
     @apply cursor-pointer;
   }
