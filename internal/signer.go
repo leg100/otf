@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 )
 
 // NewSigner constructs a signer for signing and verifying URLs
@@ -20,7 +20,7 @@ func NewSigner(secret []byte) *surl.Signer {
 
 // Signer cryptographically signs URLs with a limited lifespan.
 type Signer interface {
-	Sign(string, time.Duration) (string, error)
+	Sign(string, time.Time) (string, error)
 }
 
 // Verifier verifies signed URLs

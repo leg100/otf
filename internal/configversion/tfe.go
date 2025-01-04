@@ -18,7 +18,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 )
 
 type tfe struct {
@@ -87,7 +87,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/configuration-versions#configuration-files-upload-url
 	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
-	uploadURL, err = a.Sign(uploadURL, time.Hour)
+	uploadURL, err = a.Sign(uploadURL, time.Now().Add(time.Hour))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

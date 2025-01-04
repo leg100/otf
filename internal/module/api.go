@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 )
 
 type api struct {
@@ -121,7 +121,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	signed, err := h.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Hour)
+	signed, err := h.Sign(fmt.Sprintf("/modules/download/%s.tar.gz", version.ID), time.Now().Add(time.Hour))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

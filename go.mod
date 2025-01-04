@@ -35,7 +35,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/jackc/tern/v2 v2.2.2
 	github.com/jaschaephraim/lrserver v0.0.0-20171129202958-50d19f603f71
-	github.com/leg100/surl v0.0.5
+	github.com/leg100/surl/v2 v2.0.0
 	github.com/lestrrat-go/jwx/v2 v2.1.1
 	github.com/mitchellh/iochan v1.0.0
 	github.com/pkg/errors v0.9.1
@@ -93,7 +93,7 @@ require (
 	github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/itchyny/base58-go v0.2.0 // indirect
+	github.com/itchyny/base58-go v0.2.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect

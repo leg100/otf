@@ -19,7 +19,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 	"golang.org/x/exp/maps"
 )
 
@@ -442,7 +442,7 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 
 func (a *tfe) generateSignedURL(r *http.Request, fmtpath string, args ...any) (string, error) {
 	path := fmt.Sprintf(fmtpath, args...)
-	signedPath, err := a.Sign(path, time.Hour)
+	signedPath, err := a.Sign(path, time.Now().Add(time.Hour))
 	if err != nil {
 		return "", err
 	}

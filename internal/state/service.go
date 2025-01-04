@@ -15,7 +15,7 @@ import (
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")

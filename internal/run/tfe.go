@@ -524,7 +524,7 @@ func (a *tfe) toPhaseTimestamps(from []PhaseStatusTimestamp) *types.PhaseStatusT
 
 func (a *tfe) logURL(r *http.Request, phase Phase) (string, error) {
 	logs := fmt.Sprintf("/runs/%s/logs/%s", phase.RunID, phase.PhaseType)
-	logs, err := a.Sign(logs, time.Hour)
+	logs, err := a.Sign(logs, time.Now().Add(time.Hour))
 	if err != nil {
 		return "", err
 	}

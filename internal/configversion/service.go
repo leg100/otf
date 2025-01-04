@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 )
 
 type (
