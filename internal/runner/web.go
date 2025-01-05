@@ -91,6 +91,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	// agent tokens
 	r.HandleFunc("/agent-pools/{pool_id}/agent-tokens/create", h.createAgentToken).Methods("POST")
+	r.HandleFunc("/agent-pools/{pool_id}/agent-tokens", h.listAgentTokens).Methods("GET")
 	r.HandleFunc("/agent-tokens/{token_id}/delete", h.deleteAgentToken).Methods("POST")
 }
 
@@ -193,13 +194,16 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization string `schema:"organization_name,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), org, listPoolOptions{})
+	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), params.Organization, listPoolOptions{})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -207,14 +211,15 @@ func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("agent_pools_list.tmpl", w, struct {
 		organization.OrganizationPage
-		// list template expects pagination object but we don't paginate token
-		// listing
-		*resource.Pagination
+		html.Page[*Pool]
 		Items []*Pool
 	}{
-		OrganizationPage: organization.NewPage(r, "agent pools", org),
-		Pagination:       &resource.Pagination{},
-		Items:            pools,
+		OrganizationPage: organization.NewPage(r, "agent pools", params.Organization),
+		Page: html.Page[*Pool]{
+			Page:    resource.NewPage(pools, params.PageOptions, nil),
+			Request: r,
+		},
+		Items: pools,
 	})
 }
 
@@ -269,12 +274,6 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tokens, err := h.svc.ListAgentTokens(r.Context(), poolID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	agents, err := h.svc.listRunnersByPool(r.Context(), poolID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -288,7 +287,6 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		AllowedButUnassignedWorkspaces []poolWorkspace
 		AssignedWorkspaces             []poolWorkspace
 		AvailableWorkspaces            []poolWorkspace
-		Tokens                         []*agentToken
 		Agents                         []*RunnerMeta
 	}{
 		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
@@ -297,7 +295,6 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		AllowedButUnassignedWorkspaces: allowedButUnassignedWorkspaces,
 		AssignedWorkspaces:             assignedWorkspaces,
 		AvailableWorkspaces:            availableWorkspaces,
-		Tokens:                         tokens,
 		Agents:                         agents,
 	})
 }
@@ -351,6 +348,28 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 }
 
 // agent token handlers
+
+func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		PoolID resource.ID `schema:"pool_id,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	tokens, err := h.svc.ListAgentTokens(r.Context(), params.PoolID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("agent_token_list.tmpl", w, html.Page[*agentToken]{
+		Page:    resource.NewPage(tokens, params.PageOptions, nil),
+		Request: r,
+	})
+}
 
 func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.ID("pool_id", r)

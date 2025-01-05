@@ -5,7 +5,7 @@
 {{ define "content-header-actions" }}
   {{ if .CanCreateWorkspace }}
     <form action="{{ newWorkspacePath .Organization }}" method="GET">
-      <button class="btn" id="new-workspace-button">New Workspace</button>
+      <button class="btn btn-sm" id="new-workspace-button">New Workspace</button>
     </form>
   {{ end }}
 {{ end }}
@@ -13,7 +13,7 @@
 {{ define "content" }}
   <form method="GET">
     <div class="flex gap-2 items-center">
-      <label class="input input-bordered flex items-center gap-2">
+      <label class="input input-bordered input-sm flex items-center gap-2">
         <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 16 16"

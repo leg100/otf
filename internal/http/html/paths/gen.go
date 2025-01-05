@@ -399,6 +399,46 @@ func (r controller) FormatString(action action) string {
 	return b.String()
 }
 
+func (r controller) isPath(action action) string {
+	var b strings.Builder
+	if !r.noprefix {
+		b.WriteString(Prefix)
+	}
+	if r.controllerType == singlePath {
+		// single path controllers are just the paths themselves without
+		// parameters
+		b.WriteString(r.Path())
+		return b.String()
+	}
+	if action.collection {
+		if r.Parent != nil {
+			b.WriteString(r.Parent.Path())
+			b.WriteString("s")
+			b.WriteString("/%s")
+		}
+	}
+	b.WriteString(r.Path())
+	b.WriteString("s")
+	if action.name == "list" {
+		// list has no explict action specified in the path
+		return b.String()
+	}
+	b.WriteString("/")
+	if action.collection {
+		b.WriteString(action.name)
+		return b.String()
+	}
+	b.WriteString("%s")
+	if action.name == "show" {
+		// show has no explict action specified in the path; show is instead implied using
+		// the controller name alone
+		return b.String()
+	}
+	b.WriteString("/")
+	b.WriteString(action.name)
+	return b.String()
+}
+
 // FormatArgs are the args for use with fmt.Sprintf in a path helper in a
 // template.
 func (r controller) FormatArgs(action action) string {
@@ -433,6 +473,16 @@ func (r controller) FuncMapName(action action) string {
 		// the resource name
 		return strcase.ToLowerCamel(action.name) + r.Camel() + "Path"
 	}
+}
+
+// IsName returns the go function name for the action's is function
+func (r controller) IsName(action action) string {
+	return fmt.Sprintf("Is%ssPath", r.Camel())
+}
+
+// FuncMapIsName returns the function map name for the action's is function
+func (r controller) FuncMapIsName(action action) string {
+	return fmt.Sprintf("is%ssPath", r.Camel())
 }
 
 // HelperParams returns a list of parameters for use in a path helper function

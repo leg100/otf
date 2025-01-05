@@ -257,6 +257,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		organization.OrganizationPage
 		Team              *otfteam.Team
 		Members           []*User
+		NonMembers        []string
 		AddMemberDropdown html.DropdownUI
 		CanUpdateTeam     bool
 		CanDeleteTeam     bool
@@ -274,6 +275,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		CanRemoveMember:  user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
 		CanDelete:        user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
 		IsOwner:          user.IsOwner(team.Organization),
+		NonMembers:       nonMemberUsernames,
 		AddMemberDropdown: html.DropdownUI{
 			Name:        "username",
 			Available:   nonMemberUsernames,

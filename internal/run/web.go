@@ -176,14 +176,16 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("run_get.tmpl", w, struct {
 		workspace.WorkspacePage
-		Run       *Run
-		PlanLogs  logs.Chunk
-		ApplyLogs logs.Chunk
+		Run                *Run
+		PlanLogs           logs.Chunk
+		ApplyLogs          logs.Chunk
+		CanUpdateWorkspace bool
 	}{
-		WorkspacePage: workspace.NewPage(r, run.ID.String(), ws),
-		Run:           run,
-		PlanLogs:      logs.Chunk{Data: planLogs},
-		ApplyLogs:     logs.Chunk{Data: applyLogs},
+		WorkspacePage:      workspace.NewPage(r, run.ID.String(), ws),
+		Run:                run,
+		PlanLogs:           logs.Chunk{Data: planLogs},
+		ApplyLogs:          logs.Chunk{Data: applyLogs},
+		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 	})
 }
 

@@ -6,6 +6,12 @@
   {{ .Pool.Name }}
 {{ end }}
 
+{{ define "agent_pools_submenu" }}
+  <ul>
+    <li><a href="{{ agentPoolPath .Pool.ID.String }}">{{ .Pool.Name }}</a></li>
+  </ul>
+{{ end }}
+
 {{ define "content" }}
   <div>{{ template "identifier" .Pool }}</div>
 
@@ -103,20 +109,11 @@
     </form>
   </details>
 
-  {{ range .Tokens }}
-    <div class="widget">
-      <div>
-        <span>{{ .Description }}</span>
-        <span>created {{ durationRound .CreatedAt }} ago</span>
-      </div>
-      <div>
-        {{ template "identifier" . }}
-        <form action="{{ deleteAgentTokenPath .ID.String }}" method="POST">
-          <button id="delete-agent-token-button" class="btn btn-error btn-xs" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-        </form>
-      </div>
-    </div>
-  {{ end }}
+  <div
+    hx-get="{{ agentTokensPath .Pool.ID.String }}"
+    hx-trigger="load"
+    >
+  </div>
 
   <hr class="my-4">
   <h3 class="font-semibold text-lg mb-2">Agents</h3>
@@ -142,3 +139,4 @@
     </form>
   {{ end }}
 {{ end }}
+

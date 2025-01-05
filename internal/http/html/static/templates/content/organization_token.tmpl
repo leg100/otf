@@ -16,10 +16,10 @@
         {{ template "identifier" .Token }}
         <div class="flex gap-2">
           <form action="{{ createOrganizationTokenPath .Organization }}" method="POST">
-            <button class="btn">regenerate</button>
+            <button class="btn btn-sm">regenerate</button>
           </form>
           <form action="{{ deleteOrganizationTokenPath .Organization }}" method="POST">
-            <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+            <button class="btn btn-sm btn-error" onclick="return confirm('Are you sure you want to delete?')">delete</button>
           </form>
         </div>
       </div>

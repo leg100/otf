@@ -17,6 +17,18 @@
   </div>
 {{ end }}
 
+{{ define "workspaces_submenu" }}
+    {{ template "workspaces_submenu_partial" . }}
+{{ end }}
+
+{{ define "runs_submenu" }}
+  <ul>
+    <li>
+      <a class="overflow-x-auto" href="{{ runPath .Run.ID.String }}">{{ .Run.ID.String }}</a>
+    </li>
+  </ul>
+{{ end }}
+
 {{ define "content" }}
   <div class="flex gap-4 text-sm">
     <div>Terraform version: <span class="badge badge-ghost">{{ .Run.TerraformVersion }}</span></div>

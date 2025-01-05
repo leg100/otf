@@ -10,8 +10,8 @@
   </div>
 {{ end }}
 
-{{ define "content-header-links" }}
-  {{ template "workspace-header-links" . }}
+{{ define "workspaces_submenu" }}
+    {{ template "workspaces_submenu_partial" . }}
 {{ end }}
 
 {{ define "content" }}
@@ -189,8 +189,8 @@
   <h3 class="font-semibold text-lg">Permissions</h3>
   <div class="" id="permissions-container">
     <div>
-      <table class="text-left">
-        <thead class="bg-gray-100 border-t border-b">
+      <table class="table">
+        <thead>
           <tr>
             <th class="p-2">Team</th>
             <th class="p-2" colspan="2">Role</th>
@@ -198,18 +198,18 @@
         </thead>
         <tbody>
           <!-- always render implicit admin role permission for owners team -->
-          <tr class="text-gray-400 border-b" id="permissions-owners">
-            <td class="p-2">owners</td>
-            <td class="p-2">admin</td>
+          <tr id="permissions-owners">
+            <td class="">owners</td>
+            <td class="">admin</td>
           </tr>
           <!-- iterate through existing role assignments -->
           {{ range .Assigned }}
             {{ if eq .Team.Name "owners" }}
               {{ continue }}
             {{ end }}
-            <tr class="border-b" id="permissions-{{ .Team.Name }}">
-              <td class="p-2"><a href="{{ teamPath .Team.ID.String }}">{{ .Team.Name }}</a></td>
-              <td class="p-2">
+            <tr id="permissions-{{ .Team.Name }}">
+              <td><a href="{{ teamPath .Team.ID.String }}">{{ .Team.Name }}</a></td>
+              <td>
                 <form class="" action="{{ setPermissionWorkspacePath $.Workspace.ID.String }}" method="POST">
                   <input name="team_id" value="{{ .Team.ID }}" type="hidden">
                   <select name="role" id="role-select">

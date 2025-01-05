@@ -306,7 +306,6 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		CanUnlockWorkspace bool
 		CanUpdateWorkspace bool
 		UnassignedTags     []string
-		TagsDropdown       html.DropdownUI
 	}{
 		WorkspacePage:      NewPage(r, ws.Name, ws),
 		LockButton:         lockButton,
@@ -318,14 +317,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		CanLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 		CanUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		TagsDropdown: html.DropdownUI{
-			Name:        "tag_name",
-			Available:   internal.Diff(getTagNames(), ws.Tags),
-			Existing:    ws.Tags,
-			Action:      paths.CreateTagWorkspace(ws.ID.String()),
-			Placeholder: "Add tags",
-			Width:       html.NarrowDropDown,
-		},
+		UnassignedTags:     internal.Diff(getTagNames(), ws.Tags),
 	})
 }
 

@@ -1,0 +1,23 @@
+{{ template "table" . }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>Description</th>
+    <th>ID</th>
+    <th>Created</th>
+    <th></th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr x-data="block_link($el, '{{ agentPoolPath .ID.String }}')" id="{{ .ID.String }}">
+    <td>{{ .Description }}</td>
+    <td>{{ template "identifier" . }}</td>
+    <td>{{ durationRound .CreatedAt }} ago</td>
+    <th>
+        <form action="{{ deleteAgentTokenPath .ID.String }}" method="POST">
+          <button id="delete-agent-token-button" class="btn btn-error btn-xs" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+        </form>
+    </th>
+  </tr>
+{{ end }}

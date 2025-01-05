@@ -58,7 +58,31 @@
   {{ end }}
   <h3 class="font-semibold my-2 text-lg">Members</h3>
   {{ if .CanAddMember }}
-    {{ template "search-dropdown" .AddMemberDropdown }}
+    <div x-data="dropdown()" x-init="$watch('username', () => setButtonText())">
+      <form action="{{ addMemberTeamPath .Team.ID.String }}" method="POST">
+        <input list="team-members" class="input" name="username" x-model="username" required>
+        <datalist id="team-members">
+          {{ range .NonMembers }}
+            <option value="{{ . }}"></option>
+          {{ end }}
+        </datalist>
+        <button x-text="buttonText" class="btn btn-neutral"></button>
+      </form>
+    </div>
+    <script>
+      function dropdown() {
+        return {
+          buttonText: 'Add',
+          existing: {{ .NonMembers }},
+          username: '',
+          setButtonText() {
+            console.log(this.existing);
+            console.log(this.existing.includes(this.username))
+            this.buttonText = this.existing.includes(this.username) ? 'Add' : 'Create';
+          },
+        }
+      }
+    </script>
   {{ end }}
   <div id="content-list">
     <table class="table">
@@ -101,4 +125,10 @@
       <input type="hidden" name="id" value="{{ .Team.ID }}">
     </form>
   {{ end }}
+{{ end }}
+
+{{ define "teams_submenu" }}
+  <ul>
+    <li><a href="{{ teamPath .Team.ID.String }}">{{ .Team.Name }}</a></li>
+  </ul>
 {{ end }}

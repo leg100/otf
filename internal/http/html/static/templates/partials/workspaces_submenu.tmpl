@@ -1,0 +1,21 @@
+{{ define "workspaces_submenu_partial" }}
+  <ul>
+    <li>
+      <a href="{{ workspacePath .Workspace.ID.String }}">{{ .Workspace.Name }}</a>
+      <ul>
+        <li>
+          <a href="{{ runsPath .Workspace.ID.String }}">Runs</a>
+          {{ block "runs_submenu" . }}{{ end }}
+        </li>
+        <li>
+          <a href="{{ variablesPath .Workspace.ID.String }}">Variables</a>
+        </li>
+        {{ if .CanUpdateWorkspace }}
+          <li>
+            <a href="{{ editWorkspacePath .Workspace.ID.String }}">Settings</a>
+          </li>
+        {{ end }}
+      </ul>
+    </li>
+  </ul>
+{{ end }}

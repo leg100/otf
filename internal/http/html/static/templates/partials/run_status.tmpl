@@ -2,12 +2,12 @@
   {{
     $statusColors := dict
       "planned" "bg-purple-200"
-      "planned_and_finished" "bg-red-100"
-      "applied" "bg-green-200"
-      "errored" "bg-red-300"
+      "planned_and_finished" "badge-soft badge-success"
+      "applied" "badge-soft badge-success"
+      "errored" "badge-soft badge-error"
       "discarded" "bg-gray-200"
   }}
-  <span id="{{ .ID }}-status" class="badge {{ get $statusColors .Status.String }}">
+  <span id="{{ .ID }}-status" class="badge {{ get $statusColors .Status.String }} h-fit">
     {{ .Status.String | replace "_" " "}}
   </span>
 {{ end }}

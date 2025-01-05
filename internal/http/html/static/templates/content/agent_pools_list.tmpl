@@ -22,17 +22,21 @@
     </form>
     <hr class="my-4">
   </details>
-  {{ template "content-list" . }}
+  {{ template "table" . }}
 {{ end }}
 
-{{ define "content-list-item" }}
-  <div x-data="block_link($el, '{{ agentPoolPath .ID.String }}')" id="{{ .ID.String }}" class="widget">
-    <div>
-      <span>{{ .Name }}</span>
-      <span>{{ durationRound .CreatedAt }} ago</span>
-    </div>
-    <div>
-      {{ template "identifier" . }}
-    </div>
-  </div>
+{{ define "table-header" }}
+  <tr>
+    <th>Name</th>
+    <th>ID</th>
+    <th>Created</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr x-data="block_link($el, '{{ agentPoolPath .ID.String }}')" id="{{ .ID.String }}">
+    <td>{{ .Name }}</td>
+    <td>{{ template "identifier" . }}</td>
+    <td>{{ durationRound .CreatedAt }} ago</td>
+  </tr>
 {{ end }}

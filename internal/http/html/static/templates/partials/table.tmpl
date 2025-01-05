@@ -1,6 +1,6 @@
-{{ define "table" }}
-  <div id="table-container">
-    <table class="table">
+{{ define "list" }}
+  <div id="list-container">
+    <table class="list">
       <thead>
         {{ template "table-header" . }}
       </thead>
@@ -12,7 +12,7 @@
     </table>
     <hr/>
     <div class="flex justify-between items-center mt-2">
-      <span class="badge badge-ghost badge-lg">
+      <span class="badge badge-ghost">
         {{ .FirstItem }}-{{ .LastItem }} of {{ .TotalCount }}
       </span>
       <div class="join">
