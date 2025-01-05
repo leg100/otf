@@ -18,7 +18,7 @@ import (
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"github.com/leg100/surl"
+	"github.com/leg100/surl/v2"
 )
 
 type (

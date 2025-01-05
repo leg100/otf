@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.7](https://github.com/leg100/otf/compare/v0.3.6...v0.3.7) (2025-01-03)
+
+
+### Bug Fixes
+
+* bump packages to fix critical vulns ([b53a404](https://github.com/leg100/otf/commit/b53a404f91de2741681cc60e09324338cc4703a8))
+* don't assume public schema for postgres migrations ([e7510b0](https://github.com/leg100/otf/commit/e7510b0fabb487f76a6f5122bb6e2708fadb3a75))
+* **ui:** bad db query broke runner listing ([d86705c](https://github.com/leg100/otf/commit/d86705c11a6182462b6a3f2303a6bcfe73c752c4))
+
+
+### Miscellaneous
+
+* bump playwright ([af87baa](https://github.com/leg100/otf/commit/af87baa8054b470ae9c0fcc00fb3d604440c24a6))
+* trigger release ([e90e046](https://github.com/leg100/otf/commit/e90e0469c0a46a16112891b19a9e8877c790283b))
+
 ## [0.3.6](https://github.com/leg100/otf/compare/v0.3.5...v0.3.6) (2024-11-22)
 
 
