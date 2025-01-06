@@ -1,13 +1,28 @@
 {{ define "run-source" }}
   {{ if .IsAPISource }}
-    <img class="h-5 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src="{{ addHash "/static/images/api_icon.png" }}">
+    <img class="h-4 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src="{{ addHash "/static/images/api_icon.png" }}">
   {{ else if .IsCLISource }}
-    <img class="h-5 bg-gray-300" id="run-trigger-cli" title="run triggered via the CLI" src="{{ addHash "/static/images/cli_icon.svg" }}">
+    <div id="run-trigger-cli" title="run triggered via the CLI">
+      <svg
+        viewBox="0 0 24 24"
+        class="h-5 w-5 fill-none stroke-gray-600 stroke-2"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    </div>
   {{ else if .IsGithubSource }}
-    <img class="h-5" id="run-trigger-github" title="run triggered via github"  src="{{ addHash "/static/images/github_icon.svg" }}">
+    <img class="h-4" id="run-trigger-github" title="run triggered via github"  src="{{ addHash "/static/images/github_icon.svg" }}">
   {{ else if .IsGitlabSource }}
-    <img class="h-5" id="run-trigger-gitlab" title="run triggered via gitlab"  src="{{ addHash "/static/images/gitlab_icon.svg" }}">
+    <img class="h-4" id="run-trigger-gitlab" title="run triggered via gitlab"  src="{{ addHash "/static/images/gitlab_icon.svg" }}">
   {{ else if .IsUISource }}
-    <img class="h-5 bg-gray-300 p-0.5" id="run-trigger-ui" title="run triggered via the UI"  src="{{ addHash "/static/images/ui_icon.png" }}">
+    <div id="run-trigger-ui" title="run triggered via the UI">
+      <svg
+        class="h-4 w-4 stroke-gray-600 fill-none stroke-2"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" />
+      </svg>
+    </div>
   {{ end }}
 {{ end }}

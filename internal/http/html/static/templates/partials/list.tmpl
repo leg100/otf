@@ -1,11 +1,39 @@
-{{ define "content-list" }}
-  <div id="content-list" class="flex flex-col">
-    {{ block "content-list-header" . }}{{ end }}
+{{ define "list" }}
+  <ul class="list bg-base-100">
     {{ range .Items }}
-      {{ block "content-list-item" . }}{{ end }}
-    {{ else }}
-      No items currently exist.
+      {{ template "list-row" . }}
     {{ end }}
-    {{ template "page-navigation-links" . }}
-  </div>
+    <li class="tracking-wide p-4 text-sm flex justify-between items-center mt-2">
+      <span class="badge badge-ghost">
+        {{ .FirstItem }}-{{ .LastItem }} of {{ .TotalCount }}
+      </span>
+      <div class="join">
+        {{ with .PreviousPageLink }}
+          <button
+            class="join-item btn btn-sm"
+            id="prev-page-link"
+            hx-get="{{ . }}"
+            hx-target="closest #table-container"
+            hx-select="#table-container"
+          >
+              «
+          </button>
+        {{ end }}
+        <button class="join-item btn btn-sm" >
+          Page {{ .CurrentPage }}
+        </button>
+        {{ with .NextPageLink }}
+          <button
+            class="join-item btn btn-sm"
+            id="next-page-link"
+            hx-get="{{ . }}"
+            hx-target="closest #table-container"
+            hx-select="#table-container"
+          >
+            »
+          </button>
+        {{ end }}
+      </div>
+    </li>
+  </ul>
 {{ end }}

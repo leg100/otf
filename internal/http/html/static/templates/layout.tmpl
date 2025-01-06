@@ -27,7 +27,7 @@
       {{ block "container" . }}
         {{ block "content-header" . }}
           <div class="flex flex-wrap items-center gap-4 pb-2">
-            <div class="flex text-xl">
+            <div class="flex text-lg">
               <span id="content-header-title">{{ block "content-header-title" . }}{{ end }}</span>
             </div>
             <div>
@@ -125,39 +125,39 @@
         </a>
       </div>
       <li id="menu-item-workspaces">
-        <a href="{{ workspacesPath . }}">workspaces</a>
+        <a href="{{ workspacesPath . }}">Workspaces</a>
         {{ block "workspaces_submenu" $ }}{{ end }}
       </li>
       <li id="modules">
-        <a href="{{ modulesPath . }}">modules</a>
+        <a href="{{ modulesPath . }}">Modules</a>
       </li>
       <li id="teams">
-        <a href="{{ teamsPath . }}">teams</a>
+        <a href="{{ teamsPath . }}">Teams</a>
         {{ block "teams_submenu" $ }}{{ end }}
       </li>
       {{ if or ($.CurrentUser.IsOwner .) $.CurrentUser.IsSiteAdmin }}
         <li id="users">
-          <a href="{{ usersPath . }}">users</a>
+          <a href="{{ usersPath . }}">Users</a>
         </li>
         <li id="runners">
-          <a href="{{ runnersPath . }}">runners</a>
+          <a href="{{ runnersPath . }}">Runners</a>
         </li>
         <li id="agent_pools">
-          <a href="{{ agentPoolsPath . }}">agent pools</a>
+          <a href="{{ agentPoolsPath . }}">Agent Pools</a>
           {{ block "agent_pools_submenu" $ }}{{ end }}
       </li>
         </li>
         <li id="variable_sets">
-          <a href="{{ variableSetsPath .  }}">variable sets</a>
+          <a href="{{ variableSetsPath .  }}">Variable Sets</a>
         </li>
         <li id="vcs_providers">
-          <a href="{{ vcsProvidersPath . }}">VCS providers</a>
+          <a href="{{ vcsProvidersPath . }}">VCS Providers</a>
         </li>
         <li id="organization_tokens">
-          <a href="{{ organizationTokenPath . }}">organization token</a>
+          <a href="{{ organizationTokenPath . }}">Organization Token</a>
         </li>
         <li id="settings">
-          <a href="{{ editOrganizationPath . }}">settings</a>
+          <a href="{{ editOrganizationPath . }}">Settings</a>
         </li>
       {{ end }}
     </ul>

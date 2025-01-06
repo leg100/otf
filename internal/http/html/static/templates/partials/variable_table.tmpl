@@ -27,7 +27,7 @@
           <td class="text-right">
             {{ if $.CanDeleteVariable }}
               <form action="{{ $.DeletePath .ID }}" method="POST">
-                <button id="delete-variable-button" class="btn btn-error btn-xs" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
+                {{ template "delete_button" }}
               </form>
             {{ end }}
           </td>

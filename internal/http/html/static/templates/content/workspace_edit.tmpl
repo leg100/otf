@@ -24,7 +24,7 @@
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID.String }}" method="GET">
-        <button class="btn btn-bordered" id="list-workspace-vcs-providers-button">
+        <button class="btn" id="list-workspace-vcs-providers-button">
           Connect to VCS
         </button>
       </form>
@@ -32,30 +32,30 @@
   </div>
   <hr class="my-4">
   <form class="flex flex-col gap-5" action="{{ updateWorkspacePath .Workspace.ID.String }}" method="POST">
-    <div class="field">
-      <label for="name">Name</label>
-      <input class="input input-bordered w-80" type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
-    </div>
-    <div class="field">
-      <label for="description">Description</label>
-      <textarea class="textarea textarea-bordered w-96" rows="3" name="description" id="description">{{ .Workspace.Description }}</textarea>
-    </div>
-    <fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
-      <legend>Execution mode</legend>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Name</legend>
+      <input class="input w-80" type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Description</legend>
+      <textarea class="textarea" rows="3" name="description" id="description">{{ .Workspace.Description }}</textarea>
+    </fieldset>
+    <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+      <legend class="fieldset-legend">Execution mode</legend>
       <div class="form-checkbox">
         <input class="radio" type="radio" name="execution_mode" id="remote" value="remote" {{ checked .Workspace.ExecutionMode "remote" }}/>
-        <label for="remote">Remote</label>
+        <label class="fieldset-label" for="remote">Remote</label>
         <span class="description">Your plans and applies occur on the OTF servers.</span>
       </div>
       <div class="form-checkbox">
         <input class="radio" type="radio" name="execution_mode" id="local" value="local" {{ checked .Workspace.ExecutionMode "local" }}/>
-        <label for="local">Local</label>
+        <label class="fieldset-label" for="local">Local</label>
         <span class="description">Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
 </span>
       </div>
       <div class="form-checkbox">
         <input class="radio peer" type="radio" name="execution_mode" id="agent" value="agent" {{ checked .Workspace.ExecutionMode "agent" }}/>
-        <label for="agent">Agent</label>
+        <label class="fieldset-label" for="agent">Agent</label>
         <span class="description">Your plans and applies occur on OTF agents.</span>
         <div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-gray-100 p-2 gap-2">
           <div class="flex items-center gap-2">
@@ -66,30 +66,30 @@
         </div>
       </div>
     </fieldset>
-    <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
-      <legend>Apply method</legend>
+    <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+      <legend class="fieldset-legend">Apply method</legend>
       <div class="form-checkbox">
         <input class="radio" type="radio" name="auto_apply" id="auto-apply" value="true" {{ checked .Workspace.AutoApply }}/>
-        <label for="auto-apply">Auto apply</label>
+        <label class="fieldset-label" for="auto-apply">Auto apply</label>
         <span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="bg-gray-200">-auto-approve</span> flag with <span class="bg-gray-200">terraform apply</span>.</span>
       </div>
       <div class="form-checkbox">
         <input class="radio" type="radio" name="auto_apply" id="manual-apply" value="false" {{ checked (not .Workspace.AutoApply) }}/>
-        <label for="manual-apply">Manual apply</label>
+        <label class="fieldset-label" for="manual-apply">Manual apply</label>
         <span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
       </div>
     </fieldset>
-    <div class="field">
-      <label for="terraform-version">Terraform version</label>
-      <input class="input input-bordered w-48" type="text" name="terraform_version" id="terraform-version" value="{{ .Workspace.TerraformVersion }}" required title="Must provide version in the format <major>.<minor>.<patch>">
-      <span class="description">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Terraform version</legend>
+      <input class="input w-48" type="text" name="terraform_version" id="terraform-version" value="{{ .Workspace.TerraformVersion }}" required title="Must provide version in the format <major>.<minor>.<patch>">
+      <span class="fieldset-label inline">
         The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
       </span>
-    </div>
-    <label class="form-control">
-      <span class="label font-bold">Working directory</span>
-      <input class="input input-bordered w-96" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
-      <span class="label text-sm">
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Working directory</legend>
+      <input class="input w-80" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
+      <span class="fieldset-label">
         The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
       </span>
     </label>
@@ -175,10 +175,12 @@
       </div>
     {{ end }}
 
-    <div class="form-checkbox">
-      <input class="checkbox" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
-      <label class="font-semibold" for="global-remote-state">Remote state sharing</label>
-      <span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Remote state sharing</legend>
+      <label class="fieldset-label">
+        <input class="checkbox" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
+        <span>Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+      </label>
     </div>
 
     <div class="field">

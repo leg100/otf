@@ -11,26 +11,26 @@
 {{ end }}
 
 {{ define "content" }}
-    {{ template "table" . }}
+    {{ template "list" . }}
 {{ end }}
 
 {{ define "workspaces_submenu" }}
     {{ template "workspaces_submenu_partial" . }}
 {{ end }}
 
-{{ define "table-header" }}
-  <tr>
-    <th>User</th>
-    <th>Status</th>
-    <th>ID</th>
-    <th>Changes</th>
-    <th></th>
-    <th>Created</th>
-  </tr>
-{{ end }}
-
-{{ define "table-row" }}
-  <tr x-data="block_link($el, '{{ runPath .ID.String }}')" id="{{ .ID.String }}">
+{{ define "list-row" }} <li class="list-row" x-data="block_link($el, '{{ runPath .ID.String }}')" id="{{ .ID.String }}">
+    <div class="avatar avatar-placeholder">
+      <div class="bg-neutral text-neutral-content w-12 rounded">
+        <span class="text-3xl">D</span>
+      </div>
+    </div>
+    <div class="flex flex-col items-baseline justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <div>{{ template "run-status" . }}</div>
+        <div>{{ template "run-source" . }}</div>
+      </div>
+      <div>{{ template "identifier" . }}</div>
+    </div>
     {{ with .IngressAttributes }}
       {{ with .SenderUsername }}
         <td class="inline-block max-w-[16rem] truncate">
@@ -44,18 +44,17 @@
         </td>
       {{ end }}
     {{ end }}
-    <td>{{ template "run-status" . }}</td>
-    <td>{{ template "identifier" . }}</td>
-    <td>
-      {{ with .Apply.ResourceReport }}
-        {{ template "resource-report" . }}
-      {{ else }}
-        {{ with .Plan.ResourceReport }}
+    <div class="flex flex-col justify-between gap-2 text-right">
+      <div>
+        {{ with .Apply.ResourceReport }}
           {{ template "resource-report" . }}
+        {{ else }}
+          {{ with .Plan.ResourceReport }}
+            {{ template "resource-report" . }}
+          {{ end }}
         {{ end }}
-      {{ end }}
-    </td>
-    <td>{{ template "run-source" . }}</td>
-    <td>{{ durationRound .CreatedAt }} ago</td>
-  </tr>
+      </div>
+      <div>{{ durationRound .CreatedAt }} ago</div>
+    </div>
+  </li>
 {{ end }}
