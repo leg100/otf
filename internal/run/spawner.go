@@ -85,7 +85,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 
 	// filter out workspaces based on info contained in the event
-	n := 0
+	var n int
 	for _, ws := range workspaces {
 		switch event.Type {
 		case vcs.EventTypeTag:
@@ -113,6 +113,12 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			}
 			if ws.Connection.TagsRegex != "" {
 				// skip workspaces which specify a tags regex
+				continue
+			}
+		case vcs.EventTypePull:
+			if !ws.SpeculativeEnabled {
+				// skip workspaces configured to not trigger speculative plans
+				// (plan-only runs) in response to pull request events.
 				continue
 			}
 		}
@@ -152,7 +158,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 
 	// pull request events don't contain a list of changed files; instead an API
-	// call is necsssary to retrieve the list of changed files
+	// call is necessary to retrieve the list of changed files
 	if event.Type == vcs.EventTypePull {
 		// only perform API call if at least one workspace has file triggers
 		// enabled.
