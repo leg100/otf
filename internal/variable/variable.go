@@ -249,17 +249,6 @@ func (v *Variable) checkConflicts(collection []*Variable) error {
 	return nil
 }
 
-// Matches determines whether variable is contained in vars, i.e. shares the
-// same ID.
-func (v *Variable) Matches(vars []*Variable) bool {
-	for _, v2 := range vars {
-		if v.ID == v2.ID {
-			return true
-		}
-	}
-	return false
-}
-
 // WriteTerraformVars writes workspace variables to a file named
 // terraform.tfvars located in the given path. If the file already exists it'll
 // be appended to.

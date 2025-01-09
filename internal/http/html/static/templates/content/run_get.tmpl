@@ -24,7 +24,7 @@
 {{ define "runs_submenu" }}
   <ul>
     <li>
-      <a class="overflow-x-auto" href="{{ runPath .Run.ID.String }}">{{ .Run.ID.String }}</a>
+      <a class="font-mono text-xs truncate" href="{{ runPath .Run.ID.String }}">{{ .Run.ID.String }}</a>
     </li>
   </ul>
 {{ end }}

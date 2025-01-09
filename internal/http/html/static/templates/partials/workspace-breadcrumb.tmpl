@@ -1,7 +1,0 @@
-{{ define "workspace-breadcrumb" }}
-  {{ with .Workspace }}
-    <a href="{{ workspacesPath .Organization }}">workspaces</a>
-    /
-    <a href="{{ workspacePath .ID.String }}">{{ .Name }}</a>
-  {{ end }}
-{{ end }}

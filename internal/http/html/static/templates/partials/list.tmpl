@@ -1,7 +1,7 @@
 {{ define "list" }}
   <ul class="list bg-base-100">
     {{ range .Items }}
-      {{ template "list-row" . }}
+      <li class="list-row">{{ template "list-row" . }}</li>
     {{ end }}
     <li class="tracking-wide p-4 text-sm flex justify-between items-center mt-2">
       <span class="badge badge-ghost">

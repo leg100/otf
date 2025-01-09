@@ -1,12 +1,3 @@
-window.addEventListener("load", () => {
-  const anchors = document.querySelectorAll("#sidemenu a");
-  anchors.forEach((element) => {
-    if (window.location.pathname == element.attributes.href.value) {
-      element.classList.add("active");
-    }
-  });
-});
-
 // https://css-tricks.com/block-links-the-search-for-a-perfect-solution/#method-4-sprinkle-javascript-on-the-second-method
 document.addEventListener("alpine:init", () => {
   Alpine.data("block_link", (block, link) => ({

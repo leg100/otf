@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
@@ -77,17 +78,6 @@ type (
 		Sensitive   *bool
 		HCL         bool
 		VariableID  resource.ID `schema:"variable_id,required"`
-	}
-
-	workspaceVariableTable struct {
-		Variables         []*Variable
-		CanDeleteVariable bool
-	}
-
-	setVariableTable struct {
-		*VariableSet
-		Merged            []*Variable
-		CanDeleteVariable bool
 	}
 )
 
@@ -169,55 +159,105 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Variables(params.WorkspaceID.String()), http.StatusFound)
 }
 
+// Create variable type specifically for the template
+type variable struct {
+	*Variable
+	*VariableSet // nil if workspace var
+
+	Overridden              bool
+	CanUpdate               bool
+	CanDelete               bool
+	EditPath                string
+	DeletePath              string
+	WorkspaceVariablesTable bool
+}
+
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
-	if err != nil {
+	var params struct {
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+	ws, err := h.workspaces.Get(r.Context(), params.WorkspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	workspaceVariables, err := h.variables.ListWorkspaceVariables(r.Context(), params.WorkspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sets, err := h.variables.listWorkspaceVariableSets(r.Context(), params.WorkspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	variables, err := h.variables.ListWorkspaceVariables(r.Context(), workspaceID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	ws, err := h.workspaces.Get(r.Context(), workspaceID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	sets, err := h.variables.listWorkspaceVariableSets(r.Context(), workspaceID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	merged := mergeVariables(sets, variables, nil)
-	setVariableTables := make([]setVariableTable, len(sets))
-	for i := range sets {
-		setVariableTables[i] = setVariableTable{
-			VariableSet: sets[i],
-			Merged:      merged,
-			// hide delete button for set variables
-			CanDeleteVariable: false,
+	canUpdateVariable := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID})
+	canDeleteVariable := h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID})
+	// Merge variables from sets and workspace vars, with the latter taking
+	// precedence.
+	merged := mergeVariables(sets, workspaceVariables, nil)
+	// Copy workspace variables into slice
+	allVariables := make([]*variable, len(workspaceVariables))
+	for i, wv := range workspaceVariables {
+		allVariables[i] = &variable{
+			Variable:                wv,
+			CanUpdate:               canUpdateVariable,
+			CanDelete:               canDeleteVariable,
+			DeletePath:              paths.DeleteVariable(wv.ID.String()),
+			WorkspaceVariablesTable: true,
 		}
 	}
+	// Append variable sets to slice, including those that are overridden, for
+	// the user's information.
+	for _, set := range sets {
+		for _, sv := range set.Variables {
+			v := variable{
+				Variable:    sv,
+				VariableSet: set,
+				// Variable is deemed overridden if it's not in the merged
+				// variables slice
+				Overridden: !slices.ContainsFunc(merged, func(mergedVar *Variable) bool {
+					return mergedVar.ID == sv.ID
+				}),
+				WorkspaceVariablesTable: true,
+			}
+			allVariables = append(allVariables, &v)
+		}
+	}
+	// sort variables by key and then by whether it is overridden.
+	slices.SortFunc(allVariables, func(a, b *variable) int {
+		if a.Key == b.Key {
+			if a.Overridden {
+				return 1
+			}
+			return -1
+		}
+		if a.Key > b.Key {
+			return 1
+		}
+		return -1
+	})
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
-		WorkspaceVariableTable workspaceVariableTable
-		VariableSetTables      []setVariableTable
-		CanCreateVariable      bool
-		CanDeleteVariable      bool
-		CanUpdateWorkspace     bool
+		html.Page[*variable]
+		CanCreateVariable       bool
+		CanUpdateWorkspace      bool
+		WorkspaceVariablesTable bool
 	}{
 		WorkspacePage: workspace.NewPage(r, "variables", ws),
-		WorkspaceVariableTable: workspaceVariableTable{
-			Variables:         variables,
-			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		Page: html.Page[*variable]{
+			Page:    resource.NewPage(allVariables, params.PageOptions, nil),
+			Request: r,
 		},
-		VariableSetTables:  setVariableTables,
-		CanCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanCreateVariable:       h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		CanUpdateWorkspace:      h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		WorkspaceVariablesTable: true,
 	})
 }
 
@@ -391,13 +431,16 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
-	if err != nil {
+	var params struct {
+		VariableSetID resource.ID `schema:"variable_set_id,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	set, err := h.variables.getVariableSet(r.Context(), setID)
+	set, err := h.variables.getVariableSet(r.Context(), params.VariableSetID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -423,30 +466,47 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	allVariables := make([]*variable, len(set.Variables))
+	for i, sv := range set.Variables {
+		v := variable{
+			Variable:    sv,
+			VariableSet: set,
+		}
+		allVariables[i] = &v
+	}
+	// sort variables by key
+	slices.SortFunc(allVariables, func(a, b *variable) int {
+		if a.Key > b.Key {
+			return 1
+		}
+		return -1
+	})
 
 	h.Render("variable_set_edit.tmpl", w, struct {
 		organization.OrganizationPage
 		*VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-		CanCreateVariable   bool
-		CanDeleteVariable   bool
-		VariableTable       setVariableTable
+		html.Page[*variable]
+		EditMode                bool
+		FormAction              string
+		AvailableWorkspaces     []workspaceInfo
+		ExistingWorkspaces      []workspaceInfo
+		CanCreateVariable       bool
+		CanDeleteVariable       bool
+		WorkspaceVariablesTable bool
 	}{
-		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID.String(), set.Organization),
-		VariableSet:         set,
-		EditMode:            true,
-		FormAction:          paths.UpdateVariableSet(set.ID.String()),
-		AvailableWorkspaces: availableWorkspaces,
-		ExistingWorkspaces:  existingWorkspaces,
-		CanCreateVariable:   h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		CanDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		VariableTable: setVariableTable{
-			VariableSet:       set,
-			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+		OrganizationPage: organization.NewPage(r, "edit | "+set.ID.String(), set.Organization),
+		VariableSet:      set,
+		Page: html.Page[*variable]{
+			Page:    resource.NewPage(allVariables, params.PageOptions, nil),
+			Request: r,
 		},
+		EditMode:                true,
+		FormAction:              paths.UpdateVariableSet(set.ID.String()),
+		AvailableWorkspaces:     availableWorkspaces,
+		ExistingWorkspaces:      existingWorkspaces,
+		CanCreateVariable:       h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+		CanDeleteVariable:       h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+		WorkspaceVariablesTable: false,
 	})
 }
 
@@ -655,32 +715,4 @@ func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspa
 		}
 	}
 	return availableWorkspaces, nil
-}
-
-func (workspaceVariableTable) EditPath(variableID resource.ID) string {
-	return paths.EditVariable(variableID.String())
-}
-
-func (workspaceVariableTable) DeletePath(variableID resource.ID) string {
-	return paths.DeleteVariable(variableID.String())
-}
-
-func (w workspaceVariableTable) IsOverwritten(v *Variable) bool {
-	// a workspace variable can never be overwritten
-	return false
-}
-
-func (setVariableTable) EditPath(variableID resource.ID) string {
-	return paths.EditVariableSetVariable(variableID.String())
-}
-
-func (setVariableTable) DeletePath(variableID resource.ID) string {
-	return paths.DeleteVariableSetVariable(variableID.String())
-}
-
-func (w setVariableTable) IsOverwritten(v *Variable) bool {
-	if w.Merged == nil {
-		return false
-	}
-	return !v.Matches(w.Merged)
 }

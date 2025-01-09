@@ -79,7 +79,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	// runners
-	r.HandleFunc("/organizations/{organization_name}/runners", h.listAgents).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runners", h.listRunners).Methods("GET")
 
 	// agent pools
 	r.HandleFunc("/organizations/{organization_name}/agent-pools", h.listAgentPools).Methods("GET")
@@ -97,24 +97,26 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 // runner handlers
 
-func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+func (h *webHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Organization string `schema:"organization_name,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	serverRunners, err := h.svc.listServerRunners(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), org)
+	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), params.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// order runners to show 'freshest' at the top
+	// order runners to show 'freshest' first
 	runners := append(serverRunners, agentRunners...)
 	slices.SortFunc(runners, func(a, b *RunnerMeta) int {
 		if a.LastPingAt.Before(b.LastPingAt) {
@@ -126,10 +128,13 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("runners_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Runners []*RunnerMeta
+		html.Page[*RunnerMeta]
 	}{
-		OrganizationPage: organization.NewPage(r, "runners", org),
-		Runners:          runners,
+		OrganizationPage: organization.NewPage(r, "runners", params.Organization),
+		Page: html.Page[*RunnerMeta]{
+			Page:    resource.NewPage(runners, params.PageOptions, nil),
+			Request: r,
+		},
 	})
 }
 

@@ -27,7 +27,7 @@
       {{ block "container" . }}
         {{ block "content-header" . }}
           <div class="flex flex-wrap items-center gap-4 pb-2">
-            <div class="flex text-lg">
+            <div class="flex text-lg font-semibold">
               <span id="content-header-title">{{ block "content-header-title" . }}{{ end }}</span>
             </div>
             <div>
@@ -152,6 +152,7 @@
         </li>
         <li id="vcs_providers">
           <a href="{{ vcsProvidersPath . }}">VCS Providers</a>
+          {{ block "vcs_providers_submenu" $ }}{{ end }}
         </li>
         <li id="organization_tokens">
           <a href="{{ organizationTokenPath . }}">Organization Token</a>
@@ -162,4 +163,12 @@
       {{ end }}
     </ul>
   {{ end }}
+  <script>
+    const anchors = document.querySelectorAll("#sidemenu a");
+    anchors.forEach((element) => {
+      if (window.location.pathname == element.attributes.href.value) {
+        element.classList.add("active");
+      }
+    });
+  </script>
 {{ end }}

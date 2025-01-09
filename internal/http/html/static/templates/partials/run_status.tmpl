@@ -7,7 +7,7 @@
       "errored" "badge-soft badge-error"
       "discarded" "bg-gray-200"
   }}
-  <span id="{{ .ID }}-status" class="badge {{ get $statusColors .Status.String }} h-fit">
+  <a href="{{ runPath .ID.String }}" id="{{ .ID }}-status" class="badge {{ get $statusColors .Status.String }} h-fit">
     {{ .Status.String | replace "_" " "}}
-  </span>
+  </a>
 {{ end }}

@@ -1,6 +1,6 @@
 {{ template "layout" . }}
 
-{{ define "content-header-title" }}workspaces{{ end }}
+{{ define "content-header-title" }}Workspaces{{ end }}
 
 {{ define "content-header-actions" }}
   {{ if .CanCreateWorkspace }}
@@ -24,7 +24,7 @@
               d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
               clip-rule="evenodd" />
         </svg>
-        <input class="grow" type="search" name="search[name]" value="{{ .Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
+        <input class="grow" type="search" name="search[name]" value="{{ .Search }}" placeholder="Search Workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
       </label>
       <div class="flex flex-wrap gap-1">
         {{ range $k, $v := .TagFilters }}

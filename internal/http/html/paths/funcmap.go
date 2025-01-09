@@ -27,6 +27,8 @@ func init() {
 
 	funcmap["createTokenPath"] = CreateToken
 
+	funcmap["variablesTablePath"] = VariablesTable
+
 	funcmap["githubAppsPath"] = GithubApps
 	funcmap["createGithubAppPath"] = CreateGithubApp
 	funcmap["newGithubAppPath"] = NewGithubApp

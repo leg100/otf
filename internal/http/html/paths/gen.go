@@ -143,6 +143,11 @@ var specs = []controllerSpec{
 		path:           "/profile/tokens/create",
 	},
 	{
+		Name:           "variables_table",
+		controllerType: singlePath,
+		path:           "/variables/table",
+	},
+	{
 		Name:           "github_app",
 		controllerType: resourcePath,
 		actions: []action{

@@ -1,28 +1,21 @@
 {{ template "layout" . }}
 
-{{ define "content-header-title" }}organization token{{ end }}
+{{ define "content-header-title" }}Organization Token{{ end }}
 
 {{ define "content" }}
   <span class="text-gray-600 text-sm">
   The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
   </span>
   {{ if .Token }}
-    <div class="widget">
-      <div>
-        <span>Token</span>
-        <span>{{ durationRound .Token.CreatedAt }} ago</span>
-      </div>
-      <div>
-        {{ template "identifier" .Token }}
-        <div class="flex gap-2">
-          <form action="{{ createOrganizationTokenPath .Organization }}" method="POST">
-            <button class="btn btn-sm">regenerate</button>
-          </form>
-          <form action="{{ deleteOrganizationTokenPath .Organization }}" method="POST">
-            <button class="btn btn-sm btn-error" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-          </form>
-        </div>
-      </div>
+    <div class="flex items-center gap-2 h-10 bg-base-200 px-2 py-6 rounded">
+      {{ template "identifier" .Token }}
+      <div class="text-sm">{{ template "ago" .Token.CreatedAt }}</div>
+      <form class="ml-auto" action="{{ createOrganizationTokenPath .Organization }}" method="POST">
+        <button class="btn btn-primary btn-sm">Regenerate</button>
+      </form>
+      <form action="{{ deleteOrganizationTokenPath .Organization }}" method="POST">
+        {{ template "delete_button" }}
+      </form>
     </div>
   {{ else }}
     <form class="mt-2" action="{{ createOrganizationTokenPath .Organization }}" method="POST">

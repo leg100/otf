@@ -1,0 +1,11 @@
+{{ define "ago" }}
+  <div title="{{ . }}" class="flex gap-2 items-center">
+    <svg
+      viewBox="0 0 24 24"
+      class="h-4 w-4 fill-none stroke-2 stroke-gray-700"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+    <span>{{ durationRound . }} ago <span>
+  </div>
+{{ end }}

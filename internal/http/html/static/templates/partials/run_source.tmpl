@@ -2,7 +2,7 @@
   {{ if .IsAPISource }}
     <img class="h-4 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src="{{ addHash "/static/images/api_icon.png" }}">
   {{ else if .IsCLISource }}
-    <div id="run-trigger-cli" title="run triggered via the CLI">
+    <div id="run-trigger-cli" title="Run triggered via the CLI">
       <svg
         viewBox="0 0 24 24"
         class="h-5 w-5 fill-none stroke-gray-600 stroke-2"
@@ -11,11 +11,11 @@
       </svg>
     </div>
   {{ else if .IsGithubSource }}
-    <img class="h-4" id="run-trigger-github" title="run triggered via github"  src="{{ addHash "/static/images/github_icon.svg" }}">
+    <img class="h-4" id="run-trigger-github" title="Run triggered via github"  src="{{ addHash "/static/images/github_icon.svg" }}">
   {{ else if .IsGitlabSource }}
-    <img class="h-4" id="run-trigger-gitlab" title="run triggered via gitlab"  src="{{ addHash "/static/images/gitlab_icon.svg" }}">
+    <img class="h-4" id="run-trigger-gitlab" title="Run triggered via gitlab"  src="{{ addHash "/static/images/gitlab_icon.svg" }}">
   {{ else if .IsUISource }}
-    <div id="run-trigger-ui" title="run triggered via the UI">
+    <div id="run-trigger-ui" title="Run triggered via the UI">
       <svg
         class="h-4 w-4 stroke-gray-600 fill-none stroke-2"
         viewBox="0 0 24 24"

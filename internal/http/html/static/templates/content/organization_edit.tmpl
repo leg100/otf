@@ -1,13 +1,13 @@
 {{ template "layout" . }}
 
-{{ define "content-header-title" }}settings{{ end }}
+{{ define "content-header-title" }}Settings{{ end }}
 
 {{ define "content" }}
   <form class="flex flex-col gap-5" action="{{ updateOrganizationPath .Name }}" method="POST">
-    <div class="field">
-      <label for="name">Name</label>
-      <input class="input input-bordered w-80" type="text" name="new_name" id="name" value="{{ .Name }}" required>
-    </div>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Name</legend>
+      <input class="input w-80" type="text" name="new_name" id="name" value="{{ .Name }}" required>
+    </fieldset>
     <div class="field">
       <button class="btn w-72">Update organization name</button>
     </div>

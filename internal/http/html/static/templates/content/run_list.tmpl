@@ -18,34 +18,25 @@
     {{ template "workspaces_submenu_partial" . }}
 {{ end }}
 
-{{ define "list-row" }} <li class="list-row" x-data="block_link($el, '{{ runPath .ID.String }}')" id="{{ .ID.String }}">
-    <div class="avatar avatar-placeholder">
-      <div class="bg-neutral text-neutral-content w-12 rounded">
+{{ define "list-row" }}
+    <a href="{{ runPath .ID.String }}" class="avatar avatar-placeholder">
+      {{ $createdBy := .CreatedBy }}
+      {{ with .IngressAttributes }}
+        {{ $createdBy := .SenderUsername }}
+      {{ end }}
+      <div title="Run triggered by {{ $createdBy }}" class="bg-neutral text-neutral-content w-12 rounded">
         <span class="text-3xl">D</span>
       </div>
-    </div>
+    </a>
     <div class="flex flex-col items-baseline justify-between gap-2">
+      <div>{{ template "run-status" . }}</div>
       <div class="flex items-center gap-2">
-        <div>{{ template "run-status" . }}</div>
+        <a href="{{ runPath .ID.String }}" class="font-mono break-all text-xs">{{ .ID }}</a>
         <div>{{ template "run-source" . }}</div>
       </div>
-      <div>{{ template "identifier" . }}</div>
     </div>
-    {{ with .IngressAttributes }}
-      {{ with .SenderUsername }}
-        <td class="inline-block max-w-[16rem] truncate">
-          <a id="vcs-username" href="{{ $.IngressAttributes.SenderHTMLURL }}">@{{ . }}</a>
-        </td>
-      {{ end }}
-    {{ else }}
-      {{ with .CreatedBy }}
-        <td class="inline-block max-w-[16rem] truncate" id="run-created-by">
-          @{{ . }}
-        </td>
-      {{ end }}
-    {{ end }}
     <div class="flex flex-col justify-between gap-2 text-right">
-      <div>
+      <a href="{{ runPath .ID.String }}">
         {{ with .Apply.ResourceReport }}
           {{ template "resource-report" . }}
         {{ else }}
@@ -53,8 +44,7 @@
             {{ template "resource-report" . }}
           {{ end }}
         {{ end }}
-      </div>
+      </a>
       <div>{{ durationRound .CreatedAt }} ago</div>
     </div>
-  </li>
 {{ end }}

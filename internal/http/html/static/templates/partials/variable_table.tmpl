@@ -1,42 +1,81 @@
 {{ define "variable-table" }}
-  <table class="table w-full text-left break-words border-collapse" id="variables-table">
-    <thead class="">
-      <tr>
-        <th class="w-[25%]">Key</th>
-        <th class="w-[50%]">Value</th>
-        <th class="w-[15%]">Category</th>
-        <th class="w-[10%]"></th>
-      </tr>
-    </thead>
-    <tbody class="">
-      {{ range .Variables }}
-        <tr class="">
-        <tr id="item-variable-{{ .Key }}" x-data="block_link($el, '{{ $.EditPath .ID }}')">
-          <td class="">
-            {{ if $.IsOverwritten . }}
-              <span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
-              <s>
-            {{ end }}
-            {{ .Key }}
-            {{ if $.IsOverwritten . }}
-              </s>
-            {{ end }}
-          </td>
-          <td class="">{{ if .Sensitive }}<span class="badge badge-ghost">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
-          <td class="">{{ .Category }}</td>
-          <td class="text-right">
-            {{ if $.CanDeleteVariable }}
-              <form action="{{ $.DeletePath .ID }}" method="POST">
-                {{ template "delete_button" }}
-              </form>
-            {{ end }}
-          </td>
-        </tr>
-      {{ else }}
-        <tr>
-          <td>No variables currently exist.</td>
-        </tr>
+  <style>
+    input[type="radio"] {
+      display: none;
+    }
+    input + #variables-table {
+      display: none;
+    }
+  </style>
+  <input name="edit" type="radio" checked>
+  <div id="variables-table">
+    {{ template "table" . }}
+  </div>
+{{ end }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>Key</th>
+    <th>Value</th>
+    <th>Category</th>
+    {{ if .WorkspaceVariablesTable }}
+      <th>Variable Set</th>
+    {{ end }}
+    <th></th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr id="item-variable-{{ .Key }}">
+    <td>{{ .Key }}</td>
+    <td>
+      {{ if .Overridden }}
+        <s>
       {{ end }}
-    </tbody>
-  </table>
+      {{ if .Sensitive }}
+        <span class="badge badge-ghost">hidden</span>
+      {{ else }}
+        {{ .Value }}
+      {{ end }}
+      {{ if .Overridden }}
+        </s>
+        <span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
+      {{ end }}
+    </td>
+    <td>
+      {{ with .Category }}
+        {{ if eq . "terraform" }}
+          <span class="badge badge-primary">{{ . }}</span>
+        {{ else }}
+          <span class="badge badge-secondary">{{ . }}</span>
+        {{ end }}
+      {{ end }}
+    </td>
+    {{ if .WorkspaceVariablesTable }}
+      <td>
+        {{ with .VariableSet }}
+          <a class="link" href="{{ variableSetPath .ID.String }}">
+            {{ .Name }}
+          </a>
+        {{ end }}
+      </td>
+    {{ end }}
+    <td class="text-right flex items-center gap-2">
+      {{ if .CanUpdate }}
+        <button class="btn btn-square btn-xs">
+          <svg
+            viewBox="0 0 24 24"
+            class="h-4 w-4 fill-none stroke-current stroke-2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+          </svg>
+        </button>
+      {{ end }}
+      {{ if .CanDelete }}
+        <form action="{{ .DeletePath }}" method="POST">
+          {{ template "delete_button" }}
+        </form>
+      {{ end }}
+    </td>
+  </tr>
 {{ end }}
