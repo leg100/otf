@@ -395,7 +395,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vc
 
 	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
 	if err != nil {
-		if resp.StatusCode == http.StatusNotFound {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return vcs.Webhook{}, internal.ErrResourceNotFound
 		}
 		return vcs.Webhook{}, err

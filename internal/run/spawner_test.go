@@ -76,7 +76,10 @@ func TestSpawner(t *testing.T) {
 		},
 		{
 			name: "spawn run for opened pull request",
-			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			ws: &workspace.Workspace{
+				Connection:         &workspace.Connection{},
+				SpeculativeEnabled: true,
+			},
 			event: vcs.Event{
 				EventPayload: vcs.EventPayload{
 					Type: vcs.EventTypePull, Action: vcs.ActionCreated,
@@ -86,7 +89,10 @@ func TestSpawner(t *testing.T) {
 		},
 		{
 			name: "spawn run for update to pull request",
-			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			ws: &workspace.Workspace{
+				Connection:         &workspace.Connection{},
+				SpeculativeEnabled: true,
+			},
 			event: vcs.Event{
 				EventPayload: vcs.EventPayload{
 					Type:   vcs.EventTypePull,
@@ -94,6 +100,20 @@ func TestSpawner(t *testing.T) {
 				},
 			},
 			spawn: true,
+		},
+		{
+			name: "skip run for pull event for a workspace with speculative plans disabled",
+			ws: &workspace.Workspace{
+				Connection:         &workspace.Connection{},
+				SpeculativeEnabled: false,
+			},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionCreated,
+				},
+			},
+			spawn: false,
 		},
 		{
 			name: "skip run for push event for workspace with tags regex",
@@ -164,8 +184,9 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "spawn run for pull event for workspace with matching file trigger pattern",
 			ws: &workspace.Workspace{
-				TriggerPatterns: []string{"/foo/*.tf"},
-				Connection:      &workspace.Connection{},
+				TriggerPatterns:    []string{"/foo/*.tf"},
+				Connection:         &workspace.Connection{},
+				SpeculativeEnabled: true,
 			},
 			event: vcs.Event{
 				EventPayload: vcs.EventPayload{

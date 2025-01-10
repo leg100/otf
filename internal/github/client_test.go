@@ -7,6 +7,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
@@ -73,6 +74,27 @@ func TestCreateWebhook(t *testing.T) {
 	_, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
 		Repo:   "acme/terraform",
 		Secret: "me-secret",
+	})
+	require.NoError(t, err)
+}
+
+func TestGetWebhook(t *testing.T) {
+	ctx := context.Background()
+
+	client := newTestServerClient(t,
+		WithRepo("acme/terraform"),
+		WithHook(hook{
+			Hook: &github.Hook{
+				Config: &github.HookConfig{
+					URL: internal.String("https://otf-server/hooks"),
+				},
+			},
+		}),
+	)
+
+	_, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
+		Repo: "acme/terraform",
+		ID:   "123",
 	})
 	require.NoError(t, err)
 }

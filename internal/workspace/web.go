@@ -477,6 +477,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		PredefinedTagsRegex string `schema:"tags_regex"`
 		CustomTagsRegex     string `schema:"custom_tags_regex"`
 		AllowCLIApply       bool   `schema:"allow_cli_apply"`
+		SpeculativeEnabled  bool   `schema:"speculative_enabled"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -491,13 +492,14 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := UpdateOptions{
-		AutoApply:         &params.AutoApply,
-		Name:              &params.Name,
-		Description:       &params.Description,
-		ExecutionMode:     &params.ExecutionMode,
-		TerraformVersion:  &params.TerraformVersion,
-		WorkingDirectory:  &params.WorkingDirectory,
-		GlobalRemoteState: &params.GlobalRemoteState,
+		AutoApply:          &params.AutoApply,
+		Name:               &params.Name,
+		Description:        &params.Description,
+		ExecutionMode:      &params.ExecutionMode,
+		TerraformVersion:   &params.TerraformVersion,
+		WorkingDirectory:   &params.WorkingDirectory,
+		GlobalRemoteState:  &params.GlobalRemoteState,
+		SpeculativeEnabled: &params.SpeculativeEnabled,
 	}
 	if ws.Connection != nil {
 		// workspace is connected, so set connection fields

@@ -318,6 +318,12 @@ func WithRepo(repo string) TestServerOption {
 	}
 }
 
+func WithHook(hook hook) TestServerOption {
+	return func(srv *TestServer) {
+		srv.webhook = &hook
+	}
+}
+
 func WithCommit(commit string) TestServerOption {
 	return func(srv *TestServer) {
 		srv.commit = &commit
