@@ -163,7 +163,7 @@
           <span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
         </div>
         <div class="form-checkbox">
-          <input type="checkbox" name="speculative_enabled" id="speculative-enabled" {{ checked .SpeculativeEnabled }}/>
+          <input type="checkbox" name="speculative_enabled" id="speculative-enabled" {{ checked $.Workspace.SpeculativeEnabled }}/>
           <label for="speculative-enabled">Automatic plans for pull requests</label>
           <span class="description">Trigger a plan whenever a pull request is opened and commits are pushed to the pull request. Note: this only triggers a "plan-only" run without an apply.</span>
         </div>
