@@ -46,8 +46,6 @@ data "http" "wait" {
 `, srv.URL))
 	svc.tfcli(t, ctx, "init", config)
 
-	tfpath := svc.downloadTerraform(t, ctx, nil)
-
 	out, err := os.CreateTemp(t.TempDir(), "terraform-cli-cancel.out")
 	require.NoError(t, err)
 
