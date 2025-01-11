@@ -11,6 +11,7 @@ import (
 	"time"
 
 	goexpect "github.com/google/goexpect"
+	"github.com/leg100/otf/internal"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,25 +20,28 @@ import (
 // TestTerraformLogin demonstrates using `terraform login` to retrieve
 // credentials.
 func TestTerraformLogin(t *testing.T) {
+	start := time.Now()
 	integrationTest(t)
+
+	t.Log(time.Since(start))
 
 	svc, _, ctx := setup(t, nil)
 
 	out, err := os.CreateTemp(t.TempDir(), "terraform-login.out")
 	require.NoError(t, err)
 
+	t.Log(time.Since(start))
 	// prevent terraform from automatically opening a browser
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
-	tfpath := svc.downloadTerraform(t, ctx, nil)
-
+	t.Log(time.Since(start))
 	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "login", svc.System.Hostname()},
 		time.Minute,
 		goexpect.PartialMatch(true),
-		// expect.Verbose(testing.Verbose()),
+		// goexpect.Verbose(testing.Verbose()),
 		goexpect.Tee(out),
 		goexpect.SetEnv(
 			append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
@@ -69,7 +73,14 @@ func TestTerraformLogin(t *testing.T) {
 		require.NoError(t, err)
 
 		screenshot(t, page, "terraform_login_flow_complete")
-		err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
+		err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(
+			`The login server has returned an authentication code to Terraform.`,
+			// `Terraform login` can sometimes take a bloody long time to
+			// produce this prompt, not sure why, but long enough to trip up our
+			// global playwright expect timeout of 10 seconds on github actions
+			// (presumbly because github runner is underpowered).
+			playwright.LocatorAssertionsToHaveTextOptions{Timeout: internal.Float64(20_000)},
+		)
 		require.NoError(t, err)
 	})
 

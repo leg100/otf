@@ -27,8 +27,6 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	// Create user token expressly for terraform apply
 	_, token := svc.createToken(t, ctx, nil)
 
-	tfpath := svc.downloadTerraform(t, ctx, nil)
-
 	// Invoke terraform apply
 	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "-chdir=" + configPath, "apply", "-no-color"},

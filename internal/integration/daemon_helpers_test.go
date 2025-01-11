@@ -465,8 +465,6 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, configPath string, args ...string) (string, error) {
 	t.Helper()
 
-	tfpath := s.downloadTerraform(t, ctx, nil)
-
 	// Create user token expressly for the terraform cli
 	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
@@ -502,15 +500,4 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())
 	return buf.String()
-}
-
-func (s *testDaemon) downloadTerraform(t *testing.T, ctx context.Context, version *string) string {
-	t.Helper()
-
-	if version == nil {
-		version = internal.String(releases.DefaultTerraformVersion)
-	}
-	tfpath, err := s.Download(ctx, *version, io.Discard)
-	require.NoError(t, err)
-	return tfpath
 }
