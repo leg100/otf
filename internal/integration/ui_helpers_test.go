@@ -37,9 +37,8 @@ func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name str
 	require.NoError(t, err)
 }
 
-// screenshot takes a screenshot of a browser and saves it to disk, using the
-// test name and a counter to uniquely name the file.
-func screenshot(t *testing.T, page playwright.Page, path string) {
+// screenshot takes a screenshot of a browser and saves it to disk
+func screenshot(t *testing.T, page playwright.Page, fname string) {
 	t.Helper()
 
 	// disable screenshots if headless mode is disabled - screenshots are
@@ -53,15 +52,24 @@ func screenshot(t *testing.T, page playwright.Page, path string) {
 			return
 		}
 	}
-	if docScreenshots, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
-		return
-	} else if docScreenshots != "true" {
+
+	// disable screenshots unless an environment variable is defined - if so
+	// then set the destination path for the screenshots accordingly.
+	var path string
+	if _, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); ok {
+		// For documentation purposes
+		path = filepath.Join("..", "..", "docs", "images", fname+".png")
+	} else if _, ok := os.LookupEnv("OTF_DEBUG_SCREENSHOTS"); ok {
+		// For debugging purposes
+		path = filepath.Join("screenshots", fname+".png")
+	} else {
 		return
 	}
 
-	path = filepath.Join("..", "..", "docs", "images", path+".png")
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
+	require.NoError(t, err)
 
-	_, err := page.Screenshot(playwright.PageScreenshotOptions{
+	_, err = page.Screenshot(playwright.PageScreenshotOptions{
 		Path: internal.String(path),
 	})
 	require.NoError(t, err)

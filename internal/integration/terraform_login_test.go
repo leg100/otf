@@ -11,6 +11,7 @@ import (
 	"time"
 
 	goexpect "github.com/google/goexpect"
+	"github.com/leg100/otf/internal"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,13 +32,11 @@ func TestTerraformLogin(t *testing.T) {
 	require.NoError(t, err)
 	killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
-	tfpath := svc.downloadTerraform(t, ctx, nil)
-
 	e, tferr, err := goexpect.SpawnWithArgs(
 		[]string{tfpath, "login", svc.System.Hostname()},
 		time.Minute,
 		goexpect.PartialMatch(true),
-		// expect.Verbose(testing.Verbose()),
+		// goexpect.Verbose(testing.Verbose()),
 		goexpect.Tee(out),
 		goexpect.SetEnv(
 			append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
@@ -68,9 +67,17 @@ func TestTerraformLogin(t *testing.T) {
 		err = page.Locator(`//button[text()='Accept']`).Click()
 		require.NoError(t, err)
 
-		screenshot(t, page, "terraform_login_flow_complete")
-		err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(`The login server has returned an authentication code to Terraform.`)
-		require.NoError(t, err)
+		// user is now redirected to the temp http server run by the terraform
+		// bin, which presents a short message indicating success.
+		//
+		// NOTE: disabled on GHA because it is mysteriously flaky when invoked
+		// on a GHA runner.
+		if _, isGithubActions := os.LookupEnv("CI"); !isGithubActions {
+			err = expect.Locator(page.Locator(`//body/p[1]`)).ToHaveText(
+				`The login server has returned an authentication code to Terraform.`,
+			)
+			assert.NoError(t, err)
+		}
 	})
 
 	err = <-tferr
@@ -81,6 +88,13 @@ func TestTerraformLogin(t *testing.T) {
 		t.Log(string(logs))
 		return
 	}
+
+	// The terraform binary now exits. Because it is no longer running we cannot
+	// use expect. Instead check contents of output for a success message.
+	logs, err := os.ReadFile(out.Name())
+	require.NoError(t, err)
+	unescapedLogs := internal.StripAnsi(string(logs))
+	require.Contains(t, unescapedLogs, `Success! Terraform has obtained and saved an API token.`)
 
 	// create some terraform config and run terraform init to demonstrate user
 	// has authenticated successfully.
