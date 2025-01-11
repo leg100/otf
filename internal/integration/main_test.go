@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
@@ -34,6 +35,9 @@ var (
 	// Setup playwright browser expectations with a timeout to wait for expected
 	// condition.
 	expect = playwright.NewPlaywrightAssertions(10_000)
+
+	// Path to terraform binary
+	tfpath string
 )
 
 func TestMain(m *testing.M) {
@@ -165,6 +169,14 @@ func doMain(m *testing.M) (int, error) {
 	}
 	defer cleanup()
 	browser = pool
+
+	// Download terraform now rather than in individual tests because it would
+	// otherwise make the latter flaky.
+	downloader := releases.NewDownloader("")
+	tfpath, err = downloader.Download(context.Background(), releases.DefaultTerraformVersion, os.Stdout)
+	if err != nil {
+		return 0, fmt.Errorf("downloading terraform: %w", err)
+	}
 
 	return m.Run(), nil
 }
