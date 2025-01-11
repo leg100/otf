@@ -79,6 +79,19 @@ type (
 		HCL         bool
 		VariableID  resource.ID `schema:"variable_id,required"`
 	}
+
+	// Create variable type specifically for templates
+	variable struct {
+		*Variable
+		*VariableSet // nil if workspace var
+
+		Overridden              bool
+		CanUpdate               bool
+		CanDelete               bool
+		EditPath                string
+		DeletePath              string
+		WorkspaceVariablesTable bool
+	}
 )
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -157,19 +170,6 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "added variable: "+variable.Key)
 	http.Redirect(w, r, paths.Variables(params.WorkspaceID.String()), http.StatusFound)
-}
-
-// Create variable type specifically for the template
-type variable struct {
-	*Variable
-	*VariableSet // nil if workspace var
-
-	Overridden              bool
-	CanUpdate               bool
-	CanDelete               bool
-	EditPath                string
-	DeletePath              string
-	WorkspaceVariablesTable bool
 }
 
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {

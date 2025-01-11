@@ -11,6 +11,11 @@
   <div id="variables-table">
     {{ template "table" . }}
   </div>
+  {{ range .Items }}
+    <div id="variable-edit-container-{{ .Variable.ID }}">
+      {{ template "variable-form" . }}
+    </div>
+  {{ end }}
 {{ end }}
 
 {{ define "table-header" }}
