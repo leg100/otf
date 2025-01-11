@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.8](https://github.com/leg100/otf/compare/v0.3.7...v0.3.8) (2025-01-11)
+
+
+### Features
+
+* add option to skip plans for pull requests ([#714](https://github.com/leg100/otf/issues/714)) ([29455ed](https://github.com/leg100/otf/commit/29455ed335cf556702bca750bcc18e5b53d82a3e))
+
+
+### Bug Fixes
+
+* download terraform first to avoid test flakiness ([6370660](https://github.com/leg100/otf/commit/637066069650cf9430341660ce3356720b7f2a91))
+* insufficient github perms triggering nil pointer err ([da51e5d](https://github.com/leg100/otf/commit/da51e5d6658697d8f1f2b8eae26cb5190bb62b16))
+
+
+### Miscellaneous
+
+* use new surl v2 lib ([0c5b45c](https://github.com/leg100/otf/commit/0c5b45cb32a7e7743b11631b4a14f65494141039))
+
 ## [0.3.7](https://github.com/leg100/otf/compare/v0.3.6...v0.3.7) (2025-01-03)
 
 
