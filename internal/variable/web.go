@@ -335,13 +335,16 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization string `schema:"organization_name,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	sets, err := h.variables.listVariableSets(r.Context(), org)
+	sets, err := h.variables.listVariableSets(r.Context(), params.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -349,12 +352,15 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("variable_set_list.tmpl", w, struct {
 		organization.OrganizationPage
-		VariableSets []*VariableSet
-		CanCreate    bool
+		html.Page[*VariableSet]
+		CanCreate bool
 	}{
-		OrganizationPage: organization.NewPage(r, "variable sets", org),
-		VariableSets:     sets,
-		CanCreate:        h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
+		OrganizationPage: organization.NewPage(r, "variable sets", params.Organization),
+		Page: html.Page[*VariableSet]{
+			Page:    resource.NewPage(sets, params.PageOptions, nil),
+			Request: r,
+		},
+		CanCreate: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: params.Organization}),
 	})
 }
 

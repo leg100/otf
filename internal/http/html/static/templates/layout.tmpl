@@ -18,7 +18,7 @@
   <header class="max-w-5xl navbar bg-base-100 mx-auto min-h-12">
     {{ template "header" . }}
   </header>
-  <hr/>
+  <hr class="border-base-300"/>
   <main class="max-w-5xl flex gap-2 my-0 mx-auto w-full grow">
     <div class="flex basis-1/4 grow border-r border-gray-200 overflow-x-auto w-full flex-shrink-0">
       {{ template "sidemenu" . }}
@@ -149,6 +149,7 @@
         </li>
         <li id="variable_sets">
           <a href="{{ variableSetsPath .  }}">Variable Sets</a>
+          {{ block "variable_sets_submenu" $ }}{{ end }}
         </li>
         <li id="vcs_providers">
           <a href="{{ vcsProvidersPath . }}">VCS Providers</a>

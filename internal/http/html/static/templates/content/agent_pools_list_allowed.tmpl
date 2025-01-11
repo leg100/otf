@@ -1,7 +1,10 @@
-<select class="select min-w-40" id="agent-pool-id" name="agent_pool_id">
-{{ range .Pools }}
-  <option value="{{ .ID }}" {{ selected $.CurrentPoolID .ID }}>{{ .Name }}</option>
-{{ else }}
-  <option value="">No pools found</option>
-{{ end }}
-</select>
+<fieldset class="fieldset">
+  <label class="fieldset-label" for="agent-pool-id">Agent pool</label>
+  <select class="select min-w-40" id="agent-pool-id" name="agent_pool_id">
+  {{ range .Pools }}
+    <option value="{{ .ID }}" {{ selected $.CurrentPoolID .ID }}>{{ .Name }}</option>
+  {{ else }}
+    <option value="">No pools found</option>
+  {{ end }}
+  </select>
+</fieldset>

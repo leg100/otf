@@ -13,11 +13,25 @@
 {{ end }}
 
 {{ define "content" }}
-  <div id="content-list">
-    {{ range .VariableSets }}
-      {{ template "variable-set-item" . }}
-    {{ else }}
-      No variable sets currently exist.
-    {{ end }}
-  </div>
+  {{ template "table" . }}
+{{ end }}
+
+{{ define "table-header" }}
+  <tr>
+    <th>Name</th>
+    <th>ID</th>
+    <th>Global</th>
+  </tr>
+{{ end }}
+
+{{ define "table-row" }}
+  <tr>
+    <td>
+      <a href="{{ editVariableSetPath .ID.String }}">{{ .Name }}</a>
+    </td>
+    <td>{{ template "identifier" . }}</td>
+    <td>
+      {{ if .Global }}&#10003;{{ end }}
+    </td>
+  </tr>
 {{ end }}

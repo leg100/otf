@@ -30,7 +30,7 @@
       </form>
     {{ end }}
   </div>
-  <hr class="my-4">
+  <hr class="my-4 border-base-300">
   <form class="flex flex-col gap-5" action="{{ updateWorkspacePath .Workspace.ID.String }}" method="POST">
     <fieldset class="fieldset">
       <legend class="fieldset-legend">Name</legend>
@@ -40,7 +40,7 @@
       <legend class="fieldset-legend">Description</legend>
       <textarea class="textarea" rows="3" name="description" id="description">{{ .Workspace.Description }}</textarea>
     </fieldset>
-    <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+    <fieldset class="fieldset border border-base-300 p-4 rounded-box">
       <legend class="fieldset-legend">Execution mode</legend>
       <div class="form-checkbox">
         <input class="radio" type="radio" name="execution_mode" id="remote" value="remote" {{ checked .Workspace.ExecutionMode "remote" }}/>
@@ -59,14 +59,13 @@
         <span class="description">Your plans and applies occur on OTF agents.</span>
         <div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-gray-100 p-2 gap-2">
           <div class="flex items-center gap-2">
-            <label class="text-md" for="agent-pool-id">Agent pool</label>
             <div hx-get="{{ .PoolsURL }}" hx-trigger="load" hx-swap="innerHTML"></div>
           </div>
           <span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href="{{ agentPoolsPath .Workspace.Organization }}">here</a>.</span>
         </div>
       </div>
     </fieldset>
-    <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+    <fieldset class="fieldset border border-base-300 p-4 rounded-box">
       <legend class="fieldset-legend">Apply method</legend>
       <div class="form-checkbox">
         <input class="radio" type="radio" name="auto_apply" id="auto-apply" value="true" {{ checked .Workspace.AutoApply }}/>
@@ -82,31 +81,31 @@
     <fieldset class="fieldset">
       <legend class="fieldset-legend">Terraform version</legend>
       <input class="input w-48" type="text" name="terraform_version" id="terraform-version" value="{{ .Workspace.TerraformVersion }}" required title="Must provide version in the format <major>.<minor>.<patch>">
-      <span class="fieldset-label inline">
+      <span class="inline">
         The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
       </span>
     </fieldset>
     <fieldset class="fieldset">
       <legend class="fieldset-legend">Working directory</legend>
       <input class="input w-80" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
-      <span class="fieldset-label">
+      <span class="">
         The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
       </span>
     </label>
 
     {{ with .Workspace.Connection }}
-      <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
-        <legend>VCS triggers</legend>
+      <fieldset class="fieldset border border-base-300 p-4 rounded-box">
+        <legend class="fieldset-legend">VCS triggers</legend>
 
         <div class="form-checkbox">
           <input class="radio" type="radio" id="vcs-triggers-always" name="vcs_trigger" value="{{ $.VCSTriggerAlways }}" {{ checked (and (not $.Workspace.TriggerPatterns) (not .TagsRegex)) }}>
-          <label for="vcs-triggers-always">Always trigger runs</label>
+          <label class="fieldset-label" for="vcs-triggers-always">Always trigger runs</label>
           <span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
         </div>
 
         <div class="form-checkbox">
           <input class="radio peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value="{{ $.VCSTriggerPatterns }}" {{ checked (gt (len $.Workspace.TriggerPatterns) 0) }}>
-          <label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
+          <label class="fieldset-label" for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
           <span class="description">Supports glob patterns.</span>
           <script src="{{ addHash "/static/js/workspace_trigger_patterns.js" }}"></script>
           <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="workspace_trigger_patterns({{ toJson $.Workspace.TriggerPatterns }})">
@@ -129,7 +128,7 @@
 
         <div class="form-checkbox">
           <input class="radio peer" type="radio" id="vcs-triggers-tag" name="vcs_trigger" value="{{ $.VCSTriggerTags }}" {{ checked (ne .TagsRegex "") }}>
-          <label for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
+          <label class="fieldset-label" for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
           <span class="col-start-2 description">Git tags allow you to manage releases.</span>
           <div class="col-start-2 hidden bg-gray-100 px-3 py-3 mt-2 w-full peer-checked:block">
             <div class="flex flex-col gap-2" x-data="{regex: {{ toJson .TagsRegex }}}">
@@ -159,37 +158,41 @@
           </div>
         </div>
 
-        <div class="field mt-2">
-          <label for="vcs-branch">VCS branch</label>
-          <input class="input input-bordered w-96" type="text" name="vcs_branch" id="vcs-branch" value="{{ default "" .Branch }}">
-          <span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
+        <div class="fieldset">
+          <legend class="fieldset-legend">VCS branch</legend>
+          <input class="input w-96" type="text" name="vcs_branch" id="vcs-branch" value="{{ default "" .Branch }}">
+          <span>The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
         </div>
-        <div class="form-checkbox">
-          <input type="checkbox" name="speculative_enabled" id="speculative-enabled" {{ checked $.Workspace.SpeculativeEnabled }}/>
-          <label for="speculative-enabled">Automatic plans for pull requests</label>
-          <span class="description">Trigger a plan whenever a pull request is opened and commits are pushed to the pull request. Note: this only triggers a "plan-only" run without an apply.</span>
+        <div class="fieldset">
+          <legend class="fieldset-legend">Automatic plans for pull requests</legend>
+          <label class="fieldset-label" for="speculative-enabled">
+            <input class="checkbox" type="checkbox" name="speculative_enabled" id="speculative-enabled" {{ checked $.Workspace.SpeculativeEnabled }}/>
+            <span>Trigger a plan whenever a pull request is opened and commits are pushed to the pull request. Note: this only triggers a "plan-only" run without an apply.</span>
+          </label>
         </div>
       </fieldset>
     {{ end }}
 
     {{ with .Workspace.Connection }}
-      <div class="form-checkbox">
-        <input class="checkbox" type="checkbox" name="allow_cli_apply" id="allow-cli-apply" {{ checked .AllowCLIApply }}/>
-        <label for="allow-cli-apply">Allow apply from the CLI</label>
-        <span class="description">Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
+      <div class="fieldset">
+        <legend class="fieldset-legend">Allow apply from the CLI</legend>
+        <label class="fieldset-label" for="allow-cli-apply">
+          <input class="checkbox" type="checkbox" name="allow_cli_apply" id="allow-cli-apply" {{ checked .AllowCLIApply }}/>
+          <span>Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
+        </label>
       </div>
     {{ end }}
 
-    <fieldset class="fieldset">
+    <div class="fieldset">
       <legend class="fieldset-legend">Remote state sharing</legend>
-      <label class="fieldset-label">
+      <label class="fieldset-label" for="global-remote-state">
         <input class="checkbox" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
         <span>Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
       </label>
     </div>
 
-    <div class="field">
-      <button class="btn w-40">Save changes</button>
+    <div>
+      <button class="btn w-40 my-4">Save changes</button>
     </div>
   </form>
   <hr class="my-4">

@@ -1,13 +1,18 @@
 {{ template "layout" . }}
 
 {{ define "content-header-title" }}
-  <a href="{{ variableSetsPath .VariableSet.Organization }}">variable sets</a> /
-  {{ .VariableSet.Name }} /
-  edit
+  <span class="text-xl">Edit variable set</span>
+{{ end }}
+
+{{ define "variable_sets_submenu" }}
+  <ul>
+    <li>
+      <a href="{{ editVariableSetPath .ID.String }}">{{ .Name }}</a>
+    </li>
+  </ul>
 {{ end }}
 
 {{ define "content" }}
-  <span class="text-xl">Edit variable set</span>
 
   {{ template "variable-set-form" . }}
 
