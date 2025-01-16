@@ -150,54 +150,49 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(*Workspace) error) (*Workspace, error) {
-	var ws *Workspace
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		var err error
-		// retrieve workspace
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
-		if err != nil {
-			return sql.Error(err)
-		}
-		ws, err = pgresult(result).toWorkspace()
-		if err != nil {
+func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Workspace, error) {
+			result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
+			if err != nil {
+				return nil, err
+			}
+			return pgresult(result).toWorkspace()
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, ws *Workspace) error {
+			params := sqlc.UpdateWorkspaceByIDParams{
+				AgentPoolID:                ws.AgentPoolID,
+				AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
+				AllowCLIApply:              sql.Bool(false),
+				AutoApply:                  sql.Bool(ws.AutoApply),
+				Branch:                     sql.String(""),
+				Description:                sql.String(ws.Description),
+				ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+				GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
+				Name:                       sql.String(ws.Name),
+				QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
+				SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
+				StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
+				TerraformVersion:           sql.String(ws.TerraformVersion),
+				TriggerPrefixes:            sql.StringArray(ws.TriggerPrefixes),
+				TriggerPatterns:            sql.StringArray(ws.TriggerPatterns),
+				VCSTagsRegex:               sql.StringPtr(nil),
+				WorkingDirectory:           sql.String(ws.WorkingDirectory),
+				UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+				ID:                         ws.ID,
+			}
+			if ws.Connection != nil {
+				params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
+				params.Branch = sql.String(ws.Connection.Branch)
+				params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
+			}
+			_, err := q.UpdateWorkspaceByID(ctx, params)
 			return err
-		}
-		// update workspace
-		if err := fn(ws); err != nil {
-			return err
-		}
-		// persist update
-		params := sqlc.UpdateWorkspaceByIDParams{
-			AgentPoolID:                ws.AgentPoolID,
-			AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
-			AllowCLIApply:              sql.Bool(false),
-			AutoApply:                  sql.Bool(ws.AutoApply),
-			Branch:                     sql.String(""),
-			Description:                sql.String(ws.Description),
-			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-			GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
-			Name:                       sql.String(ws.Name),
-			QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
-			SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
-			StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
-			TerraformVersion:           sql.String(ws.TerraformVersion),
-			TriggerPrefixes:            sql.StringArray(ws.TriggerPrefixes),
-			TriggerPatterns:            sql.StringArray(ws.TriggerPatterns),
-			VCSTagsRegex:               sql.StringPtr(nil),
-			WorkingDirectory:           sql.String(ws.WorkingDirectory),
-			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-			ID:                         ws.ID,
-		}
-		if ws.Connection != nil {
-			params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
-			params.Branch = sql.String(ws.Connection.Branch)
-			params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
-		}
-		_, err = q.UpdateWorkspaceByID(ctx, params)
-		return err
-	})
-	return ws, err
+		},
+	)
 }
 
 // setCurrentRun sets the ID of the current run for the specified workspace.

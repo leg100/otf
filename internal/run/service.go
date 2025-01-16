@@ -244,7 +244,7 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run,
 		return nil, err
 	}
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
 		})
 		if err != nil {
@@ -284,7 +284,7 @@ func (s *Service) Delete(ctx context.Context, runID resource.ID) error {
 
 // StartPhase starts a run phase.
 func (s *Service) StartPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 		return run.Start()
 	})
 	if err != nil {
@@ -317,7 +317,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.ID, phase inte
 	var run *Run
 	err := s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
 		var autoapply bool
-		run, err = s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			autoapply, err = run.Finish(phase, opts)
 			return err
 		})
@@ -391,7 +391,7 @@ func (s *Service) Apply(ctx context.Context, runID resource.ID) error {
 		return err
 	}
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueueApply()
 		})
 		if err != nil {
@@ -422,7 +422,7 @@ func (s *Service) Discard(ctx context.Context, runID resource.ID) error {
 		return err
 	}
 
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	_, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -443,7 +443,7 @@ func (s *Service) Cancel(ctx context.Context, runID resource.ID) error {
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		_, isUser := subject.(*user.User)
 
-		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			return run.Cancel(isUser, false)
 		})
 		if err != nil {
@@ -477,7 +477,7 @@ func (s *Service) ForceCancel(ctx context.Context, runID resource.ID) error {
 		return err
 	}
 	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			return run.Cancel(true, true)
 		})
 		if err != nil {

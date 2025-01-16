@@ -65,30 +65,27 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(*VCSProvider) error) error {
-	var provider *VCSProvider
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		row, err := q.FindVCSProviderForUpdate(ctx, id)
-		if err != nil {
-			return sql.Error(err)
-		}
-		provider, err = db.toProvider(ctx, pgRow(row))
-		if err != nil {
+func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Context, *VCSProvider) error) error {
+	_, err := sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*VCSProvider, error) {
+			row, err := q.FindVCSProviderForUpdate(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			return db.toProvider(ctx, pgRow(row))
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, provider *VCSProvider) error {
+			_, err := q.UpdateVCSProvider(ctx, sqlc.UpdateVCSProviderParams{
+				VCSProviderID: id,
+				Token:         sql.StringPtr(provider.Token),
+				Name:          sql.String(provider.Name),
+			})
 			return err
-		}
-		if err := fn(provider); err != nil {
-			return err
-		}
-		_, err = q.UpdateVCSProvider(ctx, sqlc.UpdateVCSProviderParams{
-			VCSProviderID: id,
-			Token:         sql.StringPtr(provider.Token),
-			Name:          sql.String(provider.Name),
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+		},
+	)
 	return err
 }
 

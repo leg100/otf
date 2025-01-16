@@ -69,34 +69,36 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(*Config) error) (*Config, error) {
-	var nc *Config
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindNotificationConfigurationForUpdate(ctx, id)
-		if err != nil {
-			return sql.Error(err)
-		}
-		nc = pgresult(result).toNotificationConfiguration()
-		if err := updateFunc(nc); err != nil {
-			return sql.Error(err)
-		}
-		params := sqlc.UpdateNotificationConfigurationByIDParams{
-			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
-			Enabled:                     sql.Bool(nc.Enabled),
-			Name:                        sql.String(nc.Name),
-			URL:                         sql.NullString(),
-			NotificationConfigurationID: nc.ID,
-		}
-		for _, t := range nc.Triggers {
-			params.Triggers = append(params.Triggers, sql.String(string(t)))
-		}
-		if nc.URL != nil {
-			params.URL = sql.String(*nc.URL)
-		}
-		_, err = q.UpdateNotificationConfigurationByID(ctx, params)
-		return err
-	})
-	return nc, err
+func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(context.Context, *Config) error) (*Config, error) {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Config, error) {
+			result, err := q.FindNotificationConfigurationForUpdate(ctx, id)
+			if err != nil {
+				return nil, sql.Error(err)
+			}
+			return pgresult(result).toNotificationConfiguration(), nil
+		},
+		updateFunc,
+		func(ctx context.Context, q *sqlc.Queries, nc *Config) error {
+			params := sqlc.UpdateNotificationConfigurationByIDParams{
+				UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
+				Enabled:                     sql.Bool(nc.Enabled),
+				Name:                        sql.String(nc.Name),
+				URL:                         sql.NullString(),
+				NotificationConfigurationID: nc.ID,
+			}
+			for _, t := range nc.Triggers {
+				params.Triggers = append(params.Triggers, sql.String(string(t)))
+			}
+			if nc.URL != nil {
+				params.URL = sql.String(*nc.URL)
+			}
+			_, err := q.UpdateNotificationConfigurationByID(ctx, params)
+			return err
+		},
+	)
 }
 
 func (db *pgdb) list(ctx context.Context, workspaceID resource.ID) ([]*Config, error) {

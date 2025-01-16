@@ -264,7 +264,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to Run
 	// keep a record of what the status was before the update for logging
 	// purposes
 	var from RunnerStatus
-	err = s.db.update(ctx, runnerID, func(runner *RunnerMeta) error {
+	err = s.db.update(ctx, runnerID, func(ctx context.Context, runner *RunnerMeta) error {
 		from = runner.Status
 		return runner.setStatus(to, isAgent)
 	})
@@ -320,7 +320,7 @@ func (s *Service) createJob(ctx context.Context, run *otfrun.Run) error {
 // job should be canceled.
 func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	var signal *bool
-	job, err := s.db.updateJobByRunPhase(ctx, run.ID, run.Phase(), func(job *Job) (err error) {
+	job, err := s.db.updateJobByRunPhase(ctx, run.ID, run.Phase(), func(ctx context.Context, job *Job) (err error) {
 		signal, err = job.cancel(run)
 		return err
 	})

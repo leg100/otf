@@ -166,7 +166,7 @@ func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (
 	if err != nil {
 		return nil, err
 	}
-	org, err := s.db.update(ctx, name, func(org *Organization) error {
+	org, err := s.db.update(ctx, name, func(ctx context.Context, org *Organization) error {
 		return org.Update(opts)
 	})
 	if err != nil {

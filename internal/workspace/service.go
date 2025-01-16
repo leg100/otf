@@ -263,7 +263,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts Upda
 	var updated *Workspace
 	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
 		var connect *bool
-		updated, err = s.db.update(ctx, workspaceID, func(ws *Workspace) (err error) {
+		updated, err = s.db.update(ctx, workspaceID, func(ctx context.Context, ws *Workspace) (err error) {
 			for _, hook := range s.beforeUpdateHooks {
 				if err := hook(ctx, ws); err != nil {
 					return err

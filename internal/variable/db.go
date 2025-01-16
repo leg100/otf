@@ -143,7 +143,6 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, set *VariableSet) error 
 		if err != nil {
 			return err
 		}
-
 		// lazily delete all variable set workspaces, and then add them again,
 		// regardless of whether there are any changes
 		return pdb.Lock(ctx, "variable_set_workspaces", func(ctx context.Context, q *sqlc.Queries) error {

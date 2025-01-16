@@ -73,41 +73,34 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(*Team) error) (*Team, error) {
-	var team *Team
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		var err error
-
-		// retrieve team
-		result, err := q.FindTeamByIDForUpdate(ctx, teamID)
-		if err != nil {
+func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(context.Context, *Team) error) (*Team, error) {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Team, error) {
+			result, err := q.FindTeamByIDForUpdate(ctx, teamID)
+			if err != nil {
+				return nil, err
+			}
+			return TeamRow(result).ToTeam(), nil
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, team *Team) error {
+			_, err := q.UpdateTeamByID(ctx, sqlc.UpdateTeamByIDParams{
+				TeamID:                          teamID,
+				Name:                            sql.String(team.Name),
+				Visibility:                      sql.String(team.Visibility),
+				SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
+				PermissionManageWorkspaces:      sql.Bool(team.Access.ManageWorkspaces),
+				PermissionManageVCS:             sql.Bool(team.Access.ManageVCS),
+				PermissionManageModules:         sql.Bool(team.Access.ManageModules),
+				PermissionManageProviders:       sql.Bool(team.Access.ManageProviders),
+				PermissionManagePolicies:        sql.Bool(team.Access.ManagePolicies),
+				PermissionManagePolicyOverrides: sql.Bool(team.Access.ManagePolicyOverrides),
+			})
 			return err
-		}
-		team = TeamRow(result).ToTeam()
-
-		// update team
-		if err := fn(team); err != nil {
-			return err
-		}
-		// persist update
-		_, err = q.UpdateTeamByID(ctx, sqlc.UpdateTeamByIDParams{
-			TeamID:                          teamID,
-			Name:                            sql.String(team.Name),
-			Visibility:                      sql.String(team.Visibility),
-			SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
-			PermissionManageWorkspaces:      sql.Bool(team.Access.ManageWorkspaces),
-			PermissionManageVCS:             sql.Bool(team.Access.ManageVCS),
-			PermissionManageModules:         sql.Bool(team.Access.ManageModules),
-			PermissionManageProviders:       sql.Bool(team.Access.ManageProviders),
-			PermissionManagePolicies:        sql.Bool(team.Access.ManagePolicies),
-			PermissionManagePolicyOverrides: sql.Bool(team.Access.ManagePolicyOverrides),
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	return team, err
+		},
+	)
 }
 
 func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {

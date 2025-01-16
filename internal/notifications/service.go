@@ -86,7 +86,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts Crea
 
 func (s *Service) Update(ctx context.Context, id resource.ID, opts UpdateConfigOptions) (*Config, error) {
 	var subject authz.Subject
-	updated, err := s.db.update(ctx, id, func(nc *Config) (err error) {
+	updated, err := s.db.update(ctx, id, func(ctx context.Context, nc *Config) (err error) {
 		subject, err = s.Authorize(ctx, authz.UpdateNotificationConfigurationAction, &authz.AccessRequest{ID: &nc.WorkspaceID})
 		if err != nil {
 			return err
