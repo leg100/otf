@@ -496,11 +496,11 @@ func (o *operation) writeTerraformVars(ctx context.Context) error {
 }
 
 func (o *operation) terraformInit(ctx context.Context) error {
-	return o.execute([]string{o.terraformPath, "init"})
+	return o.execute([]string{o.terraformPath, "init", "-input=false"})
 }
 
 func (o *operation) terraformPlan(ctx context.Context) error {
-	args := []string{"plan"}
+	args := []string{"plan", "-input=false"}
 	if o.run.IsDestroy {
 		args = append(args, "-destroy")
 	}
@@ -536,7 +536,7 @@ func (o *operation) terraformApply(ctx context.Context) (err error) {
 		}
 	}()
 
-	args := []string{"apply"}
+	args := []string{"apply", "-input=false"}
 	if o.run.IsDestroy {
 		args = append(args, "-destroy")
 	}
