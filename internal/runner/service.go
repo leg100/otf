@@ -393,7 +393,7 @@ func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 }
 
 func (s *Service) allocateJob(ctx context.Context, jobID resource.ID, runnerID resource.ID) (*Job, error) {
-	allocated, err := s.db.updateJob(ctx, jobID, func(job *Job) error {
+	allocated, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
 		return job.allocate(runnerID)
 	})
 	if err != nil {
@@ -409,7 +409,7 @@ func (s *Service) reallocateJob(ctx context.Context, jobID resource.ID, runnerID
 		from        resource.ID // ID of runner that job *was* allocated to
 		reallocated *Job
 	)
-	reallocated, err := s.db.updateJob(ctx, jobID, func(job *Job) error {
+	reallocated, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
 		from = *job.RunnerID
 		return job.reallocate(runnerID)
 	})
@@ -431,7 +431,7 @@ func (s *Service) startJob(ctx context.Context, jobID resource.ID) ([]byte, erro
 	}
 
 	var token []byte
-	_, err = s.db.updateJob(ctx, jobID, func(job *Job) error {
+	_, err = s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
 		if job.RunnerID == nil || *job.RunnerID != runner.ID {
 			return internal.ErrAccessNotPermitted
 		}
@@ -472,7 +472,7 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.ID, opts finishJ
 			return internal.ErrAccessNotPermitted
 		}
 	}
-	job, err := s.db.updateJob(ctx, jobID, func(job *Job) error {
+	job, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
 		// update corresponding run phase too
 		var err error
 		switch opts.Status {

@@ -235,7 +235,7 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	return jobs, nil
 }
 
-func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(*Job) error) (*Job, error) {
+func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
 	var job *Job
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		result, err := q.FindJobForUpdate(ctx, jobID)
@@ -243,7 +243,7 @@ func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(*Job) er
 			return err
 		}
 		job = jobResult(result).toJob()
-		if err := fn(job); err != nil {
+		if err := fn(ctx, job); err != nil {
 			return err
 		}
 		_, err = q.UpdateJob(ctx, sqlc.UpdateJobParams{
