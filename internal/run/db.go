@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
@@ -211,81 +212,85 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
-func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(*Run) error) (*Run, error) {
-	var run *Run
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		// select ...for update
-		result, err := q.FindRunByIDForUpdate(ctx, runID)
-		if err != nil {
-			return sql.Error(err)
-		}
-		run = pgresult(result).toRun()
+func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(context.Context, *Run) error) (*Run, error) {
+	var runStatus Status
+	var planStatus PhaseStatus
+	var applyStatus PhaseStatus
+	var cancelSignaledAt *time.Time
 
-		// Make copies of run attributes before update
-		runStatus := run.Status
-		planStatus := run.Plan.Status
-		applyStatus := run.Apply.Status
-		cancelSignaledAt := run.CancelSignaledAt
-
-		if err := fn(run); err != nil {
-			return err
-		}
-
-		if run.Status != runStatus {
-			_, err := q.UpdateRunStatus(ctx, sqlc.UpdateRunStatusParams{
-				Status: sql.String(string(run.Status)),
-				ID:     run.ID,
-			})
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Run, error) {
+			result, err := q.FindRunByIDForUpdate(ctx, runID)
 			if err != nil {
-				return err
+				return nil, err
+			}
+			run := pgresult(result).toRun()
+			// Make copies of run attributes before update
+			runStatus = run.Status
+			planStatus = run.Plan.Status
+			applyStatus = run.Apply.Status
+			cancelSignaledAt = run.CancelSignaledAt
+			return run, nil
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, run *Run) error {
+			if run.Status != runStatus {
+				_, err := q.UpdateRunStatus(ctx, sqlc.UpdateRunStatusParams{
+					Status: sql.String(string(run.Status)),
+					ID:     run.ID,
+				})
+				if err != nil {
+					return err
+				}
+
+				if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
+					return err
+				}
 			}
 
-			if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
-				return err
-			}
-		}
+			if run.Plan.Status != planStatus {
+				_, err := q.UpdatePlanStatusByID(ctx, sqlc.UpdatePlanStatusByIDParams{
+					Status: sql.String(string(run.Plan.Status)),
+					RunID:  run.ID,
+				})
+				if err != nil {
+					return err
+				}
 
-		if run.Plan.Status != planStatus {
-			_, err := q.UpdatePlanStatusByID(ctx, sqlc.UpdatePlanStatusByIDParams{
-				Status: sql.String(string(run.Plan.Status)),
-				RunID:  run.ID,
-			})
-			if err != nil {
-				return err
-			}
-
-			if err := db.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
-				return err
-			}
-		}
-
-		if run.Apply.Status != applyStatus {
-			_, err := q.UpdateApplyStatusByID(ctx, sqlc.UpdateApplyStatusByIDParams{
-				Status: sql.String(string(run.Apply.Status)),
-				RunID:  run.ID,
-			})
-			if err != nil {
-				return err
+				if err := db.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
+					return err
+				}
 			}
 
-			if err := db.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
-				return err
-			}
-		}
+			if run.Apply.Status != applyStatus {
+				_, err := q.UpdateApplyStatusByID(ctx, sqlc.UpdateApplyStatusByIDParams{
+					Status: sql.String(string(run.Apply.Status)),
+					RunID:  run.ID,
+				})
+				if err != nil {
+					return err
+				}
 
-		if run.CancelSignaledAt != cancelSignaledAt && run.CancelSignaledAt != nil {
-			_, err := q.UpdateCancelSignaledAt(ctx, sqlc.UpdateCancelSignaledAtParams{
-				CancelSignaledAt: sql.Timestamptz(*run.CancelSignaledAt),
-				ID:               run.ID,
-			})
-			if err != nil {
-				return err
+				if err := db.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
+					return err
+				}
 			}
-		}
 
-		return nil
-	})
-	return run, err
+			if run.CancelSignaledAt != cancelSignaledAt && run.CancelSignaledAt != nil {
+				_, err := q.UpdateCancelSignaledAt(ctx, sqlc.UpdateCancelSignaledAtParams{
+					CancelSignaledAt: sql.Timestamptz(*run.CancelSignaledAt),
+					ID:               run.ID,
+				})
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	)
 }
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.ID, resource, output Report) error {

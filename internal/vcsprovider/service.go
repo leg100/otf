@@ -131,7 +131,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 		before  VCSProvider
 		after   *VCSProvider
 	)
-	err := a.db.update(ctx, id, func(provider *VCSProvider) (err error) {
+	err := a.db.update(ctx, id, func(ctx context.Context, provider *VCSProvider) (err error) {
 		subject, err = a.Authorize(ctx, authz.UpdateVariableSetAction, &authz.AccessRequest{Organization: provider.Organization})
 		if err != nil {
 			return err

@@ -70,28 +70,29 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	return db.Querier(ctx).InsertRunner(ctx, params)
 }
 
-func (db *db) update(ctx context.Context, runnerID resource.ID, fn func(*RunnerMeta) error) error {
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindRunnerByIDForUpdate(ctx, runnerID)
-		if err != nil {
+func (db *db) update(ctx context.Context, runnerID resource.ID, fn func(context.Context, *RunnerMeta) error) error {
+	_, err := sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*RunnerMeta, error) {
+			result, err := q.FindRunnerByIDForUpdate(ctx, runnerID)
+			if err != nil {
+				return nil, err
+			}
+			return runnerMetaResult(result).toRunnerMeta(), nil
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, agent *RunnerMeta) error {
+			_, err := q.UpdateRunner(ctx, sqlc.UpdateRunnerParams{
+				RunnerID:     agent.ID,
+				Status:       sql.String(string(agent.Status)),
+				LastPingAt:   sql.Timestamptz(agent.LastPingAt),
+				LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
+			})
 			return err
-		}
-		agent := runnerMetaResult(result).toRunnerMeta()
-		if err := fn(agent); err != nil {
-			return err
-		}
-		_, err = q.UpdateRunner(ctx, sqlc.UpdateRunnerParams{
-			RunnerID:     agent.ID,
-			Status:       sql.String(string(agent.Status)),
-			LastPingAt:   sql.Timestamptz(agent.LastPingAt),
-			LastStatusAt: sql.Timestamptz(agent.LastStatusAt),
-		})
-		return err
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
+		},
+	)
+	return err
 }
 
 func (db *db) get(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
@@ -236,62 +237,54 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 }
 
 func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
-	var job *Job
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindJobForUpdate(ctx, jobID)
-		if err != nil {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Job, error) {
+			result, err := q.FindJobForUpdate(ctx, jobID)
+			if err != nil {
+				return nil, err
+			}
+			return jobResult(result).toJob(), nil
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, job *Job) error {
+			_, err := q.UpdateJob(ctx, sqlc.UpdateJobParams{
+				Status:   sql.String(string(job.Status)),
+				Signaled: sql.BoolPtr(job.Signaled),
+				RunnerID: job.RunnerID,
+				JobID:    job.ID,
+			})
 			return err
-		}
-		job = jobResult(result).toJob()
-		if err := fn(ctx, job); err != nil {
-			return err
-		}
-		_, err = q.UpdateJob(ctx, sqlc.UpdateJobParams{
-			Status:   sql.String(string(job.Status)),
-			Signaled: sql.BoolPtr(job.Signaled),
-			RunnerID: job.RunnerID,
-			JobID:    result.JobID,
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return job, nil
+		},
+	)
 }
 
-func (db *db) updateJobByRunPhase(ctx context.Context, runID resource.ID, runPhase internal.PhaseType, fn func(*Job) error) (*Job, error) {
-	var job *Job
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindJobForUpdateByRunPhase(ctx, sqlc.FindJobForUpdateByRunPhaseParams{
-			RunID: runID,
-			Phase: sql.String(string(runPhase)),
-		})
-		if err != nil {
+func (db *db) updateJobByRunPhase(ctx context.Context, runID resource.ID, runPhase internal.PhaseType, fn func(context.Context, *Job) error) (*Job, error) {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Job, error) {
+			result, err := q.FindJobForUpdateByRunPhase(ctx, sqlc.FindJobForUpdateByRunPhaseParams{
+				RunID: runID,
+				Phase: sql.String(string(runPhase)),
+			})
+			if err != nil {
+				return nil, err
+			}
+			return jobResult(result).toJob(), nil
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, job *Job) error {
+			_, err := q.UpdateJob(ctx, sqlc.UpdateJobParams{
+				Status:   sql.String(string(job.Status)),
+				Signaled: sql.BoolPtr(job.Signaled),
+				RunnerID: job.RunnerID,
+				JobID:    job.ID,
+			})
 			return err
-		}
-		job = jobResult(result).toJob()
-		if err := fn(job); err != nil {
-			return err
-		}
-		_, err = q.UpdateJob(ctx, sqlc.UpdateJobParams{
-			Status:   sql.String(string(job.Status)),
-			Signaled: sql.BoolPtr(job.Signaled),
-			RunnerID: job.RunnerID,
-			JobID:    result.JobID,
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return job, nil
+		},
+	)
 }
 
 // agent tokens

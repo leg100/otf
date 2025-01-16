@@ -85,35 +85,33 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return nil
 }
 
-func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
-	var org *Organization
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := q.FindOrganizationByNameForUpdate(ctx, sql.String(name))
-		if err != nil {
+func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context, *Organization) error) (*Organization, error) {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, q *sqlc.Queries) (*Organization, error) {
+			result, err := q.FindOrganizationByNameForUpdate(ctx, sql.String(name))
+			if err != nil {
+				return nil, err
+			}
+			return row(result).toOrganization(), nil
+		},
+		fn,
+		func(ctx context.Context, q *sqlc.Queries, org *Organization) error {
+			_, err := q.UpdateOrganizationByName(ctx, sqlc.UpdateOrganizationByNameParams{
+				Name:                       sql.String(name),
+				NewName:                    sql.String(org.Name),
+				Email:                      sql.StringPtr(org.Email),
+				CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
+				CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
+				SessionRemember:            sql.Int4Ptr(org.SessionRemember),
+				SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
+				UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
+				AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
+			})
 			return err
-		}
-		org = row(result).toOrganization()
-
-		if err := fn(org); err != nil {
-			return err
-		}
-		_, err = q.UpdateOrganizationByName(ctx, sqlc.UpdateOrganizationByNameParams{
-			Name:                       sql.String(name),
-			NewName:                    sql.String(org.Name),
-			Email:                      sql.StringPtr(org.Email),
-			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
-			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
-			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
-			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
-			AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	return org, err
+		},
+	)
 }
 
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {

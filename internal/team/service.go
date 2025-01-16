@@ -153,7 +153,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 		return nil, err
 	}
 
-	team, err = a.db.UpdateTeam(ctx, teamID, func(team *Team) error {
+	team, err = a.db.UpdateTeam(ctx, teamID, func(ctx context.Context, team *Team) error {
 		return team.Update(opts)
 	})
 	if err != nil {
