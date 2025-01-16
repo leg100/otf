@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.9](https://github.com/leg100/otf/compare/v0.3.8...v0.3.9) (2025-01-16)
+
+
+### Bug Fixes
+
+* **db:** deadlock exhausting max connections ([1d9d18e](https://github.com/leg100/otf/commit/1d9d18ed4f3c7e2198e94fef6ae6eb1db79f3646))
+* disable terraform interactive prompts ([272cabb](https://github.com/leg100/otf/commit/272cabb3a0f350e3cb3325944bc64aba08885f4c))
+* use generic update func to eliminate tx propagation failure ([#720](https://github.com/leg100/otf/issues/720)) ([900fbe7](https://github.com/leg100/otf/commit/900fbe7d17aef0a7df27c6cc25cfa72a13cd648e))
+
 ## [0.3.8](https://github.com/leg100/otf/compare/v0.3.7...v0.3.8) (2025-01-12)
 
 
