@@ -43,7 +43,6 @@ type Broker[T any] struct {
 	mu     sync.Mutex                 // sync access to map
 	getter GetterFunc[T]
 	table  string
-	kind   resource.Kind
 }
 
 // GetterFunc retrieves the type T using its unique id.
@@ -54,13 +53,12 @@ type databaseListener interface {
 	RegisterFunc(table string, ff sql.ForwardFunc)
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table string, kind resource.Kind, getter GetterFunc[T]) *Broker[T] {
+func NewBroker[T any](logger logr.Logger, listener databaseListener, table string, getter GetterFunc[T]) *Broker[T] {
 	b := &Broker[T]{
 		Logger: logger.WithValues("component", "broker"),
 		subs:   make(map[chan Event[T]]struct{}),
 		getter: getter,
 		table:  table,
-		kind:   kind,
 	}
 	listener.RegisterFunc(table, b.forward)
 	return b

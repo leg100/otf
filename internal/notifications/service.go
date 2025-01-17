@@ -47,7 +47,6 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"notification_configurations",
-		resource.NotificationConfigurationKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Config, error) {
 			if action == sql.DeleteAction {
 				return &Config{ID: id}, nil

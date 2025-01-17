@@ -118,7 +118,6 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runs",
-		resource.RunKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Run, error) {
 			if action == sql.DeleteAction {
 				return &Run{ID: id}, nil

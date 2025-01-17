@@ -86,7 +86,6 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
-		resource.WorkspaceKind,
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Workspace, error) {
 			if action == sql.DeleteAction {
 				return &Workspace{ID: id}, nil
