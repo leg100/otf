@@ -65,8 +65,10 @@ func TestScheduler_schedule(t *testing.T) {
 		// Should not propagate error
 		err := s.schedule(ctx, wsID, run1)
 		assert.NoError(t, err)
-		// Should not schedule
-		assert.Equal(t, 0, len(s.queues))
+		// Should not be made current run but instead placed on backlog
+		assert.Equal(t, 1, len(s.queues))
+		assert.Nil(t, s.queues[wsID].current)
+		assert.Equal(t, []resource.ID{run1.ID}, s.queues[wsID].backlog)
 	})
 
 	t.Run("remove finished current run and unlock queue", func(t *testing.T) {

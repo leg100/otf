@@ -145,9 +145,13 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *
 		if err != nil {
 			if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
 				s.V(0).Info("workspace locked by user; cannot schedule run", "run", *q.current)
-				return nil
+				// Place current run back onto front of backlog and wait til
+				// user unlocks workspace
+				q.backlog = append([]resource.ID{*q.current}, q.backlog...)
+				q.current = nil
+			} else {
+				return err
 			}
-			return err
 		}
 	}
 	if unlock {

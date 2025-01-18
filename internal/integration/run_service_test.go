@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRun(t *testing.T) {
+func TestRunService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
