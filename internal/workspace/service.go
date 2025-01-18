@@ -403,7 +403,7 @@ func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error
 	return nil
 }
 
-// SetCurrentRun sets the current run for the workspace
-func (s *Service) SetCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
-	return s.db.setCurrentRun(ctx, workspaceID, runID)
+// SetLatestRun sets the latest run for the workspace
+func (s *Service) SetLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
+	return s.db.setLatestRun(ctx, workspaceID, runID)
 }

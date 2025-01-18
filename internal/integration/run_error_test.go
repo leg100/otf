@@ -86,7 +86,7 @@ func TestRunError(t *testing.T) {
 			defer logsUnsub()
 
 			// create run
-			_ = daemon.createRun(t, ctx, ws, cv)
+			_ = daemon.createRun(t, ctx, ws, cv, nil)
 
 			// wait for the run to report an error status and for the logs to contain
 			// the error message.

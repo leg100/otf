@@ -42,7 +42,7 @@ func TestRemoteStateSharing(t *testing.T) {
 	// listen to run events, and create run and apply
 	sub, unsub := daemon.Runs.Watch(ctx)
 	defer unsub()
-	_ = daemon.createRun(t, ctx, producer, producerCV)
+	_ = daemon.createRun(t, ctx, producer, producerCV, nil)
 applied:
 	for event := range sub {
 		switch event.Payload.Status {
@@ -84,7 +84,7 @@ output "remote_foo" {
 	require.NoError(t, err)
 
 	// create run and apply
-	_ = daemon.createRun(t, ctx, consumer, consumerCV)
+	_ = daemon.createRun(t, ctx, consumer, consumerCV, nil)
 	for event := range sub {
 		switch event.Payload.Status {
 		case run.RunPlanned:

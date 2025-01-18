@@ -195,8 +195,8 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(con
 	)
 }
 
-// setCurrentRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
+// setLatestRun sets the ID of the current run for the specified workspace.
+func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
 	q := db.Querier(ctx)
 
 	err := q.UpdateWorkspaceLatestRun(ctx, sqlc.UpdateWorkspaceLatestRunParams{

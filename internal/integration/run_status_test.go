@@ -94,7 +94,7 @@ output "cat_name" { value = random_pet.cat.id }
 			require.NoError(t, err)
 
 			// create run and wait for it to reach wanted status
-			created := daemon.createRun(t, ctx, ws, cv)
+			created := daemon.createRun(t, ctx, ws, cv, nil)
 			for event := range sub {
 				r := event.Payload
 				if r.ID == created.ID && r.Status == step.wantStatus {

@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -43,6 +44,8 @@ type (
 		*github.TestServer
 		// dowloader allows tests to download terraform
 		downloader
+		// run subscription for tests to check on run events
+		runEvents <-chan pubsub.Event[*run.Run]
 	}
 
 	// downloader downloads terraform versions
@@ -130,6 +133,10 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	// don't proceed until daemon has started.
 	<-started
 
+	// Subscribe to run events
+	runEvents, unsub := d.Runs.Watch(ctx)
+	t.Cleanup(unsub)
+
 	t.Cleanup(func() {
 		cancel() // terminates daemon
 		<-done   // don't exit test until daemon is fully terminated
@@ -139,6 +146,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		Daemon:     d,
 		TestServer: githubServer,
 		downloader: releases.NewDownloader(cfg.terraformBinDir),
+		runEvents:  runEvents,
 	}
 
 	// create a dedicated user account and context for test to use.
@@ -189,6 +197,29 @@ func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID
 	ws, err := s.Workspaces.Get(ctx, workspaceID)
 	require.NoError(t, err)
 	return ws
+}
+
+func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.ID) *run.Run {
+	t.Helper()
+
+	run, err := s.Runs.Get(ctx, runID)
+	require.NoError(t, err)
+	return run
+}
+
+func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.ID, status run.Status) {
+	t.Helper()
+
+	for event := range s.runEvents {
+		if event.Payload.ID == runID {
+			if event.Payload.Status == status {
+				break
+			}
+			if event.Payload.Done() && event.Payload.Status != status {
+				t.Fatalf("expected run status %s but run finished with status %s", status, event.Payload.Status)
+			}
+		}
+	}
 }
 
 func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
@@ -306,7 +337,7 @@ func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx conte
 	return cv
 }
 
-func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
+func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion, opts *run.CreateOptions) *run.Run {
 	t.Helper()
 
 	if ws == nil {
@@ -315,10 +346,12 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	if cv == nil {
 		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
+	if opts == nil {
+		opts = &run.CreateOptions{}
+	}
+	opts.ConfigurationVersionID = &cv.ID
 
-	run, err := s.Runs.Create(ctx, ws.ID, run.CreateOptions{
-		ConfigurationVersionID: &cv.ID,
-	})
+	run, err := s.Runs.Create(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return run
 }

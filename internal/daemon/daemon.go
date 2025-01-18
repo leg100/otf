@@ -32,7 +32,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
-	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
@@ -562,8 +561,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Logger:    d.Logger,
 			Exclusive: true,
 			DB:        d.DB,
-			LockID:    internal.Int64(scheduler.LockID),
-			System: scheduler.NewScheduler(scheduler.Options{
+			LockID:    internal.Int64(run.SchedulerLockID),
+			System: run.NewScheduler(run.SchedulerOptions{
 				Logger:          d.Logger,
 				WorkspaceClient: d.Workspaces,
 				RunClient:       d.Runs,

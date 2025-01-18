@@ -35,7 +35,7 @@ func TestIntegration_NotificationSlack(t *testing.T) {
 	require.NoError(t, err)
 
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	_ = daemon.createRun(t, ctx, ws, cv)
+	_ = daemon.createRun(t, ctx, ws, cv, nil)
 
 	assert.Regexp(t, `run pending`, <-got)
 	assert.Regexp(t, `run planning`, <-got)
