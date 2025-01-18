@@ -240,6 +240,9 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run,
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
 		})
+		if err != nil {
+			return err
+		}
 		if !run.PlanOnly {
 			_, err := s.workspaces.Lock(ctx, run.WorkspaceID, &run.ID)
 			if err != nil {

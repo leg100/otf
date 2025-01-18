@@ -141,11 +141,11 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *
 	q := s.queues[workspaceID]
 	q, enqueue, unlock := q.process(run)
 	if enqueue {
-		run, err := s.runs.EnqueuePlan(ctx, *q.current)
+		_, err := s.runs.EnqueuePlan(ctx, *q.current)
 		if err != nil {
 			if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
-				s.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)
-				return err
+				s.V(0).Info("workspace locked by user; cannot schedule run", "run", *q.current)
+				return nil
 			}
 			return err
 		}
