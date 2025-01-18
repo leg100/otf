@@ -235,23 +235,21 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 }
 
 // EnqueuePlan enqueues a plan for the run.
-//
-// NOTE: this is an internal action, invoked by the scheduler only.
 func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run, err error) {
-	subject, err := s.Authorize(ctx, authz.EnqueuePlanAction, &authz.AccessRequest{ID: &runID})
-	if err != nil {
-		return nil, err
-	}
 	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
 		})
-		if err != nil {
-			s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
-			return err
+		if !run.PlanOnly {
+			_, err := s.workspaces.Lock(ctx, run.WorkspaceID, &run.ID)
+			if err != nil {
+				return err
+			}
+			_, err = s.workspaces.SetLatestRun(ctx, run.WorkspaceID, run.ID)
+			if err != nil {
+				return err
+			}
 		}
-		s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
-		// invoke AfterEnqueuePlan hooks
 		for _, hook := range s.afterEnqueuePlanHooks {
 			if err := hook(ctx, run); err != nil {
 				return err
@@ -259,7 +257,12 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run,
 		}
 		return nil
 	})
-	return
+	if err != nil {
+		s.Error(err, "enqueuing plan", "id", runID)
+		return nil, err
+	}
+	s.V(0).Info("enqueued plan", "id", runID)
+	return run, err
 }
 
 func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {

@@ -17,7 +17,7 @@ func TestLogs(t *testing.T) {
 
 	t.Run("upload chunk", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
-		run := svc.createRun(t, ctx, nil, nil)
+		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
 			RunID: run.ID,
@@ -29,7 +29,7 @@ func TestLogs(t *testing.T) {
 
 	t.Run("reject empty chunk", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
-		run := svc.createRun(t, ctx, nil, nil)
+		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
 			RunID: run.ID,
@@ -40,7 +40,7 @@ func TestLogs(t *testing.T) {
 
 	t.Run("get chunk", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
-		run := svc.createRun(t, ctx, nil, nil)
+		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
 			RunID: run.ID,
@@ -141,7 +141,7 @@ func TestClusterLogs(t *testing.T) {
 	t.Cleanup(func() { cancel() })
 
 	// create run on local node
-	run := local.createRun(t, ctx, nil, nil)
+	run := local.createRun(t, ctx, nil, nil, nil)
 
 	// follow run's plan logs on remote node
 	sub, err := remote.Logs.Tail(ctx, logs.GetChunkOptions{

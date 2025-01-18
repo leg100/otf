@@ -23,7 +23,7 @@ func TestIntegration_StateUI(t *testing.T) {
 	// create run and wait for it to complete
 	ws := daemon.createWorkspace(t, ctx, org)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	_ = daemon.createRun(t, ctx, ws, cv)
+	_ = daemon.createRun(t, ctx, ws, cv, nil)
 applied:
 	for event := range sub {
 		r := event.Payload

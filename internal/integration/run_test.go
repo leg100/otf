@@ -59,20 +59,58 @@ func TestRun(t *testing.T) {
 
 	t.Run("enqueue plan", func(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
-		run := svc.createRun(t, ctx, nil, nil)
 
-		got, err := svc.Runs.EnqueuePlan(ctx, run.ID)
-		require.NoError(t, err)
+		tests := []struct {
+			name      string
+			planOnly  bool
+			latestRun bool
+			lock      bool
+		}{
+			{
+				"normal run - lock and make current run",
+				false,
+				true,
+				true,
+			},
+			{
+				"plan-only run - dont lock and dont make latest run",
+				true,
+				false,
+				false,
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				run := svc.createRun(t, ctx, nil, nil, &otfrun.CreateOptions{
+					PlanOnly: &tt.planOnly,
+				})
 
-		assert.Equal(t, otfrun.RunPlanQueued, got.Status)
-		timestamp, err := got.StatusTimestamp(otfrun.RunPlanQueued)
-		assert.NoError(t, err)
-		assert.True(t, timestamp.After(got.CreatedAt))
+				got, err := svc.Runs.EnqueuePlan(ctx, run.ID)
+				require.NoError(t, err)
+
+				ws := svc.getWorkspace(t, ctx, run.WorkspaceID)
+				if tt.latestRun {
+					assert.Equal(t, run.ID, ws.LatestRun.ID)
+				} else {
+					assert.Nil(t, ws.LatestRun)
+				}
+				if tt.lock {
+					assert.Equal(t, run.ID, *ws.Lock)
+				} else {
+					assert.Nil(t, ws.Lock)
+				}
+
+				assert.Equal(t, otfrun.RunPlanQueued, got.Status)
+				timestamp, err := got.StatusTimestamp(otfrun.RunPlanQueued)
+				assert.NoError(t, err)
+				assert.True(t, timestamp.After(got.CreatedAt))
+			})
+		}
 	})
 
 	t.Run("cancel pending run", func(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
-		run := svc.createRun(t, ctx, nil, nil)
+		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Runs.Cancel(ctx, run.ID)
 		require.NoError(t, err)
@@ -88,7 +126,7 @@ func TestRun(t *testing.T) {
 
 	t.Run("get", func(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
-		want := svc.createRun(t, ctx, nil, nil)
+		want := svc.createRun(t, ctx, nil, nil, nil)
 
 		got, err := svc.Runs.Get(ctx, want.ID)
 		require.NoError(t, err)
@@ -112,10 +150,10 @@ func TestRun(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		run1 := svc.createRun(t, ctx, ws1, cv1)
-		run2 := svc.createRun(t, ctx, ws1, cv1)
-		run3 := svc.createRun(t, ctx, ws2, cv2)
-		run4 := svc.createRun(t, ctx, ws2, cv2)
+		run1 := svc.createRun(t, ctx, ws1, cv1, nil)
+		run2 := svc.createRun(t, ctx, ws1, cv1, nil)
+		run3 := svc.createRun(t, ctx, ws2, cv2, nil)
+		run4 := svc.createRun(t, ctx, ws2, cv2, nil)
 
 		tests := []struct {
 			name string

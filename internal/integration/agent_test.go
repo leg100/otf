@@ -57,7 +57,7 @@ func TestIntegration_Agents(t *testing.T) {
 	defer unsub()
 
 	// create a run on ws1
-	_ = daemon.createRun(t, ctx, ws1, nil)
+	_ = daemon.createRun(t, ctx, ws1, nil, nil)
 
 	// wait for job to be allocated to agent1
 	Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
@@ -66,7 +66,7 @@ func TestIntegration_Agents(t *testing.T) {
 	})
 
 	// create a run on ws2
-	_ = daemon.createRun(t, ctx, ws2, nil)
+	_ = daemon.createRun(t, ctx, ws2, nil, nil)
 
 	// wait for job to be allocated to agent2
 	Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {

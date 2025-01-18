@@ -57,7 +57,7 @@ data "http" "wait" {
 	require.NoError(t, err)
 
 	// create run and wait for it to finish
-	run := svc.createRun(t, ctx, ws, cv)
+	run := svc.createRun(t, ctx, ws, cv, nil)
 	for event := range runsSub {
 		if event.Payload.ID != run.ID {
 			continue

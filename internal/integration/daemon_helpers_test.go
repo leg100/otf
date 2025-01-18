@@ -306,7 +306,7 @@ func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx conte
 	return cv
 }
 
-func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
+func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion, opts *run.CreateOptions) *run.Run {
 	t.Helper()
 
 	if ws == nil {
@@ -315,10 +315,12 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	if cv == nil {
 		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
+	if opts == nil {
+		opts = &run.CreateOptions{}
+	}
+	opts.ConfigurationVersionID = &cv.ID
 
-	run, err := s.Runs.Create(ctx, ws.ID, run.CreateOptions{
-		ConfigurationVersionID: &cv.ID,
-	})
+	run, err := s.Runs.Create(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return run
 }

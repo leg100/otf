@@ -70,7 +70,7 @@ func TestIntegration_RunCancel(t *testing.T) {
 	require.NoError(t, err)
 
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	r := daemon.createRun(t, ctx, ws, cv)
+	r := daemon.createRun(t, ctx, ws, cv, nil)
 
 	// fake bin process has started
 	require.Equal(t, "started", <-got)
