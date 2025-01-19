@@ -237,7 +237,11 @@ func (o *operation) do() error {
 	if err != nil {
 		return fmt.Errorf("constructing working directory: %w", err)
 	}
-	defer wd.close()
+	defer func() {
+		if err := wd.close(); err != nil {
+			o.Error(err, "deleting files after job completion", "job", o.job, "path", wd)
+		}
+	}()
 	o.workdir = wd
 	writer := logs.NewPhaseWriter(o.ctx, logs.PhaseWriterOptions{
 		RunID:  run.ID,
