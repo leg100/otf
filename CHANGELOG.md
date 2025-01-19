@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.10](https://github.com/leg100/otf/compare/v0.3.9...v0.3.10) (2025-01-19)
+
+
+### Bug Fixes
+
+* log error if job files cannot be deleted ([9c3afcc](https://github.com/leg100/otf/commit/9c3afcca92dbaf68f1cfb4e34066ec75dd67e884))
+* **scheduler:** runs stuck in pending state ([#722](https://github.com/leg100/otf/issues/722)) ([3d4306d](https://github.com/leg100/otf/commit/3d4306d12d84f6235e4a5204bedf680c46756939))
+
+
+### Miscellaneous
+
+* remove unused parameter ([8df5334](https://github.com/leg100/otf/commit/8df53340e0489127cab95307034e5f75b292671e))
+
 ## [0.3.9](https://github.com/leg100/otf/compare/v0.3.8...v0.3.9) (2025-01-16)
 
 
