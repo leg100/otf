@@ -23,10 +23,9 @@ func TestSubsystem(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sub := &Subsystem{
-				Name:      tt.name,
-				System:    &fakeStartable{},
-				Logger:    logr.Discard(),
-				Exclusive: tt.exclusive,
+				Name:   tt.name,
+				System: &fakeStartable{},
+				Logger: logr.Discard(),
 			}
 			if tt.exclusive {
 				sub.DB = &fakeWaitAndLock{}

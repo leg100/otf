@@ -13,10 +13,6 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// LockID guarantees only one notifier on a cluster is running at any
-// time.
-const LockID int64 = 5577006791947779411
-
 type (
 	// Notifier relays run events onto interested parties
 	Notifier struct {

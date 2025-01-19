@@ -14,10 +14,6 @@ var (
 	defaultManagerInterval = 10 * time.Second
 )
 
-// ManagerLockID guarantees only one manager on a cluster is running at any
-// time.
-const ManagerLockID int64 = 5577006791947779413
-
 // manager manages the state of runners.
 //
 // Only one manager should be running on an OTF cluster at any one time.

@@ -10,10 +10,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-// AllocatorLockID guarantees only one allocator on a cluster is running at any
-// time.
-const AllocatorLockID int64 = 5577006791947779412
-
 // allocator allocates jobs to runners. Only one allocator must be active on
 // an OTF cluster at any one time.
 type allocator struct {

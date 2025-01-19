@@ -11,9 +11,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// TimeoutLockID is a unique ID guaranteeing only one timeout daemon on a cluster is running at any time.
-const TimeoutLockID int64 = 179366396344335598
-
 // By default check timed out runs every minute
 var defaultCheckInterval = time.Minute
 

@@ -12,10 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SchedulerLockID guarantees only one scheduler on a cluster is running at any
-// time.
-const SchedulerLockID int64 = 5577006791947779410
-
 type (
 	// scheduler performs two principle tasks :
 	// (a) manages lifecycle of workspace queues, creating/destroying them

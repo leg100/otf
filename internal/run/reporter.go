@@ -14,9 +14,6 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-// ReporterLockID is a unique ID guaranteeing only one reporter on a cluster is running at any time.
-const ReporterLockID int64 = 179366396344335597
-
 type (
 	// Reporter reports back to VCS providers the current status of VCS-triggered
 	// runs.
