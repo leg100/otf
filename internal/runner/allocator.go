@@ -17,10 +17,12 @@ type allocator struct {
 	// service for seeding and streaming pools, runners, and jobs, and for
 	// allocating jobs to runners.
 	client allocatorClient
-	// runners to allocate jobs to, keyed by runner ID
+	// runners keyed by runner ID
 	runners map[resource.ID]*RunnerMeta
-	// jobs awaiting allocation to an runner, keyed by job ID
+	// jobs keyed by job ID
 	jobs map[resource.ID]*Job
+	// total current jobs allocated to each runner keyed by runner ID
+	currentJobs map[resource.ID]int
 }
 
 type allocatorClient interface {
@@ -65,6 +67,7 @@ func (a *allocator) Start(ctx context.Context) error {
 			switch event.Type {
 			case pubsub.DeletedEvent:
 				delete(a.runners, event.Payload.ID)
+				delete(a.currentJobs, event.Payload.ID)
 			default:
 				a.runners[event.Payload.ID] = event.Payload
 			}
@@ -87,8 +90,10 @@ func (a *allocator) Start(ctx context.Context) error {
 
 func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
 	a.runners = make(map[resource.ID]*RunnerMeta, len(runners))
+	a.currentJobs = make(map[resource.ID]int, len(runners))
 	for _, runner := range runners {
 		a.runners[runner.ID] = runner
+		a.currentJobs[runner.ID] = runner.CurrentJobs
 	}
 	a.jobs = make(map[resource.ID]*Job, len(jobs))
 	for _, job := range jobs {
@@ -121,7 +126,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			// job has completed: remove and adjust number of current jobs
 			// runner has
 			delete(a.jobs, job.ID)
-			a.runners[*job.RunnerID].CurrentJobs--
+			a.currentJobs[*job.RunnerID]--
 			continue
 		default:
 			// job running; ignore
@@ -135,7 +140,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 				continue
 			}
 			// skip runners with insufficient capacity
-			if runner.CurrentJobs == runner.MaxJobs {
+			if a.currentJobs[runner.ID] == runner.MaxJobs {
 				continue
 			}
 			if runner.AgentPool == nil {
@@ -177,7 +182,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			a.runners[from].CurrentJobs--
+			a.currentJobs[from]--
 		} else {
 			updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
 			if err != nil {
@@ -185,7 +190,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			}
 		}
 		a.jobs[job.ID] = updatedJob
-		a.runners[runner.ID].CurrentJobs++
+		a.currentJobs[runner.ID]++
 	}
 	return nil
 }
