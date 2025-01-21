@@ -68,6 +68,7 @@ func (a *allocator) Start(ctx context.Context) error {
 			case pubsub.DeletedEvent:
 				delete(a.runners, event.Payload.ID)
 				delete(a.currentJobs, event.Payload.ID)
+				currentJobsMetric.DeleteLabelValues(runnerIDLabel)
 			default:
 				a.runners[event.Payload.ID] = event.Payload
 			}
@@ -94,6 +95,7 @@ func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
 	for _, runner := range runners {
 		a.runners[runner.ID] = runner
 		a.currentJobs[runner.ID] = runner.CurrentJobs
+		currentJobsMetric.WithLabelValues(runner.ID.String()).Set(float64(runner.CurrentJobs))
 	}
 	a.jobs = make(map[resource.ID]*Job, len(jobs))
 	for _, job := range jobs {
@@ -127,6 +129,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			// runner has
 			delete(a.jobs, job.ID)
 			a.currentJobs[*job.RunnerID]--
+			currentJobsMetric.WithLabelValues(job.RunnerID.String()).Dec()
 			continue
 		default:
 			// job running; ignore
@@ -183,6 +186,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 				return err
 			}
 			a.currentJobs[from]--
+			currentJobsMetric.WithLabelValues(runner.ID.String()).Dec()
 		} else {
 			updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
 			if err != nil {
@@ -191,6 +195,15 @@ func (a *allocator) allocate(ctx context.Context) error {
 		}
 		a.jobs[job.ID] = updatedJob
 		a.currentJobs[runner.ID]++
+		currentJobsMetric.WithLabelValues(runner.ID.String()).Inc()
 	}
 	return nil
+}
+
+func (a *allocator) incrementCurrentJobs(runnerID resource.ID) {
+}
+
+func (a *allocator) decrementCurrentJobs(runnerID resource.ID) {
+	a.currentJobs[runnerID]--
+	currentJobsMetric.WithLabelValues(runnerID.String()).Dec()
 }
