@@ -17,10 +17,12 @@ type allocator struct {
 	// service for seeding and streaming pools, runners, and jobs, and for
 	// allocating jobs to runners.
 	client allocatorClient
-	// runners to allocate jobs to, keyed by runner ID
+	// runners keyed by runner ID
 	runners map[resource.ID]*RunnerMeta
-	// jobs awaiting allocation to an runner, keyed by job ID
+	// jobs keyed by job ID
 	jobs map[resource.ID]*Job
+	// total current jobs allocated to each runner keyed by runner ID
+	currentJobs map[resource.ID]int
 }
 
 type allocatorClient interface {
@@ -63,8 +65,17 @@ func (a *allocator) Start(ctx context.Context) error {
 				return pubsub.ErrSubscriptionTerminated
 			}
 			switch event.Type {
+			case pubsub.CreatedEvent:
+				a.addRunner(event.Payload)
+			case pubsub.UpdatedEvent:
+				switch event.Payload.Status {
+				case RunnerExited, RunnerErrored:
+					// Delete runners in terminal state.
+					a.deleteRunner(event.Payload)
+				}
+				a.addRunner(event.Payload)
 			case pubsub.DeletedEvent:
-				delete(a.runners, event.Payload.ID)
+				a.deleteRunner(event.Payload)
 			default:
 				a.runners[event.Payload.ID] = event.Payload
 			}
@@ -87,11 +98,17 @@ func (a *allocator) Start(ctx context.Context) error {
 
 func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
 	a.runners = make(map[resource.ID]*RunnerMeta, len(runners))
+	a.currentJobs = make(map[resource.ID]int, len(runners))
 	for _, runner := range runners {
-		a.runners[runner.ID] = runner
+		a.addRunner(runner)
 	}
 	a.jobs = make(map[resource.ID]*Job, len(jobs))
 	for _, job := range jobs {
+		// skip jobs in terminal state
+		switch job.Status {
+		case JobErrored, JobCanceled, JobFinished:
+			continue
+		}
 		a.jobs[job.ID] = job
 	}
 }
@@ -121,21 +138,20 @@ func (a *allocator) allocate(ctx context.Context) error {
 			// job has completed: remove and adjust number of current jobs
 			// runner has
 			delete(a.jobs, job.ID)
-			a.runners[*job.RunnerID].CurrentJobs--
+			a.decrementCurrentJobs(*job.RunnerID)
 			continue
 		default:
 			// job running; ignore
 			continue
 		}
 		// allocate job to available runner
-		var available []*RunnerMeta
+		var (
+			available            []*RunnerMeta
+			insufficientCapacity bool
+		)
 		for _, runner := range a.runners {
 			if runner.Status != RunnerIdle && runner.Status != RunnerBusy {
 				// skip runners that are not ready for jobs
-				continue
-			}
-			// skip runners with insufficient capacity
-			if runner.CurrentJobs == runner.MaxJobs {
 				continue
 			}
 			if runner.AgentPool == nil {
@@ -151,10 +167,20 @@ func (a *allocator) allocate(ctx context.Context) error {
 					continue
 				}
 			}
+			// skip runners with insufficient capacity
+			if a.currentJobs[runner.ID] == runner.MaxJobs {
+				insufficientCapacity = true
+				continue
+			}
 			available = append(available, runner)
 		}
 		if len(available) == 0 {
-			a.Error(nil, "no available runners found for job", "job", job)
+			// If there is at least one appropriate runner but it has
+			// insufficient capacity then it is a normal and temporary issue and
+			// not worthy of reporting as an error.
+			if !insufficientCapacity {
+				a.Error(nil, "no available runners found for job", "job", job)
+			}
 			continue
 		}
 		// select runner that has most recently sent a ping
@@ -177,7 +203,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			a.runners[from].CurrentJobs--
+			a.decrementCurrentJobs(from)
 		} else {
 			updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
 			if err != nil {
@@ -185,7 +211,34 @@ func (a *allocator) allocate(ctx context.Context) error {
 			}
 		}
 		a.jobs[job.ID] = updatedJob
-		a.runners[runner.ID].CurrentJobs++
+		a.incrementCurrentJobs(runner.ID)
 	}
 	return nil
+}
+
+func (a *allocator) addRunner(runner *RunnerMeta) {
+	// skip runners in terminal state (exited, errored)
+	switch runner.Status {
+	case RunnerExited, RunnerErrored:
+		return
+	}
+	a.runners[runner.ID] = runner
+	a.currentJobs[runner.ID] = runner.CurrentJobs
+	currentJobsMetric.WithLabelValues(runner.ID.String()).Set(float64(runner.CurrentJobs))
+}
+
+func (a *allocator) deleteRunner(runner *RunnerMeta) {
+	delete(a.runners, runner.ID)
+	delete(a.currentJobs, runner.ID)
+	currentJobsMetric.DeleteLabelValues(runner.ID.String())
+}
+
+func (a *allocator) incrementCurrentJobs(runnerID resource.ID) {
+	a.currentJobs[runnerID]++
+	currentJobsMetric.WithLabelValues(runnerID.String()).Inc()
+}
+
+func (a *allocator) decrementCurrentJobs(runnerID resource.ID) {
+	a.currentJobs[runnerID]--
+	currentJobsMetric.WithLabelValues(runnerID.String()).Dec()
 }
