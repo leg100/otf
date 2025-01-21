@@ -16,17 +16,35 @@ func TestScheduler_schedule(t *testing.T) {
 
 	wsID := resource.NewID(resource.WorkspaceKind)
 
-	t.Run("dont add plan-only runs to queues", func(t *testing.T) {
+	t.Run("enqueue plan for pending plan-only run but don't add to workspace queue", func(t *testing.T) {
+		run := &Run{Status: RunPending, PlanOnly: true, ID: resource.NewID(resource.RunKind)}
+		runClient := &fakeSchedulerRunClient{}
 		s := &scheduler{
-			runs:       &fakeSchedulerRunClient{},
+			runs:       runClient,
 			workspaces: &fakeSchedulerWorkspaceClient{},
 			queues:     make(map[resource.ID]queue),
 		}
 
-		run := &Run{Status: RunPending, PlanOnly: true}
 		err := s.schedule(ctx, wsID, run)
 		require.NoError(t, err)
 
+		assert.Equal(t, run.ID, *runClient.enqueuedRunID)
+		assert.Equal(t, 0, len(s.queues))
+	})
+
+	t.Run("ignore running plan-only run", func(t *testing.T) {
+		run := &Run{Status: RunPlanning, PlanOnly: true, ID: resource.NewID(resource.RunKind)}
+		runClient := &fakeSchedulerRunClient{}
+		s := &scheduler{
+			runs:       runClient,
+			workspaces: &fakeSchedulerWorkspaceClient{},
+			queues:     make(map[resource.ID]queue),
+		}
+
+		err := s.schedule(ctx, wsID, run)
+		require.NoError(t, err)
+
+		assert.Nil(t, runClient.enqueuedRunID)
 		assert.Equal(t, 0, len(s.queues))
 	})
 
@@ -177,10 +195,12 @@ func TestScheduler_process(t *testing.T) {
 type fakeSchedulerRunClient struct {
 	schedulerRunClient
 
+	enqueuedRunID    *resource.ID
 	enqueuePlanError error
 }
 
 func (f *fakeSchedulerRunClient) EnqueuePlan(ctx context.Context, runID resource.ID) (*Run, error) {
+	f.enqueuedRunID = &runID
 	return nil, f.enqueuePlanError
 }
 

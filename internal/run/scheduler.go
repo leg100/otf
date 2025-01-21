@@ -128,11 +128,15 @@ func (s *scheduler) Start(ctx context.Context) error {
 }
 
 func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *Run) error {
-	if run != nil && run.PlanOnly && run.Status == RunPending {
-		// Pending plan-only runs immediately have a plan enqueued and not added to the
-		// workspace queue.
-		_, err := s.runs.EnqueuePlan(ctx, run.ID)
-		return err
+	if run != nil && run.PlanOnly {
+		if run.Status == RunPending {
+			// Enqueue plan immediately for pending plan-only runs
+			if _, err := s.runs.EnqueuePlan(ctx, run.ID); err != nil {
+				return err
+			}
+		}
+		// Plan-only runs are not added to workspace queues.
+		return nil
 	}
 	q := s.queues[workspaceID]
 	q, enqueue, unlock := q.process(run)
