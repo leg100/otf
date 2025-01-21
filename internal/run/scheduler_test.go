@@ -111,11 +111,19 @@ func TestScheduler_process(t *testing.T) {
 			false,
 		},
 		{
-			"make run current and request enqueue plan",
+			"make pending run current and request enqueue plan",
 			queue{},
-			&Run{ID: runID1},
+			&Run{ID: runID1, Status: RunPending},
 			queue{current: &runID1},
 			true,
+			false,
+		},
+		{
+			"make plan_enqueued run current and do not request enqueue plan",
+			queue{},
+			&Run{ID: runID1, Status: RunPlanQueued},
+			queue{current: &runID1},
+			false,
 			false,
 		},
 		{
