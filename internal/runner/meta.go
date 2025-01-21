@@ -124,6 +124,7 @@ func (m *RunnerMeta) LogValue() slog.Value {
 		slog.Bool("agent", m.IsAgent()),
 		slog.String("status", string(m.Status)),
 		slog.String("ip_address", m.IPAddress.String()),
+		slog.Int("max_jobs", m.MaxJobs),
 	}
 	if m.AgentPool != nil {
 		attrs = append(attrs, slog.Any("pool", m.AgentPool))

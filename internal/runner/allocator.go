@@ -55,7 +55,11 @@ func (a *allocator) Start(ctx context.Context) error {
 	a.seed(runners, jobs)
 
 	// allocate jobs to runners
-	a.allocate(ctx)
+	for _, job := range a.jobs {
+		if err := a.allocate(ctx, job); err != nil {
+			return err
+		}
+	}
 
 	// consume events until a subscriber is closed, and allocate jobs.
 	for {
@@ -89,8 +93,10 @@ func (a *allocator) Start(ctx context.Context) error {
 				a.jobs[event.Payload.ID] = event.Payload
 			}
 		}
-		if err := a.allocate(ctx); err != nil {
-			return err
+		for _, job := range a.jobs {
+			if err := a.allocate(ctx, job); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -113,110 +119,112 @@ func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
 }
 
 // allocate jobs to runners.
-func (a *allocator) allocate(ctx context.Context) error {
-	for _, job := range a.jobs {
-		var reallocate bool
-		switch job.Status {
-		case JobUnallocated:
-			// see below
-		case JobAllocated:
-			// check runner the job is allocated to: if the runner is no longer in
-			// a fit state then try to allocate job to another runner
-			runner, ok := a.runners[*job.RunnerID]
-			if !ok {
-				return fmt.Errorf("runner %s not found in cache", *job.RunnerID)
-			}
-			if runner.Status == RunnerIdle || runner.Status == RunnerBusy {
-				// runner still healthy, wait for runner to start job
-				continue
-			}
+func (a *allocator) allocate(ctx context.Context, job *Job) error {
+	var reallocate bool
+	switch job.Status {
+	case JobAllocated:
+		// check runner the job is allocated to: if the runner is no longer in
+		// a fit state then try to allocate job to another runner
+		runner, ok := a.runners[*job.RunnerID]
+		if !ok {
+			return fmt.Errorf("runner %s not found in cache", *job.RunnerID)
+		}
+		switch runner.Status {
+		case RunnerIdle, RunnerBusy:
+			// runner still healthy, wait for runner to start job
+			return nil
+		default:
 			// no longer healthy, try reallocating job to another another
 			a.Info("reallocating job away from unhealthy runner", "job", job, "runner", runner)
 			reallocate = true
-		case JobFinished, JobCanceled, JobErrored:
-			// job has completed: remove and adjust number of current jobs
-			// runner has
-			delete(a.jobs, job.ID)
-			a.decrementCurrentJobs(*job.RunnerID)
-			continue
-		default:
-			// job running; ignore
-			continue
 		}
-		// allocate job to available runner
-		var (
-			available            []*RunnerMeta
-			insufficientCapacity bool
-		)
-		for _, runner := range a.runners {
-			if runner.Status != RunnerIdle && runner.Status != RunnerBusy {
-				// skip runners that are not ready for jobs
-				continue
-			}
-			if runner.AgentPool == nil {
-				// if runner has a nil agent pool ID then it is a server
-				// runner and it only handles jobs with a nil pool ID.
-				if job.AgentPoolID != nil {
-					continue
-				}
-			} else {
-				// if a runner has a non-nil agent pool ID then it is an agent
-				// and it only handles jobs with a matching pool ID.
-				if job.AgentPoolID == nil || runner.AgentPool.ID != *job.AgentPoolID {
-					continue
-				}
-			}
-			// skip runners with insufficient capacity
-			if a.currentJobs[runner.ID] == runner.MaxJobs {
-				insufficientCapacity = true
-				continue
-			}
-			available = append(available, runner)
-		}
-		if len(available) == 0 {
-			// If there is at least one appropriate runner but it has
-			// insufficient capacity then it is a normal and temporary issue and
-			// not worthy of reporting as an error.
-			if !insufficientCapacity {
-				a.Error(nil, "no available runners found for job", "job", job)
-			}
-			continue
-		}
-		// select runner that has most recently sent a ping
-		slices.SortFunc(available, func(a, b *RunnerMeta) int {
-			if a.LastPingAt.After(b.LastPingAt) {
-				// a with more recent ping comes first in list
-				return -1
-			} else {
-				return 1
-			}
-		})
-		var (
-			runner     = available[0]
-			updatedJob *Job
-			err        error
-		)
-		if reallocate {
-			from := *job.RunnerID
-			updatedJob, err = a.client.reallocateJob(ctx, job.ID, runner.ID)
-			if err != nil {
-				return err
-			}
-			a.decrementCurrentJobs(from)
-		} else {
-			updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
-			if err != nil {
-				return err
-			}
-		}
-		a.jobs[job.ID] = updatedJob
-		a.incrementCurrentJobs(runner.ID)
+	case JobFinished, JobCanceled, JobErrored:
+		// job has completed: remove and adjust number of current jobs
+		// runner has
+		delete(a.jobs, job.ID)
+		a.decrementCurrentJobs(*job.RunnerID)
+		return nil
+	case JobRunning:
+		return nil
+	case JobUnallocated:
+		// proceed to allocate job below
+	default:
+		a.Error(nil, "unknown job status", "job", job)
+		return nil
 	}
+	// allocate job to available runner
+	var (
+		available            []*RunnerMeta
+		insufficientCapacity bool
+	)
+	for _, runner := range a.runners {
+		// skip runners that are not ready for jobs
+		if runner.Status != RunnerIdle && runner.Status != RunnerBusy {
+			continue
+		}
+		// skip server runners for agent jobs
+		if runner.AgentPool == nil && job.AgentPoolID != nil {
+			continue
+		}
+		// skip agent runners for server jobs
+		if runner.AgentPool != nil && job.AgentPoolID == nil {
+			continue
+		}
+		// skip agent runners for agent jobs assigned to different agent
+		// pool
+		if runner.AgentPool != nil && job.AgentPoolID != nil && runner.AgentPool.ID != *job.AgentPoolID {
+			continue
+		}
+		// skip runners with insufficient capacity
+		if runner.MaxJobs == a.currentJobs[runner.ID] {
+			insufficientCapacity = true
+			continue
+		}
+		available = append(available, runner)
+	}
+	if len(available) == 0 {
+		// If there is at least one appropriate runner but it has
+		// insufficient capacity then it is a normal and temporary issue and
+		// not worthy of reporting as an error.
+		if !insufficientCapacity {
+			a.Error(nil, "no available runners found for job", "job", job)
+		}
+		return nil
+	}
+	// select runner that has most recently sent a ping
+	slices.SortFunc(available, func(a, b *RunnerMeta) int {
+		if a.LastPingAt.After(b.LastPingAt) {
+			// a with more recent ping comes first in list
+			return -1
+		} else {
+			return 1
+		}
+	})
+	var (
+		runner     = available[0]
+		updatedJob *Job
+		err        error
+	)
+	if reallocate {
+		from := *job.RunnerID
+		updatedJob, err = a.client.reallocateJob(ctx, job.ID, runner.ID)
+		if err != nil {
+			return err
+		}
+		a.decrementCurrentJobs(from)
+	} else {
+		updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
+		if err != nil {
+			return err
+		}
+	}
+	a.jobs[job.ID] = updatedJob
+	a.incrementCurrentJobs(runner.ID)
 	return nil
 }
 
 func (a *allocator) addRunner(runner *RunnerMeta) {
-	// skip runners in terminal state (exited, errored)
+	// don't add runners in terminal state (exited, errored)
 	switch runner.Status {
 	case RunnerExited, RunnerErrored:
 		return

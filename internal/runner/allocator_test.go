@@ -202,7 +202,7 @@ func TestAllocator_allocate(t *testing.T) {
 				},
 			}
 			a.seed(tt.runners, []*Job{tt.job})
-			err := a.allocate(context.Background())
+			err := a.allocate(context.Background(), tt.job)
 			require.NoError(t, err)
 			// check agents
 			if assert.Equal(t, len(tt.wantRunners), len(a.runners)) {
