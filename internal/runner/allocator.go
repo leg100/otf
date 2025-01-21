@@ -72,12 +72,11 @@ func (a *allocator) Start(ctx context.Context) error {
 				case RunnerExited, RunnerErrored:
 					// Delete runners in terminal state.
 					a.deleteRunner(event.Payload)
+				default:
+					a.runners[event.Payload.ID] = event.Payload
 				}
-				a.addRunner(event.Payload)
 			case pubsub.DeletedEvent:
 				a.deleteRunner(event.Payload)
-			default:
-				a.runners[event.Payload.ID] = event.Payload
 			}
 		case event, open := <-jobsSub:
 			if !open {
