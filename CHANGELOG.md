@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.12](https://github.com/leg100/otf/compare/v0.3.11...v0.3.12) (2025-01-21)
+
+
+### Bug Fixes
+
+* allocator not accounting for deleted jobs ([44ea11e](https://github.com/leg100/otf/commit/44ea11e504f06ea549bed7dd08c508b6572f7810))
+* runner job capacity exceeded again ([f362c6d](https://github.com/leg100/otf/commit/f362c6da10f5914289043125be8b0dac203c3680))
+
 ## [0.3.11](https://github.com/leg100/otf/compare/v0.3.10...v0.3.11) (2025-01-21)
 
 
