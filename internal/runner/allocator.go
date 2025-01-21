@@ -104,6 +104,11 @@ func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
 	}
 	a.jobs = make(map[resource.ID]*Job, len(jobs))
 	for _, job := range jobs {
+		// skip jobs in terminal state
+		switch job.Status {
+		case JobErrored, JobCanceled, JobFinished:
+			continue
+		}
 		a.jobs[job.ID] = job
 	}
 }
@@ -140,14 +145,13 @@ func (a *allocator) allocate(ctx context.Context) error {
 			continue
 		}
 		// allocate job to available runner
-		var available []*RunnerMeta
+		var (
+			available            []*RunnerMeta
+			insufficientCapacity bool
+		)
 		for _, runner := range a.runners {
 			if runner.Status != RunnerIdle && runner.Status != RunnerBusy {
 				// skip runners that are not ready for jobs
-				continue
-			}
-			// skip runners with insufficient capacity
-			if a.currentJobs[runner.ID] == runner.MaxJobs {
 				continue
 			}
 			if runner.AgentPool == nil {
@@ -163,10 +167,20 @@ func (a *allocator) allocate(ctx context.Context) error {
 					continue
 				}
 			}
+			// skip runners with insufficient capacity
+			if a.currentJobs[runner.ID] == runner.MaxJobs {
+				insufficientCapacity = true
+				continue
+			}
 			available = append(available, runner)
 		}
 		if len(available) == 0 {
-			a.Error(nil, "no available runners found for job", "job", job)
+			// If there is at least one appropriate runner but it has
+			// insufficient capacity then it is a normal and temporary issue and
+			// not worthy of reporting as an error.
+			if !insufficientCapacity {
+				a.Error(nil, "no available runners found for job", "job", job)
+			}
 			continue
 		}
 		// select runner that has most recently sent a ping
