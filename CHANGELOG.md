@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.11](https://github.com/leg100/otf/compare/v0.3.10...v0.3.11) (2025-01-21)
+
+
+### Bug Fixes
+
+* **allocator:** job capacity exceeded on runners ([#723](https://github.com/leg100/otf/issues/723)) ([53cae20](https://github.com/leg100/otf/commit/53cae20e1cb768cb2fc39c8bf476e84d1f2c0ee8))
+* don't add plan-only runs to workspace queue ([fc476c5](https://github.com/leg100/otf/commit/fc476c5e5b5ae7b9d939ad81b75180ecc2c3746d))
+* dont schedule already-scheduled runs at startup ([91cf7a1](https://github.com/leg100/otf/commit/91cf7a13a55a7bf19529072574c2c89b44e8525b))
+
 ## [0.3.10](https://github.com/leg100/otf/compare/v0.3.9...v0.3.10) (2025-01-19)
 
 
