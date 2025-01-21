@@ -186,7 +186,14 @@ func (q queue) process(run *Run) (qq queue, enqueuePlan bool, unlock bool) {
 				unlock = true
 			}
 		} else {
-			// check if run is in backlog
+			if q.current == nil && run.Status != RunPending && !run.Done() {
+				// This condition handles the scenario where the scheduler has
+				// only been started up and the scheduler has not yet set the
+				// current run and there is an existing scheduled run that is
+				// not yet done.
+				q.current = &run.ID
+				return q, false, false
+			}
 			var found bool
 			for i, id := range q.backlog {
 				if run.ID == id {
