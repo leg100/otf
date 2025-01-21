@@ -88,6 +88,14 @@ func (a *allocator) Start(ctx context.Context) error {
 			}
 			switch event.Type {
 			case pubsub.DeletedEvent:
+				// Job is auto-deleted when its run is deleted (which occurs
+				// when a workspace or org is deleted). If it was assigned to a
+				// runner then decrement its current run tally.
+				if job, ok := a.jobs[event.Payload.ID]; ok {
+					if job.RunnerID != nil {
+						a.decrementCurrentJobs(*job.RunnerID)
+					}
+				}
 				delete(a.jobs, event.Payload.ID)
 			default:
 				a.jobs[event.Payload.ID] = event.Payload
