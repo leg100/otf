@@ -65,10 +65,17 @@ func (a *allocator) Start(ctx context.Context) error {
 				return pubsub.ErrSubscriptionTerminated
 			}
 			switch event.Type {
+			case pubsub.CreatedEvent:
+				a.addRunner(event.Payload)
+			case pubsub.UpdatedEvent:
+				switch event.Payload.Status {
+				case RunnerExited, RunnerErrored:
+					// Delete runners in terminal state.
+					a.deleteRunner(event.Payload)
+				}
+				a.addRunner(event.Payload)
 			case pubsub.DeletedEvent:
-				delete(a.runners, event.Payload.ID)
-				delete(a.currentJobs, event.Payload.ID)
-				currentJobsMetric.DeleteLabelValues(runnerIDLabel)
+				a.deleteRunner(event.Payload)
 			default:
 				a.runners[event.Payload.ID] = event.Payload
 			}
@@ -93,9 +100,7 @@ func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
 	a.runners = make(map[resource.ID]*RunnerMeta, len(runners))
 	a.currentJobs = make(map[resource.ID]int, len(runners))
 	for _, runner := range runners {
-		a.runners[runner.ID] = runner
-		a.currentJobs[runner.ID] = runner.CurrentJobs
-		currentJobsMetric.WithLabelValues(runner.ID.String()).Set(float64(runner.CurrentJobs))
+		a.addRunner(runner)
 	}
 	a.jobs = make(map[resource.ID]*Job, len(jobs))
 	for _, job := range jobs {
@@ -128,8 +133,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			// job has completed: remove and adjust number of current jobs
 			// runner has
 			delete(a.jobs, job.ID)
-			a.currentJobs[*job.RunnerID]--
-			currentJobsMetric.WithLabelValues(job.RunnerID.String()).Dec()
+			a.decrementCurrentJobs(*job.RunnerID)
 			continue
 		default:
 			// job running; ignore
@@ -185,8 +189,7 @@ func (a *allocator) allocate(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			a.currentJobs[from]--
-			currentJobsMetric.WithLabelValues(runner.ID.String()).Dec()
+			a.decrementCurrentJobs(from)
 		} else {
 			updatedJob, err = a.client.allocateJob(ctx, job.ID, runner.ID)
 			if err != nil {
@@ -194,13 +197,31 @@ func (a *allocator) allocate(ctx context.Context) error {
 			}
 		}
 		a.jobs[job.ID] = updatedJob
-		a.currentJobs[runner.ID]++
-		currentJobsMetric.WithLabelValues(runner.ID.String()).Inc()
+		a.incrementCurrentJobs(runner.ID)
 	}
 	return nil
 }
 
+func (a *allocator) addRunner(runner *RunnerMeta) {
+	// skip runners in terminal state (exited, errored)
+	switch runner.Status {
+	case RunnerExited, RunnerErrored:
+		return
+	}
+	a.runners[runner.ID] = runner
+	a.currentJobs[runner.ID] = runner.CurrentJobs
+	currentJobsMetric.WithLabelValues(runner.ID.String()).Set(float64(runner.CurrentJobs))
+}
+
+func (a *allocator) deleteRunner(runner *RunnerMeta) {
+	delete(a.runners, runner.ID)
+	delete(a.currentJobs, runner.ID)
+	currentJobsMetric.DeleteLabelValues(runner.ID.String())
+}
+
 func (a *allocator) incrementCurrentJobs(runnerID resource.ID) {
+	a.currentJobs[runnerID]++
+	currentJobsMetric.WithLabelValues(runnerID.String()).Inc()
 }
 
 func (a *allocator) decrementCurrentJobs(runnerID resource.ID) {
