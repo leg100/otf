@@ -9,14 +9,16 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 
-// TestIntegration_RunCancel demonstrates a run being canceled mid-flow.
-func TestIntegration_RunCancel(t *testing.T) {
+// TestIntegration_RunCancelInterrupt tests cancelling a run via an interrupt
+// signal, which occurs when a run is in the planning or applying state.
+func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	integrationTest(t)
 
 	// stage a fake terraform bin that sleeps until it receives an interrupt
@@ -81,4 +83,8 @@ func TestIntegration_RunCancel(t *testing.T) {
 
 	// fake bin has received interrupt
 	require.Equal(t, "canceled", <-got)
+
+	// canceling the job should result in the run then entering the canceled
+	// state.
+	daemon.waitRunStatus(t, r.ID, run.RunCanceled)
 }

@@ -62,7 +62,11 @@ WHERE j.job_id = sqlc.arg('job_id')
 FOR UPDATE OF j
 ;
 
--- name: FindJobForUpdateByRunPhase :one
+
+-- FindUnfinishedJobForUpdateByRunID finds an unfinished job belonging to a run.
+-- (There should only be one such job for a run).
+--
+-- name: FindUnfinishedJobForUpdateByRunID :one
 SELECT
     j.job_id,
     j.run_id,
@@ -77,7 +81,7 @@ FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.run_id = sqlc.arg('run_id')
-AND   j.phase = sqlc.arg('phase')
+AND   j.status IN ('unallocated', 'allocated', 'running')
 FOR UPDATE OF j
 ;
 

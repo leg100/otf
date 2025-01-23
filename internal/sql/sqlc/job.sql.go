@@ -229,59 +229,6 @@ func (q *Queries) FindJobForUpdate(ctx context.Context, jobID resource.ID) (Find
 	return i, err
 }
 
-const findJobForUpdateByRunPhase = `-- name: FindJobForUpdateByRunPhase :one
-SELECT
-    j.job_id,
-    j.run_id,
-    j.phase,
-    j.status,
-    j.signaled,
-    j.runner_id,
-    w.agent_pool_id,
-    r.workspace_id,
-    w.organization_name
-FROM jobs j
-JOIN runs r USING (run_id)
-JOIN workspaces w USING (workspace_id)
-WHERE j.run_id = $1
-AND   j.phase = $2
-FOR UPDATE OF j
-`
-
-type FindJobForUpdateByRunPhaseParams struct {
-	RunID resource.ID
-	Phase pgtype.Text
-}
-
-type FindJobForUpdateByRunPhaseRow struct {
-	JobID            resource.ID
-	RunID            resource.ID
-	Phase            pgtype.Text
-	Status           pgtype.Text
-	Signaled         pgtype.Bool
-	RunnerID         *resource.ID
-	AgentPoolID      *resource.ID
-	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
-}
-
-func (q *Queries) FindJobForUpdateByRunPhase(ctx context.Context, arg FindJobForUpdateByRunPhaseParams) (FindJobForUpdateByRunPhaseRow, error) {
-	row := q.db.QueryRow(ctx, findJobForUpdateByRunPhase, arg.RunID, arg.Phase)
-	var i FindJobForUpdateByRunPhaseRow
-	err := row.Scan(
-		&i.JobID,
-		&i.RunID,
-		&i.Phase,
-		&i.Status,
-		&i.Signaled,
-		&i.RunnerID,
-		&i.AgentPoolID,
-		&i.WorkspaceID,
-		&i.OrganizationName,
-	)
-	return i, err
-}
-
 const findJobs = `-- name: FindJobs :many
 SELECT
     j.job_id,
@@ -338,6 +285,56 @@ func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const findUnfinishedJobForUpdateByRunID = `-- name: FindUnfinishedJobForUpdateByRunID :one
+SELECT
+    j.job_id,
+    j.run_id,
+    j.phase,
+    j.status,
+    j.signaled,
+    j.runner_id,
+    w.agent_pool_id,
+    r.workspace_id,
+    w.organization_name
+FROM jobs j
+JOIN runs r USING (run_id)
+JOIN workspaces w USING (workspace_id)
+WHERE j.run_id = $1
+AND   j.status IN ('unallocated', 'allocated', 'running')
+FOR UPDATE OF j
+`
+
+type FindUnfinishedJobForUpdateByRunIDRow struct {
+	JobID            resource.ID
+	RunID            resource.ID
+	Phase            pgtype.Text
+	Status           pgtype.Text
+	Signaled         pgtype.Bool
+	RunnerID         *resource.ID
+	AgentPoolID      *resource.ID
+	WorkspaceID      resource.ID
+	OrganizationName pgtype.Text
+}
+
+// FindUnfinishedJobForUpdateByRunID finds an unfinished job belonging to a run.
+// (There should only be one such job for a run).
+func (q *Queries) FindUnfinishedJobForUpdateByRunID(ctx context.Context, runID resource.ID) (FindUnfinishedJobForUpdateByRunIDRow, error) {
+	row := q.db.QueryRow(ctx, findUnfinishedJobForUpdateByRunID, runID)
+	var i FindUnfinishedJobForUpdateByRunIDRow
+	err := row.Scan(
+		&i.JobID,
+		&i.RunID,
+		&i.Phase,
+		&i.Status,
+		&i.Signaled,
+		&i.RunnerID,
+		&i.AgentPoolID,
+		&i.WorkspaceID,
+		&i.OrganizationName,
+	)
+	return i, err
 }
 
 const insertJob = `-- name: InsertJob :exec

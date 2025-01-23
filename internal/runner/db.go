@@ -260,15 +260,12 @@ func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(context.
 	)
 }
 
-func (db *db) updateJobByRunPhase(ctx context.Context, runID resource.ID, runPhase internal.PhaseType, fn func(context.Context, *Job) error) (*Job, error) {
+func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context, q *sqlc.Queries) (*Job, error) {
-			result, err := q.FindJobForUpdateByRunPhase(ctx, sqlc.FindJobForUpdateByRunPhaseParams{
-				RunID: runID,
-				Phase: sql.String(string(runPhase)),
-			})
+			result, err := q.FindUnfinishedJobForUpdateByRunID(ctx, runID)
 			if err != nil {
 				return nil, err
 			}

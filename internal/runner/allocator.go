@@ -147,10 +147,13 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 			reallocate = true
 		}
 	case JobFinished, JobCanceled, JobErrored:
-		// job has completed: remove and adjust number of current jobs
-		// runner has
+		// job has completed
 		delete(a.jobs, job.ID)
-		a.decrementCurrentJobs(*job.RunnerID)
+		// adjust current jobs of job's runner if allocated (an unallocated job
+		// could have been canceled).
+		if job.RunnerID != nil {
+			a.decrementCurrentJobs(*job.RunnerID)
+		}
 		return nil
 	case JobRunning:
 		return nil

@@ -38,6 +38,7 @@ type Config struct {
 	EnableRequestLogging         bool
 	DevMode                      bool
 	DisableScheduler             bool
+	DisableRunner                bool
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
 	SkipTLSVerification          bool

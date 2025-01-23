@@ -543,12 +543,14 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			LockID: internal.Int64(sql.RunnerManagerLockID),
 			System: d.Runners.NewManager(),
 		},
-		{
+	}
+	if !d.DisableRunner {
+		subsystems = append(subsystems, &Subsystem{
 			Name:   "runner-daemon",
 			Logger: d.Logger,
 			DB:     d.DB,
 			System: d.runner,
-		},
+		})
 	}
 	if !d.DisableScheduler {
 		subsystems = append(subsystems, &Subsystem{
@@ -577,11 +579,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		return fmt.Errorf("timed out waiting for database events listener to start")
 	case <-d.listener.Started():
 	}
-	// Wait for agent to register; otherwise some tests may fail
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-d.runner.Registered():
+	// Wait for runner to register; otherwise some tests may fail
+	if !d.DisableRunner {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-d.runner.Registered():
+		}
 	}
 
 	// Run HTTP/JSON-API server and web app

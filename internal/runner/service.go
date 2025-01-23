@@ -317,7 +317,7 @@ func (s *Service) createJob(ctx context.Context, run *otfrun.Run) error {
 // job should be canceled.
 func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 	var signal *bool
-	job, err := s.db.updateJobByRunPhase(ctx, run.ID, run.Phase(), func(ctx context.Context, job *Job) (err error) {
+	job, err := s.db.updateUnfinishedJobByRunID(ctx, run.ID, func(ctx context.Context, job *Job) (err error) {
 		signal, err = job.cancel(run)
 		return err
 	})

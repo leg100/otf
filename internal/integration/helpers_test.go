@@ -82,9 +82,11 @@ func userFromContext(t *testing.T, ctx context.Context) *user.User {
 	return user
 }
 
-// Wait for an event to arrive satisfying the condition within a 10 second timeout.
-func Wait[T any](t *testing.T, c <-chan pubsub.Event[T], cond func(pubsub.Event[T]) bool) {
-	timeout := time.After(10 * time.Second)
+// wait for an event to arrive satisfying the condition within a timeout.
+func wait[T any](t *testing.T, c <-chan pubsub.Event[T], cond func(pubsub.Event[T]) bool) {
+	t.Helper()
+
+	timeout := time.After(5 * time.Second)
 	for {
 		select {
 		case <-timeout:

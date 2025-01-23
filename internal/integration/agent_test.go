@@ -60,7 +60,7 @@ func TestIntegration_Agents(t *testing.T) {
 	_ = daemon.createRun(t, ctx, ws1, nil, nil)
 
 	// wait for job to be allocated to agent1
-	Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
+	wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobAllocated &&
 			*event.Payload.RunnerID == agent1.ID
 	})
@@ -69,7 +69,7 @@ func TestIntegration_Agents(t *testing.T) {
 	_ = daemon.createRun(t, ctx, ws2, nil, nil)
 
 	// wait for job to be allocated to agent2
-	Wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
+	wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobAllocated &&
 			*event.Payload.RunnerID == agent2.ID
 	})

@@ -175,7 +175,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 		// shut agent down and wait for it to exit
 		shutdownAgent()
-		Wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
+		wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
 			return event.Payload.Status == runner.RunnerExited
 		})
 
@@ -227,7 +227,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// confirm pool was deleted
-		Wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
+		wait(t, poolsSub, func(event pubsub.Event[*runner.Pool]) bool {
 			return event.Type == pubsub.DeletedEvent
 		})
 	})
