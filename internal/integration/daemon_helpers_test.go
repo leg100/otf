@@ -207,19 +207,20 @@ func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.ID
 	return run
 }
 
-func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.ID, status run.Status) {
+func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.ID, status run.Status) *run.Run {
 	t.Helper()
 
 	for event := range s.runEvents {
 		if event.Payload.ID == runID {
 			if event.Payload.Status == status {
-				break
+				return event.Payload
 			}
 			if event.Payload.Done() && event.Payload.Status != status {
 				t.Fatalf("expected run status %s but run finished with status %s", status, event.Payload.Status)
 			}
 		}
 	}
+	return nil
 }
 
 func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {

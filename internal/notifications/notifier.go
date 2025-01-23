@@ -67,7 +67,7 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 
 // Start the notifier daemon. Should be started in a go-routine.
 func (s *Notifier) Start(ctx context.Context) error {
-	// subscribe to both run events and notification config events
+	// subscribe to notification config events
 	subRuns, unsubRuns := s.runs.Watch(ctx)
 	defer unsubRuns()
 	subConfigs, unsubConfigs := s.notifications.Watch(ctx)

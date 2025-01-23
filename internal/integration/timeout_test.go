@@ -28,10 +28,6 @@ func TestIntegration_Timeout(t *testing.T) {
 	})
 	ws := svc.createWorkspace(t, ctx, org)
 
-	// watch run events
-	runsSub, runsUnsub := svc.Runs.Watch(ctx)
-	defer runsUnsub()
-
 	// Setup a http server, to which the terraform 'http' data source will
 	// connect, causing it to hang, thereby keeping OTF run in the planning
 	// state.
@@ -56,17 +52,10 @@ data "http" "wait" {
 	err = svc.Configs.UploadConfig(ctx, cv.ID, tarball)
 	require.NoError(t, err)
 
-	// create run and wait for it to finish
+	// create run and wait for it to enter canceled state
 	run := svc.createRun(t, ctx, ws, cv, nil)
-	for event := range runsSub {
-		if event.Payload.ID != run.ID {
-			continue
-		}
-		if event.Payload.Done() {
-			run = event.Payload
-			break
-		}
-	}
+	run = svc.waitRunStatus(t, run.ID, otfrun.RunCanceled)
+
 	// run should have reached planning state before being timed out and being
 	// forced into a canceled state.
 	_, err = run.StatusTimestamp(otfrun.RunPlanning)

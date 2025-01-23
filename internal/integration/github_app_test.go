@@ -250,13 +250,10 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sub, unsub := daemon.Runs.Watch(ctx)
-	defer unsub()
-
 	// send event
 	push := testutils.ReadFile(t, "./fixtures/github_app_push.json")
 	github.SendEventRequest(t, github.PushEvent, daemon.System.URL(github.AppEventsPath), "secret", push)
 
 	// wait for run to be created
-	<-sub
+	<-daemon.runEvents
 }

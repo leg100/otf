@@ -77,10 +77,6 @@ func TestRunError(t *testing.T) {
 			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
-			// watch run events
-			runsSub, runsUnsub := daemon.Runs.Watch(ctx)
-			defer runsUnsub()
-
 			// watch log events
 			logsSub, logsUnsub := daemon.Logs.WatchLogs(ctx)
 			defer logsUnsub()
@@ -102,7 +98,7 @@ func TestRunError(t *testing.T) {
 					if errorRegex.Match(event.Payload.Data) {
 						gotErrorLogs = true
 					}
-				case event := <-runsSub:
+				case event := <-daemon.runEvents:
 					if event.Payload.Status == run.RunErrored {
 						gotErrorStatus = true
 					}

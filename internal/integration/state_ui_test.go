@@ -15,28 +15,15 @@ func TestIntegration_StateUI(t *testing.T) {
 	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
-
-	// watch run events
-	sub, unsub := daemon.Runs.Watch(ctx)
-	defer unsub()
-
-	// create run and wait for it to complete
 	ws := daemon.createWorkspace(t, ctx, org)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	_ = daemon.createRun(t, ctx, ws, cv, nil)
-applied:
-	for event := range sub {
-		r := event.Payload
-		switch r.Status {
-		case run.RunApplied:
-			break applied
-		case run.RunPlanned:
-			err := daemon.Runs.Apply(ctx, r.ID)
-			require.NoError(t, err)
-		case run.RunErrored:
-			t.Fatal("run unexpectedly finished with an error")
-		}
-	}
+
+	// create run and wait for it to complete
+	r := daemon.createRun(t, ctx, ws, cv, nil)
+	planned := daemon.waitRunStatus(t, r.ID, run.RunPlanned)
+	err := daemon.Runs.Apply(ctx, planned.ID)
+	require.NoError(t, err)
+	daemon.waitRunStatus(t, r.ID, run.RunApplied)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))

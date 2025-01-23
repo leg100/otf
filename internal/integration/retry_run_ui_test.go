@@ -19,19 +19,9 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{
 		Speculative: internal.Bool(true),
 	})
-	// watch run events
-	sub, unsub := daemon.Runs.Watch(ctx)
-	defer unsub()
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv, nil)
-	for event := range sub {
-		if event.Payload.Status == run.RunErrored {
-			t.Fatal("run unexpectedly errored")
-		}
-		if event.Payload.Status == run.RunPlannedAndFinished {
-			break
-		}
-	}
+	daemon.waitRunStatus(t, r.ID, run.RunPlannedAndFinished)
 
 	// open browser, go to run, and click retry
 	browser.New(t, ctx, func(page playwright.Page) {

@@ -39,24 +39,19 @@ func TestRemoteStateSharing(t *testing.T) {
 	producerCV := daemon.createConfigurationVersion(t, ctx, producer, nil)
 	err = daemon.Configs.UploadConfig(ctx, producerCV.ID, tarball)
 	require.NoError(t, err)
-	// listen to run events, and create run and apply
-	sub, unsub := daemon.Runs.Watch(ctx)
-	defer unsub()
-	_ = daemon.createRun(t, ctx, producer, producerCV, nil)
-applied:
-	for event := range sub {
-		switch event.Payload.Status {
-		case run.RunPlanned:
-			err := daemon.Runs.Apply(ctx, event.Payload.ID)
-			require.NoError(t, err)
-		case run.RunApplied:
-			break applied
-		case run.RunErrored:
-			t.Fatalf("run unexpectedly errored")
-		}
-	}
 
-	// consume state from a run in the consumer workspace
+	producerRun := daemon.createRun(t, ctx, producer, producerCV, nil)
+
+	// Wait for run to reach planned state before applying
+	planned := daemon.waitRunStatus(t, producerRun.ID, run.RunPlanned)
+	err = daemon.Runs.Apply(ctx, planned.ID)
+	require.NoError(t, err)
+
+	// Wait for run to be applied
+	daemon.waitRunStatus(t, producerRun.ID, run.RunApplied)
+
+	// consume state in a run in the consumer workspace from the producer
+	// workspace.
 	consumerRoot := t.TempDir()
 	consumerConfig := fmt.Sprintf(`
 data "terraform_remote_state" "producer" {
@@ -84,21 +79,14 @@ output "remote_foo" {
 	require.NoError(t, err)
 
 	// create run and apply
-	_ = daemon.createRun(t, ctx, consumer, consumerCV, nil)
-	for event := range sub {
-		switch event.Payload.Status {
-		case run.RunPlanned:
-			err := daemon.Runs.Apply(ctx, event.Payload.ID)
-			require.NoError(t, err)
-		case run.RunApplied:
-			return
-		case run.RunErrored:
-			t.Fatalf("run unexpectedly errored")
-		}
-	}
+	consumerRun := daemon.createRun(t, ctx, consumer, consumerCV, nil)
+	planned = daemon.waitRunStatus(t, consumerRun.ID, run.RunPlanned)
+	err = daemon.Runs.Apply(ctx, planned.ID)
+	require.NoError(t, err)
+	daemon.waitRunStatus(t, consumerRun.ID, run.RunApplied)
 
 	got := daemon.getCurrentState(t, ctx, consumer.ID)
-	if assert.Contains(t, got.Outputs, "foo") {
-		assert.Equal(t, "bar", got.Outputs["foo"])
+	if assert.Contains(t, got.Outputs, "remote_foo", got.Outputs) {
+		assert.Equal(t, `"bar"`, string(got.Outputs["remote_foo"].Value))
 	}
 }

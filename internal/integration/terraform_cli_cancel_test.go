@@ -23,10 +23,6 @@ func TestIntegration_TerraformCLICancel(t *testing.T) {
 
 	svc, org, ctx := setup(t, nil)
 
-	// watch run events
-	runsSub, runsUnsub := svc.Runs.Watch(ctx)
-	defer runsUnsub()
-
 	// Canceling a run is not straight-forward, because to do so reliably the
 	// terraform apply should be interrupted precisely when it is in mid-flow,
 	// i.e. while it is planning. To achieve this, the test uses the 'http'
@@ -81,7 +77,7 @@ data "http" "wait" {
 	require.NoError(t, <-tferr, string(testutils.ReadFile(t, out.Name())))
 	t.Log(string(testutils.ReadFile(t, out.Name())))
 
-	for event := range runsSub {
+	for event := range svc.runEvents {
 		r := event.Payload
 		if r.Status == run.RunCanceled {
 			break
