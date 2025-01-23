@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.13](https://github.com/leg100/otf/compare/v0.3.12...v0.3.13) (2025-01-23)
+
+
+### Bug Fixes
+
+* **runner:** canceling non-running jobs causes deadlock ([bad9fce](https://github.com/leg100/otf/commit/bad9fce0f310f587492c5e2e0d24d6a51aafcbc3))
+
 ## [0.3.12](https://github.com/leg100/otf/compare/v0.3.11...v0.3.12) (2025-01-21)
 
 
