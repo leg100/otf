@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/felixge/httpsnoop"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -16,6 +17,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	otftempl "github.com/leg100/otf/internal/http/html/templ"
 	"github.com/leg100/otf/internal/json"
 )
 
@@ -26,17 +28,15 @@ const (
 	headersKey      key = "headers"
 )
 
-var (
-	healthzPayload = json.MustMarshal(struct {
-		Version string
-		Commit  string
-		Built   string
-	}{
-		Version: internal.Version,
-		Commit:  internal.Commit,
-		Built:   internal.Built,
-	})
-)
+var healthzPayload = json.MustMarshal(struct {
+	Version string
+	Commit  string
+	Built   string
+}{
+	Version: internal.Version,
+	Commit:  internal.Commit,
+	Built:   internal.Built,
+})
 
 type (
 	// ServerConfig is the http server config
@@ -82,6 +82,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	if err := html.AddStaticHandler(logger, r, cfg.DevMode); err != nil {
 		return nil, err
 	}
+
+	// Templ files
+	r.Handle("/templ", templ.Handler(otftempl.Hello("louis")))
 
 	// Prometheus metrics
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)

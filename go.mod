@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/pubsub v1.43.0
 	github.com/DataDog/jsonapi v0.8.3
 	github.com/Masterminds/sprig/v3 v3.3.0
+	github.com/a-h/templ v0.3.833
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.11.0
@@ -17,7 +18,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/fatih/color v1.16.0
 	github.com/felixge/httpsnoop v1.0.4
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-logr/logr v1.4.2
 	github.com/gobwas/glob v0.2.3
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
