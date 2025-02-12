@@ -36,7 +36,7 @@ type (
 // Provider extracts the provider from the provider URI
 func (r Resource) Provider() string {
 	matches := providerPathRegex.FindStringSubmatch(r.ProviderURI)
-	if matches == nil || len(matches) < 2 {
+	if len(matches) < 2 {
 		return r.ProviderURI
 	}
 	return matches[1]
