@@ -44,6 +44,10 @@ type (
 	}
 )
 
+type Props struct {
+	CurrentOrganization string
+}
+
 func NewPage(r *http.Request, title, organization string) OrganizationPage {
 	sitePage := html.NewSitePage(r, title)
 	sitePage.CurrentOrganization = organization
@@ -144,19 +148,21 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.Get(r.Context(), name)
+	_, err = a.svc.Get(r.Context(), name)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	a.Render("organization_get.tmpl", w, struct {
-		OrganizationPage
-		*Organization
-	}{
-		OrganizationPage: NewPage(r, org.Name, org.Name),
-		Organization:     org,
-	})
+	Get().Render(r.Context(), w)
+
+	//a.Render("organization_get.tmpl", w, struct {
+	//	OrganizationPage
+	//	*Organization
+	//}{
+	//	OrganizationPage: NewPage(r, org.Name, org.Name),
+	//	Organization:     org,
+	//})
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {

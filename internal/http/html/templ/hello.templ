@@ -1,5 +1,10 @@
 package templ
 
-templ Hello(name string) {
-	<div>Hello, { name } garman</div>
+import (
+	"context"
+	"github.com/leg100/otf/internal/authz"
+)
+
+templ Hello(ctx context.Context) {
+	<div>Hello, { authz.SubjectFromContextString(ctx) }</div>
 }

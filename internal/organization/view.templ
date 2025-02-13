@@ -1,0 +1,8 @@
+package organization
+
+import "github.com/leg100/otf/internal/authz"
+
+templ Get(xys string) {
+	<div>Hello, { authz.SubjectFromContextString(ctx) }</div>
+	<div>Current org is: { authz.SubjectFromContextString(ctx) }</div>
+}
