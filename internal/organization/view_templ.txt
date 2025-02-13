@@ -1,3 +1,0 @@
-<div>Hello, 
-</div><div>Current org is: 
-</div>
