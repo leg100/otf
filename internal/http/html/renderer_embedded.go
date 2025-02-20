@@ -13,7 +13,7 @@ type embeddedRenderer struct {
 }
 
 func newEmbeddedRenderer() (*embeddedRenderer, error) {
-	buster := &cacheBuster{embedded}
+	buster := &CacheBuster{embedded}
 
 	cache, err := newTemplateCache(embedded, buster, false)
 	if err != nil {

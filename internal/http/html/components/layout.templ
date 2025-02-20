@@ -1,0 +1,18 @@
+package components
+
+import "github.com/leg100/otf/internal/http/html"
+
+templ Layout(page html.SitePage) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ page.Title } | otf</title>
+			<link rel="icon" type="image/svg+xml" href={ assetPath(ctx, "/static/images/icon.svg") }/>
+		</head>
+		<body>
+			{ children... }
+		</body>
+	</html>
+}

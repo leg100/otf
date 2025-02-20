@@ -154,7 +154,8 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Get().Render(r.Context(), w)
+	p := NewPage(r, name, name)
+	Get(p).Render(r.Context(), w)
 
 	//a.Render("organization_get.tmpl", w, struct {
 	//	OrganizationPage

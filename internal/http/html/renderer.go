@@ -94,7 +94,7 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 }
 
 // newTemplateCache populates a cache of templates.
-func newTemplateCache(templates fs.FS, buster *cacheBuster, devMode bool) (map[string]*template.Template, error) {
+func newTemplateCache(templates fs.FS, buster *CacheBuster, devMode bool) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
 	pages, err := fs.Glob(templates, contentTemplatesGlob)

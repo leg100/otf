@@ -9,7 +9,7 @@ import (
 type devRenderer struct{}
 
 func (r *devRenderer) RenderTemplate(name string, w io.Writer, data any) error {
-	buster := &cacheBuster{localDisk}
+	buster := &CacheBuster{localDisk}
 
 	cache, err := newTemplateCache(localDisk, buster, true)
 	if err != nil {

@@ -12,26 +12,26 @@ import (
 )
 
 var (
-	_ http.FileSystem = (*cacheBuster)(nil)
+	_ http.FileSystem = (*CacheBuster)(nil)
 
 	// regexp for a hex-formatted sha256 hash sum
 	sha256re = regexp.MustCompile(`[0-9a-f]{32}`)
 )
 
-// cacheBuster provides a cache-busting filesystem wrapper, mapping paths with a
+// CacheBuster provides a cache-busting filesystem wrapper, mapping paths with a
 // specific format containing a sha256 hash to paths without the hash in the
 // wrapped filesystem. i.e. mapping
 //
 // /css/main.1fc822f99a2cfb6b5f316f00107a7d2770d547b64f3e0ea69baec12001a95f9f.css
 // ->
 // /css/main.css
-type cacheBuster struct {
+type CacheBuster struct {
 	fs.FS
 }
 
 // Open strips the hash from the name before opening it in the wrapped
 // filesystem.
-func (cb *cacheBuster) Open(fname string) (http.File, error) {
+func (cb *CacheBuster) Open(fname string) (http.File, error) {
 	var partsSansHash []string
 
 	// Reconstruct filename without hash
@@ -51,7 +51,7 @@ func (cb *cacheBuster) Open(fname string) (http.File, error) {
 // Path inserts a hash of the named file into its filename, before the filename
 // extension: <path>.<ext> -> <path>.<hash>.<ext>, where <hash> is the hex
 // format of the SHA256 hash of the contents of the file.
-func (cb *cacheBuster) Path(fname string) (string, error) {
+func (cb *CacheBuster) Path(fname string) (string, error) {
 	var leadingSlash bool
 
 	// fs.FS expects paths without a leading slash

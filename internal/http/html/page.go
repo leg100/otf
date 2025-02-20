@@ -29,12 +29,12 @@ func NewSitePage(r *http.Request, title string) SitePage {
 	}
 }
 
-func (v SitePage) CurrentUser() authz.Subject {
+func (v SitePage) CurrentUser() string {
 	subject, err := authz.SubjectFromContext(v.request.Context())
 	if err != nil {
-		return nil
+		return ""
 	}
-	return subject
+	return subject.String()
 }
 
 func (v SitePage) CurrentPath() string {

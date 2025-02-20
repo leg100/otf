@@ -1,8 +1,10 @@
 package organization
 
-import "github.com/leg100/otf/internal/authz"
+import "github.com/leg100/otf/internal/http/html/components"
 
-templ Get(xys string) {
-	<div>Hello, { authz.SubjectFromContextString(ctx) }</div>
-	<div>Current org is: { authz.SubjectFromContextString(ctx) }</div>
+templ Get(page OrganizationPage) {
+	@components.Layout(page.SitePage) {
+		<div>Hello, { page.CurrentUser() }</div>
+		<div>Current org is: { page.CurrentOrganization }</div>
+	}
 }
