@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
@@ -11,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"strings"
+	"time"
 )
 
 templ new(organization string) {
@@ -508,6 +510,87 @@ templ editTitle(ws *Workspace) {
 	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
 	/
 	settings
+}
+
+templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        "list vcs providers | " + ws.ID.String(),
+		ContentTitle: listVCSProvidersTitle(ws),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
+		<div id="content-list">
+			for _, provider := range providers {
+				{{ path := fmt.Sprintf("%s?vcs_provider_id=%s", paths.SetupConnectionRepoWorkspace(ws.ID.String()), provider.ID.String()) }}
+				<div class="widget" x-data={ components.BlockLink(templ.SafeURL(path)) } id={ provider.ID.String() }>
+					<div>
+						<span class="font-semibold">{ provider.String() }</span>
+						<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
+					</div>
+					<div>
+						@components.Identifier(provider.ID)
+					</div>
+				</div>
+			}
+			if len(providers) == 0 {
+				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+			}
+		</div>
+	}
+}
+
+templ listVCSProvidersTitle(ws *Workspace) {
+	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
+	/
+	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+	/
+	vcs providers
+}
+
+templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        "list vcs repos | " + ws.ID.String(),
+		ContentTitle: listVCSReposTitle(ws),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<div>
+			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
+		</div>
+		<form action={ paths.ConnectWorkspace(ws.ID.String()) } method="POST">
+			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
+			<input class="text-input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+			<button class="btn">connect</button>
+		</form>
+		<div id="content-list">
+			for _, repo := range repos {
+				<div class="widget">
+					<div>
+						<span>{ repo }</span>
+						<form action={ paths.ConnectWorkspace(ws.ID.String()) } method="POST">
+							<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
+							<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+							<button class="btn">connect</button>
+						</form>
+					</div>
+				</div>
+			}
+			if len(repos) == 0 {
+				No repositories found.
+			}
+		</div>
+	}
+}
+
+templ listVCSReposTitle(ws *Workspace) {
+	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
+	/
+	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+	/
+	vcs repositories
 }
 
 templ workspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) {

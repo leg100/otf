@@ -584,13 +584,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.Render("workspace_vcs_provider_list.tmpl", w, struct {
-		WorkspacePage
-		Items []*vcsprovider.VCSProvider
-	}{
-		WorkspacePage: NewPage(r, "list vcs providers | "+ws.ID.String(), ws),
-		Items:         providers,
-	})
+	templ.Handler(listVCSProviders(ws, providers)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
@@ -623,15 +617,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.Render("workspace_vcs_repo_list.tmpl", w, struct {
-		WorkspacePage
-		Repos         []string
-		VCSProviderID resource.ID
-	}{
-		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID.String(), ws),
-		Repos:         repos,
-		VCSProviderID: params.VCSProviderID,
-	})
+	templ.Handler(listVCSRepos(ws, params.VCSProviderID, repos)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
