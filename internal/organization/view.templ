@@ -1,10 +1,186 @@
 package organization
 
-import "github.com/leg100/otf/internal/http/html/components"
+import (
+	"time"
 
-templ Get(page OrganizationPage) {
-	@components.Layout(page.SitePage) {
-		<div>Hello, { page.CurrentUser() }</div>
-		<div>Current org is: { page.CurrentOrganization }</div>
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
+)
+
+templ new() {
+	@components.Layout(components.LayoutProps{
+		Title:        "new organization",
+		ContentTitle: newOrganizationTitle(),
+	}) {
+		<form class="flex flex-col gap-2" action={ paths.CreateOrganization() } method="POST">
+			<div class="field">
+				<label for="name">Name</label>
+				<input class="text-input w-80" type="text" name="name" id="name" required/>
+			</div>
+			<div>
+				<button class="btn" id="create-organization-button">Create organization</button>
+			</div>
+		</form>
+	}
+}
+
+templ newOrganizationTitle() {
+	<a href={ paths.Organizations() }>organizations</a> / new
+}
+
+type listProps struct {
+	html.SitePage
+	*resource.Page[*Organization]
+	CanCreate bool
+}
+
+templ list(props listProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:          "organizations",
+		ContentTitle:   templ.Raw("organizations"),
+		ContentActions: listActions(props.CanCreate),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		@components.ContentList(props.Page.Items, listItem)
+	}
+}
+
+templ listItem(org *Organization) {
+	<div class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+		<div>
+			<span>{ org.Name }</span>
+		</div>
+		<div>
+			@components.Identifier(org.ID)
+		</div>
+	</div>
+}
+
+templ listActions(canCreate bool) {
+	<form action={ paths.NewOrganization() } method="GET">
+		<button
+			class="btn"
+			id="new-organization-button"
+			disabled?={ !canCreate }
+			if canCreate {
+				title="create a new organization"
+			} else {
+				title="organization creation has been restricted to site admins"
+			}
+		>
+			New Organization
+		</button>
+	</form>
+}
+
+templ get(organization *Organization) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        organization.Name,
+		Organization: organization.Name,
+		ContentTitle: templ.Raw("main menu")}
+	}}
+	@components.Layout(layoutProps) {
+		@components.Identifier(organization.ID)
+		<div class="flex flex-col gap-2 text-lg">
+			<span id="menu-item-workspaces">
+				<a href={ paths.Workspaces(organization.Name) }>workspaces</a>
+			</span>
+			<span id="modules">
+				<a href={ paths.Modules(organization.Name) }>modules</a>
+			</span>
+			<span id="teams">
+				<a href={ paths.Modules(organization.Name) }>teams</a>
+			</span>
+			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
+				<span id="users">
+					<a href={ paths.Users(organization.Name) }>users</a>
+				</span>
+				<span id="runners">
+					<a href={ paths.Runners(organization.Name) }>runners</a>
+				</span>
+				<span id="agent_pools">
+					<a href={ paths.AgentPools(organization.Name) }>agent pools</a>
+				</span>
+				<span id="variable_sets">
+					<a href={ paths.VariableSets(organization.Name) }>variable sets</a>
+				</span>
+				<span id="vcs_providers">
+					<a href={ paths.VCSProviders(organization.Name) }>VCS providers</a>
+				</span>
+				<span id="organization_tokens">
+					<a href={ paths.OrganizationToken(organization.Name) }>organization token</a>
+				</span>
+				<span id="settings">
+					<a href={ paths.EditOrganization(organization.Name) }>settings</a>
+				</span>
+			}
+		</div>
+	}
+}
+
+templ edit(organization *Organization) {
+	@components.Layout(components.LayoutProps{
+		Title:        organization.Name,
+		Organization: organization.Name,
+		ContentTitle: templ.Raw("settings"),
+	}) {
+		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(organization.Name) } method="POST">
+			<div class="field">
+				<label for="name">Name</label>
+				<input class="text-input w-80" type="text" name="new_name" id="name" value={ organization.Name } required/>
+			</div>
+			<div class="field">
+				<button class="btn w-72">Update organization name</button>
+			</div>
+		</form>
+		<hr class="my-4"/>
+		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
+		<form action={ paths.DeleteOrganization(organization.Name) } method="POST">
+			<button id="delete-organization-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+				Delete organization
+			</button>
+			<input type="hidden" name="id" value={ organization.ID.String() }/>
+		</form>
+	}
+}
+
+templ getToken(organization string, token *OrganizationToken) {
+	@components.Layout(components.LayoutProps{
+		Title:        organization,
+		Organization: organization,
+		ContentTitle: templ.Raw("organization token"),
+	}) {
+		<span class="text-gray-600 text-sm">
+			The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
+		</span>
+		if token != nil {
+			<div class="widget">
+				<div>
+					<span>Token</span>
+					<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
+				</div>
+				<div>
+					@components.Identifier(token.ID)
+					<div class="flex gap-2">
+						<form action={ paths.CreateOrganizationToken(organization) } method="POST">
+							<button class="btn">regenerate</button>
+						</form>
+						<form action={ paths.DeleteOrganizationToken(organization) } method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		} else {
+			<form class="mt-2" action={ paths.CreateOrganizationToken(organization) } method="POST">
+				<button class="btn w-72">Create organization token</button>
+			</form>
+		}
 	}
 }

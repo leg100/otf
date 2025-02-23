@@ -153,6 +153,7 @@ tunnel:
 paths:
 	go generate ./internal/http/html/paths
 	goimports -w ./internal/http/html/paths
+	goimports -w ./internal/http/html/components/paths
 
 # Re-generate RBAC action strings
 .PHONY: actions
@@ -186,13 +187,14 @@ playwright-deps-arch:
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: http://localhost:7331
 live/templ:
-	templ generate --watch --proxy="https://localhost:8080" --open-browser=false -v
+	templ generate --watch --proxy="https://localhost:8080" --open-browser=false -v --cmd="go run ./cmd/otfd/main.go"
 
 # run air to detect any go file changes to re-build and re-run the server.
 live/server:
 	go run github.com/air-verse/air@v1.61.7 \
 	--build.cmd "go build -o _build/otfd ./cmd/otfd" --build.bin "_build/otfd" --build.delay "100" \
 	--build.exclude_dir "node_modules" \
+	--build.exclude_regex "_templ.go" \
 	--build.include_ext "go" \
 	--build.stop_on_error "false" \
 
@@ -206,10 +208,9 @@ live/sync_assets:
 	--build.cmd "templ generate --notify-proxy" \
 	--build.bin "true" \
 	--build.delay "100" \
-	--build.exclude_dir "" \
 	--build.include_dir "./internal/http/html/static/" \
 	--build.include_ext "js,css"
 
 # start all 4 watch processes in parallel.
 live:
-	make -j4 live/templ live/server live/tailwind live/sync_assets
+	make -j3 live/templ live/tailwind live/sync_assets

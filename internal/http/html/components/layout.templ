@@ -1,18 +1,126 @@
 package components
 
-import "github.com/leg100/otf/internal/http/html"
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+)
 
-templ Layout(page html.SitePage) {
+type LayoutProps struct {
+	Title          string
+	Organization   string
+	ContentTitle   templ.Component
+	ContentActions templ.Component
+	ContentLinks   templ.Component
+	ContentMenu    templ.Component
+}
+
+templ Layout(props LayoutProps) {
+	@BareLayout(BareLayoutProps{Title: props.Title, Organization: props.Organization}) {
+		<div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
+			<div class="flex text-xl">
+				<span id="content-header-title">
+					@props.ContentTitle
+				</span>
+			</div>
+			<div>
+				if props.ContentActions != nil {
+					@props.ContentActions
+				}
+			</div>
+			<ul class="flex grow items-center justify-end gap-4">
+				if props.ContentLinks != nil {
+					@props.ContentLinks
+				}
+			</ul>
+		</div>
+		if props.ContentMenu != nil {
+			@props.ContentMenu
+		}
+		<div class="flex flex-col gap-2 mb-4" id="content">
+			{ children... }
+		</div>
+	}
+}
+
+type BareLayoutProps struct {
+	Title        string
+	Organization string
+}
+
+templ BareLayout(props BareLayoutProps) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>{ page.Title } | otf</title>
-			<link rel="icon" type="image/svg+xml" href={ assetPath(ctx, "/static/images/icon.svg") }/>
+			<title>{ props.Title } | otf</title>
+			<link rel="icon" type="image/svg+xml" href={ AssetPath(ctx, "/static/images/icon.svg") }/>
+			<script src={ AssetPath(ctx, "/static/js/main.js") }></script>
+			<script src={ AssetPath(ctx, "/static/js/htmx.2.0.4.min.js") }></script>
+			<script src={ AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js") }></script>
+			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
+			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
 		</head>
-		<body>
-			{ children... }
+		<body class="flex flex-col m-0 min-h-screen font-sans">
+			@navbar(props.Organization)
+			<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
+				{ children... }
+			</main>
+			@footer()
 		</body>
 	</html>
+}
+
+templ navbar(organization string) {
+	<header class="bg-gray-200">
+		<nav class="max-w-4xl flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
+			if Authenticated(ctx) {
+				<input class="hidden peer" id="hamburger-toggle" type="checkbox"/>
+				<label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
+					<img src={ AssetPath(ctx, "/static/images/hamburger.svg") } alt="open menu"/>
+				</label>
+				<label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
+					<img src={ AssetPath(ctx, "/static/images/cross.svg") } alt="close menu"/>
+				</label>
+			}
+			if Authenticated(ctx) {
+				if organization != "" {
+					<div class="flex gap-2 items-center">
+						<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill-rule="evenodd" clip-rule="evenodd">
+							<path d="M16 7h8v17h-24v-24h16v7zm-9 12h-2v4h2v-4zm4 0h-2v4h2v-4zm7 0h-2v4h2v-4zm4-10h-6v8h4v5h2v-13zm-8-7h-12v20h1v-5h10v5h1v-20zm-8 13h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm8-2v2h-2v-2h2zm-14-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm6-2h2v2h-2v-2zm-12-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm-6-3h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2z"></path>
+						</svg>
+						<a href={ paths.Organization(organization) }>{ organization }</a>
+					</div>
+				}
+			}
+			<div class="logo md:order-first">
+				<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
+			</div>
+			if Authenticated(ctx) {
+				<div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
+					<div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
+						<a href={ paths.Admin() }>site</a>
+						<a href={ paths.Organizations() }>organizations</a>
+						<a href={ paths.Profile() }>profile</a>
+					</div>
+				</div>
+			}
+		</nav>
+	</header>
+}
+
+templ footer() {
+	<footer class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
+		<div class="flex justify-between gap-4 max-w-2xl py-0.5 my-0 mx-auto">
+			<div></div>
+			<div class="footer-version">
+				<a href="https://github.com/leg100/otf">{ internal.Version }</a>
+			</div>
+			<div class="footer-site-login">
+				if !Authenticated(ctx) {
+					<a href={ paths.AdminLogin() }>site admin</a>
+				}
+			</div>
+		</div>
+	</footer>
 }

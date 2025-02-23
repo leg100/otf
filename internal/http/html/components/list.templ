@@ -1,0 +1,9 @@
+package components
+
+templ ContentList[T any](items []T, comp func(T) templ.Component) {
+	<div id="content-list" class="flex flex-col">
+		for _, item := range items {
+			@comp(item)
+		}
+	</div>
+}

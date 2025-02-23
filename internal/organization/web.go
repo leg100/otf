@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -44,10 +45,6 @@ type (
 	}
 )
 
-type Props struct {
-	CurrentOrganization string
-}
-
 func NewPage(r *http.Request, title, organization string) OrganizationPage {
 	sitePage := html.NewSitePage(r, title)
 	sitePage.CurrentOrganization = organization
@@ -75,7 +72,7 @@ func (a *web) addHandlers(r *mux.Router) {
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {
-	a.Render("organization_new.tmpl", w, html.NewSitePage(r, "new organization"))
+	templ.Handler(new()).ServeHTTP(w, r)
 }
 
 func (a *web) create(w http.ResponseWriter, r *http.Request) {
@@ -130,15 +127,12 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 	canCreate := !a.RestrictCreation || subject.CanAccess(authz.CreateOrganizationAction, nil)
 
-	a.Render("organization_list.tmpl", w, struct {
-		html.SitePage
-		*resource.Page[*Organization]
-		CanCreate bool
-	}{
+	props := listProps{
 		SitePage:  html.NewSitePage(r, "organizations"),
 		Page:      organizations,
 		CanCreate: canCreate,
-	})
+	}
+	templ.Handler(list(props)).ServeHTTP(w, r)
 }
 
 func (a *web) get(w http.ResponseWriter, r *http.Request) {
@@ -148,22 +142,13 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.svc.Get(r.Context(), name)
+	org, err := a.svc.Get(r.Context(), name)
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	p := NewPage(r, name, name)
-	Get(p).Render(r.Context(), w)
-
-	//a.Render("organization_get.tmpl", w, struct {
-	//	OrganizationPage
-	//	*Organization
-	//}{
-	//	OrganizationPage: NewPage(r, org.Name, org.Name),
-	//	Organization:     org,
-	//})
+	templ.Handler(get(org)).ServeHTTP(w, r)
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
@@ -179,13 +164,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_edit.tmpl", w, struct {
-		OrganizationPage
-		*Organization
-	}{
-		OrganizationPage: NewPage(r, org.Name, org.Name),
-		Organization:     org,
-	})
+	templ.Handler(edit(org)).ServeHTTP(w, r)
 }
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
@@ -266,13 +245,7 @@ func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 	if len(tokens) > 0 {
 		token = tokens[0]
 	}
-	a.Render("organization_token.tmpl", w, struct {
-		OrganizationPage
-		Token *OrganizationToken
-	}{
-		OrganizationPage: NewPage(r, org, org),
-		Token:            token,
-	})
+	templ.Handler(getToken(org, token)).ServeHTTP(w, r)
 }
 
 func (a *web) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {

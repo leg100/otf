@@ -1,0 +1,548 @@
+package workspace
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/vcsprovider"
+	"strings"
+)
+
+templ new(organization string) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new workspace",
+		ContentTitle: newTitle(organization),
+	}) {
+		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
+			<div class="field">
+				<label for="name">Name</label>
+				<input class="text-input w-80" type="text" name="name" id="name" required/>
+			</div>
+			<div>
+				<button class="btn" id="create-workspace-button">Create workspace</button>
+			</div>
+		</form>
+	}
+}
+
+templ newTitle(organization string) {
+	<a href={ paths.Workspaces(organization) }>workspaces</a> / new
+}
+
+type listProps struct {
+	organization string
+	page         *resource.Page[*Workspace]
+	search       string
+	tagFilters   map[string]bool
+	canCreate    bool
+}
+
+templ list(props listProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:          "workspaces",
+		ContentTitle:   templ.Raw("workspaces"),
+		ContentActions: listActions(props.organization, props.canCreate),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<form method="GET">
+			<div class="flex gap-2 items-center">
+				<input class="text-input bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" value={ props.search } style={ magnifyingGlassStyle(ctx) } placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container"/>
+				<div class="flex flex-wrap gap-1">
+					for k, v := range props.tagFilters {
+						<div>
+							<input id={ "workspace-tag-filter-" + k } class="hidden peer" name="search[tags]" value={ k } type="checkbox" checked?={ v } onchange="this.form.submit()"/>
+							<label for={ "workspace-tag-filter-" + k } class="tag bg-gray-300 peer-checked:bg-blue-800 cursor-pointer">
+								{ k }
+							</label>
+						</div>
+					}
+				</div>
+			</div>
+		</form>
+		<div id="workspace-listing-container">
+			@components.ContentList(props.page.Items, listItem)
+		</div>
+	}
+}
+
+templ listItem(ws *Workspace) {
+	<div x-data={ components.BlockLink(paths.Workspace(ws.ID.String())) } class="widget" id={ "item-workspace-" + ws.Name }>
+		<div>
+			<span>{ ws.Name }</span>
+			if ws.LatestRun != nil {
+				@components.RunStatus(ws.LatestRun.ID, string(ws.LatestRun.Status))
+			}
+		</div>
+		<div>
+			<div class="flex gap-2 items-center">
+				@components.Identifier(ws.ID)
+				<form class="flex items-center gap-2" action={ paths.Workspace(ws.ID.String()) } method="GET">
+					for _, tag := range ws.Tags {
+						<button class="tag" name="search[tags]" value={ tag }>{ tag }</button>
+					}
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
+templ listActions(organization string, canCreate bool) {
+	if canCreate {
+		<form action={ paths.NewWorkspace(organization) } method="GET">
+			<button class="btn" id="new-workspace-button">New Workspace</button>
+		</form>
+	}
+}
+
+type getProps struct {
+	ws                 *Workspace
+	button             LockButton
+	vcsProvider        *vcsprovider.VCSProvider
+	canApply           bool
+	canAddTags         bool
+	canRemoveTags      bool
+	canCreateRun       bool
+	canLockWorkspace   bool
+	canUnlockWorkspace bool
+	canUpdateWorkspace bool
+	unassignedTags     []string
+	tagsDropdown       components.SearchDropdownProps
+}
+
+templ get(props getProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        "workspaces",
+		ContentTitle: getTitle(props.ws),
+		ContentLinks: workspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<div class="flex gap-6 flex-row">
+			<div class="grow flex flex-col gap-4 basis-4/5">
+				<div>
+					@components.Identifier(props.ws.ID)
+				</div>
+				<div>
+					<h3 class="text-lg font-bold my-2">Latest Run</h3>
+					<div
+						id="latest-run"
+						hx-ext="sse"
+						sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) + "?latest=true" }
+						sse-swap="latest-run"
+					>
+						if props.ws.LatestRun != nil {
+							<div hx-get={ string(paths.WidgetRun(props.ws.LatestRun.ID.String())) } hx-trigger="load" hx-swap="outerHTML"></div>
+						} else {
+							There are no runs for this workspace.
+						}
+					</div>
+				</div>
+				<div>
+					<div hx-get={ string(paths.StateWorkspace(props.ws.ID.String())) } hx-trigger="load" hx-swap="innerHTML"></div>
+				</div>
+			</div>
+			<div class="flex gap-4 flex-col basis-1/5">
+				if props.canCreateRun {
+					<div>
+						<h3 class="font-semibold mb-2">Actions</h3>
+						<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID.String()) } method="POST">
+							<select name="operation" id="start-run-operation" onchange="this.form.submit()">
+								<option value="" selected>-- start run --</option>
+								<option value="plan-only">plan only</option>
+								if props.canApply {
+									<option value="plan-and-apply">plan and apply</option>
+								}
+							</select>
+						</form>
+					</div>
+				}
+				<div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href={ paths.EditWorkspace(props.ws.ID.String()) + "#terraform-version" }>{ props.ws.TerraformVersion }</a></div>
+				<div>
+					<h3 class="font-semibold mb-2">Locking</h3>
+					<div class={ "flex", "flex-col", "gap-2", "p-2", map[string]bool{"bg-green-200": props.button.State == "unlocked", "bg-orange-200": props.button.State == "locked"} }>
+						<span>{ strings.Title(props.button.State) }</span>
+						if props.canLockWorkspace || props.canUnlockWorkspace {
+							<form action={ props.button.Action } method="POST"><button class="btn" disabled?={ props.button.Disabled }>{ props.button.Text }</button></form>
+						}
+						<span class="text-sm">{ props.button.Message }</span>
+					</div>
+				</div>
+				if props.ws.Connection != nil {
+					<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
+				}
+				<div class="flex flex-col gap-2">
+					<h3 class="font-semibold mb-1">Tags</h3>
+					<div id="tags" class="tag-container">
+						for _, tag := range props.ws.Tags {
+							<form action={ paths.DeleteTagWorkspace(props.ws.ID.String()) } method="POST">
+								<input type="hidden" name="tag_name" id="remove-tag-name" value={ tag } required/>
+								<div class="flex gap-1 items-center tag">
+									<span>{ tag }</span>
+									if props.canRemoveTags {
+										<button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id={ "button-remove-tag-" + tag } class="delete cross">x</button>
+									}
+								</div>
+							</form>
+						}
+					</div>
+					if props.canAddTags {
+						@components.SearchDropdown(props.tagsDropdown)
+					}
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ getTitle(ws *Workspace) {
+	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a> / { ws.Name }
+}
+
+type editProps struct {
+	ws                 *Workspace
+	assigned           []perm
+	unassigned         []*team.Team
+	roles              []authz.Role
+	vcsProvider        *vcsprovider.VCSProvider
+	unassignedTags     []string
+	canUpdateWorkspace bool
+	canDeleteWorkspace bool
+	vcsTagRegexDefault string
+	vcsTagRegexPrefix  string
+	vcsTagRegexSuffix  string
+	vcsTagRegexCustom  string
+	vcsTriggerAlways   string
+	vcsTriggerPatterns string
+	vcsTriggerTags     string
+	poolsURL           string
+}
+
+type perm struct {
+	role authz.Role
+	team *team.Team
+}
+
+templ edit(props editProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        "edit | " + props.ws.ID.String(),
+		ContentTitle: editTitle(props.ws),
+		ContentLinks: workspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<div class="mt-3">
+			if props.ws.Connection != nil {
+				<form action={ paths.DisconnectWorkspace(props.ws.ID.String()) } method="POST">
+					<button class="btn" id="disconnect-workspace-repo-button">
+						Disconnect from { props.ws.Connection.Repo } ({ props.vcsProvider.String() })
+					</button>
+				</form>
+			} else {
+				<form action={ paths.SetupConnectionProviderWorkspace(props.ws.ID.String()) } method="GET">
+					<button class="btn" id="list-workspace-vcs-providers-button">
+						Connect to VCS
+					</button>
+				</form>
+			}
+		</div>
+		<hr class="my-4"/>
+		<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID.String()) } method="POST">
+			<div class="field">
+				<label for="name">Name</label>
+				<input class="text-input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
+			</div>
+			<div class="field">
+				<label for="description">Description</label>
+				<textarea class="text-input w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
+			</div>
+			<fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
+				<legend>Execution mode</legend>
+				<div class="form-checkbox">
+					<input type="radio" name="execution_mode" id="remote" value="remote" checked?={ props.ws.ExecutionMode == "remote" }/>
+					<label for="remote">Remote</label>
+					<span class="description">Your plans and applies occur on the OTF servers.</span>
+				</div>
+				<div class="form-checkbox">
+					<input type="radio" name="execution_mode" id="local" value="local" checked?={ props.ws.ExecutionMode == "local" }/>
+					<label for="local">Local</label>
+					<span class="description">
+						Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
+					</span>
+				</div>
+				<div class="form-checkbox">
+					<input class="peer" type="radio" name="execution_mode" id="agent" value="agent" checked?={ props.ws.ExecutionMode == "agent" }/>
+					<label for="agent">Agent</label>
+					<span class="description">Your plans and applies occur on OTF agents.</span>
+					<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-gray-100 p-2 gap-2">
+						<div class="flex items-center gap-2">
+							<label class="text-md" for="agent-pool-id">Agent pool</label>
+							<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
+						</div>
+						<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization) }>here</a>.</span>
+					</div>
+				</div>
+			</fieldset>
+			<fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+				<legend>Apply method</legend>
+				<div class="form-checkbox">
+					<input type="radio" name="auto_apply" id="auto-apply" value="true" checked?={ props.ws.AutoApply }/>
+					<label for="auto-apply">Auto apply</label>
+					<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="bg-gray-200">-auto-approve</span> flag with <span class="bg-gray-200">terraform apply</span>.</span>
+				</div>
+				<div class="form-checkbox">
+					<input type="radio" name="auto_apply" id="manual-apply" value="false" checked?={ !props.ws.AutoApply }/>
+					<label for="manual-apply">Manual apply</label>
+					<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
+				</div>
+			</fieldset>
+			<div class="field">
+				<label for="terraform-version">Terraform version</label>
+				<input class="text-input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
+				<span class="description">
+					The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
+				</span>
+			</div>
+			<div class="field">
+				<label for="working_directory">Working directory</label>
+				<input class="text-input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
+				<span class="description">
+					The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
+				</span>
+			</div>
+			if props.ws.Connection != nil {
+				@editConnection(props)
+			}
+			<div class="form-checkbox">
+				<input class="" type="checkbox" name="global_remote_state" id="global-remote-state" checked?={ props.ws.GlobalRemoteState }/>
+				<label class="font-semibold" for="global-remote-state">Remote state sharing</label>
+				<span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+			</div>
+			<div class="field">
+				<button class="btn w-40">Save changes</button>
+			</div>
+		</form>
+		<hr class="my-4"/>
+		<h3 class="font-semibold text-lg">Permissions</h3>
+		<div id="permissions-container">
+			@editPermissions(props)
+		</div>
+		<hr class="my-4"/>
+		<h3 class="font-semibold text-lg">Advanced</h3>
+		<div class="flex flex-col gap-4 mt-2 mb-6">
+			<form action={ paths.StartRunWorkspace(props.ws.ID.String()) } method="POST">
+				<button id="queue-destroy-plan-button" class="btn-danger" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
+					Queue destroy plan
+				</button>
+				<input type="hidden" name="connected" value={ boolString(props.ws.Connection != nil) }/>
+				<input name="operation" value="destroy-all" type="hidden"/>
+			</form>
+			if props.canDeleteWorkspace {
+				<form action={ paths.DeleteWorkspace(props.ws.ID.String()) } method="POST">
+					<button id="delete-workspace-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+						Delete workspace
+					</button>
+				</form>
+			}
+		</div>
+	}
+}
+
+templ editConnection(props editProps) {
+	<fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+		<legend>VCS triggers</legend>
+		<div class="form-checkbox">
+			<input type="radio" id="vcs-triggers-always" name="vcs_trigger" value={ props.vcsTriggerAlways } checked?={ len(props.ws.TriggerPatterns) == 0 && len(props.ws.Connection.TagsRegex) == 0 }/>
+			<label for="vcs-triggers-always">Always trigger runs</label>
+			<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+		</div>
+		<div class="form-checkbox">
+			<input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value={ props.vcsTriggerPatterns } checked?={ len(props.ws.TriggerPatterns) > 0 }/>
+			<label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
+			<span class="description">Supports glob patterns.</span>
+			<script src={ components.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
+			<div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
+				<input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)"/>
+				<div class="flex flex-col gap-2">
+					<div class="flex gap-2 items-center">
+						<label for="new_path">Path</label>
+						<input @keydown.enter.prevent="addPattern" class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path"/>
+						<button @click="addPattern" type="button" id="add-pattern" class="btn w-40">Add pattern</button>
+					</div>
+					<template x-for="path in paths">
+						<div class="flex gap-2 items-center justify-end">
+							<span class="justify-end bg-gray-200 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
+							<button @click="deletePattern(path)" type="button" class="btn-danger w-40" :id="$id('delete-pattern')">Delete</button>
+						</div>
+					</template>
+				</div>
+			</div>
+		</div>
+		<div class="form-checkbox">
+			<input class="peer" type="radio" id="vcs-triggers-tag" name="vcs_trigger" value={ props.vcsTriggerTags } checked?={ props.ws.Connection.TagsRegex != "" }/>
+			<label for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
+			<span class="col-start-2 description">Git tags allow you to manage releases.</span>
+			<div class="col-start-2 hidden bg-gray-100 px-3 py-3 mt-2 w-full peer-checked:block">
+				<div class="flex flex-col gap-2" x-data={ "{regex: " + toJSON(props.ws.Connection.TagsRegex) + "}" }>
+					<div class="form-checkbox">
+						<input type="radio" id="tags-regex-default" name="tags_regex" value={ props.vcsTagRegexDefault } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexDefault || props.ws.Connection.TagsRegex != "" }/>
+						<label for="tags-regex-default">Default</label>
+						<span class="description">e.g. <span class="bg-gray-200">12.33.4456</span></span>
+					</div>
+					<div class="form-checkbox">
+						<input type="radio" id="tags-regex-prefix" name="tags_regex" value={ props.vcsTagRegexPrefix } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexPrefix }/>
+						<label for="tags-regex-prefix">Version contains a prefix</label>
+						<span class="description">e.g. <span class="bg-gray-200">v12.33.4456</span></span>
+					</div>
+					<div class="form-checkbox">
+						<input type="radio" id="tags-regex-suffix" name="tags_regex" value={ props.vcsTagRegexSuffix } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexSuffix }/>
+						<label for="tags-regex-suffix">Version contains a suffix</label>
+						<span class="description">e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
+					</div>
+					<div class="form-checkbox">
+						{{ isCustom := props.ws.Connection.TagsRegex != "" && props.ws.Connection.TagsRegex != props.vcsTagRegexDefault && props.ws.Connection.TagsRegex != props.vcsTagRegexPrefix && props.ws.Connection.TagsRegex != props.vcsTagRegexSuffix }}
+						<input class="peer" type="radio" id="tags-regex-custom" name="tags_regex" value={ props.vcsTagRegexCustom } checked?={ isCustom }/>
+						<label for="tags-regex-custom">Custom regular expression</label>
+						<input class="col-start-2 text-input w-96 mt-2 hidden peer-checked:block" type="text" name="custom_tags_regex" value={ props.ws.Connection.TagsRegex }/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="field mt-2">
+			<label for="vcs-branch">VCS branch</label>
+			<input class="text-input w-96" type="text" name="vcs_branch" id="vcs-branch" value={ props.ws.Connection.Branch }/>
+			<span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
+		</div>
+		<div class="form-checkbox">
+			<input type="checkbox" name="speculative_enabled" id="speculative-enabled" checked?={ props.ws.SpeculativeEnabled }/>
+			<label for="speculative-enabled">Automatic plans for pull requests</label>
+			<span class="description">Trigger a plan whenever a pull request is opened and commits are pushed to the pull request. Note: this only triggers a "plan-only" run without an apply.</span>
+		</div>
+	</fieldset>
+	<div class="form-checkbox">
+		<input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" checked?={ props.ws.Connection.AllowCLIApply }/>
+		<label for="allow-cli-apply">Allow apply from the CLI</label>
+		<span class="description">Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
+	</div>
+}
+
+templ editPermissions(props editProps) {
+	<div>
+		<table class="text-left">
+			<thead class="bg-gray-100 border-t border-b">
+				<tr>
+					<th class="p-2">Team</th>
+					<th class="p-2" colspan="2">Role</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- always render implicit admin role permission for owners team -->
+				<tr class="text-gray-400 border-b" id="permissions-owners">
+					<td class="p-2">owners</td>
+					<td class="p-2">admin</td>
+				</tr>
+				<!-- iterate through existing role assignments -->
+				for _, perm := range props.assigned {
+					if perm.team.Name == "owners" {
+						continue
+					}
+					<tr class="border-b" id={ "permissions-" + perm.team.Name }>
+						<td class="p-2"><a href={ paths.Team(perm.team.ID.String()) }>{ perm.team.Name }</a></td>
+						<td class="p-2">
+							<form class="" action={ paths.SetPermissionWorkspace(props.ws.ID.String()) } method="POST">
+								<input name="team_id" value={ perm.team.ID.String() } type="hidden"/>
+								<select name="role" id="role-select">
+									for _, role := range props.roles {
+										<option value={ role.String() } selected?={ perm.role.String() == role.String() }>{ role.String() }</option>
+									}
+								</select>
+								<button class="btn">Update</button>
+							</form>
+						</td>
+						<td>
+							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID.String()) } method="POST">
+								<input name="team_id" value={ perm.team.ID.String() } type="hidden"/>
+								<button class="btn-danger">Remove</button>
+							</form>
+						</td>
+					</tr>
+				}
+				<tr class="border-b">
+					<form id="permissions-add-form" class="horizontal-form" action={ paths.SetPermissionWorkspace(props.ws.ID.String()) } method="POST"></form>
+					<td class="p-2">
+						<select form="permissions-add-form" name="team_id" id="permissions-add-select-team">
+							<option value="">--team--</option>
+							for _, perm := range props.unassigned {
+								<option value={ perm.ID.String() }>{ perm.Name }</option>
+							}
+						</select>
+					</td>
+					<td class="p-2" id="permissions-add-role-container">
+						<select form="permissions-add-form" name="role" id="permissions-add-select-role">
+							<option value="">--role--</option>
+							for _, role := range props.roles {
+								<option value={ role.String() }>{ role.String() }</option>
+							}
+						</select>
+						<button class="btn" id="permissions-add-button" form="permissions-add-form">
+							Add
+						</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+}
+
+templ editTitle(ws *Workspace) {
+	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
+	/
+	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+	/
+	settings
+}
+
+templ workspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) {
+	{{
+	var links = map[string]templ.SafeURL{
+		"runs":      paths.Runs(workspaceID.String()),
+		"variables": paths.Variables(workspaceID.String()),
+	}
+	if canUpdate {
+		links["settings"] = paths.EditWorkspace(workspaceID.String())
+	}
+	}}
+	for text, link := range links {
+		<li>
+			<a class={ templ.KV("active", components.CurrentPath(ctx) == string(link)) } href={ link }>{ text }</a>
+		</li>
+	}
+}
+
+func magnifyingGlassStyle(ctx context.Context) (string, error) {
+	path, err := components.AssetPath(ctx, "/static/images/magnifying_glass.svg")
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("background-image: url(%s)", path), nil
+}
+
+func boolString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+func toJSON(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}

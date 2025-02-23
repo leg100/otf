@@ -11,7 +11,6 @@
   <script src="{{ addHash "/static/js/htmx-sse.2.2.2.js" }}"></script>
   <script defer src="{{ addHash "/static/js/alpine.3.14.8.min.js" }}"></script>
   {{ if devMode }}<script src="http://localhost:35729/livereload.js"></script>{{ end }}
-  <link rel="stylesheet" href="{{ addHash "/static/css/output.css" }}">
   <title>{{ .Title }} | otf</title>
 </head>
 <body class="flex flex-col m-0 min-h-screen font-sans">
@@ -53,19 +52,17 @@
   </header>
   <main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
     {{ block "container" . }}
-      {{ block "content-header" . }}
-        <div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
-          <div class="flex text-xl">
-            <span id="content-header-title">{{ block "content-header-title" . }}{{ end }}</span>
-          </div>
-          <div>
-            {{ block "content-header-actions" . }}{{ end }}
-          </div>
-          <ul class="flex grow items-center justify-end gap-4">
-            {{ block "content-header-links" . }}{{ end }}
-          </ul>
+      <div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
+        <div class="flex text-xl">
+          <span id="content-header-title">{{ block "content-header-title" . }}{{ end }}</span>
         </div>
-      {{ end }}
+        <div>
+          {{ block "content-header-actions" . }}{{ end }}
+        </div>
+        <ul class="flex grow items-center justify-end gap-4">
+          {{ block "content-header-links" . }}{{ end }}
+        </ul>
+      </div>
 
       {{ block "content-menu" . }}{{ end }}
 

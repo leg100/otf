@@ -1,6 +1,9 @@
 package http
 
-import "context"
+import (
+	"context"
+	"net/http"
+)
 
 type devModeKey struct{}
 
@@ -9,4 +12,13 @@ func DevModeFromContext(ctx context.Context) bool {
 		return mode
 	}
 	return false
+}
+
+type requestKey struct{}
+
+func RequestFromContext(ctx context.Context) *http.Request {
+	if r, ok := ctx.Value(requestKey{}).(*http.Request); ok {
+		return r
+	}
+	return nil
 }
