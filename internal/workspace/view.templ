@@ -123,7 +123,7 @@ templ get(props getProps) {
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
 		ContentTitle: getTitle(props.ws),
-		ContentLinks: workspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -237,7 +237,7 @@ templ edit(props editProps) {
 	layoutProps := components.LayoutProps{
 		Title:        "edit | " + props.ws.ID.String(),
 		ContentTitle: editTitle(props.ws),
-		ContentLinks: workspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -593,7 +593,7 @@ templ listVCSReposTitle(ws *Workspace) {
 	vcs repositories
 }
 
-templ workspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) {
+templ WorkspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) {
 	{{
 	var links = map[string]templ.SafeURL{
 		"runs":      paths.Runs(workspaceID.String()),

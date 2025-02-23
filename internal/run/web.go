@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -124,23 +125,15 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 
-	response := struct {
-		workspace.WorkspacePage
-		*resource.Page[*Run]
-		CanUpdateWorkspace bool
-	}{
-		WorkspacePage:      workspace.NewPage(r, "runs", ws),
-		Page:               runs,
-		CanUpdateWorkspace: canUpdateWorkspace,
+	props := listProps{
+		ws:                 ws,
+		page:               runs,
+		canUpdateWorkspace: canUpdateWorkspace,
 	}
-
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		if err := h.RenderTemplate("run_listing.tmpl", w, response); err != nil {
-			h.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		templ.Handler(list(props)).ServeHTTP(w, r)
 	} else {
-		h.Render("run_list.tmpl", w, response)
+		templ.Handler(list(props)).ServeHTTP(w, r)
 	}
 }
 

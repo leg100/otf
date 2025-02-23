@@ -1,0 +1,136 @@
+package run
+
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/workspace"
+	"strconv"
+	"time"
+)
+
+type listProps struct {
+	ws                 *workspace.Workspace
+	page               *resource.Page[*Run]
+	canUpdateWorkspace bool
+}
+
+templ list(props listProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        "runs",
+		ContentTitle: listTitle(props.ws),
+		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<!-- watch for updates to listed runs as well as newly created runs -->
+		<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
+			{{ /* if a new run is created then reload entire run listing */ }}
+			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
+			@components.ContentList(props.page.Items, widget)
+		</div>
+	}
+}
+
+templ widget(run *Run) {
+	<div sse-swap={ "run-item-" + run.ID.String() }>
+		<div x-data={ components.BlockLink(paths.Run(run.ID.String())) } class="widget">
+			<div>
+				@components.RunStatus(run.ID, run.Status.String())
+				if run.PlanOnly {
+					<span>| plan-only</span>
+				}
+				if run.IngressAttributes != nil {
+					<span class="inline-block max-w-[16rem] truncate">
+						| <a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>\@{ run.IngressAttributes.SenderUsername }</a>
+					</span>
+				} else if run.CreatedBy != nil {
+					<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
+						| @{ *run.CreatedBy }
+					</span>
+				}
+				<span>{ internal.Ago(time.Now(), run.CreatedAt) } ago</span>
+			</div>
+			<div>
+				<div class="flex gap-2 items-center">
+					@components.Identifier(run.ID)
+					@source(run)
+					if run.IngressAttributes != nil {
+						<div class="flex flex-wrap gap-2 items-center">
+							<span class="flex flex-wrap items-center gap-2 bg-gray-100 font-mono text-sm p-1">
+								<img class="h-5" src={ components.AssetPath(ctx, "/static/images/git_icon.svg") }/>
+								if run.IngressAttributes.IsPullRequest {
+									<a id="pull-request-link" href={ templ.SafeURL(run.IngressAttributes.PullRequestURL) } title={ run.IngressAttributes.PullRequestTitle }>#{ strconv.Itoa(run.IngressAttributes.PullRequestNumber) }</a> |
+								} else if run.IngressAttributes.Branch != "" {
+									<span class="inline-block max-w-[12rem] truncate" id="vcs-branch">{ run.IngressAttributes.Branch }</span>|
+								} else if run.IngressAttributes.Tag != "" {
+									<span class="inline-block max-w-[12rem] truncate" id="vcs-tag">{ run.IngressAttributes.Tag }</span>|
+								}
+								<a id="commit-sha-abbrev" href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>{ run.IngressAttributes.CommitSHA[:7] }</a>
+							</span>
+						</div>
+					}
+				</div>
+				<div class="flex gap-4 items-center justify-between">
+					if run.Apply.ResourceReport != nil {
+						@resourceReport(run.Apply.ResourceReport)
+					} else {
+						@resourceReport(run.Plan.ResourceReport)
+					}
+					if run.Status == RunPlanned {
+						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+							<button class="btn">apply</button>
+						</form>
+					}
+					if run.Cancelable() {
+						<form action={ paths.CancelRun(run.ID.String()) } method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+						</form>
+					} else if run.ForceCancelable() {
+						<form action={ paths.ForceCancelRun(run.ID.String()) } method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
+						</form>
+					} else if run.Discardable() {
+						<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+							<button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+						</form>
+					} else if run.CancelSignaledAt != nil && !run.Done() {
+						cancelling...
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ listTitle(ws *workspace.Workspace) {
+	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
+	/
+	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+	/
+	runs
+}
+
+templ resourceReport(report *Report) {
+	<div class="font-mono" id="resource-summary">
+		<span class="text-green-700">+{ strconv.Itoa(report.Additions) }</span>
+		<span class="text-blue-700">~{ strconv.Itoa(report.Changes) }</span>
+		<span class="text-red-700">-{ strconv.Itoa(report.Destructions) }</span>
+	</div>
+}
+
+templ source(run *Run) {
+	if run.IsAPISource() {
+		<img class="h-5 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src={ components.AssetPath(ctx, "/static/images/api_icon.png") }/>
+	} else if run.IsCLISource() {
+		<img class="h-5 bg-gray-300" id="run-trigger-cli" title="run triggered via the CLI" src={ components.AssetPath(ctx, "/static/images/cli_icon.svg") }/>
+	} else if run.IsGithubSource() {
+		<img class="h-5" id="run-trigger-github" title="run triggered via github" src={ components.AssetPath(ctx, "/static/images/github_icon.svg") }/>
+	} else if run.IsGitlabSource() {
+		<img class="h-5" id="run-trigger-gitlab" title="run triggered via gitlab" src={ components.AssetPath(ctx, "/static/images/gitlab_icon.svg") }/>
+	} else if run.IsUISource() {
+		<img class="h-5 bg-gray-300 p-0.5" id="run-trigger-ui" title="run triggered via the UI" src={ components.AssetPath(ctx, "/static/images/ui_icon.png") }/>
+	}
+}

@@ -498,7 +498,7 @@ func get(props getProps) templ.Component {
 		layoutProps := components.LayoutProps{
 			Title:        "workspaces",
 			ContentTitle: getTitle(props.ws),
-			ContentLinks: workspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		}
 		templ_7745c5c3_Var24 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -939,7 +939,7 @@ func edit(props editProps) templ.Component {
 		layoutProps := components.LayoutProps{
 			Title:        "edit | " + props.ws.ID.String(),
 			ContentTitle: editTitle(props.ws),
-			ContentLinks: workspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		}
 		templ_7745c5c3_Var47 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -2224,7 +2224,7 @@ func listVCSReposTitle(ws *Workspace) templ.Component {
 	})
 }
 
-func workspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) templ.Component {
+func WorkspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
