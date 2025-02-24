@@ -1,13 +1,13 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}profile{{ end }}
+{ define "content-header-title" }profile}
 
-{{ define "content-header-links" }}{{ template "profile-header" . }}{{ end }}
+{ define "content-header-links" }{ template "profile-header" . }}
 
-{{ define "content" }}
-  <p>You are logged in as <span class="bg-gray-200">{{ .User.Username }}</span></p>
+{ define "content" }
+  <p>You are logged in as <span class="bg-gray-200">{ .User.Username }</span></p>
   <br>
-  <form action="{{ logoutPath }}" method="POST">
+  <form action={ logoutPath } method="POST">
     <button class="btn" id="logout">logout</button>
   </form>
-{{ end }}
+}

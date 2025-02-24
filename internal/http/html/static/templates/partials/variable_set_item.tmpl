@@ -1,15 +1,15 @@
-{{ define "variable-set-item" }}
-  <div class="widget" id="item-variable-set-{{ .Name }}" x-data="block_link($el, '{{ editVariableSetPath .ID.String }}')">
-    <span id="name">{{ .Name }}</span>
+{ define "variable-set-item" }
+  <div class="widget" id="item-variable-set-{ .Name }" x-data="block_link($el, '{ editVariableSetPath .ID.String }')">
+    <span id="name">{ .Name }</span>
     <div>
-      {{ template "identifier" . }}
+      { template "identifier" . }
       <span>
-        {{ if .Global }}
+        { if .Global }
           global
-        {{ else }}
-          {{ len .Workspaces }} workspaces
-        {{ end }}
+        } else {
+          { len .Workspaces } workspaces
+        }
       </span>
     </div>
   </div>
-{{ end }}
+}

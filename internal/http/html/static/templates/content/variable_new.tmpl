@@ -1,11 +1,11 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  {{ template "workspace-variables-breadcrumb" . }} / new
-{{ end }}
+{ define "content-header-title" }
+  { template "workspace-variables-breadcrumb" . } / new
+}
 
-{{ define "content" }}
+{ define "content" }
   <span class="text-xl">Add a new workspace variable.</span>
 
-  {{ template "variable-form" . }}
-{{ end }}
+  { template "variable-form" . }
+}

@@ -5,20 +5,20 @@
           @click="activeTab = 'resources'"
           :class="{ 'bg-gray-200 text-black relative z-10': activeTab == 'resources' }"
           id="resources-label"
-      >Resources ({{ len .Resources }})</label>
+      >Resources ({ len .Resources })</label>
       <label
           class="p-2 border-x border-t border-black cursor-pointer" for="outputs-tab"
           @click="activeTab = 'outputs'"
           :class="{ 'bg-gray-200 text-black': activeTab == 'outputs' }"
           id="outputs-label"
-      >Outputs ({{ len .Outputs }})</label>
+      >Outputs ({ len .Outputs })</label>
   </div>
   <table
     x-show="activeTab == 'resources'"
     class="table-fixed w-full text-left break-words border-collapse"
     id="resources-table"
   >
-    {{ with .Resources }}
+    if .Resources {
       <thead class="bg-gray-200 border border-slate-900">
         <tr>
           <th>Name</th>
@@ -27,20 +27,20 @@
           <th>Module</th>
         </tr>
       </thead>
-    {{ end }}
+    }
     <tbody class="border border-slate-900">
-      {{ range .Resources }}
+      for k, v := range .Resources {
         <tr class="even:bg-gray-100">
-          <td>{{ .Name }}</td>
-          <td>{{ .Provider }}</td>
-          <td>{{ .Type }}</td>
-          <td>{{ .ModuleName }}</td>
+          <td>{ .Name }</td>
+          <td>{ .Provider }</td>
+          <td>{ .Type }</td>
+          <td>{ .ModuleName }</td>
         </tr>
-      {{ else }}
+      } else {
         <tr class="bg-gray-200">
           <td>No resources currently exist.</td>
         </tr>
-      {{ end }}
+      }
     </tbody>
   </table>
   <table
@@ -48,7 +48,7 @@
     class="table-fixed w-full text-left break-words border-collapse"
     id="outputs-table"
   >
-    {{ with .Outputs }}
+    if .Outputs {
       <thead class="bg-gray-200 border border-slate-900">
         <tr>
           <th>Name</th>
@@ -56,19 +56,19 @@
           <th>Value</th>
         </tr>
       </thead>
-    {{ end }}
+    }
     <tbody class="border border-slate-900">
-      {{ range $k, $v := .Outputs }}
+      for k, v := range $k, $v := .Outputs {
         <tr>
-          <td>{{ $k }}</td>
-          <td>{{ $v.Type }}</td>
-          <td><span class="bg-gray-200">{{ $v.StringValue }}</span></td>
+          <td>{ $k }</td>
+          <td>{ $v.Type }</td>
+          <td><span class="bg-gray-200">{ $v.StringValue }</span></td>
         </tr>
-      {{ else }}
+      } else {
         <tr class="bg-gray-200">
           <td>No outputs currently exist.</td>
         </tr>
-      {{ end }}
+      }
     </tbody>
   </table>
 </div>

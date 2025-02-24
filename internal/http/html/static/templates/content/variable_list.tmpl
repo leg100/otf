@@ -1,27 +1,27 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  {{ template "workspace-variables-breadcrumb" . }}
-{{ end }}
+{ define "content-header-title" }
+  { template "workspace-variables-breadcrumb" . }
+}
 
-{{ define "content-header-links" }}
-  {{ template "workspace-header-links" . }}
-{{ end }}
+{ define "content-header-links" }
+  { template "workspace-header-links" . }
+}
 
-{{ define "content" }}
-  <span class="text-lg my-2">Workspace Variables ({{ len .WorkspaceVariableTable.Variables }})</span>
-  {{ template "variable-table" .WorkspaceVariableTable }}
-  {{ if .CanCreateVariable }}
-    <form class="mt-2" action="{{ newVariablePath $.Workspace.ID.String }}" method="GET">
+{ define "content" }
+  <span class="text-lg my-2">Workspace Variables ({ len .WorkspaceVariableTable.Variables })</span>
+  { template "variable-table" .WorkspaceVariableTable }
+  { if .CanCreateVariable }
+    <form class="mt-2" action={ newVariablePath $.Workspace.ID.String } method="GET">
       <button class="btn">Add variable</button>
     </form>
-  {{ end }}
-  <span class="text-lg mt-4">Variable Sets ({{ len .VariableSetTables }})</span>
-  {{ range .VariableSetTables }}
-    <div class="flex flex-col gap-2" id="variable-set-{{ .Name }}">
-      {{ template "variable-set-item" . }}
-      {{ template "variable-table" . }}
+  }
+  <span class="text-lg mt-4">Variable Sets ({ len .VariableSetTables })</span>
+  for k, v := range .VariableSetTables {
+    <div class="flex flex-col gap-2" id="variable-set-{ .Name }">
+      { template "variable-set-item" . }
+      { template "variable-table" . }
     </div>
     <div class="my-2"></div>
-  {{ end }}
-{{ end }}
+  }
+}

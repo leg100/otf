@@ -1,11 +1,11 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  <a href="{{ teamsPath .Organization }}">teams</a> / new
-{{ end }}
+{ define "content-header-title" }
+  <a href="{ teamsPath .Organization }">teams</a> / new
+}
 
-{{ define "content" }}
-  <form class="flex flex-col gap-2" action="{{ createTeamPath .Organization }}" method="POST">
+{ define "content" }
+  <form class="flex flex-col gap-2" action={ createTeamPath .Organization } method="POST">
     <div class="field">
       <label for="name">Name</label>
       <input class="text-input w-80" type="text" name="name" id="name" required>
@@ -14,4 +14,4 @@
       <button class="btn" id="create-team-button">Create team</button>
     </div>
   </form>
-{{ end }}
+}

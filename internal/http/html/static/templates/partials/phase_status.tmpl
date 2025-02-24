@@ -1,4 +1,0 @@
-{{ define "phase-status" }}
-  {{ $statusColors := dict "finished" "bg-green-200" }}
-  <span id="{{ .PhaseType }}-status" class="{{ get $statusColors .Status.String }}" hx-swap-oob="true">{{ .Status.String }}</span>
-{{ end }}

@@ -1,10 +1,10 @@
-{{ define "content-list" }}
+{ define "content-list" }
   <div id="content-list" class="flex flex-col">
-    {{ range .Items }}
-      {{ block "content-list-item" . }}{{ end }}
-    {{ else }}
+    for k, v := range .Items {
+      { block "content-list-item" . }}
+    } else {
       No items currently exist.
-    {{ end }}
-    {{ template "page-navigation-links" . }}
+    }
+    { template "page-navigation-links" . }
   </div>
-{{ end }}
+}

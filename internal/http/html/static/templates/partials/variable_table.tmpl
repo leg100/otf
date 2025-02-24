@@ -1,4 +1,4 @@
-{{ define "variable-table" }}
+{ define "variable-table" }
   <table class="table-fixed w-full text-left break-words border-collapse" id="variables-table">
     <thead class="bg-gray-200 border-t border-b border-slate-900">
       <tr>
@@ -9,33 +9,33 @@
       </tr>
     </thead>
     <tbody class="border-b border-slate-900">
-      {{ range .Variables }}
+      for k, v := range .Variables {
         <tr class="even:bg-gray-100">
           <td class="p-2 flex flex-row gap-2">
-            {{ if $.IsOverwritten . }}
+            { if $.IsOverwritten . }
               <span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
               <s>
-            {{ end }}
-            <a class="underline" href="{{ $.EditPath .ID }}">{{ .Key }}</a>
-            {{ if $.IsOverwritten . }}
+            }
+            <a class="underline" href="{ $.EditPath .ID }">{ .Key }</a>
+            { if $.IsOverwritten . }
               </s>
-            {{ end }}
+            }
           </td>
-          <td class="p-2">{{ if .Sensitive }}<span class="bg-gray-200">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
-          <td class="p-2">{{ .Category }}</td>
+          <td class="p-2">{ if .Sensitive }<span class="bg-gray-200">hidden</span>} else {{ .Value }}</td>
+          <td class="p-2">{ .Category }</td>
           <td class="p-2 text-right">
-            {{ if $.CanDeleteVariable }}
-              <form action="{{ $.DeletePath .ID }}" method="POST">
+            { if $.CanDeleteVariable }
+              <form action={ $.DeletePath .ID } method="POST">
                 <button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
               </form>
-            {{ end }}
+            }
           </td>
         </tr>
-      {{ else }}
+      } else {
         <tr>
           <td>No variables currently exist.</td>
         </tr>
-      {{ end }}
+      }
     </tbody>
   </table>
-{{ end }}
+}

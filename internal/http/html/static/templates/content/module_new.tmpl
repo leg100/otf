@@ -1,93 +1,93 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  <a href="{{ modulesPath .Organization }}">modules</a> / new
-{{ end }}
+{ define "content-header-title" }
+  <a href="{ modulesPath .Organization }">modules</a> / new
+}
 
-{{ define "content" }}
+{ define "content" }
   <div class="flex gap-6 items-center mb-5">
-    <div class="{{ if eq .Step "connect-vcs" }}text-black{{ else }}text-gray-400{{ end }}">
-      <a href="{{ newModulePath .Organization }}?step=connect-vcs">
+    <div class="{ if eq .Step "connect-vcs" }text-black} else {text-gray-400}">
+      <a href="{ newModulePath .Organization }?step=connect-vcs">
         1. connect vcs
       </a>
     </div>
-    <div class="{{ if eq .Step "select-repo" }}text-black{{ else }}text-gray-400{{ end }}">
+    <div class="{ if eq .Step "select-repo" }text-black} else {text-gray-400}">
       2. select repo
     </div>
-    <div class="{{ if eq .Step "confirm-selection" }}text-black{{ else }}text-gray-400{{ end }}">
+    <div class="{ if eq .Step "confirm-selection" }text-black} else {text-gray-400}">
       3. confirm selection
     </div>
   </div>
-  {{ if eq .Step "connect-vcs" }}
+  { if eq .Step "connect-vcs" }
     <h3 class="font-semibold">Connect to a version control provider</h2>
     <div>
       Choose a VCS provider that hosts your module source code.
     </div>
     <div id="content-list">
-      {{ range .Items }}
+      for k, v := range .Items {
         <div class="widget">
           <div>
-            <span>{{ .String }}</span>
-            <span>{{ durationRound .CreatedAt }} ago</span>
+            <span>{ .String }</span>
+            <span>{ durationRound .CreatedAt } ago</span>
           </div>
           <div>
-            {{ template "identifier" . }}
-            <form action="{{ newModulePath $.Organization }}" method="GET">
+            { template "identifier" . }
+            <form action={ newModulePath $.Organization } method="GET">
               <input type="hidden" name="step" id="select-repo-step" value="select-repo">
-              <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .ID }}">
+              <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{ .ID }">
               <button class="btn">connect</button>
             </form>
           </div>
         </div>
-      {{ else }}
+      } else {
         No VCS providers are currently configured.
-      {{ end }}
+      }
     </div>
-  {{ else if eq .Step "select-repo" }}
+  { else if eq .Step "select-repo" }
     <h3 class="font-semibold">Choose a repository</h2>
     <div>
-      Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be {{ "terraform-<PROVIDER>-<NAME>" }}.
+      Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be { "terraform-<PROVIDER>-<NAME>" }.
     </div>
-    <form action="{{ newModulePath $.Organization }}" method="GET">
-      <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .VCSProviderID }}">
+    <form action={ newModulePath $.Organization } method="GET">
+      <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{ .VCSProviderID }">
       <input type="hidden" name="step" id="select-repo-step" value="confirm-selection">
       <input class="text-input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
       <button class="btn">connect</button>
     </form>
 
     <div id="content-list">
-      {{ range .Repos }}
+      for k, v := range .Repos {
         <div class="widget">
           <div>
-            <span>{{ . }}</span>
-            <form action="{{ newModulePath $.Organization }}" method="GET">
-              <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.VCSProviderID }}">
+            <span>{ . }</span>
+            <form action={ newModulePath $.Organization } method="GET">
+              <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{ $.VCSProviderID }">
               <input type="hidden" name="step" id="select-repo-step" value="confirm-selection">
-              <input type="hidden" name="identifier" id="identifier" value="{{ . }}">
+              <input type="hidden" name="identifier" id="identifier" value="{ . }">
               <button class="btn">connect</button>
             </form>
           </div>
         </div>
-      {{ else }}
+      } else {
         No repositories found.
-      {{ end }}
+      }
     </div>
-  {{ else if eq .Step "confirm-selection" }}
+  { else if eq .Step "confirm-selection" }
     <h3 class="font-semibold">Confirm module details</h2>
     <div>
       <div>
-        <span class="font-semibold">Provider:</span> {{ .VCSProvider.Kind }}
+        <span class="font-semibold">Provider:</span> { .VCSProvider.Kind }
       </div>
       <div>
-        <span class="font-semibold">Repository:</span> {{ .Repo }}
+        <span class="font-semibold">Repository:</span> { .Repo }
       </div>
     </div>
     <div>
-      <form action="{{ createModulePath $.Organization }}" method="POST">
-        <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .VCSProvider.ID }}">
-        <input type="hidden" name="identifier" id="identifier" value="{{ .Repo }}">
+      <form action={ createModulePath $.Organization } method="POST">
+        <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{ .VCSProvider.ID }">
+        <input type="hidden" name="identifier" id="identifier" value="{ .Repo }">
         <button class="btn">connect</button>
       </form>
     </div>
-  {{ end }}
-{{ end }}
+  }
+}

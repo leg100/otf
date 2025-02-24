@@ -1,10 +1,10 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}Create Github App{{ end }}
+{ define "content-header-title" }Create Github App}
 
-{{ define "content" }}
-  <script src="{{ addHash "/static/js/github_apps_new.js" }}"></script>
-  <div x-data="action('{{ .GithubHostname }}', '{{ .Manifest }}')">
+{ define "content" }
+  <script src={ components.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
+  <div x-data="action('{ .GithubHostname }', '{ .Manifest }')">
     <form class="flex flex-col gap-4" :action="action" method="post">
       <div class="field">
         <label for="organization">Organization</label>
@@ -22,4 +22,4 @@
       <button class="btn w-40">Create</button>
     </form>
   </div>
-{{ end }}
+}

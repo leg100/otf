@@ -1,11 +1,11 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "container" }}
-  {{ template "flash" . }}
+{ define "container" }
+  { template "flash" . }
   <div class="m-auto">
     <div class="flex flex-col justify-center items-center gap-2">
       <h2 class="font-semibold text-lg">Authorize App</h2>
-      Hi {{ .CurrentUser }},
+      Hi { .CurrentUser },
       <span>
         <span class="bg-gray-200">terraform</span> is requesting access to your OTF user account.
       </span>
@@ -15,4 +15,4 @@
       </form>
     </div>
   </div>
-{{ end }}
+}

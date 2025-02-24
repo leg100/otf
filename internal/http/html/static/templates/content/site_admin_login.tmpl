@@ -1,7 +1,7 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "container" }}
-  {{ template "flash" . }}
+{ define "container" }
+  { template "flash" . }
   <div class="m-auto">
     <form class="flex flex-col gap-2" action="/admin/login" method="POST">
       <div class="field">
@@ -13,4 +13,4 @@
       </div>
     </form>
   </div>
-{{ end }}
+}

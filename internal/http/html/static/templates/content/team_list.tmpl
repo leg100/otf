@@ -1,30 +1,30 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}teams{{ end }}
+{ define "content-header-title" }teams}
 
-{{ define "content-header-actions" }}
-  {{ if .CanCreateTeam }}
-    <form action="{{ newTeamPath .Organization }}" method="GET">
+{ define "content-header-actions" }
+  { if .CanCreateTeam }
+    <form action={ newTeamPath .Organization } method="GET">
       <button class="btn" id="new-team-button">
         New Team
       </button>
     </form>
-  {{ end }}
-{{ end }}
+  }
+}
 
-{{ define "content" }}
+{ define "content" }
   <div id="content-list">
-    {{ range .Teams }}
-      <div id="item-team-{{ .Name }}" class="widget" x-data="block_link($el, '{{ teamPath .ID.String }}')">
+    for k, v := range .Teams {
+      <div id="item-team-{ .Name }" class="widget" x-data="block_link($el, '{ teamPath .ID.String }')">
         <div>
-          <span>{{ .Name }}</span>
+          <span>{ .Name }</span>
         </div>
         <div>
-          {{ template "identifier" . }}
+          { template "identifier" . }
         </div>
       </div>
-    {{ else }}
+    } else {
       No teams currently exist.
-    {{ end }}
+    }
   </div>
-{{ end }}
+}

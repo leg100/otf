@@ -1,9 +1,9 @@
-{{ define "search-dropdown" }}
-  {{ $width := dict "narrow" "w-40" "wide" "w-80" }}
-  <script src="{{ addHash "/static/js/search_dropdown.js" }}"></script>
-  <form id="search-dropdown" action="{{ .Action }}" method="POST"></form>
+{ define "search-dropdown" }
+  { $width := dict "narrow" "w-40" "wide" "w-80" }
+  <script src={ components.AssetPath(ctx, "/static/js/search_dropdown.js") }></script>
+  <form id="search-dropdown" action={ .Action } method="POST"></form>
   <div
-      x-data="search_dropdown({{ toJson .Existing }}, {{ toJson .Available }})"
+      x-data="search_dropdown({ toJson .Existing }, { toJson .Available })"
       x-ref="searchdrop"
       @keydown.escape.prevent.stop="close($refs.input-search)"
       @focusin.window="! $refs.searchdrop.contains($event.target) && close()"
@@ -11,7 +11,7 @@
       x-id="['dropdown-button']"
       class="relative"
       >
-    <input type="hidden" name="{{ .Name }}" :value="search" form="search-dropdown">
+    <input type="hidden" name="{ .Name }" :value="search" form="search-dropdown">
     <input
         @focusin="open = true"
         x-model="search"
@@ -20,8 +20,8 @@
         @click="open = true"
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"
-        class="flex items-center {{ get $width (toString .Width) }} gap-2 bg-white px-2 py-1 border"
-        placeholder="{{ .Placeholder }}"
+        class="flex items-center { get $width (toString .Width) } gap-2 bg-white px-2 py-1 border"
+        placeholder="{ .Placeholder }"
         form="search-dropdown"
         >
     <div
@@ -30,7 +30,7 @@
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
-        class="absolute flex flex-col {{ get $width (toString .Width) }} mt-1 bg-white overflow-x-auto border border-black"
+        class="absolute flex flex-col { get $width (toString .Width) } mt-1 bg-white overflow-x-auto border border-black"
         >
         <span class="text-left py-1 px-2 text-gray-600 italic" x-show="existing?.includes(search)">
           <span x-text="search"></span> already added
@@ -44,4 +44,4 @@
         </template>
     </div>
   </div>
-{{ end }}
+}

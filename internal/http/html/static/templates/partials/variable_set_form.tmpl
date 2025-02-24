@@ -1,29 +1,29 @@
-{{ define "variable-set-form" }}
-  <form class="flex flex-col gap-5" action="{{ .FormAction }}" method="POST">
-    {{ with .VariableSet }}
+{ define "variable-set-form" }
+  <form class="flex flex-col gap-5" action={ .FormAction } method="POST">
+    if .VariableSet {
       <div class="field">
         <label class="font-semibold" for="name">Name</label>
-        <input class="text-input" type="text" name="name" id="name" value="{{ .Name }}" required placeholder="name">
+        <input class="text-input" type="text" name="name" id="name" value="{ .Name }" required placeholder="name">
       </div>
       <div class="field">
         <label class="font-semibold" for="description">Description</label>
-        <textarea class="text-input" type="text" name="description" id="description">{{ .Description }}</textarea>
+        <textarea class="text-input" type="text" name="description" id="description">{ .Description }</textarea>
       </div>
       <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
         <legend>Scope</legend>
         <div class="form-checkbox">
-          <input type="radio" name="global" id="global" value="true" {{ checked .Global }} required>
+          <input type="radio" name="global" id="global" value="true" { checked .Global } required>
           <label for="global">Global</label>
           <span class="description">All current and future workspaces in this organization will access this variable set.</span>
         </div>
         <div class="form-checkbox">
-          <input class="peer" type="radio" name="global" value="false" id="workspace-scoped" {{ checked (not .Global) }} required>
+          <input class="peer" type="radio" name="global" value="false" id="workspace-scoped" { checked (not .Global) } required>
           <label for="workspace-scoped">Apply to specific workspaces</label>
           <span class="col-start-2 description">Only the selected workspaces will access this variable set.</span>
-          <script src="{{ addHash "/static/js/dropdown.js" }}"></script>
+          <script src={ components.AssetPath(ctx, "/static/js/dropdown.js") }></script>
           <div
             class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
-            x-data="dropdown({{ toJson $.ExistingWorkspaces }}, {{ toJson $.AvailableWorkspaces }})"
+            x-data="dropdown({ toJson $.ExistingWorkspaces }, { toJson $.AvailableWorkspaces })"
             x-ref="workspace_select"
             @keydown.escape.prevent.stop="close($refs.workspace_input)"
             @focusin.window="! $refs.workspace_select.contains($event.target) && close()"
@@ -56,7 +56,7 @@
               <template x-for="item in existing">
                 <div class="flex p-1 gap-1 bg-gray-200 group">
                   <span class="" x-text="item.name"></span>
-                  <button @click="deleteItem(item)" type="button" class="group-hover:bg-gray-400" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                  <button @click="deleteItem(item)" type="button" class="group-hover:bg-gray-400" id="button-remove-tag-{ . }" class="delete cross">x</button>
                 </div>
               </template>
             </div>
@@ -68,6 +68,6 @@
           Save variable set
         </button>
       </div>
-    {{ end }}
+    }
   </form>
-{{ end }}
+}

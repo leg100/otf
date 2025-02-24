@@ -1,76 +1,76 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  <a href="{{ modulesPath .Organization }}">modules</a> / {{ .Module.Name }}
-{{ end }}
+{ define "content-header-title" }
+  <a href="{ modulesPath .Organization }">modules</a> / { .Module.Name }
+}
 
-{{ define "content" }}
+{ define "content" }
   <div class="flex flex-col gap-4">
-    {{ if eq .Module.Status .ModuleStatusPending }}
+    { if eq .Module.Status .ModuleStatusPending }
       Module status is still pending.
-    {{ else if eq .Module.Status .ModuleStatusNoVersionTags }}
+    { else if eq .Module.Status .ModuleStatusNoVersionTags }
       Module source repository has no tags.
-    {{ else if eq .Module.Status .ModuleStatusSetupFailed }}
+    { else if eq .Module.Status .ModuleStatusSetupFailed }
       Module setup failed.
-    {{ else if eq .Module.Status .ModuleStatusSetupComplete }}
-      <div class="flex gap-4 items-center"> <form class="flex gap-2 items-center" action="{{ modulePath .Module.ID.String }}" method="GET">
+    { else if eq .Module.Status .ModuleStatusSetupComplete }
+      <div class="flex gap-4 items-center"> <form class="flex gap-2 items-center" action={ modulePath .Module.ID.String } method="GET">
           <label>Version</label>
           <select class="w-32" name="version" id="version" onchange="this.form.submit()">
-            {{ range reverse .Module.AvailableVersions }}
-              {{ if eq .Status $.ModuleVersionStatusOK }}
-                <option value="{{ .Version }}" {{ selected .Version $.CurrentVersion.Version }}>{{ .Version }}</option>
-              {{ end }}
-            {{ end }}
+            for k, v := range reverse .Module.AvailableVersions {
+              { if eq .Status $.ModuleVersionStatusOK }
+                <option value="{ .Version }" { selected .Version $.CurrentVersion.Version }>{ .Version }</option>
+              }
+            }
           </select>
         </form>
-        {{ with .Module.Connection }}
+        if .Module.Connection {
           <div>
-            Source <span class="bg-gray-200" id="vcs-repo">{{ .Repo }}</span>
+            Source <span class="bg-gray-200" id="vcs-repo">{ .Repo }</span>
           </div>
-        {{ end }}
+        }
       </div>
       <div>
         <h3 class="font-semibold">
         <div class="flex flex-col gap-2">
           <label for="usage">Usage</label>
           <textarea class="text-input font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
-  module "{{ .Module.Name }}" {
-    source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
-    version = "{{ .CurrentVersion.Version }}"
+  module "{ .Module.Name }" {
+    source  = "{ .Hostname }/{ .Organization }/{ .Module.Name }/{ .Module.Provider }"
+    version = "{ .CurrentVersion.Version }"
   }
           </textarea>
         </div>
       </div>
       <div>
-        {{ trimHTML .Readme }}
+        { trimHTML .Readme }
       </div>
       <div>
         <h3 class="font-semibold">Resources</h3>
-        {{ range $k, $v := .TerraformModule.ManagedResources }}
+        for k, v := range $k, $v := .TerraformModule.ManagedResources {
           <div>
-            <span class="bg-gray-200">{{ $k }}</span>
+            <span class="bg-gray-200">{ $k }</span>
           </div>
-        {{ end }}
+        }
       </div>
       <div>
         <h3 class="font-semibold">Variables</h3>
-        {{ range $k, $v := .TerraformModule.Variables }}
+        for k, v := range $k, $v := .TerraformModule.Variables {
           <div>
-            <span class="bg-gray-200">{{ $k }}</span>
+            <span class="bg-gray-200">{ $k }</span>
           </div>
-        {{ end }}
+        }
       </div>
       <div>
         <h3 class="font-semibold">Outputs</h3>
-        {{ range $k, $v := .TerraformModule.Outputs }}
+        for k, v := range $k, $v := .TerraformModule.Outputs {
           <div>
-            <span class="bg-gray-200">{{ $k }}</span>
+            <span class="bg-gray-200">{ $k }</span>
           </div>
-        {{ end }}
+        }
       </div>
-    {{ end }}
-    <form id="module-delete-button" action="{{ deleteModulePath .Module.ID.String }}" method="POST">
+    }
+    <form id="module-delete-button" action={ deleteModulePath .Module.ID.String } method="POST">
       <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
     </form>
   </div>
-{{ end }}
+}

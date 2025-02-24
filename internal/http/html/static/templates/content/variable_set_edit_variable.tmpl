@@ -1,15 +1,15 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  <a href="{{ variableSetsPath .VariableSet.Organization }}">variable sets</a> /
-  <a href="{{ editVariableSetPath .VariableSet.ID.String }}">{{ .VariableSet.Name }}</a> /
+{ define "content-header-title" }
+  <a href="{ variableSetsPath .VariableSet.Organization }">variable sets</a> /
+  <a href="{ editVariableSetPath .VariableSet.ID.String }">{ .VariableSet.Name }</a> /
   variables /
-  {{ .Variable.ID }} /
+  { .Variable.ID } /
   edit
-{{ end }}
+}
 
-{{ define "content" }}
+{ define "content" }
   <span class="text-xl">Edit variable.</span>
 
-  {{ template "variable-form" . }}
-{{ end }}
+  { template "variable-form" . }
+}

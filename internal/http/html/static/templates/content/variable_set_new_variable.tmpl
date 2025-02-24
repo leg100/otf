@@ -1,11 +1,11 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}
-  <a href="{{ variableSetsPath .VariableSet.Organization }}">variable sets</a> / new variable
-{{ end }}
+{ define "content-header-title" }
+  <a href="{ variableSetsPath .VariableSet.Organization }">variable sets</a> / new variable
+}
 
-{{ define "content" }}
+{ define "content" }
   <span class="text-xl">Add new variable to variable set.</span>
 
-  {{ template "variable-form" . }}
-{{ end }}
+  { template "variable-form" . }
+}

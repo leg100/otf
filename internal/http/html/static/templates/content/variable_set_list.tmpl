@@ -1,23 +1,23 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}variable sets{{ end }}
+{ define "content-header-title" }variable sets}
 
-{{ define "content-header-actions" }}
-  {{ if .CanCreate }}
-    <form action="{{ newVariableSetPath .Organization }}" method="GET">
+{ define "content-header-actions" }
+  { if .CanCreate }
+    <form action={ newVariableSetPath .Organization } method="GET">
       <button class="btn" id="new-variable-set-button">
         New Variable Set
       </button>
     </form>
-  {{ end }}
-{{ end }}
+  }
+}
 
-{{ define "content" }}
+{ define "content" }
   <div id="content-list">
-    {{ range .VariableSets }}
-      {{ template "variable-set-item" . }}
-    {{ else }}
+    for k, v := range .VariableSets {
+      { template "variable-set-item" . }
+    } else {
       No variable sets currently exist.
-    {{ end }}
+    }
   </div>
-{{ end }}
+}

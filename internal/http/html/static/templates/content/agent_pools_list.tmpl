@@ -1,8 +1,8 @@
-{{ template "layout" . }}
+{ template "layout" . }
 
-{{ define "content-header-title" }}agent pools{{ end }}
+{ define "content-header-title" }agent pools}
 
-{{ define "content" }}
+{ define "content" }
   <div class="description w-3/4">
     An agent pool is a group of <span class="bg-gray-200 font-mono p-0.5 text-xs">otf-agent</span> processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the <span class="font-bold">agent</span> execution mode, any available agent in that workspace's associated agent pool is eligible to complete the run.
   </div>
@@ -10,7 +10,7 @@
     <summary class="cursor-pointer py-2">
       <span class="font-semibold">New agent pool</span>
     </summary>
-    <form class="flex flex-col gap-5" action="{{ createAgentPoolPath .Organization }}" method="POST">
+    <form class="flex flex-col gap-5" action={ createAgentPoolPath .Organization } method="POST">
       <div class="field">
         <label for="name">Name</label>
         <input class="text-input w-3/4" rows="3" type="text" name="name" id="new-pool-name" required>
@@ -22,17 +22,17 @@
     </form>
     <hr class="my-4">
   </details>
-  {{ template "content-list" . }}
-{{ end }}
+  { template "content-list" . }
+}
 
-{{ define "content-list-item" }}
-  <div x-data="block_link($el, '{{ agentPoolPath .ID.String }}')" id="{{ .ID.String }}" class="widget">
+{ define "content-list-item" }
+  <div x-data="block_link($el, '{ agentPoolPath .ID.String }')" id="{ .ID.String }" class="widget">
     <div>
-      <span>{{ .Name }}</span>
-      <span>{{ durationRound .CreatedAt }} ago</span>
+      <span>{ .Name }</span>
+      <span>{ durationRound .CreatedAt } ago</span>
     </div>
     <div>
-      {{ template "identifier" . }}
+      { template "identifier" . }
     </div>
   </div>
-{{ end }}
+}
