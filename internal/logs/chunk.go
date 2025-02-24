@@ -3,7 +3,6 @@ package logs
 import (
 	"context"
 	"fmt"
-	"html/template"
 
 	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/leg100/otf/internal"
@@ -90,7 +89,7 @@ func (c Chunk) IsEnd() bool {
 	return len(c.Data) > 0 && c.Data[len(c.Data)-1] == ETX
 }
 
-func (c Chunk) ToHTML() template.HTML {
+func (c Chunk) ToHTML() string {
 	// remove ASCII markers
 	if c.IsStart() {
 		c.Data = c.Data[1:]
@@ -102,5 +101,5 @@ func (c Chunk) ToHTML() template.HTML {
 	// convert ANSI escape sequences to HTML
 	html := term2html.Render(c.Data)
 
-	return template.HTML(string(html))
+	return string(html)
 }

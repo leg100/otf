@@ -1,12 +1,15 @@
 package run
 
 import (
+	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -27,11 +30,109 @@ templ list(props listProps) {
 	@components.Layout(layoutProps) {
 		<!-- watch for updates to listed runs as well as newly created runs -->
 		<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
-			{{ /* if a new run is created then reload entire run listing */ }}
+			<!-- /* if a new run is created then reload entire run listing */ -->
 			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
 			@components.ContentList(props.page.Items, widget)
 		</div>
 	}
+}
+
+templ listTitle(ws *workspace.Workspace) {
+	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
+	/
+	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+	/
+	runs
+}
+
+type getProps struct {
+	run       *Run
+	ws        *workspace.Workspace
+	planLogs  logs.Chunk
+	applyLogs logs.Chunk
+}
+
+templ get(props getProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        props.run.ID.String(),
+		ContentTitle: getTitle(props.ws, props.run),
+		PreContent:   getPreContent(),
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<div class="flex gap-4 text-sm">
+			<div>Terraform version: <span class="bg-gray-200 p-0.5">{ props.run.TerraformVersion }</span></div>
+			<div id="elapsed-time">Elapsed time: @runningTime(props.run)</div>
+		</div>
+		@periodReport(props.run)
+		<div class="flex flex-col gap-4">
+			<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) + "?run_id=" + props.run.ID.String() }>
+				@widget(props.run)
+			</div>
+			<details id="plan" open>
+				<summary class="cursor-pointer py-2">
+					<div class="inline-flex gap-2">
+						<span class="font-semibold">plan</span>
+						@phaseStatus(props.run.Plan)
+						<span>
+							@runningTime(props.run.Plan)
+						</span>
+					</div>
+				</summary>
+				<div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+					{ strings.TrimSpace(props.planLogs.ToHTML()) }
+					<div id="tailed-plan-logs"></div>
+				</div>
+			</details>
+			<details id="apply" open>
+				<summary class="cursor-pointer py-2">
+					<span class="font-semibold">apply</span>
+					@phaseStatus(props.run.Apply)
+					<span>
+						@runningTime(props.run.Apply)
+					</span>
+				</summary>
+				<div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+					{ strings.TrimSpace(props.applyLogs.ToHTML()) }
+					<div id="tailed-apply-logs"></div>
+				</div>
+			</details>
+			<hr class="my-4"/>
+			<div id="run-actions-container" class="border p-2">
+				@actions(props.run)
+			</div>
+		</div>
+	}
+}
+
+templ getPreContent() {
+	<link rel="stylesheet" href={ components.AssetPath(ctx, "/static/css/terminal.css") }/>
+	<script src={ components.AssetPath(ctx, "/static/js/tail.js") }></script>
+	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
+}
+
+templ getPostContent(props getProps) {
+	if !props.planLogs.IsEnd() {
+		<script type="text/javascript">
+      setupTail({ paths.TailRun(props.run.ID.String()) }, 'plan', { props.PlanLogs.NextOffset() });
+    </script>
+	}
+	if !props.applyLogs.IsEnd() {
+		<script type="text/javascript">
+      setupTail({ paths.TailRun(props.run.ID.String9)) }, 'apply', { props.ApplyLogs.NextOffset() });
+    </script>
+	}
+}
+
+templ getTitle(ws *workspace.Workspace, run *Run) {
+	<a href={ paths.Workspaces(run.Organization) }>workspaces</a>
+	/
+	<a href={ paths.Workspace(run.WorkspaceID.String()) }>{ ws.Name }</a>
+	/
+	<a href={ paths.Runs(run.WorkspaceID.String()) }>{ ws.Name }</a>
+	/
+	{ run.ID.String() }
 }
 
 templ widget(run *Run) {
@@ -105,12 +206,70 @@ templ widget(run *Run) {
 	</div>
 }
 
-templ listTitle(ws *workspace.Workspace) {
-	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
-	/
-	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
-	/
-	runs
+templ actions(run *Run) {
+	<div class="flex gap-2" id="run-actions" hx-swap-oob="true">
+		if run.Status == RunPlanned {
+			<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+				<button class="btn">apply</button>
+			</form>
+			<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+				<button class="btn">discard</button>
+			</form>
+		} else if run.Done() {
+			<form action={ paths.RetryRun(run.ID.String()) } method="POST">
+				<button class="btn">retry run</button>
+			</form>
+		}
+	</div>
+}
+
+templ runningTime(phase Phase) {
+	if phase.HasStarted() {
+		{{ elapsed := phase.ElapsedTime(time.Now()) }}
+		<span
+			id={ "running-time-" + phase.String() }
+			hx-swap-oob="true"
+			class="text-sm bg-gray-200 p-0.5"
+			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %f, %s", phase.StartedAt(), elapsed.Milliseconds, boolString(phase.Done())) }
+			x-text="formatDuration(elapsed)"
+		>
+			{ strconv.Itoa(int(elapsed)) }
+		</span>
+	} else {
+		<span id={ "running-time-" + phase.String() }></span>
+	}
+}
+
+var periodStatusColors = map[string]string{
+	"pending":              "bg-yellow-50",
+	"plan_queued":          "bg-yellow-200",
+	"planning":             "bg-violet-200",
+	"planned":              "bg-violet-400",
+	"planned_and_finished": "bg-green-100",
+	"applying":             "bg-cyan-200",
+}
+
+templ periodReport(run *Run) {
+	{{ report := run.PeriodReport(time.Now()) }}
+	<div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
+		for i := range report.Periods {
+			<div
+				style={ fmt.Sprintf("width: %f%", report.Percentage(i)) }
+				class={ "inline-block", "h-full",  periodStatusColors[run.Status.String()] }
+			></div>
+		}
+		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
+			<ul class="flex gap-4 flex-wrap text-sm">
+				for _, period := range report.Periods {
+					<li class="">
+						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[run.Status.String()] }></div>
+						<span>{ period.Status.String() }</span>
+						<span>({ period.Period.String() })</span>
+					</li>
+				}
+			</ul>
+		</div>
+	</div>
 }
 
 templ resourceReport(report *Report) {
@@ -133,4 +292,21 @@ templ source(run *Run) {
 	} else if run.IsUISource() {
 		<img class="h-5 bg-gray-300 p-0.5" id="run-trigger-ui" title="run triggered via the UI" src={ components.AssetPath(ctx, "/static/images/ui_icon.png") }/>
 	}
+}
+
+var phaseStatusColors = map[PhaseStatus]string{
+	PhaseFinished: "bg-green-200",
+}
+
+templ phaseStatus(phase Phase) {
+	<span id={ string(phase.PhaseType) + "-status" } class={ phaseStatusColors[phase.Status] } hx-swap-oob="true">
+		{ phase.Status.String() }
+	</span>
+}
+
+func boolString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }

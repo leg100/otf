@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
@@ -124,14 +125,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
-
 	props := listProps{
 		ws:                 ws,
 		page:               runs,
 		canUpdateWorkspace: canUpdateWorkspace,
 	}
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		templ.Handler(list(props)).ServeHTTP(w, r)
+		templ.Handler(components.ContentList(runs.Items, widget)).ServeHTTP(w, r)
 	} else {
 		templ.Handler(list(props)).ServeHTTP(w, r)
 	}
@@ -149,6 +149,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, "retrieving run: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
 		h.Error(w, "retrieving workspace: "+err.Error(), http.StatusInternalServerError)
@@ -167,17 +168,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_get.tmpl", w, struct {
-		workspace.WorkspacePage
-		Run       *Run
-		PlanLogs  logs.Chunk
-		ApplyLogs logs.Chunk
-	}{
-		WorkspacePage: workspace.NewPage(r, run.ID.String(), ws),
-		Run:           run,
-		PlanLogs:      logs.Chunk{Data: planLogs},
-		ApplyLogs:     logs.Chunk{Data: applyLogs},
-	})
+	props := getProps{
+		run:       run,
+		ws:        ws,
+		planLogs:  logs.Chunk{Data: planLogs},
+		applyLogs: logs.Chunk{Data: applyLogs},
+	}
+	templ.Handler(get(props)).ServeHTTP(w, r)
 }
 
 // getWidget renders a run "widget", i.e. the container that

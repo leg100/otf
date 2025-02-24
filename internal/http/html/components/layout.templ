@@ -12,10 +12,17 @@ type LayoutProps struct {
 	ContentActions templ.Component
 	ContentLinks   templ.Component
 	ContentMenu    templ.Component
+	PreContent     templ.Component
+	PostContent    templ.Component
 }
 
 templ Layout(props LayoutProps) {
-	@BareLayout(BareLayoutProps{Title: props.Title, Organization: props.Organization}) {
+	@BareLayout(BareLayoutProps{
+		Title:        props.Title,
+		Organization: props.Organization,
+		PreContent:   props.PreContent,
+		PostContent:  props.PostContent,
+	}) {
 		<div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
 			<div class="flex text-xl">
 				<span id="content-header-title">
@@ -45,6 +52,8 @@ templ Layout(props LayoutProps) {
 type BareLayoutProps struct {
 	Title        string
 	Organization string
+	PreContent   templ.Component
+	PostContent  templ.Component
 }
 
 templ BareLayout(props BareLayoutProps) {
@@ -53,6 +62,9 @@ templ BareLayout(props BareLayoutProps) {
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			if props.PreContent != nil {
+				@props.PreContent
+			}
 			<title>{ props.Title } | otf</title>
 			<link rel="icon" type="image/svg+xml" href={ AssetPath(ctx, "/static/images/icon.svg") }/>
 			<script src={ AssetPath(ctx, "/static/js/main.js") }></script>
@@ -67,6 +79,9 @@ templ BareLayout(props BareLayoutProps) {
 				{ children... }
 			</main>
 			@footer()
+			if props.PostContent != nil {
+				@props.PostContent
+			}
 		</body>
 	</html>
 }
