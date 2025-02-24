@@ -1,7 +1,7 @@
 { template "layout" . }
 
 { define "content-header-title" }
-  <a href="{ teamsPath .Organization }">teams</a>
+  <a href={ teamsPath .Organization }>teams</a>
   /
 { .Team.Name }}
 
@@ -67,7 +67,7 @@
           { template "identifier" . }
           { if $.CanRemoveMember }
             <form action={ removeMemberTeamPath $.Team.ID.String } method="POST">
-              <input type="hidden" name="username" id="delete-username" value="{ .Username }">
+              <input type="hidden" name="username" id="delete-username" value={ .Username }>
               <button id="remove-member-button" class="btn-danger">
                 Remove member
               </button>
@@ -85,7 +85,7 @@
     <form action={ deleteTeamPath .Team.ID.String } method="POST">
       <button class="btn-danger"
         onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
-      <input type="hidden" name="id" value="{ .Team.ID }">
+      <input type="hidden" name="id" value={ .Team.ID }>
     </form>
   }
 }

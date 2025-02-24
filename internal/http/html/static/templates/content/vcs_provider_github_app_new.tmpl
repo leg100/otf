@@ -17,7 +17,7 @@
         <label for="install_id">Installation</label>
         <select class="w-48" name="install_id" id="select-install-id">
           for k, v := range . {
-            <option value="{ .ID }">{ .String }</option>
+            <option value={ .ID }>{ .String }</option>
           }
         </select>
         <span class="description">Select a Github App installation.</span>
@@ -25,6 +25,6 @@
       <button class="btn w-32" id="create-vcs-provider-button">Create</button>
     </form>
   } else {
-    <span>No installations of the GitHub app found. Install it <a class="underline" href="{ .App.NewInstallURL .GithubHostname }">on Github first</a>.</span>
+    <span>No installations of the GitHub app found. Install it <a class="underline" href={ .App.NewInstallURL .GithubHostname }>on Github first</a>.</span>
   }
 }

@@ -1,7 +1,7 @@
 { template "layout" . }
 
 { define "content-header-title" }
-  <a href="{ modulesPath .Organization }">modules</a> / { .Module.Name }
+  <a href={ modulesPath .Organization }>modules</a> / { .Module.Name }
 }
 
 { define "content" }
@@ -18,7 +18,7 @@
           <select class="w-32" name="version" id="version" onchange="this.form.submit()">
             for k, v := range reverse .Module.AvailableVersions {
               { if eq .Status $.ModuleVersionStatusOK }
-                <option value="{ .Version }" { selected .Version $.CurrentVersion.Version }>{ .Version }</option>
+                <option value={ .Version } { selected .Version $.CurrentVersion.Version }>{ .Version }</option>
               }
             }
           </select>

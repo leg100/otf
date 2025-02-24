@@ -12,10 +12,10 @@
         if .Name {
           <span>{ . }</span>
         }
-        <div class="{ get $statusColors (toString .Status) }">{ .Status }</div>
+        <div class={ get $statusColors (toString .Status) }>{ .Status }</div>
         <div class="text-sm" title="{ .CurrentJobs } jobs are currently allocated out of a maximum of { .MaxJobs } jobs">({ .CurrentJobs }/{ .MaxJobs })</div>
       </div>
-      <span title="{ .LastPingAt }">last seen { durationRound .LastPingAt } ago</span>
+      <span title={ .LastPingAt }>last seen { durationRound .LastPingAt } ago</span>
     </div>
     <div>
       { template "identifier" . }

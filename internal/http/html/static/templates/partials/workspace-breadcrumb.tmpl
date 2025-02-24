@@ -1,7 +1,7 @@
 { define "workspace-breadcrumb" }
   if .Workspace {
-    <a href="{ workspacesPath .Organization }">workspaces</a>
+    <a href={ workspacesPath .Organization }>workspaces</a>
     /
-    <a href="{ workspacePath .ID.String }">{ .Name }</a>
+    <a href={ workspacePath .ID.String }>{ .Name }</a>
   }
 }

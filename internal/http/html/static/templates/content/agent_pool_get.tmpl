@@ -1,7 +1,7 @@
 { template "layout" . }
 
 { define "content-header-title" }
-  <a href="{ agentPoolsPath .Organization }">agent pools</a>
+  <a href={ agentPoolsPath .Organization }>agent pools</a>
   /
   { .Pool.Name }
 }
@@ -12,7 +12,7 @@
   <form class="" action={ updateAgentPoolPath .Pool.ID.String } method="POST">
     <div class="field mb-4">
       <label for="name">Name</label>
-      <input class="text-input w-80" type="text" name="name" id="name" value="{ .Pool.Name }" required>
+      <input class="text-input w-80" type="text" name="name" id="name" value={ .Pool.Name } required>
     </div>
     <fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
       <legend class="">Workspaces</legend>
@@ -69,9 +69,9 @@
             </div>
             <h4 class="font-bold text-sm">Granted & Assigned</h4>
             <div id="granted-and-assigned-workspaces" class="flex flex-row gap-2">
-              <input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value="{ toJson .AssignedWorkspaces }">
+              <input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value={ toJson .AssignedWorkspaces }>
               for k, v := range .AssignedWorkspaces {
-                <a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href="{ editWorkspacePath .ID.String }">{ .Name }</a>
+                <a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ editWorkspacePath .ID.String }>{ .Name }</a>
               }
             </div>
           </div>
@@ -131,7 +131,7 @@
       <span class="description">Before deleting an agent pool you must unassign the pool from the following workspaces:</span>
       <ul id="unassign-workspaces-before-deletion" class="flex flex-row gap-2">
         for k, v := range . {
-          <a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href="{ editWorkspacePath .ID.String }">{ .Name }</a>
+          <a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ editWorkspacePath .ID.String }>{ .Name }</a>
         }
       </ul>
     }

@@ -3,7 +3,7 @@
     if .Variable {
       <div class="field">
         <label class="font-semibold" for="key">Key</label>
-        <input class="text-input" type="text" name="key" id="key" value="{ .Key }" required placeholder="key" { disabled (and .Sensitive $.EditMode) }>
+        <input class="text-input" type="text" name="key" id="key" value={ .Key } required placeholder="key" { disabled (and .Sensitive $.EditMode) }>
       </div>
       <div class="field">
         <label class="font-semibold" for="value">Value</label>
@@ -33,7 +33,7 @@
       </div>
       <div class="field">
         <label class="font-semibold" for="description">Description</label>
-        <input class="text-input" type="text" class="freeform" name="description" id="description" value="{ .Description }" placeholder="description (optional)">
+        <input class="text-input" type="text" class="freeform" name="description" id="description" value={ .Description } placeholder="description (optional)">
       </div>
       <div>
         <button class="btn" id="save-variable-button">

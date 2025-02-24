@@ -11,7 +11,7 @@
       x-id="['dropdown-button']"
       class="relative"
       >
-    <input type="hidden" name="{ .Name }" :value="search" form="search-dropdown">
+    <input type="hidden" name={ .Name } :value="search" form="search-dropdown">
     <input
         @focusin="open = true"
         x-model="search"
@@ -21,7 +21,7 @@
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"
         class="flex items-center { get $width (toString .Width) } gap-2 bg-white px-2 py-1 border"
-        placeholder="{ .Placeholder }"
+        placeholder={ .Placeholder }
         form="search-dropdown"
         >
     <div

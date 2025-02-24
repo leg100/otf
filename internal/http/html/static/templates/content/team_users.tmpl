@@ -11,7 +11,7 @@
         { template "identifier" . }
         { if $.CanRemoveMember }
           <form action={ removeMemberTeamPath $.Team.ID.String } method="POST">
-            <input type="hidden" name="username" id="delete-username" value="{ .Username }">
+            <input type="hidden" name="username" id="delete-username" value={ .Username }>
             <button id="remove-member-button" class="btn-danger">
               Remove member
             </button>

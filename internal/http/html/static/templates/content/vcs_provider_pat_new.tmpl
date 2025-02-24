@@ -6,7 +6,7 @@
 
 { define "content" }
   <div>
-    Create a { title .Kind } VCS provider with a <a class="underline" href="{ .TokensURL }">personal token</a> with the <span class="bg-gray-200">{ .Scope }</span> scope.
+    Create a { title .Kind } VCS provider with a <a class="underline" href={ .TokensURL }>personal token</a> with the <span class="bg-gray-200">{ .Scope }</span> scope.
   </div>
 
   { template "vcs_provider_form" . }

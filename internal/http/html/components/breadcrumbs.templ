@@ -1,0 +1,11 @@
+package components
+
+type Breadcrumb struct {
+	Name string
+	Link templ.SafeURL
+}
+
+templ Breadcrumbs(crumbs ...Breadcrumb) {
+	for i := range crumbs {
+	}
+}

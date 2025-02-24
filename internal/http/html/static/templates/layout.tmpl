@@ -30,7 +30,7 @@
         if $.CurrentOrganization {
           <div class="flex gap-2 items-center">
             { template "building_icon" }
-            <a href="{ organizationPath . }">{ . }</a>
+            <a href={ organizationPath . }>{ . }</a>
           </div>
         }
       }
@@ -42,9 +42,9 @@
       if .CurrentUser {
         <div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
           <div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
-            <a href="{ adminPath }">site</a>
-            <a href="{ organizationsPath }">organizations</a>
-            <a href="{ profilePath }">profile</a>
+            <a href={ adminPath }>site</a>
+            <a href={ organizationsPath }>organizations</a>
+            <a href={ profilePath }>profile</a>
           </div>
         </div>
       }
@@ -81,7 +81,7 @@
       </div>
       <div class="footer-site-login">
         { if not .CurrentUser }
-          <a href="{ adminLoginPath }">site admin</a>
+          <a href={ adminLoginPath }>site admin</a>
         }
       </div>
     </div>

@@ -29,16 +29,16 @@
         <button class="btn">New Github VCS Provider (App)</button>
       </form>
     } else {
-      <span>Alternatively, <a class="underline" href="{ newGithubAppPath }">create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
+      <span>Alternatively, <a class="underline" href={ newGithubAppPath }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
     }
   </div>
 }
 
 { define "content-list-item" }
-  <div x-data="block_link($el, '{ editVCSProviderPath .ID.String }')" id="{ .ID.String }" class="widget">
+  <div x-data="block_link($el, '{ editVCSProviderPath .ID.String }')" id={ .ID.String } class="widget">
     <div>
       <span>
-        <a id="edit-vcs-provider-link" href="{ editVCSProviderPath .ID.String }">{ .String }</a>
+        <a id="edit-vcs-provider-link" href={ editVCSProviderPath .ID.String }>{ .String }</a>
       </span>
       <span>{ durationRound .CreatedAt } ago</span>
     </div>
@@ -46,7 +46,7 @@
       { template "identifier" . }
       <form action={ deleteVCSProviderPath .ID.String } method="POST">
         <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-        <input type="hidden" name="id" value="{ .ID }">
+        <input type="hidden" name="id" value={ .ID }>
       </form>
     </div>
   </div>

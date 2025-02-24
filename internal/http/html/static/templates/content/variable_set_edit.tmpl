@@ -1,7 +1,7 @@
 { template "layout" . }
 
 { define "content-header-title" }
-  <a href="{ variableSetsPath .VariableSet.Organization }">variable sets</a> /
+  <a href={ variableSetsPath .VariableSet.Organization }>variable sets</a> /
   { .VariableSet.Name } /
   edit
 }

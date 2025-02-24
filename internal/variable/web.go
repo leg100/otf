@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
@@ -128,17 +129,13 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_new.tmpl", w, struct {
-		workspace.WorkspacePage
-		Variable   *Variable
-		EditMode   bool
-		FormAction string
-	}{
+	props := newProps{
 		WorkspacePage: workspace.NewPage(r, "new variable", ws),
 		Variable:      &Variable{},
 		EditMode:      false,
 		FormAction:    paths.CreateVariable(workspaceID.String()),
-	})
+	}
+	templ.Handler(new(props)).ServeHTTP(w, r)
 }
 
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {

@@ -5,7 +5,7 @@
   <div class="m-auto">
     <div class="flex flex-col gap-2">
       for k, v := range .Clients {
-        <a class="p-4 border border-black flex justify-center items-center gap-1" id="login-button-{ . }" href="{ .RequestPath }">
+        <a class="p-4 border border-black flex justify-center items-center gap-1" id="login-button-{ . }" href={ .RequestPath }>
           { template "icons" .String }<span>Login with { title .String }</span>
         </a>
       } else {

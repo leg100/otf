@@ -1,7 +1,7 @@
 { template "layout" . }
 
 { define "content-header-title" }
-  <div><a href="{ profilePath }">profile</a> / tokens</div>
+  <div><a href={ profilePath }>profile</a> / tokens</div>
 }
 
 { define "content-header-actions" }
@@ -26,7 +26,7 @@
       { template "identifier" . }
       <form action={ deleteTokenPath } method="POST">
         <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-        <input type="hidden" name="id" value="{ .ID }">
+        <input type="hidden" name="id" value={ .ID }>
       </form>
     </div>
   </div>

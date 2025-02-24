@@ -1,0 +1,93 @@
+package variable
+
+type newProps struct {
+	Variable   *Variable
+	Workspace   *workspace.Workspace
+	EditMode   bool
+	FormAction string
+}
+
+templ new(props newProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new variable",
+		ContentTitle: newTitle(organization),
+	}) {
+		  <span class="text-xl">Add a new workspace variable.</span>
+		  @variableForm()
+		  }
+}
+
+type listWorkspaceVariablesProps struct {
+		workspace.WorkspacePage
+		WorkspaceVariableTable workspaceVariableTable
+		VariableSetTables      []setVariableTable
+		CanCreateVariable      bool
+		CanDeleteVariable      bool
+		CanUpdateWorkspace     bool
+}
+
+templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
+}
+
+templ editWorkspaceVariable(props newProps) {
+}
+
+type listVariableSetsProps struct {
+		WorkspaceVariableTable workspaceVariableTable
+		VariableSetTables      []setVariableTable
+		CanCreateVariable      bool
+		CanDeleteVariable      bool
+		CanUpdateWorkspace     bool
+}
+
+templ listVariableSets(props listWorkspaceVariablesProps) {
+}
+
+
+type newVariableSetProps struct {
+		WorkspaceVariableTable workspaceVariableTable
+		VariableSetTables      []setVariableTable
+		CanCreateVariable      bool
+		CanDeleteVariable      bool
+		CanUpdateWorkspace     bool
+}
+
+templ newVariableSet(props newVariableSetProps) {
+}
+
+
+type editVariableSetProps struct {
+		organization.OrganizationPage
+		*VariableSet
+		EditMode            bool
+		FormAction          string
+		AvailableWorkspaces []workspaceInfo
+		ExistingWorkspaces  []workspaceInfo
+		CanCreateVariable   bool
+		CanDeleteVariable   bool
+		VariableTable       setVariableTable
+}
+
+templ editVariableSet(props editVariableSetProps) {
+}
+
+type newVariableSetVariableProps struct {
+		organization.OrganizationPage
+		*VariableSet
+		EditMode            bool
+		FormAction          string
+		AvailableWorkspaces []workspaceInfo
+		ExistingWorkspaces  []workspaceInfo
+		CanCreateVariable   bool
+		CanDeleteVariable   bool
+		VariableTable       setVariableTable
+}
+
+templ newVariableSetVariable(props newVariableSetVariableProps) {
+}
+
+templ editVariableSetVariable(props newVariableSetVariableProps) {
+}
+
+templ variableForm() {
+}

@@ -8,7 +8,7 @@
       <div class="widget">
         <div>
           <span>
-            <a class="flex underline gap-1 items-center" href="{ .URL $.GithubHostname }" target="GithubTab">
+            <a class="flex underline gap-1 items-center" href={ .URL $.GithubHostname } target="GithubTab">
               { .String }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }>
             </a>
           </span>
@@ -18,7 +18,7 @@
           { if $.CanDeleteApp }
             <form action={ deleteGithubAppPath (toString .ID) } method="POST">
               <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-              <input type="hidden" name="id" value="{ .ID }">
+              <input type="hidden" name="id" value={ .ID }>
             </form>
           }
         </div>
@@ -37,7 +37,7 @@
           <div class="widget">
             <div>
               <span>
-                <a class="flex underline gap-1 items-center"  href="{ .HTMLURL }" target="GithubTab">
+                <a class="flex underline gap-1 items-center"  href={ .HTMLURL } target="GithubTab">
                   { .String }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }>
                 </a>
               </span>
@@ -46,7 +46,7 @@
               { template "identifier" . }
               <form action={ deleteInstallGithubAppPath (toString .ID) } method="POST">
                 <button class="btn-danger" onclick="return confirm('Are you sure you want to uninstall?')">uninstall</button>
-                <input type="hidden" name="install_id" value="{ .ID }">
+                <input type="hidden" name="install_id" value={ .ID }>
               </form>
             </div>
           </div>
@@ -57,7 +57,7 @@
     <span>
       No GitHub app found.
       { if .CanCreateApp }
-        Create an app <a id="new-github-app-link" class="underline" href="{ newGithubAppPath }">here</a>.
+        Create an app <a id="new-github-app-link" class="underline" href={ newGithubAppPath }>here</a>.
       } else {
         To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/latest/auth/site_admins/">site admin</a> role.
       }
