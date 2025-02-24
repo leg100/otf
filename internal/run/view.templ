@@ -121,14 +121,12 @@ templ getPreContent() {
 }
 
 templ getPostContent(props getProps) {
-	<script type="text/javascript">
 	if !props.planLogs.IsEnd() {
-      setupTail({ paths.TailRun(props.run.ID.String()) }, 'plan', { props.PlanLogs.NextOffset() });
+      @templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "plan", props.planLogs.NextOffset());
 	}
 	if !props.applyLogs.IsEnd() {
-      setupTail({ paths.TailRun(props.run.ID.String()) }, 'apply', { props.ApplyLogs.NextOffset() });
+      @templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "apply", props.applyLogs.NextOffset());
 	}
-    </script>
 }
 
 templ getTitle(ws *workspace.Workspace, run *Run) {
@@ -136,7 +134,7 @@ templ getTitle(ws *workspace.Workspace, run *Run) {
 	/
 	<a href={ paths.Workspace(run.WorkspaceID.String()) }>{ ws.Name }</a>
 	/
-	<a href={ paths.Runs(run.WorkspaceID.String()) }>{ ws.Name }</a>
+	<a href={ paths.Runs(run.WorkspaceID.String()) }>runs</a>
 	/
 	{ run.ID.String() }
 }
