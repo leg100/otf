@@ -1,0 +1,11 @@
+package components
+
+templ Strikethrough(cond bool) {
+	if cond {
+		<s>
+			{ children... }
+		</s>
+	} else {
+		{ children... }
+	}
+}

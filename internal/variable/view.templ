@@ -4,7 +4,9 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
+	"strconv"
 )
 
 templ new(ws *workspace.Workspace) {
@@ -25,23 +27,47 @@ templ new(ws *workspace.Workspace) {
 }
 
 type listWorkspaceVariablesProps struct {
-	workspace.WorkspacePage
-	WorkspaceVariableTable workspaceVariableTable
-	VariableSetTables      []setVariableTable
-	CanCreateVariable      bool
-	CanDeleteVariable      bool
-	CanUpdateWorkspace     bool
+	ws                  *workspace.Workspace
+	workspaceTableProps workspaceTableProps
+	setTablesProps      []setTableProps
+	canCreateVariable   bool
+	canDeleteVariable   bool
+	canUpdateWorkspace  bool
 }
 
 templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "variables",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
+		},
+	}) {
+		<span class="text-lg my-2">Workspace Variables ({ strconv.Itoa(len(props.workspaceTableProps.Variables())) })</span>
+		@variablesTable(props.workspaceTableProps)
+		if props.canCreateVariable {
+			<form class="mt-2" action={ paths.NewVariable(props.ws.ID.String()) } method="GET">
+				<button class="btn">Add variable</button>
+			</form>
+		}
+		<span class="text-lg mt-4">Variable Sets ({ strconv.Itoa(len(props.setTablesProps)) })</span>
+		for _, table := range props.setTablesProps {
+			<div class="flex flex-col gap-2" id={ "variable-set-" + table.set.Name }>
+				@variableSetItem(table.set)
+				@variablesTable(table)
+			</div>
+			<div class="my-2"></div>
+		}
+	}
 }
 
 templ editWorkspaceVariable(props variableFormProps) {
 }
 
 type listVariableSetsProps struct {
-	WorkspaceVariableTable workspaceVariableTable
-	VariableSetTables      []setVariableTable
+	WorkspaceVariableTable workspaceTableProps
+	VariableSetTables      []setTableProps
 	CanCreateVariable      bool
 	CanDeleteVariable      bool
 	CanUpdateWorkspace     bool
@@ -51,8 +77,8 @@ templ listVariableSets(props listWorkspaceVariablesProps) {
 }
 
 type newVariableSetProps struct {
-	WorkspaceVariableTable workspaceVariableTable
-	VariableSetTables      []setVariableTable
+	WorkspaceVariableTable workspaceTableProps
+	VariableSetTables      []setTableProps
 	CanCreateVariable      bool
 	CanDeleteVariable      bool
 	CanUpdateWorkspace     bool
@@ -70,7 +96,7 @@ type editVariableSetProps struct {
 	ExistingWorkspaces  []workspaceInfo
 	CanCreateVariable   bool
 	CanDeleteVariable   bool
-	VariableTable       setVariableTable
+	VariableTable       setTableProps
 }
 
 templ editVariableSet(props editVariableSetProps) {
@@ -85,13 +111,123 @@ type newVariableSetVariableProps struct {
 	ExistingWorkspaces  []workspaceInfo
 	CanCreateVariable   bool
 	CanDeleteVariable   bool
-	VariableTable       setVariableTable
+	VariableTable       setTableProps
 }
 
 templ newVariableSetVariable(props newVariableSetVariableProps) {
 }
 
 templ editVariableSetVariable(props newVariableSetVariableProps) {
+}
+
+type tableProps interface {
+	Variables() []*Variable
+	EditPath(variableID resource.ID) templ.SafeURL
+	DeletePath(variableID resource.ID) templ.SafeURL
+	IsOverwritten(v *Variable) bool
+	CanDeleteVariable() bool
+}
+
+type workspaceTableProps struct {
+	variables         []*Variable
+	canDeleteVariable bool
+}
+
+func (p workspaceTableProps) Variables() []*Variable {
+	return p.variables
+}
+
+func (workspaceTableProps) EditPath(variableID resource.ID) templ.SafeURL {
+	return paths.EditVariable(variableID.String())
+}
+
+func (workspaceTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
+	return paths.DeleteVariable(variableID.String())
+}
+
+func (w workspaceTableProps) IsOverwritten(v *Variable) bool {
+	// a workspace variable can never be overwritten
+	return false
+}
+
+func (w workspaceTableProps) CanDeleteVariable() bool {
+	return w.canDeleteVariable
+}
+
+type setTableProps struct {
+	set               *VariableSet
+	merged            []*Variable
+	canDeleteVariable bool
+}
+
+func (p setTableProps) Variables() []*Variable {
+	return p.set.Variables
+}
+
+func (setTableProps) EditPath(variableID resource.ID) templ.SafeURL {
+	return paths.EditVariableSetVariable(variableID.String())
+}
+
+func (setTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
+	return paths.DeleteVariableSetVariable(variableID.String())
+}
+
+func (w setTableProps) IsOverwritten(v *Variable) bool {
+	if w.merged == nil {
+		return false
+	}
+	return !v.Matches(w.merged)
+}
+
+func (w setTableProps) CanDeleteVariable() bool {
+	return w.canDeleteVariable
+}
+
+templ variablesTable(props tableProps) {
+	<table class="table-fixed w-full text-left break-words border-collapse" id="variables-table">
+		<thead class="bg-gray-200 border-t border-b border-slate-900">
+			<tr>
+				<th class="p-2 w-[25%]">Key</th>
+				<th class="p-2 w-[50%]">Value</th>
+				<th class="p-2 w-[15%]">Category</th>
+				<th class="p-2 w-[10%]"></th>
+			</tr>
+		</thead>
+		<tbody class="border-b border-slate-900">
+			for _, v := range props.Variables() {
+				<tr class="even:bg-gray-100">
+					<td class="p-2 flex flex-row gap-2">
+						if props.IsOverwritten(v) {
+							<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
+						}
+						@components.Strikethrough(props.IsOverwritten(v)) {
+							<a class="underline" href={ props.EditPath(v.ID) }>{ v.Key }</a>
+						}
+					</td>
+					<td class="p-2">
+						if v.Sensitive {
+							<span class="bg-gray-200">hidden</span>
+						} else {
+							v.Value
+						}
+					</td>
+					<td class="p-2">{ string(v.Category) }</td>
+					<td class="p-2 text-right">
+						if props.CanDeleteVariable() {
+							<form action={ props.DeletePath(v.ID) } method="POST">
+								<button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
+							</form>
+						}
+					</td>
+				</tr>
+			}
+			if len(props.Variables()) == 0 {
+				<tr>
+					<td>No variables currently exist.</td>
+				</tr>
+			}
+		</tbody>
+	</table>
 }
 
 type variableFormProps struct {
@@ -162,5 +298,21 @@ templ variableForm(props variableFormProps) {
 	<div class="flex flex-col gap-2">
 		<h4 class="font-semibold">Sensitive variables</h4>
 		Sensitive variables are never shown in the UI or API. Other than changing its value, you cannot make changes to a sensitive variable; you'll need to delete and re-create the variable.
+	</div>
+}
+
+templ variableSetItem(vs *VariableSet) {
+	<div class="widget" id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID.String())) }>
+		<span id="name">{ vs.Name }</span>
+		<div>
+			@components.Identifier(vs.ID)
+			<span>
+				if vs.Global {
+					global
+				} else {
+					{ strconv.Itoa(len(vs.Workspaces)) } workspaces
+				}
+			</span>
+		</div>
 	</div>
 }

@@ -79,17 +79,6 @@ type (
 		HCL         bool
 		VariableID  resource.ID `schema:"variable_id,required"`
 	}
-
-	workspaceVariableTable struct {
-		Variables         []*Variable
-		CanDeleteVariable bool
-	}
-
-	setVariableTable struct {
-		*VariableSet
-		Merged            []*Variable
-		CanDeleteVariable bool
-	}
 )
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -183,33 +172,27 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	merged := mergeVariables(sets, variables, nil)
-	setVariableTables := make([]setVariableTable, len(sets))
+	setVariableTables := make([]setTableProps, len(sets))
 	for i := range sets {
-		setVariableTables[i] = setVariableTable{
-			VariableSet: sets[i],
-			Merged:      merged,
+		setVariableTables[i] = setTableProps{
+			set:    sets[i],
+			merged: merged,
 			// hide delete button for set variables
-			CanDeleteVariable: false,
+			canDeleteVariable: false,
 		}
 	}
-	h.Render("variable_list.tmpl", w, struct {
-		workspace.WorkspacePage
-		WorkspaceVariableTable workspaceVariableTable
-		VariableSetTables      []setVariableTable
-		CanCreateVariable      bool
-		CanDeleteVariable      bool
-		CanUpdateWorkspace     bool
-	}{
-		WorkspacePage: workspace.NewPage(r, "variables", ws),
-		WorkspaceVariableTable: workspaceVariableTable{
-			Variables:         variables,
-			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+	props := listWorkspaceVariablesProps{
+		ws: ws,
+		workspaceTableProps: workspaceTableProps{
+			variables:         variables,
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		},
-		VariableSetTables:  setVariableTables,
-		CanCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-	})
+		setTablesProps:     setVariableTables,
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+	}
+	templ.Handler(listWorkspaceVariables(props)).ServeHTTP(w, r)
 }
 
 func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -424,7 +407,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		ExistingWorkspaces  []workspaceInfo
 		CanCreateVariable   bool
 		CanDeleteVariable   bool
-		VariableTable       setVariableTable
+		VariableTable       setTableProps
 	}{
 		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID.String(), set.Organization),
 		VariableSet:         set,
@@ -434,9 +417,9 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		ExistingWorkspaces:  existingWorkspaces,
 		CanCreateVariable:   h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		CanDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		VariableTable: setVariableTable{
-			VariableSet:       set,
-			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+		VariableTable: setTableProps{
+			set:                       set,
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		},
 	})
 }
@@ -646,32 +629,4 @@ func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspa
 		}
 	}
 	return availableWorkspaces, nil
-}
-
-func (workspaceVariableTable) EditPath(variableID resource.ID) string {
-	return paths.EditVariable(variableID.String())
-}
-
-func (workspaceVariableTable) DeletePath(variableID resource.ID) string {
-	return paths.DeleteVariable(variableID.String())
-}
-
-func (w workspaceVariableTable) IsOverwritten(v *Variable) bool {
-	// a workspace variable can never be overwritten
-	return false
-}
-
-func (setVariableTable) EditPath(variableID resource.ID) string {
-	return paths.EditVariableSetVariable(variableID.String())
-}
-
-func (setVariableTable) DeletePath(variableID resource.ID) string {
-	return paths.DeleteVariableSetVariable(variableID.String())
-}
-
-func (w setVariableTable) IsOverwritten(v *Variable) bool {
-	if w.Merged == nil {
-		return false
-	}
-	return !v.Matches(w.Merged)
 }
