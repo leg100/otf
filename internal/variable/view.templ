@@ -1,86 +1,91 @@
 package variable
 
-type newProps struct {
-	Variable   *Variable
-	Workspace   *workspace.Workspace
-	EditMode   bool
-	FormAction string
-}
+import (
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/workspace"
+)
 
-templ new(props newProps) {
+templ new(ws *workspace.Workspace) {
 	@components.Layout(components.LayoutProps{
-		Title:        "new variable",
-		ContentTitle: newTitle(organization),
+		Title: "new variable",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: "new"},
+		},
 	}) {
-		  <span class="text-xl">Add a new workspace variable.</span>
-		  @variableForm()
-		  }
+		<span class="text-xl">Add a new workspace variable.</span>
+		@variableForm(variableFormProps{
+			ws:         ws,
+			formAction: paths.CreateVariable(ws.ID.String()),
+		})
+	}
 }
 
 type listWorkspaceVariablesProps struct {
-		workspace.WorkspacePage
-		WorkspaceVariableTable workspaceVariableTable
-		VariableSetTables      []setVariableTable
-		CanCreateVariable      bool
-		CanDeleteVariable      bool
-		CanUpdateWorkspace     bool
+	workspace.WorkspacePage
+	WorkspaceVariableTable workspaceVariableTable
+	VariableSetTables      []setVariableTable
+	CanCreateVariable      bool
+	CanDeleteVariable      bool
+	CanUpdateWorkspace     bool
 }
 
 templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 }
 
-templ editWorkspaceVariable(props newProps) {
+templ editWorkspaceVariable(props variableFormProps) {
 }
 
 type listVariableSetsProps struct {
-		WorkspaceVariableTable workspaceVariableTable
-		VariableSetTables      []setVariableTable
-		CanCreateVariable      bool
-		CanDeleteVariable      bool
-		CanUpdateWorkspace     bool
+	WorkspaceVariableTable workspaceVariableTable
+	VariableSetTables      []setVariableTable
+	CanCreateVariable      bool
+	CanDeleteVariable      bool
+	CanUpdateWorkspace     bool
 }
 
 templ listVariableSets(props listWorkspaceVariablesProps) {
 }
 
-
 type newVariableSetProps struct {
-		WorkspaceVariableTable workspaceVariableTable
-		VariableSetTables      []setVariableTable
-		CanCreateVariable      bool
-		CanDeleteVariable      bool
-		CanUpdateWorkspace     bool
+	WorkspaceVariableTable workspaceVariableTable
+	VariableSetTables      []setVariableTable
+	CanCreateVariable      bool
+	CanDeleteVariable      bool
+	CanUpdateWorkspace     bool
 }
 
 templ newVariableSet(props newVariableSetProps) {
 }
 
-
 type editVariableSetProps struct {
-		organization.OrganizationPage
-		*VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-		CanCreateVariable   bool
-		CanDeleteVariable   bool
-		VariableTable       setVariableTable
+	organization.OrganizationPage
+	*VariableSet
+	EditMode            bool
+	FormAction          string
+	AvailableWorkspaces []workspaceInfo
+	ExistingWorkspaces  []workspaceInfo
+	CanCreateVariable   bool
+	CanDeleteVariable   bool
+	VariableTable       setVariableTable
 }
 
 templ editVariableSet(props editVariableSetProps) {
 }
 
 type newVariableSetVariableProps struct {
-		organization.OrganizationPage
-		*VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-		CanCreateVariable   bool
-		CanDeleteVariable   bool
-		VariableTable       setVariableTable
+	organization.OrganizationPage
+	*VariableSet
+	EditMode            bool
+	FormAction          string
+	AvailableWorkspaces []workspaceInfo
+	ExistingWorkspaces  []workspaceInfo
+	CanCreateVariable   bool
+	CanDeleteVariable   bool
+	VariableTable       setVariableTable
 }
 
 templ newVariableSetVariable(props newVariableSetVariableProps) {
@@ -89,5 +94,73 @@ templ newVariableSetVariable(props newVariableSetVariableProps) {
 templ editVariableSetVariable(props newVariableSetVariableProps) {
 }
 
-templ variableForm() {
+type variableFormProps struct {
+	variable   *Variable
+	ws         *workspace.Workspace
+	editMode   bool
+	formAction templ.SafeURL
+}
+
+templ variableForm(props variableFormProps) {
+	<form class="flex flex-col gap-5" action={ props.formAction } method="POST">
+		if props.variable != nil {
+			<div class="field">
+				<label class="font-semibold" for="key">Key</label>
+				<input class="text-input" type="text" name="key" id="key" value={ props.variable.Key } required placeholder="key" disabled?={ props.variable.Sensitive && props.editMode }/>
+			</div>
+			<div class="field">
+				<label class="font-semibold" for="value">Value</label>
+				<textarea
+					class="text-input"
+					type="text"
+					name="value"
+					id="value"
+					if props.variable.Sensitive {
+						placeholder="hidden"
+					}
+				>
+					if  props.variable.Sensitive {
+						{ props.variable.Value }
+					}
+				</textarea>
+			</div>
+			<fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+				<legend>Category</legend>
+				<div class="form-checkbox">
+					<input type="radio" name="category" id="terraform" value="terraform" checked?={ props.variable.Category == "terraform" } disabled?={ props.variable.Sensitive && props.editMode } required/>
+					<label for="terraform">Terraform</label>
+					<span class="description">These variables should match the declarations in your configuration. Click the HCL box to use interpolation or set a non-string value.</span>
+				</div>
+				<div class="form-checkbox">
+					<input type="radio" name="category" id="env" value="env" checked?={ props.variable.Category == "env" } disabled?={ props.variable.Sensitive && props.editMode } required/>
+					<label for="env">Environment variable</label>
+					<span class="description">These variables are available in the Terraform runtime environment.</span>
+				</div>
+			</fieldset>
+			<div class="form-checkbox">
+				<input class="" type="checkbox" name="hcl" id="hcl" checked?={ props.variable.HCL } disabled?={ props.variable.Sensitive && props.editMode }/>
+				<label for="hcl">HCL</label>
+				<span class="description">Parse this field as HashiCorp Configuration Language (HCL). This allows you to interpolate values at runtime.</span>
+			</div>
+			<div class="form-checkbox">
+				<input type="checkbox" name="sensitive" id="sensitive" checked?={ props.variable.Sensitive } disabled?={ props.variable.Sensitive && props.editMode }/>
+				<label for="sensitive">Sensitive</label>
+				<span class="description">Sensitive variables are never shown in the UI or API. They may appear in Terraform logs if your configuration is designed to output them.</span>
+			</div>
+			<div class="field">
+				<label class="font-semibold" for="description">Description</label>
+				<input class="text-input" type="text" class="freeform" name="description" id="description" value={ props.variable.Description } placeholder="description (optional)"/>
+			</div>
+			<div>
+				<button class="btn" id="save-variable-button">
+					Save variable
+				</button>
+			</div>
+		}
+	</form>
+	<hr class="my-5"/>
+	<div class="flex flex-col gap-2">
+		<h4 class="font-semibold">Sensitive variables</h4>
+		Sensitive variables are never shown in the UI or API. Other than changing its value, you cannot make changes to a sensitive variable; you'll need to delete and re-create the variable.
+	</div>
 }

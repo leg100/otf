@@ -23,8 +23,12 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "runs",
-		ContentTitle: listTitle(props.ws),
 		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name:  props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "runs"},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -35,14 +39,6 @@ templ list(props listProps) {
 			@components.ContentList(props.page.Items, widget)
 		</div>
 	}
-}
-
-templ listTitle(ws *workspace.Workspace) {
-	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
-	/
-	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
-	/
-	runs
 }
 
 type getProps struct {
@@ -56,9 +52,14 @@ templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        props.run.ID.String(),
-		ContentTitle: getTitle(props.ws, props.run),
 		PreContent:   getPreContent(),
 		PostContent:  getPostContent(props),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name:  props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
+			{Name: props.run.ID.String()},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {

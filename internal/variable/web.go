@@ -129,13 +129,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	props := newProps{
-		WorkspacePage: workspace.NewPage(r, "new variable", ws),
-		Variable:      &Variable{},
-		EditMode:      false,
-		FormAction:    paths.CreateVariable(workspaceID.String()),
-	}
-	templ.Handler(new(props)).ServeHTTP(w, r)
+	templ.Handler(new(ws)).ServeHTTP(w, r)
 }
 
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {

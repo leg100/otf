@@ -5,10 +5,15 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 )
 
+type Breadcrumb struct {
+	Name string
+	Link templ.SafeURL
+}
+
 type LayoutProps struct {
 	Title          string
 	Organization   string
-	ContentTitle   templ.Component
+	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
 	ContentLinks   templ.Component
 	ContentMenu    templ.Component
@@ -26,7 +31,16 @@ templ Layout(props LayoutProps) {
 		<div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
 			<div class="flex text-xl">
 				<span id="content-header-title">
-					@props.ContentTitle
+					for i, crumb := range props.Breadcrumbs {
+						if crumb.Link != "" {
+							<a href={ crumb.Link }>{ crumb.Name }</a>
+						} else {
+							{ crumb.Name }
+						}
+						if i < (len(props.Breadcrumbs) - 1) {
+							/
+						}
+					}
 				</span>
 			</div>
 			<div>

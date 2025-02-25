@@ -18,7 +18,11 @@ import (
 templ new(organization string) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new workspace",
-		ContentTitle: newTitle(organization),
+		Organization: organization,
+		Breadcrumbs: []components.Breadcrumb{
+				{Name: "workspaces", Link: paths.Workspaces(organization)},
+				{Name: "new"},
+				},
 	}) {
 		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
 			<div class="field">
@@ -30,10 +34,6 @@ templ new(organization string) {
 			</div>
 		</form>
 	}
-}
-
-templ newTitle(organization string) {
-	<a href={ paths.Workspaces(organization) }>workspaces</a> / new
 }
 
 type listProps struct {
@@ -48,8 +48,11 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:          "workspaces",
-		ContentTitle:   templ.Raw("workspaces"),
+		Organization: props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces"},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -122,8 +125,12 @@ templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
-		ContentTitle: getTitle(props.ws),
+		Organization: props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name:  props.ws.Name},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -204,10 +211,6 @@ templ get(props getProps) {
 	}
 }
 
-templ getTitle(ws *Workspace) {
-	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a> / { ws.Name }
-}
-
 type editProps struct {
 	ws                 *Workspace
 	assigned           []perm
@@ -236,8 +239,13 @@ templ edit(props editProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "edit | " + props.ws.ID.String(),
-		ContentTitle: editTitle(props.ws),
+		Organization: props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name:  props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "settings"},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -504,19 +512,16 @@ templ editPermissions(props editProps) {
 	</div>
 }
 
-templ editTitle(ws *Workspace) {
-	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
-	/
-	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
-	/
-	settings
-}
-
 templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs providers | " + ws.ID.String(),
-		ContentTitle: listVCSProvidersTitle(ws),
+		Organization: ws.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name:  ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: "vcs providers"},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -541,19 +546,16 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	}
 }
 
-templ listVCSProvidersTitle(ws *Workspace) {
-	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
-	/
-	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
-	/
-	vcs providers
-}
-
 templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs repos | " + ws.ID.String(),
-		ContentTitle: listVCSReposTitle(ws),
+		Organization: ws.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name:  ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: "vcs repositories"},
+		},
 	}
 	}}
 	@components.Layout(layoutProps) {
@@ -583,14 +585,6 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
 			}
 		</div>
 	}
-}
-
-templ listVCSReposTitle(ws *Workspace) {
-	<a href={ paths.Workspaces(ws.Organization) }>workspaces</a>
-	/
-	<a href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
-	/
-	vcs repositories
 }
 
 templ WorkspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) {
