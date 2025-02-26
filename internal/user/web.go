@@ -139,18 +139,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
-	user, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("site.tmpl", w, struct {
-		html.SitePage
-		User authz.Subject
-	}{
-		SitePage: html.NewSitePage(r, "site"),
-		User:     user,
-	})
+	templ.Handler(siteSettings()).ServeHTTP(w, r)
 }
 
 // team membership handlers

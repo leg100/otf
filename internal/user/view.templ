@@ -100,3 +100,20 @@ templ tokenListActions() {
 		<button class="btn" id="new-user-token-button">New Token</button>
 	</form>
 }
+
+templ siteSettings() {
+	@components.Layout(components.LayoutProps{
+		Title: "site",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "site settings"},
+		},
+		ContentLinks:   profileLinks(),
+		ContentActions: tokenListActions(),
+	}) {
+		<div class="flex flex-col gap-2 text-lg">
+			<span>
+				<a href={ paths.GithubApps() }>GitHub app</a>
+			</span>
+		</div>
+	}
+}

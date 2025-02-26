@@ -1,0 +1,127 @@
+package github
+
+import (
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"strconv"
+)
+
+type newAppViewProps struct {
+	manifest       string
+	githubHostname string
+}
+
+templ newAppView(props newAppViewProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "select app owner",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "Create GitHub app"},
+		},
+	}) {
+		<script src={ components.AssetPath(ctx, "/static/js/github_apps_new.js") }></script>
+		<div x-data={ "action('" + props.githubHostname + "', '" + props.manifest + "')" }>
+			<form class="flex flex-col gap-4" :action="action" method="post">
+				<div class="field">
+					<label for="organization">Organization</label>
+					<span class="description">
+						If assigning ownership to a GitHub organization, enter its name here. Otherwise ownership is assigned to your personal GitHub account.
+					</span>
+					<input class="text-input w-48" id="organization" x-model="organization"/>
+				</div>
+				<div class="form-checkbox">
+					<input type="checkbox" id="public" x-model="public" x-init="$watch('public', value => manifest.public = public)"/>
+					<label for="public">Public</label>
+					<span class="description">By default an app is private and can only be installed on the owner's account. If you intend to install the app in more than one organization or user account then it is necessary to make the app public.</span>
+				</div>
+				<input type="hidden" name="manifest" :value="JSON.stringify(manifest)"/>
+				<button class="btn w-40">Create</button>
+			</form>
+		</div>
+	}
+}
+
+type getAppsProps struct {
+	app            *App
+	installations  []*Installation
+	githubHostname string
+	canCreateApp   bool
+	canDeleteApp   bool
+}
+
+templ getApps(props getAppsProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "github app",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "GitHub app"},
+		},
+	}) {
+		if props.app != nil {
+			<div class="flex flex-col gap-2 text-lg">
+				<div class="widget">
+					<div>
+						<span>
+							<a class="flex underline gap-1 items-center" href={ templ.SafeURL(props.app.URL(props.githubHostname)) } target="GithubTab">
+								{ props.app.String() }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+							</a>
+						</span>
+					</div>
+					<div>
+						@components.CopyableContent() {
+							<span class="identifier">
+								{ strconv.Itoa(int(props.app.ID)) }
+							</span>
+						}
+						if props.canDeleteApp {
+							<form action={ paths.DeleteGithubApp(strconv.Itoa(int(props.app.ID))) } method="POST">
+								<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+								<input type="hidden" name="id" value={ strconv.Itoa(int(props.app.ID)) }/>
+							</form>
+						}
+					</div>
+				</div>
+			</div>
+			<hr class="my-4"/>
+			<h3 class="font-semibold text-lg">Installations</h3>
+			<form action={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) } method="GET" target="GithubTab">
+				<button class="btn w-32 flex gap-1 items-center justify-center">
+					Install<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+				</button>
+			</form>
+			<div id="installations">
+				for _, install := range props.installations {
+					<div class="flex flex-col gap-2 text-lg">
+						<div class="widget">
+							<div>
+								<span>
+									<a class="flex underline gap-1 items-center" href={ templ.SafeURL(*install.HTMLURL) } target="GithubTab">
+										{ install.String() }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+									</a>
+								</span>
+							</div>
+							<div>
+								@components.CopyableContent() {
+									<span class="identifier">
+										{ strconv.Itoa(int(*install.ID)) }
+									</span>
+								}
+								<form action={ paths.DeleteInstallGithubApp(strconv.Itoa(int(*install.ID))) } method="POST">
+									<button class="btn-danger" onclick="return confirm('Are you sure you want to uninstall?')">uninstall</button>
+									<input type="hidden" name="install_id" value={ strconv.Itoa(int(*install.ID)) }/>
+								</form>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		} else {
+			<span>
+				No GitHub app found.
+				if props.canCreateApp {
+					Create an app <a id="new-github-app-link" class="underline" href={ paths.NewGithubApp() }>here</a>.
+				} else {
+					To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/latest/auth/site_admins/">site admin</a> role.
+				}
+			</span>
+		}
+	}
+}

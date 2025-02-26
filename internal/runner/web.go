@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
@@ -123,13 +124,11 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-	h.Render("runners_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Runners []*RunnerMeta
-	}{
-		OrganizationPage: organization.NewPage(r, "runners", org),
-		Runners:          runners,
-	})
+	props := listRunnersProps{
+		organization: org,
+		runners:      runners,
+	}
+	templ.Handler(listRunners(props)).ServeHTTP(w, r)
 }
 
 // agent pool handlers

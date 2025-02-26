@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -95,15 +96,11 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("github_apps_new.tmpl", w, struct {
-		html.SitePage
-		Manifest       string
-		GithubHostname string
-	}{
-		SitePage:       html.NewSitePage(r, "select app owner"),
-		Manifest:       string(marshaled),
-		GithubHostname: h.GithubHostname,
-	})
+	props := newAppViewProps{
+		manifest:       string(marshaled),
+		githubHostname: h.GithubHostname,
+		}
+	templ.Handler(newAppView(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -125,21 +122,14 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("github_apps_get.tmpl", w, struct {
-		html.SitePage
-		App            *App
-		Installations  []*Installation
-		GithubHostname string
-		CanCreateApp   bool
-		CanDeleteApp   bool
-	}{
-		SitePage:       html.NewSitePage(r, "github app"),
-		App:            app,
-		Installations:  installs,
-		GithubHostname: h.GithubHostname,
-		CanCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
-		CanDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
-	})
+	props := getAppsProps{
+		app:            app,
+		installations:  installs,
+		githubHostname: h.GithubHostname,
+		canCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
+		canDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
+	}
+	templ.Handler(getApps(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
