@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 	workspacepkg "github.com/leg100/otf/internal/workspace"
@@ -204,17 +203,11 @@ func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("agent_pools_list.tmpl", w, struct {
-		organization.OrganizationPage
-		// list template expects pagination object but we don't paginate token
-		// listing
-		*resource.Pagination
-		Items []*Pool
-	}{
-		OrganizationPage: organization.NewPage(r, "agent pools", org),
-		Pagination:       &resource.Pagination{},
-		Items:            pools,
-	})
+	props := listAgentPoolProps{
+		organization: org,
+		pools:        pools,
+	}
+	templ.Handler(listAgentPools(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
@@ -280,25 +273,16 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("agent_pool_get.tmpl", w, struct {
-		organization.OrganizationPage
-		Pool                           *Pool
-		CanDeleteAgentPool             bool
-		AllowedButUnassignedWorkspaces []poolWorkspace
-		AssignedWorkspaces             []poolWorkspace
-		AvailableWorkspaces            []poolWorkspace
-		Tokens                         []*agentToken
-		Agents                         []*RunnerMeta
-	}{
-		OrganizationPage:               organization.NewPage(r, pool.Name, pool.Organization),
-		Pool:                           pool,
-		CanDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
-		AllowedButUnassignedWorkspaces: allowedButUnassignedWorkspaces,
-		AssignedWorkspaces:             assignedWorkspaces,
-		AvailableWorkspaces:            availableWorkspaces,
-		Tokens:                         tokens,
-		Agents:                         agents,
-	})
+	props := getAgentPoolProps{
+		pool:                           pool,
+		allowedButUnassignedWorkspaces: allowedButUnassignedWorkspaces,
+		assignedWorkspaces:             assignedWorkspaces,
+		availableWorkspaces:            availableWorkspaces,
+		tokens:                         tokens,
+		agents:                         agents,
+		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
+	}
+	templ.Handler(getAgentPool(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
