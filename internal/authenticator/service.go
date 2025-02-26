@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
@@ -103,11 +104,5 @@ func (a *service) AddHandlers(r *mux.Router) {
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	a.Render("login.tmpl", w, struct {
-		html.SitePage
-		Clients []*OAuthClient
-	}{
-		SitePage: html.NewSitePage(r, "login"),
-		Clients:  a.clients,
-	})
+	templ.Handler(login(a.clients)).ServeHTTP(w, r)
 }

@@ -1,0 +1,56 @@
+package variable
+
+import (
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+type editWorkspaceVariableProps struct {
+	ws       *workspace.Workspace
+	variable *Variable
+}
+
+templ editWorkspaceVariable(props editWorkspaceVariableProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "edit | " + props.variable.ID.String(),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
+			{Name: "edit"},
+		},
+	}) {
+		<span class="text-xl">Edit workspace variable</span>
+		@form(formProps{
+			variable: props.variable,
+			edit:     true,
+			action:   paths.UpdateVariable(props.variable.ID.String()),
+		})
+	}
+}
+
+type editVSVProps struct {
+	set      *VariableSet
+	variable *Variable
+}
+
+templ editVSV(props editVSVProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "edit variable set variable",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID.String())},
+			{Name: "variables"},
+			{Name: props.variable.ID.String()},
+			{Name: "edit"},
+		},
+	}) {
+		<span class="text-xl">Edit variable</span>
+		@form(formProps{
+			variable: props.variable,
+			edit:     true,
+			action:   paths.UpdateVariableSetVariable(props.variable.ID.String()),
+		})
+	}
+}

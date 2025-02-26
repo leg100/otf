@@ -1,0 +1,43 @@
+package variable
+
+import (
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/workspace"
+)
+
+templ newWorkspaceVariable(ws *workspace.Workspace) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new variable",
+		Organization: ws.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: "new"},
+		},
+	}) {
+		<span class="text-xl">Add a new workspace variable</span>
+		@form(formProps{
+			variable: &Variable{},
+			action:   paths.CreateVariable(ws.ID.String()),
+		})
+	}
+}
+
+templ newVSV(vs *VariableSet) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new variable | variable sets",
+		Organization: vs.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
+			{Name: vs.Name, Link: paths.VariableSet(vs.ID.String())},
+			{Name: "new variable"},
+		},
+	}) {
+		<span class="text-xl">Add new variable to variable set</span>
+		@form(formProps{
+			variable: &Variable{},
+			action:   paths.CreateVariableSetVariable(vs.ID.String()),
+		})
+	}
+}

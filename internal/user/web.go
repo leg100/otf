@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
@@ -73,7 +74,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/teams/{team_id}/add-member", h.addTeamMember).Methods("POST")
 	r.HandleFunc("/teams/{team_id}/remove-member", h.removeTeamMember).Methods("POST")
 	// NOTE: to avoid an import cycle the getTeam handler is located here rather
-	// than in the team package where it ought to belong.the
+	// than in the team package where it ought to belong
 	r.HandleFunc("/teams/{team_id}", h.getTeam).Methods("GET")
 
 	// terraform login opens a browser to this hardcoded URL
@@ -108,23 +109,12 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("profile.tmpl", w, struct {
-		html.SitePage
-		User authz.Subject
-	}{
-		SitePage: html.NewSitePage(r, "profile"),
-		User:     user,
-	})
+	templ.Handler(profile()).ServeHTTP(w, r)
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	h.Render("site_admin_login.tmpl", w, html.NewSitePage(r, "site admin login"))
+	templ.Handler(adminLogin()).ServeHTTP(w, r)
 }
 
 // adminLogin logs in a site admin
@@ -290,7 +280,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 //
 
 func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	h.Render("token_new.tmpl", w, html.NewSitePage(r, "new user token"))
+	templ.Handler(newToken()).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
@@ -324,16 +314,7 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	h.Render("user_token_list.tmpl", w, struct {
-		html.SitePage
-		// list template expects pagination object
-		*resource.Pagination
-		Items []*UserToken
-	}{
-		SitePage:   html.NewSitePage(r, "user tokens"),
-		Pagination: &resource.Pagination{},
-		Items:      tokens,
-	})
+	templ.Handler(tokenList(tokens)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {

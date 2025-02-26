@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -118,7 +117,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(new(ws)).ServeHTTP(w, r)
+	templ.Handler(newWorkspaceVariable(ws)).ServeHTTP(w, r)
 }
 
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -172,9 +171,9 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	merged := mergeVariables(sets, variables, nil)
-	setVariableTables := make([]setTableProps, len(sets))
+	variableSetTables := make([]setTableProps, len(sets))
 	for i := range sets {
-		setVariableTables[i] = setTableProps{
+		variableSetTables[i] = setTableProps{
 			set:    sets[i],
 			merged: merged,
 			// hide delete button for set variables
@@ -187,7 +186,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 			variables:         variables,
 			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		},
-		setTablesProps:     setVariableTables,
+		setTablesProps:     variableSetTables,
 		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
@@ -213,17 +212,11 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_edit.tmpl", w, struct {
-		workspace.WorkspacePage
-		Variable   *Variable
-		EditMode   bool
-		FormAction string
-	}{
-		WorkspacePage: workspace.NewPage(r, "edit | "+wv.ID.String(), ws),
-		Variable:      wv.Variable,
-		EditMode:      true,
-		FormAction:    paths.UpdateVariable(wv.ID.String()),
-	})
+	props := editWorkspaceVariableProps{
+		ws:       ws,
+		variable: wv.Variable,
+	}
+	templ.Handler(editWorkspaceVariable(props)).ServeHTTP(w, r)
 }
 
 func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -281,15 +274,12 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_set_list.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSets []*VariableSet
-		CanCreate    bool
-	}{
-		OrganizationPage: organization.NewPage(r, "variable sets", org),
-		VariableSets:     sets,
-		CanCreate:        h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
-	})
+	props := listVariableSetsProps{
+		organization:         org,
+		sets:                 sets,
+		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
+	}
+	templ.Handler(listVariableSets(props)).ServeHTTP(w, r)
 }
 
 func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -306,23 +296,11 @@ func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_set_new.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSet         *VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-	}{
-		OrganizationPage: organization.NewPage(r, "variable sets", org),
-		VariableSet: &VariableSet{
-			Global: true, // set global as default
-		},
-		EditMode:            false,
-		FormAction:          paths.CreateVariableSet(org),
-		AvailableWorkspaces: availableWorkspaces,
-		ExistingWorkspaces:  []workspaceInfo{},
-	})
+	props := newVariableSetProps{
+		organization:        org,
+		availableWorkspaces: availableWorkspaces,
+	}
+	templ.Handler(newVariableSet(props)).ServeHTTP(w, r)
 }
 
 func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -398,30 +376,16 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("variable_set_edit.tmpl", w, struct {
-		organization.OrganizationPage
-		*VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-		CanCreateVariable   bool
-		CanDeleteVariable   bool
-		VariableTable       setTableProps
-	}{
-		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID.String(), set.Organization),
-		VariableSet:         set,
-		EditMode:            true,
-		FormAction:          paths.UpdateVariableSet(set.ID.String()),
-		AvailableWorkspaces: availableWorkspaces,
-		ExistingWorkspaces:  existingWorkspaces,
-		CanCreateVariable:   h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		CanDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		VariableTable: setTableProps{
-			set:                       set,
+	props := editVariableSetProps{
+		set:                 set,
+		availableWorkspaces: availableWorkspaces,
+		existingWorkspaces:  existingWorkspaces,
+		variableTable: setTableProps{
+			set:               set,
 			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		},
-	})
+	}
+	templ.Handler(editVariableSet(props)).ServeHTTP(w, r)
 }
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -493,19 +457,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_set_new_variable.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSet *VariableSet
-		Variable    *Variable
-		EditMode    bool
-		FormAction  string
-	}{
-		OrganizationPage: organization.NewPage(r, "new variable | variable sets", set.Organization),
-		VariableSet:      set,
-		Variable:         &Variable{},
-		EditMode:         false,
-		FormAction:       paths.CreateVariableSetVariable(setID.String()),
-	})
+	templ.Handler(newVSV(set)).ServeHTTP(w, r)
 }
 
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -550,19 +502,7 @@ func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	}
 	v := set.getVariable(variableID)
 
-	h.Render("variable_set_edit_variable.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSet *VariableSet
-		Variable    *Variable
-		EditMode    bool
-		FormAction  string
-	}{
-		OrganizationPage: organization.NewPage(r, "edit variable", set.Organization),
-		VariableSet:      set,
-		Variable:         v,
-		EditMode:         true,
-		FormAction:       paths.UpdateVariableSetVariable(v.ID.String()),
-	})
+	templ.Handler(editVSV(editVSVProps{set: set, variable: v})).ServeHTTP(w, r)
 }
 
 func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
