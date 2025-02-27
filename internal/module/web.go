@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -84,15 +85,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Render("module_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Items            []*Module
-		CanPublishModule bool
-	}{
-		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
-		Items:            modules,
-		CanPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
-	})
+
+	props := listProps{
+		organization:     opts.Organization,
+		modules:          modules,
+		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
+	}
+	templ.Handler(list(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -136,31 +135,14 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("module_get.tmpl", w, struct {
-		organization.OrganizationPage
-		Module                    *Module
-		TerraformModule           *TerraformModule
-		Readme                    template.HTML
-		CurrentVersion            *ModuleVersion
-		Hostname                  string
-		ModuleStatusPending       ModuleStatus
-		ModuleStatusNoVersionTags ModuleStatus
-		ModuleStatusSetupFailed   ModuleStatus
-		ModuleStatusSetupComplete ModuleStatus
-		ModuleVersionStatusOK     ModuleVersionStatus
-	}{
-		OrganizationPage:          organization.NewPage(r, module.ID.String(), module.Organization),
-		Module:                    module,
-		TerraformModule:           tfmod,
-		Readme:                    readme,
-		CurrentVersion:            modver,
-		Hostname:                  h.system.Hostname(),
-		ModuleStatusPending:       ModuleStatusPending,
-		ModuleStatusNoVersionTags: ModuleStatusNoVersionTags,
-		ModuleStatusSetupFailed:   ModuleStatusSetupFailed,
-		ModuleStatusSetupComplete: ModuleStatusSetupComplete,
-		ModuleVersionStatusOK:     ModuleVersionStatusOK,
-	})
+	props := getProps{
+		module:          module,
+		terraformModule: tfmod,
+		readme:          readme,
+		currentVersion:  modver,
+		hostname:        h.system.Hostname(),
+	}
+	templ.Handler(get(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -195,15 +177,12 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_new.tmpl", w, struct {
-		organization.OrganizationPage
-		Items []*vcsprovider.VCSProvider
-		Step  newModuleStep
-	}{
-		OrganizationPage: organization.NewPage(r, "new module", org),
-		Items:            providers,
-		Step:             newModuleConnectStep,
-	})
+	props := newViewProps{
+		organization: org,
+		providers:    providers,
+		step:         newModuleConnectStep,
+	}
+	templ.Handler(newView(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
