@@ -11,8 +11,8 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -226,36 +226,25 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("team_get.tmpl", w, struct {
-		organization.OrganizationPage
-		Team              *otfteam.Team
-		Members           []*User
-		AddMemberDropdown html.DropdownUI
-		CanUpdateTeam     bool
-		CanDeleteTeam     bool
-		CanAddMember      bool
-		CanRemoveMember   bool
-		CanDelete         bool
-		IsOwner           bool
-	}{
-		OrganizationPage: organization.NewPage(r, team.ID.String(), team.Organization),
-		Team:             team,
-		Members:          members,
-		CanUpdateTeam:    user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanDeleteTeam:    user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanAddMember:     user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanRemoveMember:  user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanDelete:        user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		IsOwner:          user.IsOwner(team.Organization),
-		AddMemberDropdown: html.DropdownUI{
+	props := getTeamProps{
+		team:            team,
+		members:         members,
+		canUpdateTeam:   user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		canDeleteTeam:   user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		canAddMember:    user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		canRemoveMember: user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		canDelete:       user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		isOwner:         user.IsOwner(team.Organization),
+		dropdown: components.SearchDropdownProps{
 			Name:        "username",
 			Available:   nonMemberUsernames,
 			Existing:    usernames,
-			Action:      paths.AddMemberTeam(team.ID.String()),
+			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID.String())),
 			Placeholder: "Add user",
-			Width:       html.WideDropDown,
+			Width:       components.WideDropDown,
 		},
-	})
+	}
+	templ.Handler(getTeam(props)).ServeHTTP(w, r)
 }
 
 //

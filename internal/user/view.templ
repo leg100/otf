@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/team"
 	"time"
 )
 
@@ -60,6 +61,123 @@ templ userListItem(user *User) {
 		<span id="username">{ user.Username }</span>
 		@components.Identifier(user.ID)
 	</div>
+}
+
+type getTeamProps struct {
+	team            *team.Team
+	members         []*User
+	canUpdateTeam   bool
+	canDeleteTeam   bool
+	canAddMember    bool
+	canRemoveMember bool
+	canDelete       bool
+	isOwner         bool
+	dropdown        components.SearchDropdownProps
+}
+
+templ getTeam(props getTeamProps) {
+	@components.Layout(components.LayoutProps{
+		Title: props.team.ID.String(),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "teams", Link: paths.Teams(props.team.Organization)},
+			{Name: props.team.Name},
+		},
+	}) {
+		if props.canUpdateTeam {
+			<h3 class="font-semibold my-2 text-lg">Permissions</h3>
+			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID.String()) } method="POST">
+				<div class="form-checkbox">
+					<input
+						type="checkbox"
+						name="manage_workspaces"
+						id="manage_workspaces"
+						value="true"
+						checked?={ props.team.OrganizationAccess().ManageWorkspaces || props.team.IsOwners() }
+						if props.team.IsOwners() {
+							title="cannot change permissions of owners team"
+							disabled
+						}
+					/>
+					<label for="manage_workspaces">Manage Workspaces</label>
+					<span class="description">Allows members to create and administrate all workspaces within the organization.</span>
+				</div>
+				<div class="form-checkbox">
+					<input
+						type="checkbox"
+						name="manage_vcs"
+						id="manage_vcs"
+						value="true"
+						checked?={ props.team.OrganizationAccess().ManageVCS || props.team.IsOwners() }
+						if props.team.IsOwners() {
+							title="cannot change permissions of owners team"
+							disabled
+						}
+					/>
+					<label for="manage_vcs">Manage VCS Settings</label>
+					<span class="description">Allows members to manage the set of VCS providers available within the organization.</span>
+				</div>
+				<div class="form-checkbox">
+					<input
+						type="checkbox"
+						name="manage_modules"
+						id="manage_modules"
+						value="true"
+						checked?={ props.team.OrganizationAccess().ManageModules || props.team.IsOwners() }
+						if props.team.IsOwners() {
+							title="cannot change permissions of owners team"
+							disabled
+						}
+					/>
+					<label for="manage_modules">Manage Modules</label>
+					<span class="description" for="manage_modules">Allows members to publish and delete modules within the organization.</span>
+				</div>
+				if !props.team.IsOwners() {
+					<div class="field">
+						<button class="btn w-40">Save changes</button>
+					</div>
+				}
+			</form>
+			<hr class="my-4"/>
+		}
+		<h3 class="font-semibold my-2 text-lg">Members</h3>
+		if props.canAddMember {
+			@components.SearchDropdown(props.dropdown)
+		}
+		<div id="content-list">
+			for _, member := range props.members {
+				<div id={ "item-user-" + member.Username } class="widget">
+					<div>
+						<span id="username">{ member.Username }</span>
+					</div>
+					<div>
+						@components.Identifier(member.ID)
+						if props.canRemoveMember {
+							<form action={ paths.RemoveMemberTeam(props.team.ID.String()) } method="POST">
+								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
+								<button id="remove-member-button" class="btn-danger">
+									Remove member
+								</button>
+							</form>
+						}
+					</div>
+				</div>
+			}
+			if len(props.members) == 0 {
+				The team currently has no members.
+			}
+		</div>
+		if  props.team.IsOwners() && props.canDeleteTeam {
+			<hr class="my-4"/>
+			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
+			<form action={ paths.DeleteTeam(props.team.ID.String()) } method="POST">
+				<button
+					class="btn-danger"
+					onclick="return confirm('Are you sure you want to delete?')"
+				>Delete team</button>
+				<input type="hidden" name="id" value={ props.team.ID.String() }/>
+			</form>
+		}
+	}
 }
 
 templ newToken() {
