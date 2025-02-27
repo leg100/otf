@@ -44,6 +44,24 @@ templ profileLinks() {
 	</div>
 }
 
+templ userList(users []*User) {
+	@components.Layout(components.LayoutProps{
+		Title: "users",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "users"},
+		},
+	}) {
+		@components.ContentList(users, userListItem)
+	}
+}
+
+templ userListItem(user *User) {
+	<div id={ "item-user-" + user.Username } class="widget">
+		<span id="username">{ user.Username }</span>
+		@components.Identifier(user.ID)
+	</div>
+}
+
 templ newToken() {
 	@components.Layout(components.LayoutProps{
 		Title: "new user token",

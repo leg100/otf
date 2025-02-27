@@ -1,0 +1,209 @@
+package vcsprovider
+
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/vcs"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type listProps struct {
+	organization string
+	providers    []*VCSProvider
+	app          *github.App
+}
+
+templ list(props listProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "vcs providers",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "vcs providers"},
+		},
+	}) {
+		<div>
+			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
+		</div>
+		<div id="content-list">
+			for _, provider := range props.providers {
+				@listItem(provider)
+			}
+			if len(props.providers) == 0 {
+				No VCS providers are currently configured.
+			}
+		</div>
+		<div class="flex flex-col gap-4 mt-4">
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+				<button class="btn">New Github VCS Provider (Personal Token)</button>
+				<input type="hidden" name="kind" id="kind" value="github"/>
+			</form>
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+				<button class="btn">New Gitlab VCS Provider (Personal Token)</button>
+				<input type="hidden" name="kind" id="kind" value="gitlab"/>
+			</form>
+			if props.app != nil {
+				<form action={ paths.NewGithubAppVCSProvider(props.organization) } method="GET">
+					<button class="btn">New Github VCS Provider (App)</button>
+				</form>
+			} else {
+				<span>Alternatively, <a class="underline" href={ paths.NewGithubApp() }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
+			}
+		</div>
+	}
+}
+
+templ listItem(provider *VCSProvider) {
+	<div x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID.String())) } class="widget" id={ provider.ID.String() }>
+		<div>
+			<span>
+				<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID.String()) }>{ provider.String() }</a>
+			</span>
+			<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
+		</div>
+		<div>
+			@components.Identifier(provider.ID)
+			<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
+				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+				<input type="hidden" name="id" value={ provider.ID.String() }/>
+			</form>
+		</div>
+	</div>
+}
+
+templ edit(provider *VCSProvider) {
+	@components.Layout(components.LayoutProps{
+		Title: "edit vcs provider",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
+			{Name: provider.String()},
+			{Name: "settings"},
+		},
+	}) {
+		@form(formProps{
+			provider: provider,
+			edit:     true,
+			action:   paths.UpdateVCSProvider(provider.ID.String()),
+		})
+		<hr class="my-4"/>
+		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
+		<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
+			<button id="delete-vcs-provider-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+				Delete VCS provider
+			</button>
+		</form>
+	}
+}
+
+type newPATProps struct {
+	provider  *VCSProvider
+	tokensURL templ.SafeURL
+	scope     string
+}
+
+templ newPAT(props newPATProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "new vcs provider",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "New " + strings.Title(string(props.provider.Kind)) + " VCS Provider"},
+		},
+	}) {
+		<div>
+			Create a { strings.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ props.tokensURL }>personal token</a> with the <span class="bg-gray-200">{ props.scope }</span> scope.
+		</div>
+		@form(formProps{
+			provider: props.provider,
+			action:   paths.CreateVCSProvider(props.provider.Organization),
+		})
+	}
+}
+
+type newGithubAppProps struct {
+	organization   string
+	app            *github.App
+	installations  []*github.Installation
+	kind           vcs.Kind
+	githubHostname string
+}
+
+templ newGithubApp(props newGithubAppProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "new vcs provider",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "New Github App VCS Provider"},
+		},
+	}) {
+		if len(props.installations) > 0 {
+			Create a VCS provider that leverages the permissions of a GitHub app installation.
+			<form class="flex flex-col gap-4" action={ paths.CreateVCSProvider(props.organization) } method="POST">
+				<div class="field">
+					<label for="name">Name</label>
+					<input class="text-input w-64" type="text" name="name" id="name" placeholder="github"/>
+					<span class="description">An optional display name for your VCS provider.</span>
+				</div>
+				<div class="field">
+					<label for="install_id">Installation</label>
+					<select class="w-48" name="install_id" id="select-install-id">
+						for _, install := range props.installations {
+							<option value={ strconv.Itoa(int(*install.ID)) }>{ install.String() }</option>
+						}
+					</select>
+					<span class="description">Select a Github App installation.</span>
+				</div>
+				<button class="btn w-32" id="create-vcs-provider-button">Create</button>
+			</form>
+		} else {
+			<span>No installations of the GitHub app found. Install it <a class="underline" href={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) }>on Github first</a>.</span>
+		}
+	}
+}
+
+type formProps struct {
+	provider *VCSProvider
+	action   templ.SafeURL
+	edit     bool
+}
+
+templ form(props formProps) {
+	<form class="flex flex-col gap-5" action={ props.action } method="POST">
+		<div class="field">
+			<label for="name">Name</label>
+			<input
+				class="text-input w-64"
+				type="text"
+				name="name"
+				id="name"
+				if props.provider.Name != "" {
+					value={ props.provider.Name }
+				} else {
+					placeholder={ props.provider.String() }
+				}
+			/>
+			<span class="description">An optional display name for your VCS provider.</span>
+		</div>
+		if props.provider.GithubApp != nil {
+			<div class="field">
+				<label for="token">Token</label>
+				<textarea
+					class="text-input w-96"
+					rows="3"
+					name="token"
+					id="token"
+					if props.edit {
+						placeholder="*****"
+					} else {
+						required
+					}
+				></textarea>
+			</div>
+		}
+		if props.edit {
+			<button class="btn w-32">Update</button>
+		} else {
+			<button class="btn w-32">Create</button>
+			<input type="hidden" name="kind" id="kind" value={ string(props.provider.Kind) }/>
+		}
+	</form>
+}

@@ -99,13 +99,7 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.Render("users_list.tmpl", w, struct {
-		html.SitePage
-		Users []*User
-	}{
-		SitePage: html.NewSitePage(r, "users"),
-		Users:    users,
-	})
+	templ.Handler(userList(users)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {

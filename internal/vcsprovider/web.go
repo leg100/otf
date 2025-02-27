@@ -4,15 +4,16 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/templ-go/x/urlbuilder"
 )
 
 type webHandlers struct {
@@ -49,7 +50,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get).Methods("GET")
 }
 
 func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
@@ -62,31 +62,21 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := struct {
-		organization.OrganizationPage
-		VCSProvider *VCSProvider
-		FormAction  string
-		EditMode    bool
-		TokensURL   string
-		Scope       string
-		Kind        string
-	}{
-		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		VCSProvider:      &VCSProvider{Kind: params.Kind},
-		FormAction:       paths.CreateVCSProvider(params.Organization),
-		EditMode:         false,
+	props := newPATProps{
+		provider: &VCSProvider{
+			Kind:         params.Kind,
+			Organization: params.Organization,
+		},
 	}
 	switch params.Kind {
 	case vcs.GithubKind:
-		response.Kind = string(vcs.GithubKind)
-		response.Scope = "repo"
-		response.TokensURL = "https://" + h.GithubHostname + "/settings/tokens"
+		props.scope = "repo"
+		props.tokensURL = urlbuilder.New("https", h.GithubHostname).Path("/settings/tokens").Build()
 	case vcs.GitlabKind:
-		response.Kind = string(vcs.GitlabKind)
-		response.Scope = "api"
-		response.TokensURL = "https://" + h.GitlabHostname + "/-/profile/personal_access_tokens"
+		props.scope = "api"
+		props.tokensURL = urlbuilder.New("https", h.GitlabHostname).Path("/-/profile/personal_access_tokens").Build()
 	}
-	h.Render("vcs_provider_pat_new.tmpl", w, response)
+	templ.Handler(newPAT(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
@@ -109,19 +99,14 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("vcs_provider_github_app_new.tmpl", w, struct {
-		organization.OrganizationPage
-		App            *github.App
-		Installations  []*github.Installation
-		Kind           vcs.Kind
-		GithubHostname string
-	}{
-		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		App:              app,
-		Installations:    installs,
-		Kind:             vcs.GithubKind,
-		GithubHostname:   h.GithubHostname,
-	})
+	props := newGithubAppProps{
+		organization:   params.Organization,
+		app:            app,
+		installations:  installs,
+		kind:           vcs.GithubKind,
+		githubHostname: h.GithubHostname,
+	}
+	templ.Handler(newGithubApp(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -164,17 +149,7 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("vcs_provider_edit.tmpl", w, struct {
-		organization.OrganizationPage
-		VCSProvider *VCSProvider
-		FormAction  string
-		EditMode    bool
-	}{
-		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
-		VCSProvider:      provider,
-		FormAction:       paths.UpdateVCSProvider(providerID.String()),
-		EditMode:         true,
-	})
+	templ.Handler(edit(provider)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
@@ -220,34 +195,12 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Render("vcs_provider_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Items     []*VCSProvider
-		GithubApp *github.App
-	}{
-		OrganizationPage: organization.NewPage(r, "vcs providers", org),
-		Items:            providers,
-		GithubApp:        app,
-	})
-}
-
-func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("vcs_provider_id", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
+	props := listProps{
+		organization: org,
+		providers:    providers,
+		app:          app,
 	}
-
-	provider, err := h.client.Get(r.Context(), id)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("vcs_provider_get.tmpl", w, struct {
-		VCSProvider *VCSProvider
-	}{
-		VCSProvider: provider,
-	})
+	templ.Handler(list(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {

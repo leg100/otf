@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -52,11 +52,7 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_new.tmpl", w, struct {
-		organization.OrganizationPage
-	}{
-		OrganizationPage: organization.NewPage(r, "new team", org),
-	})
+	templ.Handler(newTeamView(org)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
@@ -125,15 +121,12 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Teams         []*Team
-		CanCreateTeam bool
-	}{
-		OrganizationPage: organization.NewPage(r, "teams", org),
-		Teams:            teams,
-		CanCreateTeam:    subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
-	})
+	props := listTeamsProps{
+		organization:  org,
+		teams:         teams,
+		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
+	}
+	templ.Handler(listTeams(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {

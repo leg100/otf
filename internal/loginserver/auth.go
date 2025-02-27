@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -55,7 +55,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		s.Render("consent.tmpl", w, html.NewSitePage(r, "consent"))
+		templ.Handler(consent()).ServeHTTP(w, r)
 		return
 	}
 

@@ -57,6 +57,7 @@ templ Layout(props LayoutProps) {
 		if props.ContentMenu != nil {
 			@props.ContentMenu
 		}
+		@Flashes()
 		<div class="flex flex-col gap-2 mb-4" id="content">
 			{ children... }
 		</div>
