@@ -114,7 +114,6 @@ func newTemplateCache(templates fs.FS, buster *CacheBuster, devMode bool) (map[s
 	funcs["addHash"] = buster.Path
 	funcs["version"] = func() string { return internal.Version }
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
-	funcs["mergeQuery"] = mergeQuery
 	funcs["prevPageQuery"] = prevPageQuery
 	funcs["nextPageQuery"] = nextPageQuery
 	funcs["selected"] = selected

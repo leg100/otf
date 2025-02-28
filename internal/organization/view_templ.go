@@ -126,7 +126,7 @@ func list(props listProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.ContentList(props.Page.Items, listItem).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.PaginatedContentList(props.Page, listItem).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

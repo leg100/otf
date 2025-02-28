@@ -6,13 +6,14 @@ import (
 	"net/url"
 	"reflect"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 )
 
-// mergeQuery merges the query string into the given url, replacing any existing
+// MergeQuery merges the query string into the given url, replacing any existing
 // query parameters with the same name.
-func mergeQuery(u string, q string) (string, error) {
+func MergeQuery(u string, q string) (templ.SafeURL, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return "", err
@@ -26,7 +27,7 @@ func mergeQuery(u string, q string) (string, error) {
 		existingQuery.Set(k, v[0])
 	}
 	parsedURL.RawQuery = existingQuery.Encode()
-	return parsedURL.String(), nil
+	return templ.SafeURL(parsedURL.String()), nil
 }
 
 func prevPageQuery(p resource.Pagination) *string {

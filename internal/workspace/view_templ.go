@@ -238,7 +238,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.ContentList(props.page.Items, listItem).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.PaginatedContentList(props.page, listItem).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

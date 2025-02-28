@@ -7,10 +7,8 @@ import (
 	"github.com/leg100/otf/internal/authz"
 )
 
-const (
-	// number of items in a paginated result to show on a single page
-	PageSize int = 100
-)
+// number of items in a paginated result to show on a single page
+const PageSize int = 10
 
 // SitePage contains data shared by all pages when rendering templates.
 type SitePage struct {

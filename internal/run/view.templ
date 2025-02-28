@@ -26,7 +26,7 @@ templ list(props listProps) {
 		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name:  props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			{Name: "runs"},
 		},
 	}
@@ -36,7 +36,7 @@ templ list(props listProps) {
 		<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
 			<!-- /* if a new run is created then reload entire run listing */ -->
 			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
-			@components.ContentList(props.page.Items, widget)
+			@components.PaginatedContentList(props.page, widget)
 		</div>
 	}
 }
@@ -51,12 +51,12 @@ type getProps struct {
 templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
-		Title:        props.run.ID.String(),
-		PreContent:   getPreContent(),
-		PostContent:  getPostContent(props),
+		Title:       props.run.ID.String(),
+		PreContent:  getPreContent(),
+		PostContent: getPostContent(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name:  props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
 			{Name: props.run.ID.String()},
 		},
@@ -123,10 +123,12 @@ templ getPreContent() {
 
 templ getPostContent(props getProps) {
 	if !props.planLogs.IsEnd() {
-      @templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "plan", props.planLogs.NextOffset());
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "plan", props.planLogs.NextOffset())
+		;
 	}
 	if !props.applyLogs.IsEnd() {
-      @templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "apply", props.applyLogs.NextOffset());
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "apply", props.applyLogs.NextOffset())
+		;
 	}
 }
 

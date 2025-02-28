@@ -46,7 +46,7 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.ContentList(props.Page.Items, listItem)
+		@components.PaginatedContentList(props.Page, listItem)
 	}
 }
 

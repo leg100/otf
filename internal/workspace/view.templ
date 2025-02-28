@@ -20,9 +20,9 @@ templ new(organization string) {
 		Title:        "new workspace",
 		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(organization)},
-				{Name: "new"},
-				},
+			{Name: "workspaces", Link: paths.Workspaces(organization)},
+			{Name: "new"},
+		},
 	}) {
 		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
 			<div class="field">
@@ -48,7 +48,7 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:          "workspaces",
-		Organization: props.organization,
+		Organization:   props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces"},
@@ -72,7 +72,7 @@ templ list(props listProps) {
 			</div>
 		</form>
 		<div id="workspace-listing-container">
-			@components.ContentList(props.page.Items, listItem)
+			@components.PaginatedContentList(props.page, listItem)
 		</div>
 	}
 }
@@ -129,7 +129,7 @@ templ get(props getProps) {
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name:  props.ws.Name},
+			{Name: props.ws.Name},
 		},
 	}
 	}}
@@ -243,7 +243,7 @@ templ edit(props editProps) {
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name:  props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			{Name: "settings"},
 		},
 	}
@@ -519,7 +519,7 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 		Organization: ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			{Name:  ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 			{Name: "vcs providers"},
 		},
 	}
@@ -553,7 +553,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
 		Organization: ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			{Name:  ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 			{Name: "vcs repositories"},
 		},
 	}
