@@ -99,7 +99,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	props := newAppViewProps{
 		manifest:       string(marshaled),
 		githubHostname: h.GithubHostname,
-		}
+	}
 	templ.Handler(newAppView(props)).ServeHTTP(w, r)
 }
 
@@ -187,15 +187,13 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	err = h.RenderTemplate("github_delete_message.tmpl", buf, struct {
-		GithubHostname string
-		*App
-	}{
-		GithubHostname: h.GithubHostname,
-		App:            app,
-	})
-	if err != nil {
+	props := deleteMessageProps{
+		githubHostname: h.GithubHostname,
+		app:            app,
+	}
+	if err := deleteMessage(props).Render(r.Context(), buf); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	html.FlashSuccess(w, buf.String())
 

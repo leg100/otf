@@ -324,13 +324,11 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("agent_pools_list_allowed.tmpl", w, struct {
-		Pools         []*Pool
-		CurrentPoolID *resource.ID
-	}{
-		Pools:         pools,
-		CurrentPoolID: opts.AgentPoolID,
-	})
+	props := agentPoolListAllowedProps{
+			pools:         pools,
+			currentPoolID: opts.AgentPoolID,
+	}
+	templ.Handler(agentPoolListAllowed(props)).ServeHTTP(w, r)
 }
 
 // agent token handlers
