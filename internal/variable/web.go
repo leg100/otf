@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
@@ -117,7 +116,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(newWorkspaceVariable(ws)).ServeHTTP(w, r)
+	html.Render(newWorkspaceVariable(ws), w, r)
 }
 
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -191,7 +190,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
 	}
-	templ.Handler(listWorkspaceVariables(props)).ServeHTTP(w, r)
+	html.Render(listWorkspaceVariables(props), w, r)
 }
 
 func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -216,7 +215,7 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		ws:       ws,
 		variable: wv.Variable,
 	}
-	templ.Handler(editWorkspaceVariable(props)).ServeHTTP(w, r)
+	html.Render(editWorkspaceVariable(props), w, r)
 }
 
 func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -279,7 +278,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		sets:                 sets,
 		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
 	}
-	templ.Handler(listVariableSets(props)).ServeHTTP(w, r)
+	html.Render(listVariableSets(props), w, r)
 }
 
 func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +299,7 @@ func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 		organization:        org,
 		availableWorkspaces: availableWorkspaces,
 	}
-	templ.Handler(newVariableSet(props)).ServeHTTP(w, r)
+	html.Render(newVariableSet(props), w, r)
 }
 
 func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -385,7 +384,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		},
 	}
-	templ.Handler(editVariableSet(props)).ServeHTTP(w, r)
+	html.Render(editVariableSet(props), w, r)
 }
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -457,7 +456,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(newVSV(set)).ServeHTTP(w, r)
+	html.Render(newVSV(set), w, r)
 }
 
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -502,7 +501,7 @@ func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	}
 	v := set.getVariable(variableID)
 
-	templ.Handler(editVSV(editVSVProps{set: set, variable: v})).ServeHTTP(w, r)
+	html.Render(editVSV(editVSVProps{set: set, variable: v}), w, r)
 }
 
 func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {

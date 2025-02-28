@@ -99,16 +99,16 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	templ.Handler(userList(users)).ServeHTTP(w, r)
+	html.Render(userList(users), w, r)
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	templ.Handler(profile()).ServeHTTP(w, r)
+	html.Render(profile(), w, r)
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	templ.Handler(adminLogin()).ServeHTTP(w, r)
+	html.Render(adminLogin(), w, r)
 }
 
 // adminLogin logs in a site admin
@@ -133,7 +133,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
-	templ.Handler(siteSettings()).ServeHTTP(w, r)
+	html.Render(siteSettings(), w, r)
 }
 
 // team membership handlers
@@ -244,7 +244,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Width:       components.WideDropDown,
 		},
 	}
-	templ.Handler(getTeam(props)).ServeHTTP(w, r)
+	html.Render(getTeam(props), w, r)
 }
 
 //
@@ -252,7 +252,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 //
 
 func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	templ.Handler(newToken()).ServeHTTP(w, r)
+	html.Render(newToken(), w, r)
 }
 
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
@@ -267,7 +267,7 @@ func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := tokens.TokenFlashMessage(h, w, token); err != nil {
+	if err := components.TokenFlashMessage(w, token); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -286,7 +286,7 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	templ.Handler(tokenList(tokens)).ServeHTTP(w, r)
+	html.Render(tokenList(tokens), w, r)
 }
 
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {

@@ -4,15 +4,14 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tokens"
 )
 
 type (
@@ -72,7 +71,7 @@ func (a *web) addHandlers(r *mux.Router) {
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {
-	templ.Handler(new()).ServeHTTP(w, r)
+	html.Render(new(), w, r)
 }
 
 func (a *web) create(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +131,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		Page:      organizations,
 		CanCreate: canCreate,
 	}
-	templ.Handler(list(props)).ServeHTTP(w, r)
+	html.Render(list(props), w, r)
 }
 
 func (a *web) get(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +147,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(get(org)).ServeHTTP(w, r)
+	html.Render(get(org), w, r)
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +163,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(edit(org)).ServeHTTP(w, r)
+	html.Render(edit(org), w, r)
 }
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +221,7 @@ func (a *web) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := tokens.TokenFlashMessage(a, w, token); err != nil {
+	if err := components.TokenFlashMessage(w, token); err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -245,7 +244,7 @@ func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 	if len(tokens) > 0 {
 		token = tokens[0]
 	}
-	templ.Handler(getToken(org, token)).ServeHTTP(w, r)
+	html.Render(getToken(org, token), w, r)
 }
 
 func (a *web) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {

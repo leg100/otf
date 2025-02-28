@@ -3,7 +3,6 @@ package state
 import (
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -34,5 +33,5 @@ func (h *webHandlers) getState(w http.ResponseWriter, r *http.Request) {
 		f, _ = sv.File()
 	}
 
-	templ.Handler(get(f)).ServeHTTP(w, r)
+	html.Render(get(f), w, r)
 }

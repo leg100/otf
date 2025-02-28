@@ -7,15 +7,14 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tokens"
 	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
 
@@ -127,7 +126,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		organization: org,
 		runners:      runners,
 	}
-	templ.Handler(listRunners(props)).ServeHTTP(w, r)
+	html.Render(listRunners(props), w, r)
 }
 
 // agent pool handlers
@@ -207,7 +206,7 @@ func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		organization: org,
 		pools:        pools,
 	}
-	templ.Handler(listAgentPools(props)).ServeHTTP(w, r)
+	html.Render(listAgentPools(props), w, r)
 }
 
 func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
@@ -282,7 +281,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		agents:                         agents,
 		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
 	}
-	templ.Handler(getAgentPool(props)).ServeHTTP(w, r)
+	html.Render(getAgentPool(props), w, r)
 }
 
 func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
@@ -325,10 +324,10 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 	}
 
 	props := agentPoolListAllowedProps{
-			pools:         pools,
-			currentPoolID: opts.AgentPoolID,
+		pools:         pools,
+		currentPoolID: opts.AgentPoolID,
 	}
-	templ.Handler(agentPoolListAllowed(props)).ServeHTTP(w, r)
+	html.Render(agentPoolListAllowed(props), w, r)
 }
 
 // agent token handlers
@@ -351,7 +350,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := tokens.TokenFlashMessage(h, w, token); err != nil {
+	if err := components.TokenFlashMessage(w, token); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

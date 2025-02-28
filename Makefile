@@ -189,15 +189,6 @@ playwright-deps-arch:
 live/templ:
 	templ generate --watch --proxy="https://localhost:8080" --open-browser=false -v --cmd="go run ./cmd/otfd/main.go"
 
-# run air to detect any go file changes to re-build and re-run the server.
-live/server:
-	go run github.com/air-verse/air@v1.61.7 \
-	--build.cmd "go build -o _build/otfd ./cmd/otfd" --build.bin "_build/otfd" --build.delay "100" \
-	--build.exclude_dir "node_modules" \
-	--build.exclude_regex "_templ.go" \
-	--build.include_ext "go" \
-	--build.stop_on_error "false" \
-
 # run tailwindcss to generate the styles.css bundle in watch mode.
 live/tailwind:
 	tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/styles.css --minify --watch

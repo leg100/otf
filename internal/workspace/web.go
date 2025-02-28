@@ -190,9 +190,9 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		templ.Handler(components.ContentList(props.page.Items, listItem)).ServeHTTP(w, r)
+		html.Render(components.ContentList(props.page.Items, listItem), w, r)
 	} else {
-		templ.Handler(list(props)).ServeHTTP(w, r)
+		html.Render(list(props), w, r)
 	}
 }
 
@@ -202,7 +202,7 @@ func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	templ.Handler(new(org)).ServeHTTP(w, r)
+	html.Render(new(org), w, r)
 }
 
 func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -301,7 +301,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 			Width:       components.NarrowDropDown,
 		},
 	}
-	templ.Handler(get(props)).ServeHTTP(w, r)
+	html.Render(get(props), w, r)
 }
 
 func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
@@ -418,7 +418,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		canDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
 		poolsURL:           poolsURL,
 	}
-	templ.Handler(edit(props)).ServeHTTP(w, r)
+	html.Render(edit(props), w, r)
 }
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -584,7 +584,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	templ.Handler(listVCSProviders(ws, providers)).ServeHTTP(w, r)
+	html.Render(listVCSProviders(ws, providers), w, r)
 }
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
@@ -617,7 +617,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	templ.Handler(listVCSRepos(ws, params.VCSProviderID, repos)).ServeHTTP(w, r)
+	html.Render(listVCSRepos(ws, params.VCSProviderID, repos), w, r)
 }
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {

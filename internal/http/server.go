@@ -15,9 +15,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
-	otftempl "github.com/leg100/otf/internal/http/html/templ"
 	"github.com/leg100/otf/internal/json"
 )
 
@@ -131,15 +129,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	for _, h := range cfg.Handlers {
 		h.AddHandlers(svcRouter)
 	}
-
-	// Templ files
-	svcRouter.HandleFunc("/app/templ", func(w http.ResponseWriter, r *http.Request) {
-		_, err := authz.SubjectFromContext(r.Context())
-		if err != nil {
-			logger.Error(err, "error retrieving subject")
-		}
-		otftempl.Hello(r.Context()).Render(r.Context(), w)
-	})
 
 	// Optionally log every request
 	if cfg.EnableRequestLogging {

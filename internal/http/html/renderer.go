@@ -11,9 +11,15 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
 )
+
+func Render(c templ.Component, w http.ResponseWriter, r *http.Request, options ...func(*templ.ComponentHandler)) {
+	purgeFlashes(w)
+	templ.Handler(c, options...).ServeHTTP(w, r)
+}
 
 const (
 	// Paths to static assets relative to the templates filesystem. For use with

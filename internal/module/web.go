@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -91,7 +90,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		modules:          modules,
 		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
 	}
-	templ.Handler(list(props)).ServeHTTP(w, r)
+	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +141,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		currentVersion:  modver,
 		hostname:        h.system.Hostname(),
 	}
-	templ.Handler(get(props)).ServeHTTP(w, r)
+	html.Render(get(props), w, r)
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +181,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		providers:    providers,
 		step:         newModuleConnectStep,
 	}
-	templ.Handler(newView(props)).ServeHTTP(w, r)
+	html.Render(newView(props), w, r)
 }
 
 func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {

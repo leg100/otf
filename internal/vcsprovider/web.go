@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
@@ -76,7 +75,7 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 		props.scope = "api"
 		props.tokensURL = urlbuilder.New("https", h.GitlabHostname).Path("/-/profile/personal_access_tokens").Build()
 	}
-	templ.Handler(newPAT(props)).ServeHTTP(w, r)
+	html.Render(newPAT(props), w, r)
 }
 
 func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +105,7 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		kind:           vcs.GithubKind,
 		githubHostname: h.GithubHostname,
 	}
-	templ.Handler(newGithubApp(props)).ServeHTTP(w, r)
+	html.Render(newGithubApp(props), w, r)
 }
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +148,7 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(edit(provider)).ServeHTTP(w, r)
+	html.Render(edit(provider), w, r)
 }
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +199,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		providers:    providers,
 		app:          app,
 	}
-	templ.Handler(list(props)).ServeHTTP(w, r)
+	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {

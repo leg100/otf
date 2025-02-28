@@ -1,8 +1,10 @@
 package components
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	gohttp "net/http"
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http"
@@ -71,4 +73,16 @@ func CurrentURL(ctx context.Context) string {
 		return ""
 	}
 	return request.URL.String()
+}
+
+// TokenFlashMessage is a helper for rendering a flash message with an
+// authentication token.
+func TokenFlashMessage(w gohttp.ResponseWriter, token []byte) error {
+	// render a small templated flash message
+	buf := new(bytes.Buffer)
+	if err := flashToken(string(token)).Render(context.Background(), buf); err != nil {
+		return err
+	}
+	html.FlashSuccess(w, buf.String())
+	return nil
 }

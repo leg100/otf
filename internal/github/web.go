@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -100,7 +99,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		manifest:       string(marshaled),
 		githubHostname: h.GithubHostname,
 	}
-	templ.Handler(newAppView(props)).ServeHTTP(w, r)
+	html.Render(newAppView(props), w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +128,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		canCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
 		canDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
 	}
-	templ.Handler(getApps(props)).ServeHTTP(w, r)
+	html.Render(getApps(props), w, r)
 }
 
 func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {

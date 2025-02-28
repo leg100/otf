@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -52,7 +51,7 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templ.Handler(newTeamView(org)).ServeHTTP(w, r)
+	html.Render(newTeamView(org), w, r)
 }
 
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +125,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		teams:         teams,
 		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
 	}
-	templ.Handler(listTeams(props)).ServeHTTP(w, r)
+	html.Render(listTeams(props), w, r)
 }
 
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
