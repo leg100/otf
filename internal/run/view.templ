@@ -269,7 +269,7 @@ templ periodReport(run *Run) {
 	<div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
 		for i := range report.Periods {
 			<div
-				style={ fmt.Sprintf("width: %f%", report.Percentage(i)) }
+				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
 				class={ "inline-block", "h-full",  periodStatusColors[run.Status.String()] }
 			></div>
 		}

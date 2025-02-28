@@ -190,7 +190,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		html.Render(components.PaginatedContentList(props.page, listItem), w, r)
+		html.Render(components.ContentList(props.page.Items, listItem), w, r)
 	} else {
 		html.Render(list(props), w, r)
 	}

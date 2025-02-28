@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 )
 
-// number of items in a paginated result to show on a single page
+// PageSize is the number of items in a paginated result to show on a single page
 const PageSize int = 10
 
 // SitePage contains data shared by all pages when rendering templates.

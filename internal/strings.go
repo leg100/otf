@@ -1,6 +1,17 @@
 package internal
 
-import "strings"
+import (
+	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
+
+var caser = cases.Title(language.English)
+
+func Title(s string) string {
+	return caser.String(s)
+}
 
 func NewStringFromPtr(s *string) string {
 	if s == nil {

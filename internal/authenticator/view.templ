@@ -1,8 +1,8 @@
 package authenticator
 
 import (
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
-	"strings"
 )
 
 templ login(clients []*OAuthClient) {
@@ -14,7 +14,7 @@ templ login(clients []*OAuthClient) {
 				for _, client := range clients {
 					<a class="p-4 border border-black flex justify-center items-center gap-1" id={ "login-button-" + client.String() } href={ templ.URL(client.RequestPath()) }>
 						@loginIcon(client)
-						<span>Login with { strings.Title(client.String()) }</span>
+						<span>Login with { internal.Title(client.String()) }</span>
 					</a>
 				}
 				if len(clients) == 0 {

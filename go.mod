@@ -1,8 +1,6 @@
 module github.com/leg100/otf
 
-go 1.23
-
-toolchain go1.23.1
+go 1.24
 
 require (
 	cloud.google.com/go/pubsub v1.43.0
@@ -46,6 +44,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
+	github.com/templ-go/x v0.0.0-20240924085055-a31c35cebd07
 	github.com/xanzy/go-gitlab v0.109.0
 	golang.org/x/exp v0.0.0-20241004190924-225e2abe05e6
 	golang.org/x/mod v0.21.0
@@ -117,7 +116,6 @@ require (
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/templ-go/x v0.0.0-20240924085055-a31c35cebd07 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
