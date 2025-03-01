@@ -6,13 +6,13 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -222,17 +222,13 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, res)
 	}
 
-	h.Render("module_new.tmpl", w, struct {
-		organization.OrganizationPage
-		Repos         []string
-		VCSProviderID resource.ID
-		Step          newModuleStep
-	}{
-		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
-		Repos:            filtered,
-		VCSProviderID:    params.VCSProviderID,
-		Step:             newModuleRepoStep,
-	})
+	props := newViewProps{
+		organization:  params.Organization,
+		repos:         filtered,
+		vcsProviderID: params.VCSProviderID,
+		step:          newModuleRepoStep,
+	}
+	templ.Handler(newView(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
@@ -252,17 +248,13 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_new.tmpl", w, struct {
-		organization.OrganizationPage
-		Step        newModuleStep
-		Repo        string
-		VCSProvider *vcsprovider.VCSProvider
-	}{
-		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
-		Step:             newModuleConfirmStep,
-		Repo:             params.Repo,
-		VCSProvider:      vcsprov,
-	})
+	props := newViewProps{
+		organization: params.Organization,
+		repo:         params.Repo,
+		vcsProvider:  vcsprov,
+		step:         newModuleConfirmStep,
+	}
+	templ.Handler(newView(props)).ServeHTTP(w, r)
 }
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {

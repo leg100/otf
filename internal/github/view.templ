@@ -91,13 +91,15 @@ templ getApps(props getAppsProps) {
 				for _, install := range props.installations {
 					<div class="flex flex-col gap-2 text-lg">
 						<div class="widget">
-							<div>
-								<span>
-									<a class="flex underline gap-1 items-center" href={ templ.SafeURL(*install.HTMLURL) } target="GithubTab">
-										{ install.String() }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
-									</a>
-								</span>
-							</div>
+							if install.HTMLURL != nil {
+								<div>
+									<span>
+										<a class="flex underline gap-1 items-center" href={ templ.SafeURL(*install.HTMLURL) } target="GithubTab">
+											{ install.String() }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+										</a>
+									</span>
+								</div>
+							}
 							<div>
 								@components.CopyableContent() {
 									<span class="identifier">

@@ -1,11 +1,11 @@
 package html
 
 import (
-	"context"
 	"embed"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/logr"
@@ -17,18 +17,44 @@ var (
 	//go:embed static
 	embedded embed.FS
 
-	// The same files but on the local disk
-	localPath = "internal/http/html"
-	localDisk = os.DirFS(localPath)
+	AssetsFS *CacheBuster
 )
 
-type assetsFSKey struct{}
+func init() {
+	// The same files but on the local disk
+	if _, ok := os.LookupEnv("OTF_DEV_MODE"); ok {
+		wd, err := os.Getwd()
+		if err != nil {
+			panic(err.Error())
+		}
+		root := findModuleRoot(wd)
+		localPath := filepath.Join(root, "internal/http/html")
+		localDisk := os.DirFS(localPath)
 
-func AssetsFS(ctx context.Context) *CacheBuster {
-	if cb, ok := ctx.Value(assetsFSKey{}).(*CacheBuster); ok {
-		return cb
+		AssetsFS = &CacheBuster{localDisk}
+	} else {
+		AssetsFS = &CacheBuster{embedded}
 	}
-	return nil
+}
+
+func findModuleRoot(dir string) (roots string) {
+	if dir == "" {
+		panic("dir not set")
+	}
+	dir = filepath.Clean(dir)
+
+	// Look for enclosing go.mod.
+	for {
+		if fi, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil && !fi.IsDir() {
+			return dir
+		}
+		d := filepath.Dir(dir)
+		if d == dir {
+			break
+		}
+		dir = d
+	}
+	return ""
 }
 
 // AddStaticHandler adds a handler to router serving static assets
@@ -36,24 +62,8 @@ func AssetsFS(ctx context.Context) *CacheBuster {
 // local disk instead and starts a live reload server, which reloads the browser
 // whenever static files change.
 func AddStaticHandler(logger logr.Logger, r *mux.Router, devMode bool) error {
-	var fs http.FileSystem
-	if devMode {
-		if err := startLiveReloadServer(logger); err != nil {
-			return fmt.Errorf("starting livereload server: %w", err)
-		}
-		fs = &CacheBuster{localDisk}
-	} else {
-		fs = &CacheBuster{embedded}
-	}
-
-	// Add assets filesystem to context to allow templates to access assets
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), assetsFSKey{}, fs)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	})
-
+	wd, _ := os.Getwd()
+	log.Printf("addStaticHandler: pwd: %s\n", wd)
 	r = r.NewRoute().Subrouter()
 
 	// Middleware to add cache control headers
@@ -66,6 +76,6 @@ func AddStaticHandler(logger logr.Logger, r *mux.Router, devMode bool) error {
 			next.ServeHTTP(w, r)
 		})
 	})
-	r.PathPrefix("/static/").Handler(http.FileServer(fs)).Methods("GET")
+	r.PathPrefix("/static/").Handler(http.FileServer(AssetsFS)).Methods("GET")
 	return nil
 }

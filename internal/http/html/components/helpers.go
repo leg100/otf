@@ -3,7 +3,6 @@ package components
 import (
 	"bytes"
 	"context"
-	"errors"
 	gohttp "net/http"
 
 	"github.com/leg100/otf/internal/authz"
@@ -12,10 +11,7 @@ import (
 )
 
 func AssetPath(ctx context.Context, path string) (string, error) {
-	if fs := html.AssetsFS(ctx); fs != nil {
-		return fs.Path(path)
-	}
-	return "", errors.New("not found")
+	return html.AssetsFS.Path(path)
 }
 
 func CurrentUsername(ctx context.Context) (string, error) {

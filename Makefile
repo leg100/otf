@@ -187,7 +187,7 @@ playwright-deps-arch:
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: http://localhost:7331
 live/templ:
-	templ generate --watch --proxy="https://localhost:8080" --open-browser=false -v --cmd="go run ./cmd/otfd/main.go"
+	templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
 live/tailwind:
@@ -199,8 +199,8 @@ live/sync_assets:
 	--build.cmd "templ generate --notify-proxy" \
 	--build.bin "true" \
 	--build.delay "100" \
-	--build.include_dir "./internal/http/html/static/" \
-	--build.include_ext "js,css"
+	--build.include_dir "internal/http/html/static" \
+	--build.include_ext "js,css,svg"
 
 # start all 4 watch processes in parallel.
 live:

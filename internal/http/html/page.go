@@ -8,7 +8,7 @@ import (
 )
 
 // PageSize is the number of items in a paginated result to show on a single page
-const PageSize int = 10
+const PageSize int = 100
 
 // SitePage contains data shared by all pages when rendering templates.
 type SitePage struct {

@@ -33,7 +33,7 @@ func Test_idtokenHandler_getUsername(t *testing.T) {
 		Expiration(time.Now().Add(time.Minute)).
 		Build()
 	require.NoError(t, err)
-	key, err := rsa.GenerateKey(rand.Reader, 512)
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err)
 	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, key))
 	require.NoError(t, err)

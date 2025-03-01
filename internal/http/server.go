@@ -104,14 +104,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 		})
 	})
 
-	// this middleware adds dev mode to the context
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), devModeKey{}, cfg.DevMode)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	})
-
 	// this middleware adds the request to the context, to enable templates to
 	//  access request attributes
 	r.Use(func(next http.Handler) http.Handler {
