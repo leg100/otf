@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
@@ -41,7 +40,6 @@ type (
 		*sql.DB
 		*internal.HostnameService
 		*surl.Signer
-		html.Renderer
 
 		Authorizer         *authz.Authorizer
 		RepohookService    *repohooks.Service
@@ -64,7 +62,6 @@ func NewService(opts Options) *Service {
 		Signer: opts.Signer,
 	}
 	svc.web = &webHandlers{
-		Renderer:     opts.Renderer,
 		authorizer:   opts.Authorizer,
 		client:       &svc,
 		vcsproviders: opts.VCSProviderService,

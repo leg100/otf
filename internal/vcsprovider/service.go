@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -35,7 +34,6 @@ type (
 		*internal.HostnameService
 		*sql.DB
 		*tfeapi.Responder
-		html.Renderer
 		logr.Logger
 		vcs.Subscriber
 
@@ -66,7 +64,6 @@ func NewService(opts Options) *Service {
 		},
 	}
 	svc.web = &webHandlers{
-		Renderer:        opts.Renderer,
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
 		GitlabHostname:  opts.GitlabHostname,

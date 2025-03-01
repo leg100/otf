@@ -7,7 +7,6 @@ import (
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -16,7 +15,6 @@ import (
 type (
 	Options struct {
 		logr.Logger
-		html.Renderer
 
 		*internal.HostnameService
 
@@ -28,8 +26,6 @@ type (
 	}
 
 	service struct {
-		html.Renderer
-
 		clients []*OAuthClient
 	}
 
@@ -43,7 +39,7 @@ type (
 // the system. Supports multiple clients: zero or more clients that support an
 // opaque token, and one client that supports IDToken/OIDC.
 func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error) {
-	svc := service{Renderer: opts.Renderer}
+	svc := service{}
 	// Construct clients with opaque token handlers
 	for _, cfg := range opts.OpaqueHandlerConfigs {
 		if cfg.ClientID == "" && cfg.ClientSecret == "" {

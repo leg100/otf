@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -40,7 +39,6 @@ type (
 
 	Options struct {
 		logr.Logger
-		html.Renderer
 		internal.Cache
 		*sql.DB
 		*tfeapi.Responder
@@ -68,8 +66,7 @@ func NewService(opts Options) *Service {
 		factory:    &factory{db},
 	}
 	svc.web = &webHandlers{
-		Renderer: opts.Renderer,
-		Service:  &svc,
+		Service: &svc,
 	}
 	svc.tfeapi = &tfe{
 		Responder:  opts.Responder,

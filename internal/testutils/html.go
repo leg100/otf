@@ -4,9 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	otfhtml "github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/net/html"
 )
 
@@ -23,10 +21,4 @@ func AssertRedirect(t *testing.T, w *httptest.ResponseRecorder, path string) {
 		redirect, _ := w.Result().Location()
 		assert.Equal(t, path, redirect.Path)
 	}
-}
-
-func NewRenderer(t *testing.T) otfhtml.Renderer {
-	renderer, err := otfhtml.NewRenderer(false)
-	require.NoError(t, err)
-	return renderer
 }

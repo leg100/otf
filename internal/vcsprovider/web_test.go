@@ -16,9 +16,7 @@ import (
 )
 
 func TestVCSProvider_newPersonalToken(t *testing.T) {
-	svc := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-	}
+	svc := &webHandlers{}
 
 	for _, kind := range []string{"github", "gitlab"} {
 		t.Run(kind, func(t *testing.T) {
@@ -33,7 +31,6 @@ func TestVCSProvider_newPersonalToken(t *testing.T) {
 
 func TestVCSProvider_newGithubApp(t *testing.T) {
 	svc := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
 		githubApps: &fakeGithubAppService{
 			app: &github.App{},
 			installs: []*github.Installation{{
@@ -51,7 +48,6 @@ func TestVCSProvider_newGithubApp(t *testing.T) {
 
 func TestCreateVCSProviderHandler(t *testing.T) {
 	svc := &webHandlers{
-		Renderer:   testutils.NewRenderer(t),
 		githubApps: &fakeGithubAppService{},
 		client:     &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
 	}
@@ -72,7 +68,6 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 
 func TestListVCSProvidersHandler(t *testing.T) {
 	svc := &webHandlers{
-		Renderer:   testutils.NewRenderer(t),
 		githubApps: &fakeGithubAppService{},
 		client:     &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
 	}

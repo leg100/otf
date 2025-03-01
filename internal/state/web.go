@@ -9,7 +9,6 @@ import (
 )
 
 type webHandlers struct {
-	html.Renderer
 	*Service
 }
 
@@ -22,7 +21,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 func (h *webHandlers) getState(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("workspace_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 

@@ -2,7 +2,6 @@ package html
 
 import (
 	"embed"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,8 +20,13 @@ var (
 )
 
 func init() {
-	// The same files but on the local disk
+	// Serve assets from embedded files in go binary, unless dev mode is
+	// enabled, in which case serve files direct from filesystem, to avoid
+	// having to rebuild the binary every time a file changes.
 	if _, ok := os.LookupEnv("OTF_DEV_MODE"); ok {
+		// The working directory differs depending on where go build/test is
+		// invoked, so work out the root of the project repo and then join the
+		// relative path to the assets.
 		wd, err := os.Getwd()
 		if err != nil {
 			panic(err.Error())
@@ -61,9 +65,7 @@ func findModuleRoot(dir string) (roots string) {
 // (JS, CSS, etc) from within go binary. Enabling developer mode sources files from
 // local disk instead and starts a live reload server, which reloads the browser
 // whenever static files change.
-func AddStaticHandler(logger logr.Logger, r *mux.Router, devMode bool) error {
-	wd, _ := os.Getwd()
-	log.Printf("addStaticHandler: pwd: %s\n", wd)
+func AddStaticHandler(logger logr.Logger, r *mux.Router) error {
 	r = r.NewRoute().Subrouter()
 
 	// Middleware to add cache control headers

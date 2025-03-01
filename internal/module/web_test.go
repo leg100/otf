@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -162,7 +161,6 @@ func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
 		fn(&svc)
 	}
 	return &webHandlers{
-		Renderer:     testutils.NewRenderer(t),
 		authorizer:   authz.NewAllowAllAuthorizer(),
 		system:       &svc,
 		client:       &svc,

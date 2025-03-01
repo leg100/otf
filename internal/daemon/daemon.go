@@ -20,7 +20,6 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logs"
@@ -96,10 +95,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	hostnameService := internal.NewHostnameService(cfg.Host)
 	hostnameService.SetWebhookHostname(cfg.WebhookHost)
 
-	renderer, err := html.NewRenderer(cfg.DevMode)
-	if err != nil {
-		return nil, fmt.Errorf("setting up web page renderer: %w", err)
-	}
 	cache, err := inmem.NewCache(*cfg.CacheConfig)
 	if err != nil {
 		return nil, err
@@ -136,7 +131,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:                   authorizer,
 		DB:                           db,
 		Listener:                     listener,
-		Renderer:                     renderer,
 		Responder:                    responder,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 		TokensService:                tokensService,
@@ -146,7 +140,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		Renderer:            renderer,
 		Responder:           responder,
 		OrganizationService: orgService,
 		TokensService:       tokensService,
@@ -155,7 +148,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:        logger,
 		Authorizer:    authorizer,
 		DB:            db,
-		Renderer:      renderer,
 		Responder:     responder,
 		TokensService: tokensService,
 		SiteToken:     cfg.SiteToken,
@@ -170,7 +162,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		Renderer:            renderer,
 		HostnameService:     hostnameService,
 		GithubHostname:      cfg.GithubHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
@@ -182,7 +173,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		Authorizer:          authorizer,
 		DB:                  db,
-		Renderer:            renderer,
 		Responder:           responder,
 		HostnameService:     hostnameService,
 		GithubAppService:    githubAppService,
@@ -221,7 +211,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:          authorizer,
 		DB:                  db,
 		Listener:            listener,
-		Renderer:            renderer,
 		Responder:           responder,
 		ConnectionService:   connectionService,
 		TeamService:         teamService,
@@ -244,7 +233,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Authorizer:           authorizer,
 		DB:                   db,
 		Listener:             listener,
-		Renderer:             renderer,
 		Responder:            responder,
 		OrganizationService:  orgService,
 		WorkspaceService:     workspaceService,
@@ -268,7 +256,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:             logger,
 		Authorizer:         authorizer,
 		DB:                 db,
-		Renderer:           renderer,
 		HostnameService:    hostnameService,
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
@@ -282,7 +269,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:               db,
 		WorkspaceService: workspaceService,
 		Cache:            cache,
-		Renderer:         renderer,
 		Responder:        responder,
 		Signer:           signer,
 	})
@@ -290,7 +276,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:           logger,
 		Authorizer:       authorizer,
 		DB:               db,
-		Renderer:         renderer,
 		Responder:        responder,
 		WorkspaceService: workspaceService,
 		RunClient:        runService,
@@ -300,7 +285,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:           logger,
 		Authorizer:       authorizer,
 		DB:               db,
-		Renderer:         renderer,
 		Responder:        responder,
 		RunService:       runService,
 		WorkspaceService: workspaceService,
@@ -327,7 +311,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
 		Logger:          logger,
-		Renderer:        renderer,
 		HostnameService: hostnameService,
 		TokensService:   tokensService,
 		UserService:     userService,
@@ -385,7 +368,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		authenticatorService,
 		loginserver.NewServer(loginserver.Options{
 			Secret:      cfg.Secret,
-			Renderer:    renderer,
 			UserService: userService,
 		}),
 		configService,

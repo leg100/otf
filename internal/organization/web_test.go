@@ -18,10 +18,7 @@ import (
 )
 
 func TestWeb_NewHandler(t *testing.T) {
-	svc := &web{
-		svc:      &fakeWebService{},
-		Renderer: testutils.NewRenderer(t),
-	}
+	svc := &web{svc: &fakeWebService{}}
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()
@@ -30,10 +27,7 @@ func TestWeb_NewHandler(t *testing.T) {
 }
 
 func TestWeb_CreateHandler(t *testing.T) {
-	svc := &web{
-		svc:      &fakeWebService{},
-		Renderer: testutils.NewRenderer(t),
-	}
+	svc := &web{}
 
 	form := strings.NewReader(url.Values{
 		"name": {"my-new-org"},
@@ -58,10 +52,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		for i := 1; i <= 201; i++ {
 			orgs[i-1] = &Organization{Name: uuid.NewString()}
 		}
-		svc := &web{
-			svc:      &fakeWebService{orgs: orgs},
-			Renderer: testutils.NewRenderer(t),
-		}
+		svc := &web{svc: &fakeWebService{orgs: orgs}}
 
 		t.Run("first page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=1", nil)
@@ -115,7 +106,6 @@ func TestWeb_ListHandler(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				svc := &web{
 					svc:              &fakeWebService{},
-					Renderer:         testutils.NewRenderer(t),
 					RestrictCreation: tt.restrict,
 				}
 				r := httptest.NewRequest("GET", "/?", nil)
@@ -145,7 +135,6 @@ func TestWeb_DeleteHandler(t *testing.T) {
 		svc: &fakeWebService{
 			orgs: []*Organization{{Name: uuid.NewString()}},
 		},
-		Renderer: testutils.NewRenderer(t),
 	}
 
 	r := httptest.NewRequest("POST", "/?name=acme-corp", nil)

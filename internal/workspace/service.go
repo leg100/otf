@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -42,7 +41,6 @@ type (
 		*sql.Listener
 		*tfeapi.Responder
 		*authz.Authorizer
-		html.Renderer
 
 		logr.Logger
 
@@ -63,7 +61,6 @@ func NewService(opts Options) *Service {
 		connections: opts.ConnectionService,
 	}
 	svc.web = &webHandlers{
-		Renderer:     opts.Renderer,
 		authorizer:   opts.Authorizer,
 		teams:        opts.TeamService,
 		vcsproviders: opts.VCSProviderService,

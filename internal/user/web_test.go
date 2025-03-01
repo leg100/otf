@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,9 +21,7 @@ func TestWeb_UserTokens(t *testing.T) {
 	user := &User{Username: uuid.NewString()}
 
 	t.Run("new", func(t *testing.T) {
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-		}
+		h := &webHandlers{}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
@@ -37,10 +34,7 @@ func TestWeb_UserTokens(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-			users:    &fakeService{},
-		}
+		h := &webHandlers{users: &fakeService{}}
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), user))
@@ -56,7 +50,6 @@ func TestWeb_UserTokens(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
 			users: &fakeService{
 				ut: &UserToken{},
 			},
@@ -73,8 +66,7 @@ func TestWeb_UserTokens(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-			users:    &fakeService{},
+			users: &fakeService{},
 		}
 		q := "/?id=token-123"
 		r := httptest.NewRequest("POST", q, nil)
@@ -97,9 +89,8 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 	owners := &team.Team{Name: "owners", Organization: "acme-org"}
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	h := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		teams:    &fakeTeamService{team: owners},
-		users:    &fakeService{user: owner},
+		teams: &fakeTeamService{team: owners},
+		users: &fakeService{user: owner},
 	}
 
 	q := "/?team_id=team-123"
@@ -114,7 +105,6 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 
 func TestAdminLoginHandler(t *testing.T) {
 	h := &webHandlers{
-		Renderer:  testutils.NewRenderer(t),
 		siteToken: "secrettoken",
 		tokens:    &fakeTokensService{},
 	}

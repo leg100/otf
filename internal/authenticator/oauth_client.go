@@ -161,7 +161,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract username from OAuth token
 	username, err := a.getUsername(r.Context(), token)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -173,14 +173,14 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		user, err = a.users.Create(ctx, username)
 	}
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Lookup user in db, to retrieve user id to embed in session token
 	// Get or create user.
 	if err := a.sessions.StartSession(w, r, user.ID); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }

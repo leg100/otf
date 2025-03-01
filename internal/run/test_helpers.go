@@ -6,11 +6,9 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
-	"github.com/stretchr/testify/require"
 )
 
 type fakeSubService struct {
@@ -46,16 +44,12 @@ func withRuns(runs ...*Run) fakeWebServiceOption {
 }
 
 func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-
 	var svc fakeWebServices
 	for _, fn := range opts {
 		fn(&svc)
 	}
 
 	return &webHandlers{
-		Renderer:   renderer,
 		authorizer: authz.NewAllowAllAuthorizer(),
 		workspaces: &workspace.FakeService{
 			Workspaces: []*workspace.Workspace{svc.ws},

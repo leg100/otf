@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
@@ -67,7 +66,6 @@ type (
 		*sql.DB
 		*tfeapi.Responder
 		*surl.Signer
-		html.Renderer
 		*sql.Listener
 	}
 )
@@ -89,7 +87,6 @@ func NewService(opts Options) *Service {
 		releases:      opts.ReleasesService,
 	}
 	svc.web = &webHandlers{
-		Renderer:   opts.Renderer,
 		authorizer: opts.Authorizer,
 		logger:     opts.Logger,
 		runs:       &svc,

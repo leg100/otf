@@ -2,23 +2,25 @@ package html
 
 import (
 	"context"
-	"io"
 	"net/http"
 
 	"github.com/a-h/templ"
 )
 
-func Render(c templ.Component, w http.ResponseWriter, r *http.Request, options ...func(*templ.ComponentHandler)) {
+// Render a template. Wraps the upstream templ handler to carry out additional
+// actions every time a template is rendered.
+func Render(c templ.Component, w http.ResponseWriter, r *http.Request) {
 	// purge flash messages from cookie store prior to rendering template
 	purgeFlashes(w)
+	// add request to context for templates to access
 	ctx := context.WithValue(r.Context(), requestKey{}, r)
-	options = append(options, templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
+	// handle errors
+	errHandler := templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = io.WriteString(w, err.Error())
+			Error(w, err.Error(), http.StatusBadRequest)
 		})
-	}))
-	templ.Handler(c, options...).ServeHTTP(w, r.WithContext(ctx))
+	})
+	templ.Handler(c, errHandler).ServeHTTP(w, r.WithContext(ctx))
 }
 
 type requestKey struct{}
