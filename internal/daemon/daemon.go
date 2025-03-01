@@ -428,7 +428,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		CertFile:             d.CertFile,
 		KeyFile:              d.KeyFile,
 		EnableRequestLogging: d.EnableRequestLogging,
-		DevMode:              d.DevMode,
 		Middleware:           []mux.MiddlewareFunc{d.Tokens.Middleware()},
 		Handlers:             d.handlers,
 	})

@@ -42,7 +42,6 @@ type (
 		SSL                  bool
 		CertFile, KeyFile    string
 		EnableRequestLogging bool
-		DevMode              bool
 
 		Handlers []internal.Handlers
 		// middleware to intercept requests, executed in the order given.
@@ -77,7 +76,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
-	if err := html.AddStaticHandler(logger, r, cfg.DevMode); err != nil {
+	if err := html.AddStaticHandler(logger, r); err != nil {
 		return nil, err
 	}
 
