@@ -1,8 +1,10 @@
 package components
 
 templ flashToken(s string) {
-	Created token:
+	Created token:&nbsp;
 	<div>
-		@CopyableContent()
+		@CopyableContent() {
+			{ s }
+		}
 	</div>
 }
