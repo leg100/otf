@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -100,5 +100,5 @@ func (a *service) AddHandlers(r *mux.Router) {
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	templ.Handler(login(a.clients)).ServeHTTP(w, r)
+	html.Render(login(a.clients), w, r)
 }

@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
@@ -227,7 +226,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		vcsProviderID: params.VCSProviderID,
 		step:          newModuleRepoStep,
 	}
-	templ.Handler(newView(props)).ServeHTTP(w, r)
+	html.Render(newView(props), w, r)
 }
 
 func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
@@ -253,7 +252,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		vcsProvider:  vcsprov,
 		step:         newModuleConfirmStep,
 	}
-	templ.Handler(newView(props)).ServeHTTP(w, r)
+	html.Render(newView(props), w, r)
 }
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {

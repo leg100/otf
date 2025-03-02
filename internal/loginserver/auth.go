@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/user"
@@ -55,7 +54,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		templ.Handler(consent()).ServeHTTP(w, r)
+		html.Redner(consent(), w, r)
 		return
 	}
 
