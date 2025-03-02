@@ -10,15 +10,12 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	html.Renderer
-
 	teams  webClient
 	tokens *tokens.Service
 }
@@ -48,15 +45,11 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("team_new.tmpl", w, struct {
-		organization.OrganizationPage
-	}{
-		OrganizationPage: organization.NewPage(r, "new team", org),
-	})
+	html.Render(newTeamView(org), w, r)
 }
 
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +58,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		Organization *string `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -78,7 +71,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -92,13 +85,13 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.teams.Update(r.Context(), params.TeamID, params.UpdateTeamOptions)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -109,48 +102,45 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	teams, err := h.teams.List(r.Context(), org)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	subject, err := authz.SubjectFromContext(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("team_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Teams         []*Team
-		CanCreateTeam bool
-	}{
-		OrganizationPage: organization.NewPage(r, "teams", org),
-		Teams:            teams,
-		CanCreateTeam:    subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
-	})
+	props := listTeamsProps{
+		organization:  org,
+		teams:         teams,
+		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
+	}
+	html.Render(listTeams(props), w, r)
 }
 
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.teams.GetByID(r.Context(), teamID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = h.teams.Delete(r.Context(), teamID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

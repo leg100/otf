@@ -1,0 +1,330 @@
+package run
+
+import (
+	"fmt"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/workspace"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type listProps struct {
+	ws                 *workspace.Workspace
+	page               *resource.Page[*Run]
+	canUpdateWorkspace bool
+}
+
+templ list(props listProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        "runs",
+		Organization: props.ws.Organization,
+		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "runs"},
+		},
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<!-- watch for updates to listed runs as well as newly created runs -->
+		<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
+			<!-- /* if a new run is created then reload entire run listing */ -->
+			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
+			@components.PaginatedContentList(props.page, widget)
+		</div>
+	}
+}
+
+type getProps struct {
+	run       *Run
+	ws        *workspace.Workspace
+	planLogs  logs.Chunk
+	applyLogs logs.Chunk
+}
+
+templ get(props getProps) {
+	{{
+	layoutProps := components.LayoutProps{
+		Title:        props.run.ID.String(),
+		Organization: props.ws.Organization,
+		PreContent:   getPreContent(),
+		PostContent:  getPostContent(props),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
+			{Name: props.run.ID.String()},
+		},
+	}
+	}}
+	@components.Layout(layoutProps) {
+		<div class="flex gap-4 text-sm">
+			<div>Terraform version: <span class="bg-gray-200 p-0.5">{ props.run.TerraformVersion }</span></div>
+			<div id="elapsed-time">
+				Elapsed time:
+				<span>
+					@runningTime(props.run)
+				</span>
+			</div>
+		</div>
+		@periodReport(props.run)
+		<div class="flex flex-col gap-4">
+			<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) + "?run_id=" + props.run.ID.String() }>
+				@widget(props.run)
+			</div>
+			<details id="plan" open>
+				<summary class="cursor-pointer py-2">
+					<div class="inline-flex gap-2">
+						<span class="font-semibold">plan</span>
+						@phaseStatus(props.run.Plan)
+						<span>
+							@runningTime(&props.run.Plan)
+						</span>
+					</div>
+				</summary>
+				<div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+					@templ.Raw(strings.TrimSpace(props.planLogs.ToHTML()))
+					<div id="tailed-plan-logs"></div>
+				</div>
+			</details>
+			<details id="apply" open>
+				<summary class="cursor-pointer py-2">
+					<div class="inline-flex gap-2">
+						<span class="font-semibold">apply</span>
+						@phaseStatus(props.run.Apply)
+						<span>
+							@runningTime(&props.run.Apply)
+						</span>
+					</div>
+				</summary>
+				<div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+					@templ.Raw(strings.TrimSpace(props.applyLogs.ToHTML()))
+					<div id="tailed-apply-logs"></div>
+				</div>
+			</details>
+			<hr class="my-4"/>
+			<div id="run-actions-container" class="border p-2">
+				@actions(props.run)
+			</div>
+		</div>
+	}
+}
+
+templ getPreContent() {
+	<link rel="stylesheet" href={ components.AssetPath(ctx, "/static/css/terminal.css") }/>
+	<script src={ components.AssetPath(ctx, "/static/js/tail.js") }></script>
+	<script src={ components.AssetPath(ctx, "/static/js/running_time.js") }></script>
+}
+
+templ getPostContent(props getProps) {
+	if !props.planLogs.IsEnd() {
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "plan", props.planLogs.NextOffset())
+		;
+	}
+	if !props.applyLogs.IsEnd() {
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "apply", props.applyLogs.NextOffset())
+		;
+	}
+}
+
+templ eventView(run *Run) {
+	@widget(run)
+	@phaseStatus(run.Plan)
+	@phaseStatus(run.Apply)
+	@actions(run)
+	@periodReport(run)
+	@runningTime(run)
+	@runningTime(&run.Plan)
+	@runningTime(&run.Apply)
+}
+
+templ widget(run *Run) {
+	<div sse-swap={ "run-item-" + run.ID.String() }>
+		<div x-data={ components.BlockLink(paths.Run(run.ID.String())) } class="widget">
+			<div>
+				@components.RunStatus(run.ID, run.Status.String())
+				if run.PlanOnly {
+					<span>| plan-only</span>
+				}
+				if run.IngressAttributes != nil {
+					<span class="inline-block max-w-[16rem] truncate">
+						| <a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
+					</span>
+				} else if run.CreatedBy != nil {
+					<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
+						| @{ *run.CreatedBy }
+					</span>
+				}
+				<span>{ internal.Ago(time.Now(), run.CreatedAt) } ago</span>
+			</div>
+			<div>
+				<div class="flex gap-2 items-center">
+					@components.Identifier(run.ID)
+					@source(run)
+					if run.IngressAttributes != nil {
+						<div class="flex flex-wrap gap-2 items-center">
+							<span class="flex flex-wrap items-center gap-2 bg-gray-100 font-mono text-sm p-1">
+								<img class="h-5" src={ components.AssetPath(ctx, "/static/images/git_icon.svg") }/>
+								if run.IngressAttributes.IsPullRequest {
+									<a id="pull-request-link" href={ templ.SafeURL(run.IngressAttributes.PullRequestURL) } title={ run.IngressAttributes.PullRequestTitle }>#{ strconv.Itoa(run.IngressAttributes.PullRequestNumber) }</a> |
+								} else if run.IngressAttributes.Branch != "" {
+									<span class="inline-block max-w-[12rem] truncate" id="vcs-branch">{ run.IngressAttributes.Branch }</span>|
+								} else if run.IngressAttributes.Tag != "" {
+									<span class="inline-block max-w-[12rem] truncate" id="vcs-tag">{ run.IngressAttributes.Tag }</span>|
+								}
+								<a id="commit-sha-abbrev" href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>{ run.IngressAttributes.CommitSHA[:7] }</a>
+							</span>
+						</div>
+					}
+				</div>
+				<div class="flex gap-4 items-center justify-between">
+					if run.Apply.ResourceReport != nil {
+						@resourceReport(run.Apply.ResourceReport)
+					} else if run.Plan.ResourceReport != nil {
+						@resourceReport(run.Plan.ResourceReport)
+					}
+					if run.Status == RunPlanned {
+						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+							<button class="btn">apply</button>
+						</form>
+					}
+					if run.Cancelable() {
+						<form action={ paths.CancelRun(run.ID.String()) } method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+						</form>
+					} else if run.ForceCancelable() {
+						<form action={ paths.ForceCancelRun(run.ID.String()) } method="POST">
+							<button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
+						</form>
+					} else if run.Discardable() {
+						<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+							<button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+						</form>
+					} else if run.CancelSignaledAt != nil && !run.Done() {
+						cancelling...
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ actions(run *Run) {
+	<div class="flex gap-2" id="run-actions" hx-swap-oob="true">
+		if run.Status == RunPlanned {
+			<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+				<button class="btn">apply</button>
+			</form>
+			<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+				<button class="btn">discard</button>
+			</form>
+		} else if run.Done() {
+			<form action={ paths.RetryRun(run.ID.String()) } method="POST">
+				<button class="btn">retry run</button>
+			</form>
+		}
+	</div>
+}
+
+type task interface {
+	ElapsedTime(time.Time) time.Duration
+	HasStarted() bool
+	StartedAt() time.Time
+	Done() bool
+	String() string
+}
+
+templ runningTime(tsk task) {
+	if tsk.HasStarted() {
+		{{ elapsed := tsk.ElapsedTime(time.Now()) }}
+		<span
+			id={ "running-time-" + tsk.String() }
+			hx-swap-oob="true"
+			class="text-sm bg-gray-200 p-0.5"
+			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())) }
+			x-text="formatDuration(elapsed)"
+		>
+			{ strconv.Itoa(int(elapsed)) }
+		</span>
+	} else {
+		<span id={ "running-time-" + tsk.String() }></span>
+	}
+}
+
+var periodStatusColors = map[Status]string{
+	RunPending:            "bg-yellow-50",
+	RunPlanQueued:         "bg-yellow-200",
+	RunPlanning:           "bg-violet-200",
+	RunPlanned:            "bg-violet-400",
+	RunPlannedAndFinished: "bg-green-100",
+	RunApplying:           "bg-cyan-200",
+}
+
+templ periodReport(run *Run) {
+	{{ report := run.PeriodReport(time.Now()) }}
+	<div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
+		for i, period := range report.Periods {
+			<div
+				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
+				class={ "inline-block", "h-full",  periodStatusColors[period.Status] }
+			></div>
+		}
+		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
+			<ul class="flex gap-4 flex-wrap text-sm">
+				for _, period := range report.Periods {
+					<li>
+						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status] }></div>
+						<span>{ period.Status.String() }</span>
+						<span>({ period.Period.String() })</span>
+					</li>
+				}
+			</ul>
+		</div>
+	</div>
+}
+
+templ resourceReport(report *Report) {
+	<div class="font-mono" id="resource-summary">
+		<span class="text-green-700">+{ strconv.Itoa(report.Additions) }</span>
+		<span class="text-blue-700">~{ strconv.Itoa(report.Changes) }</span>
+		<span class="text-red-700">-{ strconv.Itoa(report.Destructions) }</span>
+	</div>
+}
+
+templ source(run *Run) {
+	if run.IsAPISource() {
+		<img class="h-5 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src={ components.AssetPath(ctx, "/static/images/api_icon.png") }/>
+	} else if run.IsCLISource() {
+		<img class="h-5 bg-gray-300" id="run-trigger-cli" title="run triggered via the CLI" src={ components.AssetPath(ctx, "/static/images/cli_icon.svg") }/>
+	} else if run.IsGithubSource() {
+		<img class="h-5" id="run-trigger-github" title="run triggered via github" src={ components.AssetPath(ctx, "/static/images/github_icon.svg") }/>
+	} else if run.IsGitlabSource() {
+		<img class="h-5" id="run-trigger-gitlab" title="run triggered via gitlab" src={ components.AssetPath(ctx, "/static/images/gitlab_icon.svg") }/>
+	} else if run.IsUISource() {
+		<img class="h-5 bg-gray-300 p-0.5" id="run-trigger-ui" title="run triggered via the UI" src={ components.AssetPath(ctx, "/static/images/ui_icon.png") }/>
+	}
+}
+
+var phaseStatusColors = map[PhaseStatus]string{
+	PhaseFinished: "bg-green-200",
+}
+
+templ phaseStatus(phase Phase) {
+	<span id={ string(phase.PhaseType) + "-status" } class={ phaseStatusColors[phase.Status] } hx-swap-oob="true">
+		{ phase.Status.String() }
+	</span>
+}
+
+func boolString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}

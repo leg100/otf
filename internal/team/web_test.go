@@ -13,9 +13,7 @@ import (
 
 func TestTeam_WebHandlers(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-		}
+		h := &webHandlers{}
 		q := "/?organization_name=acme-corp"
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
@@ -24,9 +22,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-		}
+		h := &webHandlers{}
 		q := "/?organization_name=acme-corp"
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
@@ -36,10 +32,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-			teams:    &fakeService{team: team},
-		}
+		h := &webHandlers{teams: &fakeService{team: team}}
 
 		q := "/?team_id=team-123&manage_workspaces=true"
 		r := httptest.NewRequest("GET", q, nil)
@@ -50,10 +43,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-			teams:    &fakeService{team: team},
-		}
+		h := &webHandlers{teams: &fakeService{team: team}}
 		// make request with user with full perms, to ensure parts of
 		// page that are hidden to unprivileged users are not hidden.
 		userCtx := authz.AddSubjectToContext(context.Background(), &authz.Superuser{})
@@ -68,10 +58,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: "acme-org"}
-		h := &webHandlers{
-			Renderer: testutils.NewRenderer(t),
-			teams:    &fakeService{team: team},
-		}
+		h := &webHandlers{teams: &fakeService{team: team}}
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()

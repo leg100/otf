@@ -1,0 +1,50 @@
+package components
+
+import (
+	"fmt"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/resource"
+)
+
+templ ContentList[T any](items []T, comp func(T) templ.Component) {
+	<div id="content-list" class="flex flex-col">
+		for _, item := range items {
+			@comp(item)
+		}
+	</div>
+}
+
+templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Component) {
+	<div id="content-list" class="flex flex-col">
+		for _, item := range page.Items {
+			@comp(item)
+		}
+		if len(page.Items) == 0 {
+			No items currently exist.
+		}
+	</div>
+	<div class="flex p-4 gap-2 justify-end">
+		if page.PreviousPage != nil {
+			{{
+			url, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.PreviousPage))
+			if err != nil {
+				return err
+			}
+			}}
+			<a id="prev-page-link" href={ url }>Previous Page</a>
+		}
+		if page.NextPage != nil {
+			{{
+			url, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.NextPage))
+			if err != nil {
+				return err
+			}
+			}}
+			<a id="next-page-link" href={ url }>Next Page</a>
+		}
+	</div>
+}
+
+func pageQuery(page int) string {
+	return fmt.Sprintf("page[number]=%d", page)
+}

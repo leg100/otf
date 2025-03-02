@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/user"
 )
 
@@ -32,8 +31,6 @@ type (
 	server struct {
 		secret []byte           // for encrypting auth code
 		users  userTokensClient // for creating user API token
-
-		html.Renderer // render consent UI
 	}
 
 	userTokensClient interface {
@@ -44,8 +41,6 @@ type (
 	Options struct {
 		Secret      []byte // for encrypting auth code
 		UserService *user.Service
-
-		html.Renderer
 	}
 
 	authcode struct {
@@ -65,9 +60,8 @@ type (
 
 func NewServer(opts Options) *server {
 	return &server{
-		Renderer: opts.Renderer,
-		secret:   opts.Secret,
-		users:    opts.UserService,
+		secret: opts.Secret,
+		users:  opts.UserService,
 	}
 }
 

@@ -1,0 +1,19 @@
+package components
+
+import (
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
+	"strings"
+)
+
+var runStatusColors = map[string]string{
+	"discarded":            "bg-gray-200",
+	"planned_and_finished": "bg-red-100",
+	"applied":              "bg-green-200",
+}
+
+templ RunStatus(runID resource.ID, status string) {
+	<span id={ runID.String() + "-status" } class={ "run-status text-lg", runStatusColors[status] }>
+		<a href={ paths.Run(runID.String()) }>{ strings.ReplaceAll(status, "_", " ") }</a>
+	</span>
+}

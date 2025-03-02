@@ -62,11 +62,11 @@ func TestGithubPullRequest(t *testing.T) {
 			_, err = page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
 			require.NoError(t, err)
 			// should be one run widget with info matching the pull request
-			err = expect.Locator(page.Locator(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//a[@id='pull-request-link' and text()='#2']`)).ToBeVisible()
 			require.NoError(t, err)
-			err = expect.Locator(page.Locator(`//div[@class='widget']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
 			require.NoError(t, err)
-			err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@class='widget']//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit))).ToBeVisible()
+			err = expect.Locator(page.Locator(fmt.Sprintf(`//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit))).ToBeVisible()
 			require.NoError(t, err)
 		})
 

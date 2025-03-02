@@ -6,12 +6,13 @@ import (
 	"sort"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -19,8 +20,6 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	html.Renderer
-
 	users     usersClient
 	teams     teamsClient
 	tokens    tokensClient
@@ -73,7 +72,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/teams/{team_id}/add-member", h.addTeamMember).Methods("POST")
 	r.HandleFunc("/teams/{team_id}/remove-member", h.removeTeamMember).Methods("POST")
 	// NOTE: to avoid an import cycle the getTeam handler is located here rather
-	// than in the team package where it ought to belong.the
+	// than in the team package where it ought to belong
 	r.HandleFunc("/teams/{team_id}", h.getTeam).Methods("GET")
 
 	// terraform login opens a browser to this hardcoded URL
@@ -88,50 +87,33 @@ func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	users, err := h.users.ListOrganizationUsers(r.Context(), name)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("users_list.tmpl", w, struct {
-		html.SitePage
-		Users []*User
-	}{
-		SitePage: html.NewSitePage(r, "users"),
-		Users:    users,
-	})
+	html.Render(userList(users), w, r)
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("profile.tmpl", w, struct {
-		html.SitePage
-		User authz.Subject
-	}{
-		SitePage: html.NewSitePage(r, "profile"),
-		User:     user,
-	})
+	html.Render(profile(), w, r)
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	h.Render("site_admin_login.tmpl", w, html.NewSitePage(r, "site admin login"))
+	html.Render(adminLogin(), w, r)
 }
 
 // adminLogin logs in a site admin
 func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -143,24 +125,13 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 
 	err = h.tokens.StartSession(w, r, SiteAdminID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
-	user, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("site.tmpl", w, struct {
-		html.SitePage
-		User authz.Subject
-	}{
-		SitePage: html.NewSitePage(r, "site"),
-		User:     user,
-	})
+	html.Render(siteSettings(), w, r)
 }
 
 // team membership handlers
@@ -171,13 +142,13 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 		Username *string     `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := h.users.AddTeamMembership(r.Context(), params.TeamID, []string{*params.Username})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -191,13 +162,13 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 		Username string      `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := h.users.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -208,20 +179,20 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.ID("team_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.teams.GetByID(r.Context(), teamID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// get usernames of team members
 	members, err := h.users.ListTeamUsers(r.Context(), teamID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	usernames := make([]string, len(members))
@@ -234,7 +205,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// retrieve the list.
 	user, err := UserFromContext(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -243,7 +214,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	if user.CanAccess(authz.ListUsersAction, nil) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
-			h.Error(w, err.Error(), http.StatusInternalServerError)
+			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		nonMembers := diffUsers(members, users)
@@ -253,36 +224,25 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("team_get.tmpl", w, struct {
-		organization.OrganizationPage
-		Team              *otfteam.Team
-		Members           []*User
-		AddMemberDropdown html.DropdownUI
-		CanUpdateTeam     bool
-		CanDeleteTeam     bool
-		CanAddMember      bool
-		CanRemoveMember   bool
-		CanDelete         bool
-		IsOwner           bool
-	}{
-		OrganizationPage: organization.NewPage(r, team.ID.String(), team.Organization),
-		Team:             team,
-		Members:          members,
-		CanUpdateTeam:    user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanDeleteTeam:    user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanAddMember:     user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanRemoveMember:  user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		CanDelete:        user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		IsOwner:          user.IsOwner(team.Organization),
-		AddMemberDropdown: html.DropdownUI{
+	props := getTeamProps{
+		team:            team,
+		members:         members,
+		canUpdateTeam:   user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		canDeleteTeam:   user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		canAddMember:    user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		canRemoveMember: user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
+		canDelete:       user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		isOwner:         user.IsOwner(team.Organization),
+		dropdown: components.SearchDropdownProps{
 			Name:        "username",
 			Available:   nonMemberUsernames,
 			Existing:    usernames,
-			Action:      paths.AddMemberTeam(team.ID.String()),
+			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID.String())),
 			Placeholder: "Add user",
-			Width:       html.WideDropDown,
+			Width:       components.WideDropDown,
 		},
-	})
+	}
+	html.Render(getTeam(props), w, r)
 }
 
 //
@@ -290,23 +250,23 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 //
 
 func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	h.Render("token_new.tmpl", w, html.NewSitePage(r, "new user token"))
+	html.Render(newToken(), w, r)
 }
 
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 	var opts CreateUserTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	_, token, err := h.users.CreateToken(r.Context(), opts)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := tokens.TokenFlashMessage(h, w, token); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := components.TokenFlashMessage(w, token); err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
@@ -315,7 +275,7 @@ func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 	tokens, err := h.users.ListTokens(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -324,26 +284,17 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	h.Render("user_token_list.tmpl", w, struct {
-		html.SitePage
-		// list template expects pagination object
-		*resource.Pagination
-		Items []*UserToken
-	}{
-		SitePage:   html.NewSitePage(r, "user tokens"),
-		Pagination: &resource.Pagination{},
-		Items:      tokens,
-	})
+	html.Render(tokenList(tokens), w, r)
 }
 
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("id", r)
 	if err != nil {
-		h.Error(w, "missing id", http.StatusUnprocessableEntity)
+		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
 	if err := h.users.DeleteToken(r.Context(), id); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "Deleted token")

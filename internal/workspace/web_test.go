@@ -23,7 +23,7 @@ import (
 )
 
 func TestNewWorkspaceHandler(t *testing.T) {
-	h := &webHandlers{Renderer: testutils.NewRenderer(t)}
+	h := &webHandlers{}
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
@@ -35,8 +35,7 @@ func TestNewWorkspaceHandler(t *testing.T) {
 func TestWorkspace_Create(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 	h := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	form := strings.NewReader(url.Values{
@@ -70,7 +69,6 @@ func TestGetWorkspaceHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &webHandlers{
-				Renderer: testutils.NewRenderer(t),
 				uiHelpers: &uiHelpers{
 					service:    &fakeUIHelpersService{lockedBy: bobby},
 					authorizer: authz.NewAllowAllAuthorizer(),
@@ -92,8 +90,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 func TestWorkspace_GetByName(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	q := "/?organization_name=acme-corp&workspace_name=fake-ws"
@@ -180,7 +177,6 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &webHandlers{
-				Renderer:   testutils.NewRenderer(t),
 				authorizer: authz.NewAllowAllAuthorizer(),
 				client: &FakeService{
 					Policy:     tt.policy,
@@ -211,8 +207,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 func TestUpdateWorkspaceHandler(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	form := strings.NewReader(url.Values{
@@ -236,7 +231,6 @@ func TestListWorkspacesHandler(t *testing.T) {
 		workspaces[i-1] = &Workspace{ID: testutils.ParseID(t, fmt.Sprintf("ws-%d", i))}
 	}
 	app := &webHandlers{
-		Renderer:   testutils.NewRenderer(t),
 		authorizer: authz.NewAllowAllAuthorizer(),
 		client:     &FakeService{Workspaces: workspaces},
 	}
@@ -275,7 +269,6 @@ func TestListWorkspacesHandler(t *testing.T) {
 func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-foo"), LatestRun: &LatestRun{Status: "applied", ID: testutils.ParseID(t, "run-123")}}
 	app := &webHandlers{
-		Renderer:   testutils.NewRenderer(t),
 		authorizer: authz.NewAllowAllAuthorizer(),
 		client:     &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -290,8 +283,7 @@ func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 func TestDeleteWorkspace(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	q := "/?workspace_id=ws-123"
@@ -308,8 +300,7 @@ func TestDeleteWorkspace(t *testing.T) {
 func TestLockWorkspace(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	form := strings.NewReader(url.Values{
@@ -330,8 +321,7 @@ func TestLockWorkspace(t *testing.T) {
 func TestUnlockWorkspace(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	form := strings.NewReader(url.Values{
@@ -352,8 +342,7 @@ func TestUnlockWorkspace(t *testing.T) {
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
 			providers: []*vcsprovider.VCSProvider{
 				{},
@@ -373,8 +362,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 func TestListWorkspaceReposHandler(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
 			providers: []*vcsprovider.VCSProvider{
 				{},
@@ -399,8 +387,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 func TestConnectWorkspaceHandler(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	form := strings.NewReader(url.Values{
@@ -426,8 +413,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 func TestDisconnectWorkspaceHandler(t *testing.T) {
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
 	app := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
-		client:   &FakeService{Workspaces: []*Workspace{ws}},
+		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
 
 	form := strings.NewReader(url.Values{

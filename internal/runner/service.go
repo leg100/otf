@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -45,7 +44,6 @@ type (
 		logr.Logger
 		*sql.DB
 		*sql.Listener
-		html.Renderer
 		*tfeapi.Responder
 
 		RunService       *otfrun.Service
@@ -80,7 +78,6 @@ func NewService(opts ServiceOptions) *Service {
 		Responder: opts.Responder,
 	}
 	svc.web = &webHandlers{
-		Renderer:   opts.Renderer,
 		authorizer: opts.Authorizer,
 		logger:     opts.Logger,
 		svc:        svc,

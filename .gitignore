@@ -1,3 +1,5 @@
+# templ watch mode generated files
+*_templ.txt
 # local node shite
 ui/node_modules
 package.json

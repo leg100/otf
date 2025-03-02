@@ -55,7 +55,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		s.Render("consent.tmpl", w, html.NewSitePage(r, "consent"))
+		html.Render(consent(), w, r)
 		return
 	}
 

@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -42,7 +41,6 @@ type (
 
 		*sql.DB
 		*tfeapi.Responder
-		html.Renderer
 		logr.Logger
 	}
 )
@@ -58,7 +56,6 @@ func NewService(opts Options) *Service {
 		teams: opts.TeamService,
 	}
 	svc.web = &webHandlers{
-		Renderer:  opts.Renderer,
 		teams:     opts.TeamService,
 		tokens:    opts.TokensService,
 		siteToken: opts.SiteToken,

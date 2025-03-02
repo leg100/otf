@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,9 +42,7 @@ func TestNewAuthenticatorService(t *testing.T) {
 // TestLoginHandler tests the login page handler, testing for the presence of a
 // login button for each configured cloud.
 func TestLoginHandler(t *testing.T) {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-	svc := &service{Renderer: renderer}
+	svc := &service{}
 
 	svc.clients = []*OAuthClient{
 		{OAuthConfig: OAuthConfig{Name: "cloud1"}},

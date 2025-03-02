@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
@@ -34,7 +33,6 @@ type (
 
 		*sql.DB
 		*tfeapi.Responder
-		html.Renderer
 		logr.Logger
 	}
 
@@ -52,7 +50,6 @@ func NewService(opts Options) *Service {
 	}
 
 	svc.web = &web{
-		Renderer:   opts.Renderer,
 		authorizer: opts.Authorizer,
 		workspaces: opts.WorkspaceService,
 		variables:  &svc,

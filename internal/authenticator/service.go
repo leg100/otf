@@ -15,7 +15,6 @@ import (
 type (
 	Options struct {
 		logr.Logger
-		html.Renderer
 
 		*internal.HostnameService
 
@@ -27,8 +26,6 @@ type (
 	}
 
 	service struct {
-		html.Renderer
-
 		clients []*OAuthClient
 	}
 
@@ -42,7 +39,7 @@ type (
 // the system. Supports multiple clients: zero or more clients that support an
 // opaque token, and one client that supports IDToken/OIDC.
 func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error) {
-	svc := service{Renderer: opts.Renderer}
+	svc := service{}
 	// Construct clients with opaque token handlers
 	for _, cfg := range opts.OpaqueHandlerConfigs {
 		if cfg.ClientID == "" && cfg.ClientSecret == "" {
@@ -103,11 +100,5 @@ func (a *service) AddHandlers(r *mux.Router) {
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	a.Render("login.tmpl", w, struct {
-		html.SitePage
-		Clients []*OAuthClient
-	}{
-		SitePage: html.NewSitePage(r, "login"),
-		Clients:  a.clients,
-	})
+	html.Render(login(a.clients), w, r)
 }

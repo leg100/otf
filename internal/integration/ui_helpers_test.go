@@ -153,7 +153,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	require.NoError(t, err)
 
 	// wait for run to enter planned or planned and finished state
-	err = expect.Locator(page.Locator(`//div[@class='widget']/div/span/a`)).ToHaveText(regexp.MustCompile(`planned|planned and finished`))
+	err = expect.Locator(page.Locator(`//span[contains(concat(' ', normalize-space(@class), ' '), ' run-status ')]/a`)).ToHaveText(regexp.MustCompile(`planned|planned and finished`))
 	require.NoError(t, err)
 
 	// run widget should show plan summary
@@ -188,7 +188,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	require.NoError(t, err)
 
 	// confirm run ends in applied state
-	err = expect.Locator(page.Locator(`//div[@class='widget']/div/span/a`)).ToHaveText("applied")
+	err = expect.Locator(page.Locator(`//span[contains(concat(' ', normalize-space(@class), ' '), ' run-status ')]/a`)).ToHaveText("applied")
 	require.NoError(t, err)
 
 	// run widget should show apply summary
@@ -202,7 +202,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	require.NoError(t, err)
 
 	// because run was triggered from the UI, the UI icon should be visible.
-	err = expect.Locator(page.Locator(`//div[@class='widget']//img[@id='run-trigger-ui']`)).ToBeVisible()
+	err = expect.Locator(page.Locator(`//img[@id='run-trigger-ui']`)).ToBeVisible()
 	require.NoError(t, err)
 
 	// run should show elapsed time

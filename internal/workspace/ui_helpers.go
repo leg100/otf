@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/a-h/templ"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
 	userpkg "github.com/leg100/otf/internal/user"
 )
@@ -24,12 +25,12 @@ type uiHelpersAuthorizer interface {
 }
 
 type LockButton struct {
-	State    string // locked or unlocked
-	Text     string // button text
-	Tooltip  string // button tooltip
-	Disabled bool   // button greyed out or not
-	Message  string // message accompanying button
-	Action   string // form URL
+	State    string        // locked or unlocked
+	Text     string        // button text
+	Tooltip  string        // button tooltip
+	Disabled bool          // button greyed out or not
+	Message  string        // message accompanying button
+	Action   templ.SafeURL // form URL
 }
 
 // lockButtonHelper helps the UI determine the button to display for

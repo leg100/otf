@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/http/html"
+	otfhtml "github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -27,7 +27,7 @@ type (
 )
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
-	r = html.UIRouter(r)
+	r = otfhtml.UIRouter(r)
 
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 }
@@ -42,7 +42,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		Offset int `schema:"offset,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity, false)
+		otfhtml.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		Offset: params.Offset,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		otfhtml.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

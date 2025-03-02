@@ -28,7 +28,7 @@ func TestFlash(t *testing.T) {
 
 	// pop flashes
 	r := fakeRequest(cookies[0])
-	got, err := PopFlashes(r)
+	got, err := PopFlashes(r, w)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(got))
 	assert.Contains(t, got, flash{FlashSuccessType, "yes!"})

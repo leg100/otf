@@ -10,14 +10,12 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
 	web struct {
-		html.Renderer
 		workspaces webWorkspaceClient
 
 		variables  webVariablesClient
@@ -78,17 +76,6 @@ type (
 		HCL         bool
 		VariableID  resource.ID `schema:"variable_id,required"`
 	}
-
-	workspaceVariableTable struct {
-		Variables         []*Variable
-		CanDeleteVariable bool
-	}
-
-	setVariableTable struct {
-		*VariableSet
-		Merged            []*Variable
-		CanDeleteVariable bool
-	}
 )
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -118,27 +105,17 @@ func (h *web) addHandlers(r *mux.Router) {
 func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("variable_new.tmpl", w, struct {
-		workspace.WorkspacePage
-		Variable   *Variable
-		EditMode   bool
-		FormAction string
-	}{
-		WorkspacePage: workspace.NewPage(r, "new variable", ws),
-		Variable:      &Variable{},
-		EditMode:      false,
-		FormAction:    paths.CreateVariable(workspaceID.String()),
-	})
+	html.Render(newWorkspaceVariable(ws), w, r)
 }
 
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +124,7 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID resource.ID `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -172,90 +149,78 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.ID("workspace_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variables, err := h.variables.ListWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	sets, err := h.variables.listWorkspaceVariableSets(r.Context(), workspaceID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	merged := mergeVariables(sets, variables, nil)
-	setVariableTables := make([]setVariableTable, len(sets))
+	variableSetTables := make([]setTableProps, len(sets))
 	for i := range sets {
-		setVariableTables[i] = setVariableTable{
-			VariableSet: sets[i],
-			Merged:      merged,
+		variableSetTables[i] = setTableProps{
+			set:    sets[i],
+			merged: merged,
 			// hide delete button for set variables
-			CanDeleteVariable: false,
+			canDeleteVariable: false,
 		}
 	}
-	h.Render("variable_list.tmpl", w, struct {
-		workspace.WorkspacePage
-		WorkspaceVariableTable workspaceVariableTable
-		VariableSetTables      []setVariableTable
-		CanCreateVariable      bool
-		CanDeleteVariable      bool
-		CanUpdateWorkspace     bool
-	}{
-		WorkspacePage: workspace.NewPage(r, "variables", ws),
-		WorkspaceVariableTable: workspaceVariableTable{
-			Variables:         variables,
-			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+	props := listWorkspaceVariablesProps{
+		ws: ws,
+		workspaceTableProps: workspaceTableProps{
+			variables:         variables,
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
 		},
-		VariableSetTables:  setVariableTables,
-		CanCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		CanUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-	})
+		setTablesProps:     variableSetTables,
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+	}
+	html.Render(listWorkspaceVariables(props), w, r)
 }
 
 func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	wv, err := h.variables.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.workspaces.Get(r.Context(), wv.WorkspaceID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("variable_edit.tmpl", w, struct {
-		workspace.WorkspacePage
-		Variable   *Variable
-		EditMode   bool
-		FormAction string
-	}{
-		WorkspacePage: workspace.NewPage(r, "edit | "+wv.ID.String(), ws),
-		Variable:      wv.Variable,
-		EditMode:      true,
-		FormAction:    paths.UpdateVariable(wv.ID.String()),
-	})
+	props := editWorkspaceVariableProps{
+		ws:       ws,
+		variable: wv.Variable,
+	}
+	html.Render(editWorkspaceVariable(props), w, r)
 }
 
 func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params updateVariableParams
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -280,13 +245,13 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	wv, err := h.variables.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -297,58 +262,43 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	sets, err := h.variables.listVariableSets(r.Context(), org)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("variable_set_list.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSets []*VariableSet
-		CanCreate    bool
-	}{
-		OrganizationPage: organization.NewPage(r, "variable sets", org),
-		VariableSets:     sets,
-		CanCreate:        h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
-	})
+	props := listVariableSetsProps{
+		organization:         org,
+		sets:                 sets,
+		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
+	}
+	html.Render(listVariableSets(props), w, r)
 }
 
 func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	// retrieve names of all workspaces in org to show in dropdown widget
 	availableWorkspaces, err := h.getAvailableWorkspaces(r.Context(), org)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("variable_set_new.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSet         *VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-	}{
-		OrganizationPage: organization.NewPage(r, "variable sets", org),
-		VariableSet: &VariableSet{
-			Global: true, // set global as default
-		},
-		EditMode:            false,
-		FormAction:          paths.CreateVariableSet(org),
-		AvailableWorkspaces: availableWorkspaces,
-		ExistingWorkspaces:  []workspaceInfo{},
-	})
+	props := newVariableSetProps{
+		organization:        org,
+		availableWorkspaces: availableWorkspaces,
+	}
+	html.Render(newVariableSet(props), w, r)
 }
 
 func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -360,13 +310,13 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		WorkspacesJSON string `schema:"workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	var workspaces []workspaceInfo
 	if err := json.Unmarshal([]byte(params.WorkspacesJSON), &workspaces); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	workspaceIDs := make([]resource.ID, len(workspaces))
@@ -393,20 +343,20 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 	setID, err := decode.ID("variable_set_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	set, err := h.variables.getVariableSet(r.Context(), setID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// retrieve names of workspaces in org to show in dropdown widget
 	availableWorkspaces, err := h.getAvailableWorkspaces(r.Context(), set.Organization)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	// create list of existing workspaces and remove them from available
@@ -424,30 +374,16 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("variable_set_edit.tmpl", w, struct {
-		organization.OrganizationPage
-		*VariableSet
-		EditMode            bool
-		FormAction          string
-		AvailableWorkspaces []workspaceInfo
-		ExistingWorkspaces  []workspaceInfo
-		CanCreateVariable   bool
-		CanDeleteVariable   bool
-		VariableTable       setVariableTable
-	}{
-		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID.String(), set.Organization),
-		VariableSet:         set,
-		EditMode:            true,
-		FormAction:          paths.UpdateVariableSet(set.ID.String()),
-		AvailableWorkspaces: availableWorkspaces,
-		ExistingWorkspaces:  existingWorkspaces,
-		CanCreateVariable:   h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		CanDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
-		VariableTable: setVariableTable{
-			VariableSet:       set,
-			CanDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+	props := editVariableSetProps{
+		set:                 set,
+		availableWorkspaces: availableWorkspaces,
+		existingWorkspaces:  existingWorkspaces,
+		variableTable: setTableProps{
+			set:               set,
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
 		},
-	})
+	}
+	html.Render(editVariableSet(props), w, r)
 }
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -459,13 +395,13 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		WorkspacesJSON string `schema:"workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	var workspaces []workspaceInfo
 	if err := json.Unmarshal([]byte(params.WorkspacesJSON), &workspaces); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	workspaceIDs := make([]resource.ID, len(workspaces))
@@ -492,13 +428,13 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	setID, err := decode.ID("variable_set_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	set, err := h.variables.deleteVariableSet(r.Context(), setID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -509,29 +445,17 @@ func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	setID, err := decode.ID("variable_set_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	set, err := h.variables.getVariableSet(r.Context(), setID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("variable_set_new_variable.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSet *VariableSet
-		Variable    *Variable
-		EditMode    bool
-		FormAction  string
-	}{
-		OrganizationPage: organization.NewPage(r, "new variable | variable sets", set.Organization),
-		VariableSet:      set,
-		Variable:         &Variable{},
-		EditMode:         false,
-		FormAction:       paths.CreateVariableSetVariable(setID.String()),
-	})
+	html.Render(newVSV(set), w, r)
 }
 
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -540,7 +464,7 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		SetID resource.ID `schema:"variable_set_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -565,36 +489,24 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	set, err := h.variables.getVariableSetByVariableID(r.Context(), variableID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	v := set.getVariable(variableID)
 
-	h.Render("variable_set_edit_variable.tmpl", w, struct {
-		organization.OrganizationPage
-		VariableSet *VariableSet
-		Variable    *Variable
-		EditMode    bool
-		FormAction  string
-	}{
-		OrganizationPage: organization.NewPage(r, "edit variable", set.Organization),
-		VariableSet:      set,
-		Variable:         v,
-		EditMode:         true,
-		FormAction:       paths.UpdateVariableSetVariable(v.ID.String()),
-	})
+	html.Render(editVSV(editVSVProps{set: set, variable: v}), w, r)
 }
 
 func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	var params updateVariableParams
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -620,13 +532,13 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.ID("variable_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	set, err := h.variables.deleteVariableSetVariable(r.Context(), variableID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	v := set.getVariable(variableID)
@@ -655,32 +567,4 @@ func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspa
 		}
 	}
 	return availableWorkspaces, nil
-}
-
-func (workspaceVariableTable) EditPath(variableID resource.ID) string {
-	return paths.EditVariable(variableID.String())
-}
-
-func (workspaceVariableTable) DeletePath(variableID resource.ID) string {
-	return paths.DeleteVariable(variableID.String())
-}
-
-func (w workspaceVariableTable) IsOverwritten(v *Variable) bool {
-	// a workspace variable can never be overwritten
-	return false
-}
-
-func (setVariableTable) EditPath(variableID resource.ID) string {
-	return paths.EditVariableSetVariable(variableID.String())
-}
-
-func (setVariableTable) DeletePath(variableID resource.ID) string {
-	return paths.DeleteVariableSetVariable(variableID.String())
-}
-
-func (w setVariableTable) IsOverwritten(v *Variable) bool {
-	if w.Merged == nil {
-		return false
-	}
-	return !v.Matches(w.Merged)
 }

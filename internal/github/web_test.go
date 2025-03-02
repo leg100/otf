@@ -20,7 +20,6 @@ import (
 
 func TestWebHandlers_new(t *testing.T) {
 	h := &webHandlers{
-		Renderer:        testutils.NewRenderer(t),
 		HostnameService: internal.NewHostnameService("example.com"),
 	}
 
@@ -32,7 +31,6 @@ func TestWebHandlers_new(t *testing.T) {
 
 func TestWebHandlers_get(t *testing.T) {
 	h := &webHandlers{
-		Renderer:        testutils.NewRenderer(t),
 		HostnameService: internal.NewHostnameService("example.com"),
 		svc: &fakeService{
 			app: &App{},
@@ -71,7 +69,6 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 	}()
 
 	h := &webHandlers{
-		Renderer:       testutils.NewRenderer(t),
 		GithubHostname: githubStubHostname,
 		GithubSkipTLS:  true,
 		svc:            &fakeService{},
@@ -85,7 +82,6 @@ func TestWebHandlers_exchangeCode(t *testing.T) {
 
 func TestWebHandlers_deleteApp(t *testing.T) {
 	h := &webHandlers{
-		Renderer: testutils.NewRenderer(t),
 		svc: &fakeService{
 			app: &App{},
 		},

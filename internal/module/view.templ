@@ -1,0 +1,285 @@
+package module
+
+import (
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/components"
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcsprovider"
+	"html/template"
+	"slices"
+	"strings"
+	"time"
+)
+
+type newViewProps struct {
+	organization  string
+	providers     []*vcsprovider.VCSProvider
+	repos         []string
+	vcsProviderID resource.ID
+	repo          string
+	vcsProvider   *vcsprovider.VCSProvider
+	step          newModuleStep
+}
+
+templ newView(props newViewProps) {
+	@components.Layout(components.LayoutProps{
+		Title: "new module",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "modules", Link: paths.Modules(props.organization)},
+			{Name: "new"},
+		},
+	}) {
+		<div class="flex gap-6 items-center mb-5">
+			<div
+				if props.step == newModuleConnectStep {
+					class="text-black"
+				} else {
+					class="text-gray-400"
+				}
+			>
+				<a href={ paths.NewModule(props.organization) + "?step=connect-vcs" }>
+					1. connect vcs
+				</a>
+			</div>
+			<div
+				if props.step == newModuleRepoStep {
+					class="text-black"
+				} else {
+					class="text-gray-400"
+				}
+			>
+				2. select repo
+			</div>
+			<div
+				if props.step == newModuleConfirmStep {
+					class="text-black"
+				} else {
+					class="text-gray-400"
+				}
+			>
+				3. confirm selection
+			</div>
+		</div>
+		switch props.step {
+			case newModuleConnectStep:
+				@newConnect(props)
+			case newModuleRepoStep:
+				@newRepo(props)
+			case newModuleConfirmStep:
+				@newConfirm(props)
+		}
+	}
+}
+
+templ newConnect(props newViewProps) {
+	<h3 class="font-semibold">Connect to a version control provider</h3>
+	<div>
+		Choose a VCS provider that hosts your module source code.
+	</div>
+	<div id="content-list">
+		for _, provider := range props.providers {
+			<div class="widget">
+				<div>
+					<span>{ provider.String() }</span>
+					<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
+				</div>
+				<div>
+					@components.Identifier(provider.ID)
+					<form action={ paths.NewModule(props.organization) } method="GET">
+						<input type="hidden" name="step" id="select-repo-step" value="select-repo"/>
+						<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ provider.ID.String() }/>
+						<button class="btn">connect</button>
+					</form>
+				</div>
+			</div>
+		}
+		if len(props.providers) == 0 {
+			No VCS providers are currently configured.
+		}
+	</div>
+}
+
+templ newRepo(props newViewProps) {
+	<h3 class="font-semibold">Choose a repository</h3>
+	<div>
+		Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
+	</div>
+	<form action={ paths.NewModule(props.organization) } method="GET">
+		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
+		<input type="hidden" name="step" id="select-repo-step" value="confirm-selection"/>
+		<input class="text-input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+		<button class="btn">connect</button>
+	</form>
+	<div id="content-list">
+		for _, repo := range props.repos {
+			<div class="widget">
+				<div>
+					<span>{ repo }</span>
+					<form action={ paths.NewModule(props.organization) } method="GET">
+						<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
+						<input type="hiDden" name="step" id="select-repo-step" value="confirm-selection"/>
+						<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+						<button class="btn">connect</button>
+					</form>
+				</div>
+			</div>
+		}
+		if len(props.repos) == 0 {
+			No repositories found.
+		}
+	</div>
+}
+
+templ newConfirm(props newViewProps) {
+	<h3 class="font-semibold">Confirm module details</h3>
+	<div>
+		<div>
+			<span class="font-semibold">Provider:</span> { string(props.vcsProvider.Kind) }
+		</div>
+		<div>
+			<span class="font-semibold">Repository:</span> { props.repo }
+		</div>
+	</div>
+	<div>
+		<form action={ paths.CreateModule(props.organization) } method="POST">
+			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProvider.ID.String() }/>
+			<input type="hidden" name="identifier" id="identifier" value={ props.repo }/>
+			<button class="btn">connect</button>
+		</form>
+	</div>
+}
+
+type listProps struct {
+	organization     string
+	modules          []*Module
+	canPublishModule bool
+}
+
+templ list(props listProps) {
+	@components.Layout(components.LayoutProps{
+		Title:          "modules",
+		ContentActions: listActions(props),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "modules"},
+		},
+	}) {
+		<div id="content-list">
+			for _, module := range props.modules {
+				@listItem(module)
+			}
+			if len(props.modules) == 0 {
+				No published modules.
+			}
+		</div>
+	}
+}
+
+templ listActions(props listProps) {
+	if props.canPublishModule {
+		<form action={ paths.NewModule(props.organization) } method="GET">
+			<button class="btn" id="list-module-vcs-providers-button">Publish</button>
+		</form>
+	}
+}
+
+templ listItem(module *Module) {
+	<div x-data={ components.BlockLink(paths.Module(module.ID.String())) } class="widget">
+		<div>
+			<span>{ module.Name }</span>
+			<span>{ internal.Ago(time.Now(), module.CreatedAt) }</span>
+		</div>
+		@components.Identifier(module.ID)
+	</div>
+}
+
+type getProps struct {
+	module           *Module
+	terraformModule  *TerraformModule
+	readme           template.HTML
+	currentVersion   *ModuleVersion
+	canPublishModule bool
+	hostname         string
+}
+
+templ get(props getProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "modules",
+		Organization: props.module.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "modules", Link: paths.Modules(props.module.Organization)},
+		},
+	}) {
+		<div class="flex flex-col gap-4">
+			switch props.module.Status {
+				case ModuleStatusPending:
+					Module status is still pending.
+				case ModuleStatusNoVersionTags:
+					Module source repository has no tags.
+				case ModuleStatusSetupFailed:
+					Module setup failed.
+				case ModuleStatusSetupComplete:
+					<div class="flex gap-4 items-center">
+						<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID.String()) } method="GET">
+							<label>Version</label>
+							<select class="w-32" name="version" id="version" onchange="this.form.submit()">
+								{{ slices.Reverse(props.module.AvailableVersions()) }}
+								for _, mv := range props.module.AvailableVersions() {
+									if mv.Status == ModuleVersionStatusOK {
+										<option value={ mv.Version } selected?={ mv.Version == props.currentVersion.Version }>{ mv.Version }</option>
+									}
+								}
+							</select>
+						</form>
+						if props.module.Connection != nil {
+							<div>
+								Source <span class="bg-gray-200" id="vcs-repo">{ props.module.Connection.Repo }</span>
+							</div>
+						}
+					</div>
+					<div>
+						<h3 class="font-semibold"></h3>
+						<div class="flex flex-col gap-2">
+							<label for="usage">Usage</label>
+							<textarea class="text-input font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
+								{ `module "{ ` + props.module.Name + `}" {
+	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
+	version = "{ ` + props.currentVersion.Version + ` }"
+}` }
+							</textarea>
+						</div>
+					</div>
+					<div>
+						{ strings.TrimSpace(string(props.readme)) }
+					</div>
+					<div>
+						<h3 class="font-semibold">Resources</h3>
+						for resource := range props.terraformModule.ManagedResources {
+							<div>
+								<span class="bg-gray-200">{ resource }</span>
+							</div>
+						}
+					</div>
+					<div>
+						<h3 class="font-semibold">Variables</h3>
+						for v := range props.terraformModule.Variables {
+							<div>
+								<span class="bg-gray-200">{ v }</span>
+							</div>
+						}
+					</div>
+					<div>
+						<h3 class="font-semibold">Outputs</h3>
+						for output := range props.terraformModule.Outputs {
+							<div>
+								<span class="bg-gray-200">{ output }</span>
+							</div>
+						}
+					</div>
+			}
+			<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID.String()) } method="POST">
+				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+			</form>
+		</div>
+	}
+}

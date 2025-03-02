@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -28,7 +27,6 @@ type (
 
 	Options struct {
 		*sql.DB
-		html.Renderer
 		logr.Logger
 		vcs.Publisher
 		*internal.HostnameService
@@ -47,7 +45,6 @@ func NewService(opts Options) *Service {
 		db:             &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{
-		Renderer:        opts.Renderer,
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
 		GithubSkipTLS:   opts.SkipTLSVerification,

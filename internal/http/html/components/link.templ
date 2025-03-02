@@ -1,0 +1,7 @@
+package components
+
+import "fmt"
+
+func BlockLink(path templ.SafeURL) string {
+	return fmt.Sprintf("block_link($el, '%s')", path)
+}

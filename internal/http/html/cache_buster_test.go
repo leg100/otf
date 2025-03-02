@@ -18,7 +18,7 @@ var _ = []string{
 
 func TestCacheBuster(t *testing.T) {
 	fs := newTestFilesystem(t, "/test/a.txt", "abc")
-	static := cacheBuster{fs}
+	static := CacheBuster{fs}
 
 	path, err := static.Path("test/a.txt")
 	require.NoError(t, err)
@@ -30,7 +30,7 @@ func TestCacheBuster(t *testing.T) {
 
 func TestCacheBuster_MultipleDots(t *testing.T) {
 	fs := newTestFilesystem(t, "/test/a.b.c.txt", "abc")
-	static := cacheBuster{fs}
+	static := CacheBuster{fs}
 
 	path, err := static.Path("test/a.b.c.txt")
 	require.NoError(t, err)

@@ -23,7 +23,6 @@ const (
 )
 
 type webHandlers struct {
-	html.Renderer
 	*internal.HostnameService
 
 	svc webClient
@@ -91,55 +90,44 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	}
 	marshaled, err := json.Marshal(&m)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("github_apps_new.tmpl", w, struct {
-		html.SitePage
-		Manifest       string
-		GithubHostname string
-	}{
-		SitePage:       html.NewSitePage(r, "select app owner"),
-		Manifest:       string(marshaled),
-		GithubHostname: h.GithubHostname,
-	})
+	props := newAppViewProps{
+		manifest:       string(marshaled),
+		githubHostname: h.GithubHostname,
+	}
+	html.Render(newAppView(props), w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	app, err := h.svc.GetApp(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	installs, err := h.svc.ListInstallations(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	user, err := user.UserFromContext(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("github_apps_get.tmpl", w, struct {
-		html.SitePage
-		App            *App
-		Installations  []*Installation
-		GithubHostname string
-		CanCreateApp   bool
-		CanDeleteApp   bool
-	}{
-		SitePage:       html.NewSitePage(r, "github app"),
-		App:            app,
-		Installations:  installs,
-		GithubHostname: h.GithubHostname,
-		CanCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
-		CanDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
-	})
+	props := getAppsProps{
+		app:            app,
+		installations:  installs,
+		githubHostname: h.GithubHostname,
+		canCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
+		canDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
+	}
+	html.Render(getApps(props), w, r)
 }
 
 func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +135,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		Code string `schema:"code,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -157,12 +145,12 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		SkipTLSVerification: h.GithubSkipTLS,
 	})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	cfg, err := client.ExchangeCode(r.Context(), params.Code)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -177,7 +165,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = h.svc.CreateApp(r.Context(), opts)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -188,24 +176,22 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	app, err := h.svc.GetApp(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := h.svc.DeleteApp(r.Context()); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	err = h.RenderTemplate("github_delete_message.tmpl", buf, struct {
-		GithubHostname string
-		*App
-	}{
-		GithubHostname: h.GithubHostname,
-		App:            app,
-	})
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+	props := deleteMessageProps{
+		githubHostname: h.GithubHostname,
+		app:            app,
+	}
+	if err := deleteMessage(props).Render(r.Context(), buf); err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	html.FlashSuccess(w, buf.String())
 
@@ -217,12 +203,12 @@ func (h *webHandlers) deleteInstall(w http.ResponseWriter, r *http.Request) {
 		InstallID int64 `schema:"install_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	err := h.svc.DeleteInstallation(r.Context(), params.InstallID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, fmt.Sprintf("deleted installation: %d", params.InstallID))

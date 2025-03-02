@@ -1,0 +1,84 @@
+package state
+
+import "strconv"
+
+templ get(f *File) {
+	<div x-data="{ activeTab: 'resources' }">
+		<div class="flex -mb-[1px]">
+			<label
+				class="p-2 border-l border-t border-black cursor-pointer"
+				for="resources-tab"
+				@click="activeTab = 'resources'"
+				:class="{ 'bg-gray-200 text-black relative z-10': activeTab == 'resources' }"
+				id="resources-label"
+			>Resources ({ strconv.Itoa(len(f.Resources)) })</label>
+			<label
+				class="p-2 border-x border-t border-black cursor-pointer"
+				for="outputs-tab"
+				@click="activeTab = 'outputs'"
+				:class="{ 'bg-gray-200 text-black': activeTab == 'outputs' }"
+				id="outputs-label"
+			>Outputs ({ strconv.Itoa(len(f.Outputs)) })</label>
+		</div>
+		<table
+			x-show="activeTab == 'resources'"
+			class="table-fixed w-full text-left break-words border-collapse"
+			id="resources-table"
+		>
+			if len(f.Resources) > 0 {
+				<thead class="bg-gray-200 border border-slate-900">
+					<tr>
+						<th>Name</th>
+						<th>Provider</th>
+						<th>Type</th>
+						<th>Module</th>
+					</tr>
+				</thead>
+			}
+			<tbody class="border border-slate-900">
+				for _, resource := range f.Resources {
+					<tr class="even:bg-gray-100">
+						<td>{ resource.Name }</td>
+						<td>{ resource.Provider() }</td>
+						<td>{ resource.Type }</td>
+						<td>{ resource.ModuleName() }</td>
+					</tr>
+				}
+				if len(f.Resources) == 0 {
+					<tr class="bg-gray-200">
+						<td>No resources currently exist.</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+		<table
+			x-show="activeTab == 'outputs'"
+			class="table-fixed w-full text-left break-words border-collapse"
+			id="outputs-table"
+		>
+			if len(f.Outputs) > 0 {
+				<thead class="bg-gray-200 border border-slate-900">
+					<tr>
+						<th>Name</th>
+						<th>Type</th>
+						<th>Value</th>
+					</tr>
+				</thead>
+			}
+			<tbody class="border border-slate-900">
+				for k, v := range f.Outputs {
+					<tr>
+						<td>{ k }</td>
+						<td>{ v.Type() }</td>
+						<td><span class="bg-gray-200">{ v.StringValue() }</span></td>
+					</tr>
+				}
+				if len(f.Outputs) == 0 {
+					<tr class="bg-gray-200">
+						<td>No outputs currently exist.</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

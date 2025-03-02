@@ -21,7 +21,7 @@ import (
 // NewOIDCIssuer creates an oidc issuer server and returns its url. For testing
 // purposes.
 func NewOIDCIssuer(t *testing.T, username, aud, name string) string {
-	priv, err := rsa.GenerateKey(rand.Reader, 512)
+	priv, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err)
 
 	var u *url.URL

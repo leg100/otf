@@ -10,13 +10,12 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/templ-go/x/urlbuilder"
 )
 
 type webHandlers struct {
-	html.Renderer
 	*internal.HostnameService
 
 	client     webClient
@@ -49,7 +48,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get).Methods("GET")
 }
 
 func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
@@ -58,35 +56,25 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 		Kind         vcs.Kind `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	response := struct {
-		organization.OrganizationPage
-		VCSProvider *VCSProvider
-		FormAction  string
-		EditMode    bool
-		TokensURL   string
-		Scope       string
-		Kind        string
-	}{
-		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		VCSProvider:      &VCSProvider{Kind: params.Kind},
-		FormAction:       paths.CreateVCSProvider(params.Organization),
-		EditMode:         false,
+	props := newPATProps{
+		provider: &VCSProvider{
+			Kind:         params.Kind,
+			Organization: params.Organization,
+		},
 	}
 	switch params.Kind {
 	case vcs.GithubKind:
-		response.Kind = string(vcs.GithubKind)
-		response.Scope = "repo"
-		response.TokensURL = "https://" + h.GithubHostname + "/settings/tokens"
+		props.scope = "repo"
+		props.tokensURL = urlbuilder.New("https", h.GithubHostname).Path("/settings/tokens").Build()
 	case vcs.GitlabKind:
-		response.Kind = string(vcs.GitlabKind)
-		response.Scope = "api"
-		response.TokensURL = "https://" + h.GitlabHostname + "/-/profile/personal_access_tokens"
+		props.scope = "api"
+		props.tokensURL = urlbuilder.New("https", h.GitlabHostname).Path("/-/profile/personal_access_tokens").Build()
 	}
-	h.Render("vcs_provider_pat_new.tmpl", w, response)
+	html.Render(newPAT(props), w, r)
 }
 
 func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
@@ -94,34 +82,29 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		Organization string `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	app, err := h.githubApps.GetApp(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	installs, err := h.githubApps.ListInstallations(r.Context())
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("vcs_provider_github_app_new.tmpl", w, struct {
-		organization.OrganizationPage
-		App            *github.App
-		Installations  []*github.Installation
-		Kind           vcs.Kind
-		GithubHostname string
-	}{
-		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		App:              app,
-		Installations:    installs,
-		Kind:             vcs.GithubKind,
-		GithubHostname:   h.GithubHostname,
-	})
+	props := newGithubAppProps{
+		organization:   params.Organization,
+		app:            app,
+		installations:  installs,
+		kind:           vcs.GithubKind,
+		githubHostname: h.GithubHostname,
+	}
+	html.Render(newGithubApp(props), w, r)
 }
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +116,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		Kind               *vcs.Kind `schema:"kind"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	provider, err := h.client.Create(r.Context(), CreateOptions{
@@ -144,7 +127,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		Kind:               params.Kind,
 	})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "created provider: "+provider.String())
@@ -154,27 +137,17 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 	providerID, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := h.client.Get(r.Context(), providerID)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("vcs_provider_edit.tmpl", w, struct {
-		organization.OrganizationPage
-		VCSProvider *VCSProvider
-		FormAction  string
-		EditMode    bool
-	}{
-		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
-		VCSProvider:      provider,
-		FormAction:       paths.UpdateVCSProvider(providerID.String()),
-		EditMode:         true,
-	})
+	html.Render(edit(provider), w, r)
 }
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +157,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 		Name  string      `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -197,7 +170,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	}
 	provider, err := h.client.Update(r.Context(), params.ID, opts)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "updated provider: "+provider.String())
@@ -207,7 +180,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	app, err := h.githubApps.GetApp(r.Context())
@@ -217,49 +190,27 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 	providers, err := h.client.List(r.Context(), org)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Render("vcs_provider_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Items     []*VCSProvider
-		GithubApp *github.App
-	}{
-		OrganizationPage: organization.NewPage(r, "vcs providers", org),
-		Items:            providers,
-		GithubApp:        app,
-	})
-}
-
-func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("vcs_provider_id", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
+	props := listProps{
+		organization: org,
+		providers:    providers,
+		app:          app,
 	}
-
-	provider, err := h.client.Get(r.Context(), id)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("vcs_provider_get.tmpl", w, struct {
-		VCSProvider *VCSProvider
-	}{
-		VCSProvider: provider,
-	})
+	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.ID("vcs_provider_id", r)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := h.client.Delete(r.Context(), id)
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "deleted provider: "+provider.String())

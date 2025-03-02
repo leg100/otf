@@ -26,17 +26,15 @@ const (
 	headersKey      key = "headers"
 )
 
-var (
-	healthzPayload = json.MustMarshal(struct {
-		Version string
-		Commit  string
-		Built   string
-	}{
-		Version: internal.Version,
-		Commit:  internal.Commit,
-		Built:   internal.Built,
-	})
-)
+var healthzPayload = json.MustMarshal(struct {
+	Version string
+	Commit  string
+	Built   string
+}{
+	Version: internal.Version,
+	Commit:  internal.Commit,
+	Built:   internal.Built,
+})
 
 type (
 	// ServerConfig is the http server config
@@ -44,7 +42,6 @@ type (
 		SSL                  bool
 		CertFile, KeyFile    string
 		EnableRequestLogging bool
-		DevMode              bool
 
 		Handlers []internal.Handlers
 		// middleware to intercept requests, executed in the order given.
@@ -79,7 +76,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
-	if err := html.AddStaticHandler(logger, r, cfg.DevMode); err != nil {
+	if err := html.AddStaticHandler(logger, r); err != nil {
 		return nil, err
 	}
 
