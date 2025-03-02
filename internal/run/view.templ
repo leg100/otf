@@ -23,6 +23,7 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "runs",
+		Organization: props.ws.Organization,
 		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
@@ -51,9 +52,10 @@ type getProps struct {
 templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
-		Title:       props.run.ID.String(),
-		PreContent:  getPreContent(),
-		PostContent: getPostContent(props),
+		Title:        props.run.ID.String(),
+		Organization: props.ws.Organization,
+		PreContent:   getPreContent(),
+		PostContent:  getPostContent(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
@@ -142,6 +144,17 @@ templ getTitle(ws *workspace.Workspace, run *Run) {
 	{ run.ID.String() }
 }
 
+templ eventView(run *Run) {
+	@widget(run)
+	@phaseStatus(run.Plan)
+	@phaseStatus(run.Apply)
+	@actions(run)
+	@periodReport(run)
+	@runningTime(run)
+	@runningTime(&run.Plan)
+	@runningTime(&run.Apply)
+}
+
 templ widget(run *Run) {
 	<div sse-swap={ "run-item-" + run.ID.String() }>
 		<div x-data={ components.BlockLink(paths.Run(run.ID.String())) } class="widget">
@@ -152,7 +165,7 @@ templ widget(run *Run) {
 				}
 				if run.IngressAttributes != nil {
 					<span class="inline-block max-w-[16rem] truncate">
-						| <a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>\@{ run.IngressAttributes.SenderUsername }</a>
+						| <a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
 					</span>
 				} else if run.CreatedBy != nil {
 					<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
@@ -267,17 +280,17 @@ var periodStatusColors = map[string]string{
 templ periodReport(run *Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
 	<div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
-		for i := range report.Periods {
+		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
-				class={ "inline-block", "h-full",  periodStatusColors[run.Status.String()] }
+				class={ "inline-block", "h-full",  periodStatusColors[period.Status.String()] }
 			></div>
 		}
 		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
 			<ul class="flex gap-4 flex-wrap text-sm">
 				for _, period := range report.Periods {
-					<li class="">
-						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[run.Status.String()] }></div>
+					<li>
+						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status.String()] }></div>
 						<span>{ period.Status.String() }</span>
 						<span>({ period.Period.String() })</span>
 					</li>

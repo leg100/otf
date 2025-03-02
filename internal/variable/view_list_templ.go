@@ -253,6 +253,7 @@ func listVariableSets(props listVariableSetsProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:          "variable sets",
+			Organization:   props.organization,
 			ContentActions: listVariableSetsActions(props),
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "variable sets"},
@@ -333,7 +334,7 @@ func variableSetItem(vs *VariableSet) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("item-variable-set-" + vs.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 110, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 111, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -346,7 +347,7 @@ func variableSetItem(vs *VariableSet) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.EditVariableSet(vs.ID.String())))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 110, Col: 127}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 111, Col: 127}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -359,7 +360,7 @@ func variableSetItem(vs *VariableSet) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(vs.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 111, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 112, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -386,7 +387,7 @@ func variableSetItem(vs *VariableSet) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(vs.Workspaces)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 118, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view_list.templ`, Line: 119, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {

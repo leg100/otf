@@ -355,7 +355,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			// render HTML snippet and send as payload in SSE events
 			//
 			itemHTML := new(bytes.Buffer)
-			if err := widget(event.Payload).Render(r.Context(), itemHTML); err != nil {
+			if err := eventView(event.Payload).Render(r.Context(), itemHTML); err != nil {
 				h.logger.Error(err, "rendering template for run item")
 				continue
 			}

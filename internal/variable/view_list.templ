@@ -80,6 +80,7 @@ type listVariableSetsProps struct {
 templ listVariableSets(props listVariableSetsProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "variable sets",
+		Organization:   props.organization,
 		ContentActions: listVariableSetsActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets"},

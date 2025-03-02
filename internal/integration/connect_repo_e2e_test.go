@@ -56,7 +56,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
 		require.NoError(t, err)
 		// because run was triggered from github, the github icon should be visible.
-		err = expect.Locator(page.Locator(`//div[@class='widget']//img[@id='run-trigger-github']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='latest-run']//img[@id='run-trigger-github']`)).ToBeVisible()
 		require.NoError(t, err)
 
 		// GitHub should receive one pending status update followed by a final

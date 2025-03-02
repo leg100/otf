@@ -19,6 +19,9 @@ templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Com
 		for _, item := range page.Items {
 			@comp(item)
 		}
+		if len(page.Items) == 0 {
+			No items currently exist.
+		}
 	</div>
 	<div class="flex p-4 gap-2 justify-end">
 		if page.PreviousPage != nil {

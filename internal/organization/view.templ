@@ -98,7 +98,7 @@ templ get(organization *Organization) {
 				<a href={ paths.Modules(organization.Name) }>modules</a>
 			</span>
 			<span id="teams">
-				<a href={ paths.Modules(organization.Name) }>teams</a>
+				<a href={ paths.Teams(organization.Name) }>teams</a>
 			</span>
 			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
 				<span id="users">

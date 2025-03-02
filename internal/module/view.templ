@@ -143,7 +143,7 @@ templ newConfirm(props newViewProps) {
 	</div>
 	<div>
 		<form action={ paths.CreateModule(props.organization) } method="POST">
-			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
+			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProvider.ID.String() }/>
 			<input type="hidden" name="identifier" id="identifier" value={ props.repo }/>
 			<button class="btn">connect</button>
 		</form>

@@ -18,7 +18,8 @@ type listProps struct {
 
 templ list(props listProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "vcs providers",
+		Title:        "vcs providers",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "vcs providers"},
 		},
@@ -74,7 +75,8 @@ templ listItem(provider *VCSProvider) {
 
 templ edit(provider *VCSProvider) {
 	@components.Layout(components.LayoutProps{
-		Title: "edit vcs provider",
+		Title:        "edit vcs provider",
+		Organization: provider.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
 			{Name: provider.String()},
@@ -104,7 +106,8 @@ type newPATProps struct {
 
 templ newPAT(props newPATProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "new vcs provider",
+		Title:        "new vcs provider",
+		Organization: props.provider.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "New " + internal.Title(string(props.provider.Kind)) + " VCS Provider"},
 		},
@@ -129,7 +132,8 @@ type newGithubAppProps struct {
 
 templ newGithubApp(props newGithubAppProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "new vcs provider",
+		Title:        "new vcs provider",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "New Github App VCS Provider"},
 		},
@@ -182,7 +186,7 @@ templ form(props formProps) {
 			/>
 			<span class="description">An optional display name for your VCS provider.</span>
 		</div>
-		if props.provider.GithubApp != nil {
+		if props.provider.GithubApp == nil {
 			<div class="field">
 				<label for="token">Token</label>
 				<textarea

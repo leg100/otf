@@ -27,7 +27,9 @@ func TestWeb_NewHandler(t *testing.T) {
 }
 
 func TestWeb_CreateHandler(t *testing.T) {
-	svc := &web{}
+	svc := &web{
+		svc: &fakeWebService{},
+	}
 
 	form := strings.NewReader(url.Values{
 		"name": {"my-new-org"},

@@ -1,7 +1,6 @@
 package components
 
 import (
-	"fmt"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
 	"strings"
@@ -14,11 +13,7 @@ var runStatusColors = map[string]string{
 }
 
 templ RunStatus(runID resource.ID, status string) {
-	<span id={ runStatusID(runID) } class={ "run-status text-lg", runStatusColors[status] }>
+	<span id={ runID.String() + "-status" } class={ "run-status text-lg", runStatusColors[status] }>
 		<a href={ paths.Run(runID.String()) }>{ strings.ReplaceAll(status, "_", " ") }</a>
 	</span>
-}
-
-func runStatusID(runID resource.ID) string {
-	return fmt.Sprintf("%s-status", runID.String())
 }

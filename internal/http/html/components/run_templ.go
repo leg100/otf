@@ -9,7 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"fmt"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
 	"strings"
@@ -52,9 +51,9 @@ func RunStatus(runID resource.ID, status string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(runStatusID(runID))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(runID.String() + "-status")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/run.templ`, Line: 17, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/run.templ`, Line: 16, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -89,7 +88,7 @@ func RunStatus(runID resource.ID, status string) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ReplaceAll(status, "_", " "))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/run.templ`, Line: 18, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/run.templ`, Line: 17, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -101,10 +100,6 @@ func RunStatus(runID resource.ID, status string) templ.Component {
 		}
 		return nil
 	})
-}
-
-func runStatusID(runID resource.ID) string {
-	return fmt.Sprintf("%s-status", runID.String())
 }
 
 var _ = templruntime.GeneratedTemplate
