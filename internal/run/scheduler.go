@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 )
@@ -129,7 +130,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 
 func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *Run) error {
 	if run != nil && run.PlanOnly {
-		if run.Status == RunPending {
+		if run.Status == runstatus.Pending {
 			// Enqueue plan immediately for pending plan-only runs
 			if _, err := s.runs.EnqueuePlan(ctx, run.ID); err != nil {
 				return err
@@ -190,7 +191,7 @@ func (q queue) process(run *Run) (qq queue, enqueuePlan bool, unlock bool) {
 				unlock = true
 			}
 		} else {
-			if q.current == nil && run.Status != RunPending && !run.Done() {
+			if q.current == nil && run.Status != runstatus.Pending && !run.Done() {
 				// This condition handles the scenario where the scheduler has
 				// only been started up and the scheduler has not yet set the
 				// current run and there is an existing scheduled run that is

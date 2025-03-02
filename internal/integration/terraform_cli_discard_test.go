@@ -10,6 +10,7 @@ import (
 	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,5 +52,5 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	runs, err := svc.Runs.List(ctx, run.ListOptions{Organization: &org.Name})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(runs.Items))
-	require.Equal(t, run.RunDiscarded, runs.Items[0].Status)
+	require.Equal(t, runstatus.Discarded, runs.Items[0].Status)
 }

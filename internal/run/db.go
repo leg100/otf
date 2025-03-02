@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/workspace"
@@ -68,7 +69,7 @@ func (result pgresult) toRun() *Run {
 		Refresh:                result.Refresh.Bool,
 		RefreshOnly:            result.RefreshOnly.Bool,
 		Source:                 Source(result.Source.String),
-		Status:                 Status(result.Status.String),
+		Status:                 runstatus.Status(result.Status.String),
 		ReplaceAddrs:           sql.FromStringArray(result.ReplaceAddrs),
 		TargetAddrs:            sql.FromStringArray(result.TargetAddrs),
 		AutoApply:              result.AutoApply.Bool,
@@ -100,7 +101,7 @@ func (result pgresult) toRun() *Run {
 	run.StatusTimestamps = make([]StatusTimestamp, len(result.RunStatusTimestamps))
 	for i, rst := range result.RunStatusTimestamps {
 		run.StatusTimestamps[i] = StatusTimestamp{
-			Status:    Status(rst.Status.String),
+			Status:    runstatus.Status(rst.Status.String),
 			Timestamp: rst.Timestamp.Time.UTC(),
 		}
 	}
@@ -213,7 +214,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
 func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(context.Context, *Run) error) (*Run, error) {
-	var runStatus Status
+	var runStatus runstatus.Status
 	var planStatus PhaseStatus
 	var applyStatus PhaseStatus
 	var cancelSignaledAt *time.Time

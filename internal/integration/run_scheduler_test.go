@@ -6,7 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,22 +31,22 @@ func TestRunScheduler(t *testing.T) {
 	waitWorkspaceLock(t, workspaceEvents, &run1.ID)
 
 	// Wait for Run#1 to be planned
-	daemon.waitRunStatus(t, run1.ID, otfrun.RunPlanned)
+	daemon.waitRunStatus(t, run1.ID, runstatus.Planned)
 	// Run#2 should still be pending
-	assert.Equal(t, otfrun.RunPending, daemon.getRun(t, ctx, run2.ID).Status)
+	assert.Equal(t, runstatus.Pending, daemon.getRun(t, ctx, run2.ID).Status)
 
 	// Apply Run#1
 	err := daemon.Runs.Apply(ctx, run1.ID)
 	require.NoError(t, err)
 
 	// Wait for Run#1 to be applied
-	daemon.waitRunStatus(t, run1.ID, otfrun.RunApplied)
+	daemon.waitRunStatus(t, run1.ID, runstatus.Applied)
 
 	// Wait for Run#2 to lock workspace
 	waitWorkspaceLock(t, workspaceEvents, &run2.ID)
 
 	// Wait for Run#2 to be planned&finished (because there are no changes)
-	daemon.waitRunStatus(t, run2.ID, otfrun.RunPlannedAndFinished)
+	daemon.waitRunStatus(t, run2.ID, runstatus.PlannedAndFinished)
 
 	// Wait for workspace to be unlocked
 	waitWorkspaceLock(t, workspaceEvents, nil)
@@ -66,7 +66,7 @@ func TestRunScheduler(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run #3 should now proceed to planned&finished
-	daemon.waitRunStatus(t, run3.ID, otfrun.RunPlannedAndFinished)
+	daemon.waitRunStatus(t, run3.ID, runstatus.PlannedAndFinished)
 }
 
 func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock *resource.ID) {

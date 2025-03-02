@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +18,7 @@ func TestScheduler_schedule(t *testing.T) {
 	wsID := resource.NewID(resource.WorkspaceKind)
 
 	t.Run("enqueue plan for pending plan-only run but don't add to workspace queue", func(t *testing.T) {
-		run := &Run{Status: RunPending, PlanOnly: true, ID: resource.NewID(resource.RunKind)}
+		run := &Run{Status: runstatus.Pending, PlanOnly: true, ID: resource.NewID(resource.RunKind)}
 		runClient := &fakeSchedulerRunClient{}
 		s := &scheduler{
 			runs:       runClient,
@@ -33,7 +34,7 @@ func TestScheduler_schedule(t *testing.T) {
 	})
 
 	t.Run("ignore running plan-only run", func(t *testing.T) {
-		run := &Run{Status: RunPlanning, PlanOnly: true, ID: resource.NewID(resource.RunKind)}
+		run := &Run{Status: runstatus.Planning, PlanOnly: true, ID: resource.NewID(resource.RunKind)}
 		runClient := &fakeSchedulerRunClient{}
 		s := &scheduler{
 			runs:       runClient,
@@ -54,9 +55,9 @@ func TestScheduler_schedule(t *testing.T) {
 			workspaces: &fakeSchedulerWorkspaceClient{},
 			queues:     make(map[resource.ID]queue),
 		}
-		run1 := &Run{Status: RunPending, ID: resource.NewID(resource.RunKind)}
-		run2 := &Run{Status: RunPending, ID: resource.NewID(resource.RunKind)}
-		run3 := &Run{Status: RunPending, ID: resource.NewID(resource.RunKind)}
+		run1 := &Run{Status: runstatus.Pending, ID: resource.NewID(resource.RunKind)}
+		run2 := &Run{Status: runstatus.Pending, ID: resource.NewID(resource.RunKind)}
+		run3 := &Run{Status: runstatus.Pending, ID: resource.NewID(resource.RunKind)}
 
 		err := s.schedule(ctx, wsID, run1)
 		require.NoError(t, err)
@@ -78,7 +79,7 @@ func TestScheduler_schedule(t *testing.T) {
 			workspaces: &fakeSchedulerWorkspaceClient{},
 			queues:     make(map[resource.ID]queue),
 		}
-		run1 := &Run{Status: RunPending, ID: resource.NewID(resource.RunKind)}
+		run1 := &Run{Status: runstatus.Pending, ID: resource.NewID(resource.RunKind)}
 
 		// Should not propagate error
 		err := s.schedule(ctx, wsID, run1)
@@ -100,7 +101,7 @@ func TestScheduler_schedule(t *testing.T) {
 			},
 		}
 
-		err := s.schedule(ctx, wsID, &Run{Status: RunApplied, ID: runID})
+		err := s.schedule(ctx, wsID, &Run{Status: runstatus.Applied, ID: runID})
 		require.NoError(t, err)
 
 		assert.Nil(t, s.queues[wsID].current)
@@ -131,7 +132,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"make pending run current and request enqueue plan",
 			queue{},
-			&Run{ID: runID1, Status: RunPending},
+			&Run{ID: runID1, Status: runstatus.Pending},
 			queue{current: &runID1},
 			true,
 			false,
@@ -139,7 +140,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"make plan_enqueued run current and do not request enqueue plan",
 			queue{},
-			&Run{ID: runID1, Status: RunPlanQueued},
+			&Run{ID: runID1, Status: runstatus.PlanQueued},
 			queue{current: &runID1},
 			false,
 			false,
@@ -155,7 +156,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"remove finished run from current and unlock queue",
 			queue{current: &runID1},
-			&Run{ID: runID1, Status: RunApplied},
+			&Run{ID: runID1, Status: runstatus.Applied},
 			queue{},
 			false,
 			true,
@@ -163,7 +164,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"remove finished run from backlog",
 			queue{backlog: []resource.ID{runID1}},
-			&Run{ID: runID1, Status: RunApplied},
+			&Run{ID: runID1, Status: runstatus.Applied},
 			queue{},
 			false,
 			false,
@@ -171,7 +172,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"remove finished run from current and make backlogged run current and request enqueue plan",
 			queue{current: &runID1, backlog: []resource.ID{runID2}},
-			&Run{ID: runID1, Status: RunApplied},
+			&Run{ID: runID1, Status: runstatus.Applied},
 			queue{current: &runID2},
 			true,
 			false,

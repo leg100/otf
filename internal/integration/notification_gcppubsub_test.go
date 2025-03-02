@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/notifications"
-	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -82,10 +82,10 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	got = append(got, <-received)
 
 	// keep a record of whether a match was found for each expected status
-	matches := map[otfrun.Status]bool{
-		otfrun.RunPending:  false,
-		otfrun.RunPlanning: false,
-		otfrun.RunPlanned:  false,
+	matches := map[runstatus.Status]bool{
+		runstatus.Pending:  false,
+		runstatus.Planning: false,
+		runstatus.Planned:  false,
 	}
 	for _, g := range got {
 		var payload notifications.GenericPayload

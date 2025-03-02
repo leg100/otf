@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -20,10 +20,10 @@ func TestIntegration_StateUI(t *testing.T) {
 
 	// create run and wait for it to complete
 	r := daemon.createRun(t, ctx, ws, cv, nil)
-	planned := daemon.waitRunStatus(t, r.ID, run.RunPlanned)
+	planned := daemon.waitRunStatus(t, r.ID, runstatus.Planned)
 	err := daemon.Runs.Apply(ctx, planned.ID)
 	require.NoError(t, err)
-	daemon.waitRunStatus(t, r.ID, run.RunApplied)
+	daemon.waitRunStatus(t, r.ID, runstatus.Applied)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))

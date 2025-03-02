@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -28,7 +29,7 @@ func TestReporter_HandleRun(t *testing.T) {
 	}{
 		{
 			name: "set pending status",
-			run:  &Run{ID: testutils.ParseID(t, "run-123"), Status: RunPending},
+			run:  &Run{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
 				Connection: &workspace.Connection{},
@@ -93,7 +94,7 @@ func TestReporter_HandleRun(t *testing.T) {
 func TestReporter_DontSetStatusTwice(t *testing.T) {
 	ctx := context.Background()
 
-	run := &Run{ID: testutils.ParseID(t, "run-123"), Status: RunPending}
+	run := &Run{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending}
 	ws := &workspace.Workspace{
 		Name:       "dev",
 		Connection: &workspace.Connection{},

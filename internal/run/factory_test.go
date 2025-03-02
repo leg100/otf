@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, RunPending, got.Status)
+		assert.Equal(t, runstatus.Pending, got.Status)
 		assert.NotZero(t, got.CreatedAt)
 		assert.False(t, got.PlanOnly)
 		assert.True(t, got.Refresh)

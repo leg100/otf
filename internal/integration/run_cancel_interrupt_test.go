@@ -9,8 +9,8 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -86,5 +86,5 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 
 	// canceling the job should result in the run then entering the canceled
 	// state.
-	daemon.waitRunStatus(t, r.ID, run.RunCanceled)
+	daemon.waitRunStatus(t, r.ID, runstatus.Canceled)
 }

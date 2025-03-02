@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"strconv"
 	"strings"
@@ -149,7 +150,7 @@ templ widget(run *Run) {
 	<div sse-swap={ "run-item-" + run.ID.String() }>
 		<div x-data={ components.BlockLink(paths.Run(run.ID.String())) } class="widget">
 			<div>
-				@components.RunStatus(run.ID, run.Status.String())
+				@runstatus.Badge(run.ID, run.Status)
 				if run.PlanOnly {
 					<span>| plan-only</span>
 				}
@@ -190,7 +191,7 @@ templ widget(run *Run) {
 					} else if run.Plan.ResourceReport != nil {
 						@resourceReport(run.Plan.ResourceReport)
 					}
-					if run.Status == RunPlanned {
+					if run.Status == runstatus.Planned {
 						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
 							<button class="btn">apply</button>
 						</form>
@@ -218,7 +219,7 @@ templ widget(run *Run) {
 
 templ actions(run *Run) {
 	<div class="flex gap-2" id="run-actions" hx-swap-oob="true">
-		if run.Status == RunPlanned {
+		if run.Status == runstatus.Planned {
 			<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
 				<button class="btn">apply</button>
 			</form>
@@ -258,29 +259,20 @@ templ runningTime(tsk task) {
 	}
 }
 
-var periodStatusColors = map[Status]string{
-	RunPending:            "bg-yellow-50",
-	RunPlanQueued:         "bg-yellow-200",
-	RunPlanning:           "bg-violet-200",
-	RunPlanned:            "bg-violet-400",
-	RunPlannedAndFinished: "bg-green-100",
-	RunApplying:           "bg-cyan-200",
-}
-
 templ periodReport(run *Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
 	<div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
 		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
-				class={ "inline-block", "h-full",  periodStatusColors[period.Status] }
+				class={ "inline-block", "h-full",  runstatus.Colors[period.Status] }
 			></div>
 		}
 		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
 			<ul class="flex gap-4 flex-wrap text-sm">
 				for _, period := range report.Periods {
 					<li>
-						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status] }></div>
+						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", runstatus.Colors[period.Status] }></div>
 						<span>{ period.Status.String() }</span>
 						<span>({ period.Period.String() })</span>
 					</li>

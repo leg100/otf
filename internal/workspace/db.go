@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -98,7 +99,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	if r.LatestRunID != nil {
 		ws.LatestRun = &LatestRun{
 			ID:     *r.LatestRunID,
-			Status: runStatus(r.LatestRunStatus.String),
+			Status: runstatus.Status(r.LatestRunStatus.String),
 		}
 	}
 

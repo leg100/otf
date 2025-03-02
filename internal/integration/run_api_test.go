@@ -6,7 +6,7 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -58,7 +58,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// wait for run to reach planned status
-		planned := daemon.waitRunStatus(t, testutils.ParseID(t, created.ID), run.RunPlanned)
+		planned := daemon.waitRunStatus(t, testutils.ParseID(t, created.ID), runstatus.Planned)
 
 		// run should have planned two resources (defined in the config from the
 		// github repo)

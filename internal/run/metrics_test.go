@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
@@ -20,18 +21,18 @@ func TestMetricsCollector_bootstrap(t *testing.T) {
 
 	mc := &MetricsCollector{}
 	mc.bootstrap(
-		&Run{ID: testutils.ParseID(t, "run-1"), Status: RunPending},
-		&Run{ID: testutils.ParseID(t, "run-2"), Status: RunPending},
-		&Run{ID: testutils.ParseID(t, "run-3"), Status: RunPending},
-		&Run{ID: testutils.ParseID(t, "run-4"), Status: RunPending},
-		&Run{ID: testutils.ParseID(t, "run-5"), Status: RunPlanning},
-		&Run{ID: testutils.ParseID(t, "run-6"), Status: RunPlanning},
-		&Run{ID: testutils.ParseID(t, "run-7"), Status: RunPlanning},
-		&Run{ID: testutils.ParseID(t, "run-8"), Status: RunPlanning},
-		&Run{ID: testutils.ParseID(t, "run-9"), Status: RunApplied},
-		&Run{ID: testutils.ParseID(t, "run-10"), Status: RunApplied},
-		&Run{ID: testutils.ParseID(t, "run-11"), Status: RunApplied},
-		&Run{ID: testutils.ParseID(t, "run-12"), Status: RunApplied},
+		&Run{ID: testutils.ParseID(t, "run-1"), Status: runstatus.Pending},
+		&Run{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Pending},
+		&Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Pending},
+		&Run{ID: testutils.ParseID(t, "run-4"), Status: runstatus.Pending},
+		&Run{ID: testutils.ParseID(t, "run-5"), Status: runstatus.Planning},
+		&Run{ID: testutils.ParseID(t, "run-6"), Status: runstatus.Planning},
+		&Run{ID: testutils.ParseID(t, "run-7"), Status: runstatus.Planning},
+		&Run{ID: testutils.ParseID(t, "run-8"), Status: runstatus.Planning},
+		&Run{ID: testutils.ParseID(t, "run-9"), Status: runstatus.Applied},
+		&Run{ID: testutils.ParseID(t, "run-10"), Status: runstatus.Applied},
+		&Run{ID: testutils.ParseID(t, "run-11"), Status: runstatus.Applied},
+		&Run{ID: testutils.ParseID(t, "run-12"), Status: runstatus.Applied},
 	)
 	assert.Len(t, mc.currentStatuses, 12)
 	want := `
@@ -55,25 +56,25 @@ func TestMetricsCollector_update(t *testing.T) {
 	mc.bootstrap()
 
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-1"), Status: RunPending},
+		Payload: &Run{ID: testutils.ParseID(t, "run-1"), Status: runstatus.Pending},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-2"), Status: RunPending},
+		Payload: &Run{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Pending},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-2"), Status: RunPlanning},
+		Payload: &Run{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Planning},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: RunPending},
+		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Pending},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: RunPlanning},
+		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Planning},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: RunApplied},
+		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Applied},
 	})
 	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-4"), Status: RunPending},
+		Payload: &Run{ID: testutils.ParseID(t, "run-4"), Status: runstatus.Pending},
 	})
 	mc.update(pubsub.Event[*Run]{
 		Type:    pubsub.DeletedEvent,

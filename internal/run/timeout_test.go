@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,10 +22,10 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "planning timeout exceeded",
 			run: &Run{
-				Status: RunPlanning,
+				Status: runstatus.Planning,
 				StatusTimestamps: []StatusTimestamp{
 					{
-						Status:    RunPlanning,
+						Status:    runstatus.Planning,
 						Timestamp: time.Now().Add(-2 * time.Hour),
 					},
 				},
@@ -35,10 +36,10 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "applying timeout exceeded",
 			run: &Run{
-				Status: RunApplying,
+				Status: runstatus.Applying,
 				StatusTimestamps: []StatusTimestamp{
 					{
-						Status:    RunApplying,
+						Status:    runstatus.Applying,
 						Timestamp: time.Now().Add(-2 * time.Hour),
 					},
 				},
@@ -49,10 +50,10 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "planning timeout not exceeded",
 			run: &Run{
-				Status: RunPlanning,
+				Status: runstatus.Planning,
 				StatusTimestamps: []StatusTimestamp{
 					{
-						Status:    RunPlanning,
+						Status:    runstatus.Planning,
 						Timestamp: time.Now().Add(-time.Hour),
 					},
 				},
@@ -63,10 +64,10 @@ func TestTimeout(t *testing.T) {
 		{
 			name: "applying timeout not exceeded",
 			run: &Run{
-				Status: RunApplying,
+				Status: runstatus.Applying,
 				StatusTimestamps: []StatusTimestamp{
 					{
-						Status:    RunApplying,
+						Status:    runstatus.Applying,
 						Timestamp: time.Now().Add(-time.Hour),
 					},
 				},

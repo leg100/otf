@@ -9,8 +9,8 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -99,7 +99,7 @@ func TestRunError(t *testing.T) {
 						gotErrorLogs = true
 					}
 				case event := <-daemon.runEvents:
-					if event.Payload.Status == run.RunErrored {
+					if event.Payload.Status == runstatus.Errored {
 						gotErrorStatus = true
 					}
 				}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,14 +35,14 @@ func TestIntegration_RunStatus(t *testing.T) {
 	steps := []struct {
 		name               string
 		config             string
-		wantStatus         run.Status
+		wantStatus         runstatus.Status
 		wantResourceReport run.Report
 		wantOutputReport   run.Report
 	}{
 		{
 			name:       "add resource",
 			config:     `resource "random_pet" "cat" { prefix = "mr-" }`,
-			wantStatus: run.RunApplied,
+			wantStatus: runstatus.Applied,
 			wantResourceReport: run.Report{
 				Additions: 1,
 			},
@@ -50,7 +51,7 @@ func TestIntegration_RunStatus(t *testing.T) {
 			name: "replace resource",
 			config: `resource "random_pet" "cat" { prefix = "sir-" }
 `,
-			wantStatus: run.RunApplied,
+			wantStatus: runstatus.Applied,
 			wantResourceReport: run.Report{
 				Additions:    1,
 				Destructions: 1,
@@ -61,14 +62,14 @@ func TestIntegration_RunStatus(t *testing.T) {
 			config: `resource "random_pet" "cat" { prefix = "sir-" }
 output "cat_name" { value = random_pet.cat.id }
 `,
-			wantStatus: run.RunApplied,
+			wantStatus: runstatus.Applied,
 			wantOutputReport: run.Report{
 				Additions: 1,
 			},
 		},
 		{
 			name:       "destroy all",
-			wantStatus: run.RunApplied,
+			wantStatus: runstatus.Applied,
 			wantResourceReport: run.Report{
 				Destructions: 1,
 			},

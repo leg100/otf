@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 )
 
 var (
@@ -157,18 +158,18 @@ func (j *Job) cancel(run *otfrun.Run) (*bool, error) {
 	// whether job be signaled
 	var signal *bool
 	switch run.Status {
-	case otfrun.RunPlanning, otfrun.RunApplying:
+	case runstatus.Planning, runstatus.Applying:
 		if run.CancelSignaledAt != nil {
 			// run is still in progress but the user has requested it be
 			// canceled, so signal job to gracefully cancel current operation
 			signal = internal.Bool(false)
 		}
-	case otfrun.RunCanceled:
+	case runstatus.Canceled:
 		// run has been canceled so immediately cancel job too
 		if err := j.updateStatus(JobCanceled); err != nil {
 			return nil, err
 		}
-	case otfrun.RunForceCanceled:
+	case runstatus.ForceCanceled:
 		// run has been forceably canceled, so both signal job to forcefully
 		// cancel current operation, and immediately cancel job.
 		signal = internal.Bool(true)

@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -452,7 +453,7 @@ func (s *Service) Cancel(ctx context.Context, runID resource.ID) error {
 			s.Error(err, "canceling run", "id", runID, "subject", subject)
 			return err
 		}
-		if run.CancelSignaledAt != nil && run.Status != RunCanceled {
+		if run.CancelSignaledAt != nil && run.Status != runstatus.Canceled {
 			s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
 		} else {
 			s.V(0).Info("canceled run", "id", runID, "subject", subject)
