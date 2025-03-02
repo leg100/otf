@@ -134,16 +134,6 @@ templ getPostContent(props getProps) {
 	}
 }
 
-templ getTitle(ws *workspace.Workspace, run *Run) {
-	<a href={ paths.Workspaces(run.Organization) }>workspaces</a>
-	/
-	<a href={ paths.Workspace(run.WorkspaceID.String()) }>{ ws.Name }</a>
-	/
-	<a href={ paths.Runs(run.WorkspaceID.String()) }>runs</a>
-	/
-	{ run.ID.String() }
-}
-
 templ eventView(run *Run) {
 	@widget(run)
 	@phaseStatus(run.Plan)

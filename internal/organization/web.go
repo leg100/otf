@@ -33,23 +33,7 @@ type (
 		ListTokens(ctx context.Context, organization string) ([]*OrganizationToken, error)
 		DeleteToken(ctx context.Context, organization string) error
 	}
-
-	// OrganizationPage contains data shared by all organization-based pages.
-	OrganizationPage struct {
-		html.SitePage
-
-		Organization string
-	}
 )
-
-func NewPage(r *http.Request, title, organization string) OrganizationPage {
-	sitePage := html.NewSitePage(r, title)
-	sitePage.CurrentOrganization = organization
-	return OrganizationPage{
-		Organization: organization,
-		SitePage:     sitePage,
-	}
-}
 
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
@@ -125,7 +109,6 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	canCreate := !a.RestrictCreation || subject.CanAccess(authz.CreateOrganizationAction, nil)
 
 	props := listProps{
-		SitePage:  html.NewSitePage(r, "organizations"),
 		Page:      organizations,
 		CanCreate: canCreate,
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -86,21 +85,7 @@ type (
 		SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error
 	}
-
-	// WorkspacePage contains data shared by all workspace-based pages.
-	WorkspacePage struct {
-		organization.OrganizationPage
-
-		Workspace *Workspace
-	}
 )
-
-func NewPage(r *http.Request, title string, workspace *Workspace) WorkspacePage {
-	return WorkspacePage{
-		OrganizationPage: organization.NewPage(r, title, workspace.Organization),
-		Workspace:        workspace,
-	}
-}
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
