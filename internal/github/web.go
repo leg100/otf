@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -103,7 +104,9 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	app, err := h.svc.GetApp(r.Context())
-	if err != nil {
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		// app not found, which is ok.
+	} else if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -2,6 +2,7 @@ package vcsprovider
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -184,7 +185,9 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app, err := h.githubApps.GetApp(r.Context())
-	if err != nil {
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		// app not found, which is ok.
+	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

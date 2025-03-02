@@ -80,9 +80,9 @@ func (a *Service) GetApp(ctx context.Context) (*App, error) {
 	}
 
 	app, err := a.db.get(ctx)
-	if errors.Is(err, internal.ErrResourceNotFound) {
-		return nil, nil
-	} else if err != nil {
+	if err != nil {
+		// some callers call this endpoint just to check if app exists, so don't
+		// log an error if it doesn't exist.
 		return nil, err
 	}
 	a.V(9).Info("retrieved github app", "app", app, "subject", subject)
