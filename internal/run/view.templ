@@ -292,9 +292,7 @@ templ periodReport(run *Run) {
 
 templ resourceReport(report *Report) {
 	<div class="font-mono" id="resource-summary">
-		<span class="text-green-700">+{ strconv.Itoa(report.Additions) }</span>
-		<span class="text-blue-700">~{ strconv.Itoa(report.Changes) }</span>
-		<span class="text-red-700">-{ strconv.Itoa(report.Destructions) }</span>
+		<span class="text-green-700">+{ strconv.Itoa(report.Additions) }</span><span class="text-blue-700">~{ strconv.Itoa(report.Changes) }</span><span class="text-red-700">-{ strconv.Itoa(report.Destructions) }</span>
 	</div>
 }
 
