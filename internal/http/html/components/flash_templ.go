@@ -9,7 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/leg100/otf/internal/http"
+	"errors"
+	"fmt"
 	"github.com/leg100/otf/internal/http/html"
 )
 
@@ -41,13 +42,17 @@ func Flashes() templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 
-		request := http.RequestFromContext(ctx)
+		request := html.RequestFromContext(ctx)
 		if request == nil {
-			return
+			return errors.New("request not found in context")
 		}
-		flashes, err := html.PopFlashes(request)
+		response := html.ResponseFromContext(ctx)
+		if response == nil {
+			return errors.New("response not found in context")
+		}
+		flashes, err := html.PopFlashes(request, response)
 		if err != nil {
-			return
+			return fmt.Errorf("unable to pop flash messages: %w", err)
 		}
 		for _, flash := range flashes {
 			var templ_7745c5c3_Var2 = []any{"border padding py-0.5 px-1", flashColors[flash.Type.String()]}

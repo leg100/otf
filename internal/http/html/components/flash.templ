@@ -1,7 +1,8 @@
 package components
 
 import (
-	"github.com/leg100/otf/internal/http"
+	"errors"
+	"fmt"
 	"github.com/leg100/otf/internal/http/html"
 )
 
@@ -13,13 +14,17 @@ var flashColors = map[string]string{
 
 templ Flashes() {
 	{{
-	request := http.RequestFromContext(ctx)
+	request := html.RequestFromContext(ctx)
 	if request == nil {
-		return
+		return errors.New("request not found in context")
 	}
-	flashes, err := html.PopFlashes(request)
+	response := html.ResponseFromContext(ctx)
+	if response == nil {
+		return errors.New("response not found in context")
+	}
+	flashes, err := html.PopFlashes(request, response)
 	if err != nil {
-		return
+		return fmt.Errorf("unable to pop flash messages: %w", err)
 	}
 	}}
 	for _, flash := range flashes {

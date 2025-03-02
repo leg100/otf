@@ -6,7 +6,6 @@ import (
 	gohttp "net/http"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 )
 
@@ -56,7 +55,7 @@ func IsSiteAdmin(ctx context.Context) bool {
 }
 
 func CurrentPath(ctx context.Context) string {
-	request := http.RequestFromContext(ctx)
+	request := html.RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}
@@ -64,7 +63,7 @@ func CurrentPath(ctx context.Context) string {
 }
 
 func CurrentURL(ctx context.Context) string {
-	request := http.RequestFromContext(ctx)
+	request := html.RequestFromContext(ctx)
 	if request == nil {
 		return ""
 	}

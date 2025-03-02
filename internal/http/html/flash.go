@@ -29,7 +29,7 @@ type flash struct {
 func (f *flash) HTML() template.HTML { return template.HTML(f.Message) }
 
 // PopFlashes pops all flash messages off the stack
-func PopFlashes(r *http.Request) ([]flash, error) {
+func PopFlashes(r *http.Request, w http.ResponseWriter) ([]flash, error) {
 	cookie, err := r.Cookie(flashCookie)
 	if err != nil {
 		// no cookie; return empty stack
@@ -43,13 +43,9 @@ func PopFlashes(r *http.Request) ([]flash, error) {
 	if err := json.Unmarshal(decoded, &flashes); err != nil {
 		return nil, err
 	}
-
-	return flashes, nil
-}
-
-func purgeFlashes(w http.ResponseWriter) {
-	// purge cookie from browser
+	// Purge cookie from browser.
 	SetCookie(w, flashCookie, "", &time.Time{})
+	return flashes, nil
 }
 
 // FlashStack is a stack of flash messages
