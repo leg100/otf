@@ -202,6 +202,6 @@ live/sync_assets:
 	--build.include_dir "internal/http/html/static" \
 	--build.include_ext "js,css,svg"
 
-# start all 4 watch processes in parallel.
+# start watch processes in parallel.
 live:
 	make -j3 live/templ live/tailwind live/sync_assets

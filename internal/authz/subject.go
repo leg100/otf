@@ -33,11 +33,3 @@ func SubjectFromContext(ctx context.Context) (Subject, error) {
 	}
 	return subj, nil
 }
-
-func SubjectFromContextString(ctx context.Context) (string, error) {
-	subj, ok := ctx.Value(subjectCtxKey).(Subject)
-	if !ok {
-		return "", fmt.Errorf("no subject in context")
-	}
-	return subj.String(), nil
-}
