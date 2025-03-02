@@ -5,8 +5,8 @@ import (
 
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +27,7 @@ func TestIntegration_RunJobCancel(t *testing.T) {
 
 	// Create run, and wait til it reaches plan queued state
 	r := daemon.createRun(t, ctx, nil, nil, nil)
-	daemon.waitRunStatus(t, r.ID, run.RunPlanQueued)
+	daemon.waitRunStatus(t, r.ID, runstatus.PlanQueued)
 	// Job should be automatically created
 	wait(t, jobs, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.RunID == r.ID
@@ -38,7 +38,7 @@ func TestIntegration_RunJobCancel(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run and job should now enter canceled state.
-	daemon.waitRunStatus(t, r.ID, run.RunCanceled)
+	daemon.waitRunStatus(t, r.ID, runstatus.Canceled)
 	wait(t, jobs, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobCanceled &&
 			event.Payload.RunID == r.ID

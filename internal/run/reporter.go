@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -110,19 +111,19 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		description string
 	)
 	switch run.Status {
-	case RunPending, RunPlanQueued, RunApplyQueued, RunPlanning, RunApplying, RunPlanned, RunConfirmed:
+	case runstatus.Pending, runstatus.PlanQueued, runstatus.ApplyQueued, runstatus.Planning, runstatus.Applying, runstatus.Planned, runstatus.Confirmed:
 		status = vcs.PendingStatus
-	case RunPlannedAndFinished:
+	case runstatus.PlannedAndFinished:
 		status = vcs.SuccessStatus
 		if run.Plan.ResourceReport != nil {
 			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
 		}
-	case RunApplied:
+	case runstatus.Applied:
 		status = vcs.SuccessStatus
 		if run.Apply.ResourceReport != nil {
 			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 		}
-	case RunErrored, RunCanceled, RunForceCanceled, RunDiscarded:
+	case runstatus.Errored, runstatus.Canceled, runstatus.ForceCanceled, runstatus.Discarded:
 		status = vcs.ErrorStatus
 		description = run.Status.String()
 	default:

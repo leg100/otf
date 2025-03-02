@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
@@ -101,7 +102,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	run, err := daemon.Runs.Create(ctx, testutils.ParseID(t, ws.ID), otfrun.CreateOptions{})
 	require.NoError(t, err)
 
-	run = daemon.waitRunStatus(t, run.ID, otfrun.RunPlanned)
+	run = daemon.waitRunStatus(t, run.ID, runstatus.Planned)
 	// status matches, now check whether reports match as well
 	assert.Equal(t, &otfrun.Report{Additions: 2}, run.Plan.ResourceReport)
 }

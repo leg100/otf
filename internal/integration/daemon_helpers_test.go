@@ -25,6 +25,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
@@ -207,7 +208,7 @@ func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.ID
 	return run
 }
 
-func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.ID, status run.Status) *run.Run {
+func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.ID, status runstatus.Status) *run.Run {
 	t.Helper()
 
 	for event := range s.runEvents {

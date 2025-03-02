@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 )
 
 type (
@@ -33,7 +33,7 @@ type (
 	genericNotificationPayload struct {
 		Message      string
 		Trigger      Trigger
-		RunStatus    run.Status
+		RunStatus    runstatus.Status
 		RunUpdatedAt time.Time
 		RunUpdatedBy string
 	}

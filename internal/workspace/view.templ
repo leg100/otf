@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"time"
@@ -81,7 +82,7 @@ templ listItem(ws *Workspace) {
 		<div>
 			<span>{ ws.Name }</span>
 			if ws.LatestRun != nil {
-				@components.RunStatus(ws.LatestRun.ID, string(ws.LatestRun.Status))
+				@runstatus.Badge(ws.LatestRun.ID, ws.LatestRun.Status)
 			}
 		</div>
 		<div>

@@ -13,6 +13,7 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace"
@@ -132,7 +133,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert comma-separated list of statuses to []RunStatus
-	statuses := internal.FromStringCSV[Status](params.Status)
+	statuses := internal.FromStringCSV[runstatus.Status](params.Status)
 	// convert comma-separated list of sources to []RunSource
 	sources := internal.FromStringCSV[Source](params.Source)
 	// split operations CSV
@@ -156,7 +157,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, ListOptions{
-		Statuses: []Status{RunPlanQueued, RunApplyQueued},
+		Statuses: []runstatus.Status{runstatus.PlanQueued, runstatus.ApplyQueued},
 	})
 }
 
@@ -366,29 +367,29 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	var timestamps types.RunStatusTimestamps
 	for _, rst := range from.StatusTimestamps {
 		switch rst.Status {
-		case RunPending:
+		case runstatus.Pending:
 			timestamps.PlanQueueableAt = &rst.Timestamp
-		case RunPlanQueued:
+		case runstatus.PlanQueued:
 			timestamps.PlanQueuedAt = &rst.Timestamp
-		case RunPlanning:
+		case runstatus.Planning:
 			timestamps.PlanningAt = &rst.Timestamp
-		case RunPlanned:
+		case runstatus.Planned:
 			timestamps.PlannedAt = &rst.Timestamp
-		case RunPlannedAndFinished:
+		case runstatus.PlannedAndFinished:
 			timestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case RunApplyQueued:
+		case runstatus.ApplyQueued:
 			timestamps.ApplyQueuedAt = &rst.Timestamp
-		case RunApplying:
+		case runstatus.Applying:
 			timestamps.ApplyingAt = &rst.Timestamp
-		case RunApplied:
+		case runstatus.Applied:
 			timestamps.AppliedAt = &rst.Timestamp
-		case RunErrored:
+		case runstatus.Errored:
 			timestamps.ErroredAt = &rst.Timestamp
-		case RunCanceled:
+		case runstatus.Canceled:
 			timestamps.CanceledAt = &rst.Timestamp
-		case RunForceCanceled:
+		case runstatus.ForceCanceled:
 			timestamps.ForceCanceledAt = &rst.Timestamp
-		case RunDiscarded:
+		case runstatus.Discarded:
 			timestamps.DiscardedAt = &rst.Timestamp
 		}
 	}

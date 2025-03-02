@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -100,8 +101,8 @@ func TestRunService(t *testing.T) {
 					assert.Nil(t, ws.Lock)
 				}
 
-				assert.Equal(t, otfrun.RunPlanQueued, got.Status)
-				timestamp, err := got.StatusTimestamp(otfrun.RunPlanQueued)
+				assert.Equal(t, runstatus.PlanQueued, got.Status)
+				timestamp, err := got.StatusTimestamp(runstatus.PlanQueued)
 				assert.NoError(t, err)
 				assert.True(t, timestamp.After(got.CreatedAt))
 			})
@@ -118,8 +119,8 @@ func TestRunService(t *testing.T) {
 		got, err := svc.Runs.Get(ctx, run.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, otfrun.RunCanceled, got.Status)
-		canceled, err := got.StatusTimestamp(otfrun.RunCanceled)
+		assert.Equal(t, runstatus.Canceled, got.Status)
+		canceled, err := got.StatusTimestamp(runstatus.Canceled)
 		assert.NoError(t, err)
 		assert.True(t, canceled.After(got.CreatedAt))
 	})
@@ -202,7 +203,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by pending status",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.Status{otfrun.RunPending}},
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []runstatus.Status{runstatus.Pending}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
@@ -211,7 +212,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by statuses - no match",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []otfrun.Status{otfrun.RunPlanned}},
+				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []runstatus.Status{runstatus.Planned}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 0, len(l.Items))
 				},

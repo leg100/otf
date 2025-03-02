@@ -5,7 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	})
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv, nil)
-	daemon.waitRunStatus(t, r.ID, run.RunPlannedAndFinished)
+	daemon.waitRunStatus(t, r.ID, runstatus.PlannedAndFinished)
 
 	// open browser, go to run, and click retry
 	browser.New(t, ctx, func(page playwright.Page) {

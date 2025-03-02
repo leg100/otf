@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,11 +20,11 @@ func TestNotifier_handleRun(t *testing.T) {
 	ws2 := testutils.ParseID(t, "ws-zzz")
 
 	queuedRun := &run.Run{
-		Status:      run.RunPlanQueued,
+		Status:      runstatus.PlanQueued,
 		WorkspaceID: ws1,
 	}
 	planningRun := &run.Run{
-		Status:      run.RunPlanning,
+		Status:      runstatus.Planning,
 		WorkspaceID: ws1,
 	}
 	disabledConfig := &Config{
@@ -96,7 +97,7 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 	ws1 := testutils.ParseID(t, "ws-123")
 
 	planningRun := &run.Run{
-		Status:      run.RunPlanning,
+		Status:      runstatus.Planning,
 		WorkspaceID: ws1,
 	}
 	config1 := newTestConfig(t, ws1, DestinationGCPPubSub, "", TriggerPlanning)

@@ -9,7 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/daemon"
-	otfrun "github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,11 +54,11 @@ data "http" "wait" {
 
 	// create run and wait for it to enter canceled state
 	run := svc.createRun(t, ctx, ws, cv, nil)
-	run = svc.waitRunStatus(t, run.ID, otfrun.RunCanceled)
+	run = svc.waitRunStatus(t, run.ID, runstatus.Canceled)
 
 	// run should have reached planning state before being timed out and being
 	// forced into a canceled state.
-	_, err = run.StatusTimestamp(otfrun.RunPlanning)
+	_, err = run.StatusTimestamp(runstatus.Planning)
 	assert.NoError(t, err)
-	assert.Equal(t, otfrun.RunCanceled, run.Status)
+	assert.Equal(t, runstatus.Canceled, run.Status)
 }

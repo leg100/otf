@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 )
 
 const (
@@ -178,15 +179,15 @@ func (c *Config) update(opts UpdateConfigOptions) error {
 // given run state
 func (c *Config) matchTrigger(r *run.Run) (Trigger, bool) {
 	switch r.Status {
-	case run.RunPending:
+	case runstatus.Pending:
 		return TriggerCreated, c.hasTrigger(TriggerCreated)
-	case run.RunPlanning:
+	case runstatus.Planning:
 		return TriggerPlanning, c.hasTrigger(TriggerPlanning)
-	case run.RunPlanned:
+	case runstatus.Planned:
 		return TriggerNeedsAttention, c.hasTrigger(TriggerNeedsAttention)
-	case run.RunApplying:
+	case runstatus.Applying:
 		return TriggerApplying, c.hasTrigger(TriggerApplying)
-	case run.RunErrored:
+	case runstatus.Errored:
 		return TriggerErrored, c.hasTrigger(TriggerErrored)
 	}
 	if r.Done() {

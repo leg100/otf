@@ -11,7 +11,7 @@ import (
 
 	goexpect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
@@ -79,7 +79,7 @@ data "http" "wait" {
 
 	for event := range svc.runEvents {
 		r := event.Payload
-		if r.Status == run.RunCanceled {
+		if r.Status == runstatus.Canceled {
 			break
 		}
 		require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)

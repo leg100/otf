@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -55,7 +56,7 @@ type (
 		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
 		Source                 Source                  `jsonapi:"attribute" json:"source"`
-		Status                 Status                  `jsonapi:"attribute" json:"status"`
+		Status                 runstatus.Status        `jsonapi:"attribute" json:"status"`
 		WorkspaceID            resource.ID             `jsonapi:"attribute" json:"workspace_id"`
 		ConfigurationVersionID resource.ID             `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
@@ -88,8 +89,8 @@ type (
 	}
 
 	StatusTimestamp struct {
-		Status    Status    `json:"status"`
-		Timestamp time.Time `json:"timestamp"`
+		Status    runstatus.Status `json:"status"`
+		Timestamp time.Time        `json:"timestamp"`
 	}
 
 	// CreateOptions represents the options for creating a new run. See
@@ -129,7 +130,7 @@ type (
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
 		// Filter by run statuses (with an implicit OR condition)
-		Statuses []Status `schema:"statuses,omitempty"`
+		Statuses []runstatus.Status `schema:"statuses,omitempty"`
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
 		// Filter by sources
@@ -169,7 +170,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	}
 	run.Plan = newPhase(run.ID, internal.PlanPhase)
 	run.Apply = newPhase(run.ID, internal.ApplyPhase)
-	run.updateStatus(RunPending, opts.now)
+	run.updateStatus(runstatus.Pending, opts.now)
 
 	if run.Source == "" {
 		run.Source = SourceAPI
@@ -202,7 +203,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 }
 
 func (r *Run) Queued() bool {
-	return r.Status == RunPlanQueued || r.Status == RunApplyQueued
+	return r.Status == runstatus.PlanQueued || r.Status == runstatus.ApplyQueued
 }
 
 func (r *Run) HasChanges() bool {
@@ -266,11 +267,11 @@ func (r *Run) PeriodReport(now time.Time) (report PeriodReport) {
 // Phase returns the current phase.
 func (r *Run) Phase() internal.PhaseType {
 	switch r.Status {
-	case RunPending:
+	case runstatus.Pending:
 		return internal.PendingPhase
-	case RunPlanQueued, RunPlanning, RunPlanned:
+	case runstatus.PlanQueued, runstatus.Planning, runstatus.Planned:
 		return internal.PlanPhase
-	case RunApplyQueued, RunApplying, RunApplied:
+	case runstatus.ApplyQueued, runstatus.Applying, runstatus.Applied:
 		return internal.ApplyPhase
 	default:
 		return internal.UnknownPhase
@@ -282,9 +283,9 @@ func (r *Run) Discard() error {
 	if !r.Discardable() {
 		return ErrRunDiscardNotAllowed
 	}
-	r.updateStatus(RunDiscarded, nil)
+	r.updateStatus(runstatus.Discarded, nil)
 
-	if r.Status == RunPending {
+	if r.Status == runstatus.Pending {
 		r.Plan.UpdateStatus(PhaseUnreachable)
 	}
 	r.Apply.UpdateStatus(PhaseUnreachable)
@@ -294,7 +295,7 @@ func (r *Run) Discard() error {
 
 func (r *Run) InProgress() bool {
 	switch r.Status {
-	case RunPlanning, RunApplying:
+	case runstatus.Planning, runstatus.Applying:
 		return true
 	default:
 		return false
@@ -330,24 +331,24 @@ func (r *Run) Cancel(isUser, force bool) error {
 	}
 	var signal bool
 	switch r.Status {
-	case RunPending:
+	case runstatus.Pending:
 		r.Plan.UpdateStatus(PhaseUnreachable)
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunPlanQueued:
+	case runstatus.PlanQueued:
 		r.Plan.UpdateStatus(PhaseCanceled)
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunApplyQueued:
+	case runstatus.ApplyQueued:
 		r.Apply.UpdateStatus(PhaseCanceled)
-	case RunPlanning:
+	case runstatus.Planning:
 		if isUser && !force {
 			signal = true
 		} else {
 			r.Plan.UpdateStatus(PhaseCanceled)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 		}
-	case RunPlanned:
+	case runstatus.Planned:
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case RunApplying:
+	case runstatus.Applying:
 		if isUser && !force {
 			signal = true
 		} else {
@@ -366,9 +367,9 @@ func (r *Run) Cancel(isUser, force bool) error {
 		return nil
 	}
 	if force {
-		r.updateStatus(RunForceCanceled, nil)
+		r.updateStatus(runstatus.ForceCanceled, nil)
 	} else {
-		r.updateStatus(RunCanceled, nil)
+		r.updateStatus(runstatus.Canceled, nil)
 	}
 	return nil
 }
@@ -379,7 +380,7 @@ func (r *Run) Cancelable() bool {
 		return false
 	}
 	switch r.Status {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+	case runstatus.Pending, runstatus.PlanQueued, runstatus.Planning, runstatus.ApplyQueued, runstatus.Applying:
 		return true
 	default:
 		return false
@@ -427,7 +428,7 @@ func (r *Run) StartedAt() time.Time {
 // discarded, etc.
 func (r *Run) Done() bool {
 	switch r.Status {
-	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunForceCanceled, RunErrored:
+	case runstatus.Applied, runstatus.PlannedAndFinished, runstatus.Discarded, runstatus.Canceled, runstatus.ForceCanceled, runstatus.Errored:
 		return true
 	default:
 		return false
@@ -437,10 +438,10 @@ func (r *Run) Done() bool {
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
 // run for its workspace (speculative runs are ignored).
 func (r *Run) EnqueuePlan() error {
-	if r.Status != RunPending {
+	if r.Status != runstatus.Pending {
 		return fmt.Errorf("cannot enqueue run with status %s", r.Status)
 	}
-	r.updateStatus(RunPlanQueued, nil)
+	r.updateStatus(runstatus.PlanQueued, nil)
 	r.Plan.UpdateStatus(PhaseQueued)
 
 	return nil
@@ -448,17 +449,17 @@ func (r *Run) EnqueuePlan() error {
 
 func (r *Run) EnqueueApply() error {
 	switch r.Status {
-	case RunPlanned, RunCostEstimated:
+	case runstatus.Planned, runstatus.CostEstimated:
 		// applyable statuses
 	default:
 		return fmt.Errorf("cannot apply run with status %s", r.Status)
 	}
-	r.updateStatus(RunApplyQueued, nil)
+	r.updateStatus(runstatus.ApplyQueued, nil)
 	r.Apply.UpdateStatus(PhaseQueued)
 	return nil
 }
 
-func (r *Run) StatusTimestamp(status Status) (time.Time, error) {
+func (r *Run) StatusTimestamp(status runstatus.Status) (time.Time, error) {
 	for _, rst := range r.StatusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, nil
@@ -470,13 +471,13 @@ func (r *Run) StatusTimestamp(status Status) (time.Time, error) {
 // Start a run phase
 func (r *Run) Start() error {
 	switch r.Status {
-	case RunPlanQueued:
-		r.updateStatus(RunPlanning, nil)
+	case runstatus.PlanQueued:
+		r.updateStatus(runstatus.Planning, nil)
 		r.Plan.UpdateStatus(PhaseRunning)
-	case RunApplyQueued:
-		r.updateStatus(RunApplying, nil)
+	case runstatus.ApplyQueued:
+		r.updateStatus(runstatus.Applying, nil)
 		r.Apply.UpdateStatus(PhaseRunning)
-	case RunPlanning, RunApplying:
+	case runstatus.Planning, runstatus.Applying:
 		return ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
@@ -488,17 +489,17 @@ func (r *Run) Start() error {
 // a plan phase has finished and an apply should be automatically enqueued then
 // autoapply will be set to true.
 func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapply bool, err error) {
-	if r.Status == RunCanceled {
+	if r.Status == runstatus.Canceled {
 		// run was canceled before the phase finished so nothing more to do.
 		return false, nil
 	}
 	switch phase {
 	case internal.PlanPhase:
-		if r.Status != RunPlanning {
+		if r.Status != runstatus.Planning {
 			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(RunErrored, nil)
+			r.updateStatus(runstatus.Errored, nil)
 			r.Plan.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return false, nil
@@ -507,27 +508,27 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapp
 		// not support cost estimation but enter this state only in order to
 		// satisfy the go-tfe tests.
 		if r.CostEstimationEnabled {
-			r.updateStatus(RunCostEstimated, nil)
+			r.updateStatus(runstatus.CostEstimated, nil)
 		} else {
-			r.updateStatus(RunPlanned, nil)
+			r.updateStatus(runstatus.Planned, nil)
 		}
 		r.Plan.UpdateStatus(PhaseFinished)
 
 		if !r.HasChanges() || r.PlanOnly {
-			r.updateStatus(RunPlannedAndFinished, nil)
+			r.updateStatus(runstatus.PlannedAndFinished, nil)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return false, nil
 		}
 		return r.AutoApply, nil
 	case internal.ApplyPhase:
-		if r.Status != RunApplying {
+		if r.Status != runstatus.Applying {
 			return false, ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(RunErrored, nil)
+			r.updateStatus(runstatus.Errored, nil)
 			r.Apply.UpdateStatus(PhaseErrored)
 		} else {
-			r.updateStatus(RunApplied, nil)
+			r.updateStatus(runstatus.Applied, nil)
 			r.Apply.UpdateStatus(PhaseFinished)
 		}
 		return false, nil
@@ -536,7 +537,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapp
 	}
 }
 
-func (r *Run) updateStatus(status Status, now *time.Time) *Run {
+func (r *Run) updateStatus(status runstatus.Status, now *time.Time) *Run {
 	r.Status = status
 	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,
@@ -548,7 +549,7 @@ func (r *Run) updateStatus(status Status, now *time.Time) *Run {
 // Discardable determines whether run can be discarded.
 func (r *Run) Discardable() bool {
 	switch r.Status {
-	case RunPending, RunPlanned, RunCostEstimated:
+	case runstatus.Pending, runstatus.Planned, runstatus.CostEstimated:
 		return true
 	default:
 		return false
@@ -558,7 +559,7 @@ func (r *Run) Discardable() bool {
 // Confirmable determines whether run can be confirmed.
 func (r *Run) Confirmable() bool {
 	switch r.Status {
-	case RunPlanned:
+	case runstatus.Planned:
 		return true
 	default:
 		return false
