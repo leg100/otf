@@ -258,13 +258,13 @@ templ runningTime(tsk task) {
 	}
 }
 
-var periodStatusColors = map[string]string{
-	"pending":              "bg-yellow-50",
-	"plan_queued":          "bg-yellow-200",
-	"planning":             "bg-violet-200",
-	"planned":              "bg-violet-400",
-	"planned_and_finished": "bg-green-100",
-	"applying":             "bg-cyan-200",
+var periodStatusColors = map[Status]string{
+	RunPending:            "bg-yellow-50",
+	PlanQueued:            "bg-yellow-200",
+	Planning:              "bg-violet-200",
+	Planned:               "bg-violet-400",
+	RunPlannedAndFinished: "bg-green-100",
+	RunApplying:           "bg-cyan-200",
 }
 
 templ periodReport(run *Run) {
@@ -273,14 +273,14 @@ templ periodReport(run *Run) {
 		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
-				class={ "inline-block", "h-full",  periodStatusColors[period.Status.String()] }
+				class={ "inline-block", "h-full",  periodStatusColors[period.Status] }
 			></div>
 		}
 		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
 			<ul class="flex gap-4 flex-wrap text-sm">
 				for _, period := range report.Periods {
 					<li>
-						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status.String()] }></div>
+						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status] }></div>
 						<span>{ period.Status.String() }</span>
 						<span>({ period.Period.String() })</span>
 					</li>

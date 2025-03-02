@@ -3,30 +3,27 @@ package html
 import (
 	"encoding/base64"
 	"encoding/json"
-	"html/template"
 	"net/http"
 	"time"
 )
 
 const (
-	FlashSuccessType flashType = "success"
-	FlashWarningType flashType = "warning"
-	FlashErrorType   flashType = "error"
+	FlashSuccessType FlashType = "success"
+	FlashWarningType FlashType = "warning"
+	FlashErrorType   FlashType = "error"
 
 	flashCookie = "flash" // name of flash cookie
 )
 
-type flashType string
+type FlashType string
 
-func (f flashType) String() string { return string(f) }
+func (f FlashType) String() string { return string(f) }
 
 // flash is a flash message for the web UI
 type flash struct {
-	Type    flashType
+	Type    FlashType
 	Message string
 }
-
-func (f *flash) HTML() template.HTML { return template.HTML(f.Message) }
 
 // PopFlashes pops all flash messages off the stack
 func PopFlashes(r *http.Request, w http.ResponseWriter) ([]flash, error) {
@@ -51,7 +48,7 @@ func PopFlashes(r *http.Request, w http.ResponseWriter) ([]flash, error) {
 // FlashStack is a stack of flash messages
 type FlashStack []flash
 
-func (s *FlashStack) Push(t flashType, msg string) {
+func (s *FlashStack) Push(t FlashType, msg string) {
 	*s = append(*s, flash{t, msg})
 }
 

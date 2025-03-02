@@ -970,13 +970,13 @@ func runningTime(tsk task) templ.Component {
 	})
 }
 
-var periodStatusColors = map[string]string{
-	"pending":              "bg-yellow-50",
-	"plan_queued":          "bg-yellow-200",
-	"planning":             "bg-violet-200",
-	"planned":              "bg-violet-400",
-	"planned_and_finished": "bg-green-100",
-	"applying":             "bg-cyan-200",
+var periodStatusColors = map[Status]string{
+	RunPending:            "bg-yellow-50",
+	PlanQueued:            "bg-yellow-200",
+	Planning:              "bg-violet-200",
+	Planned:               "bg-violet-400",
+	RunPlannedAndFinished: "bg-green-100",
+	RunApplying:           "bg-cyan-200",
 }
 
 func periodReport(run *Run) templ.Component {
@@ -1006,7 +1006,7 @@ func periodReport(run *Run) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for i, period := range report.Periods {
-			var templ_7745c5c3_Var44 = []any{"inline-block", "h-full", periodStatusColors[period.Status.String()]}
+			var templ_7745c5c3_Var44 = []any{"inline-block", "h-full", periodStatusColors[period.Status]}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var44...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1051,7 +1051,7 @@ func periodReport(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var47 = []any{"h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status.String()]}
+			var templ_7745c5c3_Var47 = []any{"h-3", "w-3", "inline-block", "border", "border-black", "align-middle", periodStatusColors[period.Status]}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var47...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

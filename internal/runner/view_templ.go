@@ -81,12 +81,12 @@ func listRunners(props listRunnersProps) templ.Component {
 	})
 }
 
-var runnerStatusColors = map[string]string{
-	"idle":    "bg-green-100",
-	"busy":    "bg-blue-200",
-	"unknown": "bg-gray-100",
-	"errored": "bg-red-100",
-	"exited":  "bg-purple-100",
+var runnerStatusColors = map[RunnerStatus]string{
+	RunnerIdle:    "bg-green-100",
+	RunnerBusy:    "bg-blue-200",
+	RunnerUnknown: "bg-gray-100",
+	RunnerErrored: "bg-red-100",
+	RunnerExited:  "bg-purple-100",
 }
 
 func runnerListItem(runner *RunnerMeta) templ.Component {
@@ -146,7 +146,7 @@ func runnerListItem(runner *RunnerMeta) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		var templ_7745c5c3_Var6 = []any{runnerStatusColors[string(runner.Status)]}
+		var templ_7745c5c3_Var6 = []any{runnerStatusColors[runner.Status]}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -171,7 +171,7 @@ func runnerListItem(runner *RunnerMeta) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(string(runner.Status))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 49, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 49, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {

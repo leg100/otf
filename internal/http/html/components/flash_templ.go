@@ -14,10 +14,10 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 )
 
-var flashColors = map[string]string{
-	"success": "bg-green-100 border-green-400",
-	"warning": "bg-orange-100 border-orange-400",
-	"error":   "bg-red-100 border-red-400",
+var flashColors = map[html.FlashType]string{
+	html.FlashSuccessType: "bg-green-100 border-green-400",
+	html.FlashWarningType: "bg-orange-100 border-orange-400",
+	html.FlashErrorType:   "bg-red-100 border-red-400",
 }
 
 func Flashes() templ.Component {
@@ -55,7 +55,7 @@ func Flashes() templ.Component {
 			return fmt.Errorf("unable to pop flash messages: %w", err)
 		}
 		for _, flash := range flashes {
-			var templ_7745c5c3_Var2 = []any{"border padding py-0.5 px-1", flashColors[flash.Type.String()]}
+			var templ_7745c5c3_Var2 = []any{"border padding py-0.5 px-1", flashColors[flash.Type]}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

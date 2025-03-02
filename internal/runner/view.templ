@@ -31,12 +31,12 @@ templ listRunners(props listRunnersProps) {
 	}
 }
 
-var runnerStatusColors = map[string]string{
-	"idle":    "bg-green-100",
-	"busy":    "bg-blue-200",
-	"unknown": "bg-gray-100",
-	"errored": "bg-red-100",
-	"exited":  "bg-purple-100",
+var runnerStatusColors = map[RunnerStatus]string{
+	RunnerIdle:    "bg-green-100",
+	RunnerBusy:    "bg-blue-200",
+	RunnerUnknown: "bg-gray-100",
+	RunnerErrored: "bg-red-100",
+	RunnerExited:  "bg-purple-100",
 }
 
 templ runnerListItem(runner *RunnerMeta) {
@@ -46,7 +46,7 @@ templ runnerListItem(runner *RunnerMeta) {
 				if runner.Name != "" {
 					<span>{ runner.Name }</span>
 				}
-				<div class={ runnerStatusColors[string(runner.Status)] }>{ string(runner.Status) }</div>
+				<div class={ runnerStatusColors[runner.Status] }>{ string(runner.Status) }</div>
 				<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
 			</div>
 			<span title={ runner.LastPingAt.String() }>last seen { internal.Ago(time.Now(), runner.LastPingAt) } </span>
