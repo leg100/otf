@@ -972,9 +972,9 @@ func runningTime(tsk task) templ.Component {
 
 var periodStatusColors = map[Status]string{
 	RunPending:            "bg-yellow-50",
-	PlanQueued:            "bg-yellow-200",
-	Planning:              "bg-violet-200",
-	Planned:               "bg-violet-400",
+	RunPlanQueued:         "bg-yellow-200",
+	RunPlanning:           "bg-violet-200",
+	RunPlanned:            "bg-violet-400",
 	RunPlannedAndFinished: "bg-green-100",
 	RunApplying:           "bg-cyan-200",
 }
