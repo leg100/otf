@@ -222,7 +222,7 @@ templ get(props getProps) {
 					<div class="flex gap-4 items-center">
 						<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID.String()) } method="GET">
 							<label>Version</label>
-							<select class="w-32" name="version" id="version" onchange="this.form.submit()">
+							<select class="select w-32" name="version" id="version" onchange="this.form.submit()">
 								{{ slices.Reverse(props.module.AvailableVersions()) }}
 								for _, mv := range props.module.AvailableVersions() {
 									if mv.Status == ModuleVersionStatusOK {

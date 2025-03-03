@@ -26,18 +26,6 @@
   [x-cloak] {
     display: none !important;
   }
-  .btn {
-    @apply font-bold py-1 px-3 bg-gray-200 shadow-xs shadow-slate-500;
-  }
-  .btn:hover {
-    @apply bg-gray-300;
-  }
-  .btn-danger {
-    @apply font-bold py-1 px-3 bg-gray-200 shadow-xs shadow-slate-500 text-red-400;
-  }
-  .btn-danger:hover {
-    @apply bg-red-400 text-white;
-  }
   .text-input {
     @apply border py-1 px-2;
   }
@@ -53,8 +41,6 @@
   input.error {
     @apply border-2 border-red-400 shadow-xs shadow-red-200;
   }
-  select {
-    @apply py-2 px-4 bg-gray-200 shadow-xs shadow-slate-500 cursor-pointer;
   }
   input[type="radio"], input[type="checkbox"] {
     @apply cursor-pointer;
@@ -82,15 +68,6 @@
   }
   .field > label {
     @apply block font-semibold;
-  }
-  table {
-    @apply text-sm;
-  }
-  tr {
-    @apply even:bg-gray-100;
-  }
-  th, td {
-    @apply p-2;
   }
   .tag-container {
     @apply flex flex-wrap gap-1 items-center

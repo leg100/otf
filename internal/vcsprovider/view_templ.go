@@ -488,7 +488,7 @@ func newGithubApp(props newGithubAppProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" method=\"POST\"><div class=\"field\"><label for=\"name\">Name</label> <input class=\"text-input w-64\" type=\"text\" name=\"name\" id=\"name\" placeholder=\"github\"> <span class=\"description\">An optional display name for your VCS provider.</span></div><div class=\"field\"><label for=\"install_id\">Installation</label> <select class=\"w-48\" name=\"install_id\" id=\"select-install-id\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" method=\"POST\"><div class=\"field\"><label for=\"name\">Name</label> <input class=\"text-input w-64\" type=\"text\" name=\"name\" id=\"name\" placeholder=\"github\"> <span class=\"description\">An optional display name for your VCS provider.</span></div><div class=\"field\"><label for=\"install_id\">Installation</label> <select class=\"select w-48\" name=\"install_id\" id=\"select-install-id\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

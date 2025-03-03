@@ -148,7 +148,7 @@ templ newGithubApp(props newGithubAppProps) {
 				</div>
 				<div class="field">
 					<label for="install_id">Installation</label>
-					<select class="w-48" name="install_id" id="select-install-id">
+					<select class="select w-48" name="install_id" id="select-install-id">
 						for _, install := range props.installations {
 							<option value={ strconv.Itoa(int(*install.ID)) }>{ install.String() }</option>
 						}

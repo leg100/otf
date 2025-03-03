@@ -561,7 +561,7 @@ func get(props getProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" method=\"POST\"><select name=\"operation\" id=\"start-run-operation\" onchange=\"this.form.submit()\"><option value=\"\" selected>-- start run --</option> <option value=\"plan-only\">plan only</option> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" method=\"POST\"><select class=\"select\" name=\"operation\" id=\"start-run-operation\" onchange=\"this.form.submit()\"><option disabled selected>-- start run --</option> <option value=\"plan-only\">plan only</option> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1460,7 +1460,7 @@ func editPermissions(props editProps) templ.Component {
 			templ_7745c5c3_Var70 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "<div><table class=\"text-left\"><thead class=\"bg-gray-100 border-t border-b\"><tr><th class=\"p-2\">Team</th><th class=\"p-2\" colspan=\"2\">Role</th></tr></thead> <tbody><!-- always render implicit admin role permission for owners team --><tr class=\"text-gray-400 border-b\" id=\"permissions-owners\"><td class=\"p-2\">owners</td><td class=\"p-2\">admin</td></tr><!-- iterate through existing role assignments -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "<div><table class=\"table\"><thead class=\"\"><tr><th class=\"\">Team</th><th class=\"\">Role</th><th class=\"\"></th></tr></thead> <tbody><!-- always render implicit admin role permission for owners team --><tr class=\"text-gray-400\" id=\"permissions-owners\"><td class=\"\">owners</td><td class=\"\">admin</td></tr><!-- iterate through existing role assignments -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1471,64 +1471,64 @@ func editPermissions(props editProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, " <tr class=\"border-b\" id=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, " <tr id=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var71 string
 			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs("permissions-" + perm.team.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 467, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 468, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "\"><td class=\"p-2\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "\"><form class=\"\" id=\"update-permissions\" action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var72 templ.SafeURL = paths.Team(perm.team.ID.String())
+			var templ_7745c5c3_Var72 templ.SafeURL = paths.SetPermissionWorkspace(props.ws.ID.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var72)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "\" method=\"POST\"></form><td class=\"\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var73 string
-			templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(perm.team.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 468, Col: 84}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
+			var templ_7745c5c3_Var73 templ.SafeURL = paths.Team(perm.team.ID.String())
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var73)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</a></td><td class=\"p-2\"><form class=\"\" action=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var74 templ.SafeURL = paths.SetPermissionWorkspace(props.ws.ID.String())
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var74)))
+			var templ_7745c5c3_Var74 string
+			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(perm.team.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 470, Col: 81}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" method=\"POST\"><input name=\"team_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</a></td><td class=\"\"><input name=\"team_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinStringErrs(perm.team.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 471, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 472, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\" type=\"hidden\"> <select name=\"role\" id=\"role-select\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\" type=\"hidden\" form=\"update-permissions\"> <select class=\"select\" name=\"role\" id=\"role-select\" form=\"update-permissions\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1540,7 +1540,7 @@ func editPermissions(props editProps) templ.Component {
 				var templ_7745c5c3_Var76 string
 				templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(role.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 474, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 475, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 				if templ_7745c5c3_Err != nil {
@@ -1563,7 +1563,7 @@ func editPermissions(props editProps) templ.Component {
 				var templ_7745c5c3_Var77 string
 				templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(role.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 474, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 475, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 				if templ_7745c5c3_Err != nil {
@@ -1574,7 +1574,7 @@ func editPermissions(props editProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "</select> <button class=\"btn\">Update</button></form></td><td><form class=\"\" action=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "</select></td><td class=\"flex items-center gap-2\"><button class=\"btn\" form=\"update-permissions\">Update</button><form class=\"\" action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1596,12 +1596,12 @@ func editPermissions(props editProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\" type=\"hidden\"> <button class=\"btn-danger\">Remove</button></form></td></tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\" type=\"hidden\"> <button class=\"btn btn-outline\">Remove</button></form></td></tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<tr class=\"border-b\"><form id=\"permissions-add-form\" class=\"horizontal-form\" action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<tr class=\"\"><form id=\"permissions-add-form\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1610,7 +1610,7 @@ func editPermissions(props editProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "\" method=\"POST\"></form><td class=\"p-2\"><select form=\"permissions-add-form\" name=\"team_id\" id=\"permissions-add-select-team\"><option value=\"\">--team--</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "\" method=\"POST\"></form><td><select class=\"select\" form=\"permissions-add-form\" name=\"team_id\" id=\"permissions-add-select-team\"><option disabled selected>--team--</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1646,7 +1646,7 @@ func editPermissions(props editProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</select></td><td class=\"p-2\" id=\"permissions-add-role-container\"><select form=\"permissions-add-form\" name=\"role\" id=\"permissions-add-select-role\"><option value=\"\">--role--</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</select></td><td id=\"permissions-add-role-container\"><select class=\"select\" form=\"permissions-add-form\" name=\"role\" id=\"permissions-add-select-role\"><option disabled selected>--role--</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1682,7 +1682,7 @@ func editPermissions(props editProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "</select> <button class=\"btn\" id=\"permissions-add-button\" form=\"permissions-add-form\">Add</button></td></tr></tbody></table></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "</select></td><td><button class=\"btn\" id=\"permissions-add-button\" form=\"permissions-add-form\">Add</button></td></tr></tbody></table></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1755,7 +1755,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var88 string
 				templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(templ.SafeURL(path)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 532, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 534, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
 				if templ_7745c5c3_Err != nil {
@@ -1768,7 +1768,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var89 string
 				templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(provider.ID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 532, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 534, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 				if templ_7745c5c3_Err != nil {
@@ -1781,7 +1781,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var90 string
 				templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinStringErrs(provider.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 534, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 536, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
 				if templ_7745c5c3_Err != nil {
@@ -1794,7 +1794,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var91 string
 				templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), provider.CreatedAt))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 535, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 537, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 				if templ_7745c5c3_Err != nil {
@@ -1901,7 +1901,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) temp
 			var templ_7745c5c3_Var96 string
 			templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 566, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 568, Col: 98}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 			if templ_7745c5c3_Err != nil {
@@ -1919,7 +1919,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) temp
 				var templ_7745c5c3_Var97 string
 				templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(repo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 574, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 576, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 				if templ_7745c5c3_Err != nil {
@@ -1941,7 +1941,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) temp
 				var templ_7745c5c3_Var99 string
 				templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 576, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 578, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 				if templ_7745c5c3_Err != nil {
@@ -1954,7 +1954,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) temp
 				var templ_7745c5c3_Var100 string
 				templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(repo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 577, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 579, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 				if templ_7745c5c3_Err != nil {
@@ -2053,7 +2053,7 @@ func WorkspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) templ.Compone
 			var templ_7745c5c3_Var105 string
 			templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 602, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 604, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 			if templ_7745c5c3_Err != nil {

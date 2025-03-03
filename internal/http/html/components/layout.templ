@@ -57,7 +57,6 @@ templ Layout(props LayoutProps) {
 		if props.ContentMenu != nil {
 			@props.ContentMenu
 		}
-		@Flashes()
 		<div class="flex flex-col gap-2 mb-4" id="content">
 			{ children... }
 		</div>
@@ -90,6 +89,7 @@ templ BareLayout(props BareLayoutProps) {
 		</head>
 		<body class="flex flex-col m-0 min-h-screen font-sans">
 			@navbar(props.Organization)
+			@Flashes()
 			<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
 				{ children... }
 			</main>

@@ -471,7 +471,7 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 			templ_7745c5c3_Var23 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<select id=\"agent-pool-id\" name=\"agent_pool_id\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<select class=\"select\" id=\"agent-pool-id\" name=\"agent_pool_id\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

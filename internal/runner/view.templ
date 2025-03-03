@@ -121,7 +121,7 @@ type agentPoolListAllowedProps struct {
 }
 
 templ agentPoolListAllowed(props agentPoolListAllowedProps) {
-	<select id="agent-pool-id" name="agent_pool_id">
+	<select class="select" id="agent-pool-id" name="agent_pool_id">
 		for _, pool := range props.pools {
 			<option value={ pool.ID.String() } selected?={ props.currentPoolID != nil && *props.currentPoolID == pool.ID }>{ pool.Name }</option>
 		}

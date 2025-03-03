@@ -9,7 +9,10 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -45,7 +48,13 @@ func ContentList[T any](items []T, comp func(T) templ.Component) templ.Component
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div>")
+		if len(items) == 0 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "No items currently exist.")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -74,72 +83,116 @@ func PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Comp
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"content-list\" class=\"flex flex-col\">")
+
+		info, err := newPageInfo(ctx, page)
+		if err != nil {
+			return err
+		}
+		templ_7745c5c3_Err = ContentList(page.Items, comp).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, item := range page.Items {
-			templ_7745c5c3_Err = comp(item).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		if len(page.Items) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "No items currently exist.")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"flex p-4 gap-2 justify-end\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"flex p-4 gap-2 justify-end items-center\"><div class=\"badge badge-outline badge-neutral\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if page.PreviousPage != nil {
-
-			url, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.PreviousPage))
-			if err != nil {
-				return err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<a id=\"prev-page-link\" href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var3 templ.SafeURL = url
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\">Previous Page</a> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
+		var templ_7745c5c3_Var3 string
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 33, Col: 91}
 		}
-		if page.NextPage != nil {
-
-			url, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.NextPage))
-			if err != nil {
-				return err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<a id=\"next-page-link\" href=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"join\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if info.previousPageURL != nil {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<button class=\"join-item btn btn-sm\" id=\"prev-page-link\"><a id=\"prev-page-link\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var4 templ.SafeURL = url
+			var templ_7745c5c3_Var4 templ.SafeURL = *info.previousPageURL
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var4)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\">Next Page</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\">Previous Page</a></button> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div>")
+		if info.nextPageURL != nil {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<button class=\"join-item btn btn-sm\" id=\"next-page-link\"><a id=\"next-page-link\" href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var5 templ.SafeURL = *info.nextPageURL
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var5)))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\">Next Page</a></button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		return nil
 	})
+}
+
+type pageInfo struct {
+	pagination      resource.Pagination
+	opts            resource.PageOptions
+	firstItemNumber int
+	lastItemNumber  int
+	previousPageURL *templ.SafeURL
+	nextPageURL     *templ.SafeURL
+}
+
+func newPageInfo[T any](ctx context.Context, page *resource.Page[T]) (*pageInfo, error) {
+	request := html.RequestFromContext(ctx)
+	if request == nil {
+		return nil, errors.New("no request found in context")
+	}
+	var opts resource.PageOptions
+	if err := decode.All(&opts, request); err != nil {
+		return nil, err
+	}
+	opts = opts.Normalize()
+
+	firstItemNumber := ((opts.PageNumber - 1) * opts.PageSize) + 1
+	lastItemNumber := max(0, firstItemNumber+len(page.Items)-1)
+
+	info := &pageInfo{
+		pagination:      *page.Pagination,
+		opts:            opts,
+		firstItemNumber: firstItemNumber,
+		lastItemNumber:  lastItemNumber,
+	}
+
+	if page.PreviousPage != nil {
+		previousPageURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.PreviousPage))
+		if err != nil {
+			return nil, err
+		}
+		info.previousPageURL = &previousPageURL
+	}
+	if page.NextPage != nil {
+		nextPageURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.NextPage))
+		if err != nil {
+			return nil, err
+		}
+		info.nextPageURL = &nextPageURL
+	}
+
+	return info, nil
 }
 
 func pageQuery(page int) string {
