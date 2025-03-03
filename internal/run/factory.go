@@ -77,7 +77,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.ID, opts Crea
 		cv, err = f.createConfigVersionFromVCS(ctx, ws)
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetching configuration: %w", err)
 	}
 
 	return newRun(ctx, org, cv, ws, opts), nil
