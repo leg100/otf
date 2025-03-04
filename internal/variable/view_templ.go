@@ -868,14 +868,14 @@ func form(props formProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" method=\"POST\"><div class=\"field\"><label class=\"font-semibold\" for=\"key\">Key</label> <input class=\"text-input\" type=\"text\" name=\"key\" id=\"key\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" method=\"POST\"><div class=\"field\"><label class=\"font-semibold\" for=\"key\">Key</label> <input class=\"input\" type=\"text\" name=\"key\" id=\"key\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(props.variable.Key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 283, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 283, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -891,7 +891,7 @@ func form(props formProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "></div><div class=\"field\"><label class=\"font-semibold\" for=\"value\">Value</label> <textarea class=\"text-input\" type=\"text\" name=\"value\" id=\"value\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "></div><div class=\"field\"><label class=\"font-semibold\" for=\"value\">Value</label> <textarea class=\"textarea\" type=\"text\" name=\"value\" id=\"value\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -980,14 +980,14 @@ func form(props formProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "> <label for=\"sensitive\">Sensitive</label> <span class=\"description\">Sensitive variables are never shown in the UI or API. They may appear in Terraform logs if your configuration is designed to output them.</span></div><div class=\"field\"><label class=\"font-semibold\" for=\"description\">Description</label> <input class=\"text-input\" type=\"text\" class=\"freeform\" name=\"description\" id=\"description\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "> <label for=\"sensitive\">Sensitive</label> <span class=\"description\">Sensitive variables are never shown in the UI or API. They may appear in Terraform logs if your configuration is designed to output them.</span></div><div class=\"field\"><label class=\"font-semibold\" for=\"description\">Description</label> <input class=\"input\" type=\"text\" class=\"freeform\" name=\"description\" id=\"description\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(props.variable.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 326, Col: 128}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 326, Col: 123}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -1044,27 +1044,27 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if props.set != nil {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<div class=\"field\"><label class=\"font-semibold\" for=\"name\">Name</label> <input class=\"text-input\" type=\"text\" name=\"name\" id=\"name\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<div class=\"field\"><label class=\"font-semibold\" for=\"name\">Name</label> <input class=\"input\" type=\"text\" name=\"name\" id=\"name\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var36 string
 			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(props.set.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 354, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 354, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\" required placeholder=\"name\"></div><div class=\"field\"><label class=\"font-semibold\" for=\"description\">Description</label> <textarea class=\"text-input\" type=\"text\" name=\"description\" id=\"description\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\" required placeholder=\"name\"></div><div class=\"field\"><label class=\"font-semibold\" for=\"description\">Description</label> <textarea class=\"textarea\" type=\"text\" name=\"description\" id=\"description\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(props.set.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 358, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 358, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -1116,7 +1116,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" x-ref=\"workspace_select\" @keydown.escape.prevent.stop=\"close($refs.workspace_input)\" @focusin.window=\"! $refs.workspace_select.contains($event.target) &amp;&amp; close()\"><div @click.outside=\"close()\"><input type=\"hidden\" id=\"workspaces\" name=\"workspaces\" :value=\"JSON.stringify(existing)\"> <input class=\"text-input grow w-80\" type=\"text\" id=\"workspace-input\" x-ref=\"workspace_input\" x-model=\"search\" placeholder=\"Select workspace\" @focusin=\"open = true\" @click=\"open = true\"><div x-ref=\"panel\" x-show=\"showPanel\" x-cloak class=\"absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black\"><template x-for=\"item in filterAvailable\" :key=\"item.id\"><button @click=\"addItem(item)\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-text=\"item.name\"></button></template></div></div><div class=\"flex flex-row gap-2 mt-2\" id=\"existing-workspaces\"><template x-for=\"item in existing\"><div class=\"flex p-1 gap-1 bg-gray-200 group\"><span class=\"\" x-text=\"item.name\"></span> <button @click=\"deleteItem(item)\" type=\"button\" class=\"group-hover:bg-gray-400\" id=\"button-remove-tag-{ . }\" class=\"delete cross\">x</button></div></template></div></div></div></fieldset><div><button class=\"btn\" id=\"save-variable-set-button\">Save variable set</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" x-ref=\"workspace_select\" @keydown.escape.prevent.stop=\"close($refs.workspace_input)\" @focusin.window=\"! $refs.workspace_select.contains($event.target) &amp;&amp; close()\"><div @click.outside=\"close()\"><input type=\"hidden\" id=\"workspaces\" name=\"workspaces\" :value=\"JSON.stringify(existing)\"> <input class=\"input grow w-80\" type=\"text\" id=\"workspace-input\" x-ref=\"workspace_input\" x-model=\"search\" placeholder=\"Select workspace\" @focusin=\"open = true\" @click=\"open = true\"><div x-ref=\"panel\" x-show=\"showPanel\" x-cloak class=\"absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black\"><template x-for=\"item in filterAvailable\" :key=\"item.id\"><button @click=\"addItem(item)\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-text=\"item.name\"></button></template></div></div><div class=\"flex flex-row gap-2 mt-2\" id=\"existing-workspaces\"><template x-for=\"item in existing\"><div class=\"flex p-1 gap-1 bg-gray-200 group\"><span class=\"\" x-text=\"item.name\"></span> <button @click=\"deleteItem(item)\" type=\"button\" class=\"group-hover:bg-gray-400\" id=\"button-remove-tag-{ . }\" class=\"delete cross\">x</button></div></template></div></div></div></fieldset><div><button class=\"btn\" id=\"save-variable-set-button\">Save variable set</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1294,23 +1294,31 @@ func table(props tableProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "\" method=\"POST\"><button id=\"delete-variable-button\" class=\"btn-danger\" onclick=\"return confirm(&#39;Are you sure you want to delete?&#39;)\">Delete</button></form>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "\" method=\"POST\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = components.DeleteButton().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</form>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</td></tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</td></tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if len(props.Variables()) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<tr><td>No variables currently exist.</td></tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<tr><td>No variables currently exist.</td></tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</tbody></table>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</tbody></table>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

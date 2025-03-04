@@ -8,9 +8,6 @@
   [x-cloak] {
     display: none !important;
   }
-  .text-input {
-    @apply border py-1 px-2;
-  }
   .form-checkbox {
     @apply grid grid-cols-[20px_auto] gap-[1px] items-center justify-items-start;
   }

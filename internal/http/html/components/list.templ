@@ -34,18 +34,12 @@ templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Com
 		</div>
 		<div class="join">
 			if info.previousPageURL != nil {
-				<button
-					class="join-item btn btn-sm"
-					id="prev-page-link"
-				>
+				<button class="join-item btn btn-sm">
 					<a id="prev-page-link" href={ *info.previousPageURL }>Previous Page</a>
 				</button>
 			}
 			if info.nextPageURL != nil {
-				<button
-					class="join-item btn btn-sm"
-					id="next-page-link"
-				>
+				<button class="join-item btn btn-sm">
 					<a id="next-page-link" href={ *info.nextPageURL }>Next Page</a>
 				</button>
 			}

@@ -108,7 +108,7 @@ templ newRepo(props newViewProps) {
 	<form action={ paths.NewModule(props.organization) } method="GET">
 		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
 		<input type="hidden" name="step" id="select-repo-step" value="confirm-selection"/>
-		<input class="text-input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
 		<button class="btn">connect</button>
 	</form>
 	<div id="content-list">
@@ -208,6 +208,7 @@ templ get(props getProps) {
 		Organization: props.module.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules", Link: paths.Modules(props.module.Organization)},
+			{Name: props.module.Name},
 		},
 	}) {
 		<div class="flex flex-col gap-4">
@@ -241,7 +242,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold"></h3>
 						<div class="flex flex-col gap-2">
 							<label for="usage">Usage</label>
-							<textarea class="text-input font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
+							<textarea class="textarea font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
 								{ `module "{ ` + props.module.Name + `}" {
 	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
 	version = "{ ` + props.currentVersion.Version + ` }"
@@ -250,7 +251,7 @@ templ get(props getProps) {
 						</div>
 					</div>
 					<div>
-						{ strings.TrimSpace(string(props.readme)) }
+						@templ.Raw(strings.TrimSpace(string(props.readme)))
 					</div>
 					<div>
 						<h3 class="font-semibold">Resources</h3>
@@ -278,7 +279,7 @@ templ get(props getProps) {
 					</div>
 			}
 			<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID.String()) } method="POST">
-				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
 			</form>
 		</div>
 	}

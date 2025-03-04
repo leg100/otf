@@ -110,7 +110,7 @@ func PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Comp
 			return templ_7745c5c3_Err
 		}
 		if info.previousPageURL != nil {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<button class=\"join-item btn btn-sm\" id=\"prev-page-link\"><a id=\"prev-page-link\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<button class=\"join-item btn btn-sm\"><a id=\"prev-page-link\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -125,7 +125,7 @@ func PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Comp
 			}
 		}
 		if info.nextPageURL != nil {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<button class=\"join-item btn btn-sm\" id=\"next-page-link\"><a id=\"next-page-link\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<button class=\"join-item btn btn-sm\"><a id=\"next-page-link\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

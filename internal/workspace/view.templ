@@ -27,7 +27,7 @@ templ new(organization string) {
 		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
-				<input class="text-input w-80" type="text" name="name" id="name" required/>
+				<input class="input w-80" type="text" name="name" id="name" required/>
 			</div>
 			<div>
 				<button class="btn" id="create-workspace-button">Create workspace</button>
@@ -58,7 +58,7 @@ templ list(props listProps) {
 	@components.Layout(layoutProps) {
 		<form method="GET">
 			<div class="flex gap-2 items-center">
-				<input class="text-input bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" value={ props.search } style={ magnifyingGlassStyle(ctx) } placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container"/>
+				<input class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" value={ props.search } style={ magnifyingGlassStyle(ctx) } placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container"/>
 				<div class="flex flex-wrap gap-1">
 					for k, v := range props.tagFilters {
 						<div>
@@ -268,11 +268,11 @@ templ edit(props editProps) {
 		<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID.String()) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
-				<input class="text-input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
+				<input class="input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
 			</div>
 			<div class="field">
 				<label for="description">Description</label>
-				<textarea class="text-input w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
+				<textarea class="textarea w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
 			</div>
 			<fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
 				<legend>Execution mode</legend>
@@ -316,14 +316,14 @@ templ edit(props editProps) {
 			</fieldset>
 			<div class="field">
 				<label for="terraform-version">Terraform version</label>
-				<input class="text-input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
+				<input class="input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
 				<span class="description">
 					The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
 				</span>
 			</div>
 			<div class="field">
 				<label for="working_directory">Working directory</label>
-				<input class="text-input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
+				<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
 				<span class="description">
 					The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
 				</span>
@@ -349,7 +349,7 @@ templ edit(props editProps) {
 		<h3 class="font-semibold text-lg">Advanced</h3>
 		<div class="flex flex-col gap-4 mt-2 mb-6">
 			<form action={ paths.StartRunWorkspace(props.ws.ID.String()) } method="POST">
-				<button id="queue-destroy-plan-button" class="btn-danger" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
+				<button id="queue-destroy-plan-button" class="btn btn-error btn-outline" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
 					Queue destroy plan
 				</button>
 				<input type="hidden" name="connected" value={ boolString(props.ws.Connection != nil) }/>
@@ -357,7 +357,7 @@ templ edit(props editProps) {
 			</form>
 			if props.canDeleteWorkspace {
 				<form action={ paths.DeleteWorkspace(props.ws.ID.String()) } method="POST">
-					<button id="delete-workspace-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+					<button id="delete-workspace-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 						Delete workspace
 					</button>
 				</form>
@@ -384,7 +384,7 @@ templ editConnection(props editProps) {
 				<div class="flex flex-col gap-2">
 					<div class="flex gap-2 items-center">
 						<label for="new_path">Path</label>
-						<input @keydown.enter.prevent="addPattern" class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path"/>
+						<input @keydown.enter.prevent="addPattern" class="input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path"/>
 						<button @click="addPattern" type="button" id="add-pattern" class="btn w-40">Add pattern</button>
 					</div>
 					<template x-for="path in paths">
@@ -421,14 +421,14 @@ templ editConnection(props editProps) {
 						{{ isCustom := props.ws.Connection.TagsRegex != "" && props.ws.Connection.TagsRegex != props.vcsTagRegexDefault && props.ws.Connection.TagsRegex != props.vcsTagRegexPrefix && props.ws.Connection.TagsRegex != props.vcsTagRegexSuffix }}
 						<input class="peer" type="radio" id="tags-regex-custom" name="tags_regex" value={ props.vcsTagRegexCustom } checked?={ isCustom }/>
 						<label for="tags-regex-custom">Custom regular expression</label>
-						<input class="col-start-2 text-input w-96 mt-2 hidden peer-checked:block" type="text" name="custom_tags_regex" value={ props.ws.Connection.TagsRegex }/>
+						<input class="col-start-2 input w-96 mt-2 hidden peer-checked:block" type="text" name="custom_tags_regex" value={ props.ws.Connection.TagsRegex }/>
 					</div>
 				</div>
 			</div>
 		</div>
 		<div class="field mt-2">
 			<label for="vcs-branch">VCS branch</label>
-			<input class="text-input w-96" type="text" name="vcs_branch" id="vcs-branch" value={ props.ws.Connection.Branch }/>
+			<input class="input w-96" type="text" name="vcs_branch" id="vcs-branch" value={ props.ws.Connection.Branch }/>
 			<span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
 		</div>
 		<div class="form-checkbox">
@@ -566,7 +566,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
 		</div>
 		<form action={ paths.ConnectWorkspace(ws.ID.String()) } method="POST">
 			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
-			<input class="text-input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
 			<button class="btn">connect</button>
 		</form>
 		<div id="content-list">
