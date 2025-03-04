@@ -16,7 +16,7 @@ templ adminLogin() {
 			<form class="flex flex-col gap-2" action="/admin/login" method="POST">
 				<div class="field">
 					<label for="token">Site Admin Token</label>
-					<input class="text-input w-80" type="password" name="token" id="token" required/>
+					<input class="input w-80" type="password" name="token" id="token" required/>
 				</div>
 				<div>
 					<button class="btn">Login</button>
@@ -45,14 +45,20 @@ templ profileLinks() {
 	</div>
 }
 
-templ userList(users []*User) {
+type userListProps struct {
+	organization string
+	users        []*User
+}
+
+templ userList(props userListProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "users",
+		Title:        "users",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "users"},
 		},
 	}) {
-		@components.ContentList(users, userListItem)
+		@components.ContentList(props.users, userListItem)
 	}
 }
 
@@ -77,7 +83,8 @@ type getTeamProps struct {
 
 templ getTeam(props getTeamProps) {
 	@components.Layout(components.LayoutProps{
-		Title: props.team.ID.String(),
+		Title:        props.team.ID.String(),
+		Organization: props.team.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "teams", Link: paths.Teams(props.team.Organization)},
 			{Name: props.team.Name},
@@ -154,7 +161,7 @@ templ getTeam(props getTeamProps) {
 						if props.canRemoveMember {
 							<form action={ paths.RemoveMemberTeam(props.team.ID.String()) } method="POST">
 								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
-								<button id="remove-member-button" class="btn-danger">
+								<button id="remove-member-button" class="btn btn-error btn-outline">
 									Remove member
 								</button>
 							</form>
@@ -166,14 +173,13 @@ templ getTeam(props getTeamProps) {
 				The team currently has no members.
 			}
 		</div>
-		if  props.team.IsOwners() && props.canDeleteTeam {
+		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
 			<form action={ paths.DeleteTeam(props.team.ID.String()) } method="POST">
-				<button
-					class="btn-danger"
-					onclick="return confirm('Are you sure you want to delete?')"
-				>Delete team</button>
+				<button class="btn btn-error btn-outline text-green-800" onclick="return confirm('Are you sure you want to delete?')">
+					Delete team
+				</button>
 				<input type="hidden" name="id" value={ props.team.ID.String() }/>
 			</form>
 		}
@@ -192,7 +198,7 @@ templ newToken() {
 		<form class="flex flex-col gap-2" action={ paths.CreateToken() } method="POST">
 			<div class="field">
 				<label for="description">Description</label>
-				<textarea class="text-input w-80" name="description" id="description" required></textarea>
+				<textarea class="textarea w-80" name="description" id="description" required></textarea>
 			</div>
 			<div>
 				<button class="btn">Create token</button>
@@ -243,8 +249,6 @@ templ siteSettings() {
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "site settings"},
 		},
-		ContentLinks:   profileLinks(),
-		ContentActions: tokenListActions(),
 	}) {
 		<div class="flex flex-col gap-2 text-lg">
 			<span>

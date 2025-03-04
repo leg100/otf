@@ -79,20 +79,13 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		PageNumber int `schema:"page[number]"`
-	}
-	if err := decode.All(&params, r); err != nil {
+	var opts ListOptions
+	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	organizations, err := a.svc.List(r.Context(), ListOptions{
-		PageOptions: resource.PageOptions{
-			PageNumber: params.PageNumber,
-			PageSize:   html.PageSize,
-		},
-	})
+	organizations, err := a.svc.List(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

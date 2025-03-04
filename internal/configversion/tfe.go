@@ -116,8 +116,8 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID          resource.ID `schema:"workspace_id,required"`
-		resource.PageOptions             // Pagination
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		types.ListOptions
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
@@ -126,7 +126,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	page, err := a.List(r.Context(), params.WorkspaceID, ListOptions{
-		PageOptions: params.PageOptions,
+		PageOptions: resource.PageOptions(params.ListOptions),
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

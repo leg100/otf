@@ -81,3 +81,16 @@ func TokenFlashMessage(w gohttp.ResponseWriter, token []byte) error {
 	html.FlashSuccess(w, buf.String())
 	return nil
 }
+
+func Cookie(ctx context.Context, name string) string {
+	request := html.RequestFromContext(ctx)
+	if request == nil {
+		return ""
+	}
+	for _, cookie := range request.Cookies() {
+		if cookie.Name == name {
+			return cookie.Value
+		}
+	}
+	return ""
+}

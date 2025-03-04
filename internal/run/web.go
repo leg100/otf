@@ -95,27 +95,22 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		PageNumber  int         `schema:"page[number]"`
-	}
-	if err := decode.All(&params, r); err != nil {
+	var opts ListOptions
+	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+	if opts.WorkspaceID == nil {
+		html.Error(w, "missing workspace ID", http.StatusUnprocessableEntity)
+		return
+	}
 
-	ws, err := h.workspaces.Get(r.Context(), params.WorkspaceID)
+	ws, err := h.workspaces.Get(r.Context(), *opts.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.runs.List(r.Context(), ListOptions{
-		WorkspaceID: &params.WorkspaceID,
-		PageOptions: resource.PageOptions{
-			PageNumber: params.PageNumber,
-			PageSize:   html.PageSize,
-		},
-	})
+	runs, err := h.runs.List(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

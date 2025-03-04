@@ -55,7 +55,10 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 }
 
 func (a *CLI) stateListCommand() *cobra.Command {
-	var opts StateVersionListOptions
+	var opts struct {
+		Organization string
+		Workspace    string
+	}
 	cmd := &cobra.Command{
 		Use:           "list",
 		Short:         "List state versions",

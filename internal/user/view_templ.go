@@ -49,7 +49,7 @@ func adminLogin() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"m-auto\"><form class=\"flex flex-col gap-2\" action=\"/admin/login\" method=\"POST\"><div class=\"field\"><label for=\"token\">Site Admin Token</label> <input class=\"text-input w-80\" type=\"password\" name=\"token\" id=\"token\" required></div><div><button class=\"btn\">Login</button></div></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"m-auto\"><form class=\"flex flex-col gap-2\" action=\"/admin/login\" method=\"POST\"><div class=\"field\"><label for=\"token\">Site Admin Token</label> <input class=\"input w-80\" type=\"password\" name=\"token\" id=\"token\" required></div><div><button class=\"btn\">Login</button></div></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -175,7 +175,12 @@ func profileLinks() templ.Component {
 	})
 }
 
-func userList(users []*User) templ.Component {
+type userListProps struct {
+	organization string
+	users        []*User
+}
+
+func userList(props userListProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -208,14 +213,15 @@ func userList(users []*User) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.ContentList(users, userListItem).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.ContentList(props.users, userListItem).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
-			Title: "users",
+			Title:        "users",
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "users"},
 			},
@@ -255,7 +261,7 @@ func userListItem(user *User) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("item-user-" + user.Username)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 60, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 66, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -268,7 +274,7 @@ func userListItem(user *User) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 61, Col: 37}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 67, Col: 37}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -430,7 +436,7 @@ func getTeam(props getTeamProps) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs("item-user-" + member.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 148, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 155, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -443,7 +449,7 @@ func getTeam(props getTeamProps) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(member.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 150, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 157, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -474,13 +480,13 @@ func getTeam(props getTeamProps) templ.Component {
 					var templ_7745c5c3_Var20 string
 					templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(member.Username)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 156, Col: 89}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 163, Col: 89}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\"> <button id=\"remove-member-button\" class=\"btn-danger\">Remove member</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\"> <button id=\"remove-member-button\" class=\"btn btn-error btn-outline\">Remove member</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -500,7 +506,7 @@ func getTeam(props getTeamProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if props.team.IsOwners() && props.canDeleteTeam {
+			if !props.team.IsOwners() && props.canDeleteTeam {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<hr class=\"my-4\"><h3 class=\"font-semibold my-2 text-lg\">Advanced</h3><form action=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -510,14 +516,14 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" method=\"POST\"><button class=\"btn-danger\" onclick=\"return confirm(&#39;Are you sure you want to delete?&#39;)\">Delete team</button> <input type=\"hidden\" name=\"id\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" method=\"POST\"><button class=\"btn btn-error btn-outline text-green-800\" onclick=\"return confirm(&#39;Are you sure you want to delete?&#39;)\">Delete team</button> <input type=\"hidden\" name=\"id\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(props.team.ID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 177, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 183, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
@@ -531,7 +537,8 @@ func getTeam(props getTeamProps) templ.Component {
 			return nil
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
-			Title: props.team.ID.String(),
+			Title:        props.team.ID.String(),
+			Organization: props.team.Organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "teams", Link: paths.Teams(props.team.Organization)},
 				{Name: props.team.Name},
@@ -586,7 +593,7 @@ func newToken() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" method=\"POST\"><div class=\"field\"><label for=\"description\">Description</label> <textarea class=\"text-input w-80\" name=\"description\" id=\"description\" required></textarea></div><div><button class=\"btn\">Create token</button></div></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" method=\"POST\"><div class=\"field\"><label for=\"description\">Description</label> <textarea class=\"textarea w-80\" name=\"description\" id=\"description\" required></textarea></div><div><button class=\"btn\">Create token</button></div></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -690,7 +697,7 @@ func tokenListItem(token *UserToken) templ.Component {
 		var templ_7745c5c3_Var29 string
 		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(token.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 221, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 227, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
@@ -703,7 +710,7 @@ func tokenListItem(token *UserToken) templ.Component {
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), token.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 222, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 228, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -733,7 +740,7 @@ func tokenListItem(token *UserToken) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(token.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 228, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 234, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -838,8 +845,6 @@ func siteSettings() templ.Component {
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "site settings"},
 			},
-			ContentLinks:   profileLinks(),
-			ContentActions: tokenListActions(),
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var36), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

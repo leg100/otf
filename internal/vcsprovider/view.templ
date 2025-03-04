@@ -143,12 +143,12 @@ templ newGithubApp(props newGithubAppProps) {
 			<form class="flex flex-col gap-4" action={ paths.CreateVCSProvider(props.organization) } method="POST">
 				<div class="field">
 					<label for="name">Name</label>
-					<input class="text-input w-64" type="text" name="name" id="name" placeholder="github"/>
+					<input class="input w-64" type="text" name="name" id="name" placeholder="github"/>
 					<span class="description">An optional display name for your VCS provider.</span>
 				</div>
 				<div class="field">
 					<label for="install_id">Installation</label>
-					<select class="w-48" name="install_id" id="select-install-id">
+					<select class="select w-48" name="install_id" id="select-install-id">
 						for _, install := range props.installations {
 							<option value={ strconv.Itoa(int(*install.ID)) }>{ install.String() }</option>
 						}
@@ -174,7 +174,7 @@ templ form(props formProps) {
 		<div class="field">
 			<label for="name">Name</label>
 			<input
-				class="text-input w-64"
+				class="input w-64"
 				type="text"
 				name="name"
 				id="name"
@@ -190,7 +190,7 @@ templ form(props formProps) {
 			<div class="field">
 				<label for="token">Token</label>
 				<textarea
-					class="text-input w-96"
+					class="input w-96"
 					rows="3"
 					name="token"
 					id="token"

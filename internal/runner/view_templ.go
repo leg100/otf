@@ -333,7 +333,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" method=\"POST\"><div class=\"field\"><label for=\"name\">Name</label> <input class=\"text-input w-3/4\" rows=\"3\" type=\"text\" name=\"name\" id=\"new-pool-name\" required> <span class=\"description\">Enter a name to help identify the pool.</span></div><div class=\"field\"><button class=\"btn w-40\">Create agent pool</button></div></form><hr class=\"my-4\"></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" method=\"POST\"><div class=\"field\"><label for=\"name\">Name</label> <input class=\"input w-3/4\" rows=\"3\" type=\"text\" name=\"name\" id=\"new-pool-name\" required> <span class=\"description\">Enter a name to help identify the pool.</span></div><div class=\"field\"><button class=\"btn w-40\">Create agent pool</button></div></form><hr class=\"my-4\"></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -471,7 +471,7 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 			templ_7745c5c3_Var23 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<select id=\"agent-pool-id\" name=\"agent_pool_id\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<select class=\"select\" id=\"agent-pool-id\" name=\"agent_pool_id\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -585,14 +585,14 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" method=\"POST\"><div class=\"field mb-4\"><label for=\"name\">Name</label> <input class=\"text-input w-80\" type=\"text\" name=\"name\" id=\"name\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" method=\"POST\"><div class=\"field mb-4\"><label for=\"name\">Name</label> <input class=\"input w-80\" type=\"text\" name=\"name\" id=\"name\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(props.pool.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 155, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 155, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -644,7 +644,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" x-ref=\"workspace_select\" @keydown.escape.prevent.stop=\"close($refs.workspace_input)\" @focusin.window=\"! $refs.workspace_select.contains($event.target) &amp;&amp; close()\"><div @click.outside=\"close()\"><input type=\"hidden\" id=\"workspaces\" name=\"allowed_workspaces\" :value=\"JSON.stringify(existing)\"> <input class=\"text-input grow w-80\" type=\"text\" id=\"workspace-input\" x-ref=\"workspace_input\" x-model=\"search\" placeholder=\"Select workspace\" @focusin=\"open = true\" @click=\"open = true\"><div x-ref=\"panel\" x-show=\"showPanel\" x-cloak class=\"absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black\"><template x-for=\"item in filterAvailable\" :key=\"item.id\"><button :id=\"item.id\" @click=\"addItem(item)\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-text=\"item.name\"></button></template></div></div><div class=\"bg-gray-100 mt-2 p-2 flex flex-col gap-2\"><div class=\"description\">A workspace must be granted access before it can be assigned. To revoke access from an assigned workspace, first unassign the workspace and then revoke.</div><h4 class=\"font-bold text-sm\">Granted</h4><div id=\"granted-workspaces\" class=\"flex flex-row gap-2\"><template x-for=\"item in existing\"><div class=\"text-sm flex\"><a class=\"bg-green-300 py-1 px-2\" x-text=\"item.name\" :href=\"&#39;/app/workspaces/&#39; + item.id + &#39;/edit&#39;\"></a><button @click=\"deleteItem(item)\" type=\"button\" class=\"text-white bg-black py-1 px-2 hover:bg-red-500\" id=\"button-remove-tag-{ . }\" class=\"delete cross\">revoke</button></div></template></div><h4 class=\"font-bold text-sm\">Granted & Assigned</h4><div id=\"granted-and-assigned-workspaces\" class=\"flex flex-row gap-2\"><input type=\"hidden\" id=\"assigned-workspaces\" name=\"assigned_workspaces\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" x-ref=\"workspace_select\" @keydown.escape.prevent.stop=\"close($refs.workspace_input)\" @focusin.window=\"! $refs.workspace_select.contains($event.target) &amp;&amp; close()\"><div @click.outside=\"close()\"><input type=\"hidden\" id=\"workspaces\" name=\"allowed_workspaces\" :value=\"JSON.stringify(existing)\"> <input class=\"input grow w-80\" type=\"text\" id=\"workspace-input\" x-ref=\"workspace_input\" x-model=\"search\" placeholder=\"Select workspace\" @focusin=\"open = true\" @click=\"open = true\"><div x-ref=\"panel\" x-show=\"showPanel\" x-cloak class=\"absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black\"><template x-for=\"item in filterAvailable\" :key=\"item.id\"><button :id=\"item.id\" @click=\"addItem(item)\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-text=\"item.name\"></button></template></div></div><div class=\"bg-gray-100 mt-2 p-2 flex flex-col gap-2\"><div class=\"description\">A workspace must be granted access before it can be assigned. To revoke access from an assigned workspace, first unassign the workspace and then revoke.</div><h4 class=\"font-bold text-sm\">Granted</h4><div id=\"granted-workspaces\" class=\"flex flex-row gap-2\"><template x-for=\"item in existing\"><div class=\"text-sm flex\"><a class=\"bg-green-300 py-1 px-2\" x-text=\"item.name\" :href=\"&#39;/app/workspaces/&#39; + item.id + &#39;/edit&#39;\"></a><button @click=\"deleteItem(item)\" type=\"button\" class=\"text-white bg-black py-1 px-2 hover:bg-red-500\" id=\"button-remove-tag-{ . }\" class=\"delete cross\">revoke</button></div></template></div><h4 class=\"font-bold text-sm\">Granted & Assigned</h4><div id=\"granted-and-assigned-workspaces\" class=\"flex flex-row gap-2\"><input type=\"hidden\" id=\"assigned-workspaces\" name=\"assigned_workspaces\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -698,7 +698,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" method=\"POST\"><div class=\"field\"><label for=\"new-token-description\">Description</label> <input class=\"text-input w-3/4\" rows=\"3\" type=\"text\" name=\"description\" id=\"new-token-description\" required> <span class=\"description\">Enter a description to help identify the token.</span></div><div class=\"field\"><button class=\"btn w-40\">Create token</button></div></form></details> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" method=\"POST\"><div class=\"field\"><label for=\"new-token-description\">Description</label> <input class=\"input w-3/4\" rows=\"3\" type=\"text\" name=\"description\" id=\"new-token-description\" required> <span class=\"description\">Enter a description to help identify the token.</span></div><div class=\"field\"><button class=\"btn w-40\">Create token</button></div></form></details> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

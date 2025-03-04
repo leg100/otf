@@ -116,7 +116,7 @@ output "foo" {
 		require.NoError(t, err)
 
 		// delete variable
-		err = page.Locator(`//button[@id='delete-variable-button']`).Click()
+		err = page.Locator(`//button[@id='delete-button']`).Click()
 		require.NoError(t, err)
 
 		// confirm variable deleted

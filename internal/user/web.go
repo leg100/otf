@@ -97,7 +97,8 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	html.Render(userList(users), w, r)
+	props := userListProps{organization: name, users: users}
+	html.Render(userList(props), w, r)
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
