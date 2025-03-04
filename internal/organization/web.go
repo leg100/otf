@@ -80,7 +80,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		PageNumber int `schema:"page_number"`
+		PageNumber int `schema:"page"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

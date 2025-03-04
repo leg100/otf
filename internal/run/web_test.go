@@ -27,7 +27,7 @@ func TestListRunsHandler(t *testing.T) {
 	user := &user.User{ID: resource.NewID(resource.UserKind)}
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page_number=1", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
 		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 		w := httptest.NewRecorder()
 		h.list(w, r)
@@ -37,7 +37,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page_number=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=2", nil)
 		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 		w := httptest.NewRecorder()
 		h.list(w, r)
@@ -47,7 +47,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page_number=3", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=3", nil)
 		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 		w := httptest.NewRecorder()
 		h.list(w, r)

@@ -204,7 +204,7 @@ func newPageInfo[T any](ctx context.Context, page *resource.Page[T]) (*pageInfo,
 }
 
 func pageQuery(page int) string {
-	return fmt.Sprintf("page_number=%d", page)
+	return fmt.Sprintf("page=%d", page)
 }
 
 func pageSizeSelector() templ.Component {
@@ -233,6 +233,8 @@ func pageSizeSelector() templ.Component {
 			return templ_7745c5c3_Err
 		}
 
+		// If user has previously chosen a preferred page size then
+		// it'll be persisted to a cookie
 		currentPageSize := Cookie(ctx, "page_size")
 		if currentPageSize == "" {
 			currentPageSize = "20"
@@ -255,7 +257,7 @@ func pageSizeSelector() templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(size)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 114, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 116, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {

@@ -97,7 +97,7 @@ func newPageInfo[T any](ctx context.Context, page *resource.Page[T]) (*pageInfo,
 }
 
 func pageQuery(page int) string {
-	return fmt.Sprintf("page_number=%d", page)
+	return fmt.Sprintf("page=%d", page)
 }
 
 templ pageSizeSelector() {
@@ -105,6 +105,8 @@ templ pageSizeSelector() {
 		<span class="label">Page size</span>
 		<select class="select" onchange="savePageSize(this)">
 			{{
+					// If user has previously chosen a preferred page size then
+					// it'll be persisted to a cookie
 					currentPageSize := Cookie(ctx, "page_size")
 					if currentPageSize == "" {
 						currentPageSize = "20"

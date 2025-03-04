@@ -226,8 +226,10 @@ func TestUpdateWorkspaceHandler(t *testing.T) {
 }
 
 func TestListWorkspacesHandler(t *testing.T) {
-	workspaces := make([]*Workspace, 201)
-	for i := 1; i <= 201; i++ {
+	// Make enough workspaces to populate three pages
+	n := 2*resource.DefaultPageSize + 1
+	workspaces := make([]*Workspace, n)
+	for i := 1; i <= n; i++ {
 		workspaces[i-1] = &Workspace{ID: testutils.ParseID(t, fmt.Sprintf("ws-%d", i))}
 	}
 	app := &webHandlers{
@@ -236,7 +238,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	}
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page_number=1", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page=1", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
@@ -246,7 +248,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page_number=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page=2", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
@@ -256,7 +258,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page_number=3", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page=3", nil)
 		r = r.WithContext(authz.AddSubjectToContext(context.Background(), &user.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
