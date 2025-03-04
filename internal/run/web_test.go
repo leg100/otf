@@ -16,8 +16,10 @@ import (
 )
 
 func TestListRunsHandler(t *testing.T) {
-	runs := make([]*Run, 201)
-	for i := 1; i <= 201; i++ {
+	// Make enough runs to populate three pages
+	n := 2*resource.DefaultPageSize + 1
+	runs := make([]*Run, n)
+	for i := 1; i <= n; i++ {
 		runs[i-1] = &Run{ID: testutils.ParseID(t, fmt.Sprintf("run-%d", i))}
 	}
 	h := newTestWebHandlers(t,

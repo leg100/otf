@@ -50,8 +50,10 @@ func TestWeb_CreateHandler(t *testing.T) {
 
 func TestWeb_ListHandler(t *testing.T) {
 	t.Run("pagination", func(t *testing.T) {
-		orgs := make([]*Organization, 201)
-		for i := 1; i <= 201; i++ {
+		// Make enough organizations to populate three pages
+		n := 2*resource.DefaultPageSize + 1
+		orgs := make([]*Organization, n)
+		for i := 1; i <= n; i++ {
 			orgs[i-1] = &Organization{Name: uuid.NewString()}
 		}
 		svc := &web{svc: &fakeWebService{orgs: orgs}}
