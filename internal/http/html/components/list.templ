@@ -29,6 +29,7 @@ templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Com
 	}}
 	@ContentList(page.Items, comp)
 	<div class="flex p-4 gap-2 justify-end items-center">
+		@pageSizeSelector()
 		<div class="badge badge-outline badge-neutral">
 			{ fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount) }
 		</div>
@@ -96,5 +97,28 @@ func newPageInfo[T any](ctx context.Context, page *resource.Page[T]) (*pageInfo,
 }
 
 func pageQuery(page int) string {
-	return fmt.Sprintf("page[number]=%d", page)
+	return fmt.Sprintf("page_number=%d", page)
+}
+
+templ pageSizeSelector() {
+	<label class="select w-40">
+		<span class="label">Page size</span>
+		<select class="select" onchange="savePageSize(this)">
+			{{
+					currentPageSize := Cookie(ctx, "page_size")
+					if currentPageSize == "" {
+						currentPageSize = "20"
+					}
+			}}
+			for _, size := range []string{"20","40","60","80","100"} {
+				<option selected?={ currentPageSize == size }>{ size }</option>
+			}
+		</select>
+		<script>
+			function savePageSize(event) {
+				document.cookie = "page_size=" + event.value;
+				location.reload();
+			}
+		</script>
+	</label>
 }

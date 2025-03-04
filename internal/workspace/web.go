@@ -112,10 +112,11 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params struct {
+		resource.PageOptions
+
 		Search       string   `schema:"search[name],omitempty"`
 		Tags         []string `schema:"search[tags],omitempty"`
 		Organization *string  `schema:"organization_name,required"`
-		PageNumber   int      `schema:"page[number]"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -128,7 +129,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Organization: params.Organization,
 		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
-			PageSize:   html.PageSize,
+			PageSize:   params.PageSize,
 		},
 	})
 	if err != nil {

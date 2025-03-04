@@ -97,7 +97,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		PageNumber  int         `schema:"page[number]"`
+		PageNumber  int         `schema:"page_number"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

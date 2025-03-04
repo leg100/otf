@@ -55,9 +55,13 @@ func Route(dst interface{}, r *http.Request) error {
 	return nil
 }
 
-// All populates the struct pointed to by dst with query params, req body params
-// and request path variables, respectively, with path variables taking
-// precedence over body params, and body params over query params.
+// All populates the struct pointed to by dst with query params, req body
+// params, cookie values, and request path variables, with the following
+// precedence:
+// 1. cookies
+// 2. path variables
+// 3. body params
+// 4. query params
 func All(dst interface{}, r *http.Request) error {
 	// Parses both query and req body if POST/PUT/PATCH
 	if err := r.ParseForm(); err != nil {
@@ -70,6 +74,10 @@ func All(dst interface{}, r *http.Request) error {
 	// Merge in request path variables
 	for k, v := range mux.Vars(r) {
 		vars[k] = []string{v}
+	}
+	// Merge in cookie values
+	for _, cookie := range r.Cookies() {
+		vars[cookie.Name] = []string{cookie.Value}
 	}
 	if err := decode(dst, vars); err != nil {
 		return err
