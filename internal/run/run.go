@@ -565,12 +565,3 @@ func (r *Run) Confirmable() bool {
 		return false
 	}
 }
-
-// Helper methods for templates; helps avoid using strings within templates to refer
-// to constants.
-
-func (r *Run) IsGithubSource() bool { return r.Source == SourceGithub }
-func (r *Run) IsGitlabSource() bool { return r.Source == SourceGitlab }
-func (r *Run) IsUISource() bool     { return r.Source == SourceUI }
-func (r *Run) IsAPISource() bool    { return r.Source == SourceAPI }
-func (r *Run) IsCLISource() bool    { return r.Source == SourceTerraform }

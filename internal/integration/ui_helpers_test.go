@@ -202,7 +202,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	require.NoError(t, err)
 
 	// because run was triggered from the UI, the UI icon should be visible.
-	err = expect.Locator(page.Locator(`//img[@id='run-trigger-ui']`)).ToBeVisible()
+	err = expect.Locator(page.Locator(`//*[@id='run-trigger-ui']`)).ToBeVisible()
 	require.NoError(t, err)
 
 	// run should show elapsed time
