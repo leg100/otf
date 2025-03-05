@@ -30,7 +30,7 @@ templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Com
 	@ContentList(page.Items, comp)
 	<div class="flex p-4 gap-2 justify-end items-center">
 		@pageSizeSelector()
-		<div class="badge badge-outline badge-neutral">
+		<div class="badge badge-outline badge-neutral" id="page-info">
 			{ fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount) }
 		</div>
 		<div class="join">
@@ -103,7 +103,7 @@ func pageQuery(page int) string {
 templ pageSizeSelector() {
 	<label class="select w-40">
 		<span class="label">Page size</span>
-		<select class="select" onchange="savePageSize(this)">
+		<select class="select" onchange="savePageSize(this)" id="page-size-selector">
 			{{
 					// If user has previously chosen a preferred page size then
 					// it'll be persisted to a cookie

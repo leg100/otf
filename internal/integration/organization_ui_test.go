@@ -37,6 +37,18 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		)
 		require.NoError(t, err)
 
+		// go to the list of organizations
+		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
+		require.NoError(t, err)
+
+		// there should be one organization listed
+		err = expect.Locator(page.Locator(`.widget`)).ToHaveCount(1)
+		require.NoError(t, err)
+
+		// go to organization's page
+		err = page.Locator(`.widget`).Click()
+		require.NoError(t, err)
+
 		// go to organization settings
 		err = page.Locator("#settings > a").Click()
 		require.NoError(t, err)
@@ -59,25 +71,5 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("deleted organization: super-duper-org")
 		require.NoError(t, err)
-
-		// test listing orgs...first create 101 orgs
-		for i := 0; i < 101; i++ {
-			daemon.createOrganization(t, ctx)
-		}
-
-		// go to the list of organizations
-		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
-		require.NoError(t, err)
-
-		// should be 100 orgs listed on page one
-		err = expect.Locator(page.Locator(`.widget`)).ToHaveCount(100)
-		require.NoError(t, err)
-
-		// go to page two
-		err = page.Locator(`#next-page-link`).Click()
-		require.NoError(t, err)
-
-		// should be one org listed
-		expect.Locator(page.Locator(`.widget`)).ToHaveCount(1)
 	})
 }
