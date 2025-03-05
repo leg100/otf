@@ -47,13 +47,6 @@ type (
 		WorkspaceService *workspace.Service
 		Authorizer       *authz.Authorizer
 	}
-
-	// StateVersionListOptions represents the options for listing state versions.
-	StateVersionListOptions struct {
-		resource.PageOptions
-		Organization string `schema:"filter[organization][name],required"`
-		Workspace    string `schema:"filter[workspace][name],required"`
-	}
 )
 
 func NewService(opts Options) *Service {

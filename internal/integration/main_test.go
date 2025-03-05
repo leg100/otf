@@ -19,6 +19,8 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
+const assertionTimeout = 10_000
+
 var (
 	// a shared secret which signs the shared user session
 	sharedSecret []byte
@@ -34,7 +36,7 @@ var (
 
 	// Setup playwright browser expectations with a timeout to wait for expected
 	// condition.
-	expect = playwright.NewPlaywrightAssertions(10_000)
+	expect = playwright.NewPlaywrightAssertions(assertionTimeout)
 
 	// Path to terraform binary
 	tfpath string
@@ -130,6 +132,10 @@ func doMain(m *testing.M) (int, error) {
 		return 0, err
 	}
 	defer unset()
+
+	// Give assertions more time on Github Actions, because it can be awfully
+	// slow.
+	expect = playwright.NewPlaywrightAssertions(assertionTimeout * 2)
 
 	// Playwright installs its drivers and browsers in
 	// $HOME/.cache/ms-playwright, but we've set a new $HOME, so set the

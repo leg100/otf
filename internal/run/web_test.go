@@ -16,8 +16,10 @@ import (
 )
 
 func TestListRunsHandler(t *testing.T) {
-	runs := make([]*Run, 201)
-	for i := 1; i <= 201; i++ {
+	// Make enough runs to populate three pages
+	n := 2*resource.DefaultPageSize + 1
+	runs := make([]*Run, n)
+	for i := 1; i <= n; i++ {
 		runs[i-1] = &Run{ID: testutils.ParseID(t, fmt.Sprintf("run-%d", i))}
 	}
 	h := newTestWebHandlers(t,
@@ -27,7 +29,7 @@ func TestListRunsHandler(t *testing.T) {
 	user := &user.User{ID: resource.NewID(resource.UserKind)}
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)
 		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 		w := httptest.NewRecorder()
 		h.list(w, r)
@@ -37,7 +39,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=2", nil)
 		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 		w := httptest.NewRecorder()
 		h.list(w, r)
@@ -47,7 +49,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=3", nil)
 		r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 		w := httptest.NewRecorder()
 		h.list(w, r)

@@ -32,9 +32,9 @@ type (
 	// PageOptions are used to request a specific page.
 	PageOptions struct {
 		// The page number to request. The results vary based on the PageSize.
-		PageNumber int `schema:"page[number],omitempty"`
+		PageNumber int `schema:"page,omitempty"`
 		// The number of elements returned in a single page.
-		PageSize int `schema:"page[size],omitempty"`
+		PageSize int `schema:"page_size,omitempty"`
 	}
 )
 

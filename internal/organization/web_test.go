@@ -50,14 +50,16 @@ func TestWeb_CreateHandler(t *testing.T) {
 
 func TestWeb_ListHandler(t *testing.T) {
 	t.Run("pagination", func(t *testing.T) {
-		orgs := make([]*Organization, 201)
-		for i := 1; i <= 201; i++ {
+		// Make enough organizations to populate three pages
+		n := 2*resource.DefaultPageSize + 1
+		orgs := make([]*Organization, n)
+		for i := 1; i <= n; i++ {
 			orgs[i-1] = &Organization{Name: uuid.NewString()}
 		}
 		svc := &web{svc: &fakeWebService{orgs: orgs}}
 
 		t.Run("first page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page[number]=1", nil)
+			r := httptest.NewRequest("GET", "/?page=1", nil)
 			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
@@ -67,7 +69,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		})
 
 		t.Run("second page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page[number]=2", nil)
+			r := httptest.NewRequest("GET", "/?page=2", nil)
 			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
@@ -77,7 +79,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		})
 
 		t.Run("last page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page[number]=3", nil)
+			r := httptest.NewRequest("GET", "/?page=3", nil)
 			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)

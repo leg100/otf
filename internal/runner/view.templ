@@ -90,7 +90,7 @@ templ listAgentPools(props listAgentPoolProps) {
 			<form class="flex flex-col gap-5" action={ paths.CreateAgentPool(props.organization) } method="POST">
 				<div class="field">
 					<label for="name">Name</label>
-					<input class="text-input w-3/4" rows="3" type="text" name="name" id="new-pool-name" required/>
+					<input class="input w-3/4" rows="3" type="text" name="name" id="new-pool-name" required/>
 					<span class="description">Enter a name to help identify the pool.</span>
 				</div>
 				<div class="field">
@@ -121,7 +121,7 @@ type agentPoolListAllowedProps struct {
 }
 
 templ agentPoolListAllowed(props agentPoolListAllowedProps) {
-	<select id="agent-pool-id" name="agent_pool_id">
+	<select class="select" id="agent-pool-id" name="agent_pool_id">
 		for _, pool := range props.pools {
 			<option value={ pool.ID.String() } selected?={ props.currentPoolID != nil && *props.currentPoolID == pool.ID }>{ pool.Name }</option>
 		}
@@ -152,7 +152,7 @@ templ getAgentPool(props getAgentPoolProps) {
 		<form class="" action={ paths.UpdateAgentPool(props.pool.ID.String()) } method="POST">
 			<div class="field mb-4">
 				<label for="name">Name</label>
-				<input class="text-input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
+				<input class="input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
 			</div>
 			<fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
 				<legend class="">Workspaces</legend>
@@ -177,7 +177,7 @@ templ getAgentPool(props getAgentPoolProps) {
 						>
 							<input type="hidden" id="workspaces" name="allowed_workspaces" :value="JSON.stringify(existing)"/>
 							<input
-								class="text-input grow w-80"
+								class="input grow w-80"
 								type="text"
 								id="workspace-input"
 								x-ref="workspace_input"
@@ -231,7 +231,7 @@ templ getAgentPool(props getAgentPoolProps) {
 			<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID.String()) } method="POST">
 				<div class="field">
 					<label for="new-token-description">Description</label>
-					<input class="text-input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
+					<input class="input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
 					<span class="description">Enter a description to help identify the token.</span>
 				</div>
 				<div class="field">

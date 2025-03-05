@@ -280,12 +280,12 @@ templ form(props formProps) {
 	<form class="flex flex-col gap-5" action={ props.action } method="POST">
 		<div class="field">
 			<label class="font-semibold" for="key">Key</label>
-			<input class="text-input" type="text" name="key" id="key" value={ props.variable.Key } required placeholder="key" disabled?={ props.variable.Sensitive && props.edit }/>
+			<input class="input" type="text" name="key" id="key" value={ props.variable.Key } required placeholder="key" disabled?={ props.variable.Sensitive && props.edit }/>
 		</div>
 		<div class="field">
 			<label class="font-semibold" for="value">Value</label>
 			<textarea
-				class="text-input"
+				class="textarea"
 				type="text"
 				name="value"
 				id="value"
@@ -323,7 +323,7 @@ templ form(props formProps) {
 		</div>
 		<div class="field">
 			<label class="font-semibold" for="description">Description</label>
-			<input class="text-input" type="text" class="freeform" name="description" id="description" value={ props.variable.Description } placeholder="description (optional)"/>
+			<input class="input" type="text" class="freeform" name="description" id="description" value={ props.variable.Description } placeholder="description (optional)"/>
 		</div>
 		<div>
 			<button class="btn" id="save-variable-button">
@@ -351,11 +351,11 @@ templ variableSetForm(props variableSetFormProps) {
 		if props.set != nil {
 			<div class="field">
 				<label class="font-semibold" for="name">Name</label>
-				<input class="text-input" type="text" name="name" id="name" value={ props.set.Name } required placeholder="name"/>
+				<input class="input" type="text" name="name" id="name" value={ props.set.Name } required placeholder="name"/>
 			</div>
 			<div class="field">
 				<label class="font-semibold" for="description">Description</label>
-				<textarea class="text-input" type="text" name="description" id="description">{ props.set.Description }</textarea>
+				<textarea class="textarea" type="text" name="description" id="description">{ props.set.Description }</textarea>
 			</div>
 			<fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
 				<legend>Scope</legend>
@@ -381,7 +381,7 @@ templ variableSetForm(props variableSetFormProps) {
 						>
 							<input type="hidden" id="workspaces" name="workspaces" :value="JSON.stringify(existing)"/>
 							<input
-								class="text-input grow w-80"
+								class="input grow w-80"
 								type="text"
 								id="workspace-input"
 								x-ref="workspace_input"
@@ -460,19 +460,19 @@ type tableProps interface {
 
 // table of variables
 templ table(props tableProps) {
-	<table class="table-fixed w-full text-left break-words border-collapse" id="variables-table">
-		<thead class="bg-gray-200 border-t border-b border-slate-900">
+	<table class="table break-words border-collapse" id="variables-table">
+		<thead>
 			<tr>
-				<th class="p-2 w-[25%]">Key</th>
-				<th class="p-2 w-[50%]">Value</th>
-				<th class="p-2 w-[15%]">Category</th>
-				<th class="p-2 w-[10%]"></th>
+				<th class="w-[25%]">Key</th>
+				<th class="w-[50%]">Value</th>
+				<th class="w-[15%]">Category</th>
+				<th class="w-[10%]"></th>
 			</tr>
 		</thead>
-		<tbody class="border-b border-slate-900">
+		<tbody>
 			for _, v := range props.Variables() {
-				<tr class="even:bg-gray-100">
-					<td class="p-2 flex flex-row gap-2">
+				<tr>
+					<td class="flex flex-row gap-2">
 						if props.IsOverwritten(v) {
 							<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
 						}
@@ -480,18 +480,18 @@ templ table(props tableProps) {
 							<a class="underline" href={ props.EditPath(v.ID) }>{ v.Key }</a>
 						}
 					</td>
-					<td class="p-2">
+					<td>
 						if v.Sensitive {
 							<span class="bg-gray-200">hidden</span>
 						} else {
 							{ v.Value }
 						}
 					</td>
-					<td class="p-2">{ string(v.Category) }</td>
-					<td class="p-2 text-right">
+					<td>{ string(v.Category) }</td>
+					<td class="text-right">
 						if props.CanDeleteVariable() {
 							<form action={ props.DeletePath(v.ID) } method="POST">
-								<button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
+								@components.DeleteButton()
 							</form>
 						}
 					</td>

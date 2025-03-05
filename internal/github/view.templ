@@ -26,7 +26,7 @@ templ newAppView(props newAppViewProps) {
 					<span class="description">
 						If assigning ownership to a GitHub organization, enter its name here. Otherwise ownership is assigned to your personal GitHub account.
 					</span>
-					<input class="text-input w-48" id="organization" x-model="organization"/>
+					<input class="input w-48" id="organization" x-model="organization"/>
 				</div>
 				<div class="form-checkbox">
 					<input type="checkbox" id="public" x-model="public" x-init="$watch('public', value => manifest.public = public)"/>

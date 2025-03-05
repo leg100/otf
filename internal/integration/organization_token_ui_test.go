@@ -59,7 +59,7 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// delete token
-		err = page.Locator(`//button[text()='delete']`).Click()
+		err = page.Locator(`//button[@id="delete-button"]`).Click()
 		require.NoError(t, err)
 
 		// flash msg declaring token is deleted
