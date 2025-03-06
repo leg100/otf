@@ -73,11 +73,17 @@ templ list(props listProps) {
 				</div>
 				-->
 			</div>
-			<div class="flex flex-wrap gap-2">
-				for _, status := range runstatus.All() {
-					<input class={ "checkbox", "checkbox-" + runstatus.ThemeColors[status] } id={ "filter-status-" + status.String() } type="checkbox" checked="checked" name={ status.String() }/>
-					<label class={ "text-" + runstatus.ThemeColors[status] } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
-				}
+			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
+				<input type="checkbox"/>
+				<div class="collapse-title font-semibold">Filter by status</div>
+				<div class="collapse-content text-sm flex flex-wrap gap-2">
+					for _, status := range runstatus.All() {
+						<div>
+							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name={ status.String() }/>
+							<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
+						</div>
+					}
+				</div>
 			</div>
 		</form>
 		<div id="workspace-listing-container">

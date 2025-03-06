@@ -1,0 +1,156 @@
+.badge-planning {
+	@apply badge-primary;
+}
+.bg-planning {
+	@apply bg-primary;
+}
+.checkbox-planning {
+	@apply checkbox-primary;
+}
+.text-planning {
+	@apply text-primary;
+}
+.badge-applied {
+	@apply badge-success;
+}
+.bg-applied {
+	@apply bg-success;
+}
+.checkbox-applied {
+	@apply checkbox-success;
+}
+.text-applied {
+	@apply text-success;
+}
+.badge-apply_queued {
+	@apply badge-secondary;
+}
+.bg-apply_queued {
+	@apply bg-secondary;
+}
+.checkbox-apply_queued {
+	@apply checkbox-secondary;
+}
+.text-apply_queued {
+	@apply text-secondary;
+}
+.badge-applying {
+	@apply badge-accent;
+}
+.bg-applying {
+	@apply bg-accent;
+}
+.checkbox-applying {
+	@apply checkbox-accent;
+}
+.text-applying {
+	@apply text-accent;
+}
+.badge-canceled {
+	@apply badge-warning;
+}
+.bg-canceled {
+	@apply bg-warning;
+}
+.checkbox-canceled {
+	@apply checkbox-warning;
+}
+.text-canceled {
+	@apply text-warning;
+}
+.badge-pending {
+	@apply badge-primary;
+}
+.bg-pending {
+	@apply bg-primary;
+}
+.checkbox-pending {
+	@apply checkbox-primary;
+}
+.text-pending {
+	@apply text-primary;
+}
+.badge-planned_and_finished {
+	@apply badge-success;
+}
+.bg-planned_and_finished {
+	@apply bg-success;
+}
+.checkbox-planned_and_finished {
+	@apply checkbox-success;
+}
+.text-planned_and_finished {
+	@apply text-success;
+}
+.badge-confirmed {
+	@apply badge-info;
+}
+.bg-confirmed {
+	@apply bg-info;
+}
+.checkbox-confirmed {
+	@apply checkbox-info;
+}
+.text-confirmed {
+	@apply text-info;
+}
+.badge-discarded {
+	@apply badge-warning;
+}
+.bg-discarded {
+	@apply bg-warning;
+}
+.checkbox-discarded {
+	@apply checkbox-warning;
+}
+.text-discarded {
+	@apply text-warning;
+}
+.badge-errored {
+	@apply badge-error;
+}
+.bg-errored {
+	@apply bg-error;
+}
+.checkbox-errored {
+	@apply checkbox-error;
+}
+.text-errored {
+	@apply text-error;
+}
+.badge-force_canceled {
+	@apply badge-warning;
+}
+.bg-force_canceled {
+	@apply bg-warning;
+}
+.checkbox-force_canceled {
+	@apply checkbox-warning;
+}
+.text-force_canceled {
+	@apply text-warning;
+}
+.badge-plan_queued {
+	@apply badge-secondary;
+}
+.bg-plan_queued {
+	@apply bg-secondary;
+}
+.checkbox-plan_queued {
+	@apply checkbox-secondary;
+}
+.text-plan_queued {
+	@apply text-secondary;
+}
+.badge-planned {
+	@apply badge-info;
+}
+.bg-planned {
+	@apply bg-info;
+}
+.checkbox-planned {
+	@apply checkbox-info;
+}
+.text-planned {
+	@apply text-info;
+}
