@@ -41,6 +41,101 @@ var badges = map[Status]string{
 	Planning:           "badge-primary",
 }
 
+var ThemeMappings = map[Status]string{
+	Applied:            "success",
+	ApplyQueued:        "secondary",
+	Applying:           "accent",
+	Canceled:           "warning",
+	Confirmed:          "info",
+	Discarded:          "warning",
+	Errored:            "error",
+	ForceCanceled:      "warning",
+	Pending:            "primary",
+	PlanQueued:         "secondary",
+	Planned:            "info",
+	PlannedAndFinished: "success",
+	Planning:           "primary",
+}
+
+var ThemeColors = map[Status]map[string]string{
+	Applied: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+	ApplyQueued: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Applying: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Canceled: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Confirmed: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Discarded: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Errored: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	ForceCanceled: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Pending: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	PlanQueued: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Planned: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	PlannedAndFinished: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Planning: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+}
+
 func Badge(runID resource.ID, status Status) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -74,7 +169,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(runID.String() + "-status")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 37, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 132, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -109,7 +204,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ReplaceAll(string(status), "_", " "))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 38, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 133, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {

@@ -185,7 +185,7 @@ templ widget(run *Run) {
 						</div>
 					}
 				</div>
-				<div class="flex gap-4 items-center justify-between">
+				<div class="flex gap-2 items-center justify-between">
 					if run.Apply.ResourceReport != nil {
 						@resourceReport(run.Apply.ResourceReport)
 					} else if run.Plan.ResourceReport != nil {
@@ -193,20 +193,20 @@ templ widget(run *Run) {
 					}
 					if run.Status == runstatus.Planned {
 						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
-							<button class="btn">apply</button>
+							<button class="btn">Apply</button>
 						</form>
 					}
 					if run.Cancelable() {
 						<form action={ paths.CancelRun(run.ID.String()) } method="POST">
-							<button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+							<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
 						</form>
 					} else if run.ForceCancelable() {
 						<form action={ paths.ForceCancelRun(run.ID.String()) } method="POST">
-							<button class="btn-danger" onclick="return confirm('Are you sure you want to force cancel?')">force cancel</button>
+							<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
 						</form>
 					} else if run.Discardable() {
 						<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
-							<button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+							<button id="run-discard-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
 						</form>
 					} else if run.CancelSignaledAt != nil && !run.Done() {
 						cancelling...

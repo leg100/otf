@@ -1,0 +1,21 @@
+import { ClassNames } from '../interfaces/class-names';
+import { PassedElementType } from '../interfaces/passed-element-type';
+export default class Dropdown {
+    element: HTMLElement;
+    type: PassedElementType;
+    classNames: ClassNames;
+    isActive: boolean;
+    constructor({ element, type, classNames, }: {
+        element: HTMLElement;
+        type: PassedElementType;
+        classNames: ClassNames;
+    });
+    /**
+     * Show dropdown to user by adding active state class
+     */
+    show(): this;
+    /**
+     * Hide dropdown from user
+     */
+    hide(): this;
+}

@@ -33,6 +33,101 @@ var badges = map[Status]string{
 	Planning:           "badge-primary",
 }
 
+var ThemeMappings = map[Status]string{
+	Applied:            "success",
+	ApplyQueued:        "secondary",
+	Applying:           "accent",
+	Canceled:           "warning",
+	Confirmed:          "info",
+	Discarded:          "warning",
+	Errored:            "error",
+	ForceCanceled:      "warning",
+	Pending:            "primary",
+	PlanQueued:         "secondary",
+	Planned:            "info",
+	PlannedAndFinished: "success",
+	Planning:           "primary",
+}
+
+var ThemeColors = map[Status]map[string]string{
+	Applied: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+	ApplyQueued: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Applying: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Canceled: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Confirmed: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Discarded: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Errored: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	ForceCanceled: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Pending: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	PlanQueued: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Planned: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	PlannedAndFinished: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+
+	Planning: map[string]string{
+		"bg":       "bg-success",
+		"checkbox": "checkbox-success",
+		"text":     "text-success",
+	},
+}
+
 templ Badge(runID resource.ID, status Status) {
 	<span id={ runID.String() + "-status" } class={ "run-status text-lg badge", badges[status] }>
 		<a href={ paths.Run(runID.String()) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>

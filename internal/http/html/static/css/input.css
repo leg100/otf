@@ -57,3 +57,24 @@
     @apply text-gray-600 text-sm;
   }
 }
+
+.badge-planning {
+	@apply badge-success;
+}
+
+@theme static {
+	--color-applied: var(--color-success);
+	--color-apply-queued: var(--color-secondary);
+	--color-applying: var(--color-accent);
+	--color-canceled: var(--color-warning);
+	--color-confirmed: var(--color-info);
+	--color-discarded: var(--color-warning);
+	--color-errored: var(--color-error);
+	--color-force-canceled: var(--color-error);
+	--color-force-canceled: var(--color-warning);
+	--color-pending: var(--color-primary);
+	--color-plan-queued: var(--color-secondary);
+	--color-planned: var(--color-secondary);
+	--color-planned-and-finished: var(--color-success);
+	--color-planning: var(--color-primary);
+}
