@@ -998,7 +998,7 @@ func periodReport(run *Run) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for i, period := range report.Periods {
-			var templ_7745c5c3_Var44 = []any{"inline-block", "h-full", runstatus.Colors[period.Status]}
+			var templ_7745c5c3_Var44 = []any{"inline-block", "h-full", "bg-" + period.Status.String()}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var44...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1043,7 +1043,7 @@ func periodReport(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var47 = []any{"h-3", "w-3", "inline-block", "border", "border-black", "align-middle", runstatus.Colors[period.Status]}
+			var templ_7745c5c3_Var47 = []any{"h-3", "w-3", "inline-block", "border", "border-black", "align-middle", "bg-" + period.Status.String()}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var47...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

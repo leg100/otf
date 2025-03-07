@@ -265,14 +265,14 @@ templ periodReport(run *Run) {
 		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
-				class={ "inline-block", "h-full",  runstatus.Colors[period.Status] }
+				class={ "inline-block", "h-full",  "bg-" + period.Status.String() }
 			></div>
 		}
 		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
 			<ul class="flex gap-4 flex-wrap text-sm">
 				for _, period := range report.Periods {
 					<li>
-						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", runstatus.Colors[period.Status] }></div>
+						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", "bg-" + period.Status.String() }></div>
 						<span>{ period.Status.String() }</span>
 						<span>({ period.Period.String() })</span>
 					</li>
