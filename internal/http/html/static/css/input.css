@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "./runstatus.css";
 @plugin "../../../../../daisyui.js";
-@source "./runstatus.txt";
 
 @layer base {
   a {
