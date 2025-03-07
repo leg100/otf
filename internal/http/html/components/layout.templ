@@ -84,10 +84,8 @@ templ BareLayout(props BareLayoutProps) {
 			<script src={ AssetPath(ctx, "/static/js/main.js") }></script>
 			<script src={ AssetPath(ctx, "/static/js/htmx.2.0.4.min.js") }></script>
 			<script src={ AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js") }></script>
-			<script defer src={ AssetPath(ctx, "/static/js/alpine-focus.3.14.8.min.js") }></script>
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
-			<script src={ AssetPath(ctx, "/static/js/choices.9.0.1.min.js") }></script>
 		</head>
 		<body class="flex flex-col m-0 min-h-screen font-sans">
 			@navbar(props.Organization)
