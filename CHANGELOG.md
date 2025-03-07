@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.14](https://github.com/leg100/otf/compare/v0.3.13...v0.3.14) (2025-03-07)
+
+
+### Features
+
+* **ui:** add filter for workspace current run status ([#734](https://github.com/leg100/otf/issues/734)) ([f3b2c85](https://github.com/leg100/otf/commit/f3b2c85dd19973c5afa04a82987fc6a3db468584))
+* **ui:** add page size selector ([#733](https://github.com/leg100/otf/issues/733)) ([06efdf5](https://github.com/leg100/otf/commit/06efdf53150145cf07189b33e000c4170d4e433b))
+
+
+### Bug Fixes
+
+* bump tailwind config to be compat with v4 ([402903d](https://github.com/leg100/otf/commit/402903d42023db6805965fe6b685587a1167eef1))
+* gh app webhook panics when no gh app configured ([48a4b24](https://github.com/leg100/otf/commit/48a4b24f1c9de0505dc34282f7b35b424ba25de6))
+* report cfg error when starting run without cfg ([a39cc65](https://github.com/leg100/otf/commit/a39cc65f56faeee9dbb1379fc37bb272244d1195))
+* **ui:** appropriate colours for run statuses ([#732](https://github.com/leg100/otf/issues/732)) ([d217736](https://github.com/leg100/otf/commit/d2177361cdb9fbcc157c43a4ffd5fda4befa52ad)), closes [#730](https://github.com/leg100/otf/issues/730)
+* **ui:** remove spaces from change summary ([45f2329](https://github.com/leg100/otf/commit/45f232931a98eb349bf313eeea888d67fbf689ef))
+
+
+### Miscellaneous
+
+* bump js libs ([d90c1a4](https://github.com/leg100/otf/commit/d90c1a4ae01f26ded080ac83d14d157c5dd4519f))
+* fix(lint): resolve issues raised with latest staticcheck ([39565b9](https://github.com/leg100/otf/commit/39565b9406d83760ab1f3282f76d4537b35bb98f))
+* **ui:** nicer icons for run source ([21c3c05](https://github.com/leg100/otf/commit/21c3c0552caa15d1b886ae83de368e55b130e66f))
+* use builtin run watcher for integration tests ([e0299d3](https://github.com/leg100/otf/commit/e0299d3b791af3b072ae7cb69ffefe22840c7042))
+
 ## [0.3.13](https://github.com/leg100/otf/compare/v0.3.12...v0.3.13) (2025-01-23)
 
 
