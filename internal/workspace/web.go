@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -114,9 +115,12 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		resource.PageOptions
 
-		Search       string   `schema:"search[name],omitempty"`
-		Tags         []string `schema:"search[tags],omitempty"`
-		Organization *string  `schema:"organization_name,required"`
+		Search             string             `schema:"search[name],omitempty"`
+		Tags               []string           `schema:"search[tags],omitempty"`
+		TagsFilterOpen     bool               `schema:"tags_filter_open,omityempty"`
+		Statuses           []runstatus.Status `schema:"search[status],omitempty"`
+		StatusesFilterOpen bool               `schema:"statuses_filter_open,omityempty"`
+		Organization       *string            `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -124,9 +128,10 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workspaces, err := h.client.List(r.Context(), ListOptions{
-		Search:       params.Search,
-		Tags:         params.Tags,
-		Organization: params.Organization,
+		Search:             params.Search,
+		Tags:               params.Tags,
+		CurrentRunStatuses: params.Statuses,
+		Organization:       params.Organization,
 		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
 			PageSize:   params.PageSize,
@@ -167,15 +172,18 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		authz.CreateTeamAction,
 		&authz.AccessRequest{Organization: *params.Organization})
 	props := listProps{
-		organization: *params.Organization,
-		canCreate:    canCreateWorkspace,
-		page:         workspaces,
-		tagFilters:   tagfilters(),
-		search:       params.Search,
+		organization:       *params.Organization,
+		canCreate:          canCreateWorkspace,
+		page:               workspaces,
+		tagFilters:         tagfilters(),
+		tagsFilterOpen:     params.TagsFilterOpen,
+		currentRunStatuses: params.Statuses,
+		statusesFilterOpen: params.StatusesFilterOpen,
+		search:             params.Search,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		html.Render(components.ContentList(props.page.Items, listItem), w, r)
+		html.Render(components.PaginatedContentList(props.page, listItem), w, r)
 	} else {
 		html.Render(list(props), w, r)
 	}

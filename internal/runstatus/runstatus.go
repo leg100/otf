@@ -28,3 +28,21 @@ const (
 )
 
 func (s Status) String() string { return string(s) }
+
+func All() []Status {
+	return []Status{
+		Applied,
+		ApplyQueued,
+		Applying,
+		Canceled,
+		Confirmed,
+		Discarded,
+		Errored,
+		ForceCanceled,
+		Pending,
+		PlanQueued,
+		Planned,
+		PlannedAndFinished,
+		Planning,
+	}
+}

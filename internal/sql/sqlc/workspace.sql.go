@@ -18,23 +18,31 @@ WITH
         SELECT w.workspace_id
         FROM workspaces w
         LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
+		LEFT JOIN runs r ON w.latest_run_id = r.run_id
         WHERE w.name              LIKE '%' || $1 || '%'
         AND   w.organization_name LIKE ANY($2::text[])
+		AND (($3::text[] IS NULL) OR (r.status = ANY($3::text[])))
         GROUP BY w.workspace_id
-        HAVING array_agg(t.name) @> $3::text[]
+        HAVING array_agg(t.name) @> $4::text[]
     )
 SELECT count(*)
 FROM workspaces
 `
 
 type CountWorkspacesParams struct {
-	Search            pgtype.Text
-	OrganizationNames []pgtype.Text
-	Tags              []pgtype.Text
+	Search             pgtype.Text
+	OrganizationNames  []pgtype.Text
+	CurrentRunStatuses []pgtype.Text
+	Tags               []pgtype.Text
 }
 
 func (q *Queries) CountWorkspaces(ctx context.Context, arg CountWorkspacesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countWorkspaces, arg.Search, arg.OrganizationNames, arg.Tags)
+	row := q.db.QueryRow(ctx, countWorkspaces,
+		arg.Search,
+		arg.OrganizationNames,
+		arg.CurrentRunStatuses,
+		arg.Tags,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -392,19 +400,21 @@ LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON wt.workspace_id = w.workspace_id
 WHERE w.name                LIKE '%' || $1 || '%'
 AND   w.organization_name   LIKE ANY($2::text[])
+AND   (($3::text[] IS NULL) OR (r.status = ANY($3::text[])))
 GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path
-HAVING array_agg(t.name) @> $3::text[]
+HAVING array_agg(t.name) @> $4::text[]
 ORDER BY w.updated_at DESC
-LIMIT $5::int
-OFFSET $4::int
+LIMIT $6::int
+OFFSET $5::int
 `
 
 type FindWorkspacesParams struct {
-	Search            pgtype.Text
-	OrganizationNames []pgtype.Text
-	Tags              []pgtype.Text
-	Offset            pgtype.Int4
-	Limit             pgtype.Int4
+	Search             pgtype.Text
+	OrganizationNames  []pgtype.Text
+	CurrentRunStatuses []pgtype.Text
+	Tags               []pgtype.Text
+	Offset             pgtype.Int4
+	Limit              pgtype.Int4
 }
 
 type FindWorkspacesRow struct {
@@ -448,6 +458,7 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 	rows, err := q.db.Query(ctx, findWorkspaces,
 		arg.Search,
 		arg.OrganizationNames,
+		arg.CurrentRunStatuses,
 		arg.Tags,
 		arg.Offset,
 		arg.Limit,

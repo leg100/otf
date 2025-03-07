@@ -14,31 +14,20 @@ import (
 	"strings"
 )
 
-var Colors = map[Status]string{
-	Applied:            "bg-green-200",
-	Applying:           "bg-cyan-200",
-	Discarded:          "bg-gray-200",
-	Pending:            "bg-yellow-50",
-	PlanQueued:         "bg-yellow-200",
-	Planned:            "bg-violet-400",
-	PlannedAndFinished: "bg-red-100",
-	Planning:           "bg-violet-200",
-}
-
-var badges = map[Status]string{
-	Applied:            "badge-success",
-	ApplyQueued:        "badge-secondary",
-	Applying:           "badge-accent",
-	Canceled:           "badge-warning",
-	Confirmed:          "badge-info",
-	Discarded:          "badge-warning",
-	Errored:            "badge-error",
-	ForceCanceled:      "badge-warning",
-	Pending:            "badge-primary",
-	PlanQueued:         "badge-secondary",
-	Planned:            "badge-info",
-	PlannedAndFinished: "badge-success",
-	Planning:           "badge-primary",
+var ThemeMappings = map[Status]string{
+	Applied:            "success",
+	ApplyQueued:        "secondary",
+	Applying:           "accent",
+	Canceled:           "warning",
+	Confirmed:          "info",
+	Discarded:          "warning",
+	Errored:            "error",
+	ForceCanceled:      "warning",
+	Pending:            "primary",
+	PlanQueued:         "secondary",
+	Planned:            "info",
+	PlannedAndFinished: "success",
+	Planning:           "primary",
 }
 
 func Badge(runID resource.ID, status Status) templ.Component {
@@ -62,7 +51,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var2 = []any{"run-status text-lg badge", badges[status]}
+		var templ_7745c5c3_Var2 = []any{"run-status text-lg badge", "badge-" + status.String()}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -74,7 +63,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(runID.String() + "-status")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 37, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 26, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -109,7 +98,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ReplaceAll(string(status), "_", " "))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 38, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 27, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {

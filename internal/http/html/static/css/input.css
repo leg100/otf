@@ -1,4 +1,5 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+@import "./runstatus.css";
 @plugin "../../../../../daisyui.js";
 
 @layer base {

@@ -6,35 +6,24 @@ import (
 	"strings"
 )
 
-var Colors = map[Status]string{
-	Applied:            "bg-green-200",
-	Applying:           "bg-cyan-200",
-	Discarded:          "bg-gray-200",
-	Pending:            "bg-yellow-50",
-	PlanQueued:         "bg-yellow-200",
-	Planned:            "bg-violet-400",
-	PlannedAndFinished: "bg-red-100",
-	Planning:           "bg-violet-200",
-}
-
-var badges = map[Status]string{
-	Applied:            "badge-success",
-	ApplyQueued:        "badge-secondary",
-	Applying:           "badge-accent",
-	Canceled:           "badge-warning",
-	Confirmed:          "badge-info",
-	Discarded:          "badge-warning",
-	Errored:            "badge-error",
-	ForceCanceled:      "badge-warning",
-	Pending:            "badge-primary",
-	PlanQueued:         "badge-secondary",
-	Planned:            "badge-info",
-	PlannedAndFinished: "badge-success",
-	Planning:           "badge-primary",
+var ThemeMappings = map[Status]string{
+	Applied:            "success",
+	ApplyQueued:        "secondary",
+	Applying:           "accent",
+	Canceled:           "warning",
+	Confirmed:          "info",
+	Discarded:          "warning",
+	Errored:            "error",
+	ForceCanceled:      "warning",
+	Pending:            "primary",
+	PlanQueued:         "secondary",
+	Planned:            "info",
+	PlannedAndFinished: "success",
+	Planning:           "primary",
 }
 
 templ Badge(runID resource.ID, status Status) {
-	<span id={ runID.String() + "-status" } class={ "run-status text-lg badge", badges[status] }>
+	<span id={ runID.String() + "-status" } class={ "run-status text-lg badge", "badge-" + status.String() }>
 		<a href={ paths.Run(runID.String()) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>
 	</span>
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -37,11 +39,14 @@ templ new(organization string) {
 }
 
 type listProps struct {
-	organization string
-	page         *resource.Page[*Workspace]
-	search       string
-	tagFilters   map[string]bool
-	canCreate    bool
+	organization       string
+	page               *resource.Page[*Workspace]
+	search             string
+	currentRunStatuses []runstatus.Status
+	statusesFilterOpen bool
+	tagFilters         map[string]bool
+	tagsFilterOpen     bool
+	canCreate          bool
 }
 
 templ list(props listProps) {
@@ -51,14 +56,15 @@ templ list(props listProps) {
 		Organization:   props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces"},
+			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<form method="GET">
-			<div class="flex gap-2 items-center">
-				<input class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" value={ props.search } style={ magnifyingGlassStyle(ctx) } placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container"/>
+		<form method="GET" hx-target="#workspace-listing-container" hx-get={ components.CurrentURLWithoutQuery(ctx) } hx-trigger="change, keyup changed delay:500ms" hx-push-url="true">
+			<div class="flex gap-2 items-center m-2 p-2">
+				<input class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" value={ props.search } style={ magnifyingGlassStyle(ctx) } placeholder="search workspaces" hx-trigger="keyup changed delay:500ms, search"/>
+				<!--
 				<div class="flex flex-wrap gap-1">
 					for k, v := range props.tagFilters {
 						<div>
@@ -66,6 +72,31 @@ templ list(props listProps) {
 							<label for={ "workspace-tag-filter-" + k } class="tag bg-gray-300 peer-checked:bg-blue-800 cursor-pointer">
 								{ k }
 							</label>
+						</div>
+					}
+				</div>
+				-->
+			</div>
+			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
+				<input type="checkbox" name="statuses_filter_open" checked?={ props.statusesFilterOpen }/>
+				<div class="collapse-title font-semibold">Filter by status</div>
+				<div class="collapse-content text-sm flex flex-wrap gap-2">
+					for _, status := range runstatus.All() {
+						<div>
+							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(props.currentRunStatuses, status) } hx-trigger="change"/>
+							<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
+						</div>
+					}
+				</div>
+			</div>
+			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
+				<input type="checkbox" name="tags_filter_open" checked?={ props.tagsFilterOpen }/>
+				<div class="collapse-title font-semibold">Filter by tag</div>
+				<div class="collapse-content text-sm flex flex-wrap gap-2">
+					for k, v := range props.tagFilters {
+						<div>
+							<input class={ "checkbox", "checkbox-primary" } id={ "filter-tag-" + k } type="checkbox" name="search[tags]" value={ k } checked?={ v }/>
+							<label class={ "badge", "badge-primary" } for={ "filter-tag-" + k }>{ k }</label>
 						</div>
 					}
 				</div>
