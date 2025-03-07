@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/semver"
 )
 
@@ -162,9 +163,10 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		Search       string
-		Tags         []string
-		Organization *string `schema:"organization_name"`
+		Search             string
+		Tags               []string
+		CurrentRunStatuses []runstatus.Status
+		Organization       *string `schema:"organization_name"`
 
 		resource.PageOptions
 	}

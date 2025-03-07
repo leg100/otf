@@ -224,21 +224,29 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	if len(opts.Tags) > 0 {
 		tags = opts.Tags
 	}
+	// Current run statuses is optional - if not provided use a % which in SQL
+	// means match any status.
+	var statuses []string
+	if len(opts.CurrentRunStatuses) > 0 {
+		statuses = internal.ToStringSlice(opts.CurrentRunStatuses)
+	}
 
 	rows, err := q.FindWorkspaces(ctx, sqlc.FindWorkspacesParams{
-		OrganizationNames: sql.StringArray([]string{organization}),
-		Search:            sql.String(opts.Search),
-		Tags:              sql.StringArray(tags),
-		Limit:             sql.GetLimit(opts.PageOptions),
-		Offset:            sql.GetOffset(opts.PageOptions),
+		OrganizationNames:  sql.StringArray([]string{organization}),
+		Search:             sql.String(opts.Search),
+		Tags:               sql.StringArray(tags),
+		CurrentRunStatuses: sql.StringArray(statuses),
+		Limit:              sql.GetLimit(opts.PageOptions),
+		Offset:             sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	count, err := q.CountWorkspaces(ctx, sqlc.CountWorkspacesParams{
-		Search:            sql.String(opts.Search),
-		OrganizationNames: sql.StringArray([]string{organization}),
-		Tags:              sql.StringArray(tags),
+		Search:             sql.String(opts.Search),
+		OrganizationNames:  sql.StringArray([]string{organization}),
+		Tags:               sql.StringArray(tags),
+		CurrentRunStatuses: sql.StringArray(statuses),
 	})
 	if err != nil {
 		return nil, sql.Error(err)

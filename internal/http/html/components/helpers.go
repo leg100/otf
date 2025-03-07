@@ -70,6 +70,15 @@ func CurrentURL(ctx context.Context) string {
 	return request.URL.String()
 }
 
+func CurrentURLWithoutQuery(ctx context.Context) string {
+	request := html.RequestFromContext(ctx)
+	if request == nil {
+		return ""
+	}
+	request.URL.RawQuery = ""
+	return request.URL.String()
+}
+
 // TokenFlashMessage is a helper for rendering a flash message with an
 // authentication token.
 func TokenFlashMessage(w gohttp.ResponseWriter, token []byte) error {

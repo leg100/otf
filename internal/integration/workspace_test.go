@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -385,6 +386,74 @@ func TestWorkspace(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				ctx := authz.AddSubjectToContext(ctx, tt.user)
 				results, err := svc.Workspaces.List(ctx, tt.opts)
+				require.NoError(t, err)
+
+				tt.want(t, results)
+			})
+		}
+	})
+
+	t.Run("list by current run statuses", func(t *testing.T) {
+		svc, org, ctx := setup(t, nil)
+		ws1 := svc.createWorkspace(t, ctx, org)
+		ws2 := svc.createWorkspace(t, ctx, org)
+		ws3 := svc.createWorkspace(t, ctx, org)
+		cv1 := svc.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
+		cv2 := svc.createAndUploadConfigurationVersion(t, ctx, ws2, nil)
+		cv3 := svc.createAndUploadConfigurationVersion(t, ctx, ws3, nil)
+
+		ws1run1planned := svc.createRun(t, ctx, ws1, cv1, nil)
+		_ = svc.waitRunStatus(t, ws1run1planned.ID, runstatus.Planned)
+
+		ws2run1planned := svc.createRun(t, ctx, ws2, cv2, nil)
+		_ = svc.waitRunStatus(t, ws2run1planned.ID, runstatus.Planned)
+
+		ws3run1applied := svc.createRun(t, ctx, ws3, cv3, nil)
+		_ = svc.waitRunStatus(t, ws3run1applied.ID, runstatus.Planned)
+		err := svc.Runs.Apply(ctx, ws3run1applied.ID)
+		require.NoError(t, err)
+		_ = svc.waitRunStatus(t, ws3run1applied.ID, runstatus.Applied)
+
+		tests := []struct {
+			name     string
+			statuses []runstatus.Status
+			want     func(*testing.T, *resource.Page[*workspace.Workspace])
+		}{
+			{
+				name: "no filter",
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
+					assert.Equal(t, 3, len(l.Items))
+				},
+			},
+			{
+				name:     "filter by planned status",
+				statuses: []runstatus.Status{runstatus.Planned},
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
+					assert.Equal(t, 2, len(l.Items))
+				},
+			},
+			{
+				name:     "filter by applied status",
+				statuses: []runstatus.Status{runstatus.Applied},
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
+					assert.Equal(t, 1, len(l.Items))
+				},
+			},
+			{
+				name:     "filter by planned and applied status",
+				statuses: []runstatus.Status{runstatus.Planned, runstatus.Applied},
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
+					assert.Equal(t, 3, len(l.Items))
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				results, err := svc.Workspaces.List(ctx, workspace.ListOptions{
+					Organization:       &org.Name,
+					CurrentRunStatuses: tt.statuses,
+				})
 				require.NoError(t, err)
 
 				tt.want(t, results)
