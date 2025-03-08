@@ -61,6 +61,7 @@ func NewService(opts Options) *Service {
 		connections: opts.ConnectionService,
 	}
 	svc.web = &webHandlers{
+		Logger:       opts.Logger,
 		authorizer:   opts.Authorizer,
 		teams:        opts.TeamService,
 		vcsproviders: opts.VCSProviderService,
@@ -68,6 +69,11 @@ func NewService(opts Options) *Service {
 		uiHelpers: &uiHelpers{
 			service:    opts.UserService,
 			authorizer: opts.Authorizer,
+		},
+		websocketListHandler: &WebsocketListHandler[*Workspace, ListOptions]{
+			Logger:    opts.Logger,
+			Client:    &svc,
+			Component: listItem,
 		},
 	}
 	svc.tfeapi = &tfe{

@@ -163,10 +163,10 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		Search             string
-		Tags               []string
-		CurrentRunStatuses []runstatus.Status
-		Organization       *string `schema:"organization_name"`
+		Search             string             `schema:"search[name]"`
+		Tags               []string           `schema:"search[tags]"`
+		CurrentRunStatuses []runstatus.Status `schema:"search[status]"`
+		Organization       *string            `schema:"organization_name,required"`
 
 		resource.PageOptions
 	}

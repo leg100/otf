@@ -59,6 +59,7 @@ func init() {
 	funcmap["setPermissionWorkspacePath"] = SetPermissionWorkspace
 	funcmap["unsetPermissionWorkspacePath"] = UnsetPermissionWorkspace
 	funcmap["watchWorkspacePath"] = WatchWorkspace
+	funcmap["watchWorkspacePath"] = WatchWorkspaces
 	funcmap["connectWorkspacePath"] = ConnectWorkspace
 	funcmap["disconnectWorkspacePath"] = DisconnectWorkspace
 	funcmap["startRunWorkspacePath"] = StartRunWorkspace
@@ -99,7 +100,7 @@ func init() {
 	funcmap["editRunnerPath"] = EditRunner
 	funcmap["updateRunnerPath"] = UpdateRunner
 	funcmap["deleteRunnerPath"] = DeleteRunner
-	funcmap["watchRunnerPath"] = WatchRunner
+	funcmap["watchRunnerPath"] = WatchRunners
 
 	funcmap["agentPoolsPath"] = AgentPools
 	funcmap["createAgentPoolPath"] = CreateAgentPool

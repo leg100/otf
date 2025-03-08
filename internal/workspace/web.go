@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-logr/logr"
+	"github.com/gorilla/websocket"
+
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -14,7 +17,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -45,11 +47,13 @@ const (
 type (
 	webHandlers struct {
 		*uiHelpers
+		logr.Logger
 
-		teams        webTeamClient
-		vcsproviders webVCSProvidersClient
-		client       webClient
-		authorizer   webAuthorizer
+		teams                webTeamClient
+		vcsproviders         webVCSProvidersClient
+		client               webClient
+		authorizer           webAuthorizer
+		websocketListHandler *WebsocketListHandler[*Workspace, ListOptions]
 	}
 
 	webTeamClient interface {
@@ -112,40 +116,19 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		resource.PageOptions
-
-		Search             string             `schema:"search[name],omitempty"`
-		Tags               []string           `schema:"search[tags],omitempty"`
-		TagsFilterOpen     bool               `schema:"tags_filter_open,omityempty"`
-		Statuses           []runstatus.Status `schema:"search[status],omitempty"`
-		StatusesFilterOpen bool               `schema:"statuses_filter_open,omityempty"`
-		Organization       *string            `schema:"organization_name,required"`
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.handler(w, r)
+		return
 	}
-	if err := decode.All(&params, r); err != nil {
+
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.client.List(r.Context(), ListOptions{
-		Search:             params.Search,
-		Tags:               params.Tags,
-		CurrentRunStatuses: params.Statuses,
-		Organization:       params.Organization,
-		PageOptions: resource.PageOptions{
-			PageNumber: params.PageNumber,
-			PageSize:   params.PageSize,
-		},
-	})
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// retrieve all tags and create map, with each entry determining whether
-	// listing is currently filtered by the tag or not.
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
-		return h.client.ListTags(r.Context(), *params.Organization, ListTagsOptions{
+		return h.client.ListTags(r.Context(), org, ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -153,40 +136,18 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tagfilters := func() map[string]bool {
-		m := make(map[string]bool, len(tags))
-		for _, t := range tags {
-			m[t.Name] = false
-			for _, f := range params.Tags {
-				if t.Name == f {
-					m[t.Name] = true
-					break
-				}
-			}
-		}
-		return m
-	}
 
-	canCreateWorkspace := h.authorizer.CanAccess(
-		r.Context(),
-		authz.CreateTeamAction,
-		&authz.AccessRequest{Organization: *params.Organization})
 	props := listProps{
-		organization:       *params.Organization,
-		canCreate:          canCreateWorkspace,
-		page:               workspaces,
-		tagFilters:         tagfilters(),
-		tagsFilterOpen:     params.TagsFilterOpen,
-		currentRunStatuses: params.Statuses,
-		statusesFilterOpen: params.StatusesFilterOpen,
-		search:             params.Search,
+		organization: org,
+		tags:         tags,
+		canCreate: h.authorizer.CanAccess(
+			r.Context(),
+			authz.CreateWorkspaceAction,
+			&authz.AccessRequest{Organization: org},
+		),
 	}
 
-	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		html.Render(components.PaginatedContentList(props.page, listItem), w, r)
-	} else {
-		html.Render(list(props), w, r)
-	}
+	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {

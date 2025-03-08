@@ -32,6 +32,6 @@ func DeleteRunner(runner string) string {
 	return fmt.Sprintf("/app/runners/%s/delete", runner)
 }
 
-func WatchRunner(organization string) string {
+func WatchRunners(organization string) string {
 	return fmt.Sprintf("/app/organizations/%s/runners/watch", organization)
 }

@@ -2,6 +2,7 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
@@ -107,6 +108,8 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			// clear search term
 			err = page.Locator(`input[type="search"]`).Clear()
 			require.NoError(t, err)
+
+			time.Sleep(time.Hour)
 
 			// now workspace-2 should be visible (updated via ajax)
 			err = expect.Locator(page.Locator(`//*[@id="item-workspace-workspace-2"]`)).ToBeVisible()
