@@ -130,7 +130,7 @@ type (
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
 		// Filter by run statuses (with an implicit OR condition)
-		Statuses []runstatus.Status `schema:"statuses,omitempty"`
+		Statuses []runstatus.Status `schema:"search[status],omitempty"`
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
 		// Filter by sources

@@ -95,7 +95,10 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var opts ListOptions
+	var opts struct {
+		ListOptions
+		StatusFilterVisible bool `schema:"statuses_filter_open"`
+	}
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -110,7 +113,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.runs.List(r.Context(), opts)
+	runs, err := h.runs.List(r.Context(), opts.ListOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -118,12 +121,14 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 	props := listProps{
-		ws:                 ws,
-		page:               runs,
-		canUpdateWorkspace: canUpdateWorkspace,
+		ws:                    ws,
+		page:                  runs,
+		canUpdateWorkspace:    canUpdateWorkspace,
+		statuses:              opts.Statuses,
+		statusesFilterVisible: opts.StatusFilterVisible,
 	}
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		html.Render(components.ContentList(runs.Items, widget), w, r)
+		html.Render(components.PaginatedContentList(runs, widget), w, r)
 	} else {
 		html.Render(list(props), w, r)
 	}

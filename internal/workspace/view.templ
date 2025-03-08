@@ -12,8 +12,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"slices"
-	"strings"
 	"time"
 )
 
@@ -77,18 +75,7 @@ templ list(props listProps) {
 				</div>
 				-->
 			</div>
-			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
-				<input type="checkbox" name="statuses_filter_open" checked?={ props.statusesFilterOpen }/>
-				<div class="collapse-title font-semibold">Filter by status</div>
-				<div class="collapse-content text-sm flex flex-wrap gap-2">
-					for _, status := range runstatus.All() {
-						<div>
-							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(props.currentRunStatuses, status) } hx-trigger="change"/>
-							<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
-						</div>
-					}
-				</div>
-			</div>
+			@runstatus.Filter(props.currentRunStatuses, props.statusesFilterOpen)
 			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
 				<input type="checkbox" name="tags_filter_open" checked?={ props.tagsFilterOpen }/>
 				<div class="collapse-title font-semibold">Filter by tag</div>

@@ -15,9 +15,11 @@ import (
 )
 
 type listProps struct {
-	ws                 *workspace.Workspace
-	page               *resource.Page[*Run]
-	canUpdateWorkspace bool
+	ws                    *workspace.Workspace
+	page                  *resource.Page[*Run]
+	statuses              []runstatus.Status
+	statusesFilterVisible bool
+	canUpdateWorkspace    bool
 }
 
 templ list(props listProps) {
@@ -29,13 +31,16 @@ templ list(props listProps) {
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-			{Name: "runs"},
+			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
+		<form method="GET" hx-target="#run-list-container" hx-get={ components.CurrentURLWithoutQuery(ctx) } hx-trigger="change" hx-push-url="true">
+			@runstatus.Filter(props.statuses, props.statusesFilterVisible)
+		</form>
 		<!-- watch for updates to listed runs as well as newly created runs -->
-		<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
+		<div id="run-list-container" hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
 			<!-- /* if a new run is created then reload entire run listing */ -->
 			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
 			@components.PaginatedContentList(props.page, widget)
@@ -193,7 +198,7 @@ templ widget(run *Run) {
 					}
 					if run.Status == runstatus.Planned {
 						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
-							<button class="btn">Apply</button>
+							<button id="apply-button" class="btn">Apply</button>
 						</form>
 					}
 					if run.Cancelable() {
