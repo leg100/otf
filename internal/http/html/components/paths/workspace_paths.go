@@ -60,6 +60,10 @@ func WatchWorkspace(workspace string) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/watch", workspace))
 }
 
+func WatchWorkspaces(organization string) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/app/organizations/%s/workspaces/watch", organization))
+}
+
 func ConnectWorkspace(workspace string) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/connect", workspace))
 }

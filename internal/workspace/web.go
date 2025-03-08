@@ -3,7 +3,15 @@ package workspace
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
+	"slices"
+	"strings"
+	"sync"
+
+	"github.com/go-logr/logr"
+	"github.com/gorilla/websocket"
 
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
@@ -13,6 +21,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
@@ -45,6 +54,7 @@ const (
 type (
 	webHandlers struct {
 		*uiHelpers
+		logr.Logger
 
 		teams        webTeamClient
 		vcsproviders webVCSProvidersClient
@@ -77,6 +87,7 @@ type (
 		Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
 		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error)
 		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error)
+		Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], func())
 
 		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
 		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
@@ -94,6 +105,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/new", h.newWorkspace).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/create", h.createWorkspace).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/watch", h.watchWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", h.getWorkspaceByName).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}", h.getWorkspace).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/edit", h.editWorkspace).Methods("GET")
@@ -115,7 +127,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		resource.PageOptions
 
-		Search             string             `schema:"search[name],omitempty"`
+		Search             string             `schema:"search,omitempty"`
 		Tags               []string           `schema:"search[tags],omitempty"`
 		TagsFilterOpen     bool               `schema:"tags_filter_open,omityempty"`
 		Statuses           []runstatus.Status `schema:"search[status],omitempty"`
@@ -186,6 +198,114 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		html.Render(components.PaginatedContentList(props.page, listItem), w, r)
 	} else {
 		html.Render(list(props), w, r)
+	}
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func (h *webHandlers) watchWorkspaces(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		h.Error(err, "watching workspaces: upgrading websocket connection")
+		return
+	}
+	defer conn.Close()
+
+	var requestParams ListOptions
+	if err := decode.All(&requestParams, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	sub, unsub := h.client.Watch(r.Context())
+	defer unsub()
+
+	var (
+		mu     sync.Mutex
+		filter = requestParams
+	)
+
+	go func() {
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case event := <-sub:
+				if event.Type == pubsub.DeletedEvent {
+					// TODO: support removing deleted workspaces from UI
+					continue
+				}
+				err := func() error {
+					mu.Lock()
+					defer mu.Unlock()
+
+					if !isMatch(event.Payload, filter) {
+						return nil
+					}
+					w, err := conn.NextWriter(websocket.TextMessage)
+					if err != nil {
+						return err
+					}
+					defer w.Close()
+
+					comp := listItem(event.Payload)
+					if err := html.RenderSnippet(comp, w, r); err != nil {
+						return err
+					}
+					return nil
+				}()
+				if err != nil {
+					h.Error(err, "watching workspaces: fetching next writer")
+					return
+				}
+			}
+		}
+	}()
+
+	for {
+		_, p, err := conn.ReadMessage()
+		if err != nil {
+			h.Error(err, "watching workspaces: reading message")
+			return
+		}
+		err = func() error {
+			mu.Lock()
+			defer mu.Unlock()
+
+			values, err := url.ParseQuery(string(p))
+			if err != nil {
+				return fmt.Errorf("parsing query: %w", err)
+			}
+			var opts ListOptions
+			if err := decode.Decode(&opts, values); err != nil {
+				return fmt.Errorf("decoding query: %w", err)
+			}
+			opts.Organization = requestParams.Organization
+			opts.PageSize = requestParams.PageSize
+			filter = opts
+
+			workspaces, err := h.client.List(r.Context(), opts)
+			if err != nil {
+				return fmt.Errorf("fetching workspaces: %w", err)
+			}
+			w, err := conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return fmt.Errorf("fetching next writer: %w", err)
+			}
+			defer w.Close()
+			comp := components.PaginatedContentList(workspaces, listItem)
+			if err := html.RenderSnippet(comp, w, r); err != nil {
+				return fmt.Errorf("rendering html: %w", err)
+			}
+			return nil
+		}()
+		if err != nil {
+			h.Error(err, "watching workspaces")
+			return
+		}
 	}
 }
 
@@ -721,4 +841,34 @@ func filterUnassigned(policy authz.WorkspacePolicy, teams []*team.Team) (unassig
 		}
 	}
 	return
+}
+
+func isMatch(ws *Workspace, opts ListOptions) bool {
+	if ws.Organization != *opts.Organization {
+		return false
+	}
+	if !strings.Contains(ws.Name, opts.Search) {
+		return false
+	}
+	if len(opts.CurrentRunStatuses) > 0 {
+		if ws.LatestRun == nil {
+			return false
+		}
+		if !slices.Contains(opts.CurrentRunStatuses, ws.LatestRun.Status) {
+			return false
+		}
+	}
+	if len(opts.Tags) > 0 {
+		var match bool
+		for _, tag := range opts.Tags {
+			if slices.Contains(ws.Tags, tag) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	return true
 }

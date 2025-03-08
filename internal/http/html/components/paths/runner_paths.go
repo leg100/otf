@@ -36,6 +36,6 @@ func DeleteRunner(runner string) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runners/%s/delete", runner))
 }
 
-func WatchRunner(organization string) templ.SafeURL {
+func WatchRunners(organization string) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runners/watch", organization))
 }

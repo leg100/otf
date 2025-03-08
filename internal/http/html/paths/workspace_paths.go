@@ -56,6 +56,10 @@ func WatchWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/watch", workspace)
 }
 
+func WatchWorkspaces(organization string) string {
+	return fmt.Sprintf("/app/organizations/%s/workspaces/watch", organization)
+}
+
 func ConnectWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/connect", workspace)
 }

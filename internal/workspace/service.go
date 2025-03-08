@@ -61,6 +61,7 @@ func NewService(opts Options) *Service {
 		connections: opts.ConnectionService,
 	}
 	svc.web = &webHandlers{
+		Logger:       opts.Logger,
 		authorizer:   opts.Authorizer,
 		teams:        opts.TeamService,
 		vcsproviders: opts.VCSProviderService,
