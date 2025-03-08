@@ -186,6 +186,10 @@ var specs = []controllerSpec{
 						name: "watch",
 					},
 					{
+						name:       "watch",
+						collection: true,
+					},
+					{
 						name: "connect",
 					},
 					{
@@ -411,6 +415,11 @@ func (r controller) HelperName(action action) string {
 	case "list":
 		// list path helper is merely the plural form of the resource name
 		return r.Camel() + "s"
+	case "watch":
+		if action.collection {
+			return strcase.ToCamel(action.name) + r.Camel() + "s"
+		}
+		fallthrough
 	default:
 		return strcase.ToCamel(action.name) + r.Camel()
 	}

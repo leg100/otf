@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-logr/logr"
+	"github.com/gorilla/websocket"
+
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -14,7 +17,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -45,11 +47,13 @@ const (
 type (
 	webHandlers struct {
 		*uiHelpers
+		logr.Logger
 
-		teams        webTeamClient
-		vcsproviders webVCSProvidersClient
-		client       webClient
-		authorizer   webAuthorizer
+		teams                webTeamClient
+		vcsproviders         webVCSProvidersClient
+		client               webClient
+		authorizer           webAuthorizer
+		websocketListHandler *WebsocketListHandler[*Workspace, ListOptions]
 	}
 
 	webTeamClient interface {
@@ -113,30 +117,21 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		resource.PageOptions
-
-		Search             string             `schema:"search[name],omitempty"`
-		Tags               []string           `schema:"search[tags],omitempty"`
-		TagsFilterOpen     bool               `schema:"tags_filter_open,omityempty"`
-		Statuses           []runstatus.Status `schema:"search[status],omitempty"`
-		StatusesFilterOpen bool               `schema:"statuses_filter_open,omityempty"`
-		Organization       *string            `schema:"organization_name,required"`
+		ListOptions
+		TagsFilterOpen     bool `schema:"tags_filter_open,omityempty"`
+		StatusesFilterOpen bool `schema:"statuses_filter_open,omityempty"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.client.List(r.Context(), ListOptions{
-		Search:             params.Search,
-		Tags:               params.Tags,
-		CurrentRunStatuses: params.Statuses,
-		Organization:       params.Organization,
-		PageOptions: resource.PageOptions{
-			PageNumber: params.PageNumber,
-			PageSize:   params.PageSize,
-		},
-	})
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.handler(w, r, params.ListOptions)
+		return
+	}
+
+	workspaces, err := h.client.List(r.Context(), params.ListOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -177,7 +172,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		page:               workspaces,
 		tagFilters:         tagfilters(),
 		tagsFilterOpen:     params.TagsFilterOpen,
-		currentRunStatuses: params.Statuses,
+		currentRunStatuses: params.CurrentRunStatuses,
 		statusesFilterOpen: params.StatusesFilterOpen,
 		search:             params.Search,
 	}
