@@ -70,6 +70,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
+	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
@@ -124,24 +125,28 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if opts.WorkspaceID == nil {
-		html.Error(w, "missing workspace ID", http.StatusUnprocessableEntity)
-		return
-	}
 
-	ws, err := h.workspaces.Get(r.Context(), *opts.WorkspaceID)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 	props := listProps{
-		ws:                  ws,
-		canUpdateWorkspace:  canUpdateWorkspace,
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
 	}
+
+	if opts.ListOptions.WorkspaceID != nil {
+		ws, err := h.workspaces.Get(r.Context(), *opts.WorkspaceID)
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		props.organization = ws.Organization
+		props.ws = ws
+		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+	} else if opts.ListOptions.Organization != nil {
+		props.organization = *opts.ListOptions.Organization
+	} else {
+		html.Error(w, "must provide either organization_name or workspace_id", http.StatusUnprocessableEntity)
+		return
+	}
+
 	html.Render(list(props), w, r)
 }
 

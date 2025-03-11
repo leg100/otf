@@ -14,6 +14,7 @@ import (
 )
 
 type listProps struct {
+	organization        string
 	ws                  *workspace.Workspace
 	status              []runstatus.Status
 	statusFilterVisible bool
@@ -24,24 +25,30 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "runs",
-		Organization: props.ws.Organization,
-		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
-		},
+		Organization: props.organization,
 	}
+	if props.ws != nil {
+		layoutProps.Breadcrumbs = []components.Breadcrumb{
+			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+		}
+		layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
+	}
+	layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs,
+		components.Breadcrumb{Name: "runs", Link: templ.SafeURL(components.CurrentURLWithoutQuery(ctx))},
+	)
 	}}
 	@components.Layout(layoutProps) {
 		<form
-			action={ paths.Runs(props.ws.ID.String()) }
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
 			ws-send
 			hx-trigger="load delay:1ms"
+			action={ templ.SafeURL(components.CurrentURLWithoutQuery(ctx)) }
 		>
-			<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+			if props.ws != nil {
+				<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+			}
 			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
 			@runstatus.Filter(props.status, props.statusFilterVisible)
 		</form>

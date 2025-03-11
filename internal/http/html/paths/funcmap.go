@@ -93,6 +93,8 @@ func init() {
 	funcmap["updateVariablePath"] = UpdateVariable
 	funcmap["deleteVariablePath"] = DeleteVariable
 
+	funcmap["organizationRunsPath"] = OrganizationRuns
+
 	funcmap["runnersPath"] = Runners
 	funcmap["createRunnerPath"] = CreateRunner
 	funcmap["newRunnerPath"] = NewRunner

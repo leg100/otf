@@ -252,6 +252,18 @@ var specs = []controllerSpec{
 				},
 			},
 			{
+				Name:               "organization_run",
+				path:               "/run",
+				controllerType:     resourcePath,
+				skipDefaultActions: true,
+				actions: []action{
+					{
+						name:       "list",
+						collection: true,
+					},
+				},
+			},
+			{
 				Name:           "runner",
 				controllerType: resourcePath,
 				actions: []action{
