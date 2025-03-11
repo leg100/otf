@@ -87,12 +87,7 @@ func NewService(opts Options) *Service {
 		vcs:           opts.VCSProviderService,
 		releases:      opts.ReleasesService,
 	}
-	svc.web = &webHandlers{
-		authorizer: opts.Authorizer,
-		logger:     opts.Logger,
-		runs:       &svc,
-		workspaces: opts.WorkspaceService,
-	}
+	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{
 		Service:    &svc,
 		workspaces: opts.WorkspaceService,

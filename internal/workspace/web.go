@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	"github.com/gorilla/websocket"
 
 	"github.com/a-h/templ"
@@ -47,13 +46,12 @@ const (
 type (
 	webHandlers struct {
 		*uiHelpers
-		logr.Logger
 
 		teams                webTeamClient
 		vcsproviders         webVCSProvidersClient
 		client               webClient
 		authorizer           webAuthorizer
-		websocketListHandler *WebsocketListHandler[*Workspace, ListOptions]
+		websocketListHandler *components.WebsocketListHandler[*Workspace, ListOptions]
 	}
 
 	webTeamClient interface {
@@ -92,6 +90,24 @@ type (
 	}
 )
 
+func newWebHandlers(service *Service, opts Options) *webHandlers {
+	return &webHandlers{
+		authorizer:   opts.Authorizer,
+		teams:        opts.TeamService,
+		vcsproviders: opts.VCSProviderService,
+		client:       service,
+		uiHelpers: &uiHelpers{
+			service:    opts.UserService,
+			authorizer: opts.Authorizer,
+		},
+		websocketListHandler: &components.WebsocketListHandler[*Workspace, ListOptions]{
+			Logger:    opts.Logger,
+			Client:    service,
+			Component: listItem,
+		},
+	}
+}
+
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
@@ -117,7 +133,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.handler(w, r)
+		h.websocketListHandler.Handler(w, r)
 		return
 	}
 

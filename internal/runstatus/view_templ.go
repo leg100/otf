@@ -134,7 +134,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border-base-300 border\"><input id=\"toggle-status-filter-visibility\" type=\"checkbox\" name=\"statuses_filter_open\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border-base-300 border\"><input id=\"toggle-status-filter-visibility\" type=\"checkbox\" name=\"status_filter_visible\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -178,7 +178,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("filter-status-" + status.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 39, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 41, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -191,7 +191,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(string(status))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 39, Col: 166}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 44, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -207,7 +207,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " hx-trigger=\"change\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " onchange=\"this.form.submit()\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -236,7 +236,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("filter-status-" + status.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 40, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 48, Col: 98}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -249,7 +249,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ReplaceAll(string(status), "_", " "))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 40, Col: 147}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 49, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {

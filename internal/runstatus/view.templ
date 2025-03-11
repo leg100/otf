@@ -31,13 +31,23 @@ templ Badge(runID resource.ID, status Status) {
 
 templ Filter(selected []Status, visible bool) {
 	<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
-		<input id="toggle-status-filter-visibility" type="checkbox" name="statuses_filter_open" checked?={ visible }/>
+		<input id="toggle-status-filter-visibility" type="checkbox" name="status_filter_visible" checked?={ visible }/>
 		<div class="collapse-title font-semibold">Filter by status</div>
 		<div class="collapse-content text-sm flex flex-wrap gap-2">
 			for _, status := range All() {
 				<div>
-					<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(selected, status) } hx-trigger="change"/>
-					<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
+					<input
+						class={ "checkbox", "checkbox-" + status.String() }
+						id={ "filter-status-" + status.String() }
+						type="checkbox"
+						name="search[status]"
+						value={ string(status) }
+						checked?={ slices.Contains(selected, status) }
+						onchange="this.form.submit()"
+					/>
+					<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>
+						{ strings.ReplaceAll(string(status), "_", " ") }
+					</label>
 				</div>
 			}
 		</div>

@@ -6,7 +6,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"strconv"
@@ -15,11 +14,10 @@ import (
 )
 
 type listProps struct {
-	ws                    *workspace.Workspace
-	page                  *resource.Page[*Run]
-	statuses              []runstatus.Status
-	statusesFilterVisible bool
-	canUpdateWorkspace    bool
+	ws                  *workspace.Workspace
+	status              []runstatus.Status
+	statusFilterVisible bool
+	canUpdateWorkspace  bool
 }
 
 templ list(props listProps) {
@@ -36,15 +34,18 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<form method="GET" hx-target="#run-list-container" hx-get={ components.CurrentURLWithoutQuery(ctx) } hx-trigger="change" hx-push-url="true">
-			@runstatus.Filter(props.statuses, props.statusesFilterVisible)
+		<form
+			action={ paths.Runs(props.ws.ID.String()) }
+			hx-ext="ws"
+			ws-connect={ components.CurrentURL(ctx) }
+			ws-send
+			hx-trigger="load delay:1ms"
+		>
+			<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
+			@runstatus.Filter(props.status, props.statusFilterVisible)
 		</form>
-		<!-- watch for updates to listed runs as well as newly created runs -->
-		<div id="run-list-container" hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
-			<!-- /* if a new run is created then reload entire run listing */ -->
-			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
-			@components.PaginatedContentList(props.page, widget)
-		</div>
+		<div id="page-results"></div>
 	}
 }
 
