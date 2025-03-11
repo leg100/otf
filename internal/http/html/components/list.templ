@@ -27,23 +27,25 @@ templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Com
 			return err
 		}
 	}}
-	@ContentList(page.Items, comp)
-	<div class="flex p-4 gap-2 justify-end items-center">
-		@pageSizeSelector()
-		<div class="badge badge-outline badge-neutral" id="page-info">
-			{ fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount) }
-		</div>
-		<div class="join">
-			if info.previousPageURL != nil {
-				<button class="join-item btn btn-sm">
-					<a id="prev-page-link" href={ *info.previousPageURL }>Previous Page</a>
-				</button>
-			}
-			if info.nextPageURL != nil {
-				<button class="join-item btn btn-sm">
-					<a id="next-page-link" href={ *info.nextPageURL }>Next Page</a>
-				</button>
-			}
+	<div id="page-results">
+		@ContentList(page.Items, comp)
+		<div class="flex p-4 gap-2 justify-end items-center">
+			@pageSizeSelector()
+			<div class="badge badge-outline badge-neutral" id="page-info">
+				{ fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount) }
+			</div>
+			<div class="join">
+				if info.previousPageURL != nil {
+					<button class="join-item btn btn-sm">
+						<a id="prev-page-link" href={ *info.previousPageURL }>Previous Page</a>
+					</button>
+				}
+				if info.nextPageURL != nil {
+					<button class="join-item btn btn-sm">
+						<a id="next-page-link" href={ *info.nextPageURL }>Next Page</a>
+					</button>
+				}
+			</div>
 		</div>
 	</div>
 }

@@ -31,7 +31,7 @@ func Form(dst interface{}, r *http.Request) error {
 	if err := r.ParseForm(); err != nil {
 		return err
 	}
-	if err := decode(dst, r.PostForm); err != nil {
+	if err := Decode(dst, r.PostForm); err != nil {
 		return err
 	}
 	return nil
@@ -39,7 +39,7 @@ func Form(dst interface{}, r *http.Request) error {
 
 // Query unmarshals a query string (k1=v1&k2=v2...) into dst.
 func Query(dst interface{}, query url.Values) error {
-	if err := decode(dst, query); err != nil {
+	if err := Decode(dst, query); err != nil {
 		return err
 	}
 	return nil
@@ -49,7 +49,7 @@ func Query(dst interface{}, query url.Values) error {
 func Route(dst interface{}, r *http.Request) error {
 	// decoder only takes map[string][]string, not map[string]string
 	vars := convertStrMapToStrSliceMap(mux.Vars(r))
-	if err := decode(dst, vars); err != nil {
+	if err := Decode(dst, vars); err != nil {
 		return err
 	}
 	return nil
@@ -79,7 +79,7 @@ func All(dst interface{}, r *http.Request) error {
 	for _, cookie := range r.Cookies() {
 		vars[cookie.Name] = []string{cookie.Value}
 	}
-	if err := decode(dst, vars); err != nil {
+	if err := Decode(dst, vars); err != nil {
 		return err
 	}
 	return nil
@@ -111,7 +111,7 @@ func ID(name string, r *http.Request) (resource.ID, error) {
 	return resource.ParseID(s)
 }
 
-func decode(dst interface{}, src map[string][]string) error {
+func Decode(dst interface{}, src map[string][]string) error {
 	if err := decoder.Decode(dst, src); err != nil {
 		var emptyField schema.EmptyFieldError
 		if errors.As(err, &emptyField) {
