@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-logr/logr"
+	"github.com/gorilla/websocket"
+
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -14,7 +17,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -45,11 +47,13 @@ const (
 type (
 	webHandlers struct {
 		*uiHelpers
+		logr.Logger
 
-		teams        webTeamClient
-		vcsproviders webVCSProvidersClient
-		client       webClient
-		authorizer   webAuthorizer
+		teams                webTeamClient
+		vcsproviders         webVCSProvidersClient
+		client               webClient
+		authorizer           webAuthorizer
+		websocketListHandler *WebsocketListHandler[*Workspace, ListOptions]
 	}
 
 	webTeamClient interface {
@@ -112,33 +116,18 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		resource.PageOptions
-
-		Search             string             `schema:"search[name],omitempty"`
-		Tags               []string           `schema:"search[tags],omitempty"`
-		TagsFilterOpen     bool               `schema:"tags_filter_open,omityempty"`
-		Statuses           []runstatus.Status `schema:"search[status],omitempty"`
-		StatusesFilterOpen bool               `schema:"statuses_filter_open,omityempty"`
-		Organization       *string            `schema:"organization_name,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.handler(w, r)
 		return
 	}
 
-	workspaces, err := h.client.List(r.Context(), ListOptions{
-		Search:             params.Search,
-		Tags:               params.Tags,
-		CurrentRunStatuses: params.Statuses,
-		Organization:       params.Organization,
-		PageOptions: resource.PageOptions{
-			PageNumber: params.PageNumber,
-			PageSize:   params.PageSize,
-		},
-	})
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+	var params struct {
+		ListOptions
+		StatusFilterVisible bool `schema:"status_filter_visible"`
+		TagFilterVisible    bool `schema:"tag_filter_visible"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -153,40 +142,32 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tagfilters := func() map[string]bool {
-		m := make(map[string]bool, len(tags))
-		for _, t := range tags {
-			m[t.Name] = false
-			for _, f := range params.Tags {
-				if t.Name == f {
-					m[t.Name] = true
-					break
-				}
+	tagMap := make(map[string]bool, len(tags))
+	for _, t := range tags {
+		tagMap[t.Name] = false
+		for _, f := range params.Tags {
+			if t.Name == f {
+				tagMap[t.Name] = true
+				break
 			}
 		}
-		return m
 	}
 
-	canCreateWorkspace := h.authorizer.CanAccess(
-		r.Context(),
-		authz.CreateTeamAction,
-		&authz.AccessRequest{Organization: *params.Organization})
 	props := listProps{
-		organization:       *params.Organization,
-		canCreate:          canCreateWorkspace,
-		page:               workspaces,
-		tagFilters:         tagfilters(),
-		tagsFilterOpen:     params.TagsFilterOpen,
-		currentRunStatuses: params.Statuses,
-		statusesFilterOpen: params.StatusesFilterOpen,
-		search:             params.Search,
+		organization:        *params.Organization,
+		tags:                tagMap,
+		search:              params.Search,
+		status:              params.Status,
+		statusFilterVisible: params.StatusFilterVisible,
+		tagFilterVisible:    params.TagFilterVisible,
+		canCreate: h.authorizer.CanAccess(
+			r.Context(),
+			authz.CreateWorkspaceAction,
+			&authz.AccessRequest{Organization: *params.Organization},
+		),
 	}
 
-	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		html.Render(components.PaginatedContentList(props.page, listItem), w, r)
-	} else {
-		html.Render(list(props), w, r)
-	}
+	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
