@@ -121,14 +121,20 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		ListOptions
+		StatusFilterVisible bool `schema:"status_filter_visible"`
+		TagFilterVisible    bool `schema:"tag_filter_visible"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
+	// retrieve all tags and create map, with each entry determining whether
+	// listing is currently filtered by the tag or not.
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
-		return h.client.ListTags(r.Context(), org, ListTagsOptions{
+		return h.client.ListTags(r.Context(), *params.Organization, ListTagsOptions{
 			PageOptions: opts,
 		})
 	})
@@ -136,14 +142,28 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	tagMap := make(map[string]bool, len(tags))
+	for _, t := range tags {
+		tagMap[t.Name] = false
+		for _, f := range params.Tags {
+			if t.Name == f {
+				tagMap[t.Name] = true
+				break
+			}
+		}
+	}
 
 	props := listProps{
-		organization: org,
-		tags:         tags,
+		organization:        *params.Organization,
+		tags:                tagMap,
+		search:              params.Search,
+		statuses:            params.CurrentRunStatuses,
+		statusFilterVisible: params.StatusFilterVisible,
+		tagFilterVisible:    params.TagFilterVisible,
 		canCreate: h.authorizer.CanAccess(
 			r.Context(),
 			authz.CreateWorkspaceAction,
-			&authz.AccessRequest{Organization: org},
+			&authz.AccessRequest{Organization: *params.Organization},
 		),
 	}
 

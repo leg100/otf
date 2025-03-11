@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
+	"slices"
 	"strings"
 	"time"
 )
@@ -38,10 +39,14 @@ templ new(organization string) {
 }
 
 type listProps struct {
-	organization string
-	tags         []*Tag
-	canCreate    bool
-	pageOptions  resource.PageOptions
+	organization        string
+	search              string
+	statuses            []runstatus.Status
+	tags                map[string]bool
+	canCreate           bool
+	statusFilterVisible bool
+	tagFilterVisible    bool
+	pageOptions         resource.PageOptions
 }
 
 templ list(props listProps) {
@@ -58,7 +63,6 @@ templ list(props listProps) {
 	@components.Layout(layoutProps) {
 		<script>
 			window.addEventListener('htmx:wsConfigSend', function(evt) {
-				console.info(evt)
 				// remove headers from message before sending because we have no use for them.
 				// convert from json to url encoded because that is what the server handler expects.
 				const msg = evt.detail.parameters
@@ -72,7 +76,6 @@ templ list(props listProps) {
 				})
 				//console.log(msg)
 				const params = query.toString()
-				console.log(params)
 				// push to history so that user can reload / go back to filtered list
 				//const url = `${window.location.origin}${location.pathname}?${params}`
 				//window.history.pushState({}, '', url);
@@ -89,32 +92,48 @@ templ list(props listProps) {
 				//console.info(evt.detail.parameters)
 			});
 		</script>
-		<form hx-target="#workspace-listing-container" hx-ext="ws" ws-connect={ components.CurrentURL(ctx) } ws-send hx-trigger="load delay:1ms, change, keyup changed delay:500ms">
+		<form action={ paths.Workspaces(props.organization) } hx-ext="ws" ws-connect={ components.CurrentURL(ctx) } ws-send hx-trigger="load delay:1ms">
 			<input type="hidden" name="organization_name" value={ props.organization }/>
 			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
 			<div class="flex gap-2 items-center m-2 p-2">
-				<input class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" style={ magnifyingGlassStyle(ctx) } placeholder="search workspaces"/>
+				<script>
+					function submitIfChanged(e) {
+						console.log(e);
+					}
+				</script>
+				<input
+					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
+					type="search"
+					name="search[name]"
+					value={ props.search }
+					style={ magnifyingGlassStyle(ctx) }
+					placeholder="search workspaces"
+					ws-send
+					hx-trigger="keyup changed delay:500ms"
+					id="workspace-search"
+					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
+				/>
 			</div>
 			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
-				<input type="checkbox" name="statuses_filter_open"/>
+				<input type="checkbox" name="status_filter_visible" checked?={ props.statusFilterVisible }/>
 				<div class="collapse-title font-semibold">Filter by status</div>
 				<div class="collapse-content text-sm flex flex-wrap gap-2">
 					for _, status := range runstatus.All() {
 						<div>
-							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } hx-trigger="change"/>
+							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(props.statuses, status) } onchange="this.form.submit()"/>
 							<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
 						</div>
 					}
 				</div>
 			</div>
 			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
-				<input type="checkbox" name="tags_filter_open"/>
+				<input type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
 				<div class="collapse-title font-semibold">Filter by tag</div>
 				<div class="collapse-content text-sm flex flex-wrap gap-2">
-					for _, tag := range props.tags {
+					for tag, checked := range props.tags {
 						<div>
-							<input class={ "checkbox", "checkbox-primary" } id={ "filter-tag-" + tag.Name } type="checkbox" name="search[tags]" value={ tag.Name }/>
-							<label class={ "badge", "badge-primary" } for={ "filter-tag-" + tag.Name }>{ tag.Name }</label>
+							<input class={ "checkbox", "checkbox-primary" } id={ "filter-tag-" + tag } type="checkbox" name="search[tags]" value={ tag } checked?={ checked } onchange="this.form.submit()"/>
+							<label class={ "badge", "badge-primary" } for={ "filter-tag-" + tag }>{ tag }</label>
 						</div>
 					}
 				</div>
