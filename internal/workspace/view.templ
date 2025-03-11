@@ -63,44 +63,26 @@ templ list(props listProps) {
 	@components.Layout(layoutProps) {
 		<script>
 			window.addEventListener('htmx:wsConfigSend', function(evt) {
-				// remove headers from message before sending because we have no use for them.
-				// convert from json to url encoded because that is what the server handler expects.
 				const msg = evt.detail.parameters
+
+				// remove headers from message before sending because we have no use for them.
 				delete msg.HEADERS
 
+				// don't send JSON, but send url-encoded query instead
 				let query = new URLSearchParams()
 				Object.entries(msg).forEach(([k, v]) => {
 				  if (Array.isArray(v)) {
 					v.forEach(vv => query.append(k, vv))
 				  } else query.append(k, v)
 				})
-				//console.log(msg)
 				const params = query.toString()
-				// push to history so that user can reload / go back to filtered list
-				//const url = `${window.location.origin}${location.pathname}?${params}`
-				//window.history.pushState({}, '', url);
-
-				// don't send JSON, but send url-encoded query instead
 				evt.detail.messageBody = params
-
-				//const params = evt.detail.parameters
-				//evt.
-				////console.info(evt)
-				//if (('search[status]' in params) && (typeof params['search[status]'] === 'string' || params['search[status]'] instanceof String)) {
-				//	params['search[status]'] = [params['search[status]']]
-				//}
-				//console.info(evt.detail.parameters)
 			});
 		</script>
 		<form action={ paths.Workspaces(props.organization) } hx-ext="ws" ws-connect={ components.CurrentURL(ctx) } ws-send hx-trigger="load delay:1ms">
 			<input type="hidden" name="organization_name" value={ props.organization }/>
 			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
 			<div class="flex gap-2 items-center m-2 p-2">
-				<script>
-					function submitIfChanged(e) {
-						console.log(e);
-					}
-				</script>
 				<input
 					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
 					type="search"

@@ -42,7 +42,8 @@ func (h *WebsocketListHandler[Resource, Options]) handler(w http.ResponseWriter,
 	}
 	defer conn.Close()
 
-	sub, _ := h.Client.Watch(r.Context())
+	sub, unsub := h.Client.Watch(r.Context())
+	defer unsub()
 
 	// Mutex serializes go routine access to the list options and to the
 	// websocket writer.
@@ -106,7 +107,11 @@ func (h *WebsocketListHandler[Resource, Options]) handler(w http.ResponseWriter,
 				return err
 			}
 			// Wait a second before sending anything more to client.
-			<-time.After(time.Second)
+			select {
+			case <-time.After(time.Second):
+			case <-r.Context().Done():
+				return nil
+			}
 		}
 	})
 	g.Go(func() error {
@@ -140,6 +145,6 @@ func (h *WebsocketListHandler[Resource, Options]) handler(w http.ResponseWriter,
 		}
 	})
 	if err := g.Wait(); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(err, "handling websocket connection")
 	}
 }
