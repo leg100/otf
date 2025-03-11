@@ -9,18 +9,34 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-templ ContentList[T any](items []T, comp func(T) templ.Component) {
+templ ContentList[T any](
+	header templ.Component,
+	items []T,
+	comp func(T) templ.Component,
+) {
 	<div id="content-list" class="flex flex-col">
-		for _, item := range items {
-			@comp(item)
-		}
-		if len(items) == 0 {
+		if len(items) > 0 {
+			<table class="table">
+				<thead>
+					<tr>
+						@header
+					</tr>
+				</thead>
+				<tbody>
+					for _, item := range items {
+						<tr>
+							@comp(item)
+						</tr>
+					}
+				</tbody>
+			</table>
+		} else {
 			No items currently exist.
 		}
 	</div>
 }
 
-templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Component) {
+templ PaginatedContentList[T any](header templ.Component, page *resource.Page[T], comp func(T) templ.Component) {
 	{{
 		info, err := newPageInfo(ctx, page)
 		if err != nil {
@@ -28,7 +44,7 @@ templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Com
 		}
 	}}
 	<div id="page-results">
-		@ContentList(page.Items, comp)
+		@ContentList(header, page.Items, comp)
 		<div class="flex p-4 gap-2 justify-end items-center">
 			@pageSizeSelector()
 			<div class="badge badge-outline badge-neutral" id="page-info">

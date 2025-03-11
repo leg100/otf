@@ -28,8 +28,9 @@ var upgrader = websocket.Upgrader{
 // a websocket.
 type WebsocketListHandler[Resource any, Options any] struct {
 	logr.Logger
-	Client    websocketListHandlerClient[Resource, Options]
-	Component func(Resource) templ.Component
+	Client      websocketListHandlerClient[Resource, Options]
+	Component   func(Resource) templ.Component
+	TableHeader templ.Component
 }
 
 type websocketListHandlerClient[Resource any, Options any] interface {
@@ -70,7 +71,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		}
 		defer w.Close()
 
-		comp := PaginatedContentList(page, h.Component)
+		comp := PaginatedContentList(h.TableHeader, page, h.Component)
 		if err := html.RenderSnippet(comp, w, r); err != nil {
 			return fmt.Errorf("rendering html: %w", err)
 		}
