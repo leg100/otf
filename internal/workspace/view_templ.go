@@ -91,7 +91,7 @@ func new(organization string) templ.Component {
 type listProps struct {
 	organization        string
 	search              string
-	statuses            []runstatus.Status
+	status              []runstatus.Status
 	tags                map[string]bool
 	canCreate           bool
 	statusFilterVisible bool
@@ -282,7 +282,7 @@ func list(props listProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if slices.Contains(props.statuses, status) {
+				if slices.Contains(props.status, status) {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err

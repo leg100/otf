@@ -157,7 +157,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		organization:        *params.Organization,
 		tags:                tagMap,
 		search:              params.Search,
-		statuses:            params.CurrentRunStatuses,
+		status:              params.Status,
 		statusFilterVisible: params.StatusFilterVisible,
 		tagFilterVisible:    params.TagFilterVisible,
 		canCreate: h.authorizer.CanAccess(

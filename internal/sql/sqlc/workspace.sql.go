@@ -30,17 +30,17 @@ FROM workspaces
 `
 
 type CountWorkspacesParams struct {
-	Search             pgtype.Text
-	OrganizationNames  []pgtype.Text
-	CurrentRunStatuses []pgtype.Text
-	Tags               []pgtype.Text
+	Search            pgtype.Text
+	OrganizationNames []pgtype.Text
+	Status            []pgtype.Text
+	Tags              []pgtype.Text
 }
 
 func (q *Queries) CountWorkspaces(ctx context.Context, arg CountWorkspacesParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countWorkspaces,
 		arg.Search,
 		arg.OrganizationNames,
-		arg.CurrentRunStatuses,
+		arg.Status,
 		arg.Tags,
 	)
 	var count int64
@@ -409,12 +409,12 @@ OFFSET $5::int
 `
 
 type FindWorkspacesParams struct {
-	Search             pgtype.Text
-	OrganizationNames  []pgtype.Text
-	CurrentRunStatuses []pgtype.Text
-	Tags               []pgtype.Text
-	Offset             pgtype.Int4
-	Limit              pgtype.Int4
+	Search            pgtype.Text
+	OrganizationNames []pgtype.Text
+	Status            []pgtype.Text
+	Tags              []pgtype.Text
+	Offset            pgtype.Int4
+	Limit             pgtype.Int4
 }
 
 type FindWorkspacesRow struct {
@@ -458,7 +458,7 @@ func (q *Queries) FindWorkspaces(ctx context.Context, arg FindWorkspacesParams) 
 	rows, err := q.db.Query(ctx, findWorkspaces,
 		arg.Search,
 		arg.OrganizationNames,
-		arg.CurrentRunStatuses,
+		arg.Status,
 		arg.Tags,
 		arg.Offset,
 		arg.Limit,

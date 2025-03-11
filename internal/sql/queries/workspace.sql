@@ -74,7 +74,7 @@ LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON wt.workspace_id = w.workspace_id
 WHERE w.name                LIKE '%' || sqlc.arg('search') || '%'
 AND   w.organization_name   LIKE ANY(sqlc.arg('organization_names')::text[])
-AND   ((sqlc.arg('current_run_statuses')::text[] IS NULL) OR (r.status = ANY(sqlc.arg('current_run_statuses')::text[])))
+AND   ((sqlc.arg('status')::text[] IS NULL) OR (r.status = ANY(sqlc.arg('status')::text[])))
 GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path
 HAVING array_agg(t.name) @> sqlc.arg('tags')::text[]
 ORDER BY w.updated_at DESC
@@ -91,7 +91,7 @@ WITH
 		LEFT JOIN runs r ON w.latest_run_id = r.run_id
         WHERE w.name              LIKE '%' || sqlc.arg('search') || '%'
         AND   w.organization_name LIKE ANY(sqlc.arg('organization_names')::text[])
-		AND ((sqlc.arg('current_run_statuses')::text[] IS NULL) OR (r.status = ANY(sqlc.arg('current_run_statuses')::text[])))
+		AND ((sqlc.arg('status')::text[] IS NULL) OR (r.status = ANY(sqlc.arg('status')::text[])))
         GROUP BY w.workspace_id
         HAVING array_agg(t.name) @> sqlc.arg('tags')::text[]
     )

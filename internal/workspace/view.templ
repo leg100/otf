@@ -41,7 +41,7 @@ templ new(organization string) {
 type listProps struct {
 	organization        string
 	search              string
-	statuses            []runstatus.Status
+	status              []runstatus.Status
 	tags                map[string]bool
 	canCreate           bool
 	statusFilterVisible bool
@@ -102,7 +102,7 @@ templ list(props listProps) {
 				<div class="collapse-content text-sm flex flex-wrap gap-2">
 					for _, status := range runstatus.All() {
 						<div>
-							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(props.statuses, status) } onchange="this.form.submit()"/>
+							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(props.status, status) } onchange="this.form.submit()"/>
 							<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
 						</div>
 					}
