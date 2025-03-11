@@ -1,4 +1,4 @@
-package workspace
+package components
 
 import (
 	"context"
@@ -12,14 +12,17 @@ import (
 	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/websocket"
-	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/sync/errgroup"
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 // WebsocketListHandler handles dynamically updating lists of resources via
 // a websocket.
@@ -34,8 +37,8 @@ type websocketListHandlerClient[Resource any, Options any] interface {
 	List(ctx context.Context, opts Options) (*resource.Page[Resource], error)
 }
 
-func (h *WebsocketListHandler[Resource, Options]) handler(w http.ResponseWriter, r *http.Request) {
-	conn, err := otfhttp.Upgrader.Upgrade(w, r, nil)
+func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		h.Error(err, "upgrading websocket connection")
 		return
@@ -67,7 +70,7 @@ func (h *WebsocketListHandler[Resource, Options]) handler(w http.ResponseWriter,
 		}
 		defer w.Close()
 
-		comp := components.PaginatedContentList(page, h.Component)
+		comp := PaginatedContentList(page, h.Component)
 		if err := html.RenderSnippet(comp, w, r); err != nil {
 			return fmt.Errorf("rendering html: %w", err)
 		}

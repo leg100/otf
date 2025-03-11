@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
@@ -21,10 +22,11 @@ import (
 
 type (
 	webHandlers struct {
-		logger     logr.Logger
-		runs       webRunClient
-		workspaces webWorkspaceClient
-		authorizer webAuthorizer
+		logger               logr.Logger
+		runs                 webRunClient
+		workspaces           webWorkspaceClient
+		authorizer           webAuthorizer
+		websocketListHandler *components.WebsocketListHandler[*Run, ListOptions]
 	}
 
 	webRunClient interface {
@@ -50,6 +52,20 @@ type (
 		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
 	}
 )
+
+func newWebHandlers(service *Service, opts Options) *webHandlers {
+	return &webHandlers{
+		authorizer: opts.Authorizer,
+		logger:     opts.Logger,
+		runs:       service,
+		workspaces: opts.WorkspaceService,
+		websocketListHandler: &components.WebsocketListHandler[*Run, ListOptions]{
+			Logger:    opts.Logger,
+			Client:    service,
+			Component: widget,
+		},
+	}
+}
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
@@ -95,7 +111,15 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var opts ListOptions
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.Handler(w, r)
+		return
+	}
+
+	var opts struct {
+		ListOptions
+		StatusFilterVisible bool `schema:"status_filter_visible"`
+	}
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -110,23 +134,15 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.runs.List(r.Context(), opts)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	canUpdateWorkspace := h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
 	props := listProps{
-		ws:                 ws,
-		page:               runs,
-		canUpdateWorkspace: canUpdateWorkspace,
+		ws:                  ws,
+		canUpdateWorkspace:  canUpdateWorkspace,
+		status:              opts.Statuses,
+		statusFilterVisible: opts.StatusFilterVisible,
 	}
-	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
-		html.Render(components.ContentList(runs.Items, widget), w, r)
-	} else {
-		html.Render(list(props), w, r)
-	}
+	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {

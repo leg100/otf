@@ -12,8 +12,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"slices"
-	"strings"
 	"time"
 )
 
@@ -61,25 +59,13 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<script>
-			window.addEventListener('htmx:wsConfigSend', function(evt) {
-				const msg = evt.detail.parameters
-
-				// remove headers from message before sending because we have no use for them.
-				delete msg.HEADERS
-
-				// don't send JSON, but send url-encoded query instead
-				let query = new URLSearchParams()
-				Object.entries(msg).forEach(([k, v]) => {
-				  if (Array.isArray(v)) {
-					v.forEach(vv => query.append(k, vv))
-				  } else query.append(k, v)
-				})
-				const params = query.toString()
-				evt.detail.messageBody = params
-			});
-		</script>
-		<form action={ paths.Workspaces(props.organization) } hx-ext="ws" ws-connect={ components.CurrentURL(ctx) } ws-send hx-trigger="load delay:1ms">
+		<form
+			action={ paths.Workspaces(props.organization) }
+			hx-ext="ws"
+			ws-connect={ components.CurrentURL(ctx) }
+			ws-send
+			hx-trigger="load delay:1ms"
+		>
 			<input type="hidden" name="organization_name" value={ props.organization }/>
 			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
 			<div class="flex gap-2 items-center m-2 p-2">
@@ -96,18 +82,7 @@ templ list(props listProps) {
 					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
 				/>
 			</div>
-			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
-				<input type="checkbox" name="status_filter_visible" checked?={ props.statusFilterVisible }/>
-				<div class="collapse-title font-semibold">Filter by status</div>
-				<div class="collapse-content text-sm flex flex-wrap gap-2">
-					for _, status := range runstatus.All() {
-						<div>
-							<input class={ "checkbox", "checkbox-" + status.String() } id={ "filter-status-" + status.String() } type="checkbox" name="search[status]" value={ string(status) } checked?={ slices.Contains(props.status, status) } onchange="this.form.submit()"/>
-							<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>{ strings.ReplaceAll(string(status), "_", " ") }</label>
-						</div>
-					}
-				</div>
-			</div>
+			@runstatus.Filter(props.status, props.statusFilterVisible)
 			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
 				<input type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
 				<div class="collapse-title font-semibold">Filter by tag</div>

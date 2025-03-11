@@ -1,7 +1,6 @@
 package run
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"testing"
 
@@ -16,15 +15,13 @@ import (
 )
 
 func TestListRunsHandler(t *testing.T) {
-	// Make enough runs to populate three pages
-	n := 2*resource.DefaultPageSize + 1
-	runs := make([]*Run, n)
-	for i := 1; i <= n; i++ {
-		runs[i-1] = &Run{ID: testutils.ParseID(t, fmt.Sprintf("run-%d", i))}
-	}
+	// NOTE: We can't easily unit test this handler because a
+	// websocket is responsible for fetching the listing. Instead we rely on
+	// integration tests.
+	t.Skip()
+
 	h := newTestWebHandlers(t,
 		withWorkspace(&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")}),
-		withRuns(runs...),
 	)
 	user := &user.User{ID: resource.NewID(resource.UserKind)}
 

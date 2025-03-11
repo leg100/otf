@@ -6,7 +6,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"strconv"
@@ -15,9 +14,10 @@ import (
 )
 
 type listProps struct {
-	ws                 *workspace.Workspace
-	page               *resource.Page[*Run]
-	canUpdateWorkspace bool
+	ws                  *workspace.Workspace
+	status              []runstatus.Status
+	statusFilterVisible bool
+	canUpdateWorkspace  bool
 }
 
 templ list(props listProps) {
@@ -29,17 +29,23 @@ templ list(props listProps) {
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-			{Name: "runs"},
+			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<!-- watch for updates to listed runs as well as newly created runs -->
-		<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) }>
-			<!-- /* if a new run is created then reload entire run listing */ -->
-			<div hx-get={ components.CurrentURL(ctx) } hx-trigger="sse:created" hx-target="#content"></div>
-			@components.PaginatedContentList(props.page, widget)
-		</div>
+		<form
+			action={ paths.Runs(props.ws.ID.String()) }
+			hx-ext="ws"
+			ws-connect={ components.CurrentURL(ctx) }
+			ws-send
+			hx-trigger="load delay:1ms"
+		>
+			<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
+			@runstatus.Filter(props.status, props.statusFilterVisible)
+		</form>
+		<div id="page-results"></div>
 	}
 }
 
@@ -193,7 +199,7 @@ templ widget(run *Run) {
 					}
 					if run.Status == runstatus.Planned {
 						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
-							<button class="btn">Apply</button>
+							<button id="apply-button" class="btn">Apply</button>
 						</form>
 					}
 					if run.Cancelable() {
