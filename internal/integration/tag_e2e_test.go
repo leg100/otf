@@ -96,7 +96,7 @@ resource "null_resource" "tags_e2e" {}
 		err = page.Locator(`//span[@id='content-header-title']//a[text()='workspaces']`).Click()
 		require.NoError(t, err)
 		// show tags
-		err = page.Locator(`//input[@name='tags_filter_open']`).Click()
+		err = page.Locator(`//input[@name='tag_filter_visible']`).Click()
 		require.NoError(t, err)
 		// filter by tag foo
 		err = page.Locator(`//input[@id='filter-tag-foo']`).Click()

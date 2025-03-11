@@ -393,7 +393,7 @@ func TestWorkspace(t *testing.T) {
 		}
 	})
 
-	t.Run("list by current run statuses", func(t *testing.T) {
+	t.Run("list by latest run status", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
@@ -451,8 +451,8 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				results, err := svc.Workspaces.List(ctx, workspace.ListOptions{
-					Organization:       &org.Name,
-					CurrentRunStatuses: tt.statuses,
+					Organization: &org.Name,
+					Status:       tt.statuses,
 				})
 				require.NoError(t, err)
 

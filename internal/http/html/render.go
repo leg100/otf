@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"io"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -21,6 +22,13 @@ func Render(c templ.Component, w http.ResponseWriter, r *http.Request) {
 		})
 	})
 	templ.Handler(c, errHandler).ServeHTTP(w, r.WithContext(ctx))
+}
+
+func RenderSnippet(c templ.Component, w io.Writer, r *http.Request) error {
+	// add request to context for templates to access
+	ctx := context.WithValue(r.Context(), requestKey{}, r)
+	// TODO: is it ok to omit response from context?
+	return c.Render(ctx, w)
 }
 
 type requestKey struct{}
