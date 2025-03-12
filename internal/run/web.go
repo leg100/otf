@@ -62,7 +62,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		websocketListHandler: &components.WebsocketListHandler[*Run, ListOptions]{
 			Logger: opts.Logger,
 			Client: service,
-			Tabular: &table{
+			Populator: &table{
 				workspaceClient: opts.WorkspaceService,
 			},
 		},

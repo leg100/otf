@@ -13,12 +13,13 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-type Tabular[T any] interface {
+// TablePopulator populates a table component with resources of type T.
+type TablePopulator[T any] interface {
 	Header() templ.Component
 	Row(T) templ.Component
 }
 
-func Table[T any](tabular Tabular[T], page *resource.Page[T]) templ.Component {
+func Table[T any](populator TablePopulator[T], page *resource.Page[T]) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -44,11 +45,11 @@ func Table[T any](tabular Tabular[T], page *resource.Page[T]) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(page.Items) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<table><thead><tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<table class=\"table\"><thead><tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = tabular.Header().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = populator.Header().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -57,7 +58,7 @@ func Table[T any](tabular Tabular[T], page *resource.Page[T]) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, item := range page.Items {
-				templ_7745c5c3_Err = tabular.Row(item).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = populator.Row(item).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -125,7 +126,7 @@ func TablePaginationWidget[T any](page *resource.Page[T]) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/table.templ`, Line: 45, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/table.templ`, Line: 46, Col: 91}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {

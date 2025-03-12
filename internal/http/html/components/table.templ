@@ -5,23 +5,24 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-type Tabular[T any] interface {
+// TablePopulator populates a table component with resources of type T.
+type TablePopulator[T any] interface {
 	Header() templ.Component
 	Row(T) templ.Component
 }
 
-templ Table[T any](tabular Tabular[T], page *resource.Page[T]) {
+templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
 	<div id="page-results">
 		if len(page.Items) > 0 {
-			<table>
+			<table class="table">
 				<thead>
 					<tr>
-						@tabular.Header()
+						@populator.Header()
 					</tr>
 				</thead>
 				<tbody>
 					for _, item := range page.Items {
-						@tabular.Row(item)
+						@populator.Row(item)
 					}
 				</tbody>
 			</table>

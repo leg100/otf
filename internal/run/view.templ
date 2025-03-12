@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"fmt"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
@@ -64,14 +63,14 @@ type table struct {
 }
 
 templ (t table) Header() {
-	<th>select</th>
+	<th>Select</th>
 	if t.organization {
-		<th>workspace</th>
+		<th>Workspace</th>
 	}
-	<th>user</th>
-	<th>status</th>
-	<th>progress</th>
-	<th>actions</th>
+	<th>Origin</th>
+	<th>Status</th>
+	<th>Progress</th>
+	<th>Actions</th>
 }
 
 templ (t table) Row(run *Run) {
@@ -83,13 +82,15 @@ templ (t table) Row(run *Run) {
 		<td>
 			if run.IngressAttributes != nil {
 				<span class="inline-block max-w-[16rem] truncate">
-					| <a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
+					<a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
 				</span>
 			} else if run.CreatedBy != nil {
 				<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
-					| @{ *run.CreatedBy }
+					&commat;{ *run.CreatedBy }
 				</span>
 			}
+			<br/>
+			@source(run)
 		</td>
 		<td>
 			@runstatus.Badge(run.ID, run.Status)
@@ -98,30 +99,33 @@ templ (t table) Row(run *Run) {
 			}
 		</td>
 		<td>
-			<span>{ internal.Ago(time.Now(), run.CreatedAt) }</span>
-			if run.Apply.ResourceReport != nil {
-				@resourceReport(run.Apply.ResourceReport)
-			} else if run.Plan.ResourceReport != nil {
-				@resourceReport(run.Plan.ResourceReport)
-			}
+			@components.Ago(run.CreatedAt)
+			<br/>
+			<span class="text-lg">
+				if run.Apply.ResourceReport != nil {
+					@resourceReport(run.Apply.ResourceReport)
+				} else if run.Plan.ResourceReport != nil {
+					@resourceReport(run.Plan.ResourceReport)
+				}
+			</span>
 		</td>
-		<td>
+		<td class="flex gap-2">
 			if run.Status == runstatus.Planned {
 				<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
-					<button id="apply-button" class="btn">Apply</button>
+					<button id="apply-button" class="btn btn-sm">Apply</button>
 				</form>
 			}
 			if run.Cancelable() {
 				<form action={ paths.CancelRun(run.ID.String()) } method="POST">
-					<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
+					<button class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
 				</form>
 			} else if run.ForceCancelable() {
 				<form action={ paths.ForceCancelRun(run.ID.String()) } method="POST">
-					<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
+					<button class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
 				</form>
 			} else if run.Discardable() {
 				<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
-					<button id="run-discard-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
+					<button id="run-discard-button" class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
 				</form>
 			} else if run.CancelSignaledAt != nil && !run.Done() {
 				cancelling...
@@ -258,7 +262,9 @@ templ widget(run *Run) {
 						| @{ *run.CreatedBy }
 					</span>
 				}
-				<span>{ internal.Ago(time.Now(), run.CreatedAt) }</span>
+				<span>
+					@components.Ago(run.CreatedAt)
+				</span>
 			</div>
 			<div>
 				<div class="flex gap-2 items-center">

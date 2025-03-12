@@ -100,6 +100,38 @@ templ list(props listProps) {
 	}
 }
 
+type table struct{}
+
+templ (t table) Header() {
+	<th>Select</th>
+	<th>Name</th>
+	<th>Status</th>
+	<th>Tags</th>
+}
+
+templ (t table) Row(ws *Workspace) {
+	<tr id={ "run-workspace-" + ws.ID.String() }>
+		<td>checkbox</td>
+		<td>
+			<a class="link" href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+		</td>
+		<td>
+			if ws.LatestRun != nil {
+				@runstatus.Badge(ws.LatestRun.ID, ws.LatestRun.Status)
+			}
+		</td>
+		<td>
+			<div class="flex gap-2 items-center">
+				<form class="flex items-center gap-2" action={ paths.Workspace(ws.ID.String()) } method="GET">
+					for _, tag := range ws.Tags {
+						<button class="tag" name="search[tags]" value={ tag }>{ tag }</button>
+					}
+				</form>
+			</div>
+		</td>
+	</tr>
+}
+
 templ listItem(ws *Workspace) {
 	<div
 		x-data={ components.BlockLink(paths.Workspace(ws.ID.String())) }
