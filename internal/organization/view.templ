@@ -92,9 +92,11 @@ templ get(organization *Organization) {
 			<span id="menu-item-workspaces">
 				<a href={ paths.Workspaces(organization.Name) }>workspaces</a>
 			</span>
-			<span id="menu-item-runs">
-				<a href={ paths.OrganizationRuns(organization.Name) }>runs</a>
-			</span>
+			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
+				<span id="menu-item-runs">
+					<a href={ paths.OrganizationRuns(organization.Name) }>runs</a>
+				</span>
+			}
 			<span id="modules">
 				<a href={ paths.Modules(organization.Name) }>modules</a>
 			</span>

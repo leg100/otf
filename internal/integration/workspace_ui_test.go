@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/leg100/otf/internal"
@@ -40,64 +41,122 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		})
 	})
 
-	// TODO: split into more smaller more targeted tests
 	t.Run("listing_and_filtering_and_updating", func(t *testing.T) {
-		repo := vcs.NewTestRepo()
-		daemon, org, ctx := setup(t, nil,
-			github.WithRepo(repo),
-			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-		)
-		// create vcs provider for authenticating to github backend
-		provider := daemon.createVCSProvider(t, ctx, org)
+		daemon, org, ctx := setup(t, nil)
 
-		// create workspaces for listing and searching/filtering
-		ws1, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String("workspace-1"),
-			Organization: &org.Name,
-		})
-		require.NoError(t, err)
-		ws2, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String("workspace-12"),
-			Organization: &org.Name,
-		})
-		require.NoError(t, err)
-		ws3, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
-			Name:         internal.String("workspace-2"),
-			Organization: &org.Name,
-		})
-		require.NoError(t, err)
+		// Create lots of workspaces for filtering and updating
+		workspaces := make([]*workspace.Workspace, 101)
+		for i := range 101 {
+			// create workspaces workspaces-{1-101}
+			ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
+				Name:         internal.String(fmt.Sprintf("workspace-%d", i+1)),
+				Organization: &org.Name,
+			})
+			require.NoError(t, err)
+			workspaces[i] = ws
+		}
 
 		// Create some runs to allow filtering workspaces by their current run
 		// status
-		cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
-		cv2 := daemon.createAndUploadConfigurationVersion(t, ctx, ws2, nil)
-		cv3 := daemon.createAndUploadConfigurationVersion(t, ctx, ws3, nil)
+		cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, workspaces[0], nil)
+		cv2 := daemon.createAndUploadConfigurationVersion(t, ctx, workspaces[1], nil)
+		cv3 := daemon.createAndUploadConfigurationVersion(t, ctx, workspaces[2], nil)
 		// A 'planned' run.
-		ws1run1planned := daemon.createRun(t, ctx, ws1, cv1, nil)
+		ws1run1planned := daemon.createRun(t, ctx, workspaces[0], cv1, nil)
 		_ = daemon.waitRunStatus(t, ws1run1planned.ID, runstatus.Planned)
 		// A 'planned' run.
-		ws2run1planned := daemon.createRun(t, ctx, ws2, cv2, nil)
+		ws2run1planned := daemon.createRun(t, ctx, workspaces[1], cv2, nil)
 		_ = daemon.waitRunStatus(t, ws2run1planned.ID, runstatus.Planned)
 		// An 'applied' run.
-		ws3run1applied := daemon.createRun(t, ctx, ws3, cv3, nil)
+		ws3run1applied := daemon.createRun(t, ctx, workspaces[2], cv3, nil)
 		_ = daemon.waitRunStatus(t, ws3run1applied.ID, runstatus.Planned)
-		err = daemon.Runs.Apply(ctx, ws3run1applied.ID)
+		err := daemon.Runs.Apply(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
 		_ = daemon.waitRunStatus(t, ws3run1applied.ID, runstatus.Applied)
+
+		// navigate through different pages and back
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err := page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
+			require.NoError(t, err)
+
+			steps := []struct {
+				info       string
+				goNext     bool
+				goPrevious bool
+			}{
+				{
+					info:   "1-20 of 101",
+					goNext: true,
+				},
+				{
+					info:   "21-40 of 101",
+					goNext: true,
+				},
+				{
+					info:   "41-60 of 101",
+					goNext: true,
+				},
+				{
+					info:   "61-80 of 101",
+					goNext: true,
+				},
+				{
+					info:   "81-100 of 101",
+					goNext: true,
+				},
+				{
+					info:       "101-101 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "81-100 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "61-80 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "41-60 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "21-40 of 101",
+					goPrevious: true,
+				},
+				{
+					info: "1-20 of 101",
+				},
+			}
+			for _, step := range steps {
+				err = expect.Locator(page.Locator(`#page-info`)).ToHaveText(step.info)
+				require.NoError(t, err)
+
+				if step.goNext {
+					err = page.Locator("#next-page-link").Click()
+					require.NoError(t, err)
+				} else if step.goPrevious {
+					err = page.Locator("#prev-page-link").Click()
+					require.NoError(t, err)
+				}
+			}
+		})
 
 		// demonstrate listing and searching
 		browser.New(t, ctx, func(page playwright.Page) {
 			_, err := page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
 			require.NoError(t, err)
 
-			// search for 'workspace-1' which should produce two results
+			// search for 'workspace-1'
 			err = page.Locator(`input[type="search"]`).Fill("workspace-1")
 			require.NoError(t, err)
 
 			err = page.Locator(`input[type="search"]`).Press("Enter")
 			require.NoError(t, err)
 
-			err = expect.Locator(page.Locator(`div.widget`)).ToHaveCount(2)
+			// search for 'workspace-1' should produce 13 results (1,
+			// 10-19, 100, 101)
+			err = expect.Locator(page.Locator(`div.widget`)).ToHaveCount(13)
 			require.NoError(t, err)
 
 			// and workspace-2 should not be visible
@@ -111,12 +170,26 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			// now workspace-2 should be visible (updated via ajax)
 			err = expect.Locator(page.Locator(`//*[@id="item-workspace-workspace-2"]`)).ToBeVisible()
 			require.NoError(t, err)
+		})
+	})
 
+	t.Run("workspace settings", func(t *testing.T) {
+		repo := vcs.NewTestRepo()
+		daemon, org, ctx := setup(t, nil,
+			github.WithRepo(repo),
+			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+		)
+		// create vcs provider for authenticating to github backend
+		provider := daemon.createVCSProvider(t, ctx, org)
+		// create workspace on which edit settings
+		ws1 := daemon.createWorkspace(t, ctx, org)
+
+		browser.New(t, ctx, func(page playwright.Page) {
 			// demonstrate setting vcs trigger patterns
 			//
-			connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, "workspace-1", provider.String())
+			connectWorkspaceTasks(t, page, daemon.System.Hostname(), org.Name, ws1.Name, provider.String())
 
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+			_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -182,14 +255,14 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err := daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
+			ws, err := daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Len(t, ws.TriggerPatterns, 2)
 			require.Contains(t, ws.TriggerPatterns, "/foo/*.tf")
 			require.Contains(t, ws.TriggerPatterns, "/baz/*.tf")
 
 			// set vcs trigger to use tag regex
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -224,7 +297,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
+			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Len(t, ws.TriggerPatterns, 0)
 			require.NotNil(t, ws.Connection)
@@ -232,7 +305,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// set vcs branch
 			//
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 
 			// go to workspace settings
@@ -256,13 +329,13 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
+			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, "dev", ws.Connection.Branch)
 
 			// permit applies from the CLI
 			//
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 			// go to workspace settings
 			err = page.Locator(`//a[text()='settings']`).Click()
@@ -283,13 +356,13 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// check UI has correctly updated the workspace resource
-			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
+			ws, err = daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
 			require.NoError(t, err)
 			require.Equal(t, true, ws.Connection.AllowCLIApply)
 
 			// set description
 
-			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "workspace-1"))
+			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 			// go to workspace settings
 			err = page.Locator(`//a[text()='settings']`).Click()
@@ -312,7 +385,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		})
 
 		// check UI has correctly updated the workspace resource
-		ws, err := daemon.Workspaces.GetByName(ctx, org.Name, "workspace-1")
+		ws, err := daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
 		require.NoError(t, err)
 		require.Equal(t, "my big fat workspace", ws.Description)
 	})

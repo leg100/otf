@@ -403,7 +403,7 @@ AND   w.organization_name   LIKE ANY($2::text[])
 AND   (($3::text[] IS NULL) OR (r.status = ANY($3::text[])))
 GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path
 HAVING array_agg(t.name) @> $4::text[]
-ORDER BY w.updated_at DESC
+ORDER BY w.name ASC
 LIMIT $6::int
 OFFSET $5::int
 `
