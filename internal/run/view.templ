@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"strconv"
@@ -19,6 +20,7 @@ type listProps struct {
 	status              []runstatus.Status
 	statusFilterVisible bool
 	canUpdateWorkspace  bool
+	pageOptions         resource.PageOptions
 }
 
 templ list(props listProps) {
@@ -43,13 +45,16 @@ templ list(props listProps) {
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
 			ws-send
-			hx-trigger="load delay:1ms"
+			hx-trigger="load"
 			action={ templ.SafeURL(components.CurrentURLWithoutQuery(ctx)) }
 		>
 			if props.ws != nil {
 				<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+			} else {
+				<input type="hidden" name="organization_name" value={ props.organization }/>
 			}
-			<input type="hidden" name="page_size" value={ components.Cookie(ctx, "page_size") }/>
+			<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>
+			<input type="hidden" name="page" value={ strconv.Itoa(props.pageOptions.PageNumber) }/>
 			@runstatus.Filter(props.status, props.statusFilterVisible)
 		</form>
 		<div id="page-results"></div>

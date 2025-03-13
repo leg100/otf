@@ -12,12 +12,13 @@ import (
 func TestIntegration_RunListUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, nil)
-	ws := daemon.createWorkspace(t, ctx, nil)
+	daemon, org, ctx := setup(t, nil)
+	ws1 := daemon.createWorkspace(t, ctx, org)
+	ws2 := daemon.createWorkspace(t, ctx, org)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// navigate to workspace page
-		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), ws.Organization, ws.Name))
+		_, err := page.Goto(workspaceURL(daemon.System.Hostname(), ws1.Organization, ws1.Name))
 		require.NoError(t, err)
 
 		// navigate to runs page
@@ -30,11 +31,12 @@ func TestIntegration_RunListUI(t *testing.T) {
 	})
 
 	// create several runs
-	cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	cv2 := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	cv3 := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
+	cv1 := daemon.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
+	cv2 := daemon.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
+	cv3 := daemon.createAndUploadConfigurationVersion(t, ctx, ws1, nil)
+	cv4 := daemon.createAndUploadConfigurationVersion(t, ctx, ws2, nil)
 	// create run, and apply
-	run1 := daemon.createRun(t, ctx, ws, cv1, nil)
+	run1 := daemon.createRun(t, ctx, ws1, cv1, nil)
 	{
 		_ = daemon.waitRunStatus(t, run1.ID, runstatus.Planned)
 		err := daemon.Runs.Apply(ctx, run1.ID)
@@ -42,12 +44,14 @@ func TestIntegration_RunListUI(t *testing.T) {
 		_ = daemon.waitRunStatus(t, run1.ID, runstatus.Applied)
 	}
 	// create two runs, which should reached planned&finished state.
-	_ = daemon.createRun(t, ctx, ws, cv2, nil)
-	_ = daemon.createRun(t, ctx, ws, cv3, nil)
+	_ = daemon.createRun(t, ctx, ws1, cv2, nil)
+	_ = daemon.createRun(t, ctx, ws1, cv3, nil)
+	// create another run on a different workspace
+	_ = daemon.createRun(t, ctx, ws2, cv4, nil)
 
 	browser.New(t, ctx, func(page playwright.Page) {
-		// navigate to runs page
-		_, err := page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
+		// navigate to workspace runs page
+		_, err := page.Goto(workspaceRunsURL(daemon.System.Hostname(), ws1.ID))
 		require.NoError(t, err)
 
 		// should be three runs
@@ -63,6 +67,28 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should only show two runs
+		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-2 of 2")
+		require.NoError(t, err)
+	})
+
+	browser.New(t, ctx, func(page playwright.Page) {
+		// navigate to organization runs page
+		_, err := page.Goto(organizationRunsURL(daemon.System.Hostname(), org.Name))
+		require.NoError(t, err)
+
+		// should be four runs
+		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-4 of 4")
+		require.NoError(t, err)
+
+		// show status filter
+		err = page.Locator(`#toggle-status-filter-visibility`).Click()
+		require.NoError(t, err)
+
+		// filter by planned&finished
+		err = page.Locator(`#filter-status-planned_and_finished`).Click()
+		require.NoError(t, err)
+
+		// should only show three runs
 		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-2 of 2")
 		require.NoError(t, err)
 	})

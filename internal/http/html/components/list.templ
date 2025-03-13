@@ -2,11 +2,10 @@ package components
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
+	"strconv"
 )
 
 templ ContentList[T any](items []T, comp func(T) templ.Component) {
@@ -22,100 +21,93 @@ templ ContentList[T any](items []T, comp func(T) templ.Component) {
 
 templ PaginatedContentList[T any](page *resource.Page[T], comp func(T) templ.Component) {
 	{{
-		info, err := newPageInfo(ctx, page)
-		if err != nil {
-			return err
-		}
+		info := pageInfo[T]{Page: page}
 	}}
 	<div id="page-results">
 		@ContentList(page.Items, comp)
 		<div class="flex p-4 gap-2 justify-end items-center">
-			@pageSizeSelector()
-			<div class="badge badge-outline badge-neutral" id="page-info">
-				{ fmt.Sprintf("%d-%d of %d", info.firstItemNumber, info.lastItemNumber, page.TotalCount) }
-			</div>
-			<div class="join">
-				if info.previousPageURL != nil {
-					<button class="join-item btn btn-sm">
-						<a id="prev-page-link" href={ *info.previousPageURL }>Previous Page</a>
-					</button>
-				}
-				if info.nextPageURL != nil {
-					<button class="join-item btn btn-sm">
-						<a id="next-page-link" href={ *info.nextPageURL }>Next Page</a>
-					</button>
-				}
-			</div>
+			@info.pageSizeSelector()
+			@info.summary()
+			@info.navigationButtons()
 		</div>
 	</div>
 }
 
-type pageInfo struct {
-	pagination      resource.Pagination
-	opts            resource.PageOptions
-	firstItemNumber int
-	lastItemNumber  int
-	previousPageURL *templ.SafeURL
-	nextPageURL     *templ.SafeURL
+type pageInfo[T any] struct {
+	*resource.Page[T]
 }
 
-func newPageInfo[T any](ctx context.Context, page *resource.Page[T]) (*pageInfo, error) {
-	request := html.RequestFromContext(ctx)
-	if request == nil {
-		return nil, errors.New("no request found in context")
+templ (p pageInfo[T]) summary() {
+	{{
+	size, err := p.pageSize(ctx)
+	if err != nil {
+		return err
 	}
-	var opts resource.PageOptions
-	if err := decode.All(&opts, request); err != nil {
-		return nil, err
-	}
-	opts = opts.Normalize()
+	firstItemNumber := ((p.CurrentPage - 1) * size) + 1
+	lastItemNumber := max(0, firstItemNumber+len(p.Items)-1)
+	}}
+	<div class="badge badge-outline badge-neutral" id="page-info">
+		{ fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount) }
+	</div>
+}
 
-	firstItemNumber := ((opts.PageNumber - 1) * opts.PageSize) + 1
-	lastItemNumber := max(0, firstItemNumber+len(page.Items)-1)
-
-	info := &pageInfo{
-		pagination:      *page.Pagination,
-		opts:            opts,
-		firstItemNumber: firstItemNumber,
-		lastItemNumber:  lastItemNumber,
-	}
-
-	if page.PreviousPage != nil {
-		previousPageURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.PreviousPage))
+func (p pageInfo[T]) pageSize(ctx context.Context) (int, error) {
+	if preferredSize := Cookie(ctx, "page_size"); preferredSize != "" {
+		size, err := strconv.Atoi(preferredSize)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
-		info.previousPageURL = &previousPageURL
+		return size, nil
 	}
-	if page.NextPage != nil {
-		nextPageURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*page.NextPage))
+	return resource.DefaultPageSize, nil
+}
+
+templ (p pageInfo[T]) navigationButtons() {
+	{{
+		var (
+			previousURL templ.SafeURL
+			nextURL     templ.SafeURL
+			err         error
+		)
+		if p.PreviousPage != nil {
+			previousURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
+			if err != nil {
+				return err
+			}
+		}
+		if p.NextPage != nil {
+			nextURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
+			if err != nil {
+				return err
+			}
+		}
+	}}
+	<div class="join">
+		if p.PreviousPage != nil {
+			<button class="join-item btn btn-sm">
+				<a id="prev-page-link" href={ previousURL }>Previous Page</a>
+			</button>
+		}
+		if p.NextPage != nil {
+			<button class="join-item btn btn-sm">
+				<a id="next-page-link" href={ nextURL }>Next Page</a>
+			</button>
+		}
+	</div>
+}
+
+templ (p pageInfo[T]) pageSizeSelector() {
+	{{
+		currentSize, err := p.pageSize(ctx)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		info.nextPageURL = &nextPageURL
-	}
-
-	return info, nil
-}
-
-func pageQuery(page int) string {
-	return fmt.Sprintf("page=%d", page)
-}
-
-templ pageSizeSelector() {
+	}}
 	<label class="select w-40">
 		<span class="label">Page size</span>
 		<select class="select" onchange="savePageSize(this)" id="page-size-selector">
-			{{
-					// If user has previously chosen a preferred page size then
-					// it'll be persisted to a cookie
-					currentPageSize := Cookie(ctx, "page_size")
-					if currentPageSize == "" {
-						currentPageSize = "20"
-					}
-			}}
-			for _, size := range []string{"20","40","60","80","100"} {
-				<option selected?={ currentPageSize == size }>{ size }</option>
+			for _, size := range []int{20,40,60,80,100} {
+				<option selected?={ currentSize == size }>{ strconv.Itoa(size) }</option>
 			}
 		</select>
 		<script>
@@ -125,4 +117,8 @@ templ pageSizeSelector() {
 			}
 		</script>
 	</label>
+}
+
+func pageQuery(page int) string {
+	return fmt.Sprintf("page=%d", page)
 }

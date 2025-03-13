@@ -27,7 +27,11 @@ func runURL(hostname string, runID resource.ID) string {
 	return fmt.Sprintf("https://%s/app/runs/%s", hostname, runID)
 }
 
-func runsURL(hostname string, workspaceID resource.ID) string {
+func organizationRunsURL(hostname string, organization string) string {
+	return fmt.Sprintf("https://%s/app/organizations/%s/runs", hostname, organization)
+}
+
+func workspaceRunsURL(hostname string, workspaceID resource.ID) string {
 	return fmt.Sprintf("https://%s/app/workspaces/%s/runs", hostname, workspaceID)
 }
 

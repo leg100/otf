@@ -129,6 +129,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := listProps{
 		status:              opts.Statuses,
 		statusFilterVisible: opts.StatusFilterVisible,
+		pageOptions:         opts.PageOptions,
 	}
 
 	if opts.ListOptions.WorkspaceID != nil {

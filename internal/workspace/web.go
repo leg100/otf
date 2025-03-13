@@ -181,6 +181,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 			authz.CreateWorkspaceAction,
 			&authz.AccessRequest{Organization: *params.Organization},
 		),
+		pageOptions: params.PageOptions,
 	}
 
 	html.Render(list(props), w, r)
@@ -600,7 +601,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	repos, err := client.ListRepositories(r.Context(), vcs.ListRepositoriesOptions{
-		PageSize: html.PageSize,
+		PageSize: resource.MaxPageSize,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
