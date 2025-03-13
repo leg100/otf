@@ -74,6 +74,74 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		require.NoError(t, err)
 		_ = daemon.waitRunStatus(t, ws3run1applied.ID, runstatus.Applied)
 
+		// navigate through different pages and back
+		browser.New(t, ctx, func(page playwright.Page) {
+			_, err := page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
+			require.NoError(t, err)
+
+			steps := []struct {
+				info       string
+				goNext     bool
+				goPrevious bool
+			}{
+				{
+					info:   "1-20 of 101",
+					goNext: true,
+				},
+				{
+					info:   "21-40 of 101",
+					goNext: true,
+				},
+				{
+					info:   "41-60 of 101",
+					goNext: true,
+				},
+				{
+					info:   "61-80 of 101",
+					goNext: true,
+				},
+				{
+					info:   "81-100 of 101",
+					goNext: true,
+				},
+				{
+					info:       "101-101 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "81-100 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "61-80 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "41-60 of 101",
+					goPrevious: true,
+				},
+				{
+					info:       "21-40 of 101",
+					goPrevious: true,
+				},
+				{
+					info: "1-20 of 101",
+				},
+			}
+			for _, step := range steps {
+				err = expect.Locator(page.Locator(`#page-info`)).ToHaveText(step.info)
+				require.NoError(t, err)
+
+				if step.goNext {
+					err = page.Locator("#next-page-link").Click()
+					require.NoError(t, err)
+				} else if step.goPrevious {
+					err = page.Locator("#prev-page-link").Click()
+					require.NoError(t, err)
+				}
+			}
+		})
+
 		// demonstrate listing and searching
 		browser.New(t, ctx, func(page playwright.Page) {
 			_, err := page.Goto(workspacesURL(daemon.System.Hostname(), org.Name))
