@@ -202,13 +202,22 @@ func (p pageInfo[T]) navigationButtons() templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 
-		previousURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
-		if err != nil {
-			return err
+		var (
+			previousURL templ.SafeURL
+			nextURL     templ.SafeURL
+			err         error
+		)
+		if p.PreviousPage != nil {
+			previousURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
+			if err != nil {
+				return err
+			}
 		}
-		nextURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
-		if err != nil {
-			return err
+		if p.NextPage != nil {
+			nextURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
+			if err != nil {
+				return err
+			}
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"join\">")
 		if templ_7745c5c3_Err != nil {
@@ -300,7 +309,7 @@ func (p pageInfo[T]) pageSizeSelector() templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(size))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 101, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 110, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {

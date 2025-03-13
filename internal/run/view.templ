@@ -50,6 +50,8 @@ templ list(props listProps) {
 		>
 			if props.ws != nil {
 				<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+			} else {
+				<input type="hidden" name="organization_name" value={ props.organization }/>
 			}
 			<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>
 			<input type="hidden" name="page" value={ strconv.Itoa(props.pageOptions.PageNumber) }/>

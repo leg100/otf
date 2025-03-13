@@ -64,14 +64,23 @@ func (p pageInfo[T]) pageSize(ctx context.Context) (int, error) {
 
 templ (p pageInfo[T]) navigationButtons() {
 	{{
-				previousURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
-				if err != nil {
-					return err
-				}
-				nextURL, err := html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
-				if err != nil {
-					return err
-				}
+		var (
+			previousURL templ.SafeURL
+			nextURL     templ.SafeURL
+			err         error
+		)
+		if p.PreviousPage != nil {
+			previousURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.PreviousPage))
+			if err != nil {
+				return err
+			}
+		}
+		if p.NextPage != nil {
+			nextURL, err = html.MergeQuery(CurrentURL(ctx), pageQuery(*p.NextPage))
+			if err != nil {
+				return err
+			}
+		}
 	}}
 	<div class="join">
 		if p.PreviousPage != nil {

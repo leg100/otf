@@ -59,7 +59,7 @@ func TestGithubPullRequest(t *testing.T) {
 		// commit-triggered run should appear as latest run on workspace
 		browser.New(t, ctx, func(page playwright.Page) {
 			// go to runs
-			_, err = page.Goto(runsURL(daemon.System.Hostname(), ws.ID))
+			_, err = page.Goto(workspaceRunsURL(daemon.System.Hostname(), ws.ID))
 			require.NoError(t, err)
 			// should be one run widget with info matching the pull request
 			err = expect.Locator(page.Locator(`//a[@id='pull-request-link' and text()='#2']`)).ToBeVisible()
