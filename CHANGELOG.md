@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.15](https://github.com/leg100/otf/compare/v0.3.14...v0.3.15) (2025-03-13)
+
+
+### Features
+
+* order workspaces lexicographically ([66a2b00](https://github.com/leg100/otf/commit/66a2b00665cfe45b81038b4a374ac639e53a0c71))
+* **ui:** filter runs by status ([#737](https://github.com/leg100/otf/issues/737)) ([8780849](https://github.com/leg100/otf/commit/8780849e57f45568decdc64e7d4e70a0a1132316))
+* **ui:** organization runs view ([#739](https://github.com/leg100/otf/issues/739)) ([dad98f7](https://github.com/leg100/otf/commit/dad98f7ccb1e46ba1c1dd4d507f9eeb3b13a3704))
+
+
+### Bug Fixes
+
+* **ui:** pagination broken on some pages ([cc6d970](https://github.com/leg100/otf/commit/cc6d970197a8ee80a99aa8ac5ebc1c0fba9f1e2a))
+
 ## [0.3.14](https://github.com/leg100/otf/compare/v0.3.13...v0.3.14) (2025-03-07)
 
 
