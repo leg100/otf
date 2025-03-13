@@ -77,7 +77,7 @@ AND   w.organization_name   LIKE ANY(sqlc.arg('organization_names')::text[])
 AND   ((sqlc.arg('status')::text[] IS NULL) OR (r.status = ANY(sqlc.arg('status')::text[])))
 GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path
 HAVING array_agg(t.name) @> sqlc.arg('tags')::text[]
-ORDER BY w.updated_at DESC
+ORDER BY w.name ASC
 LIMIT sqlc.arg('limit')::int
 OFFSET sqlc.arg('offset')::int
 ;
