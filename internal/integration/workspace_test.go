@@ -169,11 +169,19 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
-		ws1 := svc.createWorkspace(t, ctx, org)
-		ws2 := svc.createWorkspace(t, ctx, org)
+		ws1, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+			Organization: internal.String(org.Name),
+			Name:         internal.String("workspace-1"),
+		})
+		require.NoError(t, err)
+		ws2, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
+			Organization: internal.String(org.Name),
+			Name:         internal.String("workspace-2"),
+		})
+		require.NoError(t, err)
 		wsTagged, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
 			Organization: internal.String(org.Name),
-			Name:         internal.String("ws-tagged"),
+			Name:         internal.String("workspace-3"),
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
 		})
 		require.NoError(t, err)
@@ -193,10 +201,8 @@ func TestWorkspace(t *testing.T) {
 				},
 			},
 			{
-				name: "filter by name regex",
-				// test workspaces are named `workspace-<random 6 alphanumerals>`, so prefix with 14
-				// characters to be pretty damn sure only ws1 is selected.
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: ws1.Name[:14]},
+				name: "filter by name",
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: "workspace-1"},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
@@ -218,23 +224,26 @@ func TestWorkspace(t *testing.T) {
 				},
 			},
 			{
-				name: "filter by non-existent name regex",
+				name: "filter by non-existent name",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: "xyz"},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
-				name: "paginated results ordered by updated_at",
+				name: "default order is lexicographically sorted by name",
+				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
+					assert.Equal(t, ws1, l.Items[0])
+					assert.Equal(t, ws2, l.Items[1])
+					assert.Equal(t, wsTagged, l.Items[2])
+				},
+			},
+			{
+				name: "pagination",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
-					// results are in descending order so we expect wsTagged to be listed
-					// first...unless - and this happens very occasionally - the
-					// updated_at time is equal down to nearest millisecond.
-					if !ws2.UpdatedAt.Equal(wsTagged.UpdatedAt) {
-						assert.Equal(t, wsTagged, l.Items[0])
-					}
 					assert.Equal(t, 3, l.TotalCount)
 				},
 			},
