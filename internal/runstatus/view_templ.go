@@ -52,7 +52,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var2 = []any{"run-status text-lg badge", "badge-" + status.String()}
+		var templ_7745c5c3_Var2 = []any{"run-status text-md badge", "badge-" + status.String()}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

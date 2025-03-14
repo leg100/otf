@@ -11,12 +11,12 @@ import templruntime "github.com/a-h/templ/runtime"
 import "github.com/leg100/otf/internal/resource"
 
 // TablePopulator populates a table component with resources of type T.
-type TablePopulator[T any] interface {
-	Header() templ.Component
-	Row(T) templ.Component
+type TablePopulator[T any, Options any] interface {
+	Header(Options) templ.Component
+	Row(T, Options) templ.Component
 }
 
-func Table[T any](populator TablePopulator[T], page *resource.Page[T]) templ.Component {
+func Table[T any, Options any](populator TablePopulator[T, Options], page *resource.Page[T], options Options) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -37,7 +37,7 @@ func Table[T any](populator TablePopulator[T], page *resource.Page[T]) templ.Com
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"page-results\"><div class=\"rounded-box border border-base-content/5 bg-base-400\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"page-results\"><div class=\"rounded-box border border-base-content/5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -46,7 +46,7 @@ func Table[T any](populator TablePopulator[T], page *resource.Page[T]) templ.Com
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = populator.Header().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = populator.Header(options).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -55,7 +55,7 @@ func Table[T any](populator TablePopulator[T], page *resource.Page[T]) templ.Com
 				return templ_7745c5c3_Err
 			}
 			for _, item := range page.Items {
-				templ_7745c5c3_Err = populator.Row(item).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = populator.Row(item, options).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -65,7 +65,7 @@ func Table[T any](populator TablePopulator[T], page *resource.Page[T]) templ.Com
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "No items currently exist.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<span id=\"no-items-found\" class=\"p-2\">No items found</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

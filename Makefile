@@ -203,5 +203,8 @@ live/sync_assets:
 	--build.include_ext "js,css,svg"
 
 # start watch processes in parallel.
+#
+# NOTE: for some reason, if live/templ is placed first in the list it blocks
+# the remaining processes, so it's important it is placed first.
 live:
-	make -j3 live/templ live/tailwind live/sync_assets
+	make -j live/tailwind live/sync_assets live/templ

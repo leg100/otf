@@ -3,29 +3,31 @@ package components
 import "github.com/leg100/otf/internal/resource"
 
 // TablePopulator populates a table component with resources of type T.
-type TablePopulator[T any] interface {
-	Header() templ.Component
-	Row(T) templ.Component
+type TablePopulator[T any, Options any] interface {
+	Header(Options) templ.Component
+	Row(T, Options) templ.Component
 }
 
-templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
+templ Table[T any, Options any](populator TablePopulator[T, Options], page *resource.Page[T], options Options) {
 	<div id="page-results">
-		<div class="rounded-box border border-base-content/5 bg-base-400">
+		<div class="rounded-box border border-base-content/5">
 			if len(page.Items) > 0 {
 				<table class="table">
 					<thead>
 						<tr>
-							@populator.Header()
+							@populator.Header(options)
 						</tr>
 					</thead>
 					<tbody>
 						for _, item := range page.Items {
-							@populator.Row(item)
+							@populator.Row(item, options)
 						}
 					</tbody>
 				</table>
 			} else {
-				No items currently exist.
+				<span id="no-items-found" class="p-2">
+					No items found
+				</span>
 			}
 		</div>
 		{{
