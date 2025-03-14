@@ -10,27 +10,31 @@ type TablePopulator[T any] interface {
 
 templ Table[T any](populator TablePopulator[T], page *resource.Page[T]) {
 	<div id="page-results">
-		if len(page.Items) > 0 {
-			<table class="table">
-				<thead>
-					<tr>
-						@populator.Header()
-					</tr>
-				</thead>
-				<tbody>
-					for _, item := range page.Items {
-						@populator.Row(item)
-					}
-				</tbody>
-			</table>
-		} else {
-			No items currently exist.
-		}
+		<div class="rounded-box border border-base-content/5 bg-base-400">
+			if len(page.Items) > 0 {
+				<table class="table">
+					<thead>
+						<tr>
+							@populator.Header()
+						</tr>
+					</thead>
+					<tbody>
+						for _, item := range page.Items {
+							@populator.Row(item)
+						}
+					</tbody>
+				</table>
+			} else {
+				No items currently exist.
+			}
+		</div>
 		{{
 			info := pageInfo[T]{Page: page}
 		}}
-		@info.pageSizeSelector()
-		@info.summary()
-		@info.navigationButtons()
+		<div class="flex p-4 gap-2 justify-between items-center">
+			@info.pageSizeSelector()
+			@info.summary()
+			@info.navigationButtons()
+		</div>
 	</div>
 }

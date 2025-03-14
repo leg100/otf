@@ -41,23 +41,26 @@ templ list(props listProps) {
 	)
 	}}
 	@components.Layout(layoutProps) {
-		<form
-			hx-ext="ws"
-			ws-connect={ components.CurrentURL(ctx) }
-			ws-send
-			hx-trigger="load"
-			action={ templ.SafeURL(components.CurrentURLWithoutQuery(ctx)) }
-		>
-			if props.ws != nil {
-				<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
-			} else {
-				<input type="hidden" name="organization_name" value={ props.organization }/>
-			}
-			<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>
-			<input type="hidden" name="page" value={ strconv.Itoa(props.pageOptions.PageNumber) }/>
-			@runstatus.Filter(props.status, props.statusFilterVisible)
-		</form>
-		<div id="page-results"></div>
+		<div>
+			<form
+				class="peer"
+				hx-ext="ws"
+				ws-connect={ components.CurrentURL(ctx) }
+				ws-send
+				hx-trigger="load"
+				action={ templ.SafeURL(components.CurrentURLWithoutQuery(ctx)) }
+			>
+				if props.ws != nil {
+					<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
+				} else {
+					<input type="hidden" name="organization_name" value={ props.organization }/>
+				}
+				<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>
+				<input type="hidden" name="page" value={ strconv.Itoa(props.pageOptions.PageNumber) }/>
+				@runstatus.Filter(props.status, props.statusFilterVisible)
+			</form>
+			<div id="page-results"></div>
+		</div>
 	}
 }
 
@@ -68,7 +71,6 @@ type table struct {
 }
 
 templ (t table) Header() {
-	<th>Select</th>
 	if t.organization {
 		<th>Workspace</th>
 	}
@@ -80,7 +82,6 @@ templ (t table) Header() {
 
 templ (t table) Row(run *Run) {
 	<tr id={ "run-item-" + run.ID.String() }>
-		<td>checkbox</td>
 		if t.organization {
 			<td>{ t.getWorkspaceName(ctx, run) }</td>
 		}
