@@ -47,7 +47,6 @@ templ list(props listProps) {
 				hx-ext="ws"
 				ws-connect={ components.CurrentURL(ctx) }
 				ws-send
-				hx-trigger="load"
 				action={ templ.SafeURL(components.CurrentURLWithoutQuery(ctx)) }
 			>
 				if props.ws != nil {

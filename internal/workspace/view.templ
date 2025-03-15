@@ -64,8 +64,6 @@ templ list(props listProps) {
 			action={ paths.Workspaces(props.organization) }
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
-			ws-send
-			hx-trigger="load"
 		>
 			<input type="hidden" name="organization_name" value={ props.organization }/>
 			<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>

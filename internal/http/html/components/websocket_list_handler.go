@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"dario.cat/mergo"
+
 	"sync"
 	"time"
 
@@ -37,6 +40,12 @@ type websocketListHandlerClient[Resource any, Options any] interface {
 }
 
 func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter, r *http.Request) {
+	var opts Options
+	if err := decode.All(&opts, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		h.Error(err, "upgrading websocket connection")
@@ -49,10 +58,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 
 	// Mutex serializes go routine access to the list options and to the
 	// websocket writer.
-	var (
-		mu   sync.Mutex
-		opts Options
-	)
+	var mu sync.Mutex
 
 	sendList := func() error {
 		mu.Lock()
@@ -74,6 +80,12 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			return fmt.Errorf("rendering html: %w", err)
 		}
 		return nil
+	}
+
+	// Send an initial list to client on startup.
+	if err := sendList(); err != nil {
+		h.Error(err, "handling websocket connection")
+		return
 	}
 
 	// Two go-routines:
@@ -138,6 +150,8 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			// Serialize access to opts, which is read by the other go
 			// routine.
 			mu.Lock()
+			// Merge in options messaged from client, into the existing options.
+			mergo.Merge(&opts, msg, mergo.WithOverride)
 			opts = msg
 			mu.Unlock()
 
