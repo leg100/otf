@@ -91,8 +91,8 @@ templ list(props listProps) {
 				<div class="collapse-content text-sm flex flex-wrap gap-2">
 					for tag, checked := range props.tags {
 						<div>
-							<input class={ "checkbox", "checkbox-primary" } id={ "filter-tag-" + tag } type="checkbox" name="search[tags]" value={ tag } checked?={ checked } onchange="this.form.submit()"/>
-							<label class={ "badge", "badge-primary" } for={ "filter-tag-" + tag }>{ tag }</label>
+							<input class="checkbox checkbox-accent" id={ "filter-tag-" + tag } type="checkbox" name="search[tags]" value={ tag } checked?={ checked } onchange="this.form.submit()"/>
+							<label class="badge badge-accent" for={ "filter-tag-" + tag }>{ tag }</label>
 						</div>
 					}
 				</div>
@@ -102,29 +102,49 @@ templ list(props listProps) {
 	}
 }
 
-templ listItem(ws *Workspace) {
-	<div
-		x-data={ components.BlockLink(paths.Workspace(ws.ID.String())) }
-		class="widget"
-		id={ "item-workspace-" + ws.Name }
-	>
-		<div>
-			<span>{ ws.Name }</span>
+type table struct{}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>Status</th>
+	<th>Tags</th>
+}
+
+templ (t table) Row(ws *Workspace, opts ListOptions) {
+	<tr id={ "item-workspace-" + ws.Name } x-data={ components.BlockLink(paths.Workspace(ws.ID.String())) }>
+		<td>
+			<a class="link" href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+		</td>
+		<td>
 			if ws.LatestRun != nil {
 				@runstatus.Badge(ws.LatestRun.ID, ws.LatestRun.Status)
 			}
-		</div>
-		<div>
-			<div class="flex gap-2 items-center">
-				@components.Identifier(ws.ID)
-				<form class="flex items-center gap-2" action={ paths.Workspace(ws.ID.String()) } method="GET">
-					for _, tag := range ws.Tags {
-						<button class="tag" name="search[tags]" value={ tag }>{ tag }</button>
-					}
-				</form>
+		</td>
+		<td>
+			<div class="flex flex-wrap gap-2 items-center">
+				for _, name := range ws.Tags {
+					@tag(name)
+				}
 			</div>
-		</div>
-	</div>
+		</td>
+	</tr>
+}
+
+templ tag(name string) {
+	<span class="badge badge-sm badge-accent badge-soft">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="size-4"
+		>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"></path>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"></path>
+		</svg>
+		{ name }
+	</span>
 }
 
 templ listActions(organization string, canCreate bool) {

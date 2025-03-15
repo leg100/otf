@@ -156,7 +156,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			// search for 'workspace-1' should produce 13 results (1,
 			// 10-19, 100, 101)
-			err = expect.Locator(page.Locator(`div.widget`)).ToHaveCount(13)
+			err = expect.Locator(page.Locator(`//div[@id='page-results']//tbody//tr`)).ToHaveCount(13)
 			require.NoError(t, err)
 
 			// and workspace-2 should not be visible

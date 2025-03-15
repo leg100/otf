@@ -19,14 +19,15 @@ window.addEventListener("load", (e) => {
 document.addEventListener("alpine:init", () => {
 	Alpine.data("block_link", (block, link) => ({
 		init() {
-			block.classList.add("cursor-pointer", "hover:bg-gray-100");
+			block.classList.add("cursor-pointer", "hover:bg-base-200");
 			block.addEventListener("click", (e) => {
+				console.info(e);
 				isTextSelected = window.getSelection().toString();
 				if (!isTextSelected) {
 					location = link;
 				}
 			});
-			links = block.querySelectorAll("a");
+			links = block.querySelectorAll("a, button");
 			links.forEach((link) => {
 				link.addEventListener("click", (e) => e.stopPropagation());
 			});

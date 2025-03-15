@@ -26,7 +26,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// should be no runs listed
-		err = expect.Locator(page.Locator(`//div[@id='content-list']`)).ToHaveText(`No items currently exist.`)
+		err = expect.Locator(page.Locator(`//*[@id='no-items-found']`)).ToHaveText(`No items found`)
 		require.NoError(t, err)
 	})
 

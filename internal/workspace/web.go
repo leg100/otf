@@ -103,7 +103,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		websocketListHandler: &components.WebsocketListHandler[*Workspace, ListOptions]{
 			Logger:    opts.Logger,
 			Client:    service,
-			Component: listItem,
+			Populator: &table{},
 		},
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/a-h/templ"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/http/decode"
@@ -29,7 +28,7 @@ var upgrader = websocket.Upgrader{
 type WebsocketListHandler[Resource any, Options any] struct {
 	logr.Logger
 	Client    websocketListHandlerClient[Resource, Options]
-	Component func(Resource) templ.Component
+	Populator TablePopulator[Resource, Options]
 }
 
 type websocketListHandlerClient[Resource any, Options any] interface {
@@ -70,7 +69,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		}
 		defer w.Close()
 
-		comp := PaginatedContentList(page, h.Component)
+		comp := Table(h.Populator, page, opts)
 		if err := html.RenderSnippet(comp, w, r); err != nil {
 			return fmt.Errorf("rendering html: %w", err)
 		}

@@ -1,8 +1,8 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
@@ -62,12 +62,13 @@ func TestGithubPullRequest(t *testing.T) {
 			_, err = page.Goto(workspaceRunsURL(daemon.System.Hostname(), ws.ID))
 			require.NoError(t, err)
 			// should be one run widget with info matching the pull request
-			err = expect.Locator(page.Locator(`//a[@id='pull-request-link' and text()='#2']`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//a[@id='pull-request-link']`)).ToHaveText(`#2`)
 			require.NoError(t, err)
-			err = expect.Locator(page.Locator(`//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//a[@id='vcs-username']`)).ToHaveText(`@leg100`)
 			require.NoError(t, err)
-			err = expect.Locator(page.Locator(fmt.Sprintf(`//a[@id='commit-sha-abbrev' and text()='%s']`, event.commit))).ToBeVisible()
+			err = expect.Locator(page.Locator(`//a[@id='commit-sha-abbrev']`)).ToHaveText(event.commit)
 			require.NoError(t, err)
+			time.Sleep(20 * time.Second)
 		})
 
 		// github should receive several pending status updates followed by a final
