@@ -32,7 +32,7 @@ func (f *fakeService) DeleteModule(context.Context, resource.ID) (*Module, error
 	return f.mod, nil
 }
 
-func (f *fakeService) ListModules(context.Context, ListModulesOptions) ([]*Module, error) {
+func (f *fakeService) ListModules(context.Context, ListOptions) ([]*Module, error) {
 	return []*Module{f.mod}, nil
 }
 

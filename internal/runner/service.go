@@ -193,6 +193,10 @@ func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*Runner
 	return s.runnerBroker.Subscribe(ctx)
 }
 
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*RunnerMeta], func()) {
+	return s.WatchRunners(ctx)
+}
+
 func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
 	return s.jobBroker.Subscribe(ctx)
 }
@@ -272,24 +276,35 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to Run
 	return nil
 }
 
-func (s *Service) listRunners(ctx context.Context) ([]*RunnerMeta, error) {
-	return s.db.list(ctx)
+type ListOptions struct {
+	resource.PageOptions
+	// Organization filters runners by the organization of their agent pool.
+	//
+	// NOTE: setting this does not exclude server runners (which do not belong
+	// to an organization). To exclude servers runners as well set Server below to
+	// false.
+	Organization *string
+	// PoolID filters runners by agent pool ID
+	PoolID *resource.ID
+	// Server filters server runners: true to list only server runners; false to
+	// exclude server runners.
+	Server *bool
 }
 
-func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
-	return s.db.listServerRunners(ctx)
-}
-
-func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	_, err := s.Authorize(ctx, authz.ListRunnersAction, &authz.AccessRequest{Organization: organization})
-	if err != nil {
-		return nil, err
+func (s *Service) listRunners(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {
+	// Any user can list server runners. Otherwise user must have perms to list
+	// agent runners or a combination of both server and agent runners.
+	if opts.Server == nil || *opts.Server == false {
+		var accessRequest authz.AccessRequest
+		if opts.Organization != nil {
+			accessRequest.Organization = *opts.Organization
+		}
+		_, err := s.Authorize(ctx, authz.ListRunnersAction, &accessRequest)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return s.db.listRunnersByOrganization(ctx, organization)
-}
-
-func (s *Service) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
-	return s.db.listRunnersByPool(ctx, poolID)
+	return s.db.list(ctx, opts)
 }
 
 func (s *Service) deleteRunner(ctx context.Context, runnerID resource.ID) error {

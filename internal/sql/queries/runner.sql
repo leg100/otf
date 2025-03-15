@@ -39,50 +39,39 @@ SELECT
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-LEFT JOIN agent_pools ap USING (agent_pool_id)
-ORDER BY a.last_ping_at DESC;
+JOIN agent_pools ap USING (agent_pool_id)
+WHERE (
+	ap.organization_name = sqlc.arg('organization_name')
+	OR sqlc.arg('organization_name') IS NULL
+	OR ap.agent_pool_id IS NULL
+)
+AND   (ap.agent_pool_id = sqlc.arg('agent_pool_id')::text OR sqlc.arg('agent_pool_id')::text IS NULL)
+AND   (
+	(sqlc.arg('is_server')::bool AND ap.agent_pool_id IS NULL)
+	OR (NOT sqlc.arg('is_server')::bool AND ap.agent_pool_id IS NOT NULL)
+	OR sqlc.arg('is_server')::bool IS NULL
+)
+ORDER BY last_ping_at DESC
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
+;
 
--- name: FindRunnersByOrganization :many
-SELECT
-    a.*,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
+-- name: CountRunners :one
+SELECT count(a.*)
 FROM runners a
 JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.organization_name = sqlc.arg('organization_name')
-ORDER BY last_ping_at DESC;
-
--- name: FindRunnersByPoolID :many
-SELECT
-    a.*,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.agent_pool_id = sqlc.arg('agent_pool_id')
-ORDER BY last_ping_at DESC;
-
--- name: FindServerRunners :many
-SELECT
-    a.*,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-LEFT JOIN agent_pools ap USING (agent_pool_id)
-WHERE agent_pool_id IS NULL
-ORDER BY last_ping_at DESC;
+WHERE (
+	ap.organization_name = sqlc.arg('organization_name')
+	OR sqlc.arg('organization_name') IS NULL
+	OR ap.agent_pool_id IS NULL
+)
+AND   (ap.agent_pool_id = sqlc.arg('agent_pool_id')::text OR sqlc.arg('agent_pool_id')::text IS NULL)
+AND   (
+	(sqlc.arg('is_server')::bool AND ap.agent_pool_id IS NULL)
+	OR (NOT sqlc.arg('is_server')::bool AND ap.agent_pool_id IS NOT NULL)
+	OR sqlc.arg('is_server')::bool IS NULL
+)
+;
 
 -- name: FindRunnerByID :one
 SELECT

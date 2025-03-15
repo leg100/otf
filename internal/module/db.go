@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
@@ -57,17 +58,25 @@ func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.ID, st
 	return nil
 }
 
-func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	rows, err := db.Querier(ctx).ListModulesByOrganization(ctx, sql.String(opts.Organization))
+func (db *pgdb) listModules(ctx context.Context, opts ListOptions) (*resource.Page[*Module], error) {
+	rows, err := db.Querier(ctx).ListModulesByOrganization(ctx, sqlc.ListModulesByOrganizationParams{
+		OrganizationName: sql.String(opts.Organization),
+		Limit:            sql.GetLimit(opts.PageOptions),
+		Offset:           sql.GetOffset(opts.PageOptions),
+	})
+	if err != nil {
+		return nil, err
+	}
+	count, err := db.Querier(ctx).CountModulesByOrganization(ctx, sql.String(opts.Organization))
 	if err != nil {
 		return nil, err
 	}
 
-	modules := make([]*Module, len(rows))
+	items := make([]*Module, len(rows))
 	for i, r := range rows {
-		modules[i] = moduleRow(r).toModule()
+		items[i] = moduleRow(r).toModule()
 	}
-	return modules, nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
 func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {

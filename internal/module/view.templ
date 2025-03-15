@@ -152,26 +152,20 @@ templ newConfirm(props newViewProps) {
 
 type listProps struct {
 	organization     string
-	modules          []*Module
+	page             *resource.Page[*Module]
 	canPublishModule bool
 }
 
 templ list(props listProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "modules",
+		Organization:   props.organization,
 		ContentActions: listActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules"},
 		},
 	}) {
-		<div id="content-list">
-			for _, module := range props.modules {
-				@listItem(module)
-			}
-			if len(props.modules) == 0 {
-				No published modules.
-			}
-		</div>
+		@components.Table(&table{}, props.page, ListOptions{})
 	}
 }
 
@@ -183,14 +177,28 @@ templ listActions(props listProps) {
 	}
 }
 
-templ listItem(module *Module) {
-	<div x-data={ components.BlockLink(paths.Module(module.ID.String())) } class="widget">
-		<div>
-			<span>{ module.Name }</span>
-			<span>{ internal.Ago(time.Now(), module.CreatedAt) }</span>
-		</div>
-		@components.Identifier(module.ID)
-	</div>
+type table struct{}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+}
+
+templ (t table) Row(module *Module, opts ListOptions) {
+	<tr id={ "mod-item-" + module.ID.String() } x-data={ components.BlockLink(paths.Module(module.ID.String())) }>
+		<td>
+			<a class="link" href={ paths.Module(module.ID.String()) }>
+				{ module.Name }
+			</a>
+		</td>
+		<td>
+			@components.Identifier(module.ID)
+		</td>
+		<td>
+			@components.Ago(module.CreatedAt)
+		</td>
+	</tr>
 }
 
 type getProps struct {

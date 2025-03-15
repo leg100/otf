@@ -42,7 +42,7 @@ type (
 	webModulesClient interface {
 		GetModuleByID(ctx context.Context, id resource.ID) (*Module, error)
 		GetModuleInfo(ctx context.Context, versionID resource.ID) (*TerraformModule, error)
-		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
+		ListModules(context.Context, ListOptions) (*resource.Page[*Module], error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
 		DeleteModule(ctx context.Context, id resource.ID) (*Module, error)
 	}
@@ -72,12 +72,12 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var opts ListModulesOptions
+	var opts ListOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	modules, err := h.client.ListModules(r.Context(), opts)
+	page, err := h.client.ListModules(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	props := listProps{
 		organization:     opts.Organization,
-		modules:          modules,
+		page:             page,
 		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
 	}
 	html.Render(list(props), w, r)

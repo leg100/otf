@@ -12,12 +12,12 @@ import (
 
 type listRunnersProps struct {
 	organization string
-	runners      []*RunnerMeta
 }
 
 templ listRunners(props listRunnersProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "runners",
+		Title:        "runners",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "runners"},
 		},
@@ -25,9 +25,7 @@ templ listRunners(props listRunnersProps) {
 		<div class="description max-w-2xl">
 			A runner handles the execution of runs. There are two types of runners: the runner built into <span class="bg-gray-200 font-mono p-0.5 text-xs">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="bg-gray-200 font-mono p-0.5 text-xs">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
 		</div>
-		for _, runner := range props.runners {
-			@runnerListItem(runner)
-		}
+		<div id="page-results"></div>
 	}
 }
 
@@ -39,9 +37,17 @@ var runnerStatusColors = map[RunnerStatus]string{
 	RunnerExited:  "bg-purple-100",
 }
 
-templ runnerListItem(runner *RunnerMeta) {
-	<div id={ "item-" + runner.ID.String() } class="widget">
-		<div>
+type table struct{}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Status</th>
+}
+
+templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
+	<tr id={ "item-runner-" + runner.ID.String() } x-data={ components.BlockLink(paths.Runner(runner.ID.String())) }>
+		<td>
 			<div class="flex gap-2 items-center">
 				if runner.Name != "" {
 					<span>{ runner.Name }</span>
@@ -50,9 +56,11 @@ templ runnerListItem(runner *RunnerMeta) {
 				<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
 			</div>
 			<span title={ runner.LastPingAt.String() }>last seen { internal.Ago(time.Now(), runner.LastPingAt) } </span>
-		</div>
-		<div>
+		</td>
+		<td>
 			@components.Identifier(runner.ID)
+		</td>
+		<td>
 			<div>
 				<span class="font-mono bg-gray-200 py-1 px-2 text-xs">{ runner.Version }</span>
 				<span id="process-name" class="font-mono bg-gray-200 py-1 px-2 text-xs">
@@ -64,8 +72,8 @@ templ runnerListItem(runner *RunnerMeta) {
 				</span>
 				<span class="font-mono bg-gray-200 py-1 px-2 text-xs">{ runner.IPAddress.String() }</span>
 			</div>
-		</div>
-	</div>
+		</td>
+	</tr>
 }
 
 type listAgentPoolProps struct {
@@ -134,7 +142,7 @@ type getAgentPoolProps struct {
 	assignedWorkspaces             []poolWorkspace
 	availableWorkspaces            []poolWorkspace
 	tokens                         []*agentToken
-	agents                         []*RunnerMeta
+	agents                         *resource.Page[*RunnerMeta]
 	canDeleteAgentPool             bool
 }
 
@@ -255,9 +263,9 @@ templ getAgentPool(props getAgentPoolProps) {
 		}
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
-		for _, agent := range props.agents {
-			@runnerListItem(agent)
-		}
+		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
+			<div id="page-results"></div>
+		</div>
 		if props.canDeleteAgentPool {
 			<hr class="my-4"/>
 			<h3 class="font-semibold text-lg mb-2">Advanced</h3>

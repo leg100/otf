@@ -12,6 +12,19 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
+const countModulesByOrganization = `-- name: CountModulesByOrganization :one
+SELECT count(*)
+FROM modules
+WHERE organization_name = $1
+`
+
+func (q *Queries) CountModulesByOrganization(ctx context.Context, organizationName pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countModulesByOrganization, organizationName)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteModuleByID = `-- name: DeleteModuleByID :one
 DELETE
 FROM modules
@@ -416,7 +429,16 @@ SELECT
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
+ORDER BY m.name ASC
+LIMIT $3::int
+OFFSET $2::int
 `
+
+type ListModulesByOrganizationParams struct {
+	OrganizationName pgtype.Text
+	Offset           pgtype.Int4
+	Limit            pgtype.Int4
+}
 
 type ListModulesByOrganizationRow struct {
 	ModuleID         resource.ID
@@ -431,8 +453,8 @@ type ListModulesByOrganizationRow struct {
 	ModuleVersions   []ModuleVersion
 }
 
-func (q *Queries) ListModulesByOrganization(ctx context.Context, organizationName pgtype.Text) ([]ListModulesByOrganizationRow, error) {
-	rows, err := q.db.Query(ctx, listModulesByOrganization, organizationName)
+func (q *Queries) ListModulesByOrganization(ctx context.Context, arg ListModulesByOrganizationParams) ([]ListModulesByOrganizationRow, error) {
+	rows, err := q.db.Query(ctx, listModulesByOrganization, arg.OrganizationName, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

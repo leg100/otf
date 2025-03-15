@@ -20,10 +20,11 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	svc        webClient
-	workspaces *workspacepkg.Service
-	logger     logr.Logger
-	authorizer webAuthorizer
+	svc                  webClient
+	workspaces           *workspacepkg.Service
+	logger               logr.Logger
+	authorizer           webAuthorizer
+	websocketListHandler *components.WebsocketListHandler[*RunnerMeta, ListOptions]
 }
 
 // webClient gives web handlers access to the agents service endpoints
@@ -35,10 +36,7 @@ type webClient interface {
 	deleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
 
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
-	listRunners(ctx context.Context) ([]*RunnerMeta, error)
-	listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error)
-	listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error)
-	listServerRunners(ctx context.Context) ([]*RunnerMeta, error)
+	listRunners(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error)
 
 	CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	GetAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error)
@@ -72,6 +70,20 @@ func (l *poolWorkspaceList) UnmarshalText(v []byte) error {
 	return nil
 }
 
+func newWebHandlers(svc *Service, opts ServiceOptions) *webHandlers {
+	return &webHandlers{
+		authorizer: opts.Authorizer,
+		logger:     opts.Logger,
+		svc:        svc,
+		workspaces: opts.WorkspaceService,
+		websocketListHandler: &components.WebsocketListHandler[*RunnerMeta, ListOptions]{
+			Logger:    opts.Logger,
+			Client:    svc,
+			Populator: &table{},
+		},
+	}
+}
+
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
@@ -94,35 +106,14 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 // runner handlers
 
 func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params ListOptions
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	serverRunners, err := h.svc.listServerRunners(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), org)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// order runners to show 'freshest' at the top
-	runners := append(serverRunners, agentRunners...)
-	slices.SortFunc(runners, func(a, b *RunnerMeta) int {
-		if a.LastPingAt.Before(b.LastPingAt) {
-			return 1
-		} else {
-			return -1
-		}
-	})
-
 	props := listRunnersProps{
-		organization: org,
-		runners:      runners,
+		organization: *params.Organization,
 	}
 	html.Render(listRunners(props), w, r)
 }
@@ -264,7 +255,9 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agents, err := h.svc.listRunnersByPool(r.Context(), poolID)
+	agents, err := h.svc.listRunners(r.Context(), ListOptions{
+		PoolID: &poolID,
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -13,6 +13,36 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
+const countRunners = `-- name: CountRunners :one
+SELECT count(a.*)
+FROM runners a
+JOIN agent_pools ap USING (agent_pool_id)
+WHERE (
+	ap.organization_name = $1
+	OR $1 IS NULL
+	OR ap.agent_pool_id IS NULL
+)
+AND   (ap.agent_pool_id = $2::text OR $2::text IS NULL)
+AND   (
+	($3::bool AND ap.agent_pool_id IS NULL)
+	OR (NOT $3::bool AND ap.agent_pool_id IS NOT NULL)
+	OR $3::bool IS NULL
+)
+`
+
+type CountRunnersParams struct {
+	OrganizationName pgtype.Text
+	AgentPoolID      pgtype.Text
+	IsServer         pgtype.Bool
+}
+
+func (q *Queries) CountRunners(ctx context.Context, arg CountRunnersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countRunners, arg.OrganizationName, arg.AgentPoolID, arg.IsServer)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteRunner = `-- name: DeleteRunner :one
 DELETE
 FROM runners
@@ -143,9 +173,30 @@ SELECT
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-LEFT JOIN agent_pools ap USING (agent_pool_id)
-ORDER BY a.last_ping_at DESC
+JOIN agent_pools ap USING (agent_pool_id)
+WHERE (
+	ap.organization_name = $1
+	OR $1 IS NULL
+	OR ap.agent_pool_id IS NULL
+)
+AND   (ap.agent_pool_id = $2::text OR $2::text IS NULL)
+AND   (
+	($3::bool AND ap.agent_pool_id IS NULL)
+	OR (NOT $3::bool AND ap.agent_pool_id IS NOT NULL)
+	OR $3::bool IS NULL
+)
+ORDER BY last_ping_at DESC
+LIMIT $5::int
+OFFSET $4::int
 `
+
+type FindRunnersParams struct {
+	OrganizationName pgtype.Text
+	AgentPoolID      pgtype.Text
+	IsServer         pgtype.Bool
+	Offset           pgtype.Int4
+	Limit            pgtype.Int4
+}
 
 type FindRunnersRow struct {
 	RunnerID     resource.ID
@@ -161,8 +212,14 @@ type FindRunnersRow struct {
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindRunners(ctx context.Context) ([]FindRunnersRow, error) {
-	rows, err := q.db.Query(ctx, findRunners)
+func (q *Queries) FindRunners(ctx context.Context, arg FindRunnersParams) ([]FindRunnersRow, error) {
+	rows, err := q.db.Query(ctx, findRunners,
+		arg.OrganizationName,
+		arg.AgentPoolID,
+		arg.IsServer,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -170,189 +227,6 @@ func (q *Queries) FindRunners(ctx context.Context) ([]FindRunnersRow, error) {
 	var items []FindRunnersRow
 	for rows.Next() {
 		var i FindRunnersRow
-		if err := rows.Scan(
-			&i.RunnerID,
-			&i.Name,
-			&i.Version,
-			&i.MaxJobs,
-			&i.IPAddress,
-			&i.LastPingAt,
-			&i.LastStatusAt,
-			&i.Status,
-			&i.AgentPoolID,
-			&i.AgentPool,
-			&i.CurrentJobs,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findRunnersByOrganization = `-- name: FindRunnersByOrganization :many
-SELECT
-    a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.organization_name = $1
-ORDER BY last_ping_at DESC
-`
-
-type FindRunnersByOrganizationRow struct {
-	RunnerID     resource.ID
-	Name         pgtype.Text
-	Version      pgtype.Text
-	MaxJobs      pgtype.Int4
-	IPAddress    netip.Addr
-	LastPingAt   pgtype.Timestamptz
-	LastStatusAt pgtype.Timestamptz
-	Status       pgtype.Text
-	AgentPoolID  *resource.ID
-	AgentPool    *AgentPool
-	CurrentJobs  int64
-}
-
-func (q *Queries) FindRunnersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindRunnersByOrganizationRow, error) {
-	rows, err := q.db.Query(ctx, findRunnersByOrganization, organizationName)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FindRunnersByOrganizationRow
-	for rows.Next() {
-		var i FindRunnersByOrganizationRow
-		if err := rows.Scan(
-			&i.RunnerID,
-			&i.Name,
-			&i.Version,
-			&i.MaxJobs,
-			&i.IPAddress,
-			&i.LastPingAt,
-			&i.LastStatusAt,
-			&i.Status,
-			&i.AgentPoolID,
-			&i.AgentPool,
-			&i.CurrentJobs,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findRunnersByPoolID = `-- name: FindRunnersByPoolID :many
-SELECT
-    a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.agent_pool_id = $1
-ORDER BY last_ping_at DESC
-`
-
-type FindRunnersByPoolIDRow struct {
-	RunnerID     resource.ID
-	Name         pgtype.Text
-	Version      pgtype.Text
-	MaxJobs      pgtype.Int4
-	IPAddress    netip.Addr
-	LastPingAt   pgtype.Timestamptz
-	LastStatusAt pgtype.Timestamptz
-	Status       pgtype.Text
-	AgentPoolID  *resource.ID
-	AgentPool    *AgentPool
-	CurrentJobs  int64
-}
-
-func (q *Queries) FindRunnersByPoolID(ctx context.Context, agentPoolID resource.ID) ([]FindRunnersByPoolIDRow, error) {
-	rows, err := q.db.Query(ctx, findRunnersByPoolID, agentPoolID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FindRunnersByPoolIDRow
-	for rows.Next() {
-		var i FindRunnersByPoolIDRow
-		if err := rows.Scan(
-			&i.RunnerID,
-			&i.Name,
-			&i.Version,
-			&i.MaxJobs,
-			&i.IPAddress,
-			&i.LastPingAt,
-			&i.LastStatusAt,
-			&i.Status,
-			&i.AgentPoolID,
-			&i.AgentPool,
-			&i.CurrentJobs,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findServerRunners = `-- name: FindServerRunners :many
-SELECT
-    a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status, a.agent_pool_id,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-LEFT JOIN agent_pools ap USING (agent_pool_id)
-WHERE agent_pool_id IS NULL
-ORDER BY last_ping_at DESC
-`
-
-type FindServerRunnersRow struct {
-	RunnerID     resource.ID
-	Name         pgtype.Text
-	Version      pgtype.Text
-	MaxJobs      pgtype.Int4
-	IPAddress    netip.Addr
-	LastPingAt   pgtype.Timestamptz
-	LastStatusAt pgtype.Timestamptz
-	Status       pgtype.Text
-	AgentPoolID  *resource.ID
-	AgentPool    *AgentPool
-	CurrentJobs  int64
-}
-
-func (q *Queries) FindServerRunners(ctx context.Context) ([]FindServerRunnersRow, error) {
-	rows, err := q.db.Query(ctx, findServerRunners)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FindServerRunnersRow
-	for rows.Next() {
-		var i FindServerRunnersRow
 		if err := rows.Scan(
 			&i.RunnerID,
 			&i.Name,

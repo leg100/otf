@@ -87,8 +87,9 @@ type (
 		Provider     string `schema:"provider,required"`
 		Organization string `schema:"organization,required"`
 	}
-	ListModulesOptions struct {
+	ListOptions struct {
 		Organization string `schema:"organization_name,required"` // filter by organization name
+		resource.PageOptions
 	}
 	ModuleList struct {
 		*resource.Pagination

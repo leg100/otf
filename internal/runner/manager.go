@@ -27,7 +27,7 @@ type manager struct {
 }
 
 type managerClient interface {
-	listRunners(ctx context.Context) ([]*RunnerMeta, error)
+	listRunners(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error)
 	updateStatus(ctx context.Context, runnerID resource.ID, status RunnerStatus) error
 	deleteRunner(ctx context.Context, runnerID resource.ID) error
 }
@@ -49,7 +49,9 @@ func (m *manager) Start(ctx context.Context) error {
 	ctx = authz.AddSubjectToContext(ctx, m)
 
 	updateAll := func() error {
-		runners, err := m.client.listRunners(ctx)
+		runners, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*RunnerMeta], error) {
+			return m.client.listRunners(ctx, ListOptions{PageOptions: opts})
+		})
 		if err != nil {
 			return fmt.Errorf("retrieving runners to check their status: %w", err)
 		}

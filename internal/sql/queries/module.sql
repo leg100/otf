@@ -55,6 +55,15 @@ SELECT
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = sqlc.arg('organization_name')
+ORDER BY m.name ASC
+LIMIT sqlc.arg('limit')::int
+OFFSET sqlc.arg('offset')::int
+;
+
+-- name: CountModulesByOrganization :one
+SELECT count(*)
+FROM modules
+WHERE organization_name = sqlc.arg('organization_name')
 ;
 
 -- name: FindModuleByName :one
