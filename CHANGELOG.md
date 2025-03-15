@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.16](https://github.com/leg100/otf/compare/v0.3.15...v0.3.16) (2025-03-15)
+
+
+### Features
+
+* **ui:** tabulate workspace and run listings ([#741](https://github.com/leg100/otf/issues/741)) ([31ab7ce](https://github.com/leg100/otf/commit/31ab7ce8130171ee586a0ddbaff89a6e15248ddf))
+
 ## [0.3.15](https://github.com/leg100/otf/compare/v0.3.14...v0.3.15) (2025-03-13)
 
 
