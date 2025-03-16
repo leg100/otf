@@ -20,10 +20,9 @@ func init() {
 	// Don't error if there are keys in the source map that are not present in
 	// the destination struct.
 	decoder.IgnoreUnknownKeys(true)
-}
-
-func RegisterConverter(v any, fn schema.Converter) {
-	decoder.RegisterConverter(v, fn)
+	// Don't skip decoding empty strings from source map to the destination
+	// struct.
+	decoder.ZeroEmpty(true)
 }
 
 // Form decodes an HTTP request's POST form contents into dst.

@@ -166,7 +166,7 @@ type (
 		Search       string             `schema:"search[name]"`
 		Tags         []string           `schema:"search[tags]"`
 		Status       []runstatus.Status `schema:"search[status]"`
-		Organization *string            `schema:"organization_name,required"`
+		Organization *string            `schema:"organization_name"`
 
 		resource.PageOptions
 	}

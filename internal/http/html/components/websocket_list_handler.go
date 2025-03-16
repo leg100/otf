@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
 	"sync"
 	"time"
 
@@ -37,6 +38,12 @@ type websocketListHandlerClient[Resource any, Options any] interface {
 }
 
 func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter, r *http.Request) {
+	var opts Options
+	if err := decode.All(&opts, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		h.Error(err, "upgrading websocket connection")
@@ -49,10 +56,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 
 	// Mutex serializes go routine access to the list options and to the
 	// websocket writer.
-	var (
-		mu   sync.Mutex
-		opts Options
-	)
+	var mu sync.Mutex
 
 	sendList := func() error {
 		mu.Lock()
@@ -76,6 +80,12 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		return nil
 	}
 
+	// Send an initial list to client on startup.
+	if err := sendList(); err != nil {
+		h.Error(err, "handling websocket connection")
+		return
+	}
+
 	// Two go-routines:
 	// 1) Watch server events and upon receiving an event send a new list to the
 	// client. This is necesary because the event can be a notification that a
@@ -84,7 +94,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 	// 2) Receive messages from the client altering the list of resources to
 	// retrieve (e.g. next page, filtering by status, etc), and send new list to
 	// the client.
-	g := errgroup.Group{}
+	g, ctx := errgroup.WithContext(r.Context())
 	g.Go(func() error {
 		// To avoid overwhelming the client, do not send a list more than once a
 		// second.
@@ -92,7 +102,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			// Block on receiving an event.
 			select {
 			case <-sub:
-			case <-r.Context().Done():
+			case <-ctx.Done():
 				return nil
 			}
 			// Then consume any remaining events.
@@ -111,7 +121,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			// Wait a second before sending anything more to client.
 			select {
 			case <-time.After(time.Second):
-			case <-r.Context().Done():
+			case <-ctx.Done():
 				return nil
 			}
 		}
@@ -130,15 +140,13 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			if err != nil {
 				return fmt.Errorf("parsing query: %w", err)
 			}
-			var msg Options
-			if err := decode.Decode(&msg, values); err != nil {
-				return fmt.Errorf("decoding query: %w", err)
-			}
 
 			// Serialize access to opts, which is read by the other go
 			// routine.
 			mu.Lock()
-			opts = msg
+			if err := decode.Decode(&opts, values); err != nil {
+				return fmt.Errorf("decoding query: %w", err)
+			}
 			mu.Unlock()
 
 			if err := sendList(); err != nil {
