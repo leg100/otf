@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	gohttp "net/http"
+	"net/url"
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
@@ -75,8 +76,12 @@ func CurrentURLWithoutQuery(ctx context.Context) string {
 	if request == nil {
 		return ""
 	}
-	request.URL.RawQuery = ""
-	return request.URL.String()
+	// Make a copy of URL to avoid mutating the original.
+	u := new(url.URL)
+	*u = *request.URL
+
+	u.RawQuery = ""
+	return u.String()
 }
 
 // TokenFlashMessage is a helper for rendering a flash message with an
