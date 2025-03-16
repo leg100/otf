@@ -7,12 +7,11 @@ import (
 	"net/http"
 	"net/url"
 
-	"dario.cat/mergo"
-
 	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/schema"
 	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -142,17 +141,18 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			if err != nil {
 				return fmt.Errorf("parsing query: %w", err)
 			}
-			var msg Options
-			if err := decode.Decode(&msg, values); err != nil {
-				return fmt.Errorf("decoding query: %w", err)
-			}
 
 			// Serialize access to opts, which is read by the other go
 			// routine.
 			mu.Lock()
-			// Merge in options messaged from client, into the existing options.
-			mergo.Merge(&opts, msg, mergo.WithOverride)
-			opts = msg
+			h.Info("decoding", "opts", opts)
+			decoder := schema.NewDecoder()
+			decoder.ZeroEmpty
+			if err := decode.Decode(&opts, values); err != nil {
+				h.Error(err, "opts", opts)
+				return fmt.Errorf("decoding query: %w", err)
+			}
+			h.Info("decoded message", "opts", opts)
 			mu.Unlock()
 
 			if err := sendList(); err != nil {

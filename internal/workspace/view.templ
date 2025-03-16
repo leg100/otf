@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"strconv"
 	"time"
 )
 
@@ -65,9 +64,6 @@ templ list(props listProps) {
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
 		>
-			<input type="hidden" name="organization_name" value={ props.organization }/>
-			<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>
-			<input type="hidden" name="page" value={ strconv.Itoa(props.pageOptions.PageNumber) }/>
 			<div class="flex gap-2 items-center m-2 p-2">
 				<input
 					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
