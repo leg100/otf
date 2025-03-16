@@ -283,6 +283,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 			</form>
 		</details>
+		@components.UnpaginatedTable(&agentTokensTable{}, props.tokens, listPoolOptions{})
 		for _, token := range props.tokens {
 			<div class="widget">
 				<div>
@@ -320,6 +321,32 @@ templ getAgentPool(props getAgentPoolProps) {
 			</form>
 		}
 	}
+}
+
+type agentTokensTable struct{}
+
+templ (t agentTokensTable) Header(opts listPoolOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t agentTokensTable) Row(token *agentToken, opts listPoolOptions) {
+	<tr>
+		<td>{ token.Description }</td>
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			@components.Ago(token.CreatedAt)
+		</td>
+		<td>
+			<form action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
+				@components.DeleteButton()
+			</form>
+		</td>
+	</tr>
 }
 
 func toJSON(v any) string {
