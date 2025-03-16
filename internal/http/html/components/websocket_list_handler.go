@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/schema"
 	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -95,7 +94,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 	// 2) Receive messages from the client altering the list of resources to
 	// retrieve (e.g. next page, filtering by status, etc), and send new list to
 	// the client.
-	g := errgroup.Group{}
+	g, ctx := errgroup.WithContext(r.Context())
 	g.Go(func() error {
 		// To avoid overwhelming the client, do not send a list more than once a
 		// second.
@@ -103,7 +102,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			// Block on receiving an event.
 			select {
 			case <-sub:
-			case <-r.Context().Done():
+			case <-ctx.Done():
 				return nil
 			}
 			// Then consume any remaining events.
@@ -122,7 +121,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			// Wait a second before sending anything more to client.
 			select {
 			case <-time.After(time.Second):
-			case <-r.Context().Done():
+			case <-ctx.Done():
 				return nil
 			}
 		}
@@ -145,14 +144,9 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 			// Serialize access to opts, which is read by the other go
 			// routine.
 			mu.Lock()
-			h.Info("decoding", "opts", opts)
-			decoder := schema.NewDecoder()
-			decoder.ZeroEmpty
 			if err := decode.Decode(&opts, values); err != nil {
-				h.Error(err, "opts", opts)
 				return fmt.Errorf("decoding query: %w", err)
 			}
-			h.Info("decoded message", "opts", opts)
 			mu.Unlock()
 
 			if err := sendList(); err != nil {

@@ -43,19 +43,10 @@ templ list(props listProps) {
 	@components.Layout(layoutProps) {
 		<div class="flex flex-col gap-2">
 			<form
-				class="peer"
 				hx-ext="ws"
 				ws-connect={ components.CurrentURL(ctx) }
-				ws-send
-				action={ templ.SafeURL(components.CurrentURLWithoutQuery(ctx)) }
+				action={ templ.SafeURL(components.CurrentURL(ctx)) }
 			>
-				if props.ws != nil {
-					<input type="hidden" name="workspace_id" value={ props.ws.ID.String() }/>
-				} else {
-					<input type="hidden" name="organization_name" value={ props.organization }/>
-				}
-				<input type="hidden" name="page_size" value={ strconv.Itoa(props.pageOptions.PageSize) }/>
-				<input type="hidden" name="page" value={ strconv.Itoa(props.pageOptions.PageNumber) }/>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 			</form>
 			<div id="page-results"></div>
@@ -64,8 +55,6 @@ templ list(props listProps) {
 }
 
 type table struct {
-	// organization is true if this is a table of organization runs rather than workspace runs.
-	organization    bool
 	workspaceClient webWorkspaceClient
 }
 

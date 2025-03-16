@@ -72,8 +72,8 @@ templ list(props listProps) {
 					value={ props.search }
 					style={ magnifyingGlassStyle(ctx) }
 					placeholder="search workspaces"
-					ws-send
 					hx-trigger="keyup changed delay:500ms"
+					ws-send
 					id="workspace-search"
 					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
 				/>

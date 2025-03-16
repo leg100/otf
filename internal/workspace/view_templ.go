@@ -187,7 +187,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" placeholder=\"search workspaces\" ws-send hx-trigger=\"keyup changed delay:500ms\" id=\"workspace-search\" onblur=\"if (this.defaultValue != this.value) { this.form.submit() }\"></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" placeholder=\"search workspaces\" hx-trigger=\"keyup changed delay:500ms\" ws-send id=\"workspace-search\" onblur=\"if (this.defaultValue != this.value) { this.form.submit() }\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
