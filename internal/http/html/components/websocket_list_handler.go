@@ -101,7 +101,10 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		for {
 			// Block on receiving an event.
 			select {
-			case <-sub:
+			case _, ok := <-sub:
+				if !ok {
+					return nil
+				}
 			case <-ctx.Done():
 				return nil
 			}

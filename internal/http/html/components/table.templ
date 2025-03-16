@@ -12,7 +12,7 @@ templ Table[T any, Options any](populator TablePopulator[T, Options], page *reso
 	<div id="page-results">
 		<div class="rounded-box border border-base-content/5">
 			if len(page.Items) > 0 {
-				<table class="table">
+				<table class="table overflow-x-auto">
 					<thead>
 						<tr>
 							@populator.Header(options)

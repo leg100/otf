@@ -16,7 +16,7 @@ import (
 const countRunners = `-- name: CountRunners :one
 SELECT count(a.*)
 FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE (
 	ap.organization_name = $1
 	OR $1 IS NULL
@@ -173,7 +173,7 @@ SELECT
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE (
 	ap.organization_name = $1
 	OR $1 IS NULL
@@ -186,16 +186,12 @@ AND   (
 	OR $3::bool IS NULL
 )
 ORDER BY last_ping_at DESC
-LIMIT $5::int
-OFFSET $4::int
 `
 
 type FindRunnersParams struct {
 	OrganizationName pgtype.Text
 	AgentPoolID      pgtype.Text
 	IsServer         pgtype.Bool
-	Offset           pgtype.Int4
-	Limit            pgtype.Int4
 }
 
 type FindRunnersRow struct {
@@ -213,13 +209,7 @@ type FindRunnersRow struct {
 }
 
 func (q *Queries) FindRunners(ctx context.Context, arg FindRunnersParams) ([]FindRunnersRow, error) {
-	rows, err := q.db.Query(ctx, findRunners,
-		arg.OrganizationName,
-		arg.AgentPoolID,
-		arg.IsServer,
-		arg.Offset,
-		arg.Limit,
-	)
+	rows, err := q.db.Query(ctx, findRunners, arg.OrganizationName, arg.AgentPoolID, arg.IsServer)
 	if err != nil {
 		return nil, err
 	}

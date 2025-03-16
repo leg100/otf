@@ -77,12 +77,7 @@ func NewService(opts ServiceOptions) *Service {
 		Service:   svc,
 		Responder: opts.Responder,
 	}
-	svc.web = &webHandlers{
-		authorizer: opts.Authorizer,
-		logger:     opts.Logger,
-		svc:        svc,
-		workspaces: opts.WorkspaceService,
-	}
+	svc.web = newWebHandlers(svc, opts)
 	svc.poolBroker = pubsub.NewBroker(
 		opts.Logger,
 		opts.Listener,
@@ -246,7 +241,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to Run
 	if err != nil {
 		return err
 	}
-	var isAgent bool
+	var ping bool
 	switch s := subject.(type) {
 	case *manager:
 		// ok
@@ -254,7 +249,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to Run
 		if s.ID != runnerID {
 			return internal.ErrAccessNotPermitted
 		}
-		isAgent = true
+		ping = true
 	default:
 		return internal.ErrAccessNotPermitted
 	}
@@ -264,15 +259,13 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to Run
 	var from RunnerStatus
 	err = s.db.update(ctx, runnerID, func(ctx context.Context, runner *RunnerMeta) error {
 		from = runner.Status
-		return runner.setStatus(to, isAgent)
+		return runner.setStatus(to, ping)
 	})
 	if err != nil {
 		s.Error(err, "updating runner status", "runner_id", runnerID, "status", to, "subject", subject)
 		return err
 	}
-	if isAgent {
-		s.V(9).Info("updated runner status", "runner_id", runnerID, "from", from, "to", to, "subject", subject)
-	}
+	s.V(9).Info("updated runner status", "runner_id", runnerID, "from", from, "to", to, "subject", subject)
 	return nil
 }
 
@@ -283,12 +276,16 @@ type ListOptions struct {
 	// NOTE: setting this does not exclude server runners (which do not belong
 	// to an organization). To exclude servers runners as well set Server below to
 	// false.
-	Organization *string
+	Organization *string `schema:"organization_name"`
 	// PoolID filters runners by agent pool ID
-	PoolID *resource.ID
+	PoolID *resource.ID `schema:"pool_id"`
 	// Server filters server runners: true to list only server runners; false to
 	// exclude server runners.
-	Server *bool
+	Server *bool `schema:"server"`
+}
+
+func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {
+	return s.listRunners(ctx, opts)
 }
 
 func (s *Service) listRunners(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {

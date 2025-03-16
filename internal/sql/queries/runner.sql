@@ -39,7 +39,7 @@ SELECT
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE (
 	ap.organization_name = sqlc.arg('organization_name')
 	OR sqlc.arg('organization_name') IS NULL
@@ -52,14 +52,12 @@ AND   (
 	OR sqlc.arg('is_server')::bool IS NULL
 )
 ORDER BY last_ping_at DESC
-LIMIT sqlc.arg('limit')::int
-OFFSET sqlc.arg('offset')::int
 ;
 
 -- name: CountRunners :one
 SELECT count(a.*)
 FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
+LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE (
 	ap.organization_name = sqlc.arg('organization_name')
 	OR sqlc.arg('organization_name') IS NULL

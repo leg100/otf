@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -106,6 +107,11 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 // runner handlers
 
 func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.Handler(w, r)
+		return
+	}
+
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -179,26 +185,34 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		resource.PageOptions
+		Organization string `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), org, listPoolOptions{})
+	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), params.Organization, listPoolOptions{})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listAgentPoolProps{
-		organization: org,
-		pools:        pools,
+		organization: params.Organization,
+		pools:        resource.NewPage(pools, params.PageOptions, nil),
 	}
 	html.Render(listAgentPools(props), w, r)
 }
 
 func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.Handler(w, r)
+		return
+	}
+
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -112,19 +112,11 @@ func (db *db) list(ctx context.Context, opts ListOptions) (*resource.Page[*Runne
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := db.Querier(ctx).CountRunners(ctx, sqlc.CountRunnersParams{
-		OrganizationName: sql.StringPtr(opts.Organization),
-		IsServer:         sql.BoolPtr(opts.Server),
-		AgentPoolID:      sql.IDPtr(opts.PoolID),
-	})
-	if err != nil {
-		return nil, sql.Error(err)
-	}
 	agents := make([]*RunnerMeta, len(rows))
 	for i, r := range rows {
 		agents[i] = runnerMetaResult(r).toRunnerMeta()
 	}
-	return resource.NewPage(agents, opts.PageOptions, internal.Int64(count)), nil
+	return resource.NewPage(agents, opts.PageOptions, nil), nil
 }
 
 func (db *db) deleteRunner(ctx context.Context, runnerID resource.ID) error {

@@ -230,7 +230,7 @@ templ tokenListItem(token *UserToken) {
 		<div>
 			@components.Identifier(token.ID)
 			<form action={ paths.DeleteToken() } method="POST">
-				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+				@components.DeleteButton()
 				<input type="hidden" name="id" value={ token.ID.String() }/>
 			</form>
 		</div>

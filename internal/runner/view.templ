@@ -25,65 +25,92 @@ templ listRunners(props listRunnersProps) {
 		<div class="description max-w-2xl">
 			A runner handles the execution of runs. There are two types of runners: the runner built into <span class="bg-gray-200 font-mono p-0.5 text-xs">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="bg-gray-200 font-mono p-0.5 text-xs">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
 		</div>
-		<div id="page-results"></div>
+		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
+			<div id="page-results"></div>
+		</div>
 	}
 }
 
 var runnerStatusColors = map[RunnerStatus]string{
-	RunnerIdle:    "bg-green-100",
-	RunnerBusy:    "bg-blue-200",
-	RunnerUnknown: "bg-gray-100",
-	RunnerErrored: "bg-red-100",
-	RunnerExited:  "bg-purple-100",
+	RunnerIdle:    "status-success",
+	RunnerBusy:    "status-success",
+	RunnerUnknown: "status-warning",
+	RunnerErrored: "status-error",
+	RunnerExited:  "status-info",
 }
 
 type table struct{}
 
 templ (t table) Header(opts ListOptions) {
 	<th>Name</th>
-	<th>ID</th>
 	<th>Status</th>
+	<th>Capacity</th>
+	<th>Version</th>
+	<th>Process</th>
+	<th>IP Address</th>
+	<th>Last seen</th>
 }
 
 templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
 	<tr id={ "item-runner-" + runner.ID.String() } x-data={ components.BlockLink(paths.Runner(runner.ID.String())) }>
 		<td>
-			<div class="flex gap-2 items-center">
-				if runner.Name != "" {
-					<span>{ runner.Name }</span>
-				}
-				<div class={ runnerStatusColors[runner.Status] }>{ string(runner.Status) }</div>
-				<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
-			</div>
-			<span title={ runner.LastPingAt.String() }>last seen { internal.Ago(time.Now(), runner.LastPingAt) } </span>
-		</td>
-		<td>
-			@components.Identifier(runner.ID)
-		</td>
-		<td>
-			<div>
-				<span class="font-mono bg-gray-200 py-1 px-2 text-xs">{ runner.Version }</span>
-				<span id="process-name" class="font-mono bg-gray-200 py-1 px-2 text-xs">
-					if runner.IsAgent() {
-						otf-agent
+			<div class="flex flex-col gap-2">
+				<span>
+					if runner.Name != "" {
+						{ runner.Name }
 					} else {
-						otfd
+						-
 					}
 				</span>
-				<span class="font-mono bg-gray-200 py-1 px-2 text-xs">{ runner.IPAddress.String() }</span>
+				@components.Identifier(runner.ID)
 			</div>
+		</td>
+		<td>
+			<div class="flex items-center gap-2">
+				<div class="inline-grid *:[grid-area:1/1]">
+					<div class={ "status animate-ping", runnerStatusColors[runner.Status] }></div>
+					<div class={ "status", runnerStatusColors[runner.Status] }></div>
+				</div>
+				<span>
+					{ string(runner.Status) }
+				</span>
+			</div>
+		</td>
+		<td>
+			<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
+		</td>
+		<td>
+			<span class="">{ runner.Version }</span>
+		</td>
+		<td>
+			<span id="process-name" class="">
+				if runner.IsAgent() {
+					otf-agent
+				} else {
+					otfd
+				}
+			</span>
+		</td>
+		<td>
+			<span class="">{ runner.IPAddress.String() }</span>
+		</td>
+		<td>
+			<span title={ runner.LastPingAt.String() }>
+				@components.Ago(runner.LastPingAt)
+			</span>
 		</td>
 	</tr>
 }
 
 type listAgentPoolProps struct {
 	organization string
-	pools        []*Pool
+	pools        *resource.Page[*Pool]
 }
 
 templ listAgentPools(props listAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "agent pools",
+		Title:        "agent pools",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools"},
 		},
@@ -107,20 +134,28 @@ templ listAgentPools(props listAgentPoolProps) {
 			</form>
 			<hr class="my-4"/>
 		</details>
-		@components.ContentList(props.pools, agentPoolListItem)
+		@components.Table(&agentPoolsTable{}, props.pools, listPoolOptions{})
 	}
 }
 
-templ agentPoolListItem(pool *Pool) {
-	<div x-data={ components.BlockLink(paths.AgentPool(pool.ID.String())) } class="widget" id={ pool.ID.String() }>
-		<div>
-			<span>{ pool.Name }</span>
-			<span>{ internal.Ago(time.Now(), pool.CreatedAt) }</span>
-		</div>
-		<div>
+type agentPoolsTable struct{}
+
+templ (t agentPoolsTable) Header(opts listPoolOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+}
+
+templ (t agentPoolsTable) Row(pool *Pool, opts listPoolOptions) {
+	<tr id={ pool.ID.String() } x-data={ components.BlockLink(paths.AgentPool(pool.ID.String())) }>
+		<td>{ pool.Name }</td>
+		<td>
 			@components.Identifier(pool.ID)
-		</div>
-	</div>
+		</td>
+		<td>
+			@components.Ago(pool.CreatedAt)
+		</td>
+	</tr>
 }
 
 type agentPoolListAllowedProps struct {
@@ -148,7 +183,8 @@ type getAgentPoolProps struct {
 
 templ getAgentPool(props getAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
-		Title: props.pool.Name,
+		Title:        props.pool.Name,
+		Organization: props.pool.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
 			{Name: props.pool.Name},
@@ -256,7 +292,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				<div>
 					@components.Identifier(token.ID)
 					<form action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
-						<button id="delete-agent-token-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+						@components.DeleteButton()
 					</form>
 				</div>
 			</div>
@@ -278,7 +314,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				</ul>
 			}
 			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID.String()) } method="POST">
-				<button id="delete-agent-pool-button" class="btn-danger disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
+				<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
 					Delete agent pool
 				</button>
 			</form>

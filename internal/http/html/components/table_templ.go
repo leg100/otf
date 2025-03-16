@@ -42,7 +42,7 @@ func Table[T any, Options any](populator TablePopulator[T, Options], page *resou
 			return templ_7745c5c3_Err
 		}
 		if len(page.Items) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<table class=\"table\"><thead><tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<table class=\"table overflow-x-auto\"><thead><tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -22,8 +22,6 @@ type manager struct {
 	client managerClient
 	// frequency with which the manager will check runners.
 	interval time.Duration
-	// manager identifies itself as a subject when making service calls
-	authz.Subject
 }
 
 type managerClient interface {
@@ -39,7 +37,8 @@ func newManager(s *Service) *manager {
 	}
 }
 
-func (m *manager) String() string { return "runner-manager" }
+func (m *manager) String() string                                        { return "runner-manager" }
+func (m *manager) CanAccess(_ authz.Action, _ *authz.AccessRequest) bool { return true }
 
 // Start the manager. Every interval the status of runners is checked,
 // updating their status as necessary.
