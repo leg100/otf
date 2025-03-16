@@ -88,10 +88,12 @@ templ BareLayout(props BareLayoutProps) {
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
 		</head>
-		<body class="flex flex-col m-0 min-h-screen font-sans">
+		<!--<body class="flex-col m-0 min-h-screen font-sans">-->
+		<body class="min-h-screen">
 			@navbar(props.Organization)
-			@Flashes()
-			<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
+			<main>
+				@Flashes()
+				<!--<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">-->
 				{ children... }
 			</main>
 			@footer()
