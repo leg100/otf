@@ -14,6 +14,7 @@ type LayoutProps struct {
 	Title          string
 	Organization   string
 	Breadcrumbs    []Breadcrumb
+	SubMenu        *SubMenuHoist
 	ContentActions templ.Component
 	ContentLinks   templ.Component
 	ContentMenu    templ.Component
@@ -23,10 +24,11 @@ type LayoutProps struct {
 
 templ Layout(props LayoutProps) {
 	@BareLayout(BareLayoutProps{
-		Title:        props.Title,
-		Organization: props.Organization,
-		PreContent:   props.PreContent,
-		PostContent:  props.PostContent,
+		Title:          props.Title,
+		Organization:   props.Organization,
+		GridComponents: []templ.Component{menu(props.Organization, props.SubMenu)},
+		PreContent:     props.PreContent,
+		PostContent:    props.PostContent,
 	}) {
 		<div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
 			<div class="flex text-xl">
@@ -64,10 +66,11 @@ templ Layout(props LayoutProps) {
 }
 
 type BareLayoutProps struct {
-	Title        string
-	Organization string
-	PreContent   templ.Component
-	PostContent  templ.Component
+	Title          string
+	Organization   string
+	GridComponents []templ.Component
+	PreContent     templ.Component
+	PostContent    templ.Component
 }
 
 templ BareLayout(props BareLayoutProps) {
@@ -87,16 +90,24 @@ templ BareLayout(props BareLayoutProps) {
 			<script src={ AssetPath(ctx, "/static/js/htmx-ext-ws.2.0.2.js") }></script>
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
+			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/grid.css") }/>
 		</head>
 		<!--<body class="flex-col m-0 min-h-screen font-sans">-->
 		<body class="min-h-screen">
-			@navbar(props.Organization)
-			<main>
+			<header>
+				@navbar(props.Organization)
+			</header>
+			<main class="px-2">
 				@Flashes()
 				<!--<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">-->
 				{ children... }
 			</main>
-			@footer()
+			<footer>
+				@footer()
+			</footer>
+			for _, comp := range props.GridComponents {
+				@comp
+			}
 			if props.PostContent != nil {
 				@props.PostContent
 			}
@@ -105,8 +116,8 @@ templ BareLayout(props BareLayoutProps) {
 }
 
 templ navbar(organization string) {
-	<header class="bg-gray-200">
-		<nav class="max-w-4xl flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
+	<div class="bg-gray-200 px-2">
+		<nav class="flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
 			if Authenticated(ctx) {
 				<input class="hidden peer" id="hamburger-toggle" type="checkbox"/>
 				<label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
@@ -139,11 +150,11 @@ templ navbar(organization string) {
 				</div>
 			}
 		</nav>
-	</header>
+	</div>
 }
 
 templ footer() {
-	<footer class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
+	<div class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
 		<div class="flex justify-between gap-4 max-w-2xl py-0.5 my-0 mx-auto">
 			<div></div>
 			<div class="footer-version">
@@ -155,5 +166,5 @@ templ footer() {
 				}
 			</div>
 		</div>
-	</footer>
+	</div>
 }

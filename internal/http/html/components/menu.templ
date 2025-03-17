@@ -1,0 +1,56 @@
+package components
+
+import (
+	"github.com/leg100/otf/internal/http/html/components/paths"
+	"strings"
+)
+
+type Menu string
+
+const (
+	WorkspacesMenu Menu = "Workspaces"
+	RunsMenu            = "Runs"
+	ModulesMenu         = "Modules"
+)
+
+templ menu(organization string, submenu *SubMenuHoist) {
+	<ul class="menu bg-base-200 rounded-box w-56">
+		@MenuItem(WorkspacesMenu, paths.Workspaces(organization), submenu)
+		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
+			@MenuItem(RunsMenu, paths.OrganizationRuns(organization), submenu)
+		}
+		@MenuItem(ModulesMenu, paths.Modules(organization), submenu)
+		@MenuItem("Teams", paths.Teams(organization), submenu)
+		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
+			@MenuItem("Users", paths.Users(organization), submenu)
+			@MenuItem("Runners", paths.Runners(organization), submenu)
+			@MenuItem("Agent Pools", paths.AgentPools(organization), submenu)
+			@MenuItem("Variable Sets", paths.VariableSets(organization), submenu)
+			@MenuItem("VCS Providers", paths.VCSProviders(organization), submenu)
+			@MenuItem("Organization Token", paths.OrganizationToken(organization), submenu)
+			@MenuItem("Settings", paths.EditOrganization(organization), submenu)
+		}
+	</ul>
+}
+
+type SubMenuHoist struct {
+	Parent Menu
+	Title  Menu
+	Path   templ.SafeURL
+}
+
+templ MenuItem(title Menu, path templ.SafeURL, submenu *SubMenuHoist) {
+	<li id={ "menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-") }>
+		<a
+			href={ path }
+			class={ templ.KV("menu-active", string(path) == CurrentPath(ctx)) }
+		>
+			{ string(title) }
+			if submenu != nil && submenu.Parent == title {
+				<ul>
+					@MenuItem(submenu.Title, submenu.Path, nil)
+				</ul>
+			}
+		</a>
+	</li>
+}
