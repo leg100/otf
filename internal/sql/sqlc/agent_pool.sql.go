@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -68,7 +69,7 @@ GROUP BY ap.agent_pool_id
 
 type FindAgentPoolRow struct {
 	AgentPoolID         resource.ID
-	Name                pgtype.Text
+	Name                organization.Name
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	OrganizationScoped  pgtype.Bool
@@ -111,7 +112,7 @@ GROUP BY ap.agent_pool_id
 
 type FindAgentPoolByAgentTokenIDRow struct {
 	AgentPoolID         resource.ID
-	Name                pgtype.Text
+	Name                organization.Name
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	OrganizationScoped  pgtype.Bool
@@ -152,7 +153,7 @@ ORDER BY ap.created_at DESC
 
 type FindAgentPoolsRow struct {
 	AgentPoolID         resource.ID
-	Name                pgtype.Text
+	Name                organization.Name
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	OrganizationScoped  pgtype.Bool
@@ -225,7 +226,7 @@ type FindAgentPoolsByOrganizationParams struct {
 
 type FindAgentPoolsByOrganizationRow struct {
 	AgentPoolID         resource.ID
-	Name                pgtype.Text
+	Name                organization.Name
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	OrganizationScoped  pgtype.Bool
@@ -288,7 +289,7 @@ INSERT INTO agent_pools (
 
 type InsertAgentPoolParams struct {
 	AgentPoolID        resource.ID
-	Name               pgtype.Text
+	Name               organization.Name
 	CreatedAt          pgtype.Timestamptz
 	OrganizationName   pgtype.Text
 	OrganizationScoped pgtype.Bool
@@ -334,7 +335,7 @@ RETURNING agent_pool_id, name, created_at, organization_name, organization_scope
 `
 
 type UpdateAgentPoolParams struct {
-	Name               pgtype.Text
+	Name               organization.Name
 	OrganizationScoped pgtype.Bool
 	PoolID             resource.ID
 }

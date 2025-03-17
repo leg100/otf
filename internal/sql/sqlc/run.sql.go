@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -170,7 +171,7 @@ type FindRunByIDRow struct {
 	AllowEmptyApply        pgtype.Bool
 	ExecutionMode          pgtype.Text
 	Latest                 pgtype.Bool
-	OrganizationName       pgtype.Text
+	OrganizationName       organization.Name
 	CostEstimationEnabled  pgtype.Bool
 	RunStatusTimestamps    []RunStatusTimestamp
 	PlanStatusTimestamps   []PhaseStatusTimestamp
@@ -321,7 +322,7 @@ type FindRunByIDForUpdateRow struct {
 	AllowEmptyApply        pgtype.Bool
 	ExecutionMode          pgtype.Text
 	Latest                 pgtype.Bool
-	OrganizationName       pgtype.Text
+	OrganizationName       organization.Name
 	CostEstimationEnabled  pgtype.Bool
 	RunStatusTimestamps    []RunStatusTimestamp
 	PlanStatusTimestamps   []PhaseStatusTimestamp
@@ -495,7 +496,7 @@ type FindRunsRow struct {
 	AllowEmptyApply        pgtype.Bool
 	ExecutionMode          pgtype.Text
 	Latest                 pgtype.Bool
-	OrganizationName       pgtype.Text
+	OrganizationName       organization.Name
 	CostEstimationEnabled  pgtype.Bool
 	RunStatusTimestamps    []RunStatusTimestamp
 	PlanStatusTimestamps   []PhaseStatusTimestamp

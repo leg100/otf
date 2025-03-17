@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -60,7 +61,7 @@ AND   u.username          = $2
 `
 
 type CountWorkspacesByUsernameParams struct {
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Username         pgtype.Text
 }
 
@@ -123,7 +124,7 @@ type FindWorkspaceByIDRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -221,7 +222,7 @@ type FindWorkspaceByIDForUpdateRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -299,7 +300,7 @@ AND   w.organization_name = $2
 
 type FindWorkspaceByNameParams struct {
 	Name             pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 type FindWorkspaceByNameRow struct {
@@ -325,7 +326,7 @@ type FindWorkspaceByNameRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -440,7 +441,7 @@ type FindWorkspacesRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -563,7 +564,7 @@ type FindWorkspacesByConnectionRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -659,7 +660,7 @@ OFFSET $3::int
 `
 
 type FindWorkspacesByUsernameParams struct {
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Username         pgtype.Text
 	Offset           pgtype.Int4
 	Limit            pgtype.Int4
@@ -688,7 +689,7 @@ type FindWorkspacesByUsernameRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -846,7 +847,7 @@ type InsertWorkspaceParams struct {
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	WorkingDirectory           pgtype.Text
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 }
 
 func (q *Queries) InsertWorkspace(ctx context.Context, arg InsertWorkspaceParams) error {

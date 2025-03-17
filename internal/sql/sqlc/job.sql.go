@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -39,7 +40,7 @@ type FindAllocatedJobsRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 func (q *Queries) FindAllocatedJobs(ctx context.Context, runnerID *resource.ID) ([]FindAllocatedJobsRow, error) {
@@ -102,7 +103,7 @@ type FindAndUpdateSignaledJobsRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 // Find signaled jobs and then immediately update signal with null.
@@ -162,7 +163,7 @@ type FindJobRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 func (q *Queries) FindJob(ctx context.Context, jobID resource.ID) (FindJobRow, error) {
@@ -209,7 +210,7 @@ type FindJobForUpdateRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 func (q *Queries) FindJobForUpdate(ctx context.Context, jobID resource.ID) (FindJobForUpdateRow, error) {
@@ -254,7 +255,7 @@ type FindJobsRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 func (q *Queries) FindJobs(ctx context.Context) ([]FindJobsRow, error) {
@@ -315,7 +316,7 @@ type FindUnfinishedJobForUpdateByRunIDRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 // FindUnfinishedJobForUpdateByRunID finds an unfinished job belonging to a run.

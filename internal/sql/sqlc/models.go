@@ -8,12 +8,13 @@ import (
 	"net/netip"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type AgentPool struct {
 	AgentPoolID        resource.ID
-	Name               pgtype.Text
+	Name               organization.Name
 	CreatedAt          pgtype.Timestamptz
 	OrganizationName   pgtype.Text
 	OrganizationScoped pgtype.Bool
@@ -128,7 +129,7 @@ type Module struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 type ModuleStatus struct {
@@ -170,7 +171,7 @@ type Organization struct {
 	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	Name                       organization.Name
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text
@@ -378,7 +379,7 @@ type VCSProvider struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	GithubAppID      pgtype.Int8
 }
 
@@ -402,7 +403,7 @@ type VariableSet struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 type VariableSetVariable struct {
@@ -438,7 +439,7 @@ type Workspace struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           organization.Name
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
