@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -20,8 +21,8 @@ type (
 	// byWorkspaceName are parameters used when looking up a workspace by
 	// name
 	byWorkspaceName struct {
-		Name         string `schema:"workspace_name,required"`
-		Organization string `schema:"organization_name,required"`
+		Name         string            `schema:"workspace_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
 	}
 
 	// tfe implements the TFC/E workspaces API:

@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-templ new(organization string) {
+templ new(organization organization.Name) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new workspace",
 		Organization: organization,
@@ -144,7 +144,7 @@ templ tag(name string) {
 	</span>
 }
 
-templ listActions(organization string, canCreate bool) {
+templ listActions(organization organization.Name, canCreate bool) {
 	if canCreate {
 		<form action={ paths.NewWorkspace(organization) } method="GET">
 			<button class="btn" id="new-workspace-button">New Workspace</button>

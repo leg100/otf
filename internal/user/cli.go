@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/spf13/cobra"
@@ -111,7 +112,7 @@ func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
 
 func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 	var (
-		organization string
+		organization organization.Name
 		name         string // team name
 	)
 
@@ -144,7 +145,7 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 
 func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 	var (
-		organization string
+		organization organization.Name
 		name         string // team name
 	)
 

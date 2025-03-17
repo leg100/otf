@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
@@ -223,7 +224,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 	return wv, nil
 }
 
-func (s *Service) createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
+func (s *Service) createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {
 	subject, err := s.Authorize(ctx, authz.CreateVariableSetAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
@@ -293,7 +294,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.ID, opts
 	return &after, nil
 }
 
-func (s *Service) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
+func (s *Service) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
 	subject, err := s.Authorize(ctx, authz.ListVariableSetsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err

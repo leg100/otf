@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -127,7 +128,7 @@ func (db *db) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	return agents, nil
 }
 
-func (db *db) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
+func (db *db) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
 	rows, err := db.Querier(ctx).FindRunnersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -457,7 +458,7 @@ func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool,
 	return poolresult(result).toPool()
 }
 
-func (db *db) listPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+func (db *db) listPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
 	rows, err := db.Querier(ctx).FindAgentPoolsByOrganization(ctx, sqlc.FindAgentPoolsByOrganizationParams{
 		OrganizationName:     sql.String(organization),
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),

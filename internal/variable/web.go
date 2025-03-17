@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -31,11 +32,11 @@ type (
 		UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
 		DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
 
-		createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
+		createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
 		updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error)
 		getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
 		getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error)
-		listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
+		listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
 		deleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
 		createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error)
 		updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error)

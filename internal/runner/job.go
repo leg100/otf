@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
@@ -42,7 +43,7 @@ type Job struct {
 	// the job is allocated to a server runner.
 	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent_pool_id"`
 	// Name of job's organization
-	Organization string `jsonapi:"attribute" json:"organization"`
+	Organization organization.Name `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
 	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters

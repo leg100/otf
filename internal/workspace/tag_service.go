@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql/sqlc"
 )
@@ -25,7 +26,7 @@ type (
 	}
 )
 
-func (s *Service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+func (s *Service) ListTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.Authorize(ctx, authz.ListTagsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func (s *Service) ListTags(ctx context.Context, organization string, opts ListTa
 	return list, nil
 }
 
-func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
+func (s *Service) DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return err

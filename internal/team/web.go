@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -21,10 +22,10 @@ type webHandlers struct {
 }
 
 type webClient interface {
-	Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
+	Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
 	Get(ctx context.Context, organization, team string) (*Team, error)
 	GetByID(ctx context.Context, teamID resource.ID) (*Team, error)
-	List(ctx context.Context, organization string) ([]*Team, error)
+	List(ctx context.Context, organization organization.Name) ([]*Team, error)
 	Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
 	Delete(ctx context.Context, teamID resource.ID) error
 }

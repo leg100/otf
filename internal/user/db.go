@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -79,7 +80,7 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 	return users, nil
 }
 
-func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
+func (db *pgdb) listOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error) {
 	result, err := db.Querier(ctx).FindUsersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err

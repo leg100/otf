@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
@@ -280,7 +281,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 	return s.db.listServerRunners(ctx)
 }
 
-func (s *Service) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
+func (s *Service) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
 	_, err := s.Authorize(ctx, authz.ListRunnersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
@@ -701,7 +702,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, 
 	return pool, nil
 }
 
-func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
 	subject, err := s.Authorize(ctx, authz.ListAgentPoolsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err

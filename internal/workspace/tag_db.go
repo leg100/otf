@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -30,7 +31,7 @@ func (r tagresult) toTag() *Tag {
 	}
 }
 
-func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+func (db *pgdb) listTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	q := db.Querier(ctx)
 
 	rows, err := q.FindTags(ctx, sqlc.FindTagsParams{
@@ -53,7 +54,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
+func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.ID) error {
 	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
 		for _, tid := range tagIDs {
 			_, err := q.DeleteTag(ctx, sqlc.DeleteTagParams{
@@ -81,7 +82,7 @@ func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID res
 	return nil
 }
 
-func (db *pgdb) findTagByName(ctx context.Context, organization string, name string) (*Tag, error) {
+func (db *pgdb) findTagByName(ctx context.Context, organization organization.Name, name string) (*Tag, error) {
 	tag, err := db.Querier(ctx).FindTagByName(ctx, sqlc.FindTagByNameParams{
 		Name:             sql.String(name),
 		OrganizationName: sql.String(organization),
@@ -92,7 +93,7 @@ func (db *pgdb) findTagByName(ctx context.Context, organization string, name str
 	return tagresult(tag).toTag(), nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization string, id resource.ID) (*Tag, error) {
+func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.ID) (*Tag, error) {
 	tag, err := db.Querier(ctx).FindTagByID(ctx, sqlc.FindTagByIDParams{
 		TagID:            id,
 		OrganizationName: sql.String(organization),

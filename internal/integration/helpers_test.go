@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
@@ -27,7 +28,7 @@ func runURL(hostname string, runID resource.ID) string {
 	return fmt.Sprintf("https://%s/app/runs/%s", hostname, runID)
 }
 
-func organizationRunsURL(hostname string, organization string) string {
+func organizationRunsURL(hostname string, organization organization.Name) string {
 	return fmt.Sprintf("https://%s/app/organizations/%s/runs", hostname, organization)
 }
 

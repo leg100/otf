@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -36,7 +37,7 @@ type (
 		UpdatedAt    time.Time
 		Name         string
 		Provider     string
-		Organization string // Module belongs to an organization
+		Organization organization.Name // Module belongs to an organization
 		Status       ModuleStatus
 		Versions     []ModuleVersion         // versions sorted in descending order
 		Connection   *connections.Connection // optional vcs repo connection
@@ -71,7 +72,7 @@ type (
 	CreateOptions struct {
 		Name         string
 		Provider     string
-		Organization string
+		Organization organization.Name
 	}
 	CreateModuleVersionOptions struct {
 		ModuleID resource.ID
@@ -83,12 +84,12 @@ type (
 		Error  string
 	}
 	GetModuleOptions struct {
-		Name         string `schema:"name,required"`
-		Provider     string `schema:"provider,required"`
-		Organization string `schema:"organization,required"`
+		Name         string            `schema:"name,required"`
+		Provider     string            `schema:"provider,required"`
+		Organization organization.Name `schema:"organization,required"`
 	}
 	ListModulesOptions struct {
-		Organization string `schema:"organization_name,required"` // filter by organization name
+		Organization organization.Name `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {
 		*resource.Pagination

@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
@@ -31,12 +32,12 @@ type webClient interface {
 	CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptions) (*Pool, error)
 	GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
 	updateAgentPool(ctx context.Context, poolID resource.ID, opts updatePoolOptions) (*Pool, error)
-	listAgentPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error)
+	listAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error)
 	deleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error)
 
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
-	listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error)
+	listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error)
 	listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error)
 	listServerRunners(ctx context.Context) ([]*RunnerMeta, error)
 

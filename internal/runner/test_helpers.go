@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -92,7 +93,7 @@ func (f *fakeService) listRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	return nil, nil
 }
 
-func (f *fakeService) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
+func (f *fakeService) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
 	return nil, nil
 }
 

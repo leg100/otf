@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
@@ -285,7 +286,7 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID,
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization organization.Name, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
 	q := db.Querier(ctx)
 
 	rows, err := q.FindWorkspacesByUsername(ctx, sqlc.FindWorkspacesByUsernameParams{

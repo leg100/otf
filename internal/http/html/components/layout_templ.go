@@ -5,12 +5,12 @@ package components
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 )
 
 type Breadcrumb struct {
@@ -175,7 +175,7 @@ func Layout(props LayoutProps) templ.Component {
 
 type BareLayoutProps struct {
 	Title        string
-	Organization string
+	Organization organization.Name
 	PreContent   templ.Component
 	PostContent  templ.Component
 }

@@ -198,7 +198,7 @@ func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *Organization
 	return err
 }
 
-func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization string) (*OrganizationToken, error) {
+func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization Name) (*OrganizationToken, error) {
 	result, err := db.Querier(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -206,7 +206,7 @@ func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization str
 	return tokenRow(result).toToken(), nil
 }
 
-func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error) {
+func (db *pgdb) listOrganizationTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
 	result, err := db.Querier(ctx).FindOrganizationTokens(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -226,7 +226,7 @@ func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.I
 	return tokenRow(result).toToken(), nil
 }
 
-func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {
+func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization Name) error {
 	_, err := db.Querier(ctx).DeleteOrganiationTokenByName(ctx, sql.String(organization))
 	if err != nil {
 		return sql.Error(err)

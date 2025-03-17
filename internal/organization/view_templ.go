@@ -5,15 +5,15 @@ package organization
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
+	"time"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
-	"time"
 )
 
 func new() templ.Component {
@@ -283,8 +283,8 @@ func get(organization *Organization) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 
 		layoutProps := components.LayoutProps{
-			Title:        organization.Name,
-			Organization: organization.Name,
+			Title:        Name,
+			Organization: Name,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "main menu"},
 			},
@@ -309,7 +309,7 @@ func get(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var13 templ.SafeURL = paths.Workspaces(organization.Name)
+			var templ_7745c5c3_Var13 templ.SafeURL = paths.Workspaces(Name)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var13)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -318,12 +318,12 @@ func get(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
+			if components.IsOwner(ctx, Name) || components.IsSiteAdmin(ctx) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<span id=\"menu-item-runs\"><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var14 templ.SafeURL = paths.OrganizationRuns(organization.Name)
+				var templ_7745c5c3_Var14 templ.SafeURL = paths.OrganizationRuns(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var14)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -337,7 +337,7 @@ func get(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var15 templ.SafeURL = paths.Modules(organization.Name)
+			var templ_7745c5c3_Var15 templ.SafeURL = paths.Modules(Name)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var15)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -346,7 +346,7 @@ func get(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var16 templ.SafeURL = paths.Teams(organization.Name)
+			var templ_7745c5c3_Var16 templ.SafeURL = paths.Teams(Name)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var16)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -355,12 +355,12 @@ func get(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
+			if components.IsOwner(ctx, Name) || components.IsSiteAdmin(ctx) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<span id=\"users\"><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var17 templ.SafeURL = paths.Users(organization.Name)
+				var templ_7745c5c3_Var17 templ.SafeURL = paths.Users(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var17)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -369,7 +369,7 @@ func get(organization *Organization) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var18 templ.SafeURL = paths.Runners(organization.Name)
+				var templ_7745c5c3_Var18 templ.SafeURL = paths.Runners(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var18)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -378,7 +378,7 @@ func get(organization *Organization) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var19 templ.SafeURL = paths.AgentPools(organization.Name)
+				var templ_7745c5c3_Var19 templ.SafeURL = paths.AgentPools(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var19)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -387,7 +387,7 @@ func get(organization *Organization) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var20 templ.SafeURL = paths.VariableSets(organization.Name)
+				var templ_7745c5c3_Var20 templ.SafeURL = paths.VariableSets(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var20)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -396,7 +396,7 @@ func get(organization *Organization) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var21 templ.SafeURL = paths.VCSProviders(organization.Name)
+				var templ_7745c5c3_Var21 templ.SafeURL = paths.VCSProviders(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var21)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -405,7 +405,7 @@ func get(organization *Organization) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var22 templ.SafeURL = paths.OrganizationToken(organization.Name)
+				var templ_7745c5c3_Var22 templ.SafeURL = paths.OrganizationToken(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var22)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -414,7 +414,7 @@ func get(organization *Organization) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var23 templ.SafeURL = paths.EditOrganization(organization.Name)
+				var templ_7745c5c3_Var23 templ.SafeURL = paths.EditOrganization(Name)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var23)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -475,7 +475,7 @@ func edit(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 templ.SafeURL = paths.UpdateOrganization(organization.Name)
+			var templ_7745c5c3_Var26 templ.SafeURL = paths.UpdateOrganization(Name)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var26)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -485,7 +485,7 @@ func edit(organization *Organization) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(organization.Name)
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(Name)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/organization/view.templ`, Line: 144, Col: 93}
 			}
@@ -497,7 +497,7 @@ func edit(organization *Organization) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var28 templ.SafeURL = paths.DeleteOrganization(organization.Name)
+			var templ_7745c5c3_Var28 templ.SafeURL = paths.DeleteOrganization(Name)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var28)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -522,8 +522,8 @@ func edit(organization *Organization) templ.Component {
 			return nil
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
-			Title:        organization.Name,
-			Organization: organization.Name,
+			Title:        Name,
+			Organization: Name,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "settings"},
 			},
@@ -535,7 +535,7 @@ func edit(organization *Organization) templ.Component {
 	})
 }
 
-func getToken(organization string, token *OrganizationToken) templ.Component {
+func getToken(organization Name, token *OrganizationToken) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

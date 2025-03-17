@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -29,7 +30,7 @@ type webHandlers struct {
 type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
-	ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
+	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error)
 	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
 	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error

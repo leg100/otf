@@ -3,6 +3,7 @@ package components
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 )
 
 type Breadcrumb struct {
@@ -65,7 +66,7 @@ templ Layout(props LayoutProps) {
 
 type BareLayoutProps struct {
 	Title        string
-	Organization string
+	Organization organization.Name
 	PreContent   templ.Component
 	PostContent  templ.Component
 }

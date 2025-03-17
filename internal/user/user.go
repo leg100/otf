@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
@@ -156,7 +157,7 @@ func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 }
 
 // IsOwner determines if user is an owner of an organization
-func (u *User) IsOwner(organization string) bool {
+func (u *User) IsOwner(organization organization.Name) bool {
 	for _, team := range u.Teams {
 		if team.IsOwner(organization) {
 			return true

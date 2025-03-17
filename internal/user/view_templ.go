@@ -5,15 +5,16 @@ package user
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
+	"time"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/team"
-	"time"
 )
 
 func adminLogin() templ.Component {
@@ -176,7 +177,7 @@ func profileLinks() templ.Component {
 }
 
 type userListProps struct {
-	organization string
+	organization organization.Name
 	users        []*User
 }
 

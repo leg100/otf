@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -166,7 +167,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action Action, req *AccessRe
 // individual resource.
 type AccessRequest struct {
 	// Organization name to which access is being requested.
-	Organization string
+	Organization organization.Name
 	// ID of resource to which access is being requested. If nil then the action
 	// is being requested on the organization.
 	ID *resource.ID

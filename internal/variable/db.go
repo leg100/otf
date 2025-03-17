@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/sqlc"
@@ -174,7 +175,7 @@ func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID reso
 	return VariableSetRow(row).convert()
 }
 
-func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
+func (pdb *pgdb) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
 	rows, err := pdb.Querier(ctx).FindVariableSetsByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
