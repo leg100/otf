@@ -27,7 +27,7 @@ func (q *Queries) DeleteGithubApp(ctx context.Context, githubAppID pgtype.Int8) 
 		&i.WebhookSecret,
 		&i.PrivateKey,
 		&i.Slug,
-		&i.Organization,
+		&i.OrganizationModel,
 	)
 	return i, err
 }
@@ -45,7 +45,7 @@ func (q *Queries) FindGithubApp(ctx context.Context) (GithubApp, error) {
 		&i.WebhookSecret,
 		&i.PrivateKey,
 		&i.Slug,
-		&i.Organization,
+		&i.OrganizationModel,
 	)
 	return i, err
 }
@@ -67,11 +67,11 @@ INSERT INTO github_apps (
 `
 
 type InsertGithubAppParams struct {
-	GithubAppID   pgtype.Int8
-	WebhookSecret pgtype.Text
-	PrivateKey    pgtype.Text
-	Slug          pgtype.Text
-	Organization  pgtype.Text
+	GithubAppID       pgtype.Int8
+	WebhookSecret     pgtype.Text
+	PrivateKey        pgtype.Text
+	Slug              pgtype.Text
+	OrganizationModel pgtype.Text
 }
 
 func (q *Queries) InsertGithubApp(ctx context.Context, arg InsertGithubAppParams) error {
@@ -80,7 +80,7 @@ func (q *Queries) InsertGithubApp(ctx context.Context, arg InsertGithubAppParams
 		arg.WebhookSecret,
 		arg.PrivateKey,
 		arg.Slug,
-		arg.Organization,
+		arg.OrganizationModel,
 	)
 	return err
 }
@@ -102,11 +102,11 @@ INSERT INTO github_app_installs (
 `
 
 type InsertGithubAppInstallParams struct {
-	GithubAppID   pgtype.Int8
-	InstallID     pgtype.Int8
-	Username      pgtype.Text
-	Organization  pgtype.Text
-	VCSProviderID resource.ID
+	GithubAppID       pgtype.Int8
+	InstallID         pgtype.Int8
+	Username          pgtype.Text
+	OrganizationModel pgtype.Text
+	VCSProviderID     resource.ID
 }
 
 func (q *Queries) InsertGithubAppInstall(ctx context.Context, arg InsertGithubAppInstallParams) error {
@@ -114,7 +114,7 @@ func (q *Queries) InsertGithubAppInstall(ctx context.Context, arg InsertGithubAp
 		arg.GithubAppID,
 		arg.InstallID,
 		arg.Username,
-		arg.Organization,
+		arg.OrganizationModel,
 		arg.VCSProviderID,
 	)
 	return err

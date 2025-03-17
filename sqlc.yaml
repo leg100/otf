@@ -5,9 +5,12 @@ sql:
     schema: "./internal/sql/migrations"
     gen:
       go:
+        omit_unused_structs: true
         package: "sqlc"
         out: "./internal/sql/sqlc"
         sql_package: "pgx/v5"
+        rename:
+          organization: "OrganizationModel"
         overrides:
           - db_type: "pg_catalog.bool"
             go_type:

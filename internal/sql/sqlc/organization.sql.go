@@ -43,9 +43,9 @@ const findOrganizationByID = `-- name: FindOrganizationByID :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE organization_id = $1
 `
 
-func (q *Queries) FindOrganizationByID(ctx context.Context, organizationID resource.ID) (Organization, error) {
+func (q *Queries) FindOrganizationByID(ctx context.Context, organizationID resource.ID) (OrganizationModel, error) {
 	row := q.db.QueryRow(ctx, findOrganizationByID, organizationID)
-	var i Organization
+	var i OrganizationModel
 	err := row.Scan(
 		&i.OrganizationID,
 		&i.CreatedAt,
@@ -65,9 +65,9 @@ const findOrganizationByName = `-- name: FindOrganizationByName :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE name = $1
 `
 
-func (q *Queries) FindOrganizationByName(ctx context.Context, name pgtype.Text) (Organization, error) {
+func (q *Queries) FindOrganizationByName(ctx context.Context, name pgtype.Text) (OrganizationModel, error) {
 	row := q.db.QueryRow(ctx, findOrganizationByName, name)
-	var i Organization
+	var i OrganizationModel
 	err := row.Scan(
 		&i.OrganizationID,
 		&i.CreatedAt,
@@ -90,9 +90,9 @@ WHERE name = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, name pgtype.Text) (Organization, error) {
+func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, name pgtype.Text) (OrganizationModel, error) {
 	row := q.db.QueryRow(ctx, findOrganizationByNameForUpdate, name)
-	var i Organization
+	var i OrganizationModel
 	err := row.Scan(
 		&i.OrganizationID,
 		&i.CreatedAt,
@@ -135,15 +135,15 @@ type FindOrganizationsParams struct {
 	Limit  pgtype.Int4
 }
 
-func (q *Queries) FindOrganizations(ctx context.Context, arg FindOrganizationsParams) ([]Organization, error) {
+func (q *Queries) FindOrganizations(ctx context.Context, arg FindOrganizationsParams) ([]OrganizationModel, error) {
 	rows, err := q.db.Query(ctx, findOrganizations, arg.Names, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Organization
+	var items []OrganizationModel
 	for rows.Next() {
-		var i Organization
+		var i OrganizationModel
 		if err := rows.Scan(
 			&i.OrganizationID,
 			&i.CreatedAt,
