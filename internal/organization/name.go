@@ -3,17 +3,21 @@ package organization
 import (
 	"database/sql/driver"
 	"fmt"
+	"regexp"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 )
+
+var validName = regexp.MustCompile(`^[a-zA-Z0-9\-_]+$`)
 
 type Name struct {
 	name string
 }
 
-func NewID(name string) (Name, error) {
-	if err := resource.ValidateName(&name); err != nil {
-		return Name{}, err
+func NewName(name string) (Name, error) {
+	if !validName.MatchString(name) {
+		return Name{}, internal.ErrInvalidName
 	}
 	return Name{name: name}, nil
 }

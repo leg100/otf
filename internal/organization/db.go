@@ -24,7 +24,7 @@ type row struct {
 	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	Name                       Name
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text
@@ -40,7 +40,7 @@ func (r row) toOrganization() *Organization {
 		ID:                         r.OrganizationID,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
-		Name:                       r.Name.String,
+		Name:                       r.Name,
 		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces.Bool,
 		CostEstimationEnabled:      r.CostEstimationEnabled.Bool,
 	}
@@ -71,7 +71,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		ID:                         org.ID,
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
-		Name:                       sql.String(org.Name),
+		Name:                       org.Name,
 		SessionRemember:            sql.Int4Ptr(org.SessionRemember),
 		SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
 		Email:                      sql.StringPtr(org.Email),
@@ -85,12 +85,12 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return nil
 }
 
-func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context, *Organization) error) (*Organization, error) {
+func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, *Organization) error) (*Organization, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context, q *sqlc.Queries) (*Organization, error) {
-			result, err := q.FindOrganizationByNameForUpdate(ctx, sql.String(name))
+			result, err := q.FindOrganizationByNameForUpdate(ctx, name)
 			if err != nil {
 				return nil, err
 			}
@@ -99,8 +99,8 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context
 		fn,
 		func(ctx context.Context, q *sqlc.Queries, org *Organization) error {
 			_, err := q.UpdateOrganizationByName(ctx, sqlc.UpdateOrganizationByNameParams{
-				Name:                       sql.String(name),
-				NewName:                    sql.String(org.Name),
+				Name:                       name,
+				NewName:                    org.Name,
 				Email:                      sql.StringPtr(org.Email),
 				CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
 				CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
