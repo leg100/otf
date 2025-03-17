@@ -1,12 +1,22 @@
 package resource
 
 import (
+	"database/sql"
 	"database/sql/driver"
+	"encoding"
 	"fmt"
 	"math/rand"
 	"regexp"
 	"strings"
 )
+
+type Identity interface {
+	fmt.Stringer
+	encoding.TextMarshaler
+	encoding.TextUnmarshaler
+	sql.Scanner
+	driver.Valuer
+}
 
 // base58 alphabet
 const base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
