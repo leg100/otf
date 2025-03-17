@@ -19,33 +19,11 @@ type AgentPool struct {
 	OrganizationScoped pgtype.Bool
 }
 
-type AgentPoolAllowedWorkspace struct {
-	AgentPoolID resource.ID
-	WorkspaceID resource.ID
-}
-
 type AgentToken struct {
 	AgentTokenID resource.ID
 	CreatedAt    pgtype.Timestamptz
 	Description  pgtype.Text
 	AgentPoolID  resource.ID
-}
-
-type Apply struct {
-	RunID          resource.ID
-	Status         pgtype.Text
-	ResourceReport interface{}
-}
-
-type ConfigurationVersion struct {
-	ConfigurationVersionID resource.ID
-	CreatedAt              pgtype.Timestamptz
-	AutoQueueRuns          pgtype.Bool
-	Source                 pgtype.Text
-	Speculative            pgtype.Bool
-	Status                 pgtype.Text
-	Config                 []byte
-	WorkspaceID            resource.ID
 }
 
 type ConfigurationVersionStatusTimestamp struct {
@@ -54,41 +32,12 @@ type ConfigurationVersionStatusTimestamp struct {
 	Timestamp              pgtype.Timestamptz
 }
 
-type DestinationType struct {
-	Name pgtype.Text
-}
-
 type GithubApp struct {
 	GithubAppID   pgtype.Int8
 	WebhookSecret pgtype.Text
 	PrivateKey    pgtype.Text
 	Slug          pgtype.Text
 	Organization  pgtype.Text
-}
-
-type GithubAppInstall struct {
-	GithubAppID   pgtype.Int8
-	InstallID     pgtype.Int8
-	Username      pgtype.Text
-	Organization  pgtype.Text
-	VCSProviderID resource.ID
-}
-
-type IngressAttribute struct {
-	Branch                 pgtype.Text
-	CommitSHA              pgtype.Text
-	Identifier             pgtype.Text
-	IsPullRequest          pgtype.Bool
-	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
-	CommitURL              pgtype.Text
-	PullRequestNumber      pgtype.Int4
-	PullRequestURL         pgtype.Text
-	PullRequestTitle       pgtype.Text
-	Tag                    pgtype.Text
-	SenderUsername         pgtype.Text
-	SenderAvatarURL        pgtype.Text
-	SenderHTMLURL          pgtype.Text
 }
 
 type Job struct {
@@ -100,44 +49,9 @@ type Job struct {
 	JobID    resource.ID
 }
 
-type JobPhase struct {
-	Phase pgtype.Text
-}
-
-type JobStatus struct {
-	Status pgtype.Text
-}
-
 type LatestTerraformVersion struct {
 	Version    pgtype.Text
 	Checkpoint pgtype.Timestamptz
-}
-
-type Log struct {
-	RunID   resource.ID
-	Phase   pgtype.Text
-	Chunk   []byte
-	Offset  pgtype.Int4
-	ChunkID resource.ID
-}
-
-type Module struct {
-	ModuleID         resource.ID
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
-	Name             pgtype.Text
-	Provider         pgtype.Text
-	Status           pgtype.Text
-	OrganizationName pgtype.Text
-}
-
-type ModuleStatus struct {
-	Status pgtype.Text
-}
-
-type ModuleTarball struct {
-	Tarball         []byte
-	ModuleVersionID resource.ID
 }
 
 type ModuleVersion struct {
@@ -148,10 +62,6 @@ type ModuleVersion struct {
 	Status          pgtype.Text
 	StatusError     pgtype.Text
 	ModuleID        resource.ID
-}
-
-type ModuleVersionStatus struct {
-	Status pgtype.Text
 }
 
 type NotificationConfiguration struct {
@@ -166,54 +76,11 @@ type NotificationConfiguration struct {
 	Enabled                     pgtype.Bool
 }
 
-type Organization struct {
-	OrganizationID             resource.ID
-	CreatedAt                  pgtype.Timestamptz
-	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
-	SessionRemember            pgtype.Int4
-	SessionTimeout             pgtype.Int4
-	Email                      pgtype.Text
-	CollaboratorAuthPolicy     pgtype.Text
-	AllowForceDeleteWorkspaces pgtype.Bool
-	CostEstimationEnabled      pgtype.Bool
-}
-
 type OrganizationToken struct {
 	OrganizationTokenID resource.ID
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	Expiry              pgtype.Timestamptz
-}
-
-type Phase struct {
-	Phase pgtype.Text
-}
-
-type PhaseStatus struct {
-	Status pgtype.Text
-}
-
-type PhaseStatusTimestamp struct {
-	RunID     resource.ID
-	Phase     pgtype.Text
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
-}
-
-type Plan struct {
-	RunID          resource.ID
-	Status         pgtype.Text
-	PlanBin        []byte
-	PlanJSON       []byte
-	ResourceReport interface{}
-	OutputReport   interface{}
-}
-
-type RegistrySession struct {
-	Token            pgtype.Text
-	Expiry           pgtype.Timestamptz
-	OrganizationName pgtype.Text
 }
 
 type RepoConnection struct {
@@ -231,44 +98,6 @@ type Repohook struct {
 	VCSProviderID resource.ID
 }
 
-type Run struct {
-	RunID                  resource.ID
-	CreatedAt              pgtype.Timestamptz
-	CancelSignaledAt       pgtype.Timestamptz
-	IsDestroy              pgtype.Bool
-	PositionInQueue        pgtype.Int4
-	Refresh                pgtype.Bool
-	RefreshOnly            pgtype.Bool
-	ReplaceAddrs           []pgtype.Text
-	TargetAddrs            []pgtype.Text
-	LockFile               []byte
-	Status                 pgtype.Text
-	WorkspaceID            resource.ID
-	ConfigurationVersionID resource.ID
-	AutoApply              pgtype.Bool
-	PlanOnly               pgtype.Bool
-	CreatedBy              pgtype.Text
-	Source                 pgtype.Text
-	TerraformVersion       pgtype.Text
-	AllowEmptyApply        pgtype.Bool
-}
-
-type RunStatus struct {
-	Status pgtype.Text
-}
-
-type RunStatusTimestamp struct {
-	RunID     resource.ID
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
-}
-
-type RunVariable struct {
-	RunID resource.ID
-	Key   pgtype.Text
-	Value pgtype.Text
-}
-
 type Runner struct {
 	RunnerID     resource.ID
 	Name         pgtype.Text
@@ -281,31 +110,6 @@ type Runner struct {
 	AgentPoolID  *resource.ID
 }
 
-type RunnerStatus struct {
-	Status pgtype.Text
-}
-
-type SchemaVersion struct {
-	Version pgtype.Int4
-}
-
-type Session struct {
-	Token     pgtype.Text
-	CreatedAt pgtype.Timestamptz
-	Address   pgtype.Text
-	Expiry    pgtype.Timestamptz
-	Username  pgtype.Text
-}
-
-type StateVersion struct {
-	StateVersionID resource.ID
-	CreatedAt      pgtype.Timestamptz
-	Serial         pgtype.Int4
-	State          []byte
-	WorkspaceID    resource.ID
-	Status         pgtype.Text
-}
-
 type StateVersionOutput struct {
 	StateVersionOutputID resource.ID
 	Name                 pgtype.Text
@@ -313,16 +117,6 @@ type StateVersionOutput struct {
 	Type                 pgtype.Text
 	Value                []byte
 	StateVersionID       resource.ID
-}
-
-type StateVersionStatus struct {
-	Status pgtype.Text
-}
-
-type Tag struct {
-	TagID            resource.ID
-	Name             pgtype.Text
-	OrganizationName pgtype.Text
 }
 
 type Team struct {
@@ -340,11 +134,6 @@ type Team struct {
 	PermissionManageProviders       pgtype.Bool
 }
 
-type TeamMembership struct {
-	TeamID   resource.ID
-	Username pgtype.Text
-}
-
 type TeamToken struct {
 	TeamTokenID resource.ID
 	Description pgtype.Text
@@ -358,18 +147,6 @@ type Token struct {
 	CreatedAt   pgtype.Timestamptz
 	Description pgtype.Text
 	Username    pgtype.Text
-}
-
-type User struct {
-	UserID    resource.ID
-	Username  pgtype.Text
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	SiteAdmin pgtype.Bool
-}
-
-type VCSKind struct {
-	Name pgtype.Text
 }
 
 type VCSProvider struct {
@@ -393,10 +170,6 @@ type Variable struct {
 	VersionID   pgtype.Text
 }
 
-type VariableCategory struct {
-	Category pgtype.Text
-}
-
 type VariableSet struct {
 	VariableSetID    resource.ID
 	Global           pgtype.Bool
@@ -413,57 +186,4 @@ type VariableSetVariable struct {
 type VariableSetWorkspace struct {
 	VariableSetID resource.ID
 	WorkspaceID   resource.ID
-}
-
-type Workspace struct {
-	WorkspaceID                resource.ID
-	CreatedAt                  pgtype.Timestamptz
-	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           pgtype.Bool
-	AutoApply                  pgtype.Bool
-	CanQueueDestroyPlan        pgtype.Bool
-	Description                pgtype.Text
-	Environment                pgtype.Text
-	ExecutionMode              pgtype.Text
-	GlobalRemoteState          pgtype.Bool
-	MigrationEnvironment       pgtype.Text
-	Name                       pgtype.Text
-	QueueAllRuns               pgtype.Bool
-	SpeculativeEnabled         pgtype.Bool
-	SourceName                 pgtype.Text
-	SourceURL                  pgtype.Text
-	StructuredRunOutputEnabled pgtype.Bool
-	TerraformVersion           pgtype.Text
-	TriggerPrefixes            []pgtype.Text
-	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
-	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
-	TriggerPatterns            []pgtype.Text
-	VCSTagsRegex               pgtype.Text
-	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
-}
-
-type WorkspacePermission struct {
-	WorkspaceID resource.ID
-	TeamID      resource.ID
-	Role        pgtype.Text
-}
-
-type WorkspaceRole struct {
-	Role pgtype.Text
-}
-
-type WorkspaceTag struct {
-	TagID       resource.ID
-	WorkspaceID resource.ID
-}
-
-type WorkspaceVariable struct {
-	WorkspaceID resource.ID
-	VariableID  resource.ID
 }

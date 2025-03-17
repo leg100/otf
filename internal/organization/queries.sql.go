@@ -18,8 +18,8 @@ FROM organizations
 WHERE name LIKE ANY($1::text[])
 `
 
-func (q *Queries) CountOrganizations(ctx context.Context, names []pgtype.Text) (int64, error) {
-	row := q.db.QueryRow(ctx, countOrganizations, names)
+func (q *Queries) CountOrganizations(ctx context.Context, db DBTX, names []pgtype.Text) (int64, error) {
+	row := db.QueryRow(ctx, countOrganizations, names)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -32,8 +32,8 @@ WHERE name = $1
 RETURNING organization_id
 `
 
-func (q *Queries) DeleteOrganizationByName(ctx context.Context, name pgtype.Text) (resource.ID, error) {
-	row := q.db.QueryRow(ctx, deleteOrganizationByName, name)
+func (q *Queries) DeleteOrganizationByName(ctx context.Context, db DBTX, name pgtype.Text) (resource.ID, error) {
+	row := db.QueryRow(ctx, deleteOrganizationByName, name)
 	var organization_id resource.ID
 	err := row.Scan(&organization_id)
 	return organization_id, err
@@ -43,9 +43,9 @@ const findOrganizationByID = `-- name: FindOrganizationByID :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE organization_id = $1
 `
 
-func (q *Queries) FindOrganizationByID(ctx context.Context, organizationID resource.ID) (Organization, error) {
-	row := q.db.QueryRow(ctx, findOrganizationByID, organizationID)
-	var i Organization
+func (q *Queries) FindOrganizationByID(ctx context.Context, db DBTX, organizationID resource.ID) (Model, error) {
+	row := db.QueryRow(ctx, findOrganizationByID, organizationID)
+	var i Model
 	err := row.Scan(
 		&i.OrganizationID,
 		&i.CreatedAt,
@@ -65,9 +65,9 @@ const findOrganizationByName = `-- name: FindOrganizationByName :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE name = $1
 `
 
-func (q *Queries) FindOrganizationByName(ctx context.Context, name pgtype.Text) (Organization, error) {
-	row := q.db.QueryRow(ctx, findOrganizationByName, name)
-	var i Organization
+func (q *Queries) FindOrganizationByName(ctx context.Context, db DBTX, name pgtype.Text) (Model, error) {
+	row := db.QueryRow(ctx, findOrganizationByName, name)
+	var i Model
 	err := row.Scan(
 		&i.OrganizationID,
 		&i.CreatedAt,
@@ -90,9 +90,9 @@ WHERE name = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, name pgtype.Text) (Organization, error) {
-	row := q.db.QueryRow(ctx, findOrganizationByNameForUpdate, name)
-	var i Organization
+func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, db DBTX, name pgtype.Text) (Model, error) {
+	row := db.QueryRow(ctx, findOrganizationByNameForUpdate, name)
+	var i Model
 	err := row.Scan(
 		&i.OrganizationID,
 		&i.CreatedAt,
@@ -114,8 +114,8 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID resource.ID) (pgtype.Text, error) {
-	row := q.db.QueryRow(ctx, findOrganizationNameByWorkspaceID, workspaceID)
+func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (pgtype.Text, error) {
+	row := db.QueryRow(ctx, findOrganizationNameByWorkspaceID, workspaceID)
 	var organization_name pgtype.Text
 	err := row.Scan(&organization_name)
 	return organization_name, err
@@ -135,15 +135,15 @@ type FindOrganizationsParams struct {
 	Limit  pgtype.Int4
 }
 
-func (q *Queries) FindOrganizations(ctx context.Context, arg FindOrganizationsParams) ([]Organization, error) {
-	rows, err := q.db.Query(ctx, findOrganizations, arg.Names, arg.Offset, arg.Limit)
+func (q *Queries) FindOrganizations(ctx context.Context, db DBTX, arg FindOrganizationsParams) ([]Model, error) {
+	rows, err := db.Query(ctx, findOrganizations, arg.Names, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Organization
+	var items []Model
 	for rows.Next() {
-		var i Organization
+		var i Model
 		if err := rows.Scan(
 			&i.OrganizationID,
 			&i.CreatedAt,
@@ -205,8 +205,8 @@ type InsertOrganizationParams struct {
 	AllowForceDeleteWorkspaces pgtype.Bool
 }
 
-func (q *Queries) InsertOrganization(ctx context.Context, arg InsertOrganizationParams) error {
-	_, err := q.db.Exec(ctx, insertOrganization,
+func (q *Queries) InsertOrganization(ctx context.Context, db DBTX, arg InsertOrganizationParams) error {
+	_, err := db.Exec(ctx, insertOrganization,
 		arg.ID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -248,8 +248,8 @@ type UpdateOrganizationByNameParams struct {
 	Name                       pgtype.Text
 }
 
-func (q *Queries) UpdateOrganizationByName(ctx context.Context, arg UpdateOrganizationByNameParams) (resource.ID, error) {
-	row := q.db.QueryRow(ctx, updateOrganizationByName,
+func (q *Queries) UpdateOrganizationByName(ctx context.Context, db DBTX, arg UpdateOrganizationByNameParams) (resource.ID, error) {
+	row := db.QueryRow(ctx, updateOrganizationByName,
 		arg.NewName,
 		arg.Email,
 		arg.CollaboratorAuthPolicy,

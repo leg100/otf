@@ -67,7 +67,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
-	err := db.Querier(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
+	err := (&Queries{}).InsertOrganization(ctx, db.Conn(ctx), InsertOrganizationParams{
 		ID:                         org.ID,
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),

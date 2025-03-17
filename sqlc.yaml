@@ -355,6 +355,7 @@ sql:
       package: "sqlc"
       out: "./internal/sql/sqlc"
       sql_package: "pgx/v5"
+      omit_unused_structs: true
       initialisms: &initialisms
       - "id"
       - "vcs"
@@ -373,6 +374,10 @@ sql:
     go:
       out: "./internal/organization"
       sql_package: "pgx/v5"
+      omit_unused_structs: true
       output_db_file_name: "sqlc.go"
       output_models_file_name: models.go
+      emit_methods_with_db_argument: true
       initialisms: *initialisms
+      rename:
+        organization: Model

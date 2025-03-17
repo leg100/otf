@@ -30,7 +30,6 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
 )
 
@@ -83,6 +82,13 @@ func (db *DB) Querier(ctx context.Context) *sqlc.Queries {
 		return sqlc.New(conn)
 	}
 	return sqlc.New(db.Pool)
+}
+
+func (db *DB) Conn(ctx context.Context) genericConnection {
+	if conn, ok := fromContext(ctx); ok {
+		return conn
+	}
+	return db.Pool
 }
 
 // Tx provides the caller with a callback in which all operations are conducted
