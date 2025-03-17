@@ -17,7 +17,8 @@ type listRunnersProps struct {
 
 templ listRunners(props listRunnersProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "runners",
+		Title:        "runners",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "runners"},
 		},
@@ -75,7 +76,8 @@ type listAgentPoolProps struct {
 
 templ listAgentPools(props listAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "agent pools",
+		Title:        "agent pools",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools"},
 		},
@@ -140,7 +142,8 @@ type getAgentPoolProps struct {
 
 templ getAgentPool(props getAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
-		Title: props.pool.Name,
+		Title:        props.pool.Name,
+		Organization: props.pool.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
 			{Name: props.pool.Name},
@@ -247,8 +250,8 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 				<div>
 					@components.Identifier(token.ID)
-					<form action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
-						<button id="delete-agent-token-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+					<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
+						@components.DeleteButton()
 					</form>
 				</div>
 			</div>
@@ -270,7 +273,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				</ul>
 			}
 			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID.String()) } method="POST">
-				<button id="delete-agent-pool-button" class="btn-danger disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
+				<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
 					Delete agent pool
 				</button>
 			</form>

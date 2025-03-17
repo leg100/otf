@@ -24,7 +24,8 @@ type newViewProps struct {
 
 templ newView(props newViewProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "new module",
+		Title:        "new module",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules", Link: paths.Modules(props.organization)},
 			{Name: "new"},
@@ -159,6 +160,7 @@ type listProps struct {
 templ list(props listProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "modules",
+		Organization:   props.organization,
 		ContentActions: listActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules"},

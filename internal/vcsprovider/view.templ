@@ -65,8 +65,8 @@ templ listItem(provider *VCSProvider) {
 		</div>
 		<div>
 			@components.Identifier(provider.ID)
-			<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
-				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+			<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
+				@components.DeleteButton()
 				<input type="hidden" name="id" value={ provider.ID.String() }/>
 			</form>
 		</div>
@@ -91,7 +91,7 @@ templ edit(provider *VCSProvider) {
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
 		<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
-			<button id="delete-vcs-provider-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+			<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
 				Delete VCS provider
 			</button>
 		</form>

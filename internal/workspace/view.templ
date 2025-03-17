@@ -89,6 +89,9 @@ templ list(props listProps) {
 							<label class="badge badge-accent" for={ "filter-tag-" + tag }>{ tag }</label>
 						</div>
 					}
+					if len(props.tags) == 0 {
+						No tags found
+					}
 				</div>
 			</div>
 		</form>
@@ -433,7 +436,7 @@ templ editConnection(props editProps) {
 					<template x-for="path in paths">
 						<div class="flex gap-2 items-center justify-end">
 							<span class="justify-end bg-gray-200 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
-							<button @click="deletePattern(path)" type="button" class="btn-danger w-40" :id="$id('delete-pattern')">Delete</button>
+							<button @click="deletePattern(path)" type="button" class="btn btn-sm btn-error btn-outline w-40" :id="$id('delete-pattern')">Delete</button>
 						</div>
 					</template>
 				</div>
