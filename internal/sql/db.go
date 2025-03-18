@@ -31,6 +31,8 @@ type (
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	}
+
+	Connection = genericConnection
 )
 
 // New migrates the database to the latest migration version, and then
@@ -104,6 +106,22 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, *sqlc.Queri
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
 		return callback(ctx, sqlc.New(tx))
+	})
+}
+
+// Tx2 provides the caller with a callback in which all operations are conducted
+// within a transaction.
+func (db *DB) Tx2(ctx context.Context, callback func(context.Context, Connection) error) error {
+	var conn Connection = db.Pool
+
+	// Use connection from context if found
+	if ctxConn, ok := fromContext(ctx); ok {
+		conn = ctxConn
+	}
+
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+		ctx = newContext(ctx, tx)
+		return callback(ctx, tx)
 	})
 }
 

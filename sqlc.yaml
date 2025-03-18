@@ -355,7 +355,7 @@ sql:
       package: "sqlc"
       out: "./internal/sql/sqlc"
       sql_package: "pgx/v5"
-      omit_unused_structs: true
+      omit_unused_structs: false
       initialisms: &initialisms
       - "id"
       - "vcs"
@@ -381,3 +381,41 @@ sql:
       initialisms: *initialisms
       rename:
         organization: Model
+        organization_token: TokenModel
+- engine: "postgresql"
+  queries: "./internal/workspace/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      out: "./internal/workspace"
+      sql_package: "pgx/v5"
+      omit_unused_structs: false
+      output_db_file_name: "sqlc.go"
+      output_models_file_name: models.go
+      emit_methods_with_db_argument: true
+      initialisms: *initialisms
+      rename:
+        workspace: Model
+        tag: TagModel
+- engine: "postgresql"
+  queries: "./internal/run/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      out: "./internal/run"
+      sql_package: "pgx/v5"
+      omit_unused_structs: false
+      output_db_file_name: "sqlc.go"
+      output_models_file_name: models.go
+      emit_methods_with_db_argument: true
+      initialisms: *initialisms
+      rename:
+        run: Model
+        phase: PhaseModel
+        phase_status: PhaseStatusModel
+        phase_status_timestamp: PhaseStatusTimestampModel
+        variable: VariableModel
+      overrides:
+        - db_type: "report"
+          go_type:
+            type: "Report"

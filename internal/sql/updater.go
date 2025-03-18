@@ -49,3 +49,28 @@ func Updater[T any](
 	})
 	return row, Error(err)
 }
+
+func Updater2[T any](
+	ctx context.Context,
+	db *DB,
+	getForUpdate func(context.Context, Connection) (T, error),
+	update func(context.Context, T) error,
+	updateDB func(context.Context, Connection, T) error,
+) (T, error) {
+	var row T
+	err := db.Tx2(ctx, func(ctx context.Context, conn Connection) error {
+		var err error
+		row, err = getForUpdate(ctx, conn)
+		if err != nil {
+			return err
+		}
+		if err := update(ctx, row); err != nil {
+			return err
+		}
+		if err := updateDB(ctx, conn, row); err != nil {
+			return err
+		}
+		return nil
+	})
+	return row, Error(err)
+}

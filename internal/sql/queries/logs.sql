@@ -1,17 +1,3 @@
--- name: InsertPhaseStatusTimestamp :exec
-INSERT INTO phase_status_timestamps (
-    run_id,
-    phase,
-    status,
-    timestamp
-) VALUES (
-    sqlc.arg('run_id'),
-    sqlc.arg('phase'),
-    sqlc.arg('status'),
-    sqlc.arg('timestamp')
-)
-;
-
 -- name: InsertLogChunk :exec
 INSERT INTO logs (
     chunk_id,

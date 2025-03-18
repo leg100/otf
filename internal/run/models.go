@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.28.0
 
-package sqlc
+package run
 
 import (
 	"net/netip"
@@ -92,16 +92,16 @@ type IngressAttribute struct {
 }
 
 type Job struct {
-	RunID    resource.ID
-	Phase    pgtype.Text
-	Status   pgtype.Text
-	RunnerID *resource.ID
-	Signaled pgtype.Bool
-	JobID    resource.ID
+	RunID      resource.ID
+	PhaseModel pgtype.Text
+	Status     pgtype.Text
+	RunnerID   *resource.ID
+	Signaled   pgtype.Bool
+	JobID      resource.ID
 }
 
 type JobPhase struct {
-	Phase pgtype.Text
+	PhaseModel pgtype.Text
 }
 
 type JobStatus struct {
@@ -114,11 +114,33 @@ type LatestTerraformVersion struct {
 }
 
 type Log struct {
-	RunID   resource.ID
-	Phase   pgtype.Text
-	Chunk   []byte
-	Offset  pgtype.Int4
-	ChunkID resource.ID
+	RunID      resource.ID
+	PhaseModel pgtype.Text
+	Chunk      []byte
+	Offset     pgtype.Int4
+	ChunkID    resource.ID
+}
+
+type Model struct {
+	RunID                  resource.ID
+	CreatedAt              pgtype.Timestamptz
+	CancelSignaledAt       pgtype.Timestamptz
+	IsDestroy              pgtype.Bool
+	PositionInQueue        pgtype.Int4
+	Refresh                pgtype.Bool
+	RefreshOnly            pgtype.Bool
+	ReplaceAddrs           []pgtype.Text
+	TargetAddrs            []pgtype.Text
+	LockFile               []byte
+	Status                 pgtype.Text
+	WorkspaceID            resource.ID
+	ConfigurationVersionID resource.ID
+	AutoApply              pgtype.Bool
+	PlanOnly               pgtype.Bool
+	CreatedBy              pgtype.Text
+	Source                 pgtype.Text
+	TerraformVersion       pgtype.Text
+	AllowEmptyApply        pgtype.Bool
 }
 
 type Module struct {
@@ -186,19 +208,19 @@ type OrganizationToken struct {
 	Expiry              pgtype.Timestamptz
 }
 
-type Phase struct {
-	Phase pgtype.Text
+type PhaseModel struct {
+	PhaseModel pgtype.Text
 }
 
-type PhaseStatus struct {
+type PhaseStatusModel struct {
 	Status pgtype.Text
 }
 
-type PhaseStatusTimestamp struct {
-	RunID     resource.ID
-	Phase     pgtype.Text
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
+type PhaseStatusTimestampModel struct {
+	RunID      resource.ID
+	PhaseModel pgtype.Text
+	Status     pgtype.Text
+	Timestamp  pgtype.Timestamptz
 }
 
 type Plan struct {
@@ -229,28 +251,6 @@ type Repohook struct {
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSProviderID resource.ID
-}
-
-type Run struct {
-	RunID                  resource.ID
-	CreatedAt              pgtype.Timestamptz
-	CancelSignaledAt       pgtype.Timestamptz
-	IsDestroy              pgtype.Bool
-	PositionInQueue        pgtype.Int4
-	Refresh                pgtype.Bool
-	RefreshOnly            pgtype.Bool
-	ReplaceAddrs           []pgtype.Text
-	TargetAddrs            []pgtype.Text
-	LockFile               []byte
-	Status                 pgtype.Text
-	WorkspaceID            resource.ID
-	ConfigurationVersionID resource.ID
-	AutoApply              pgtype.Bool
-	PlanOnly               pgtype.Bool
-	CreatedBy              pgtype.Text
-	Source                 pgtype.Text
-	TerraformVersion       pgtype.Text
-	AllowEmptyApply        pgtype.Bool
 }
 
 type RunStatus struct {
@@ -382,7 +382,11 @@ type VCSProvider struct {
 	GithubAppID      pgtype.Int8
 }
 
-type Variable struct {
+type VariableCategory struct {
+	Category pgtype.Text
+}
+
+type VariableModel struct {
 	VariableID  resource.ID
 	Key         pgtype.Text
 	Value       pgtype.Text
@@ -391,10 +395,6 @@ type Variable struct {
 	Sensitive   pgtype.Bool
 	HCL         pgtype.Bool
 	VersionID   pgtype.Text
-}
-
-type VariableCategory struct {
-	Category pgtype.Text
 }
 
 type VariableSet struct {

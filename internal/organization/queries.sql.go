@@ -25,6 +25,20 @@ func (q *Queries) CountOrganizations(ctx context.Context, db DBTX, names []pgtyp
 	return count, err
 }
 
+const deleteOrganiationTokenByName = `-- name: DeleteOrganiationTokenByName :one
+DELETE
+FROM organization_tokens
+WHERE organization_name = $1
+RETURNING organization_token_id
+`
+
+func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, db DBTX, organizationName pgtype.Text) (resource.ID, error) {
+	row := db.QueryRow(ctx, deleteOrganiationTokenByName, organizationName)
+	var organization_token_id resource.ID
+	err := row.Scan(&organization_token_id)
+	return organization_token_id, err
+}
+
 const deleteOrganizationByName = `-- name: DeleteOrganizationByName :one
 DELETE
 FROM organizations
@@ -119,6 +133,73 @@ func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX
 	var organization_name pgtype.Text
 	err := row.Scan(&organization_name)
 	return organization_name, err
+}
+
+const findOrganizationTokens = `-- name: FindOrganizationTokens :many
+SELECT organization_token_id, created_at, organization_name, expiry
+FROM organization_tokens
+WHERE organization_name = $1
+`
+
+func (q *Queries) FindOrganizationTokens(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]TokenModel, error) {
+	rows, err := db.Query(ctx, findOrganizationTokens, organizationName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TokenModel
+	for rows.Next() {
+		var i TokenModel
+		if err := rows.Scan(
+			&i.OrganizationTokenID,
+			&i.CreatedAt,
+			&i.OrganizationName,
+			&i.Expiry,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const findOrganizationTokensByID = `-- name: FindOrganizationTokensByID :one
+SELECT organization_token_id, created_at, organization_name, expiry
+FROM organization_tokens
+WHERE organization_token_id = $1
+`
+
+func (q *Queries) FindOrganizationTokensByID(ctx context.Context, db DBTX, organizationTokenID resource.ID) (TokenModel, error) {
+	row := db.QueryRow(ctx, findOrganizationTokensByID, organizationTokenID)
+	var i TokenModel
+	err := row.Scan(
+		&i.OrganizationTokenID,
+		&i.CreatedAt,
+		&i.OrganizationName,
+		&i.Expiry,
+	)
+	return i, err
+}
+
+const findOrganizationTokensByName = `-- name: FindOrganizationTokensByName :one
+SELECT organization_token_id, created_at, organization_name, expiry
+FROM organization_tokens
+WHERE organization_name = $1
+`
+
+func (q *Queries) FindOrganizationTokensByName(ctx context.Context, db DBTX, organizationName pgtype.Text) (TokenModel, error) {
+	row := db.QueryRow(ctx, findOrganizationTokensByName, organizationName)
+	var i TokenModel
+	err := row.Scan(
+		&i.OrganizationTokenID,
+		&i.CreatedAt,
+		&i.OrganizationName,
+		&i.Expiry,
+	)
+	return i, err
 }
 
 const findOrganizations = `-- name: FindOrganizations :many
@@ -263,4 +344,38 @@ func (q *Queries) UpdateOrganizationByName(ctx context.Context, db DBTX, arg Upd
 	var organization_id resource.ID
 	err := row.Scan(&organization_id)
 	return organization_id, err
+}
+
+const upsertOrganizationToken = `-- name: UpsertOrganizationToken :exec
+INSERT INTO organization_tokens (
+    organization_token_id,
+    created_at,
+    organization_name,
+    expiry
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4
+) ON CONFLICT (organization_name) DO UPDATE
+  SET created_at            = $2,
+      organization_token_id = $1,
+      expiry                = $4
+`
+
+type UpsertOrganizationTokenParams struct {
+	OrganizationTokenID resource.ID
+	CreatedAt           pgtype.Timestamptz
+	OrganizationName    pgtype.Text
+	Expiry              pgtype.Timestamptz
+}
+
+func (q *Queries) UpsertOrganizationToken(ctx context.Context, db DBTX, arg UpsertOrganizationTokenParams) error {
+	_, err := db.Exec(ctx, upsertOrganizationToken,
+		arg.OrganizationTokenID,
+		arg.CreatedAt,
+		arg.OrganizationName,
+		arg.Expiry,
+	)
+	return err
 }

@@ -21,3 +21,10 @@ type Model struct {
 	AllowForceDeleteWorkspaces pgtype.Bool
 	CostEstimationEnabled      pgtype.Bool
 }
+
+type TokenModel struct {
+	OrganizationTokenID resource.ID
+	CreatedAt           pgtype.Timestamptz
+	OrganizationName    pgtype.Text
+	Expiry              pgtype.Timestamptz
+}
