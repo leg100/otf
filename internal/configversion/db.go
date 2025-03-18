@@ -17,7 +17,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
-	return db.Tx2(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		err := q.InsertConfigurationVersion(ctx, conn, InsertConfigurationVersionParams{
 			ID:            cv.ID,
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
@@ -63,7 +63,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 }
 
 func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
-	return db.Tx2(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		// select ...for update
 		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, conn, id)
 		if err != nil {

@@ -87,7 +87,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 }
 
 func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context, *Organization) error) (*Organization, error) {
-	return sql.Updater2(
+	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context, conn sql.Connection) (*Organization, error) {

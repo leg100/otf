@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type cvUploader struct {

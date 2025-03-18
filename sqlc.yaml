@@ -445,3 +445,74 @@ sql:
       initialisms: *initialisms
       rename:
         variable: Model
+- engine: "postgresql"
+  queries: "./internal/user/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/user"
+      omit_unused_structs: false
+      rename:
+        user: Model
+- engine: "postgresql"
+  queries: "./internal/team/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/team"
+      omit_unused_structs: false
+      rename:
+        team: Model
+        token: TokenModel
+- engine: "postgresql"
+  queries: "./internal/repohooks/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/repohooks"
+      omit_unused_structs: false
+      rename:
+- engine: "postgresql"
+  queries: "./internal/github/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/github"
+      omit_unused_structs: false
+      rename:
+- engine: "postgresql"
+  queries: "./internal/connections/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/connections"
+      omit_unused_structs: false
+      rename:
+- engine: "postgresql"
+  queries: "./internal/vcsprovider/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/vcsprovider"
+      omit_unused_structs: false
+      rename:
+        vcs_provider: Model
+- engine: "postgresql"
+  queries: "./internal/runner/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/runner"
+      omit_unused_structs: false
+      rename:
+        runner: RunnerModel
+        runner_status: RunnerStatusModel
+        job: JobModel
+        job_status: JobStatusModel

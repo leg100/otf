@@ -8,8 +8,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type db struct {
 	*sql.DB
@@ -27,7 +28,7 @@ type runnerMetaResult struct {
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
 	AgentPoolID  *resource.ID
-	AgentPool    *sqlc.AgentPool
+	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
 
