@@ -347,15 +347,17 @@ overrides:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
 sql:
-- engine: "postgresql"
-  queries: "./internal/sql/queries"
+- engine: "postgresql" &defaults
+  queries: "./internal/organization/queries.sql"
   schema: "./internal/sql/migrations"
   gen:
     go:
-      package: "sqlc"
-      out: "./internal/sql/sqlc"
+      out: "./internal/organization"
       sql_package: "pgx/v5"
-      omit_unused_structs: false
+      omit_unused_structs: true
+      output_db_file_name: "sqlc.go"
+      output_models_file_name: models.go
+      emit_methods_with_db_argument: true
       initialisms: &initialisms
       - "id"
       - "vcs"
@@ -367,18 +369,6 @@ sql:
       - "json"
       - "hcl"
       - "ip"
-- engine: "postgresql"
-  queries: "./internal/organization/queries.sql"
-  schema: "./internal/sql/migrations"
-  gen:
-    go:
-      out: "./internal/organization"
-      sql_package: "pgx/v5"
-      omit_unused_structs: true
-      output_db_file_name: "sqlc.go"
-      output_models_file_name: models.go
-      emit_methods_with_db_argument: true
-      initialisms: *initialisms
       rename:
         organization: Model
         organization_token: TokenModel
@@ -419,3 +409,29 @@ sql:
         - db_type: "report"
           go_type:
             type: "Report"
+- engine: "postgresql"
+  queries: "./internal/configversion/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      out: "./internal/configversion"
+      sql_package: "pgx/v5"
+      omit_unused_structs: false
+      output_db_file_name: "sqlc.go"
+      output_models_file_name: models.go
+      emit_methods_with_db_argument: true
+      initialisms: *initialisms
+      rename:
+        ingress_version: IngressVersionModel
+- engine: "postgresql"
+  queries: "./internal/variable/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      out: "./internal/variable"
+      sql_package: "pgx/v5"
+      omit_unused_structs: false
+      output_db_file_name: "sqlc.go"
+      output_models_file_name: models.go
+      emit_methods_with_db_argument: true
+      initialisms: *initialisms

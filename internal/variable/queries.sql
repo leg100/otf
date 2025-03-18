@@ -1,3 +1,56 @@
+-- name: InsertVariable :exec
+INSERT INTO variables (
+    variable_id,
+    key,
+    value,
+    description,
+    category,
+    sensitive,
+    hcl,
+    version_id
+) VALUES (
+    sqlc.arg('variable_id'),
+    sqlc.arg('key'),
+    sqlc.arg('value'),
+    sqlc.arg('description'),
+    sqlc.arg('category'),
+    sqlc.arg('sensitive'),
+    sqlc.arg('hcl'),
+    sqlc.arg('version_id')
+);
+
+-- name: FindVariable :one
+SELECT *
+FROM variables
+WHERE variable_id = sqlc.arg('variable_id')
+;
+
+-- name: UpdateVariableByID :one
+UPDATE variables
+SET
+    key = sqlc.arg('key'),
+    value = sqlc.arg('value'),
+    description = sqlc.arg('description'),
+    category = sqlc.arg('category'),
+    sensitive = sqlc.arg('sensitive'),
+    version_id = sqlc.arg('version_id'),
+    hcl = sqlc.arg('hcl')
+WHERE variable_id = sqlc.arg('variable_id')
+RETURNING variable_id
+;
+
+-- name: DeleteVariableByID :one
+DELETE
+FROM variables
+WHERE variable_id = sqlc.arg('variable_id')
+RETURNING *
+;
+
+
+--
+-- variable sets
+--
+
 -- name: InsertVariableSet :exec
 INSERT INTO variable_sets (
     variable_set_id,
@@ -174,3 +227,36 @@ RETURNING *;
 DELETE
 FROM variable_set_workspaces
 WHERE variable_set_id = sqlc.arg('variable_set_id');
+
+--
+-- workspace variables
+--
+
+-- name: InsertWorkspaceVariable :exec
+INSERT INTO workspace_variables (
+    variable_id,
+    workspace_id
+) VALUES (
+    sqlc.arg('variable_id'),
+    sqlc.arg('workspace_id')
+);
+
+-- name: FindWorkspaceVariablesByWorkspaceID :many
+SELECT v.*
+FROM workspace_variables
+JOIN variables v USING (variable_id)
+WHERE workspace_id = sqlc.arg('workspace_id');
+
+-- name: FindWorkspaceVariableByVariableID :one
+SELECT
+    workspace_id,
+    v::"variables" AS variable
+FROM workspace_variables
+JOIN variables v USING (variable_id)
+WHERE v.variable_id = sqlc.arg('variable_id');
+
+-- name: DeleteWorkspaceVariableByID :one
+DELETE
+FROM workspace_variables wv USING variables v
+WHERE wv.variable_id = sqlc.arg('variable_id')
+RETURNING wv.workspace_id, (v.*)::"variables" AS variable;

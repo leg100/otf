@@ -81,3 +81,67 @@ FROM teams
 WHERE team_id = sqlc.arg('team_id')
 RETURNING team_id
 ;
+
+--
+-- team membership
+--
+
+-- name: InsertTeamMembership :many
+WITH
+    users AS (
+        SELECT username
+        FROM unnest(sqlc.arg('usernames')::text[]) t(username)
+    )
+INSERT INTO team_memberships (username, team_id)
+SELECT username, sqlc.arg('team_id')
+FROM users
+RETURNING username
+;
+
+-- name: DeleteTeamMembership :many
+WITH
+    users AS (
+        SELECT username
+        FROM unnest(sqlc.arg('usernames')::text[]) t(username)
+    )
+DELETE
+FROM team_memberships tm
+USING users
+WHERE
+    tm.username = users.username AND
+    tm.team_id  = sqlc.arg('team_id')
+RETURNING tm.username
+;
+
+--
+-- team tokens
+--
+
+-- name: InsertTeamToken :exec
+INSERT INTO team_tokens (
+    team_token_id,
+    created_at,
+    team_id,
+    expiry
+) VALUES (
+    sqlc.arg('team_token_id'),
+    sqlc.arg('created_at'),
+    sqlc.arg('team_id'),
+    sqlc.arg('expiry')
+) ON CONFLICT (team_id) DO UPDATE
+  SET team_token_id = sqlc.arg('team_token_id'),
+      created_at    = sqlc.arg('created_at'),
+      expiry        = sqlc.arg('expiry');
+
+-- name: FindTeamTokensByID :many
+SELECT *
+FROM team_tokens
+WHERE team_id = sqlc.arg('team_id')
+;
+
+-- name: DeleteTeamTokenByID :one
+DELETE
+FROM team_tokens
+WHERE team_id = sqlc.arg('team_id')
+RETURNING team_token_id
+;
