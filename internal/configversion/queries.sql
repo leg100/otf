@@ -47,7 +47,7 @@ SELECT
         WHERE cst.configuration_version_id = cv.configuration_version_id
         GROUP BY cst.configuration_version_id
     ) AS status_timestamps,
-    ia::ingress_attributes AS ingress_attributes
+    ia::"ingress_attributes" AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING (configuration_version_id)

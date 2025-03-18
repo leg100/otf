@@ -37,23 +37,6 @@ type Apply struct {
 	ResourceReport interface{}
 }
 
-type ConfigurationVersion struct {
-	ConfigurationVersionID resource.ID
-	CreatedAt              pgtype.Timestamptz
-	AutoQueueRuns          pgtype.Bool
-	Source                 pgtype.Text
-	Speculative            pgtype.Bool
-	Status                 pgtype.Text
-	Config                 []byte
-	WorkspaceID            resource.ID
-}
-
-type ConfigurationVersionStatusTimestamp struct {
-	ConfigurationVersionID resource.ID
-	Status                 pgtype.Text
-	Timestamp              pgtype.Timestamptz
-}
-
 type DestinationType struct {
 	Name pgtype.Text
 }
@@ -74,7 +57,7 @@ type GithubAppInstall struct {
 	VCSProviderID resource.ID
 }
 
-type IngressAttribute struct {
+type IngressAttributeModel struct {
 	Branch                 pgtype.Text
 	CommitSHA              pgtype.Text
 	Identifier             pgtype.Text
@@ -119,6 +102,17 @@ type Log struct {
 	Chunk   []byte
 	Offset  pgtype.Int4
 	ChunkID resource.ID
+}
+
+type Model struct {
+	ConfigurationVersionID resource.ID
+	CreatedAt              pgtype.Timestamptz
+	AutoQueueRuns          pgtype.Bool
+	Source                 pgtype.Text
+	Speculative            pgtype.Bool
+	Status                 pgtype.Text
+	Config                 []byte
+	WorkspaceID            resource.ID
 }
 
 type Module struct {
@@ -317,6 +311,12 @@ type StateVersionOutput struct {
 
 type StateVersionStatus struct {
 	Status pgtype.Text
+}
+
+type StatusTimestampModel struct {
+	ConfigurationVersionID resource.ID
+	Status                 pgtype.Text
+	Timestamp              pgtype.Timestamptz
 }
 
 type Tag struct {

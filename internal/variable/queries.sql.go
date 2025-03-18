@@ -19,9 +19,9 @@ WHERE variable_id = $1
 RETURNING variable_id, key, value, description, category, sensitive, hcl, version_id
 `
 
-func (q *Queries) DeleteVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (Variable, error) {
+func (q *Queries) DeleteVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (Model, error) {
 	row := db.QueryRow(ctx, deleteVariableByID, variableID)
-	var i Variable
+	var i Model
 	err := row.Scan(
 		&i.VariableID,
 		&i.Key,
@@ -115,13 +115,13 @@ RETURNING wv.workspace_id, (v.*)::"variables" AS variable
 
 type DeleteWorkspaceVariableByIDRow struct {
 	WorkspaceID resource.ID
-	Variable    Variable
+	Model       Variable
 }
 
 func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (DeleteWorkspaceVariableByIDRow, error) {
 	row := db.QueryRow(ctx, deleteWorkspaceVariableByID, variableID)
 	var i DeleteWorkspaceVariableByIDRow
-	err := row.Scan(&i.WorkspaceID, &i.Variable)
+	err := row.Scan(&i.WorkspaceID, &i.Model)
 	return i, err
 }
 
@@ -131,9 +131,9 @@ FROM variables
 WHERE variable_id = $1
 `
 
-func (q *Queries) FindVariable(ctx context.Context, db DBTX, variableID resource.ID) (Variable, error) {
+func (q *Queries) FindVariable(ctx context.Context, db DBTX, variableID resource.ID) (Model, error) {
 	row := db.QueryRow(ctx, findVariable, variableID)
-	var i Variable
+	var i Model
 	err := row.Scan(
 		&i.VariableID,
 		&i.Key,
@@ -420,13 +420,13 @@ WHERE v.variable_id = $1
 
 type FindWorkspaceVariableByVariableIDRow struct {
 	WorkspaceID resource.ID
-	Variable    Variable
+	Model       Variable
 }
 
 func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, db DBTX, variableID resource.ID) (FindWorkspaceVariableByVariableIDRow, error) {
 	row := db.QueryRow(ctx, findWorkspaceVariableByVariableID, variableID)
 	var i FindWorkspaceVariableByVariableIDRow
-	err := row.Scan(&i.WorkspaceID, &i.Variable)
+	err := row.Scan(&i.WorkspaceID, &i.Model)
 	return i, err
 }
 
@@ -437,15 +437,15 @@ JOIN variables v USING (variable_id)
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]Variable, error) {
+func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]Model, error) {
 	rows, err := db.Query(ctx, findWorkspaceVariablesByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Variable
+	var items []Model
 	for rows.Next() {
-		var i Variable
+		var i Model
 		if err := rows.Scan(
 			&i.VariableID,
 			&i.Key,

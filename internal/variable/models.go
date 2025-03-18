@@ -80,7 +80,7 @@ type IngressAttribute struct {
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID pgtype.Text
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
@@ -119,6 +119,17 @@ type Log struct {
 	Chunk   []byte
 	Offset  pgtype.Int4
 	ChunkID resource.ID
+}
+
+type Model struct {
+	VariableID  resource.ID
+	Key         pgtype.Text
+	Value       pgtype.Text
+	Description pgtype.Text
+	Category    pgtype.Text
+	Sensitive   pgtype.Bool
+	HCL         pgtype.Bool
+	VersionID   pgtype.Text
 }
 
 type Module struct {
@@ -380,17 +391,6 @@ type VCSProvider struct {
 	VCSKind          pgtype.Text
 	OrganizationName pgtype.Text
 	GithubAppID      pgtype.Int8
-}
-
-type Variable struct {
-	VariableID  resource.ID
-	Key         pgtype.Text
-	Value       pgtype.Text
-	Description pgtype.Text
-	Category    pgtype.Text
-	Sensitive   pgtype.Bool
-	HCL         pgtype.Bool
-	VersionID   pgtype.Text
 }
 
 type VariableCategory struct {

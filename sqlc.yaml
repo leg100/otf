@@ -29,10 +29,6 @@ overrides:
       - db_type: "variables"
         go_type:
           type: "Variable"
-      - db_type: "ingress_attributes"
-        go_type:
-          type: "IngressAttribute"
-          pointer: true
       - db_type: "run_variables"
         go_type:
           type: "RunVariable"
@@ -56,9 +52,6 @@ overrides:
       - db_type: "phase_status_timestamps"
         go_type:
           type: "PhaseStatusTimestamp"
-      - db_type: "configuration_version_status_timestamps"
-        go_type:
-          type: "ConfigurationVersionStatusTimestamp"
       - db_type: "state_version_outputs"
         go_type:
           type: "StateVersionOutput"
@@ -106,10 +99,6 @@ overrides:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
       - column: "github_app_installs.vcs_provider_id"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
-      - column: "ingress_attributes.configuration_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
@@ -347,11 +336,11 @@ overrides:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
 sql:
-- engine: "postgresql" &defaults
+- engine: "postgresql"
   queries: "./internal/organization/queries.sql"
   schema: "./internal/sql/migrations"
   gen:
-    go:
+    go: &go
       out: "./internal/organization"
       sql_package: "pgx/v5"
       omit_unused_structs: true
@@ -377,13 +366,9 @@ sql:
   schema: "./internal/sql/migrations"
   gen:
     go:
+      <<: *go
       out: "./internal/workspace"
-      sql_package: "pgx/v5"
       omit_unused_structs: false
-      output_db_file_name: "sqlc.go"
-      output_models_file_name: models.go
-      emit_methods_with_db_argument: true
-      initialisms: *initialisms
       rename:
         workspace: Model
         tag: TagModel
@@ -392,46 +377,71 @@ sql:
   schema: "./internal/sql/migrations"
   gen:
     go:
+      <<: *go
       out: "./internal/run"
-      sql_package: "pgx/v5"
       omit_unused_structs: false
-      output_db_file_name: "sqlc.go"
-      output_models_file_name: models.go
-      emit_methods_with_db_argument: true
-      initialisms: *initialisms
       rename:
         run: Model
         phase: PhaseModel
         phase_status: PhaseStatusModel
         phase_status_timestamp: PhaseStatusTimestampModel
         variable: VariableModel
+        ingress_attribute: IngressAttributeModel
       overrides:
         - db_type: "report"
           go_type:
             type: "Report"
+        - db_type: "ingress_attributes"
+          go_type:
+            type: IngressAttributeModel
+            pointer: true
 - engine: "postgresql"
   queries: "./internal/configversion/queries.sql"
   schema: "./internal/sql/migrations"
   gen:
     go:
+      <<: *go
       out: "./internal/configversion"
-      sql_package: "pgx/v5"
       omit_unused_structs: false
-      output_db_file_name: "sqlc.go"
-      output_models_file_name: models.go
-      emit_methods_with_db_argument: true
-      initialisms: *initialisms
+      overrides:
+      - db_type: "configuration_version_status_timestamps"
+        go_type:
+          type: StatusTimestampModel
+      - db_type: "ingress_attributes"
+        go_type:
+          type: IngressAttributeModel
+          pointer: true
+      - column: "ingress_attributes.configuration_version_id"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "ID"
       rename:
-        ingress_version: IngressVersionModel
+        configuration_version: Model
+        ingress_attribute: IngressAttributeModel
+        configuration_version_status_timestamp: StatusTimestampModel
 - engine: "postgresql"
   queries: "./internal/variable/queries.sql"
   schema: "./internal/sql/migrations"
   gen:
     go:
+      <<: *go
       out: "./internal/variable"
-      sql_package: "pgx/v5"
       omit_unused_structs: false
-      output_db_file_name: "sqlc.go"
       output_models_file_name: models.go
       emit_methods_with_db_argument: true
       initialisms: *initialisms
+      rename:
+        variable: Model
+- engine: "postgresql"
+  queries: "./internal/notifications/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/notifications"
+      omit_unused_structs: false
+      output_models_file_name: models.go
+      emit_methods_with_db_argument: true
+      initialisms: *initialisms
+      rename:
+        variable: Model

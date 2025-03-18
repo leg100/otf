@@ -85,8 +85,8 @@ type FindConfigurationVersionByIDRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []ConfigurationVersionStatusTimestamp
-	IngressAttributes      *IngressAttribute
+	StatusTimestamps       []StatusTimestampModel
+	IngressAttributes      *IngressAttributeModel
 }
 
 // FindConfigurationVersionByID finds a configuration_version by its id.
@@ -138,8 +138,8 @@ type FindConfigurationVersionByIDForUpdateRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []ConfigurationVersionStatusTimestamp
-	IngressAttributes      *IngressAttribute
+	StatusTimestamps       []StatusTimestampModel
+	IngressAttributes      *IngressAttributeModel
 }
 
 func (q *Queries) FindConfigurationVersionByIDForUpdate(ctx context.Context, db DBTX, configurationVersionID resource.ID) (FindConfigurationVersionByIDForUpdateRow, error) {
@@ -190,8 +190,8 @@ type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []ConfigurationVersionStatusTimestamp
-	IngressAttributes      *IngressAttribute
+	StatusTimestamps       []StatusTimestampModel
+	IngressAttributes      *IngressAttributeModel
 }
 
 func (q *Queries) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
@@ -226,7 +226,7 @@ SELECT
         WHERE cst.configuration_version_id = cv.configuration_version_id
         GROUP BY cst.configuration_version_id
     ) AS status_timestamps,
-    ia::ingress_attributes AS ingress_attributes
+    ia::"ingress_attributes" AS ingress_attributes
 FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING (configuration_version_id)
@@ -249,8 +249,8 @@ type FindConfigurationVersionsByWorkspaceIDRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []ConfigurationVersionStatusTimestamp
-	IngressAttributes      *IngressAttribute
+	StatusTimestamps       []StatusTimestampModel
+	IngressAttributes      *IngressAttributeModel
 }
 
 // FindConfigurationVersions finds configuration_versions for a given workspace.
@@ -347,9 +347,9 @@ type InsertConfigurationVersionStatusTimestampParams struct {
 	Timestamp pgtype.Timestamptz
 }
 
-func (q *Queries) InsertConfigurationVersionStatusTimestamp(ctx context.Context, db DBTX, arg InsertConfigurationVersionStatusTimestampParams) (ConfigurationVersionStatusTimestamp, error) {
+func (q *Queries) InsertConfigurationVersionStatusTimestamp(ctx context.Context, db DBTX, arg InsertConfigurationVersionStatusTimestampParams) (StatusTimestampModel, error) {
 	row := db.QueryRow(ctx, insertConfigurationVersionStatusTimestamp, arg.ID, arg.Status, arg.Timestamp)
-	var i ConfigurationVersionStatusTimestamp
+	var i StatusTimestampModel
 	err := row.Scan(&i.ConfigurationVersionID, &i.Status, &i.Timestamp)
 	return i, err
 }

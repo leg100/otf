@@ -176,7 +176,7 @@ type FindRunByIDRow struct {
 	PlanStatusTimestamps   []PhaseStatusTimestamp
 	ApplyStatusTimestamps  []PhaseStatusTimestamp
 	RunVariables           []RunVariable
-	IngressAttributes      *IngressAttribute
+	IngressAttributes      *IngressAttributeModel
 }
 
 func (q *Queries) FindRunByID(ctx context.Context, db DBTX, runID resource.ID) (FindRunByIDRow, error) {
@@ -327,7 +327,7 @@ type FindRunByIDForUpdateRow struct {
 	PlanStatusTimestamps   []PhaseStatusTimestamp
 	ApplyStatusTimestamps  []PhaseStatusTimestamp
 	RunVariables           []RunVariable
-	IngressAttributes      *IngressAttribute
+	IngressAttributes      *IngressAttributeModel
 }
 
 func (q *Queries) FindRunByIDForUpdate(ctx context.Context, db DBTX, runID resource.ID) (FindRunByIDForUpdateRow, error) {
@@ -501,7 +501,7 @@ type FindRunsRow struct {
 	PlanStatusTimestamps   []PhaseStatusTimestamp
 	ApplyStatusTimestamps  []PhaseStatusTimestamp
 	RunVariables           []RunVariable
-	IngressAttributes      *IngressAttribute
+	IngressAttributes      *IngressAttributeModel
 }
 
 func (q *Queries) FindRuns(ctx context.Context, db DBTX, arg FindRunsParams) ([]FindRunsRow, error) {

@@ -74,13 +74,13 @@ type GithubAppInstall struct {
 	VCSProviderID resource.ID
 }
 
-type IngressAttribute struct {
+type IngressAttributeModel struct {
 	Branch                 pgtype.Text
 	CommitSHA              pgtype.Text
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID pgtype.Text
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text

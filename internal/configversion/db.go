@@ -8,16 +8,17 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type pgdb struct {
 	*sql.DB // provides access to generated SQL queries
 }
 
 func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
-	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		err := q.InsertConfigurationVersion(ctx, sqlc.InsertConfigurationVersionParams{
+	return db.Tx2(ctx, func(ctx context.Context, conn sql.Connection) error {
+		err := q.InsertConfigurationVersion(ctx, conn, InsertConfigurationVersionParams{
 			ID:            cv.ID,
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
 			AutoQueueRuns: sql.Bool(cv.AutoQueueRuns),
@@ -32,7 +33,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 
 		if cv.IngressAttributes != nil {
 			ia := cv.IngressAttributes
-			err := q.InsertIngressAttributes(ctx, sqlc.InsertIngressAttributesParams{
+			err := q.InsertIngressAttributes(ctx, conn, InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
 				CommitURL:              sql.String(ia.CommitURL),
@@ -62,15 +63,15 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 }
 
 func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
-	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return db.Tx2(ctx, func(ctx context.Context, conn sql.Connection) error {
 		// select ...for update
-		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, id)
+		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, conn, id)
 		if err != nil {
 			return err
 		}
 		cv := pgRow(result).toConfigVersion()
 
-		if err := fn(cv, newConfigUploader(q, cv.ID)); err != nil {
+		if err := fn(cv, newConfigUploader(conn, cv.ID)); err != nil {
 			return err
 		}
 		return nil
@@ -78,8 +79,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, 
 }
 
 func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
-	q := db.Querier(ctx)
-	rows, err := q.FindConfigurationVersionsByWorkspaceID(ctx, sqlc.FindConfigurationVersionsByWorkspaceIDParams{
+	rows, err := q.FindConfigurationVersionsByWorkspaceID(ctx, db.Conn(ctx), FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: workspaceID,
 		Limit:       sql.GetLimit(opts.PageOptions),
 		Offset:      sql.GetOffset(opts.PageOptions),
@@ -87,7 +87,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resou
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountConfigurationVersionsByWorkspaceID(ctx, workspaceID)
+	count, err := q.CountConfigurationVersionsByWorkspaceID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,15 +100,14 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resou
 }
 
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
-	q := db.Querier(ctx)
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, *opts.ID)
+		result, err := q.FindConfigurationVersionByID(ctx, db.Conn(ctx), *opts.ID)
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return pgRow(result).toConfigVersion(), nil
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, db.Conn(ctx), *opts.WorkspaceID)
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -139,7 +138,7 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 	if err != nil {
 		return err
 	}
-	_, err = db.Querier(ctx).InsertConfigurationVersionStatusTimestamp(ctx, sqlc.InsertConfigurationVersionStatusTimestampParams{
+	_, err = q.InsertConfigurationVersionStatusTimestamp(ctx, db.Conn(ctx), InsertConfigurationVersionStatusTimestampParams{
 		ID:        cv.ID,
 		Status:    sql.String(string(cv.Status)),
 		Timestamp: sql.Timestamptz(sts),
@@ -156,8 +155,8 @@ type pgRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []sqlc.ConfigurationVersionStatusTimestamp
-	IngressAttributes      *sqlc.IngressAttribute
+	StatusTimestamps       []StatusTimestampModel
+	IngressAttributes      *IngressAttribute
 }
 
 func (result pgRow) toConfigVersion() *ConfigurationVersion {
@@ -177,7 +176,7 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	return &cv
 }
 
-func NewIngressFromRow(row *sqlc.IngressAttribute) *IngressAttributes {
+func NewIngressFromRow(row *IngressAttribute) *IngressAttributes {
 	return &IngressAttributes{
 		Branch:            row.Branch.String,
 		CommitSHA:         row.CommitSHA.String,
@@ -195,7 +194,7 @@ func NewIngressFromRow(row *sqlc.IngressAttribute) *IngressAttributes {
 	}
 }
 
-func unmarshalStatusTimestampRows(rows []sqlc.ConfigurationVersionStatusTimestamp) (timestamps []ConfigurationVersionStatusTimestamp) {
+func unmarshalStatusTimestampRows(rows []StatusTimestampModel) (timestamps []ConfigurationVersionStatusTimestamp) {
 	for _, ty := range rows {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),

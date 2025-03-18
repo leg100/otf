@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.28.0
 
-package workspace
+package notifications
 
 import (
 	"net/netip"
@@ -85,7 +85,7 @@ type IngressAttribute struct {
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
 	PullRequestTitle       pgtype.Text
-	TagModel               pgtype.Text
+	Tag                    pgtype.Text
 	SenderUsername         pgtype.Text
 	SenderAvatarURL        pgtype.Text
 	SenderHTMLURL          pgtype.Text
@@ -122,36 +122,14 @@ type Log struct {
 }
 
 type Model struct {
-	WorkspaceID                resource.ID
-	CreatedAt                  pgtype.Timestamptz
-	UpdatedAt                  pgtype.Timestamptz
-	AllowDestroyPlan           pgtype.Bool
-	AutoApply                  pgtype.Bool
-	CanQueueDestroyPlan        pgtype.Bool
-	Description                pgtype.Text
-	Environment                pgtype.Text
-	ExecutionMode              pgtype.Text
-	GlobalRemoteState          pgtype.Bool
-	MigrationEnvironment       pgtype.Text
-	Name                       pgtype.Text
-	QueueAllRuns               pgtype.Bool
-	SpeculativeEnabled         pgtype.Bool
-	SourceName                 pgtype.Text
-	SourceURL                  pgtype.Text
-	StructuredRunOutputEnabled pgtype.Bool
-	TerraformVersion           pgtype.Text
-	TriggerPrefixes            []pgtype.Text
-	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
-	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
-	TriggerPatterns            []pgtype.Text
-	VCSTagsRegex               pgtype.Text
-	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	VariableID  resource.ID
+	Key         pgtype.Text
+	Value       pgtype.Text
+	Description pgtype.Text
+	Category    pgtype.Text
+	Sensitive   pgtype.Bool
+	HCL         pgtype.Bool
+	VersionID   pgtype.Text
 }
 
 type Module struct {
@@ -352,7 +330,7 @@ type StateVersionStatus struct {
 	Status pgtype.Text
 }
 
-type TagModel struct {
+type Tag struct {
 	TagID            resource.ID
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
@@ -415,17 +393,6 @@ type VCSProvider struct {
 	GithubAppID      pgtype.Int8
 }
 
-type Variable struct {
-	VariableID  resource.ID
-	Key         pgtype.Text
-	Value       pgtype.Text
-	Description pgtype.Text
-	Category    pgtype.Text
-	Sensitive   pgtype.Bool
-	HCL         pgtype.Bool
-	VersionID   pgtype.Text
-}
-
 type VariableCategory struct {
 	Category pgtype.Text
 }
@@ -446,6 +413,39 @@ type VariableSetVariable struct {
 type VariableSetWorkspace struct {
 	VariableSetID resource.ID
 	WorkspaceID   resource.ID
+}
+
+type Workspace struct {
+	WorkspaceID                resource.ID
+	CreatedAt                  pgtype.Timestamptz
+	UpdatedAt                  pgtype.Timestamptz
+	AllowDestroyPlan           pgtype.Bool
+	AutoApply                  pgtype.Bool
+	CanQueueDestroyPlan        pgtype.Bool
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
+	GlobalRemoteState          pgtype.Bool
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
+	QueueAllRuns               pgtype.Bool
+	SpeculativeEnabled         pgtype.Bool
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
+	StructuredRunOutputEnabled pgtype.Bool
+	TerraformVersion           pgtype.Text
+	TriggerPrefixes            []pgtype.Text
+	WorkingDirectory           pgtype.Text
+	LockRunID                  *resource.ID
+	LatestRunID                *resource.ID
+	OrganizationName           pgtype.Text
+	Branch                     pgtype.Text
+	CurrentStateVersionID      *resource.ID
+	TriggerPatterns            []pgtype.Text
+	VCSTagsRegex               pgtype.Text
+	AllowCLIApply              pgtype.Bool
+	AgentPoolID                *resource.ID
+	LockUserID                 *resource.ID
 }
 
 type WorkspacePermission struct {
