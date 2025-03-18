@@ -71,7 +71,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, 
 		}
 		cv := pgRow(result).toConfigVersion()
 
-		if err := fn(cv, newConfigUploader(conn, cv.ID)); err != nil {
+		if err := fn(cv, &cvUploader{conn, cv.ID}); err != nil {
 			return err
 		}
 		return nil
@@ -118,7 +118,7 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 }
 
 func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
-	cfg, err := db.Querier(ctx).DownloadConfigurationVersion(ctx, id)
+	cfg, err := q.DownloadConfigurationVersion(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -126,7 +126,7 @@ func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
 }
 
 func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteConfigurationVersionByID(ctx, id)
+	_, err := q.DeleteConfigurationVersionByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -156,7 +156,7 @@ type pgRow struct {
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
 	StatusTimestamps       []StatusTimestampModel
-	IngressAttributes      *IngressAttribute
+	IngressAttributes      *IngressAttributeModel
 }
 
 func (result pgRow) toConfigVersion() *ConfigurationVersion {
@@ -176,7 +176,7 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	return &cv
 }
 
-func NewIngressFromRow(row *IngressAttribute) *IngressAttributes {
+func NewIngressFromRow(row *IngressAttributeModel) *IngressAttributes {
 	return &IngressAttributes{
 		Branch:            row.Branch.String,
 		CommitSHA:         row.CommitSHA.String,

@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,8 +47,9 @@ func TestTx(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
-		err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
+	err = db.Tx(ctx, func(txCtx context.Context, conn sql.Connection) error {
+		q := &organization.Queries{}
+		err := q.InsertOrganization(txCtx, conn, organization.InsertOrganizationParams{
 			ID:                         org.ID,
 			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -67,22 +67,22 @@ func TestTx(t *testing.T) {
 
 		// this should succeed because it is using the same querier from the
 		// same tx
-		_, err = q.FindOrganizationByID(txCtx, org.ID)
+		_, err = q.FindOrganizationByID(txCtx, conn, org.ID)
 		assert.NoError(t, err)
 
 		// this should succeed because it is using the same ctx from the same tx
-		_, err = db.Querier(txCtx).FindOrganizationByID(txCtx, org.ID)
+		_, err = q.FindOrganizationByID(txCtx, conn, org.ID)
 		assert.NoError(t, err)
 
-		err = db.Tx(txCtx, func(ctx context.Context, q *sqlc.Queries) error {
+		err = db.Tx(txCtx, func(ctx context.Context, conn sql.Connection) error {
 			// this should succeed because it is using a child tx via the
 			// querier
-			_, err = q.FindOrganizationByID(ctx, org.ID)
+			_, err = q.FindOrganizationByID(ctx, conn, org.ID)
 			assert.NoError(t, err)
 
 			// this should succeed because it is using a child tx via the
 			// context
-			_, err = db.Querier(ctx).FindOrganizationByID(ctx, org.ID)
+			_, err = q.FindOrganizationByID(ctx, conn, org.ID)
 			assert.NoError(t, err)
 
 			return nil
@@ -90,7 +90,7 @@ func TestTx(t *testing.T) {
 		require.NoError(t, err)
 
 		// this should fail because it is using a different ctx
-		_, err = db.Querier(ctx).FindOrganizationByID(txCtx, org.ID)
+		_, err = q.FindOrganizationByID(txCtx, conn, org.ID)
 		assert.ErrorIs(t, err, pgx.ErrNoRows)
 
 		return nil

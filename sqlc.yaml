@@ -26,9 +26,6 @@ overrides:
         go_type:
           type: "Report"
           pointer: true
-      - db_type: "variables"
-        go_type:
-          type: "Variable"
       - db_type: "run_variables"
         go_type:
           type: "RunVariable"
@@ -43,15 +40,12 @@ overrides:
         go_type:
           type: "GithubAppInstall"
           pointer: true
-      - db_type: "module_versions"
-        go_type:
-          type: "ModuleVersion"
       - db_type: "run_status_timestamps"
         go_type:
-          type: "RunStatusTimestamp"
+          type: "RunStatusTimestampModel"
       - db_type: "phase_status_timestamps"
         go_type:
-          type: "PhaseStatusTimestamp"
+          type: "PhaseStatusTimestampModel"
       - db_type: "state_version_outputs"
         go_type:
           type: "StateVersionOutput"
@@ -98,6 +92,17 @@ overrides:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - db_type: "configuration_version_status_timestamps"
+        go_type:
+          type: ConfigurationVersionStatusTimestampModel
+      - db_type: "ingress_attributes"
+        go_type:
+          type: IngressAttributeModel
+          pointer: true
+      - column: "ingress_attributes.configuration_version_id"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "ID"
       - column: "github_app_installs.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -124,18 +129,6 @@ overrides:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
       - column: "module_tarballs.module_version_id"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
-      - column: "module_versions.module_version_id"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
-      - column: "module_versions.module_id"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
-      - column: "modules.module_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
@@ -335,6 +328,27 @@ overrides:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - db_type: "module_versions"
+        go_type:
+          type: "ModuleVersionModel"
+      - column: "module_versions.module_version_id"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "ID"
+      - column: "module_versions.module_id"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "ID"
+      - column: "modules.module_id"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "ID"
+      - db_type: "variables"
+        go_type:
+          type: VariableModel
+      - db_type: "report"
+        go_type:
+          type: "Report"
 sql:
 - engine: "postgresql"
   queries: "./internal/organization/queries.sql"
@@ -385,16 +399,10 @@ sql:
         phase: PhaseModel
         phase_status: PhaseStatusModel
         phase_status_timestamp: PhaseStatusTimestampModel
+        run_status_timestamp: RunStatusTimestampModel
         variable: VariableModel
         ingress_attribute: IngressAttributeModel
       overrides:
-        - db_type: "report"
-          go_type:
-            type: "Report"
-        - db_type: "ingress_attributes"
-          go_type:
-            type: IngressAttributeModel
-            pointer: true
 - engine: "postgresql"
   queries: "./internal/configversion/queries.sql"
   schema: "./internal/sql/migrations"
@@ -404,34 +412,10 @@ sql:
       out: "./internal/configversion"
       omit_unused_structs: false
       overrides:
-      - db_type: "configuration_version_status_timestamps"
-        go_type:
-          type: StatusTimestampModel
-      - db_type: "ingress_attributes"
-        go_type:
-          type: IngressAttributeModel
-          pointer: true
-      - column: "ingress_attributes.configuration_version_id"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
       rename:
         configuration_version: Model
-        ingress_attribute: IngressAttributeModel
         configuration_version_status_timestamp: StatusTimestampModel
-- engine: "postgresql"
-  queries: "./internal/variable/queries.sql"
-  schema: "./internal/sql/migrations"
-  gen:
-    go:
-      <<: *go
-      out: "./internal/variable"
-      omit_unused_structs: false
-      output_models_file_name: models.go
-      emit_methods_with_db_argument: true
-      initialisms: *initialisms
-      rename:
-        variable: Model
+        ingress_attribute: IngressAttributeModel
 - engine: "postgresql"
   queries: "./internal/notifications/queries.sql"
   schema: "./internal/sql/migrations"
@@ -439,12 +423,9 @@ sql:
     go:
       <<: *go
       out: "./internal/notifications"
-      omit_unused_structs: false
-      output_models_file_name: models.go
-      emit_methods_with_db_argument: true
-      initialisms: *initialisms
+      omit_unused_structs: true
       rename:
-        variable: Model
+        notification_configuration: ConfigModel
 - engine: "postgresql"
   queries: "./internal/user/queries.sql"
   schema: "./internal/sql/migrations"
@@ -516,3 +497,56 @@ sql:
         runner_status: RunnerStatusModel
         job: JobModel
         job_status: JobStatusModel
+- engine: "postgresql"
+  queries: "./internal/state/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/state"
+      omit_unused_structs: false
+      rename:
+- engine: "postgresql"
+  queries: "./internal/releases/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/releases"
+      omit_unused_structs: false
+      rename:
+- engine: "postgresql"
+  queries: "./internal/logs/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/logs"
+      omit_unused_structs: false
+      rename:
+- engine: "postgresql"
+  queries: "./internal/variable/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/variable"
+      omit_unused_structs: true
+      rename:
+        variable: VariableModel
+        variable_category: VariableCategoryModel
+        variable_set: VariableSetModel
+        workspace_variable: WorkspaceVariableModel
+      overrides:
+- engine: "postgresql"
+  queries: "./internal/module/queries.sql"
+  schema: "./internal/sql/migrations"
+  gen:
+    go:
+      <<: *go
+      out: "./internal/module"
+      omit_unused_structs: true
+      rename:
+        module_version: ModuleVersionModel
+        module: ModuleModel
+      overrides:

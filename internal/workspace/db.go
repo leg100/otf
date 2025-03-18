@@ -152,7 +152,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 }
 
 func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
-	return sql.Updater2(
+	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context, conn sql.Connection) (*Workspace, error) {
@@ -329,8 +329,7 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 }
 
 func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
-	q := db.Querier(ctx)
-	err := q.DeleteWorkspaceByID(ctx, workspaceID)
+	err := q.DeleteWorkspaceByID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -361,7 +360,7 @@ func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamI
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
-	perms, err := db.Querier(ctx).FindWorkspacePermissionsAndGlobalRemoteState(ctx, workspaceID)
+	perms, err := q.FindWorkspacePermissionsAndGlobalRemoteState(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return authz.WorkspacePolicy{}, sql.Error(err)
 	}

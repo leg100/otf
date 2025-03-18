@@ -80,7 +80,7 @@ type IngressAttributeModel struct {
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID pgtype.Text
+	ConfigurationVersionID resource.ID
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
@@ -257,7 +257,7 @@ type RunStatus struct {
 	Status pgtype.Text
 }
 
-type RunStatusTimestamp struct {
+type RunStatusTimestampModel struct {
 	RunID     resource.ID
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz

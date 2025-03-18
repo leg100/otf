@@ -172,9 +172,9 @@ type FindRunByIDRow struct {
 	Latest                 pgtype.Bool
 	OrganizationName       pgtype.Text
 	CostEstimationEnabled  pgtype.Bool
-	RunStatusTimestamps    []RunStatusTimestamp
-	PlanStatusTimestamps   []PhaseStatusTimestamp
-	ApplyStatusTimestamps  []PhaseStatusTimestamp
+	RunStatusTimestamps    []RunStatusTimestampModel
+	PlanStatusTimestamps   []PhaseStatusTimestampModel
+	ApplyStatusTimestamps  []PhaseStatusTimestampModel
 	RunVariables           []RunVariable
 	IngressAttributes      *IngressAttributeModel
 }
@@ -323,9 +323,9 @@ type FindRunByIDForUpdateRow struct {
 	Latest                 pgtype.Bool
 	OrganizationName       pgtype.Text
 	CostEstimationEnabled  pgtype.Bool
-	RunStatusTimestamps    []RunStatusTimestamp
-	PlanStatusTimestamps   []PhaseStatusTimestamp
-	ApplyStatusTimestamps  []PhaseStatusTimestamp
+	RunStatusTimestamps    []RunStatusTimestampModel
+	PlanStatusTimestamps   []PhaseStatusTimestampModel
+	ApplyStatusTimestamps  []PhaseStatusTimestampModel
 	RunVariables           []RunVariable
 	IngressAttributes      *IngressAttributeModel
 }
@@ -497,9 +497,9 @@ type FindRunsRow struct {
 	Latest                 pgtype.Bool
 	OrganizationName       pgtype.Text
 	CostEstimationEnabled  pgtype.Bool
-	RunStatusTimestamps    []RunStatusTimestamp
-	PlanStatusTimestamps   []PhaseStatusTimestamp
-	ApplyStatusTimestamps  []PhaseStatusTimestamp
+	RunStatusTimestamps    []RunStatusTimestampModel
+	PlanStatusTimestamps   []PhaseStatusTimestampModel
+	ApplyStatusTimestamps  []PhaseStatusTimestampModel
 	RunVariables           []RunVariable
 	IngressAttributes      *IngressAttributeModel
 }

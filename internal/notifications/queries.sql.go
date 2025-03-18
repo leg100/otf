@@ -30,15 +30,15 @@ SELECT notification_configuration_id, created_at, updated_at, name, url, trigger
 FROM notification_configurations
 `
 
-func (q *Queries) FindAllNotificationConfigurations(ctx context.Context, db DBTX) ([]NotificationConfiguration, error) {
+func (q *Queries) FindAllNotificationConfigurations(ctx context.Context, db DBTX) ([]ConfigModel, error) {
 	rows, err := db.Query(ctx, findAllNotificationConfigurations)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []NotificationConfiguration
+	var items []ConfigModel
 	for rows.Next() {
-		var i NotificationConfiguration
+		var i ConfigModel
 		if err := rows.Scan(
 			&i.NotificationConfigurationID,
 			&i.CreatedAt,
@@ -66,9 +66,9 @@ FROM notification_configurations
 WHERE notification_configuration_id = $1
 `
 
-func (q *Queries) FindNotificationConfiguration(ctx context.Context, db DBTX, notificationConfigurationID resource.ID) (NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfiguration(ctx context.Context, db DBTX, notificationConfigurationID resource.ID) (ConfigModel, error) {
 	row := db.QueryRow(ctx, findNotificationConfiguration, notificationConfigurationID)
-	var i NotificationConfiguration
+	var i ConfigModel
 	err := row.Scan(
 		&i.NotificationConfigurationID,
 		&i.CreatedAt,
@@ -90,9 +90,9 @@ WHERE notification_configuration_id = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, db DBTX, notificationConfigurationID resource.ID) (NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfigurationForUpdate(ctx context.Context, db DBTX, notificationConfigurationID resource.ID) (ConfigModel, error) {
 	row := db.QueryRow(ctx, findNotificationConfigurationForUpdate, notificationConfigurationID)
-	var i NotificationConfiguration
+	var i ConfigModel
 	err := row.Scan(
 		&i.NotificationConfigurationID,
 		&i.CreatedAt,
@@ -113,15 +113,15 @@ FROM notification_configurations
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]NotificationConfiguration, error) {
+func (q *Queries) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]ConfigModel, error) {
 	rows, err := db.Query(ctx, findNotificationConfigurationsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []NotificationConfiguration
+	var items []ConfigModel
 	for rows.Next() {
-		var i NotificationConfiguration
+		var i ConfigModel
 		if err := rows.Scan(
 			&i.NotificationConfigurationID,
 			&i.CreatedAt,

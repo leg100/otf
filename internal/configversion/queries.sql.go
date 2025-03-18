@@ -85,7 +85,7 @@ type FindConfigurationVersionByIDRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []StatusTimestampModel
+	StatusTimestamps       []ConfigurationVersionStatusTimestamp
 	IngressAttributes      *IngressAttributeModel
 }
 
@@ -138,7 +138,7 @@ type FindConfigurationVersionByIDForUpdateRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []StatusTimestampModel
+	StatusTimestamps       []ConfigurationVersionStatusTimestamp
 	IngressAttributes      *IngressAttributeModel
 }
 
@@ -190,7 +190,7 @@ type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []StatusTimestampModel
+	StatusTimestamps       []ConfigurationVersionStatusTimestamp
 	IngressAttributes      *IngressAttributeModel
 }
 
@@ -249,7 +249,7 @@ type FindConfigurationVersionsByWorkspaceIDRow struct {
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	StatusTimestamps       []StatusTimestampModel
+	StatusTimestamps       []ConfigurationVersionStatusTimestamp
 	IngressAttributes      *IngressAttributeModel
 }
 

@@ -19,9 +19,9 @@ WHERE variable_id = $1
 RETURNING variable_id, key, value, description, category, sensitive, hcl, version_id
 `
 
-func (q *Queries) DeleteVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (Model, error) {
+func (q *Queries) DeleteVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (VariableModel, error) {
 	row := db.QueryRow(ctx, deleteVariableByID, variableID)
-	var i Model
+	var i VariableModel
 	err := row.Scan(
 		&i.VariableID,
 		&i.Key,
@@ -42,9 +42,9 @@ WHERE variable_set_id = $1
 RETURNING variable_set_id, global, name, description, organization_name
 `
 
-func (q *Queries) DeleteVariableSetByID(ctx context.Context, db DBTX, variableSetID resource.ID) (VariableSet, error) {
+func (q *Queries) DeleteVariableSetByID(ctx context.Context, db DBTX, variableSetID resource.ID) (VariableSetModel, error) {
 	row := db.QueryRow(ctx, deleteVariableSetByID, variableSetID)
-	var i VariableSet
+	var i VariableSetModel
 	err := row.Scan(
 		&i.VariableSetID,
 		&i.Global,
@@ -114,14 +114,14 @@ RETURNING wv.workspace_id, (v.*)::"variables" AS variable
 `
 
 type DeleteWorkspaceVariableByIDRow struct {
-	WorkspaceID resource.ID
-	Model       Variable
+	WorkspaceID   resource.ID
+	VariableModel VariableModel
 }
 
 func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (DeleteWorkspaceVariableByIDRow, error) {
 	row := db.QueryRow(ctx, deleteWorkspaceVariableByID, variableID)
 	var i DeleteWorkspaceVariableByIDRow
-	err := row.Scan(&i.WorkspaceID, &i.Model)
+	err := row.Scan(&i.WorkspaceID, &i.VariableModel)
 	return i, err
 }
 
@@ -131,9 +131,9 @@ FROM variables
 WHERE variable_id = $1
 `
 
-func (q *Queries) FindVariable(ctx context.Context, db DBTX, variableID resource.ID) (Model, error) {
+func (q *Queries) FindVariable(ctx context.Context, db DBTX, variableID resource.ID) (VariableModel, error) {
 	row := db.QueryRow(ctx, findVariable, variableID)
-	var i Model
+	var i VariableModel
 	err := row.Scan(
 		&i.VariableID,
 		&i.Key,
@@ -171,7 +171,7 @@ type FindVariableSetBySetIDRow struct {
 	Name             pgtype.Text
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
-	Variables        []Variable
+	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
@@ -215,7 +215,7 @@ type FindVariableSetByVariableIDRow struct {
 	Name             pgtype.Text
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
-	Variables        []Variable
+	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
@@ -259,7 +259,7 @@ type FindVariableSetForUpdateRow struct {
 	Name             pgtype.Text
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
-	Variables        []Variable
+	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
@@ -302,7 +302,7 @@ type FindVariableSetsByOrganizationRow struct {
 	Name             pgtype.Text
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
-	Variables        []Variable
+	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
@@ -377,7 +377,7 @@ type FindVariableSetsByWorkspaceRow struct {
 	Name             pgtype.Text
 	Description      pgtype.Text
 	OrganizationName pgtype.Text
-	Variables        []Variable
+	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
@@ -419,14 +419,14 @@ WHERE v.variable_id = $1
 `
 
 type FindWorkspaceVariableByVariableIDRow struct {
-	WorkspaceID resource.ID
-	Model       Variable
+	WorkspaceID   resource.ID
+	VariableModel VariableModel
 }
 
 func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, db DBTX, variableID resource.ID) (FindWorkspaceVariableByVariableIDRow, error) {
 	row := db.QueryRow(ctx, findWorkspaceVariableByVariableID, variableID)
 	var i FindWorkspaceVariableByVariableIDRow
-	err := row.Scan(&i.WorkspaceID, &i.Model)
+	err := row.Scan(&i.WorkspaceID, &i.VariableModel)
 	return i, err
 }
 
@@ -437,15 +437,15 @@ JOIN variables v USING (variable_id)
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]Model, error) {
+func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]VariableModel, error) {
 	rows, err := db.Query(ctx, findWorkspaceVariablesByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Model
+	var items []VariableModel
 	for rows.Next() {
-		var i Model
+		var i VariableModel
 		if err := rows.Scan(
 			&i.VariableID,
 			&i.Key,

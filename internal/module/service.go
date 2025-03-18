@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/surl/v2"
@@ -288,7 +287,7 @@ func (s *Service) DeleteModule(ctx context.Context, id resource.ID) (*Module, er
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
 			err := s.connections.Disconnect(ctx, connections.DisconnectOptions{
@@ -365,7 +364,7 @@ func (s *Service) uploadVersion(ctx context.Context, versionID resource.ID, tarb
 	}
 
 	// save tarball, set status, and make it the latest version
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := s.db.saveTarball(ctx, versionID, tarball); err != nil {
 			return err
 		}
