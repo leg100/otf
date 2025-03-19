@@ -12,7 +12,7 @@ import (
 )
 
 type AgentPool struct {
-	AgentPoolID        resource.ID
+	AgentPoolID        pgtype.Text
 	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
 	OrganizationName   pgtype.Text
@@ -20,36 +20,36 @@ type AgentPool struct {
 }
 
 type AgentPoolAllowedWorkspace struct {
-	AgentPoolID resource.ID
-	WorkspaceID resource.ID
+	AgentPoolID pgtype.Text
+	WorkspaceID pgtype.Text
 }
 
 type AgentToken struct {
-	AgentTokenID resource.ID
+	AgentTokenID pgtype.Text
 	CreatedAt    pgtype.Timestamptz
 	Description  pgtype.Text
-	AgentPoolID  resource.ID
+	AgentPoolID  pgtype.Text
 }
 
 type Apply struct {
-	RunID          resource.ID
+	RunID          pgtype.Text
 	Status         pgtype.Text
 	ResourceReport interface{}
 }
 
 type ConfigurationVersion struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID pgtype.Text
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	Config                 []byte
-	WorkspaceID            resource.ID
+	WorkspaceID            pgtype.Text
 }
 
 type ConfigurationVersionStatusTimestamp struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID pgtype.Text
 	Status                 pgtype.Text
 	Timestamp              pgtype.Timestamptz
 }
@@ -71,10 +71,10 @@ type GithubAppInstall struct {
 	InstallID     pgtype.Int8
 	Username      pgtype.Text
 	Organization  pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID pgtype.Text
 }
 
-type IngressAttribute struct {
+type IngressAttributeModel struct {
 	Branch                 pgtype.Text
 	CommitSHA              pgtype.Text
 	Identifier             pgtype.Text
@@ -92,12 +92,12 @@ type IngressAttribute struct {
 }
 
 type Job struct {
-	RunID    resource.ID
+	RunID    pgtype.Text
 	Phase    pgtype.Text
 	Status   pgtype.Text
-	RunnerID *resource.ID
+	RunnerID pgtype.Text
 	Signaled pgtype.Bool
-	JobID    resource.ID
+	JobID    pgtype.Text
 }
 
 type JobPhase struct {
@@ -114,15 +114,15 @@ type LatestTerraformVersion struct {
 }
 
 type Log struct {
-	RunID   resource.ID
+	RunID   pgtype.Text
 	Phase   pgtype.Text
 	Chunk   []byte
 	Offset  pgtype.Int4
-	ChunkID resource.ID
+	ChunkID pgtype.Text
 }
 
 type Module struct {
-	ModuleID         resource.ID
+	ModuleID         pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -137,17 +137,17 @@ type ModuleStatus struct {
 
 type ModuleTarball struct {
 	Tarball         []byte
-	ModuleVersionID resource.ID
+	ModuleVersionID pgtype.Text
 }
 
 type ModuleVersion struct {
-	ModuleVersionID resource.ID
+	ModuleVersionID pgtype.Text
 	Version         pgtype.Text
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
 	Status          pgtype.Text
 	StatusError     pgtype.Text
-	ModuleID        resource.ID
+	ModuleID        pgtype.Text
 }
 
 type ModuleVersionStatus struct {
@@ -155,19 +155,19 @@ type ModuleVersionStatus struct {
 }
 
 type NotificationConfiguration struct {
-	NotificationConfigurationID resource.ID
+	NotificationConfigurationID pgtype.Text
 	CreatedAt                   pgtype.Timestamptz
 	UpdatedAt                   pgtype.Timestamptz
 	Name                        pgtype.Text
 	URL                         pgtype.Text
 	Triggers                    []pgtype.Text
 	DestinationType             pgtype.Text
-	WorkspaceID                 resource.ID
+	WorkspaceID                 pgtype.Text
 	Enabled                     pgtype.Bool
 }
 
 type Organization struct {
-	OrganizationID             resource.ID
+	OrganizationID             pgtype.Text
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       pgtype.Text
@@ -180,7 +180,7 @@ type Organization struct {
 }
 
 type OrganizationToken struct {
-	OrganizationTokenID resource.ID
+	OrganizationTokenID pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
 	Expiry              pgtype.Timestamptz
@@ -195,14 +195,14 @@ type PhaseStatus struct {
 }
 
 type PhaseStatusTimestamp struct {
-	RunID     resource.ID
+	RunID     pgtype.Text
 	Phase     pgtype.Text
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
 type Plan struct {
-	RunID          resource.ID
+	RunID          pgtype.Text
 	Status         pgtype.Text
 	PlanBin        []byte
 	PlanJSON       []byte
@@ -217,8 +217,8 @@ type RegistrySession struct {
 }
 
 type RepoConnection struct {
-	ModuleID      *resource.ID
-	WorkspaceID   *resource.ID
+	ModuleID      pgtype.Text
+	WorkspaceID   pgtype.Text
 	RepoPath      pgtype.Text
 	VCSProviderID resource.ID
 }
@@ -232,7 +232,7 @@ type Repohook struct {
 }
 
 type Run struct {
-	RunID                  resource.ID
+	RunID                  pgtype.Text
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -244,7 +244,7 @@ type Run struct {
 	LockFile               []byte
 	Status                 pgtype.Text
 	WorkspaceID            resource.ID
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID pgtype.Text
 	AutoApply              pgtype.Bool
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
@@ -258,19 +258,19 @@ type RunStatus struct {
 }
 
 type RunStatusTimestamp struct {
-	RunID     resource.ID
+	RunID     pgtype.Text
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
 type RunVariable struct {
-	RunID resource.ID
+	RunID pgtype.Text
 	Key   pgtype.Text
 	Value pgtype.Text
 }
 
 type Runner struct {
-	RunnerID     resource.ID
+	RunnerID     pgtype.Text
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -278,7 +278,7 @@ type Runner struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  *resource.ID
+	AgentPoolID  pgtype.Text
 }
 
 type RunnerStatus struct {
@@ -298,21 +298,21 @@ type Session struct {
 }
 
 type StateVersion struct {
-	StateVersionID resource.ID
+	StateVersionID pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	Serial         pgtype.Int4
 	State          []byte
-	WorkspaceID    resource.ID
+	WorkspaceID    pgtype.Text
 	Status         pgtype.Text
 }
 
 type StateVersionOutput struct {
-	StateVersionOutputID resource.ID
+	StateVersionOutputID pgtype.Text
 	Name                 pgtype.Text
 	Sensitive            pgtype.Bool
 	Type                 pgtype.Text
 	Value                []byte
-	StateVersionID       resource.ID
+	StateVersionID       pgtype.Text
 }
 
 type StateVersionStatus struct {
@@ -320,7 +320,7 @@ type StateVersionStatus struct {
 }
 
 type Tag struct {
-	TagID            resource.ID
+	TagID            pgtype.Text
 	Name             pgtype.Text
 	OrganizationName pgtype.Text
 }
@@ -341,27 +341,27 @@ type Team struct {
 }
 
 type TeamMembership struct {
-	TeamID   resource.ID
+	TeamID   pgtype.Text
 	Username pgtype.Text
 }
 
 type TeamToken struct {
-	TeamTokenID resource.ID
+	TeamTokenID pgtype.Text
 	Description pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	TeamID      resource.ID
+	TeamID      pgtype.Text
 	Expiry      pgtype.Timestamptz
 }
 
 type Token struct {
-	TokenID     resource.ID
+	TokenID     pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	Description pgtype.Text
 	Username    pgtype.Text
 }
 
 type User struct {
-	UserID    resource.ID
+	UserID    pgtype.Text
 	Username  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -383,7 +383,7 @@ type VCSProvider struct {
 }
 
 type Variable struct {
-	VariableID  resource.ID
+	VariableID  pgtype.Text
 	Key         pgtype.Text
 	Value       pgtype.Text
 	Description pgtype.Text
@@ -398,7 +398,7 @@ type VariableCategory struct {
 }
 
 type VariableSet struct {
-	VariableSetID    resource.ID
+	VariableSetID    pgtype.Text
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -406,13 +406,13 @@ type VariableSet struct {
 }
 
 type VariableSetVariable struct {
-	VariableSetID resource.ID
-	VariableID    resource.ID
+	VariableSetID pgtype.Text
+	VariableID    pgtype.Text
 }
 
 type VariableSetWorkspace struct {
-	VariableSetID resource.ID
-	WorkspaceID   resource.ID
+	VariableSetID pgtype.Text
+	WorkspaceID   pgtype.Text
 }
 
 type Workspace struct {
@@ -436,21 +436,21 @@ type Workspace struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  pgtype.Text
+	LatestRunID                pgtype.Text
 	OrganizationName           pgtype.Text
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
 	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	LockUserID                 pgtype.Text
 }
 
 type WorkspacePermission struct {
-	WorkspaceID resource.ID
-	TeamID      resource.ID
+	WorkspaceID pgtype.Text
+	TeamID      pgtype.Text
 	Role        pgtype.Text
 }
 
@@ -459,11 +459,11 @@ type WorkspaceRole struct {
 }
 
 type WorkspaceTag struct {
-	TagID       resource.ID
-	WorkspaceID resource.ID
+	TagID       pgtype.Text
+	WorkspaceID pgtype.Text
 }
 
 type WorkspaceVariable struct {
-	WorkspaceID resource.ID
-	VariableID  resource.ID
+	WorkspaceID pgtype.Text
+	VariableID  pgtype.Text
 }
