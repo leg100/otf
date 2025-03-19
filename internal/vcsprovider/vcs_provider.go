@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -22,8 +21,8 @@ type (
 		ID           resource.ID
 		Name         string
 		CreatedAt    time.Time
-		Organization organization.Name // name of OTF organization
-		Hostname     string            // hostname of github/gitlab etc
+		Organization resource.OrganizationName // name of OTF organization
+		Hostname     string                    // hostname of github/gitlab etc
 
 		Kind  vcs.Kind // github/gitlab etc. Not necessary if GithubApp is non-nil.
 		Token *string  // personal access token.
@@ -43,7 +42,7 @@ type (
 	}
 
 	CreateOptions struct {
-		Organization organization.Name
+		Organization resource.OrganizationName
 		Name         string
 		Kind         *vcs.Kind
 

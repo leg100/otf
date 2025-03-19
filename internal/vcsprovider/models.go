@@ -8,7 +8,6 @@ import (
 	"net/netip"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -128,7 +127,7 @@ type Model struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
 }
 

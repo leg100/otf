@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 
 	"github.com/spf13/cobra"
@@ -17,7 +16,7 @@ type teamCLI struct {
 }
 
 type cliClient interface {
-	Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+	Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error)
 	Get(ctx context.Context, organization, team string) (*Team, error)
 	Delete(ctx context.Context, teamID resource.ID) error
 }
@@ -42,7 +41,7 @@ func NewTeamCommand(apiClient *otfapi.Client) *cobra.Command {
 }
 
 func (a *teamCLI) teamNewCommand() *cobra.Command {
-	var organization organization.Name
+	var organization resource.OrganizationName
 
 	cmd := &cobra.Command{
 		Use:           "new [name]",
@@ -69,7 +68,7 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 }
 
 func (a *teamCLI) teamDeleteCommand() *cobra.Command {
-	var organization organization.Name
+	var organization resource.OrganizationName
 
 	cmd := &cobra.Command{
 		Use:           "delete [name]",

@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -105,7 +104,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(cont
 	)
 }
 
-func (db *pgdb) getTeam(ctx context.Context, name, organization organization.Name) (*Team, error) {
+func (db *pgdb) getTeam(ctx context.Context, name, organization resource.OrganizationName) (*Team, error) {
 	result, err := q.FindTeamByName(ctx, db.Conn(ctx), FindTeamByNameParams{
 		Name:             sql.String(name),
 		OrganizationName: organization,
@@ -132,7 +131,7 @@ func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Tea
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) listTeams(ctx context.Context, organization organization.Name) ([]*Team, error) {
+func (db *pgdb) listTeams(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
 	result, err := q.FindTeamsByOrg(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, err

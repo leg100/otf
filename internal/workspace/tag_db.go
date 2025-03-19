@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -30,7 +29,7 @@ func (r tagresult) toTag() *Tag {
 	}
 }
 
-func (db *pgdb) listTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+func (db *pgdb) listTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	rows, err := q.FindTags(ctx, db.Conn(ctx), FindTagsParams{
 		OrganizationName: organization,
 		Limit:            sql.GetLimit(opts.PageOptions),
@@ -51,7 +50,7 @@ func (db *pgdb) listTags(ctx context.Context, organization organization.Name, op
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.ID) error {
+func (db *pgdb) deleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.ID) error {
 	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, tid := range tagIDs {
 			_, err := q.DeleteTag(ctx, conn, DeleteTagParams{
@@ -79,7 +78,7 @@ func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID res
 	return nil
 }
 
-func (db *pgdb) findTagByName(ctx context.Context, organization organization.Name, name string) (*Tag, error) {
+func (db *pgdb) findTagByName(ctx context.Context, organization resource.OrganizationName, name string) (*Tag, error) {
 	tag, err := q.FindTagByName(ctx, db.Conn(ctx), FindTagByNameParams{
 		Name:             sql.String(name),
 		OrganizationName: organization,
@@ -90,7 +89,7 @@ func (db *pgdb) findTagByName(ctx context.Context, organization organization.Nam
 	return tagresult(tag).toTag(), nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.ID) (*Tag, error) {
+func (db *pgdb) findTagByID(ctx context.Context, organization resource.OrganizationName, id resource.ID) (*Tag, error) {
 	tag, err := q.FindTagByID(ctx, db.Conn(ctx), FindTagByIDParams{
 		TagID:            id,
 		OrganizationName: organization,

@@ -31,7 +31,7 @@ func (c *Client) CreateOrganization(ctx context.Context, options CreateOptions) 
 }
 
 // DeleteOrganization deletes an organization via http.
-func (c *Client) DeleteOrganization(ctx context.Context, organization Name) error {
+func (c *Client) DeleteOrganization(ctx context.Context, organization resource.OrganizationName) error {
 	u := fmt.Sprintf("organizations/%s", organization)
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {

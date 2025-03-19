@@ -73,7 +73,7 @@ func NewService(opts Options) *Service {
 		// owners team is created, so in this particular instance authorization
 		// is skipped.
 		ctx = authz.AddSkipAuthz(ctx)
-		_, err := svc.Create(ctx, organization.Name, CreateTeamOptions{
+		_, err := svc.Create(ctx, resource.OrganizationName, CreateTeamOptions{
 			Name: internal.String("owners"),
 		})
 		if err != nil {
@@ -103,7 +103,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+func (a *Service) Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.Authorize(ctx, authz.CreateTeamAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 }
 
 // List lists teams in the organization.
-func (a *Service) List(ctx context.Context, organization organization.Name) ([]*Team, error) {
+func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
 	subject, err := a.Authorize(ctx, authz.ListTeamsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err

@@ -16,7 +16,7 @@ type (
 
 		CreatedAt time.Time
 		// Token belongs to an organization
-		Organization Name
+		Organization resource.OrganizationName
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -24,7 +24,7 @@ type (
 	// CreateOrganizationTokenOptions are options for creating an organization token via the service
 	// endpoint
 	CreateOrganizationTokenOptions struct {
-		Organization Name `schema:"organization_name,required"`
+		Organization resource.OrganizationName `schema:"organization_name,required"`
 		Expiry       *time.Time
 	}
 

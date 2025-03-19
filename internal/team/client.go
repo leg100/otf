@@ -6,7 +6,6 @@ import (
 	"net/url"
 
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -15,7 +14,7 @@ type Client struct {
 }
 
 // Create creates a team via HTTP/JSONAPI.
-func (c *Client) Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+func (c *Client) Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
 	// validate params
 	if _, err := newTeam(organization, opts); err != nil {
 		return nil, err

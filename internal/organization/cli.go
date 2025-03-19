@@ -23,7 +23,7 @@ type (
 		Get(ctx context.Context, name string) (*Organization, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
-		GetEntitlements(ctx context.Context, organization Name) (Entitlements, error)
+		GetEntitlements(ctx context.Context, organization resource.OrganizationName) (Entitlements, error)
 		AfterCreateOrganization(hook func(context.Context, *Organization) error)
 		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
 
@@ -31,8 +31,8 @@ type (
 		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
 		// GetOrganizationToken gets the organization token. If a token does not
 		// exist, then nil is returned without an error.
-		GetOrganizationToken(ctx context.Context, organization Name) (*OrganizationToken, error)
-		DeleteToken(ctx context.Context, organization Name) error
+		GetOrganizationToken(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error)
+		DeleteToken(ctx context.Context, organization resource.OrganizationName) error
 		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error)
 	}

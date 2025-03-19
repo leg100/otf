@@ -9,7 +9,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
@@ -57,7 +56,7 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 
 func (a *CLI) stateListCommand() *cobra.Command {
 	var opts struct {
-		Organization organization.Name
+		Organization resource.OrganizationName
 		Workspace    string
 	}
 	cmd := &cobra.Command{

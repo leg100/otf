@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
 
@@ -177,7 +177,7 @@ func profileLinks() templ.Component {
 }
 
 type userListProps struct {
-	organization organization.Name
+	organization resource.OrganizationName
 	users        []*User
 }
 

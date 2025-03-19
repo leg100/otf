@@ -25,7 +25,7 @@ type row struct {
 	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       Name
+	Name                       resource.OrganizationName
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text
@@ -86,7 +86,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return nil
 }
 
-func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, *Organization) error) (*Organization, error) {
+func (db *pgdb) update(ctx context.Context, name resource.OrganizationName, fn func(context.Context, *Organization) error) (*Organization, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -198,7 +198,7 @@ func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *Organization
 	return err
 }
 
-func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization Name) (*OrganizationToken, error) {
+func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error) {
 	result, err := q.FindOrganizationTokensByName(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -206,7 +206,7 @@ func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization Nam
 	return tokenRow(result).toToken(), nil
 }
 
-func (db *pgdb) listOrganizationTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
+func (db *pgdb) listOrganizationTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error) {
 	result, err := q.FindOrganizationTokens(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -226,7 +226,7 @@ func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.I
 	return tokenRow(result).toToken(), nil
 }
 
-func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization Name) error {
+func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization resource.OrganizationName) error {
 	_, err := q.DeleteOrganiationTokenByName(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return sql.Error(err)

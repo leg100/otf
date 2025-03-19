@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/templ-go/x/urlbuilder"
@@ -54,8 +53,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization organization.Name `schema:"organization_name,required"`
-		Kind         vcs.Kind          `schema:"kind,required"`
+		Organization resource.OrganizationName `schema:"organization_name,required"`
+		Kind         vcs.Kind                  `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -81,7 +80,7 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization organization.Name `schema:"organization_name,required"`
+		Organization resource.OrganizationName `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

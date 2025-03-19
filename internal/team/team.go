@@ -6,17 +6,16 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		ID           resource.ID       `jsonapi:"primary,teams"`
-		CreatedAt    time.Time         `jsonapi:"attribute" json:"created-at"`
-		Name         string            `jsonapi:"attribute" json:"name"`
-		Organization organization.Name `jsonapi:"attribute" json:"organization"`
+		ID           resource.ID               `jsonapi:"primary,teams"`
+		CreatedAt    time.Time                 `jsonapi:"attribute" json:"created-at"`
+		Name         string                    `jsonapi:"attribute" json:"name"`
+		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization"`
 
 		Access OrganizationAccess
 
@@ -77,7 +76,7 @@ type (
 	}
 )
 
-func newTeam(organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+func newTeam(organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
 	// required parameters
 	if opts.Name == nil {
 		return nil, &internal.ErrMissingParameter{Parameter: "name"}
@@ -123,7 +122,7 @@ func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
 }
 
-func (t *Team) IsOwner(organization organization.Name) bool {
+func (t *Team) IsOwner(organization resource.OrganizationName) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 

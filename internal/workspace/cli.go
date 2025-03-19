@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/organization"
 
 	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/cobra"
@@ -80,7 +79,7 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 }
 
 func (a *CLI) workspaceShowCommand() *cobra.Command {
-	var organization organization.Name
+	var organization resource.OrganizationName
 
 	cmd := &cobra.Command{
 		Use:           "show [name]",
@@ -114,7 +113,7 @@ func (a *CLI) workspaceShowCommand() *cobra.Command {
 
 func (a *CLI) workspaceEditCommand() *cobra.Command {
 	var (
-		organization organization.Name
+		organization resource.OrganizationName
 		opts         UpdateOptions
 		mode         string
 		poolID       string
@@ -161,7 +160,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 }
 
 func (a *CLI) workspaceLockCommand() *cobra.Command {
-	var organization organization.Name
+	var organization resource.OrganizationName
 
 	cmd := &cobra.Command{
 		Use:           "lock [name]",
@@ -194,7 +193,7 @@ func (a *CLI) workspaceLockCommand() *cobra.Command {
 
 func (a *CLI) workspaceUnlockCommand() *cobra.Command {
 	var (
-		organization organization.Name
+		organization resource.OrganizationName
 		force        bool
 	)
 

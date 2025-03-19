@@ -10,10 +10,10 @@ import (
 	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func newTeamView(organization organization.Name) templ.Component {
+func newTeamView(organization resource.OrganizationName) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

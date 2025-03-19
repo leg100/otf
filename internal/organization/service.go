@@ -250,7 +250,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 	s.beforeDeleteHooks = append(s.beforeDeleteHooks, hook)
 }
 
-func (s *Service) GetEntitlements(ctx context.Context, organization Name) (Entitlements, error) {
+func (s *Service) GetEntitlements(ctx context.Context, organization resource.OrganizationName) (Entitlements, error) {
 	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return Entitlements{}, err
@@ -287,7 +287,7 @@ func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenO
 	return ot, token, nil
 }
 
-func (s *Service) GetOrganizationToken(ctx context.Context, organization Name) (*OrganizationToken, error) {
+func (s *Service) GetOrganizationToken(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error) {
 	ot, err := s.db.getOrganizationTokenByName(ctx, organization)
 	if err != nil {
 		s.Error(err, "retrieving organization token", "organization", organization)
@@ -307,7 +307,7 @@ func (s *Service) getOrganizationTokenByID(ctx context.Context, tokenID resource
 	return ot, nil
 }
 
-func (s *Service) ListTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
+func (s *Service) ListTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error) {
 	tokens, err := s.db.listOrganizationTokens(ctx, organization)
 	if err != nil {
 		s.Error(err, "listing organization tokens", "organization", organization)
@@ -317,7 +317,7 @@ func (s *Service) ListTokens(ctx context.Context, organization Name) ([]*Organiz
 	return tokens, nil
 }
 
-func (s *Service) DeleteToken(ctx context.Context, organization Name) error {
+func (s *Service) DeleteToken(ctx context.Context, organization resource.OrganizationName) error {
 	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return err

@@ -13,7 +13,7 @@ type Model struct {
 	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       Name
+	Name                       resource.OrganizationName
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text

@@ -30,8 +30,8 @@ type (
 		Delete(ctx context.Context, name string) error
 
 		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		ListTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error)
-		DeleteToken(ctx context.Context, organization Name) error
+		ListTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error)
+		DeleteToken(ctx context.Context, organization resource.OrganizationName) error
 	}
 )
 

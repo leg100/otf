@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -83,7 +82,7 @@ type (
 
 		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
 		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
-		ListTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error)
+		ListTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
 		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
 		SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error
@@ -298,8 +297,8 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         string            `schema:"workspace_name,required"`
-		Organization organization.Name `schema:"organization_name,required"`
+		Name         string                    `schema:"workspace_name,required"`
+		Organization resource.OrganizationName `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

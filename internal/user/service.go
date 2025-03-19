@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/team"
@@ -168,7 +167,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 }
 
 // ListOrganizationUsers lists an organization's users
-func (a *Service) ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error) {
+func (a *Service) ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
 	_, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err
