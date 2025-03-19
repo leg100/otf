@@ -10,8 +10,9 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type (
 	// pgdb is a workspace database on postgres
@@ -114,8 +115,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 }
 
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
-	q := db.Querier(ctx)
-	params := sqlc.InsertWorkspaceParams{
+	params := InsertWorkspaceParams{
 		ID:                         ws.ID,
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
@@ -148,7 +148,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		params.Branch = sql.String(ws.Connection.Branch)
 		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 	}
-	err := q.InsertWorkspace(ctx, params)
+	err := q.InsertWorkspace(ctx, db.Conn(ctx), params)
 	return sql.Error(err)
 }
 
@@ -156,16 +156,16 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(con
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, q *sqlc.Queries) (*Workspace, error) {
-			result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
+		func(ctx context.Context, conn sql.Connection) (*Workspace, error) {
+			result, err := q.FindWorkspaceByIDForUpdate(ctx, conn, workspaceID)
 			if err != nil {
 				return nil, err
 			}
 			return pgresult(result).toWorkspace()
 		},
 		fn,
-		func(ctx context.Context, q *sqlc.Queries, ws *Workspace) error {
-			params := sqlc.UpdateWorkspaceByIDParams{
+		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
+			params := UpdateWorkspaceByIDParams{
 				AgentPoolID:                ws.AgentPoolID,
 				AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
 				AllowCLIApply:              sql.Bool(false),
@@ -191,7 +191,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(con
 				params.Branch = sql.String(ws.Connection.Branch)
 				params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 			}
-			_, err := q.UpdateWorkspaceByID(ctx, params)
+			_, err := q.UpdateWorkspaceByID(ctx, conn, params)
 			return err
 		},
 	)
@@ -199,9 +199,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(con
 
 // setLatestRun sets the ID of the current run for the specified workspace.
 func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
-	q := db.Querier(ctx)
-
-	err := q.UpdateWorkspaceLatestRun(ctx, sqlc.UpdateWorkspaceLatestRunParams{
+	err := q.UpdateWorkspaceLatestRun(ctx, db.Conn(ctx), UpdateWorkspaceLatestRunParams{
 		RunID:       &runID,
 		WorkspaceID: workspaceID,
 	})
@@ -213,8 +211,6 @@ func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.ID
 }
 
 func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
-	q := db.Querier(ctx)
-
 	// Organization name filter is optional - if not provided use a % which in
 	// SQL means match any organization.
 	organization := "%"
@@ -232,7 +228,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 		status = internal.ToStringSlice(opts.Status)
 	}
 
-	rows, err := q.FindWorkspaces(ctx, sqlc.FindWorkspacesParams{
+	rows, err := q.FindWorkspaces(ctx, db.Conn(ctx), FindWorkspacesParams{
 		OrganizationNames: sql.StringArray([]string{organization}),
 		Search:            sql.String(opts.Search),
 		Tags:              sql.StringArray(tags),
@@ -243,7 +239,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := q.CountWorkspaces(ctx, sqlc.CountWorkspacesParams{
+	count, err := q.CountWorkspaces(ctx, db.Conn(ctx), CountWorkspacesParams{
 		Search:            sql.String(opts.Search),
 		OrganizationNames: sql.StringArray([]string{organization}),
 		Tags:              sql.StringArray(tags),
@@ -265,9 +261,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 }
 
 func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
-	q := db.Querier(ctx)
-
-	rows, err := q.FindWorkspacesByConnection(ctx, sqlc.FindWorkspacesByConnectionParams{
+	rows, err := q.FindWorkspacesByConnection(ctx, db.Conn(ctx), FindWorkspacesByConnectionParams{
 		VCSProviderID: vcsProviderID,
 		RepoPath:      sql.String(repoPath),
 	})
@@ -287,10 +281,8 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID,
 }
 
 func (db *pgdb) listByUsername(ctx context.Context, username string, organization organization.Name, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
-	q := db.Querier(ctx)
-
-	rows, err := q.FindWorkspacesByUsername(ctx, sqlc.FindWorkspacesByUsernameParams{
-		OrganizationName: sql.String(organization),
+	rows, err := q.FindWorkspacesByUsername(ctx, db.Conn(ctx), FindWorkspacesByUsernameParams{
+		OrganizationName: organization,
 		Username:         sql.String(username),
 		Limit:            sql.GetLimit(opts),
 		Offset:           sql.GetOffset(opts),
@@ -298,8 +290,8 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountWorkspacesByUsername(ctx, sqlc.CountWorkspacesByUsernameParams{
-		OrganizationName: sql.String(organization),
+	count, err := q.CountWorkspacesByUsername(ctx, db.Conn(ctx), CountWorkspacesByUsernameParams{
+		OrganizationName: organization,
 		Username:         sql.String(username),
 	})
 	if err != nil {
@@ -319,8 +311,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 }
 
 func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
-	q := db.Querier(ctx)
-	result, err := q.FindWorkspaceByID(ctx, workspaceID)
+	result, err := q.FindWorkspaceByID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -328,8 +319,7 @@ func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, e
 }
 
 func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
-	q := db.Querier(ctx)
-	result, err := q.FindWorkspaceByName(ctx, sqlc.FindWorkspaceByNameParams{
+	result, err := q.FindWorkspaceByName(ctx, db.Conn(ctx), FindWorkspaceByNameParams{
 		Name:             sql.String(workspace),
 		OrganizationName: sql.String(organization),
 	})
@@ -340,8 +330,7 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 }
 
 func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
-	q := db.Querier(ctx)
-	err := q.DeleteWorkspaceByID(ctx, workspaceID)
+	err := q.DeleteWorkspaceByID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -349,7 +338,7 @@ func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 }
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
-	err := db.Querier(ctx).UpsertWorkspacePermission(ctx, sqlc.UpsertWorkspacePermissionParams{
+	err := q.UpsertWorkspacePermission(ctx, db.Conn(ctx), UpsertWorkspacePermissionParams{
 		WorkspaceID: workspaceID,
 		TeamID:      teamID,
 		Role:        sql.String(role.String()),
@@ -361,7 +350,7 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID 
 }
 
 func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
-	err := db.Querier(ctx).DeleteWorkspacePermissionByID(ctx, sqlc.DeleteWorkspacePermissionByIDParams{
+	err := q.DeleteWorkspacePermissionByID(ctx, db.Conn(ctx), DeleteWorkspacePermissionByIDParams{
 		WorkspaceID: workspaceID,
 		TeamID:      teamID,
 	})
@@ -372,7 +361,7 @@ func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamI
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
-	perms, err := db.Querier(ctx).FindWorkspacePermissionsAndGlobalRemoteState(ctx, workspaceID)
+	perms, err := q.FindWorkspacePermissionsAndGlobalRemoteState(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return authz.WorkspacePolicy{}, sql.Error(err)
 	}

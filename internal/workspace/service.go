@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/user"
@@ -122,7 +121,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		for _, hook := range s.beforeCreateHooks {
 			if err := hook(ctx, ws); err != nil {
 				return err
@@ -248,7 +247,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts Upda
 
 	// update the workspace and optionally connect/disconnect to/from vcs repo.
 	var updated *Workspace
-	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		var connect *bool
 		updated, err = s.db.update(ctx, workspaceID, func(ctx context.Context, ws *Workspace) (err error) {
 			for _, hook := range s.beforeUpdateHooks {

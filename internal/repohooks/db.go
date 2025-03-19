@@ -9,9 +9,10 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 )
+
+var q = &Queries{}
 
 type (
 	db struct {
@@ -32,8 +33,7 @@ type (
 // getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
-	q := db.Querier(ctx)
-	result, err := q.FindRepohookByRepoAndProvider(ctx, sqlc.FindRepohookByRepoAndProviderParams{
+	result, err := q.FindRepohookByRepoAndProvider(ctx, db.Conn(ctx), FindRepohookByRepoAndProviderParams{
 		RepoPath:      sql.String(hook.repoPath),
 		VCSProviderID: hook.vcsProviderID,
 	})
@@ -46,7 +46,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 
 	// not found; create instead
 
-	insertResult, err := q.InsertRepohook(ctx, sqlc.InsertRepohookParams{
+	insertResult, err := q.InsertRepohook(ctx, db.Conn(ctx), InsertRepohookParams{
 		RepohookID:    sql.UUID(hook.id),
 		Secret:        sql.String(hook.secret),
 		RepoPath:      sql.String(hook.repoPath),
@@ -60,8 +60,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 }
 
 func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
-	q := db.Querier(ctx)
-	result, err := q.FindRepohookByID(ctx, sql.UUID(id))
+	result, err := q.FindRepohookByID(ctx, db.Conn(ctx), sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -69,8 +68,7 @@ func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 }
 
 func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
-	q := db.Querier(ctx)
-	result, err := q.FindRepohooks(ctx)
+	result, err := q.FindRepohooks(ctx, db.Conn(ctx))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -86,8 +84,7 @@ func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 }
 
 func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
-	q := db.Querier(ctx)
-	result, err := q.FindUnreferencedRepohooks(ctx)
+	result, err := q.FindUnreferencedRepohooks(ctx, db.Conn(ctx))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -103,8 +100,7 @@ func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 }
 
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
-	q := db.Querier(ctx)
-	_, err := q.UpdateRepohookVCSID(ctx, sqlc.UpdateRepohookVCSIDParams{
+	_, err := q.UpdateRepohookVCSID(ctx, db.Conn(ctx), UpdateRepohookVCSIDParams{
 		VCSID:      sql.String(cloudID),
 		RepohookID: sql.UUID(id),
 	})
@@ -115,8 +111,7 @@ func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID strin
 }
 
 func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
-	q := db.Querier(ctx)
-	_, err := q.DeleteRepohookByID(ctx, sql.UUID(id))
+	_, err := q.DeleteRepohookByID(ctx, db.Conn(ctx), sql.UUID(id))
 	if err != nil {
 		return sql.Error(err)
 	}

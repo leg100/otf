@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -121,7 +120,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization
 	if err != nil {
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := s.db.create(ctx, org); err != nil {
 			return err
 		}
@@ -226,7 +225,7 @@ func (s *Service) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		org, err := s.db.get(ctx, name)
 		if err != nil {
 			return err

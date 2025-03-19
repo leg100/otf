@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.16](https://github.com/leg100/otf/compare/v0.3.15...v0.3.16) (2025-03-17)
+
+
+### Features
+
+* **ui:** tabulate workspace and run listings ([#741](https://github.com/leg100/otf/issues/741)) ([31ab7ce](https://github.com/leg100/otf/commit/31ab7ce8130171ee586a0ddbaff89a6e15248ddf))
+
+
+### Bug Fixes
+
+* add arm and 386 arch testdata ([#740](https://github.com/leg100/otf/issues/740)) ([e24cdfa](https://github.com/leg100/otf/commit/e24cdfa957d0f6170f891052c7a1233e01747783))
+* **ui:** various UI fixes ([a368efe](https://github.com/leg100/otf/commit/a368efe138fd37ed2dea46c4ff67b2df74ad403c))
+
 ## [0.3.15](https://github.com/leg100/otf/compare/v0.3.14...v0.3.15) (2025-03-13)
 
 

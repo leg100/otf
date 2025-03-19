@@ -7,8 +7,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type (
 	// pgdb is a notification configuration database on postgres
@@ -49,7 +50,7 @@ func (r pgresult) toNotificationConfiguration() *Config {
 }
 
 func (db *pgdb) create(ctx context.Context, nc *Config) error {
-	params := sqlc.InsertNotificationConfigurationParams{
+	params := InsertNotificationConfigurationParams{
 		NotificationConfigurationID: nc.ID,
 		CreatedAt:                   sql.Timestamptz(nc.CreatedAt),
 		UpdatedAt:                   sql.Timestamptz(nc.UpdatedAt),
@@ -65,7 +66,7 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 	if nc.URL != nil {
 		params.URL = sql.String(*nc.URL)
 	}
-	err := db.Querier(ctx).InsertNotificationConfiguration(ctx, params)
+	err := q.InsertNotificationConfiguration(ctx, db.Conn(ctx), params)
 	return sql.Error(err)
 }
 
@@ -73,16 +74,16 @@ func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(cont
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, q *sqlc.Queries) (*Config, error) {
-			result, err := q.FindNotificationConfigurationForUpdate(ctx, id)
+		func(ctx context.Context, conn sql.Connection) (*Config, error) {
+			result, err := q.FindNotificationConfigurationForUpdate(ctx, conn, id)
 			if err != nil {
 				return nil, sql.Error(err)
 			}
 			return pgresult(result).toNotificationConfiguration(), nil
 		},
 		updateFunc,
-		func(ctx context.Context, q *sqlc.Queries, nc *Config) error {
-			params := sqlc.UpdateNotificationConfigurationByIDParams{
+		func(ctx context.Context, conn sql.Connection, nc *Config) error {
+			params := UpdateNotificationConfigurationByIDParams{
 				UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
 				Enabled:                     sql.Bool(nc.Enabled),
 				Name:                        sql.String(nc.Name),
@@ -95,14 +96,14 @@ func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(cont
 			if nc.URL != nil {
 				params.URL = sql.String(*nc.URL)
 			}
-			_, err := q.UpdateNotificationConfigurationByID(ctx, params)
+			_, err := q.UpdateNotificationConfigurationByID(ctx, conn, params)
 			return err
 		},
 	)
 }
 
 func (db *pgdb) list(ctx context.Context, workspaceID resource.ID) ([]*Config, error) {
-	results, err := db.Querier(ctx).FindNotificationConfigurationsByWorkspaceID(ctx, workspaceID)
+	results, err := q.FindNotificationConfigurationsByWorkspaceID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -115,7 +116,7 @@ func (db *pgdb) list(ctx context.Context, workspaceID resource.ID) ([]*Config, e
 }
 
 func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
-	results, err := db.Querier(ctx).FindAllNotificationConfigurations(ctx)
+	results, err := q.FindAllNotificationConfigurations(ctx, db.Conn(ctx))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -128,7 +129,7 @@ func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
 }
 
 func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
-	row, err := db.Querier(ctx).FindNotificationConfiguration(ctx, id)
+	row, err := q.FindNotificationConfiguration(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -136,7 +137,7 @@ func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteNotificationConfigurationByID(ctx, id)
+	_, err := q.DeleteNotificationConfigurationByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)
 	}

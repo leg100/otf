@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -32,17 +31,15 @@ func (r tagresult) toTag() *Tag {
 }
 
 func (db *pgdb) listTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	q := db.Querier(ctx)
-
-	rows, err := q.FindTags(ctx, sqlc.FindTagsParams{
-		OrganizationName: sql.String(organization),
+	rows, err := q.FindTags(ctx, db.Conn(ctx), FindTagsParams{
+		OrganizationName: organization,
 		Limit:            sql.GetLimit(opts.PageOptions),
 		Offset:           sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := q.CountTags(ctx, sql.String(organization))
+	count, err := q.CountTags(ctx, db.Conn(ctx), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -55,11 +52,11 @@ func (db *pgdb) listTags(ctx context.Context, organization organization.Name, op
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.ID) error {
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, tid := range tagIDs {
-			_, err := q.DeleteTag(ctx, sqlc.DeleteTagParams{
+			_, err := q.DeleteTag(ctx, conn, DeleteTagParams{
 				TagID:            tid,
-				OrganizationName: sql.String(organization),
+				OrganizationName: organization,
 			})
 			if err != nil {
 				return err
@@ -71,7 +68,7 @@ func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, 
 }
 
 func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID resource.ID) error {
-	err := db.Querier(ctx).InsertTag(ctx, sqlc.InsertTagParams{
+	err := q.InsertTag(ctx, db.Conn(ctx), InsertTagParams{
 		TagID:            tagID,
 		Name:             sql.String(name),
 		OrganizationName: sql.String(organization),
@@ -83,9 +80,9 @@ func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID res
 }
 
 func (db *pgdb) findTagByName(ctx context.Context, organization organization.Name, name string) (*Tag, error) {
-	tag, err := db.Querier(ctx).FindTagByName(ctx, sqlc.FindTagByNameParams{
+	tag, err := q.FindTagByName(ctx, db.Conn(ctx), FindTagByNameParams{
 		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -94,9 +91,9 @@ func (db *pgdb) findTagByName(ctx context.Context, organization organization.Nam
 }
 
 func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.ID) (*Tag, error) {
-	tag, err := db.Querier(ctx).FindTagByID(ctx, sqlc.FindTagByIDParams{
+	tag, err := q.FindTagByID(ctx, db.Conn(ctx), FindTagByIDParams{
 		TagID:            id,
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -105,7 +102,7 @@ func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name,
 }
 
 func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.ID) error {
-	_, err := db.Querier(ctx).InsertWorkspaceTag(ctx, sqlc.InsertWorkspaceTagParams{
+	_, err := q.InsertWorkspaceTag(ctx, db.Conn(ctx), InsertWorkspaceTagParams{
 		TagID:       tagID,
 		WorkspaceID: workspaceID,
 	})
@@ -116,7 +113,7 @@ func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.ID
 }
 
 func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteWorkspaceTag(ctx, sqlc.DeleteWorkspaceTagParams{
+	_, err := q.DeleteWorkspaceTag(ctx, db.Conn(ctx), DeleteWorkspaceTagParams{
 		WorkspaceID: workspaceID,
 		TagID:       tagID,
 	})
@@ -127,9 +124,7 @@ func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resou
 }
 
 func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	q := db.Querier(ctx)
-
-	rows, err := q.FindWorkspaceTags(ctx, sqlc.FindWorkspaceTagsParams{
+	rows, err := q.FindWorkspaceTags(ctx, db.Conn(ctx), FindWorkspaceTagsParams{
 		WorkspaceID: workspaceID,
 		Limit:       sql.GetLimit(opts.PageOptions),
 		Offset:      sql.GetOffset(opts.PageOptions),
@@ -137,7 +132,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.ID, 
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := q.CountWorkspaceTags(ctx, workspaceID)
+	count, err := q.CountWorkspaceTags(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}

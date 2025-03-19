@@ -5,15 +5,14 @@ import (
 
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // toggleLock toggles the workspace lock state in the DB.
 func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglefn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		// retrieve workspace
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, conn, workspaceID)
 		if err != nil {
 			return err
 		}
@@ -25,7 +24,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 			return err
 		}
 		// persist to db
-		params := sqlc.UpdateWorkspaceLockByIDParams{
+		params := UpdateWorkspaceLockByIDParams{
 			WorkspaceID: ws.ID,
 		}
 		if ws.Locked() {
@@ -38,7 +37,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 				return ErrWorkspaceInvalidLock
 			}
 		}
-		if err := q.UpdateWorkspaceLockByID(ctx, params); err != nil {
+		if err := q.UpdateWorkspaceLockByID(ctx, conn, params); err != nil {
 			return err
 		}
 		return nil

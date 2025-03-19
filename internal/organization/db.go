@@ -7,8 +7,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type (
 	// dbListOptions represents the options for listing organizations via the
@@ -67,7 +68,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
-	err := db.Querier(ctx).InsertOrganization(ctx, sqlc.InsertOrganizationParams{
+	err := q.InsertOrganization(ctx, db.Conn(ctx), InsertOrganizationParams{
 		ID:                         org.ID,
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -89,16 +90,16 @@ func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, 
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, q *sqlc.Queries) (*Organization, error) {
-			result, err := q.FindOrganizationByNameForUpdate(ctx, name)
+		func(ctx context.Context, conn sql.Connection) (*Organization, error) {
+			result, err := q.FindOrganizationByNameForUpdate(ctx, conn, name)
 			if err != nil {
 				return nil, err
 			}
 			return row(result).toOrganization(), nil
 		},
 		fn,
-		func(ctx context.Context, q *sqlc.Queries, org *Organization) error {
-			_, err := q.UpdateOrganizationByName(ctx, sqlc.UpdateOrganizationByNameParams{
+		func(ctx context.Context, conn sql.Connection, org *Organization) error {
+			_, err := q.UpdateOrganizationByName(ctx, conn, UpdateOrganizationByNameParams{
 				Name:                       name,
 				NewName:                    org.Name,
 				Email:                      sql.StringPtr(org.Email),
@@ -115,12 +116,11 @@ func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, 
 }
 
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
-	q := db.Querier(ctx)
 	if opts.names == nil {
 		opts.names = []string{"%"} // return all organizations
 	}
 
-	rows, err := q.FindOrganizations(ctx, sqlc.FindOrganizationsParams{
+	rows, err := q.FindOrganizations(ctx, db.Conn(ctx), FindOrganizationsParams{
 		Names:  sql.StringArray(opts.names),
 		Limit:  sql.GetLimit(opts.PageOptions),
 		Offset: sql.GetOffset(opts.PageOptions),
@@ -128,7 +128,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountOrganizations(ctx, sql.StringArray(opts.names))
+	count, err := q.CountOrganizations(ctx, db.Conn(ctx), sql.StringArray(opts.names))
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
-	r, err := db.Querier(ctx).FindOrganizationByName(ctx, sql.String(name))
+	r, err := q.FindOrganizationByName(ctx, db.Conn(ctx), sql.String(name))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -149,7 +149,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
-	r, err := db.Querier(ctx).FindOrganizationByID(ctx, id)
+	r, err := q.FindOrganizationByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -157,7 +157,7 @@ func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, err
 }
 
 func (db *pgdb) delete(ctx context.Context, name string) error {
-	_, err := db.Querier(ctx).DeleteOrganizationByName(ctx, sql.String(name))
+	_, err := q.DeleteOrganizationByName(ctx, db.Conn(ctx), sql.String(name))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -189,9 +189,9 @@ func (result tokenRow) toToken() *OrganizationToken {
 }
 
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
-	err := db.Querier(ctx).UpsertOrganizationToken(ctx, sqlc.UpsertOrganizationTokenParams{
+	err := q.UpsertOrganizationToken(ctx, db.Conn(ctx), UpsertOrganizationTokenParams{
 		OrganizationTokenID: token.ID,
-		OrganizationName:    sql.String(token.Organization),
+		OrganizationName:    token.Organization,
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
 		Expiry:              sql.TimestamptzPtr(token.Expiry),
 	})
@@ -199,7 +199,7 @@ func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *Organization
 }
 
 func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization Name) (*OrganizationToken, error) {
-	result, err := db.Querier(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
+	result, err := q.FindOrganizationTokensByName(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -207,7 +207,7 @@ func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization Nam
 }
 
 func (db *pgdb) listOrganizationTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
-	result, err := db.Querier(ctx).FindOrganizationTokens(ctx, sql.String(organization))
+	result, err := q.FindOrganizationTokens(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -219,7 +219,7 @@ func (db *pgdb) listOrganizationTokens(ctx context.Context, organization Name) (
 }
 
 func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
-	result, err := db.Querier(ctx).FindOrganizationTokensByID(ctx, tokenID)
+	result, err := q.FindOrganizationTokensByID(ctx, db.Conn(ctx), tokenID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -227,7 +227,7 @@ func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.I
 }
 
 func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization Name) error {
-	_, err := db.Querier(ctx).DeleteOrganiationTokenByName(ctx, sql.String(organization))
+	_, err := q.DeleteOrganiationTokenByName(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return sql.Error(err)
 	}

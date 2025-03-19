@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +25,7 @@ func TestWaitAndLock(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		func() {
 			err := db.WaitAndLock(ctx, 123, func(context.Context) error { return nil })
 			require.NoError(t, err)
@@ -48,8 +47,13 @@ func TestTx(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
-		err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
+	// retain reference to old context for testing below.
+	oldContext := ctx
+
+	err = db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+		q := &organization.Queries{}
+		// insert org using tx
+		err := q.InsertOrganization(ctx, conn, organization.InsertOrganizationParams{
 			ID:                         org.ID,
 			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -64,33 +68,20 @@ func TestTx(t *testing.T) {
 		if err != nil {
 			return err
 		}
-
-		// this should succeed because it is using the same querier from the
-		// same tx
-		_, err = q.FindOrganizationByID(txCtx, org.ID)
+		// query org just created using same tx conn.
+		_, err = q.FindOrganizationByID(ctx, conn, org.ID)
 		assert.NoError(t, err)
 
-		// this should succeed because it is using the same ctx from the same tx
-		_, err = db.Querier(txCtx).FindOrganizationByID(txCtx, org.ID)
-		assert.NoError(t, err)
-
-		err = db.Tx(txCtx, func(ctx context.Context, q *sqlc.Queries) error {
-			// this should succeed because it is using a child tx via the
-			// querier
-			_, err = q.FindOrganizationByID(ctx, org.ID)
-			assert.NoError(t, err)
-
-			// this should succeed because it is using a child tx via the
-			// context
-			_, err = db.Querier(ctx).FindOrganizationByID(ctx, org.ID)
-			assert.NoError(t, err)
-
-			return nil
+		err = db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+			// query org just created using child tx conn
+			_, err = q.FindOrganizationByID(ctx, conn, org.ID)
+			return err
 		})
 		require.NoError(t, err)
 
-		// this should fail because it is using a different ctx
-		_, err = db.Querier(ctx).FindOrganizationByID(txCtx, org.ID)
+		// this should fail because it is using a different conn from the old
+		// context
+		_, err = q.FindOrganizationByID(ctx, db.Conn(oldContext), org.ID)
 		assert.ErrorIs(t, err, pgx.ErrNoRows)
 
 		return nil

@@ -5,8 +5,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type (
 	// pgdb is a github app database on postgres
@@ -47,7 +48,7 @@ func (r AppRow) convert() *App {
 }
 
 func (db *pgdb) create(ctx context.Context, app *App) error {
-	err := db.Querier(ctx).InsertGithubApp(ctx, sqlc.InsertGithubAppParams{
+	err := q.InsertGithubApp(ctx, db.Conn(ctx), InsertGithubAppParams{
 		GithubAppID:   pgtype.Int8{Int64: app.ID, Valid: true},
 		WebhookSecret: sql.String(app.WebhookSecret),
 		PrivateKey:    sql.String(app.PrivateKey),
@@ -58,7 +59,7 @@ func (db *pgdb) create(ctx context.Context, app *App) error {
 }
 
 func (db *pgdb) get(ctx context.Context) (*App, error) {
-	result, err := db.Querier(ctx).FindGithubApp(ctx)
+	result, err := q.FindGithubApp(ctx, db.Conn(ctx))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -66,12 +67,12 @@ func (db *pgdb) get(ctx context.Context) (*App, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context) error {
-	return db.Lock(ctx, "github_apps", func(ctx context.Context, q *sqlc.Queries) error {
-		result, err := db.Querier(ctx).FindGithubApp(ctx)
+	return db.Lock(ctx, "github_apps", func(ctx context.Context, conn sql.Connection) error {
+		result, err := q.FindGithubApp(ctx, conn)
 		if err != nil {
 			return sql.Error(err)
 		}
-		_, err = db.Querier(ctx).DeleteGithubApp(ctx, result.GithubAppID)
+		_, err = q.DeleteGithubApp(ctx, conn, result.GithubAppID)
 		if err != nil {
 			return sql.Error(err)
 		}

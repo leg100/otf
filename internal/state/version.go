@@ -11,7 +11,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/sqlc"
+	"github.com/leg100/otf/internal/sql"
 	"golang.org/x/exp/maps"
 )
 
@@ -67,7 +67,7 @@ type (
 	}
 
 	factoryDB interface {
-		Tx(context.Context, func(context.Context, *sqlc.Queries) error) error
+		Tx(context.Context, func(context.Context, sql.Connection) error) error
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
@@ -120,7 +120,7 @@ func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVers
 		Status:      Pending,
 		WorkspaceID: opts.WorkspaceID,
 	}
-	err := f.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err := f.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := f.db.createVersion(ctx, &sv); err != nil {
 			return err
 		}
@@ -161,7 +161,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 		}
 	}
 	// now perform database updates
-	err := f.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := f.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
 		if sv.Status != Pending {
 			return ErrUploadNonPending
 		}

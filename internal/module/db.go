@@ -9,8 +9,9 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 type (
 	// pgdb is the registry database on postgres
@@ -29,12 +30,12 @@ type (
 		OrganizationName pgtype.Text
 		VCSProviderID    resource.ID
 		RepoPath         pgtype.Text
-		ModuleVersions   []sqlc.ModuleVersion
+		ModuleVersions   []ModuleVersionModel
 	}
 )
 
 func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
-	err := db.Querier(ctx).InsertModule(ctx, sqlc.InsertModuleParams{
+	err := q.InsertModule(ctx, db.Conn(ctx), InsertModuleParams{
 		ID:               mod.ID,
 		CreatedAt:        sql.Timestamptz(mod.CreatedAt),
 		UpdatedAt:        sql.Timestamptz(mod.UpdatedAt),
@@ -47,7 +48,7 @@ func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
 }
 
 func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.ID, status ModuleStatus) error {
-	_, err := db.Querier(ctx).UpdateModuleStatusByID(ctx, sqlc.UpdateModuleStatusByIDParams{
+	_, err := q.UpdateModuleStatusByID(ctx, db.Conn(ctx), UpdateModuleStatusByIDParams{
 		Status:   sql.String(string(status)),
 		ModuleID: moduleID,
 	})
@@ -58,7 +59,7 @@ func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.ID, st
 }
 
 func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	rows, err := db.Querier(ctx).ListModulesByOrganization(ctx, sql.String(opts.Organization))
+	rows, err := q.ListModulesByOrganization(ctx, db.Conn(ctx), sql.String(opts.Organization))
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Mo
 }
 
 func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	row, err := db.Querier(ctx).FindModuleByName(ctx, sqlc.FindModuleByNameParams{
+	row, err := q.FindModuleByName(ctx, db.Conn(ctx), FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
 		OrganizationName: sql.String(opts.Organization),
@@ -84,7 +85,7 @@ func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, 
 }
 
 func (db *pgdb) getModuleByID(ctx context.Context, id resource.ID) (*Module, error) {
-	row, err := db.Querier(ctx).FindModuleByID(ctx, id)
+	row, err := q.FindModuleByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -93,7 +94,7 @@ func (db *pgdb) getModuleByID(ctx context.Context, id resource.ID) (*Module, err
 }
 
 func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
-	row, err := db.Querier(ctx).FindModuleByConnection(ctx, sqlc.FindModuleByConnectionParams{
+	row, err := q.FindModuleByConnection(ctx, db.Conn(ctx), FindModuleByConnectionParams{
 		VCSProviderID: vcsProviderID,
 		RepoPath:      sql.String(repoPath),
 	})
@@ -105,12 +106,12 @@ func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resourc
 }
 
 func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteModuleByID(ctx, id)
+	_, err := q.DeleteModuleByID(ctx, db.Conn(ctx), id)
 	return sql.Error(err)
 }
 
 func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion) error {
-	_, err := db.Querier(ctx).InsertModuleVersion(ctx, sqlc.InsertModuleVersionParams{
+	_, err := q.InsertModuleVersion(ctx, db.Conn(ctx), InsertModuleVersionParams{
 		ModuleVersionID: version.ID,
 		Version:         sql.String(version.Version),
 		CreatedAt:       sql.Timestamptz(version.CreatedAt),
@@ -125,7 +126,7 @@ func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion)
 }
 
 func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) error {
-	_, err := db.Querier(ctx).UpdateModuleVersionStatusByID(ctx, sqlc.UpdateModuleVersionStatusByIDParams{
+	_, err := q.UpdateModuleVersionStatusByID(ctx, db.Conn(ctx), UpdateModuleVersionStatusByIDParams{
 		ModuleVersionID: opts.ID,
 		Status:          sql.String(string(opts.Status)),
 		StatusError:     sql.String(opts.Error),
@@ -134,7 +135,7 @@ func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModule
 }
 
 func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.ID) (*Module, error) {
-	row, err := db.Querier(ctx).FindModuleByModuleVersionID(ctx, versionID)
+	row, err := q.FindModuleByModuleVersionID(ctx, db.Conn(ctx), versionID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -142,12 +143,12 @@ func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.ID)
 }
 
 func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteModuleVersionByID(ctx, versionID)
+	_, err := q.DeleteModuleVersionByID(ctx, db.Conn(ctx), versionID)
 	return sql.Error(err)
 }
 
 func (db *pgdb) saveTarball(ctx context.Context, versionID resource.ID, tarball []byte) error {
-	_, err := db.Querier(ctx).InsertModuleTarball(ctx, sqlc.InsertModuleTarballParams{
+	_, err := q.InsertModuleTarball(ctx, db.Conn(ctx), InsertModuleTarballParams{
 		Tarball:         tarball,
 		ModuleVersionID: versionID,
 	})
@@ -155,7 +156,7 @@ func (db *pgdb) saveTarball(ctx context.Context, versionID resource.ID, tarball 
 }
 
 func (db *pgdb) getTarball(ctx context.Context, versionID resource.ID) ([]byte, error) {
-	tarball, err := db.Querier(ctx).FindModuleTarball(ctx, versionID)
+	tarball, err := q.FindModuleTarball(ctx, db.Conn(ctx), versionID)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -197,7 +198,7 @@ func (row moduleRow) toModule() *Module {
 	return module
 }
 
-type byVersion []sqlc.ModuleVersion
+type byVersion []ModuleVersionModel
 
 func (v byVersion) Len() int      { return len(v) }
 func (v byVersion) Swap(i, j int) { v[i], v[j] = v[j], v[i] }

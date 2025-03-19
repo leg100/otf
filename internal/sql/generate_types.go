@@ -30,7 +30,14 @@ var ignoreBuiltinTypes = []string{
 }
 
 type sqlcConfig struct {
-	SQL []struct {
+	Overrides struct {
+		Go struct {
+			Overrides []struct {
+				DbType string `yaml:"db_type"`
+			}
+		}
+	} `yaml:"overrides"`
+	Sql []struct {
 		Gen struct {
 			Go struct {
 				Overrides []struct {
@@ -50,22 +57,29 @@ func main() {
 	if err := yaml.Unmarshal(sqlcConfigFile, &cfg); err != nil {
 		log.Fatal("Error unmarshaling sqlc config file: ", err.Error())
 	}
-	if len(cfg.SQL) != 1 {
-		log.Fatalf("Error, was expecting only one sqlc engine, but found %d", len(cfg.SQL))
-	}
 	var types []string
-	for _, override := range cfg.SQL[0].Gen.Go.Overrides {
+	addType := func(dbType string) {
 		// Ignore overrides that don't specify a database type.
-		if override.DbType == "" {
-			continue
+		if dbType == "" {
+			return
 		}
 		// Ignore overrides of built-in types like int, bool, etc.
-		if slices.Contains(ignoreBuiltinTypes, override.DbType) {
-			continue
+		if slices.Contains(ignoreBuiltinTypes, dbType) {
+			return
 		}
-		types = append(types, override.DbType)
+		types = append(types, dbType)
 		// Add array form, too.
-		types = append(types, fmt.Sprintf("%s[]", override.DbType))
+		types = append(types, fmt.Sprintf("%s[]", dbType))
+	}
+	// Add global override types
+	for _, override := range cfg.Overrides.Go.Overrides {
+		addType(override.DbType)
+	}
+	// Add per-table override types
+	for _, table := range cfg.Sql {
+		for _, override := range table.Gen.Go.Overrides {
+			addType(override.DbType)
+		}
 	}
 	tmpl, err := template.New("types.go.tmpl").ParseFiles("types.go.tmpl")
 	if err != nil {

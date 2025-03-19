@@ -7,9 +7,10 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 )
+
+var q = &Queries{}
 
 type (
 	// pgdb is a VCS provider database on postgres
@@ -27,14 +28,14 @@ type (
 		VCSKind          pgtype.Text
 		OrganizationName pgtype.Text
 		GithubAppID      pgtype.Int8
-		GithubApp        *sqlc.GithubApp
-		GithubAppInstall *sqlc.GithubAppInstall
+		GithubApp        *GithubApp
+		GithubAppInstall *GithubAppInstall
 	}
 )
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		params := sqlc.InsertVCSProviderParams{
+	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+		params := InsertVCSProviderParams{
 			VCSProviderID:    provider.ID,
 			Name:             sql.String(provider.Name),
 			VCSKind:          sql.String(string(provider.Kind)),
@@ -45,11 +46,11 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 		if provider.GithubApp != nil {
 			params.GithubAppID = pgtype.Int8{Int64: provider.GithubApp.AppCredentials.ID, Valid: true}
 		}
-		if err := db.Querier(ctx).InsertVCSProvider(ctx, params); err != nil {
+		if err := q.InsertVCSProvider(ctx, conn, params); err != nil {
 			return err
 		}
 		if provider.GithubApp != nil {
-			err := db.Querier(ctx).InsertGithubAppInstall(ctx, sqlc.InsertGithubAppInstallParams{
+			err := (&github.Queries{}).InsertGithubAppInstall(ctx, conn, github.InsertGithubAppInstallParams{
 				GithubAppID:   pgtype.Int8{Int64: provider.GithubApp.AppCredentials.ID, Valid: true},
 				InstallID:     pgtype.Int8{Int64: provider.GithubApp.ID, Valid: true},
 				Username:      sql.StringPtr(provider.GithubApp.User),
@@ -69,16 +70,16 @@ func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Cont
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, q *sqlc.Queries) (*VCSProvider, error) {
-			row, err := q.FindVCSProviderForUpdate(ctx, id)
+		func(ctx context.Context, conn sql.Connection) (*VCSProvider, error) {
+			row, err := q.FindVCSProviderForUpdate(ctx, conn, id)
 			if err != nil {
 				return nil, err
 			}
 			return db.toProvider(ctx, pgRow(row))
 		},
 		fn,
-		func(ctx context.Context, q *sqlc.Queries, provider *VCSProvider) error {
-			_, err := q.UpdateVCSProvider(ctx, sqlc.UpdateVCSProviderParams{
+		func(ctx context.Context, conn sql.Connection, provider *VCSProvider) error {
+			_, err := q.UpdateVCSProvider(ctx, conn, UpdateVCSProviderParams{
 				VCSProviderID: id,
 				Token:         sql.StringPtr(provider.Token),
 				Name:          sql.String(provider.Name),
@@ -90,7 +91,7 @@ func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Cont
 }
 
 func (db *pgdb) get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
-	row, err := db.Querier(ctx).FindVCSProvider(ctx, id)
+	row, err := q.FindVCSProvider(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -98,7 +99,7 @@ func (db *pgdb) get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
 }
 
 func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
-	rows, err := db.Querier(ctx).FindVCSProviders(ctx)
+	rows, err := q.FindVCSProviders(ctx, db.Conn(ctx))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -114,7 +115,7 @@ func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
 }
 
 func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	rows, err := db.Querier(ctx).FindVCSProvidersByOrganization(ctx, sql.String(organization))
+	rows, err := q.FindVCSProvidersByOrganization(ctx, db.Conn(ctx), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -130,9 +131,7 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 }
 
 func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
-	rows, err := db.Querier(ctx).FindVCSProvidersByGithubAppInstallID(ctx,
-		sql.Int8(int(installID)),
-	)
+	rows, err := q.FindVCSProvidersByGithubAppInstallID(ctx, db.Conn(ctx), sql.Int8(int(installID)))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -148,7 +147,7 @@ func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]
 }
 
 func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteVCSProviderByID(ctx, id)
+	_, err := q.DeleteVCSProviderByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)
 	}

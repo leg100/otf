@@ -9,9 +9,10 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/team"
 )
+
+var q = &Queries{}
 
 // dbresult represents the result of a database query for a user.
 type dbresult struct {
@@ -20,7 +21,7 @@ type dbresult struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []sqlc.Team
+	Teams     []Team
 }
 
 func (result dbresult) toUser() *User {
@@ -45,8 +46,8 @@ type pgdb struct {
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
-	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		err := q.InsertUser(ctx, sqlc.InsertUserParams{
+	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+		err := q.InsertUser(ctx, conn, InsertUserParams{
 			ID:        user.ID,
 			Username:  sql.String(user.Username),
 			CreatedAt: sql.Timestamptz(user.CreatedAt),
@@ -56,7 +57,7 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 			return sql.Error(err)
 		}
 		for _, team := range user.Teams {
-			_, err = q.InsertTeamMembership(ctx, sqlc.InsertTeamMembershipParams{
+			_, err = q.InsertTeamMembership(ctx, conn, InsertTeamMembershipParams{
 				TeamID:    team.ID,
 				Usernames: sql.StringArray([]string{user.Username}),
 			})
@@ -69,7 +70,7 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 }
 
 func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
-	result, err := db.Querier(ctx).FindUsers(ctx)
+	result, err := q.FindUsers(ctx, db.Conn(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 }
 
 func (db *pgdb) listOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error) {
-	result, err := db.Querier(ctx).FindUsersByOrganization(ctx, sql.String(organization))
+	result, err := q.FindUsersByOrganization(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func (db *pgdb) listOrganizationUsers(ctx context.Context, organization organiza
 }
 
 func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error) {
-	result, err := db.Querier(ctx).FindUsersByTeamID(ctx, teamID)
+	result, err := q.FindUsersByTeamID(ctx, db.Conn(ctx), teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,19 +109,19 @@ func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.ID) ([]*User,
 // getUser retrieves a user from the DB, along with its sessions.
 func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
-		result, err := db.Querier(ctx).FindUserByID(ctx, *spec.UserID)
+		result, err := q.FindUserByID(ctx, db.Conn(ctx), *spec.UserID)
 		if err != nil {
 			return nil, err
 		}
 		return dbresult(result).toUser(), nil
 	} else if spec.Username != nil {
-		result, err := db.Querier(ctx).FindUserByUsername(ctx, sql.String(*spec.Username))
+		result, err := q.FindUserByUsername(ctx, db.Conn(ctx), sql.String(*spec.Username))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return dbresult(result).toUser(), nil
 	} else if spec.AuthenticationTokenID != nil {
-		result, err := db.Querier(ctx).FindUserByAuthenticationTokenID(ctx, *spec.AuthenticationTokenID)
+		result, err := q.FindUserByAuthenticationTokenID(ctx, db.Conn(ctx), *spec.AuthenticationTokenID)
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -131,7 +132,7 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 }
 
 func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.ID, usernames ...string) error {
-	_, err := db.Querier(ctx).InsertTeamMembership(ctx, sqlc.InsertTeamMembershipParams{
+	_, err := q.InsertTeamMembership(ctx, db.Conn(ctx), InsertTeamMembershipParams{
 		Usernames: sql.StringArray(usernames),
 		TeamID:    teamID,
 	})
@@ -142,7 +143,7 @@ func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.ID, usern
 }
 
 func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.ID, usernames ...string) error {
-	_, err := db.Querier(ctx).DeleteTeamMembership(ctx, sqlc.DeleteTeamMembershipParams{
+	_, err := q.DeleteTeamMembership(ctx, db.Conn(ctx), DeleteTeamMembershipParams{
 		Usernames: sql.StringArray(usernames),
 		TeamID:    teamID,
 	})
@@ -155,12 +156,12 @@ func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.ID, us
 // DeleteUser deletes a user from the DB.
 func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	if spec.UserID != nil {
-		_, err := db.Querier(ctx).DeleteUserByID(ctx, *spec.UserID)
+		_, err := q.DeleteUserByID(ctx, db.Conn(ctx), *spec.UserID)
 		if err != nil {
 			return sql.Error(err)
 		}
 	} else if spec.Username != nil {
-		_, err := db.Querier(ctx).DeleteUserByUsername(ctx, sql.String(*spec.Username))
+		_, err := q.DeleteUserByUsername(ctx, db.Conn(ctx), sql.String(*spec.Username))
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -175,15 +176,15 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 // is returned.
 func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promoted []string, demoted []string, err error) {
 	var resetted, updated []pgtype.Text
-	err = db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err = db.Tx(ctx, func(ctx context.Context, conn sql.Connection) (err error) {
 		// First demote any existing site admins...
-		resetted, err = q.ResetUserSiteAdmins(ctx)
+		resetted, err = q.ResetUserSiteAdmins(ctx, conn)
 		if err != nil {
 			return err
 		}
 		// ...then promote any specified usernames
 		if len(usernames) > 0 {
-			updated, err = q.UpdateUserSiteAdmins(ctx, sql.StringArray(usernames))
+			updated, err = q.UpdateUserSiteAdmins(ctx, conn, sql.StringArray(usernames))
 			if err != nil {
 				return err
 			}
@@ -216,7 +217,7 @@ func pgtextSliceDiff(a, b []pgtype.Text) []string {
 //
 
 func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
-	err := db.Querier(ctx).InsertToken(ctx, sqlc.InsertTokenParams{
+	err := q.InsertToken(ctx, db.Conn(ctx), InsertTokenParams{
 		TokenID:     token.ID,
 		Description: sql.String(token.Description),
 		Username:    sql.String(token.Username),
@@ -226,7 +227,7 @@ func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
 }
 
 func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserToken, error) {
-	result, err := db.Querier(ctx).FindTokensByUsername(ctx, sql.String(username))
+	result, err := q.FindTokensByUsername(ctx, db.Conn(ctx), sql.String(username))
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +244,7 @@ func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserTok
 }
 
 func (db *pgdb) getUserToken(ctx context.Context, id resource.ID) (*UserToken, error) {
-	row, err := db.Querier(ctx).FindTokenByID(ctx, id)
+	row, err := q.FindTokenByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -256,7 +257,7 @@ func (db *pgdb) getUserToken(ctx context.Context, id resource.ID) (*UserToken, e
 }
 
 func (db *pgdb) deleteUserToken(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteTokenByID(ctx, id)
+	_, err := q.DeleteTokenByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)
 	}
