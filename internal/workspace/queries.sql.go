@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -19,7 +18,7 @@ FROM tags t
 WHERE t.organization_name = $1
 `
 
-func (q *Queries) CountTags(ctx context.Context, db DBTX, organizationName organization.Name) (int64, error) {
+func (q *Queries) CountTags(ctx context.Context, db DBTX, organizationName resource.OrganizationName) (int64, error) {
 	row := db.QueryRow(ctx, countTags, organizationName)
 	var count int64
 	err := row.Scan(&count)
@@ -87,7 +86,7 @@ AND   u.username          = $2
 `
 
 type CountWorkspacesByUsernameParams struct {
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	Username         pgtype.Text
 }
 
@@ -108,7 +107,7 @@ RETURNING tag_id
 
 type DeleteTagParams struct {
 	TagID            resource.ID
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 }
 
 func (q *Queries) DeleteTag(ctx context.Context, db DBTX, arg DeleteTagParams) (resource.ID, error) {
@@ -181,13 +180,13 @@ AND   t.organization_name = $2
 
 type FindTagByIDParams struct {
 	TagID            resource.ID
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 }
 
 type FindTagByIDRow struct {
 	TagID            resource.ID
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	InstanceCount    int64
 }
 
@@ -218,13 +217,13 @@ AND   t.organization_name = $2
 
 type FindTagByNameParams struct {
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 }
 
 type FindTagByNameRow struct {
 	TagID            resource.ID
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	InstanceCount    int64
 }
 
@@ -255,7 +254,7 @@ OFFSET $2::int
 `
 
 type FindTagsParams struct {
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	Offset           pgtype.Int4
 	Limit            pgtype.Int4
 }
@@ -263,7 +262,7 @@ type FindTagsParams struct {
 type FindTagsRow struct {
 	TagID            resource.ID
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	InstanceCount    int64
 }
 
@@ -333,7 +332,7 @@ type FindWorkspaceByIDRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -431,7 +430,7 @@ type FindWorkspaceByIDForUpdateRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -509,7 +508,7 @@ AND   w.organization_name = $2
 
 type FindWorkspaceByNameParams struct {
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 }
 
 type FindWorkspaceByNameRow struct {
@@ -535,7 +534,7 @@ type FindWorkspaceByNameRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -639,7 +638,7 @@ type FindWorkspaceTagsParams struct {
 type FindWorkspaceTagsRow struct {
 	TagID            resource.ID
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	InstanceCount    int64
 }
 
@@ -727,7 +726,7 @@ type FindWorkspacesRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -850,7 +849,7 @@ type FindWorkspacesByConnectionRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -946,7 +945,7 @@ OFFSET $3::int
 `
 
 type FindWorkspacesByUsernameParams struct {
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 	Username         pgtype.Text
 	Offset           pgtype.Int4
 	Limit            pgtype.Int4
@@ -975,7 +974,7 @@ type FindWorkspacesByUsernameRow struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -1065,7 +1064,7 @@ INSERT INTO tags (
 type InsertTagParams struct {
 	TagID            resource.ID
 	Name             pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 }
 
 // workspace tags
@@ -1158,7 +1157,7 @@ type InsertWorkspaceParams struct {
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	WorkingDirectory           pgtype.Text
-	OrganizationName           organization.Name
+	OrganizationName           resource.OrganizationName
 }
 
 func (q *Queries) InsertWorkspace(ctx context.Context, db DBTX, arg InsertWorkspaceParams) error {

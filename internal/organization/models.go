@@ -25,6 +25,6 @@ type Model struct {
 type TokenModel struct {
 	OrganizationTokenID resource.ID
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	Expiry              pgtype.Timestamptz
 }

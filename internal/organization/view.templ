@@ -49,9 +49,9 @@ templ list(props listProps) {
 }
 
 templ listItem(org *Organization) {
-	<div class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+	<div class="widget" x-data={ components.BlockLink(paths.Organization(org.Name.String())) }>
 		<div>
-			<span>{ org.Name }</span>
+			<span>{ org.Name.String() }</span>
 		</div>
 		<div>
 			@components.Identifier(org.ID)
@@ -79,8 +79,8 @@ templ listActions(canCreate bool) {
 templ get(organization *Organization) {
 	{{
 	layoutProps := components.LayoutProps{
-		Title:        Name,
-		Organization: Name,
+		Title:        organization.Name.String(),
+		Organization: &organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "main menu"},
 		},
@@ -90,40 +90,40 @@ templ get(organization *Organization) {
 		@components.Identifier(organization.ID)
 		<div class="flex flex-col gap-2 text-lg">
 			<span id="menu-item-workspaces">
-				<a href={ paths.Workspaces(Name) }>workspaces</a>
+				<a href={ paths.Workspaces(organization.Name.String()) }>workspaces</a>
 			</span>
-			if components.IsOwner(ctx, Name) || components.IsSiteAdmin(ctx) {
+			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
 				<span id="menu-item-runs">
-					<a href={ paths.OrganizationRuns(Name) }>runs</a>
+					<a href={ paths.OrganizationRuns(organization.Name.String()) }>runs</a>
 				</span>
 			}
 			<span id="modules">
-				<a href={ paths.Modules(Name) }>modules</a>
+				<a href={ paths.Modules(organization.Name.String()) }>modules</a>
 			</span>
 			<span id="teams">
-				<a href={ paths.Teams(Name) }>teams</a>
+				<a href={ paths.Teams(organization.Name.String()) }>teams</a>
 			</span>
-			if components.IsOwner(ctx, Name) || components.IsSiteAdmin(ctx) {
+			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
 				<span id="users">
-					<a href={ paths.Users(Name) }>users</a>
+					<a href={ paths.Users(organization.Name.String()) }>users</a>
 				</span>
 				<span id="runners">
-					<a href={ paths.Runners(Name) }>runners</a>
+					<a href={ paths.Runners(organization.Name.String()) }>runners</a>
 				</span>
 				<span id="agent_pools">
-					<a href={ paths.AgentPools(Name) }>agent pools</a>
+					<a href={ paths.AgentPools(organization.Name.String()) }>agent pools</a>
 				</span>
 				<span id="variable_sets">
-					<a href={ paths.VariableSets(Name) }>variable sets</a>
+					<a href={ paths.VariableSets(organization.Name.String()) }>variable sets</a>
 				</span>
 				<span id="vcs_providers">
-					<a href={ paths.VCSProviders(Name) }>VCS providers</a>
+					<a href={ paths.VCSProviders(organization.Name.String()) }>VCS providers</a>
 				</span>
 				<span id="organization_tokens">
-					<a href={ paths.OrganizationToken(Name) }>organization token</a>
+					<a href={ paths.OrganizationToken(organization.Name.String()) }>organization token</a>
 				</span>
 				<span id="settings">
-					<a href={ paths.EditOrganization(Name) }>settings</a>
+					<a href={ paths.EditOrganization(organization.Name.String()) }>settings</a>
 				</span>
 			}
 		</div>
@@ -132,16 +132,16 @@ templ get(organization *Organization) {
 
 templ edit(organization *Organization) {
 	@components.Layout(components.LayoutProps{
-		Title:        Name,
-		Organization: Name,
+		Title:        organization.Name.String(),
+		Organization: &organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "settings"},
 		},
 	}) {
-		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(Name) } method="POST">
+		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(organization.Name.String()) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="new_name" id="name" value={ Name } required/>
+				<input class="input w-80" type="text" name="new_name" id="name" value={ organization.Name.String() } required/>
 			</div>
 			<div class="field">
 				<button class="btn w-72">Update organization name</button>
@@ -149,7 +149,7 @@ templ edit(organization *Organization) {
 		</form>
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-		<form action={ paths.DeleteOrganization(Name) } method="POST">
+		<form action={ paths.DeleteOrganization(organization.Name.String()) } method="POST">
 			<button id="delete-organization-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 				Delete organization
 			</button>
@@ -158,10 +158,10 @@ templ edit(organization *Organization) {
 	}
 }
 
-templ getToken(organization Name, token *OrganizationToken) {
+templ getToken(organization resource.OrganizationName, token *OrganizationToken) {
 	@components.Layout(components.LayoutProps{
-		Title:        organization,
-		Organization: organization,
+		Title:        organization.String(),
+		Organization: &organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "organization token"},
 		},
@@ -178,17 +178,17 @@ templ getToken(organization Name, token *OrganizationToken) {
 				<div>
 					@components.Identifier(token.ID)
 					<div class="flex gap-2">
-						<form action={ paths.CreateOrganizationToken(organization) } method="POST">
+						<form action={ paths.CreateOrganizationToken(organization.String()) } method="POST">
 							<button class="btn">regenerate</button>
 						</form>
-						<form action={ paths.DeleteOrganizationToken(organization) } method="POST">
+						<form action={ paths.DeleteOrganizationToken(organization.String()) } method="POST">
 							@components.DeleteButton()
 						</form>
 					</div>
 				</div>
 			</div>
 		} else {
-			<form class="mt-2" action={ paths.CreateOrganizationToken(organization) } method="POST">
+			<form class="mt-2" action={ paths.CreateOrganizationToken(organization.String()) } method="POST">
 				<button class="btn w-72">Create organization token</button>
 			</form>
 		}

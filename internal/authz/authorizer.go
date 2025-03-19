@@ -42,7 +42,7 @@ type WorkspacePolicyGetter interface {
 
 // OrganizationResolver takes the ID of a resource and returns the name of the
 // organization it belongs to.
-type OrganizationResolver func(ctx context.Context, id resource.ID) (string, error)
+type OrganizationResolver func(ctx context.Context, id resource.ID) (resource.OrganizationName, error)
 
 // WorkspaceResolver takes the ID of a resource and returns the ID of the
 // workspace it belongs to.
@@ -127,7 +127,7 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRe
 			// belongs to an organization, so there should be a resolver for each
 			// resource kind to resolve the resource ID to the organization it
 			// belongs to.
-			if req.Organization == "" {
+			if req.Organization == nil {
 				resolver, ok := a.organizationResolvers[req.ID.Kind()]
 				if !ok {
 					return errors.New("resource kind is missing organization resolver")
@@ -136,7 +136,7 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRe
 				if err != nil {
 					return fmt.Errorf("resolving organization: %w", err)
 				}
-				req.Organization = organization
+				req.Organization = &organization
 			}
 		}
 		// Subject determines whether it is allowed to access resource.
@@ -166,7 +166,7 @@ func (a *Authorizer) CanAccess(ctx context.Context, action Action, req *AccessRe
 // individual resource.
 type AccessRequest struct {
 	// Organization name to which access is being requested.
-	Organization resource.OrganizationName
+	Organization *resource.OrganizationName
 	// ID of resource to which access is being requested. If nil then the action
 	// is being requested on the organization.
 	ID *resource.ID
@@ -193,8 +193,9 @@ func (r *AccessRequest) LogValue() slog.Value {
 	if r == nil {
 		return slog.StringValue("site")
 	} else {
-		attrs := []slog.Attr{
-			slog.String("organization", r.Organization),
+		var attrs []slog.Attr
+		if r.Organization != nil {
+			attrs = append(attrs, slog.Any("organization", *r.Organization))
 		}
 		if r.ID != nil {
 			attrs = append(attrs, slog.String("resource_id", r.ID.String()))

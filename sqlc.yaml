@@ -66,7 +66,7 @@ sql:
       output_db_file_name: "sqlc.go"
       output_models_file_name: models.go
       emit_methods_with_db_argument: true
-      initialisms: &initialisms
+      initialisms:
       - "id"
       - "vcs"
       - "cli"
@@ -81,17 +81,22 @@ sql:
         organization: Model
         organization_token: TokenModel
       overrides:
-      - column: "organizations.name"
-        go_type:
-          type: "Name"
-      - column: "organization_tokens.organization_token_id"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
       - column: "organizations.organization_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "organizations.name"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
+      - column: "organization_tokens.organization_token_id"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "ID"
+      - column: "organization_tokens.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
 - engine: "postgresql"
   queries: "./internal/workspace/queries.sql"
   schema: "./internal/sql/migrations"
@@ -106,8 +111,8 @@ sql:
       overrides:
       - column: "workspaces.organization_name"
         go_type:
-          import: "github.com/leg100/otf/internal/organization"
-          type: "Name"
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
       - db_type: "workspace_permissions"
         go_type:
           type: "WorkspacePermission"
@@ -117,8 +122,8 @@ sql:
           type: "ID"
       - column: "tags.organization_name"
         go_type:
-          import: "github.com/leg100/otf/internal/organization"
-          type: "Name"
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
       - column: "workspaces.current_state_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -306,8 +311,8 @@ sql:
           type: "ID"
       - column: "teams.organization_name"
         go_type:
-          import: "github.com/leg100/otf/internal/organization"
-          type: "Name"
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
 - engine: "postgresql"
   queries: "./internal/repohooks/queries.sql"
   schema: "./internal/sql/migrations"
@@ -381,8 +386,8 @@ sql:
           type: "ID"
       - column: "vcs_providers.organization_name"
         go_type:
-          import: "github.com/leg100/otf/internal/organization"
-          type: "Name"
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
       - db_type: "github_apps"
         go_type:
           type: "GithubApp"
@@ -558,8 +563,8 @@ sql:
           type: "ID"
       - column: "variable_sets.organization_name"
         go_type:
-          import: "github.com/leg100/otf/internal/organization"
-          type: "Name"
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
 - engine: "postgresql"
   queries: "./internal/module/queries.sql"
   schema: "./internal/sql/migrations"

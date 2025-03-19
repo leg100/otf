@@ -140,8 +140,8 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
-	r, err := q.FindOrganizationByName(ctx, db.Conn(ctx), sql.String(name))
+func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organization, error) {
+	r, err := q.FindOrganizationByName(ctx, db.Conn(ctx), name)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -156,8 +156,8 @@ func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, err
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) delete(ctx context.Context, name string) error {
-	_, err := q.DeleteOrganizationByName(ctx, db.Conn(ctx), sql.String(name))
+func (db *pgdb) delete(ctx context.Context, name resource.OrganizationName) error {
+	_, err := q.DeleteOrganizationByName(ctx, db.Conn(ctx), name)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -170,17 +170,17 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 
 // tokenRow is the row result of a database query for organization tokens
 type tokenRow struct {
-	OrganizationTokenID resource.ID        `json:"organization_token_id"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	OrganizationName    pgtype.Text        `json:"organization_name"`
-	Expiry              pgtype.Timestamptz `json:"expiry"`
+	OrganizationTokenID resource.ID               `json:"organization_token_id"`
+	CreatedAt           pgtype.Timestamptz        `json:"created_at"`
+	OrganizationName    resource.OrganizationName `json:"organization_name"`
+	Expiry              pgtype.Timestamptz        `json:"expiry"`
 }
 
 func (result tokenRow) toToken() *OrganizationToken {
 	ot := &OrganizationToken{
 		ID:           result.OrganizationTokenID,
 		CreatedAt:    result.CreatedAt.Time.UTC(),
-		Organization: result.OrganizationName.String,
+		Organization: result.OrganizationName,
 	}
 	if result.Expiry.Valid {
 		ot.Expiry = internal.Time(result.Expiry.Time.UTC())

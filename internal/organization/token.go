@@ -57,7 +57,7 @@ func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequ
 		// Organization token cannot take action on site-level resources
 		return false
 	}
-	if req.Organization != u.Organization {
+	if req.Organization != nil && *req.Organization != u.Organization {
 		// Organization token cannot take action on other organizations
 		return false
 	}
@@ -68,8 +68,4 @@ func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequ
 		return false
 	}
 	return true
-}
-
-func (u *OrganizationToken) Organizations() []string {
-	return []string{u.Organization}
 }

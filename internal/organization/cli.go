@@ -19,10 +19,10 @@ type (
 	// cliService provides the cli with access to organizations
 	cliService interface {
 		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
-		Get(ctx context.Context, name string) (*Organization, error)
+		Update(ctx context.Context, name resource.OrganizationName, opts UpdateOptions) (*Organization, error)
+		Get(ctx context.Context, name resource.OrganizationName) (*Organization, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
-		DeleteOrganization(ctx context.Context, name string) error
+		DeleteOrganization(ctx context.Context, name resource.OrganizationName) error
 		GetEntitlements(ctx context.Context, organization resource.OrganizationName) (Entitlements, error)
 		AfterCreateOrganization(hook func(context.Context, *Organization) error)
 		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
@@ -87,7 +87,11 @@ func (a *CLI) deleteOrganizationCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := a.DeleteOrganization(cmd.Context(), args[0]); err != nil {
+			name, err := resource.NewOrganizationName(args[0])
+			if err != nil {
+				return err
+			}
+			if err := a.DeleteOrganization(cmd.Context(), name); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted organization %s\n", args[0])

@@ -33,6 +33,13 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+	var params struct {
+		Name resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
 
 	var opts CreateTeamOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {

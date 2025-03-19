@@ -65,7 +65,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 	if opts.Name == nil {
 		return nil, internal.ErrRequiredName
 	}
-	name, err := NewName(*opts.Name)
+	name, err := resource.NewOrganizationName(*opts.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 
 func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.Name != nil {
-		name, err := NewName(*opts.Name)
+		name, err := resource.NewOrganizationName(*opts.Name)
 		if err != nil {
 			return err
 		}

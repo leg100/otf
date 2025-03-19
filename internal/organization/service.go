@@ -156,8 +156,8 @@ func (s *Service) AfterCreateOrganization(hook func(context.Context, *Organizati
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) Update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
-	subject, err := s.Authorize(ctx, authz.UpdateOrganizationAction, &authz.AccessRequest{Organization: name})
+func (s *Service) Update(ctx context.Context, name resource.OrganizationName, opts UpdateOptions) (*Organization, error) {
+	subject, err := s.Authorize(ctx, authz.UpdateOrganizationAction, &authz.AccessRequest{Organization: &name})
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +202,8 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*O
 	return orgs, err
 }
 
-func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
-	subject, err := s.Authorize(ctx, authz.GetOrganizationAction, &authz.AccessRequest{Organization: name})
+func (s *Service) Get(ctx context.Context, name resource.OrganizationName) (*Organization, error) {
+	subject, err := s.Authorize(ctx, authz.GetOrganizationAction, &authz.AccessRequest{Organization: &name})
 	if err != nil {
 		return nil, err
 	}
@@ -219,8 +219,8 @@ func (s *Service) Get(ctx context.Context, name string) (*Organization, error) {
 	return org, nil
 }
 
-func (s *Service) Delete(ctx context.Context, name string) error {
-	subject, err := s.Authorize(ctx, authz.DeleteOrganizationAction, &authz.AccessRequest{Organization: name})
+func (s *Service) Delete(ctx context.Context, name resource.OrganizationName) error {
+	subject, err := s.Authorize(ctx, authz.DeleteOrganizationAction, &authz.AccessRequest{Organization: &name})
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 }
 
 func (s *Service) GetEntitlements(ctx context.Context, organization resource.OrganizationName) (Entitlements, error) {
-	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, &authz.AccessRequest{Organization: organization})
+	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return Entitlements{}, err
 	}
@@ -266,7 +266,7 @@ func (s *Service) GetEntitlements(ctx context.Context, organization resource.Org
 // CreateToken creates an organization token. If an organization
 // token already exists it is replaced.
 func (s *Service) CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
-	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: opts.Organization})
+	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: &opts.Organization})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -318,7 +318,7 @@ func (s *Service) ListTokens(ctx context.Context, organization resource.Organiza
 }
 
 func (s *Service) DeleteToken(ctx context.Context, organization resource.OrganizationName) error {
-	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: organization})
+	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return err
 	}

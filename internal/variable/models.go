@@ -6,7 +6,6 @@ package variable
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -26,7 +25,7 @@ type VariableSetModel struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName organization.Name
+	OrganizationName resource.OrganizationName
 }
 
 type VariableSetVariable struct {
