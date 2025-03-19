@@ -280,7 +280,7 @@ sql:
     go:
       <<: *go
       out: "./internal/team"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
         team: Model
         token: TokenModel
@@ -300,7 +300,7 @@ sql:
     go:
       <<: *go
       out: "./internal/repohooks"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
       overrides:
       - column: "repohooks.vcs_provider_id"
@@ -318,7 +318,7 @@ sql:
     go:
       <<: *go
       out: "./internal/github"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
       overrides:
       - column: "github_app_installs.vcs_provider_id"
@@ -332,7 +332,7 @@ sql:
     go:
       <<: *go
       out: "./internal/connections"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
       overrides:
       - column: "repo_connections.module_id"
@@ -379,7 +379,7 @@ sql:
     go:
       <<: *go
       out: "./internal/runner"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
         runner: RunnerModel
         runner_status: RunnerStatusModel
@@ -439,7 +439,7 @@ sql:
     go:
       <<: *go
       out: "./internal/state"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
       overrides:
       - db_type: "state_version_outputs"
@@ -468,7 +468,7 @@ sql:
     go:
       <<: *go
       out: "./internal/releases"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
 - engine: "postgresql"
   queries: "./internal/logs/queries.sql"
@@ -477,7 +477,7 @@ sql:
     go:
       <<: *go
       out: "./internal/logs"
-      omit_unused_structs: false
+      omit_unused_structs: true
       rename:
       overrides:
       - column: "logs.run_id"
