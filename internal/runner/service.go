@@ -15,7 +15,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/workspace"
@@ -647,7 +646,7 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID resource.ID, opts 
 		subject       authz.Subject
 		before, after Pool
 	)
-	err := s.db.Lock(ctx, "agent_pools, agent_pool_allowed_workspaces", func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := s.db.Lock(ctx, "agent_pools, agent_pool_allowed_workspaces", func(ctx context.Context, _ sql.Connection) (err error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
 			return err

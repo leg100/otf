@@ -11,13 +11,13 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -229,7 +229,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 
 // EnqueuePlan enqueues a plan for the run.
 func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run, err error) {
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
 		})
@@ -313,7 +313,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.ID, phase inte
 		}
 	}
 	var run *Run
-	err := s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
 		var autoapply bool
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			autoapply, err = run.Finish(phase, opts)
@@ -388,7 +388,7 @@ func (s *Service) Apply(ctx context.Context, runID resource.ID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueueApply()
 		})
@@ -438,7 +438,7 @@ func (s *Service) Cancel(ctx context.Context, runID resource.ID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		_, isUser := subject.(*user.User)
 
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
@@ -474,7 +474,7 @@ func (s *Service) ForceCancel(ctx context.Context, runID resource.ID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			return run.Cancel(true, true)
 		})
@@ -591,7 +591,7 @@ func (s *Service) createApplyReport(ctx context.Context, runID resource.ID) (Rep
 }
 
 func (s *Service) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
-	data, err := s.db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
+	data, err := (&logs.Queries{}).FindLogs(ctx, s.db.Conn(ctx), logs.FindLogsParams{
 		RunID: runID,
 		Phase: sql.String(string(phase)),
 	})

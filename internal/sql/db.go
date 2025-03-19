@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // max conns avail in a pgx pool
@@ -30,8 +29,9 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
+
+	Connection = genericConnection
 )
 
 // New migrates the database to the latest migration version, and then
@@ -77,18 +77,17 @@ func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error
 	return &DB{Pool: pool, Logger: logger}, nil
 }
 
-// Querier provides pre-generated queries
-func (db *DB) Querier(ctx context.Context) *sqlc.Queries {
+func (db *DB) Conn(ctx context.Context) Connection {
 	if conn, ok := fromContext(ctx); ok {
-		return sqlc.New(conn)
+		return conn
 	}
-	return sqlc.New(db.Pool)
+	return db.Pool
 }
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(context.Context, *sqlc.Queries) error) error {
-	var conn genericConnection = db.Pool
+func (db *DB) Tx(ctx context.Context, callback func(context.Context, Connection) error) error {
+	var conn Connection = db.Pool
 
 	// Use connection from context if found
 	if ctxConn, ok := fromContext(ctx); ok {
@@ -97,7 +96,7 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, *sqlc.Queri
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
-		return callback(ctx, sqlc.New(tx))
+		return callback(ctx, tx)
 	})
 }
 
@@ -126,7 +125,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	})
 }
 
-func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, *sqlc.Queries) error) error {
+func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, Connection) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -140,7 +139,7 @@ func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, *
 		if _, err := tx.Exec(ctx, sql); err != nil {
 			return err
 		}
-		return fn(ctx, sqlc.New(tx))
+		return fn(ctx, tx)
 	})
 }
 

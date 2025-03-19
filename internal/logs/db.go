@@ -8,8 +8,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
+
+var q = &Queries{}
 
 // pgdb is a logs database on postgres
 type pgdb struct {
@@ -17,7 +18,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
-	err := db.Querier(ctx).InsertLogChunk(ctx, sqlc.InsertLogChunkParams{
+	err := q.InsertLogChunk(ctx, db.Conn(ctx), InsertLogChunkParams{
 		ChunkID: chunk.ID,
 		RunID:   chunk.RunID,
 		Phase:   sql.String(string(chunk.Phase)),
@@ -31,7 +32,7 @@ func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
 }
 
 func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error) {
-	chunk, err := db.Querier(ctx).FindLogChunkByID(ctx, chunkID)
+	chunk, err := q.FindLogChunkByID(ctx, db.Conn(ctx), chunkID)
 	if err != nil {
 		return Chunk{}, sql.Error(err)
 	}
@@ -45,7 +46,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error
 }
 
 func (db *pgdb) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
-	data, err := db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
+	data, err := q.FindLogs(ctx, db.Conn(ctx), FindLogsParams{
 		RunID: runID,
 		Phase: sql.String(string(phase)),
 	})
