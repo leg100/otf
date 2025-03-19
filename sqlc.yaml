@@ -104,6 +104,10 @@ sql:
         workspace: Model
         tag: TagModel
       overrides:
+      - column: "workspaces.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/organization"
+          type: "Name"
       - db_type: "workspace_permissions"
         go_type:
           type: "WorkspacePermission"
@@ -111,6 +115,10 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "tags.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/organization"
+          type: "Name"
       - column: "workspaces.current_state_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -296,6 +304,10 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "teams.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/organization"
+          type: "Name"
 - engine: "postgresql"
   queries: "./internal/repohooks/queries.sql"
   schema: "./internal/sql/migrations"
@@ -367,6 +379,10 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "vcs_providers.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/organization"
+          type: "Name"
       - db_type: "github_apps"
         go_type:
           type: "GithubApp"
@@ -540,6 +556,10 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "variable_sets.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/organization"
+          type: "Name"
 - engine: "postgresql"
   queries: "./internal/module/queries.sql"
   schema: "./internal/sql/migrations"

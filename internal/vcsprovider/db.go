@@ -39,7 +39,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 			VCSProviderID:    provider.ID,
 			Name:             sql.String(provider.Name),
 			VCSKind:          sql.String(string(provider.Kind)),
-			OrganizationName: sql.String(provider.Organization),
+			OrganizationName: provider.Organization,
 			CreatedAt:        sql.Timestamptz(provider.CreatedAt),
 			Token:            sql.StringPtr(provider.Token),
 		}

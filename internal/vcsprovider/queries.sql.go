@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -42,7 +43,7 @@ type FindVCSProviderRow struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	GithubAppID      pgtype.Int8
 	GithubApp        *GithubApp
 	GithubAppInstall *GithubAppInstall
@@ -82,7 +83,7 @@ type FindVCSProviderForUpdateRow struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	GithubAppID      pgtype.Int8
 	GithubApp        *GithubApp
 	GithubAppInstall *GithubAppInstall
@@ -120,7 +121,7 @@ type FindVCSProvidersRow struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	GithubAppID      pgtype.Int8
 	GithubApp        *GithubApp
 	GithubAppInstall *GithubAppInstall
@@ -172,7 +173,7 @@ type FindVCSProvidersByGithubAppInstallIDRow struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	GithubAppID      pgtype.Int8
 	GithubApp        *GithubApp
 	GithubAppInstall *GithubAppInstall
@@ -224,13 +225,13 @@ type FindVCSProvidersByOrganizationRow struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	GithubAppID      pgtype.Int8
 	GithubApp        *GithubApp
 	GithubAppInstall *GithubAppInstall
 }
 
-func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]FindVCSProvidersByOrganizationRow, error) {
+func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, db DBTX, organizationName organization.Name) ([]FindVCSProvidersByOrganizationRow, error) {
 	rows, err := db.Query(ctx, findVCSProvidersByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -287,7 +288,7 @@ type InsertVCSProviderParams struct {
 	VCSKind          pgtype.Text
 	Token            pgtype.Text
 	GithubAppID      pgtype.Int8
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 func (q *Queries) InsertVCSProvider(ctx context.Context, db DBTX, arg InsertVCSProviderParams) error {

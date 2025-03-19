@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -170,7 +171,7 @@ type FindVariableSetBySetIDRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -214,7 +215,7 @@ type FindVariableSetByVariableIDRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -258,7 +259,7 @@ type FindVariableSetForUpdateRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -301,12 +302,12 @@ type FindVariableSetsByOrganizationRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]FindVariableSetsByOrganizationRow, error) {
+func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, db DBTX, organizationName organization.Name) ([]FindVariableSetsByOrganizationRow, error) {
 	rows, err := db.Query(ctx, findVariableSetsByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -376,7 +377,7 @@ type FindVariableSetsByWorkspaceRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -535,7 +536,7 @@ type InsertVariableSetParams struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 // variable sets

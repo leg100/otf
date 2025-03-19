@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -102,7 +103,7 @@ AND   organization_name = $2
 
 type FindTeamByNameParams struct {
 	Name             pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName organization.Name
 }
 
 func (q *Queries) FindTeamByName(ctx context.Context, db DBTX, arg FindTeamByNameParams) (Model, error) {
@@ -190,7 +191,7 @@ FROM teams
 WHERE organization_name = $1
 `
 
-func (q *Queries) FindTeamsByOrg(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]Model, error) {
+func (q *Queries) FindTeamsByOrg(ctx context.Context, db DBTX, organizationName organization.Name) ([]Model, error) {
 	rows, err := db.Query(ctx, findTeamsByOrg, organizationName)
 	if err != nil {
 		return nil, err
@@ -257,7 +258,7 @@ type InsertTeamParams struct {
 	ID                              resource.ID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
-	OrganizationName                pgtype.Text
+	OrganizationName                organization.Name
 	Visibility                      pgtype.Text
 	SSOTeamID                       pgtype.Text
 	PermissionManageWorkspaces      pgtype.Bool
