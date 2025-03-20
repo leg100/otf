@@ -80,7 +80,7 @@ func newWorkspaceVariable(ws *workspace.Workspace) templ.Component {
 }
 
 type newVariableSetProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	availableWorkspaces []workspaceInfo
 }
 
@@ -384,7 +384,7 @@ func listWorkspaceVariables(props listWorkspaceVariablesProps) templ.Component {
 }
 
 type listVariableSetsProps struct {
-	organization         string
+	organization         resource.OrganizationName
 	sets                 []*VariableSet
 	canCreateVariableSet bool
 }

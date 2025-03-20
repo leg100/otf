@@ -22,7 +22,7 @@ type webHandlers struct {
 
 type webClient interface {
 	Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error)
-	Get(ctx context.Context, organization, team string) (*Team, error)
+	Get(ctx context.Context, organization resource.OrganizationName, team string) (*Team, error)
 	GetByID(ctx context.Context, teamID resource.ID) (*Team, error)
 	List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error)
 	Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
@@ -43,19 +43,21 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization *resource.OrganizationName `schema:"organization_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	html.Render(newTeamView(org), w, r)
+	html.Render(newTeamView(*params.Organization), w, r)
 }
 
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         *string
-		Organization *string `schema:"organization_name,required"`
+		Organization *resource.OrganizationName `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -67,7 +69,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	})
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "team already exists")
-		http.Redirect(w, r, paths.NewTeam(*params.Organization), http.StatusFound)
+		http.Redirect(w, r, paths.NewTeam(params.Organization.String()), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -100,13 +102,15 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	teams, err := h.teams.List(r.Context(), org)
+	teams, err := h.teams.List(r.Context(), params.Name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -119,9 +123,9 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	props := listTeamsProps{
-		organization:  org,
+		organization:  params.Name,
 		teams:         teams,
-		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
+		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: &params.Name}),
 	}
 	html.Render(listTeams(props), w, r)
 }
@@ -145,5 +149,5 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted team: "+team.Name)
-	http.Redirect(w, r, paths.Teams(team.Organization), http.StatusFound)
+	http.Redirect(w, r, paths.Teams(team.Organization.String()), http.StatusFound)
 }

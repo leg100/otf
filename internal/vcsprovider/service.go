@@ -148,7 +148,7 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 	return after, nil
 }
 
-func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
+func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error) {
 	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, &authz.AccessRequest{Organization: organization})
 	if err != nil {
 		return nil, err

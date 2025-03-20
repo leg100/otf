@@ -333,24 +333,24 @@ type Tag struct {
 	OrganizationName pgtype.Text
 }
 
-type Team struct {
+type TeamMembership struct {
+	TeamID   resource.ID
+	Username pgtype.Text
+}
+
+type TeamModel struct {
 	TeamID                          resource.ID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
-	OrganizationName                pgtype.Text
+	OrganizationName                resource.OrganizationName
 	SSOTeamID                       pgtype.Text
 	Visibility                      pgtype.Text
 	PermissionManagePolicies        pgtype.Bool
 	PermissionManagePolicyOverrides pgtype.Bool
 	PermissionManageProviders       pgtype.Bool
-}
-
-type TeamMembership struct {
-	TeamID   resource.ID
-	Username pgtype.Text
 }
 
 type TeamToken struct {

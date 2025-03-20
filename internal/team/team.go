@@ -131,7 +131,7 @@ func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		// Deny all site-level access
 		return false
 	}
-	if req.Organization != t.Organization {
+	if req.Organization != nil && *req.Organization != t.Organization {
 		// Deny access to other organizations
 		return false
 	}
@@ -171,10 +171,6 @@ func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		}
 	}
 	return false
-}
-
-func (t *Team) Organizations() []string {
-	return []string{t.Organization}
 }
 
 func (t *Team) Update(opts UpdateTeamOptions) error {

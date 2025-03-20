@@ -19,7 +19,7 @@ func (c *Client) Create(ctx context.Context, organization resource.OrganizationN
 	if _, err := newTeam(organization, opts); err != nil {
 		return nil, err
 	}
-	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization))
+	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization.String()))
 	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
@@ -32,8 +32,8 @@ func (c *Client) Create(ctx context.Context, organization resource.OrganizationN
 }
 
 // Get retrieves a team via HTTP/JSONAPI.
-func (c *Client) Get(ctx context.Context, organization, name string) (*Team, error) {
-	u := fmt.Sprintf("organizations/%s/teams/%s", url.QueryEscape(organization), url.QueryEscape(name))
+func (c *Client) Get(ctx context.Context, organization resource.OrganizationName, name string) (*Team, error) {
+	u := fmt.Sprintf("organizations/%s/teams/%s", url.QueryEscape(organization.String()), url.QueryEscape(name))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err

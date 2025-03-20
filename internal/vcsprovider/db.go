@@ -114,7 +114,7 @@ func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
 	return providers, nil
 }
 
-func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]*VCSProvider, error) {
+func (db *pgdb) listByOrganization(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error) {
 	rows, err := q.FindVCSProvidersByOrganization(ctx, db.Conn(ctx), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)

@@ -30,7 +30,7 @@ type webClient interface {
 	Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
 	Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error)
 	Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
-	List(ctx context.Context, organization string) ([]*VCSProvider, error)
+	List(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error)
 	Delete(ctx context.Context, id resource.ID) (*VCSProvider, error)
 }
 

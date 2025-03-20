@@ -20,7 +20,7 @@ type dbresult struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (result dbresult) toUser() *User {

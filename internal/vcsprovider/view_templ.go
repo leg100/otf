@@ -19,7 +19,7 @@ import (
 )
 
 type listProps struct {
-	organization string
+	organization resource.OrganizationName
 	providers    []*VCSProvider
 	app          *github.App
 }
@@ -446,7 +446,7 @@ func newPAT(props newPATProps) templ.Component {
 }
 
 type newGithubAppProps struct {
-	organization   string
+	organization   resource.OrganizationName
 	app            *github.App
 	installations  []*github.Installation
 	kind           vcs.Kind

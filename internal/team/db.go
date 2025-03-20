@@ -20,7 +20,7 @@ type TeamRow struct {
 	PermissionManageWorkspaces      pgtype.Bool
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
-	OrganizationName                pgtype.Text
+	OrganizationName                resource.OrganizationName
 	SSOTeamID                       pgtype.Text
 	Visibility                      pgtype.Text
 	PermissionManagePolicies        pgtype.Bool
@@ -104,7 +104,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(cont
 	)
 }
 
-func (db *pgdb) getTeam(ctx context.Context, name, organization resource.OrganizationName) (*Team, error) {
+func (db *pgdb) getTeam(ctx context.Context, name string, organization resource.OrganizationName) (*Team, error) {
 	result, err := q.FindTeamByName(ctx, db.Conn(ctx), FindTeamByNameParams{
 		Name:             sql.String(name),
 		OrganizationName: organization,

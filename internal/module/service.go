@@ -105,7 +105,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 	return module, nil
 }
 
-func (s *Service) publishModule(ctx context.Context, organization string, opts PublishOptions) (*Module, error) {
+func (s *Service) publishModule(ctx context.Context, organization resource.OrganizationName, opts PublishOptions) (*Module, error) {
 	name, provider, err := opts.Repo.Split()
 	if err != nil {
 		return nil, err

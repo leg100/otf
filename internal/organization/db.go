@@ -15,7 +15,7 @@ type (
 	// dbListOptions represents the options for listing organizations via the
 	// database.
 	dbListOptions struct {
-		names []string // filter organizations by name if non-nil
+		names []resource.OrganizationName // filter organizations by name if non-nil
 		resource.PageOptions
 	}
 )
@@ -116,19 +116,24 @@ func (db *pgdb) update(ctx context.Context, name resource.OrganizationName, fn f
 }
 
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
-	if opts.names == nil {
-		opts.names = []string{"%"} // return all organizations
+	// Convert organization name type slice to string slice
+	names := make([]string, len(opts.names))
+	for i, name := range opts.names {
+		names[i] = name.String()
+	}
+	if len(names) == 0 {
+		names = []string{"%"} // return all organizations
 	}
 
 	rows, err := q.FindOrganizations(ctx, db.Conn(ctx), FindOrganizationsParams{
-		Names:  sql.StringArray(opts.names),
+		Names:  sql.StringArray(names),
 		Limit:  sql.GetLimit(opts.PageOptions),
 		Offset: sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountOrganizations(ctx, db.Conn(ctx), sql.StringArray(opts.names))
+	count, err := q.CountOrganizations(ctx, db.Conn(ctx), sql.StringArray(names))
 	if err != nil {
 		return nil, err
 	}

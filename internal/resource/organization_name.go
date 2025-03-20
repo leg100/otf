@@ -3,8 +3,11 @@ package resource
 import (
 	"database/sql/driver"
 	"fmt"
+	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/stretchr/testify/require"
 )
 
 type OrganizationName struct {
@@ -46,9 +49,31 @@ func (name *OrganizationName) Scan(text any) error {
 	return nil
 }
 
+// Value satisfies the pflag.Value interface
 func (name *OrganizationName) Value() (driver.Value, error) {
 	if name == nil {
 		return nil, nil
 	}
 	return name.name, nil
+}
+
+// Set satisfies the pflag.Value interface
+func (name *OrganizationName) Set(v string) error {
+	validated, err := NewOrganizationName(v)
+	if err != nil {
+		return err
+	}
+	*name = validated
+	return nil
+}
+
+// Type satisfies the pflag.Value interface
+func (name *OrganizationName) Type() string {
+	return "organization"
+}
+
+func NewTestOrganizationName(t *testing.T) OrganizationName {
+	name, err := NewOrganizationName(uuid.NewString())
+	require.NoError(t, err)
+	return name
 }

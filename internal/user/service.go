@@ -168,7 +168,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
-	_, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: organization})
+	_, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*Use
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.ID, use
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return err
 	}
@@ -265,7 +265,7 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.ID, 
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return err
 	}

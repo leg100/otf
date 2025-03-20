@@ -21,7 +21,7 @@ import (
 )
 
 type newViewProps struct {
-	organization  string
+	organization  resource.OrganizationName
 	providers     []*vcsprovider.VCSProvider
 	repos         []string
 	vcsProviderID resource.ID
@@ -475,7 +475,7 @@ func newConfirm(props newViewProps) templ.Component {
 }
 
 type listProps struct {
-	organization     string
+	organization     resource.OrganizationName
 	modules          []*Module
 	canPublishModule bool
 }

@@ -55,7 +55,7 @@ type fakeTeamService struct {
 	team *team.Team
 }
 
-func (f *fakeTeamService) Get(context.Context, string, string) (*team.Team, error) {
+func (f *fakeTeamService) Get(context.Context, resource.OrganizationName, string) (*team.Team, error) {
 	return f.team, nil
 }
 

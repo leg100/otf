@@ -28,11 +28,6 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
 	var params struct {
 		Name resource.OrganizationName `schema:"organization_name"`
 	}
@@ -47,7 +42,7 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := a.Create(r.Context(), org, opts)
+	team, err := a.Create(r.Context(), params.Name, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

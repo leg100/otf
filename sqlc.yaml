@@ -273,6 +273,7 @@ sql:
       omit_unused_structs: false
       rename:
         user: Model
+        team: TeamModel
       overrides:
       - column: "users.user_id"
         go_type:
@@ -280,7 +281,7 @@ sql:
           type: "ID"
       - db_type: "teams"
         go_type:
-          type: "Team"
+          type: "TeamModel"
       - column: "tokens.token_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -289,6 +290,10 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "teams.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
 - engine: "postgresql"
   queries: "./internal/team/queries.sql"
   schema: "./internal/sql/migrations"

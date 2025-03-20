@@ -28,7 +28,7 @@ templ newWorkspaceVariable(ws *workspace.Workspace) {
 }
 
 type newVariableSetProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	availableWorkspaces []workspaceInfo
 }
 
@@ -133,7 +133,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 }
 
 type listVariableSetsProps struct {
-	organization         string
+	organization         resource.OrganizationName
 	sets                 []*VariableSet
 	canCreateVariableSet bool
 }

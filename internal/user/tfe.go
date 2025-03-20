@@ -140,8 +140,10 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 }
 
 func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -157,7 +159,7 @@ func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
 			ID: resource.NewID("user"),
 		},
 		Organization: &types.Organization{
-			Name: org,
+			Name: pathParams.Organization,
 		},
 	}
 

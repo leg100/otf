@@ -23,7 +23,7 @@ import (
 )
 
 type listProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	ws                  *workspace.Workspace
 	status              []runstatus.Status
 	statusFilterVisible bool

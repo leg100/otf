@@ -87,7 +87,7 @@ func new(organization organization.Name) templ.Component {
 }
 
 type listProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	search              string
 	status              []runstatus.Status
 	tags                map[string]bool
