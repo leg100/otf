@@ -41,7 +41,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		vcsProvider := daemon.createVCSProvider(t, ctx, org)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String("connected-workspace"),
-			Organization: internal.String(org.Name),
+			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      &repo,
 				VCSProviderID: &vcsProvider.ID,

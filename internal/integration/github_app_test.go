@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -34,9 +33,9 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	// receives the completed form correctly.
 	tests := []struct {
 		name         string
-		public       bool              // whether to tick 'public' checkbox
-		organization organization.Name // install in organization github account
-		path         string            // form should submitted to this path on github
+		public       bool   // whether to tick 'public' checkbox
+		organization string // install in organization github account
+		path         string // form should submitted to this path on github
 	}{
 		{
 			"create private app in personal github account",
@@ -243,7 +242,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	// create and connect a workspace to a repo using the app install
 	_, err = daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String("dev"),
-		Organization: internal.String(org.Name),
+		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
 			RepoPath:      internal.String("leg100/otf-workspaces"),

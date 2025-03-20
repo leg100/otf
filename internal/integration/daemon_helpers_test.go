@@ -307,7 +307,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 	return team
 }
 
-func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *team.Team {
+func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org resource.OrganizationName, name string) *team.Team {
 	t.Helper()
 
 	team, err := s.Teams.Get(ctx, org, name)

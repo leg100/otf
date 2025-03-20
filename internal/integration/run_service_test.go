@@ -46,7 +46,7 @@ func TestRunService(t *testing.T) {
 		vcsProvider := daemon.createVCSProvider(t, ctx, org)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String("connected-workspace"),
-			Organization: internal.String(org.Name),
+			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      &repo,
 				VCSProviderID: &vcsProvider.ID,
@@ -176,7 +176,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by organization name",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization)},
+				opts: otfrun.ListOptions{Organization: &ws1.Organization},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
@@ -194,7 +194,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by workspace name and organization",
-				opts: otfrun.ListOptions{WorkspaceName: internal.String(ws1.Name), Organization: internal.String(ws1.Organization)},
+				opts: otfrun.ListOptions{WorkspaceName: internal.String(ws1.Name), Organization: &ws1.Organization},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
@@ -203,7 +203,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by pending status",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []runstatus.Status{runstatus.Pending}},
+				opts: otfrun.ListOptions{Organization: &ws1.Organization, Statuses: []runstatus.Status{runstatus.Pending}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
@@ -212,14 +212,14 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "by statuses - no match",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), Statuses: []runstatus.Status{runstatus.Planned}},
+				opts: otfrun.ListOptions{Organization: &ws1.Organization, Statuses: []runstatus.Status{runstatus.Planned}},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter out speculative runs in org1",
-				opts: otfrun.ListOptions{Organization: internal.String(ws1.Organization), PlanOnly: internal.Bool(false)},
+				opts: otfrun.ListOptions{Organization: &ws1.Organization, PlanOnly: internal.Bool(false)},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
@@ -228,7 +228,7 @@ func TestRunService(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org2",
-				opts: otfrun.ListOptions{Organization: internal.String(ws2.Organization), PlanOnly: internal.Bool(false)},
+				opts: otfrun.ListOptions{Organization: &ws2.Organization, PlanOnly: internal.Bool(false)},
 				want: func(t *testing.T, l *resource.Page[*otfrun.Run]) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))

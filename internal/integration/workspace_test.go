@@ -29,14 +29,14 @@ func TestWorkspace(t *testing.T) {
 
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
-			Organization: internal.String(org.Name),
+			Organization: &org.Name,
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 				Name:         internal.String(ws.Name),
-				Organization: internal.String(org.Name),
+				Organization: &org.Name,
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
@@ -170,21 +170,23 @@ func TestWorkspace(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 		ws1, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Organization: internal.String(org.Name),
+			Organization: &org.Name,
 			Name:         internal.String("workspace-1"),
 		})
 		require.NoError(t, err)
 		ws2, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Organization: internal.String(org.Name),
+			Organization: &org.Name,
 			Name:         internal.String("workspace-2"),
 		})
 		require.NoError(t, err)
 		wsTagged, err := svc.Workspaces.Create(ctx, workspace.CreateOptions{
-			Organization: internal.String(org.Name),
+			Organization: &org.Name,
 			Name:         internal.String("workspace-3"),
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
 		})
 		require.NoError(t, err)
+
+		nonExistentOrganization := resource.NewTestOrganizationName(t)
 
 		tests := []struct {
 			name string
@@ -193,7 +195,7 @@ func TestWorkspace(t *testing.T) {
 		}{
 			{
 				name: "filter by org",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
+				opts: workspace.ListOptions{Organization: &org.Name},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 3, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
@@ -202,7 +204,7 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "filter by name",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: "workspace-1"},
+				opts: workspace.ListOptions{Organization: &org.Name, Search: "workspace-1"},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
@@ -218,21 +220,21 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "filter by non-existent org",
-				opts: workspace.ListOptions{Organization: internal.String("non-existent")},
+				opts: workspace.ListOptions{Organization: &nonExistentOrganization},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter by non-existent name",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: "xyz"},
+				opts: workspace.ListOptions{Organization: &org.Name, Search: "xyz"},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "default order is lexicographically sorted by name",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
+				opts: workspace.ListOptions{Organization: &org.Name},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, ws1, l.Items[0])
 					assert.Equal(t, ws2, l.Items[1])
@@ -241,7 +243,7 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "pagination",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
+				opts: workspace.ListOptions{Organization: &org.Name, PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, 3, l.TotalCount)
@@ -249,7 +251,7 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "stray pagination",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
+				opts: workspace.ListOptions{Organization: &org.Name, PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
@@ -339,6 +341,8 @@ func TestWorkspace(t *testing.T) {
 		user1 := svc.createUser(t, user.WithTeams(team1, team2))
 		user2 := svc.createUser(t)
 
+		nonExistentOrganization := resource.NewTestOrganizationName(t)
+
 		tests := []struct {
 			name string
 			user *user.User
@@ -348,7 +352,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "show both workspaces",
 				user: user1,
-				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
+				opts: workspace.ListOptions{Organization: &org.Name},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
@@ -358,7 +362,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "query non-existent org",
 				user: user1,
-				opts: workspace.ListOptions{Organization: internal.String("acme-corp")},
+				opts: workspace.ListOptions{Organization: &nonExistentOrganization},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
@@ -366,7 +370,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "user with no perms",
 				user: user2,
-				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
+				opts: workspace.ListOptions{Organization: &org.Name},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
@@ -375,7 +379,7 @@ func TestWorkspace(t *testing.T) {
 				name: "paginated results ordered by updated_at",
 				user: user1,
 				opts: workspace.ListOptions{
-					Organization: internal.String(org.Name),
+					Organization: &org.Name,
 					PageOptions:  resource.PageOptions{PageNumber: 1, PageSize: 1},
 				},
 				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
@@ -499,7 +503,7 @@ func TestWorkspace(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
 
-		results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{Organization: internal.String(ws.Organization)})
+		results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{Organization: &ws.Organization})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 	})

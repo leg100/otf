@@ -21,8 +21,8 @@ func NewOrganizationName(name string) (OrganizationName, error) {
 	return OrganizationName{name: name}, nil
 }
 
-func (n OrganizationName) GetKind() Kind  { return OrganizationKind }
-func (n OrganizationName) String() string { return n.name }
+func (OrganizationName) GetKind() Kind       { return OrganizationKind }
+func (name OrganizationName) String() string { return name.name }
 
 func (name OrganizationName) MarshalText() ([]byte, error) {
 	return []byte(name.name), nil

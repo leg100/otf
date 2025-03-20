@@ -31,5 +31,3 @@ const (
 	TeamTokenKind         Kind = "tt"
 	AgentTokenKind        Kind = "at"
 )
-
-var parentGetters map[Kind]func(id any)
