@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
@@ -34,8 +35,10 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -97,7 +100,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 
 	oauthClient, err := a.Create(r.Context(), CreateOptions{
 		Name:         *params.Name,
-		Organization: org,
+		Organization: pathParams.Organization,
 		Token:        params.OAuthToken,
 		Kind:         vcs.KindPtr(vcs.GithubKind),
 	})
@@ -110,13 +113,15 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	providers, err := a.List(r.Context(), org)
+	providers, err := a.List(r.Context(), params.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

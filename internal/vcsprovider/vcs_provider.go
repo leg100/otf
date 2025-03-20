@@ -172,7 +172,7 @@ func (t *VCSProvider) Update(opts UpdateOptions) error {
 func (t *VCSProvider) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", t.ID.String()),
-		slog.String("organization", t.Organization),
+		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind)),
 	}

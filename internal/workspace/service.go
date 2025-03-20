@@ -85,10 +85,10 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
 	// Instruct the authorizer to resolve workspace IDs to organization names.
-	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.ID) (string, error) {
+	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.ID) (resource.OrganizationName, error) {
 		ws, err := svc.db.get(ctx, id)
 		if err != nil {
-			return "", err
+			return resource.OrganizationName{}, err
 		}
 		return ws.Organization, nil
 	})
@@ -116,7 +116,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &authz.AccessRequest{Organization: ws.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &authz.AccessRequest{Organization: &ws.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (s *Service) Get(ctx context.Context, workspaceID resource.ID) (*Workspace,
 	return ws, nil
 }
 
-func (s *Service) GetByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (s *Service) GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
 	ws, err := s.db.getByName(ctx, organization, workspace)
 	if err != nil {
 		s.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
@@ -212,7 +212,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, &authz.AccessRequest{Organization: *opts.Organization})
+		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, &authz.AccessRequest{Organization: opts.Organization})
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.

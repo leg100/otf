@@ -51,7 +51,7 @@ type (
 		AllowEmptyApply        pgtype.Bool
 		ExecutionMode          pgtype.Text
 		Latest                 pgtype.Bool
-		OrganizationName       pgtype.Text
+		OrganizationName       resource.OrganizationName
 		CostEstimationEnabled  pgtype.Bool
 		RunStatusTimestamps    []RunStatusTimestampModel
 		PlanStatusTimestamps   []PhaseStatusTimestampModel
@@ -79,7 +79,7 @@ func (result pgresult) toRun() *Run {
 		TerraformVersion:       result.TerraformVersion.String,
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest.Bool,
-		Organization:           result.OrganizationName.String,
+		Organization:           result.OrganizationName,
 		WorkspaceID:            result.WorkspaceID,
 		ConfigurationVersionID: result.ConfigurationVersionID,
 		CostEstimationEnabled:  result.CostEstimationEnabled.Bool,

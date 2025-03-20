@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -21,8 +20,8 @@ type (
 	// byWorkspaceName are parameters used when looking up a workspace by
 	// name
 	byWorkspaceName struct {
-		Name         string            `schema:"workspace_name,required"`
-		Organization organization.Name `schema:"organization_name,required"`
+		Name         string                    `schema:"workspace_name,required"`
+		Organization resource.OrganizationName `schema:"organization_name,required"`
 	}
 
 	// tfe implements the TFC/E workspaces API:
@@ -176,8 +175,10 @@ func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -189,7 +190,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	page, err := a.List(r.Context(), ListOptions{
 		Search:       params.Search,
-		Organization: &organization,
+		Organization: &pathParams.Organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
 		Tags:         internal.SplitCSV(params.Tags),
 	})

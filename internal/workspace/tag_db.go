@@ -14,7 +14,7 @@ type (
 	tagresult struct {
 		TagID            resource.ID
 		Name             pgtype.Text
-		OrganizationName pgtype.Text
+		OrganizationName resource.OrganizationName
 		InstanceCount    int64
 	}
 )
@@ -24,7 +24,7 @@ func (r tagresult) toTag() *Tag {
 	return &Tag{
 		ID:            r.TagID,
 		Name:          r.Name.String,
-		Organization:  r.OrganizationName.String,
+		Organization:  r.OrganizationName,
 		InstanceCount: int(r.InstanceCount),
 	}
 }
@@ -38,7 +38,7 @@ func (db *pgdb) listTags(ctx context.Context, organization resource.Organization
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := q.CountTags(ctx, db.Conn(ctx), sql.String(organization))
+	count, err := q.CountTags(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -66,11 +66,11 @@ func (db *pgdb) deleteTags(ctx context.Context, organization resource.Organizati
 	return sql.Error(err)
 }
 
-func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID resource.ID) error {
+func (db *pgdb) addTag(ctx context.Context, organization resource.OrganizationName, name string, tagID resource.ID) error {
 	err := q.InsertTag(ctx, db.Conn(ctx), InsertTagParams{
 		TagID:            tagID,
 		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return sql.Error(err)

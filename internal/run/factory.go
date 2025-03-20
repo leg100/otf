@@ -24,7 +24,7 @@ type (
 	}
 
 	factoryOrganizationClient interface {
-		Get(ctx context.Context, name string) (*organization.Organization, error)
+		Get(ctx context.Context, name resource.OrganizationName) (*organization.Organization, error)
 	}
 
 	factoryWorkspaceClient interface {

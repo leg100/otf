@@ -55,12 +55,12 @@ type (
 	}
 
 	webTeamClient interface {
-		List(context.Context, string) ([]*team.Team, error)
+		List(context.Context, resource.OrganizationName) ([]*team.Team, error)
 	}
 
 	webVCSProvidersClient interface {
 		Get(ctx context.Context, providerID resource.ID) (*vcsprovider.VCSProvider, error)
-		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
+		List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error)
 
 		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
@@ -73,7 +73,7 @@ type (
 	webClient interface {
 		Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
 		Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
-		GetByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+		GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
 		Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
@@ -179,7 +179,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		canCreate: h.authorizer.CanAccess(
 			r.Context(),
 			authz.CreateWorkspaceAction,
-			&authz.AccessRequest{Organization: *params.Organization},
+			&authz.AccessRequest{Organization: params.Organization},
 		),
 		pageOptions: params.PageOptions,
 	}
@@ -188,18 +188,20 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	html.Render(new(org), w, r)
+	html.Render(new(params.Organization), w, r)
 }
 
 func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         *string `schema:"name,required"`
-		Organization *string `schema:"organization_name,required"`
+		Name         *string                    `schema:"name,required"`
+		Organization *resource.OrganizationName `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -212,7 +214,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "workspace already exists: "+*params.Name)
-		http.Redirect(w, r, paths.NewWorkspace(*params.Organization), http.StatusFound)
+		http.Redirect(w, r, paths.NewWorkspace(params.Organization.String()), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -507,7 +509,7 @@ func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "deleted workspace: "+ws.Name)
-	http.Redirect(w, r, paths.Workspaces(ws.Organization), http.StatusFound)
+	http.Redirect(w, r, paths.Workspaces(ws.Organization.String()), http.StatusFound)
 }
 
 func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {

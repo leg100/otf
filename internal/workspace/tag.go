@@ -13,10 +13,10 @@ type (
 	// Tag is a symbol associated with one or more workspaces. Helps searching and
 	// grouping workspaces.
 	Tag struct {
-		ID            resource.ID // ID of the form 'tag-*'. Globally unique.
-		Name          string      // Meaningful symbol. Unique to an organization.
-		InstanceCount int         // Number of workspaces that have this tag
-		Organization  string      // Organization this tag belongs to.
+		ID            resource.ID               // ID of the form 'tag-*'. Globally unique.
+		Name          string                    // Meaningful symbol. Unique to an organization.
+		InstanceCount int                       // Number of workspaces that have this tag
+		Organization  resource.OrganizationName // Organization this tag belongs to.
 	}
 
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to

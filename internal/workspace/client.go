@@ -13,7 +13,7 @@ type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) GetByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (c *Client) GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *Client) Get(ctx context.Context, workspaceID resource.ID) (*Workspace, 
 }
 
 func (c *Client) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*opts.Organization))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(opts.Organization.String()))
 	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {
 		return nil, err
