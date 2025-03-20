@@ -74,9 +74,6 @@ func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 	if opts.Name == "" {
 		return nil, errors.New("name must not be empty")
 	}
-	if opts.Organization == "" {
-		return nil, errors.New("organization must not be empty")
-	}
 	pool := &Pool{
 		ID:                 resource.NewID("apool"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
@@ -120,7 +117,7 @@ func (p *Pool) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("id", p.ID.String()),
 		slog.String("name", p.Name),
-		slog.String("organization", p.Organization),
+		slog.Any("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),
 		slog.Any("workspaces", p.AssignedWorkspaces),
 		slog.Any("allowed_workspaces", p.AllowedWorkspaces),

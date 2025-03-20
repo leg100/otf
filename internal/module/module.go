@@ -124,7 +124,7 @@ func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 func (m *Module) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", m.ID.String()),
-		slog.String("organization", m.Organization),
+		slog.Any("organization", m.Organization),
 		slog.String("name", m.Name),
 		slog.String("provider", m.Provider),
 		slog.String("status", string(m.Status)),

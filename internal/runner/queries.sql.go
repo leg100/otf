@@ -109,7 +109,7 @@ type FindAgentPoolRow struct {
 	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	OrganizationScoped  pgtype.Bool
 	WorkspaceIds        []pgtype.Text
 	AllowedWorkspaceIds []pgtype.Text
@@ -152,7 +152,7 @@ type FindAgentPoolByAgentTokenIDRow struct {
 	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	OrganizationScoped  pgtype.Bool
 	WorkspaceIds        []pgtype.Text
 	AllowedWorkspaceIds []pgtype.Text
@@ -193,7 +193,7 @@ type FindAgentPoolsRow struct {
 	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	OrganizationScoped  pgtype.Bool
 	WorkspaceIds        []pgtype.Text
 	AllowedWorkspaceIds []pgtype.Text
@@ -256,7 +256,7 @@ ORDER BY ap.created_at DESC
 `
 
 type FindAgentPoolsByOrganizationParams struct {
-	OrganizationName     pgtype.Text
+	OrganizationName     resource.OrganizationName
 	NameSubstring        pgtype.Text
 	AllowedWorkspaceName pgtype.Text
 	AllowedWorkspaceID   pgtype.Text
@@ -266,7 +266,7 @@ type FindAgentPoolsByOrganizationRow struct {
 	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	OrganizationScoped  pgtype.Bool
 	WorkspaceIds        []pgtype.Text
 	AllowedWorkspaceIds []pgtype.Text
@@ -386,7 +386,7 @@ type FindAllocatedJobsRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (q *Queries) FindAllocatedJobs(ctx context.Context, db DBTX, runnerID *resource.ID) ([]FindAllocatedJobsRow, error) {
@@ -449,7 +449,7 @@ type FindAndUpdateSignaledJobsRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 // Find signaled jobs and then immediately update signal with null.
@@ -509,7 +509,7 @@ type FindJobRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (q *Queries) FindJob(ctx context.Context, db DBTX, jobID resource.ID) (FindJobRow, error) {
@@ -556,7 +556,7 @@ type FindJobForUpdateRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (q *Queries) FindJobForUpdate(ctx context.Context, db DBTX, jobID resource.ID) (FindJobForUpdateRow, error) {
@@ -601,7 +601,7 @@ type FindJobsRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (q *Queries) FindJobs(ctx context.Context, db DBTX) ([]FindJobsRow, error) {
@@ -819,7 +819,7 @@ type FindRunnersByOrganizationRow struct {
 	CurrentJobs  int64
 }
 
-func (q *Queries) FindRunnersByOrganization(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]FindRunnersByOrganizationRow, error) {
+func (q *Queries) FindRunnersByOrganization(ctx context.Context, db DBTX, organizationName resource.OrganizationName) ([]FindRunnersByOrganizationRow, error) {
 	rows, err := db.Query(ctx, findRunnersByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -1001,7 +1001,7 @@ type FindUnfinishedJobForUpdateByRunIDRow struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 // FindUnfinishedJobForUpdateByRunID finds an unfinished job belonging to a run.
@@ -1044,7 +1044,7 @@ type InsertAgentPoolParams struct {
 	AgentPoolID        resource.ID
 	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
-	OrganizationName   pgtype.Text
+	OrganizationName   resource.OrganizationName
 	OrganizationScoped pgtype.Bool
 }
 

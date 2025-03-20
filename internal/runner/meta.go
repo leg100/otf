@@ -41,7 +41,7 @@ type RunnerMetaAgentPool struct {
 	// Name of agent's pool
 	Name string `json:"name"`
 	// Agent pool's organization.
-	OrganizationName string `json:"organization-name"`
+	OrganizationName resource.OrganizationName `json:"organization-name"`
 	// ID of agent token that was used to authenticate runner.
 	TokenID resource.ID `json:"token-id"`
 }
@@ -139,7 +139,7 @@ func (m *RunnerMetaAgentPool) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("id", m.ID.String()),
 		slog.String("name", m.Name),
-		slog.String("organization", m.OrganizationName),
+		slog.Any("organization", m.OrganizationName),
 		slog.String("token-id", m.TokenID.String()),
 	)
 }
@@ -156,7 +156,7 @@ func (m *RunnerMeta) CanAccess(action authz.Action, req *authz.AccessRequest) bo
 	if m.IsAgent() {
 		// Agents can only carry out actions on the organization their pool
 		// belongs to.
-		return m.AgentPool.OrganizationName == req.Organization
+		return req.Organization != nil && m.AgentPool.OrganizationName == *req.Organization
 	} else {
 		// Server runners can carry out actions on all organizations.
 		return true

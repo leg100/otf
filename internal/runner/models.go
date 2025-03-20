@@ -15,7 +15,7 @@ type AgentPool struct {
 	AgentPoolID        resource.ID
 	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
-	OrganizationName   pgtype.Text
+	OrganizationName   resource.OrganizationName
 	OrganizationScoped pgtype.Bool
 }
 

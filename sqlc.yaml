@@ -48,6 +48,10 @@ overrides:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "workspaces.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
       - db_type: "ingress_attributes"
         go_type:
           type: IngressAttributeModel
@@ -109,10 +113,6 @@ sql:
         workspace: Model
         tag: TagModel
       overrides:
-      - column: "workspaces.organization_name"
-        go_type:
-          import: "github.com/leg100/otf/internal/resource"
-          type: "OrganizationName"
       - db_type: "workspace_permissions"
         go_type:
           type: "WorkspacePermission"
@@ -423,6 +423,10 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "agent_pools.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"
       - column: "agent_pool_allowed_workspaces.agent_pool_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -601,3 +605,7 @@ sql:
         go_type:
           import: "github.com/leg100/otf/internal/resource"
           type: "ID"
+      - column: "modules.organization_name"
+        go_type:
+          import: "github.com/leg100/otf/internal/resource"
+          type: "OrganizationName"

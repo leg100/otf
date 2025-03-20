@@ -26,7 +26,7 @@ type (
 		RunCreatedBy                string
 		WorkspaceID                 resource.ID
 		WorkspaceName               string
-		OrganizationName            string
+		OrganizationName            resource.OrganizationName
 		Notifications               []genericNotificationPayload
 	}
 

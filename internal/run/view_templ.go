@@ -55,11 +55,11 @@ func list(props listProps) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:        "runs",
-			Organization: props.organization,
+			Organization: &props.organization,
 		}
 		if props.ws != nil {
 			layoutProps.Breadcrumbs = []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.organization.String())},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			}
 			layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
@@ -597,11 +597,11 @@ func get(props getProps) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:        props.run.ID.String(),
-			Organization: props.ws.Organization,
+			Organization: &props.ws.Organization,
 			PreContent:   getPreContent(),
 			PostContent:  getPostContent(props),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 				{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
 				{Name: props.run.ID.String()},

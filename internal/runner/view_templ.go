@@ -5,18 +5,18 @@ package runner
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"time"
 )
 
 type listRunnersProps struct {
@@ -71,7 +71,7 @@ func listRunners(props listRunnersProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "runners",
-			Organization: props.organization,
+			Organization: &props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "runners"},
 			},
@@ -330,7 +330,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var17 templ.SafeURL = paths.CreateAgentPool(props.organization)
+			var templ_7745c5c3_Var17 templ.SafeURL = paths.CreateAgentPool(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var17)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -347,7 +347,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "agent pools",
-			Organization: props.organization,
+			Organization: &props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "agent pools"},
 			},
@@ -847,9 +847,9 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        props.pool.Name,
-			Organization: props.pool.Organization,
+			Organization: &props.pool.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
+				{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization.String())},
 				{Name: props.pool.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var27), templ_7745c5c3_Buffer)

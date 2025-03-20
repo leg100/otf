@@ -40,12 +40,12 @@ func workspaceURL(hostname, org, name string) string {
 	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
 }
 
-func workspacesURL(hostname, org string) string {
-	return "https://" + hostname + "/app/organizations/" + org + "/workspaces"
+func workspacesURL(hostname string, org resource.OrganizationName) string {
+	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces"
 }
 
-func organizationURL(hostname, org string) string {
-	return "https://" + hostname + "/app/organizations/" + org
+func organizationURL(hostname string, org resource.OrganizationName) string {
+	return "https://" + hostname + "/app/organizations/" + org.String()
 }
 
 // newRootModule creates a terraform root module, returning its directory path

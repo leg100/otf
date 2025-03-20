@@ -95,8 +95,10 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 // runner handlers
 
 func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -106,7 +108,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), org)
+	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), pathParams.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -122,7 +124,7 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 	})
 
 	props := listRunnersProps{
-		organization: org,
+		organization: pathParams.Organization,
 		runners:      runners,
 	}
 	html.Render(listRunners(props), w, r)
@@ -189,20 +191,22 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), org, listPoolOptions{})
+	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), pathParams.Organization, listPoolOptions{})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listAgentPoolProps{
-		organization: org,
+		organization: pathParams.Organization,
 		pools:        pools,
 	}
 	html.Render(listAgentPools(props), w, r)
@@ -278,7 +282,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		availableWorkspaces:            availableWorkspaces,
 		tokens:                         tokens,
 		agents:                         agents,
-		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: pool.Organization}),
+		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: &pool.Organization}),
 	}
 	html.Render(getAgentPool(props), w, r)
 }
@@ -297,7 +301,7 @@ func (h *webHandlers) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "Deleted agent pool: "+pool.Name)
-	http.Redirect(w, r, paths.AgentPools(pool.Organization), http.StatusFound)
+	http.Redirect(w, r, paths.AgentPools(pool.Organization.String()), http.StatusFound)
 }
 
 func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {

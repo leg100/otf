@@ -19,7 +19,7 @@ type listRunnersProps struct {
 templ listRunners(props listRunnersProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "runners",
-		Organization: props.organization,
+		Organization: &props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "runners"},
 		},
@@ -78,7 +78,7 @@ type listAgentPoolProps struct {
 templ listAgentPools(props listAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "agent pools",
-		Organization: props.organization,
+		Organization: &props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools"},
 		},
@@ -90,7 +90,7 @@ templ listAgentPools(props listAgentPoolProps) {
 			<summary class="cursor-pointer py-2">
 				<span class="font-semibold">New agent pool</span>
 			</summary>
-			<form class="flex flex-col gap-5" action={ paths.CreateAgentPool(props.organization) } method="POST">
+			<form class="flex flex-col gap-5" action={ paths.CreateAgentPool(props.organization.String()) } method="POST">
 				<div class="field">
 					<label for="name">Name</label>
 					<input class="input w-3/4" rows="3" type="text" name="name" id="new-pool-name" required/>
@@ -144,9 +144,9 @@ type getAgentPoolProps struct {
 templ getAgentPool(props getAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        props.pool.Name,
-		Organization: props.pool.Organization,
+		Organization: &props.pool.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
+			{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization.String())},
 			{Name: props.pool.Name},
 		},
 	}) {

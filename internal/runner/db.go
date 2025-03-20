@@ -49,7 +49,7 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 		meta.AgentPool = &RunnerMetaAgentPool{
 			ID:               r.AgentPool.AgentPoolID,
 			Name:             r.AgentPool.Name.String,
-			OrganizationName: r.AgentPool.OrganizationName.String,
+			OrganizationName: r.AgentPool.OrganizationName,
 		}
 	}
 	return meta
@@ -169,7 +169,7 @@ type jobResult struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (r jobResult) toJob() *Job {
@@ -179,7 +179,7 @@ func (r jobResult) toJob() *Job {
 		Phase:        internal.PhaseType(r.Phase.String),
 		Status:       JobStatus(r.Status.String),
 		WorkspaceID:  r.WorkspaceID,
-		Organization: r.OrganizationName.String,
+		Organization: r.OrganizationName,
 		RunnerID:     r.RunnerID,
 		AgentPoolID:  r.AgentPoolID,
 	}
@@ -347,7 +347,7 @@ type poolresult struct {
 	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	OrganizationScoped  pgtype.Bool
 	WorkspaceIds        []pgtype.Text
 	AllowedWorkspaceIds []pgtype.Text
@@ -358,7 +358,7 @@ func (r poolresult) toPool() (*Pool, error) {
 		ID:                 r.AgentPoolID,
 		Name:               r.Name.String,
 		CreatedAt:          r.CreatedAt.Time.UTC(),
-		Organization:       r.OrganizationName.String,
+		Organization:       r.OrganizationName,
 		OrganizationScoped: r.OrganizationScoped.Bool,
 	}
 	pool.AssignedWorkspaces = make([]resource.ID, len(r.WorkspaceIds))
@@ -386,7 +386,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 			AgentPoolID:        pool.ID,
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
-			OrganizationName:   sql.String(pool.Organization),
+			OrganizationName:   pool.Organization,
 			OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 		})
 		if err != nil {

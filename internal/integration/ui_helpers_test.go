@@ -15,7 +15,7 @@ import (
 )
 
 // createWorkspace creates a workspace via the UI
-func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name string) {
+func createWorkspace(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name string) {
 	t.Helper()
 
 	_, err := page.Goto(organizationURL(hostname, org))

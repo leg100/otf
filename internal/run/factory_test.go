@@ -175,7 +175,7 @@ func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv 
 	}
 }
 
-func (f *fakeFactoryOrganizationService) Get(context.Context, string) (*organization.Organization, error) {
+func (f *fakeFactoryOrganizationService) Get(context.Context, resource.OrganizationName) (*organization.Organization, error) {
 	return f.org, nil
 }
 

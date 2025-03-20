@@ -80,7 +80,7 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 	response := listAvailableVersionsResponse{
 		Modules: []listAvailableVersionsModule{
 			{
-				Source: strings.Join([]string{params.Organization, params.Provider, params.Name}, "/"),
+				Source: strings.Join([]string{params.Organization.String(), params.Provider, params.Name}, "/"),
 			},
 		},
 	}

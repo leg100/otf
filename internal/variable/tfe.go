@@ -148,8 +148,10 @@ func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -158,7 +160,7 @@ func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	set, err := a.Service.createVariableSet(r.Context(), org, CreateVariableSetOptions{
+	set, err := a.Service.createVariableSet(r.Context(), pathParams.Organization, CreateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -194,13 +196,15 @@ func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	sets, err := a.Service.listVariableSets(r.Context(), org)
+	sets, err := a.Service.listVariableSets(r.Context(), pathParams.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

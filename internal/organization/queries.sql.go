@@ -128,9 +128,9 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (pgtype.Text, error) {
+func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (resource.OrganizationName, error) {
 	row := db.QueryRow(ctx, findOrganizationNameByWorkspaceID, workspaceID)
-	var organization_name pgtype.Text
+	var organization_name resource.OrganizationName
 	err := row.Scan(&organization_name)
 	return organization_name, err
 }

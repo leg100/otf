@@ -70,7 +70,7 @@ func (j *Job) LogValue() slog.Value {
 		slog.String("job_id", j.ID.String()),
 		slog.String("run_id", j.RunID.String()),
 		slog.String("workspace_id", j.WorkspaceID.String()),
-		slog.String("organization", j.Organization),
+		slog.Any("organization", j.Organization),
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
@@ -91,7 +91,7 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		// Job cannot carry out site-wide actions
 		return false
 	}
-	if req.Organization != j.Organization {
+	if req.Organization != nil && *req.Organization != j.Organization {
 		// Job cannot carry out actions on other organizations
 		return false
 	}

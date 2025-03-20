@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -16,7 +15,7 @@ type (
 		Description  string
 		Global       bool
 		Workspaces   []resource.ID
-		Organization organization.Name // org name
+		Organization resource.OrganizationName
 		Variables    []*Variable
 	}
 
@@ -35,7 +34,7 @@ type (
 	}
 )
 
-func newSet(organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {
+func newSet(organization resource.OrganizationName, opts CreateVariableSetOptions) (*VariableSet, error) {
 	return &VariableSet{
 		ID:           resource.NewID(resource.VariableSetKind),
 		Name:         opts.Name,
@@ -49,7 +48,7 @@ func (s *VariableSet) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", s.ID.String()),
 		slog.String("name", s.Name),
-		slog.String("organization", s.Organization),
+		slog.Any("organization", s.Organization),
 		slog.Bool("global", s.Global),
 		slog.Any("workspaces", s.Workspaces),
 	}

@@ -207,7 +207,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, &authz.AccessRequest{Organization: *opts.Organization})
+		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, &authz.AccessRequest{Organization: opts.Organization})
 	} else {
 		// subject needs to be site admin to list runs across site
 		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, nil)
@@ -348,7 +348,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 		_, err = s.Authorize(ctx, authz.WatchAction, &authz.AccessRequest{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, &authz.AccessRequest{Organization: *opts.Organization})
+		_, err = s.Authorize(ctx, authz.WatchAction, &authz.AccessRequest{Organization: opts.Organization})
 	} else {
 		// caller must have site-level read permissions
 		_, err = s.Authorize(ctx, authz.WatchAction, nil)

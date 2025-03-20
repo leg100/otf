@@ -327,7 +327,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.ID, report
 func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	organization := "%"
 	if opts.Organization != nil {
-		organization = *opts.Organization
+		organization = opts.Organization.String()
 	}
 	workspaceName := "%"
 	if opts.WorkspaceName != nil {

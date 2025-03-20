@@ -65,9 +65,9 @@ func newWorkspaceVariable(ws *workspace.Workspace) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new variable",
-			Organization: ws.Organization,
+			Organization: &ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
 				{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 				{Name: "new"},
 			},
@@ -123,7 +123,7 @@ func newVariableSet(props newVariableSetProps) templ.Component {
 			}
 			templ_7745c5c3_Err = variableSetForm(variableSetFormProps{
 				set:                 &VariableSet{Global: true}, // set global as default
-				action:              paths.CreateVariableSet(props.organization),
+				action:              paths.CreateVariableSet(props.organization.String()),
 				availableWorkspaces: props.availableWorkspaces,
 				existingWorkspaces:  []workspaceInfo{},
 			}).Render(ctx, templ_7745c5c3_Buffer)
@@ -134,9 +134,9 @@ func newVariableSet(props newVariableSetProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new variable set",
-			Organization: props.organization,
+			Organization: &props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.organization)},
+				{Name: "variable sets", Link: paths.VariableSets(props.organization.String())},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
@@ -195,9 +195,9 @@ func newVSV(vs *VariableSet) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new variable | variable sets",
-			Organization: vs.Organization,
+			Organization: &vs.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
+				{Name: "variable sets", Link: paths.VariableSets(vs.Organization.String())},
 				{Name: vs.Name, Link: paths.VariableSet(vs.ID.String())},
 				{Name: "new variable"},
 			},
@@ -369,9 +369,9 @@ func listWorkspaceVariables(props listWorkspaceVariablesProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "variables",
-			Organization: props.ws.Organization,
+			Organization: &props.ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 				{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
 			},
@@ -446,7 +446,7 @@ func listVariableSets(props listVariableSetsProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:          "variable sets",
-			Organization:   props.organization,
+			Organization:   &props.organization,
 			ContentActions: listVariableSetsActions(props),
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "variable sets"},
@@ -485,7 +485,7 @@ func listVariableSetsActions(props listVariableSetsProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var16 templ.SafeURL = paths.NewVariableSet(props.organization)
+			var templ_7745c5c3_Var16 templ.SafeURL = paths.NewVariableSet(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var16)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -653,9 +653,9 @@ func editWorkspaceVariable(props editWorkspaceVariableProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "edit | " + props.variable.ID.String(),
-			Organization: props.ws.Organization,
+			Organization: &props.ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 				{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
 				{Name: "edit"},
@@ -747,9 +747,9 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "edit variable set",
-			Organization: props.set.Organization,
+			Organization: &props.set.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization.String())},
 				{Name: props.set.Name},
 				{Name: "edit"},
 			},
@@ -815,9 +815,9 @@ func editVSV(props editVSVProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "edit variable set variable",
-			Organization: props.set.Organization,
+			Organization: &props.set.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization.String())},
 				{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID.String())},
 				{Name: "variables"},
 				{Name: props.variable.ID.String()},

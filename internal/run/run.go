@@ -126,7 +126,7 @@ type (
 		// Filter by workspace ID
 		WorkspaceID *resource.ID `schema:"workspace_id,omitempty"`
 		// Filter by organization name
-		Organization *string `schema:"organization_name,omitempty"`
+		Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
 		// Filter by run statuses (with an implicit OR condition)
@@ -143,8 +143,8 @@ type (
 
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
-		Organization *string      `schema:"organization_name,omitempty"` // filter by organization name
-		WorkspaceID  *resource.ID `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
+		Organization *resource.OrganizationName `schema:"organization_name,omitempty"` // filter by organization name
+		WorkspaceID  *resource.ID               `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
 
