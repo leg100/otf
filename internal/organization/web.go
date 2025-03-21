@@ -168,26 +168,19 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name resource.OrganizationName `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	organization, err := decode.Param("name", r)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	err = a.svc.Delete(r.Context(), params.Name)
-	if err != nil {
+	if err := a.svc.Delete(r.Context(), params.Name); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "deleted organization: "+organization)
+	html.FlashSuccess(w, "deleted organization: "+params.Name.String())
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
 }
 

@@ -56,9 +56,9 @@ func TestIntegration_Organization(t *testing.T) {
 		org := daemon.createOrganization(t, ctx)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
-		want := uuid.NewString()
+		want := resource.NewTestOrganizationName(t)
 		updated, err := daemon.Organizations.Update(ctx, org.Name, organization.UpdateOptions{
-			Name: internal.String(want),
+			Name: internal.String(want.String()),
 		})
 		require.NoError(t, err)
 

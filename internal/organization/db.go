@@ -11,15 +11,6 @@ import (
 
 var q = &Queries{}
 
-type (
-	// dbListOptions represents the options for listing organizations via the
-	// database.
-	dbListOptions struct {
-		names []resource.OrganizationName // filter organizations by name if non-nil
-		resource.PageOptions
-	}
-)
-
 // row is the row result of a database query for organizations
 type row struct {
 	OrganizationID             resource.ID
@@ -115,14 +106,22 @@ func (db *pgdb) update(ctx context.Context, name resource.OrganizationName, fn f
 	)
 }
 
+// dbListOptions represents the options for listing organizations via the
+// database.
+type dbListOptions struct {
+	names []resource.OrganizationName // filter organizations by name if non-nil
+	resource.PageOptions
+}
+
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
-	// Convert organization name type slice to string slice
-	names := make([]string, len(opts.names))
-	for i, name := range opts.names {
-		names[i] = name.String()
-	}
-	if len(names) == 0 {
-		names = []string{"%"} // return all organizations
+	// Convert organization name type slice to string slice. By default, return
+	// all organizations by specifying '%'.
+	names := []string{"%"}
+	if opts.names != nil {
+		names = make([]string, len(opts.names))
+		for i, name := range opts.names {
+			names[i] = name.String()
+		}
 	}
 
 	rows, err := q.FindOrganizations(ctx, db.Conn(ctx), FindOrganizationsParams{
