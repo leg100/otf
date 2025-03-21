@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.17](https://github.com/leg100/otf/compare/v0.3.16...v0.3.17) (2025-03-21)
+
+
+### Bug Fixes
+
+* **ui:** express durations &gt; 24h as days not hours ([a37f826](https://github.com/leg100/otf/commit/a37f826e7222b9493bc60fc2765a2b56edaec125))
+
+
+### Miscellaneous
+
+* bump sqlc version ([96007b3](https://github.com/leg100/otf/commit/96007b331fa64064fac6f4421f6e1f00e626b2ac))
+* screenshot test failures ([06443b1](https://github.com/leg100/otf/commit/06443b1034664ed4a4584171d5b6e511909daf64))
+
 ## [0.3.16](https://github.com/leg100/otf/compare/v0.3.15...v0.3.16) (2025-03-17)
 
 
