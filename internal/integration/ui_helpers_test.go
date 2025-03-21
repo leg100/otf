@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
@@ -53,24 +52,17 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 		}
 	}
 
-	// disable screenshots unless an environment variable is defined - if so
-	// then set the destination path for the screenshots accordingly.
-	var path string
-	if _, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); ok {
-		// For documentation purposes
-		path = filepath.Join("..", "..", "docs", "images", fname+".png")
-	} else if _, ok := os.LookupEnv("OTF_DEBUG_SCREENSHOTS"); ok {
-		// For debugging purposes
-		path = filepath.Join("screenshots", fname+".png")
-	} else {
+	// disable screenshots unless an environment variable is defined
+	if _, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
 		return
 	}
 
+	path := filepath.Join("..", "..", "docs", "images", fname+".png")
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
 	_, err = page.Screenshot(playwright.PageScreenshotOptions{
-		Path: internal.String(path),
+		Path: &path,
 	})
 	require.NoError(t, err)
 }
