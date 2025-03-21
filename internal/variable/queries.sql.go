@@ -170,7 +170,7 @@ type FindVariableSetBySetIDRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -214,7 +214,7 @@ type FindVariableSetByVariableIDRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -258,7 +258,7 @@ type FindVariableSetForUpdateRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -301,12 +301,12 @@ type FindVariableSetsByOrganizationRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]FindVariableSetsByOrganizationRow, error) {
+func (q *Queries) FindVariableSetsByOrganization(ctx context.Context, db DBTX, organizationName resource.OrganizationName) ([]FindVariableSetsByOrganizationRow, error) {
 	rows, err := db.Query(ctx, findVariableSetsByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -376,7 +376,7 @@ type FindVariableSetsByWorkspaceRow struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	Variables        []VariableModel
 	WorkspaceIds     []pgtype.Text
 }
@@ -535,7 +535,7 @@ type InsertVariableSetParams struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 // variable sets

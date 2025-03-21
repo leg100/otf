@@ -129,8 +129,8 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		types.ListOptions
-		Organization string `schema:"filter[organization][name],required"`
-		Workspace    string `schema:"filter[workspace][name],required"`
+		Organization resource.OrganizationName `schema:"filter[organization][name],required"`
+		Workspace    string                    `schema:"filter[workspace][name],required"`
 	}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		tfeapi.Error(w, err)

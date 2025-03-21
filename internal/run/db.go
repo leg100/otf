@@ -51,7 +51,7 @@ type (
 		AllowEmptyApply        pgtype.Bool
 		ExecutionMode          pgtype.Text
 		Latest                 pgtype.Bool
-		OrganizationName       pgtype.Text
+		OrganizationName       resource.OrganizationName
 		CostEstimationEnabled  pgtype.Bool
 		RunStatusTimestamps    []RunStatusTimestampModel
 		PlanStatusTimestamps   []PhaseStatusTimestampModel
@@ -79,7 +79,7 @@ func (result pgresult) toRun() *Run {
 		TerraformVersion:       result.TerraformVersion.String,
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest.Bool,
-		Organization:           result.OrganizationName.String,
+		Organization:           result.OrganizationName,
 		WorkspaceID:            result.WorkspaceID,
 		ConfigurationVersionID: result.ConfigurationVersionID,
 		CostEstimationEnabled:  result.CostEstimationEnabled.Bool,
@@ -327,7 +327,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.ID, report
 func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	organization := "%"
 	if opts.Organization != nil {
-		organization = *opts.Organization
+		organization = opts.Organization.String()
 	}
 	workspaceName := "%"
 	if opts.WorkspaceName != nil {

@@ -16,8 +16,8 @@ type teamCLI struct {
 }
 
 type cliClient interface {
-	Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
-	Get(ctx context.Context, organization, team string) (*Team, error)
+	Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error)
+	Get(ctx context.Context, organization resource.OrganizationName, team string) (*Team, error)
 	Delete(ctx context.Context, teamID resource.ID) error
 }
 
@@ -50,7 +50,11 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.client.Create(cmd.Context(), organization, CreateTeamOptions{
+			orgname, err := resource.NewOrganizationName(organization)
+			if err != nil {
+				return err
+			}
+			team, err := a.client.Create(cmd.Context(), orgname, CreateTeamOptions{
 				Name: internal.String(args[0]),
 			})
 			if err != nil {
@@ -77,7 +81,11 @@ func (a *teamCLI) teamDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.client.Get(cmd.Context(), organization, args[0])
+			orgname, err := resource.NewOrganizationName(organization)
+			if err != nil {
+				return err
+			}
+			team, err := a.client.Get(cmd.Context(), orgname, args[0])
 			if err != nil {
 				return err
 			}

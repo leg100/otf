@@ -36,7 +36,7 @@ type (
 		UpdatedAt    time.Time
 		Name         string
 		Provider     string
-		Organization string // Module belongs to an organization
+		Organization resource.OrganizationName // Module belongs to an organization
 		Status       ModuleStatus
 		Versions     []ModuleVersion         // versions sorted in descending order
 		Connection   *connections.Connection // optional vcs repo connection
@@ -71,7 +71,7 @@ type (
 	CreateOptions struct {
 		Name         string
 		Provider     string
-		Organization string
+		Organization resource.OrganizationName
 	}
 	CreateModuleVersionOptions struct {
 		ModuleID resource.ID
@@ -83,12 +83,12 @@ type (
 		Error  string
 	}
 	GetModuleOptions struct {
-		Name         string `schema:"name,required"`
-		Provider     string `schema:"provider,required"`
-		Organization string `schema:"organization,required"`
+		Name         string                    `schema:"name,required"`
+		Provider     string                    `schema:"provider,required"`
+		Organization resource.OrganizationName `schema:"organization,required"`
 	}
 	ListModulesOptions struct {
-		Organization string `schema:"organization_name,required"` // filter by organization name
+		Organization resource.OrganizationName `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {
 		*resource.Pagination
@@ -124,7 +124,7 @@ func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 func (m *Module) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", m.ID.String()),
-		slog.String("organization", m.Organization),
+		slog.Any("organization", m.Organization),
 		slog.String("name", m.Name),
 		slog.String("provider", m.Provider),
 		slog.String("status", string(m.Status)),

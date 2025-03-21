@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
@@ -27,7 +28,7 @@ func runURL(hostname string, runID resource.ID) string {
 	return fmt.Sprintf("https://%s/app/runs/%s", hostname, runID)
 }
 
-func organizationRunsURL(hostname string, organization string) string {
+func organizationRunsURL(hostname string, organization organization.Name) string {
 	return fmt.Sprintf("https://%s/app/organizations/%s/runs", hostname, organization)
 }
 
@@ -35,20 +36,20 @@ func workspaceRunsURL(hostname string, workspaceID resource.ID) string {
 	return fmt.Sprintf("https://%s/app/workspaces/%s/runs", hostname, workspaceID)
 }
 
-func workspaceURL(hostname, org, name string) string {
-	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
+func workspaceURL(hostname string, org resource.OrganizationName, name string) string {
+	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces/" + name
 }
 
-func workspacesURL(hostname, org string) string {
-	return "https://" + hostname + "/app/organizations/" + org + "/workspaces"
+func workspacesURL(hostname string, org resource.OrganizationName) string {
+	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces"
 }
 
-func organizationURL(hostname, org string) string {
-	return "https://" + hostname + "/app/organizations/" + org
+func organizationURL(hostname string, org resource.OrganizationName) string {
+	return "https://" + hostname + "/app/organizations/" + org.String()
 }
 
 // newRootModule creates a terraform root module, returning its directory path
-func newRootModule(t *testing.T, hostname, organization, workspace string, additionalConfig ...string) string {
+func newRootModule(t *testing.T, hostname string, organization resource.OrganizationName, workspace string, additionalConfig ...string) string {
 	t.Helper()
 
 	config := fmt.Sprintf(`

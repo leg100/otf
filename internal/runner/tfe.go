@@ -61,8 +61,10 @@ func (a *tfe) addHandlers(r *mux.Router) {
 // Agent pool handlers
 
 func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -79,7 +81,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	// convert tfe params to otf opts
 	opts := CreateAgentPoolOptions{
 		Name:               *params.Name,
-		Organization:       organization,
+		Organization:       pathParams.Organization,
 		OrganizationScoped: params.OrganizationScoped,
 	}
 	opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
@@ -144,8 +146,10 @@ func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -155,7 +159,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pools, err := a.Service.listAgentPoolsByOrganization(r.Context(), organization, listPoolOptions{
+	pools, err := a.Service.listAgentPoolsByOrganization(r.Context(), pathParams.Organization, listPoolOptions{
 		NameSubstring:        params.Query,
 		AllowedWorkspaceName: params.AllowedWorkspacesName,
 	})

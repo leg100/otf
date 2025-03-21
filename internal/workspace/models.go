@@ -144,7 +144,7 @@ type Model struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  *resource.ID
 	LatestRunID                *resource.ID
-	OrganizationName           pgtype.Text
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      *resource.ID
 	TriggerPatterns            []pgtype.Text
@@ -355,7 +355,7 @@ type StateVersionStatus struct {
 type TagModel struct {
 	TagID            resource.ID
 	Name             pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 type Team struct {

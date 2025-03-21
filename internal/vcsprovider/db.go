@@ -26,7 +26,7 @@ type (
 		CreatedAt        pgtype.Timestamptz
 		Name             pgtype.Text
 		VCSKind          pgtype.Text
-		OrganizationName pgtype.Text
+		OrganizationName resource.OrganizationName
 		GithubAppID      pgtype.Int8
 		GithubApp        *GithubApp
 		GithubAppInstall *GithubAppInstall
@@ -39,7 +39,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 			VCSProviderID:    provider.ID,
 			Name:             sql.String(provider.Name),
 			VCSKind:          sql.String(string(provider.Kind)),
-			OrganizationName: sql.String(provider.Organization),
+			OrganizationName: provider.Organization,
 			CreatedAt:        sql.Timestamptz(provider.CreatedAt),
 			Token:            sql.StringPtr(provider.Token),
 		}
@@ -114,8 +114,8 @@ func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
 	return providers, nil
 }
 
-func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	rows, err := q.FindVCSProvidersByOrganization(ctx, db.Conn(ctx), sql.String(organization))
+func (db *pgdb) listByOrganization(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error) {
+	rows, err := q.FindVCSProvidersByOrganization(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -157,7 +157,7 @@ func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
 // unmarshal a vcs provider row from the database.
 func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error) {
 	opts := CreateOptions{
-		Organization: row.OrganizationName.String,
+		Organization: row.OrganizationName,
 		Name:         row.Name.String,
 		// GithubAppService: db.Git
 	}

@@ -43,7 +43,7 @@ type (
 		WorkingDirectory           pgtype.Text
 		LockRunID                  *resource.ID
 		LatestRunID                *resource.ID
-		OrganizationName           pgtype.Text
+		OrganizationName           resource.OrganizationName
 		Branch                     pgtype.Text
 		CurrentStateVersionID      *resource.ID
 		TriggerPatterns            []pgtype.Text
@@ -81,7 +81,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		TriggerPrefixes:            sql.FromStringArray(r.TriggerPrefixes),
 		TriggerPatterns:            sql.FromStringArray(r.TriggerPatterns),
 		WorkingDirectory:           r.WorkingDirectory.String,
-		Organization:               r.OrganizationName.String,
+		Organization:               r.OrganizationName,
 		Tags:                       sql.FromStringArray(r.Tags),
 		AgentPoolID:                r.AgentPoolID,
 	}
@@ -140,7 +140,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		TriggerPatterns:            sql.StringArray(ws.TriggerPatterns),
 		VCSTagsRegex:               sql.StringPtr(nil),
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
-		OrganizationName:           sql.String(ws.Organization),
+		OrganizationName:           ws.Organization,
 	}
 	if ws.Connection != nil {
 		params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
@@ -214,7 +214,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	// SQL means match any organization.
 	organization := "%"
 	if opts.Organization != nil {
-		organization = *opts.Organization
+		organization = opts.Organization.String()
 	}
 	tags := []string{}
 	if len(opts.Tags) > 0 {
@@ -279,9 +279,9 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID,
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization resource.OrganizationName, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
 	rows, err := q.FindWorkspacesByUsername(ctx, db.Conn(ctx), FindWorkspacesByUsernameParams{
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 		Username:         sql.String(username),
 		Limit:            sql.GetLimit(opts),
 		Offset:           sql.GetOffset(opts),
@@ -290,7 +290,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 		return nil, err
 	}
 	count, err := q.CountWorkspacesByUsername(ctx, db.Conn(ctx), CountWorkspacesByUsernameParams{
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 		Username:         sql.String(username),
 	})
 	if err != nil {
@@ -317,10 +317,10 @@ func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, e
 	return pgresult(result).toWorkspace()
 }
 
-func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (db *pgdb) getByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
 	result, err := q.FindWorkspaceByName(ctx, db.Conn(ctx), FindWorkspaceByNameParams{
 		Name:             sql.String(workspace),
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)

@@ -13,7 +13,7 @@ type Model struct {
 	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	Name                       resource.OrganizationName
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text
@@ -25,6 +25,6 @@ type Model struct {
 type TokenModel struct {
 	OrganizationTokenID resource.ID
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	Expiry              pgtype.Timestamptz
 }

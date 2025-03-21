@@ -40,7 +40,7 @@ func (f *fakeService) Get(context.Context, resource.ID) (*vcsprovider.VCSProvide
 	return f.vcsprovs[0], nil
 }
 
-func (f *fakeService) List(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs, nil
 }
 

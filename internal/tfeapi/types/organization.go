@@ -17,22 +17,22 @@ var DefaultOrganizationPermissions = OrganizationPermissions{
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	Name                                              string                   `jsonapi:"primary,organizations"`
-	AssessmentsEnforced                               bool                     `jsonapi:"attribute" json:"assessments-enforced"`
-	CollaboratorAuthPolicy                            AuthPolicyType           `jsonapi:"attribute" json:"collaborator-auth-policy"`
-	CostEstimationEnabled                             bool                     `jsonapi:"attribute" json:"cost-estimation-enabled"`
-	CreatedAt                                         time.Time                `jsonapi:"attribute" json:"created-at"`
-	Email                                             string                   `jsonapi:"attribute" json:"email"`
-	ExternalID                                        resource.ID              `jsonapi:"attribute" json:"external-id"`
-	OwnersTeamSAMLRoleID                              resource.ID              `jsonapi:"attribute" json:"owners-team-saml-role-id"`
-	Permissions                                       *OrganizationPermissions `jsonapi:"attribute" json:"permissions"`
-	SAMLEnabled                                       bool                     `jsonapi:"attribute" json:"saml-enabled"`
-	SessionRemember                                   *int                     `jsonapi:"attribute" json:"session-remember"`
-	SessionTimeout                                    *int                     `jsonapi:"attribute" json:"session-timeout"`
-	TrialExpiresAt                                    time.Time                `jsonapi:"attribute" json:"trial-expires-at"`
-	TwoFactorConformant                               bool                     `jsonapi:"attribute" json:"two-factor-conformant"`
-	SendPassingStatusesForUntriggeredSpeculativePlans bool                     `jsonapi:"attribute" json:"send-passing-statuses-for-untriggered-speculative-plans"`
-	RemainingTestableCount                            int                      `jsonapi:"attribute" json:"remaining-testable-count"`
+	Name                                              resource.OrganizationName `jsonapi:"primary,organizations"`
+	AssessmentsEnforced                               bool                      `jsonapi:"attribute" json:"assessments-enforced"`
+	CollaboratorAuthPolicy                            AuthPolicyType            `jsonapi:"attribute" json:"collaborator-auth-policy"`
+	CostEstimationEnabled                             bool                      `jsonapi:"attribute" json:"cost-estimation-enabled"`
+	CreatedAt                                         time.Time                 `jsonapi:"attribute" json:"created-at"`
+	Email                                             string                    `jsonapi:"attribute" json:"email"`
+	ExternalID                                        resource.ID               `jsonapi:"attribute" json:"external-id"`
+	OwnersTeamSAMLRoleID                              resource.ID               `jsonapi:"attribute" json:"owners-team-saml-role-id"`
+	Permissions                                       *OrganizationPermissions  `jsonapi:"attribute" json:"permissions"`
+	SAMLEnabled                                       bool                      `jsonapi:"attribute" json:"saml-enabled"`
+	SessionRemember                                   *int                      `jsonapi:"attribute" json:"session-remember"`
+	SessionTimeout                                    *int                      `jsonapi:"attribute" json:"session-timeout"`
+	TrialExpiresAt                                    time.Time                 `jsonapi:"attribute" json:"trial-expires-at"`
+	TwoFactorConformant                               bool                      `jsonapi:"attribute" json:"two-factor-conformant"`
+	SendPassingStatusesForUntriggeredSpeculativePlans bool                      `jsonapi:"attribute" json:"send-passing-statuses-for-untriggered-speculative-plans"`
+	RemainingTestableCount                            int                       `jsonapi:"attribute" json:"remaining-testable-count"`
 
 	// Note: This will be false for TFE versions older than v202211, where the setting was introduced.
 	// On those TFE versions, safe delete does not exist, so ALL deletes will be force deletes.

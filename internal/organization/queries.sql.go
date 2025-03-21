@@ -32,7 +32,7 @@ WHERE organization_name = $1
 RETURNING organization_token_id
 `
 
-func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, db DBTX, organizationName pgtype.Text) (resource.ID, error) {
+func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, db DBTX, organizationName resource.OrganizationName) (resource.ID, error) {
 	row := db.QueryRow(ctx, deleteOrganiationTokenByName, organizationName)
 	var organization_token_id resource.ID
 	err := row.Scan(&organization_token_id)
@@ -46,7 +46,7 @@ WHERE name = $1
 RETURNING organization_id
 `
 
-func (q *Queries) DeleteOrganizationByName(ctx context.Context, db DBTX, name pgtype.Text) (resource.ID, error) {
+func (q *Queries) DeleteOrganizationByName(ctx context.Context, db DBTX, name resource.OrganizationName) (resource.ID, error) {
 	row := db.QueryRow(ctx, deleteOrganizationByName, name)
 	var organization_id resource.ID
 	err := row.Scan(&organization_id)
@@ -79,7 +79,7 @@ const findOrganizationByName = `-- name: FindOrganizationByName :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE name = $1
 `
 
-func (q *Queries) FindOrganizationByName(ctx context.Context, db DBTX, name pgtype.Text) (Model, error) {
+func (q *Queries) FindOrganizationByName(ctx context.Context, db DBTX, name resource.OrganizationName) (Model, error) {
 	row := db.QueryRow(ctx, findOrganizationByName, name)
 	var i Model
 	err := row.Scan(
@@ -104,7 +104,7 @@ WHERE name = $1
 FOR UPDATE
 `
 
-func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, db DBTX, name pgtype.Text) (Model, error) {
+func (q *Queries) FindOrganizationByNameForUpdate(ctx context.Context, db DBTX, name resource.OrganizationName) (Model, error) {
 	row := db.QueryRow(ctx, findOrganizationByNameForUpdate, name)
 	var i Model
 	err := row.Scan(
@@ -128,9 +128,9 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (pgtype.Text, error) {
+func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (resource.OrganizationName, error) {
 	row := db.QueryRow(ctx, findOrganizationNameByWorkspaceID, workspaceID)
-	var organization_name pgtype.Text
+	var organization_name resource.OrganizationName
 	err := row.Scan(&organization_name)
 	return organization_name, err
 }
@@ -141,7 +141,7 @@ FROM organization_tokens
 WHERE organization_name = $1
 `
 
-func (q *Queries) FindOrganizationTokens(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]TokenModel, error) {
+func (q *Queries) FindOrganizationTokens(ctx context.Context, db DBTX, organizationName resource.OrganizationName) ([]TokenModel, error) {
 	rows, err := db.Query(ctx, findOrganizationTokens, organizationName)
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ FROM organization_tokens
 WHERE organization_name = $1
 `
 
-func (q *Queries) FindOrganizationTokensByName(ctx context.Context, db DBTX, organizationName pgtype.Text) (TokenModel, error) {
+func (q *Queries) FindOrganizationTokensByName(ctx context.Context, db DBTX, organizationName resource.OrganizationName) (TokenModel, error) {
 	row := db.QueryRow(ctx, findOrganizationTokensByName, organizationName)
 	var i TokenModel
 	err := row.Scan(
@@ -277,7 +277,7 @@ type InsertOrganizationParams struct {
 	ID                         resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	Name                       resource.OrganizationName
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
 	CostEstimationEnabled      pgtype.Bool
@@ -318,7 +318,7 @@ RETURNING organization_id
 `
 
 type UpdateOrganizationByNameParams struct {
-	NewName                    pgtype.Text
+	NewName                    resource.OrganizationName
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
 	CostEstimationEnabled      pgtype.Bool
@@ -326,7 +326,7 @@ type UpdateOrganizationByNameParams struct {
 	SessionTimeout             pgtype.Int4
 	AllowForceDeleteWorkspaces pgtype.Bool
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	Name                       resource.OrganizationName
 }
 
 func (q *Queries) UpdateOrganizationByName(ctx context.Context, db DBTX, arg UpdateOrganizationByNameParams) (resource.ID, error) {
@@ -366,7 +366,7 @@ INSERT INTO organization_tokens (
 type UpsertOrganizationTokenParams struct {
 	OrganizationTokenID resource.ID
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	Expiry              pgtype.Timestamptz
 }
 

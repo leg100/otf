@@ -159,7 +159,7 @@ type RunCreateOptions struct {
 type RunListOptions struct {
 	ListOptions
 
-	Organization *string `schema:"organization_name,omitempty"`
+	Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
 
 	WorkspaceID *resource.ID `schema:"workspace_id,omitempty"`
 

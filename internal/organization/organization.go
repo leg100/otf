@@ -16,10 +16,10 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        resource.ID `jsonapi:"primary,organizations"`
-		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
-		UpdatedAt time.Time   `jsonapi:"attribute" json:"updated-at"`
-		Name      string      `jsonapi:"attribute" json:"name"`
+		ID        resource.ID               `jsonapi:"primary,organizations"`
+		CreatedAt time.Time                 `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time                 `jsonapi:"attribute" json:"updated-at"`
+		Name      resource.OrganizationName `jsonapi:"attribute" json:"name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
@@ -62,11 +62,15 @@ type (
 )
 
 func NewOrganization(opts CreateOptions) (*Organization, error) {
-	if err := resource.ValidateName(opts.Name); err != nil {
+	if opts.Name == nil {
+		return nil, internal.ErrRequiredName
+	}
+	name, err := resource.NewOrganizationName(*opts.Name)
+	if err != nil {
 		return nil, err
 	}
 	org := Organization{
-		Name:                   *opts.Name,
+		Name:                   name,
 		CreatedAt:              internal.CurrentTimestamp(nil),
 		UpdatedAt:              internal.CurrentTimestamp(nil),
 		ID:                     resource.NewID(resource.OrganizationKind),
@@ -90,7 +94,11 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 
 func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.Name != nil {
-		org.Name = *opts.Name
+		name, err := resource.NewOrganizationName(*opts.Name)
+		if err != nil {
+			return err
+		}
+		org.Name = name
 	}
 	if opts.Email != nil {
 		org.Email = opts.Email

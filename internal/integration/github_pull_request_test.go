@@ -29,7 +29,7 @@ func TestGithubPullRequest(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:            internal.String("dev"),
-		Organization:    internal.String(org.Name),
+		Organization:    &org.Name,
 		TriggerPatterns: []string{"/foo/**/*.tf"},
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,

@@ -20,7 +20,7 @@ type dbresult struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (result dbresult) toUser() *User {
@@ -80,8 +80,8 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 	return users, nil
 }
 
-func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
-	result, err := q.FindUsersByOrganization(ctx, db.Conn(ctx), sql.String(organization))
+func (db *pgdb) listOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
+	result, err := q.FindUsersByOrganization(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, err
 	}

@@ -86,7 +86,8 @@ func TestWeb_UserTokens(t *testing.T) {
 // permissions only if the authenticated user is an owner, so the test sets that
 // up first.
 func TestWeb_TeamGetHandler(t *testing.T) {
-	owners := &team.Team{Name: "owners", Organization: "acme-org"}
+	org1 := resource.NewTestOrganizationName(t)
+	owners := &team.Team{Name: "owners", Organization: org1}
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	h := &webHandlers{
 		teams: &fakeTeamService{team: owners},

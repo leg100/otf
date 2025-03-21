@@ -23,7 +23,7 @@ func TestIntegration_StateCLI(t *testing.T) {
 		sv3 := daemon.createStateVersion(t, ctx, ws) // current
 
 		out := daemon.otfcli(t, ctx, "state", "list",
-			"--organization", ws.Organization,
+			"--organization", ws.Organization.String(),
 			"--workspace", ws.Name,
 		)
 

@@ -28,7 +28,7 @@ type cliStateService interface {
 }
 
 type cliWorkspaceService interface {
-	GetByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
+	GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*workspace.Workspace, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
@@ -56,7 +56,7 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 
 func (a *CLI) stateListCommand() *cobra.Command {
 	var opts struct {
-		Organization string
+		Organization resource.OrganizationName
 		Workspace    string
 	}
 	cmd := &cobra.Command{
@@ -100,7 +100,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.Organization, "organization", "", "Name of the organization the workspace belongs to")
+	cmd.Flags().Var(&opts.Organization, "organization", "Name of the organization the workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	cmd.Flags().StringVar(&opts.Workspace, "workspace", "", "Name of workspace for which to retreive state versions")

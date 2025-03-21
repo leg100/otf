@@ -127,7 +127,7 @@ type Model struct {
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
 }
 
@@ -438,7 +438,7 @@ type Workspace struct {
 	WorkingDirectory           pgtype.Text
 	LockRunID                  pgtype.Text
 	LatestRunID                pgtype.Text
-	OrganizationName           pgtype.Text
+	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
 	CurrentStateVersionID      pgtype.Text
 	TriggerPatterns            []pgtype.Text

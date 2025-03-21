@@ -156,6 +156,6 @@ func (f *fakeCLIService) Download(ctx context.Context, svID resource.ID) ([]byte
 	return f.state, nil
 }
 
-func (f *fakeCLIService) GetByName(context.Context, string, string) (*workspace.Workspace, error) {
+func (f *fakeCLIService) GetByName(context.Context, resource.OrganizationName, string) (*workspace.Workspace, error) {
 	return f.workspace, nil
 }

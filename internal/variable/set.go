@@ -15,7 +15,7 @@ type (
 		Description  string
 		Global       bool
 		Workspaces   []resource.ID
-		Organization string // org name
+		Organization resource.OrganizationName
 		Variables    []*Variable
 	}
 
@@ -34,7 +34,7 @@ type (
 	}
 )
 
-func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
+func newSet(organization resource.OrganizationName, opts CreateVariableSetOptions) (*VariableSet, error) {
 	return &VariableSet{
 		ID:           resource.NewID(resource.VariableSetKind),
 		Name:         opts.Name,
@@ -48,7 +48,7 @@ func (s *VariableSet) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", s.ID.String()),
 		slog.String("name", s.Name),
-		slog.String("organization", s.Organization),
+		slog.Any("organization", s.Organization),
 		slog.Bool("global", s.Global),
 		slog.Any("workspaces", s.Workspaces),
 	}

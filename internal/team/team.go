@@ -12,10 +12,10 @@ import (
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		ID           resource.ID `jsonapi:"primary,teams"`
-		CreatedAt    time.Time   `jsonapi:"attribute" json:"created-at"`
-		Name         string      `jsonapi:"attribute" json:"name"`
-		Organization string      `jsonapi:"attribute" json:"organization"`
+		ID           resource.ID               `jsonapi:"primary,teams"`
+		CreatedAt    time.Time                 `jsonapi:"attribute" json:"created-at"`
+		Name         string                    `jsonapi:"attribute" json:"name"`
+		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization"`
 
 		Access OrganizationAccess
 
@@ -76,7 +76,7 @@ type (
 	}
 )
 
-func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
+func newTeam(organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
 	// required parameters
 	if opts.Name == nil {
 		return nil, &internal.ErrMissingParameter{Parameter: "name"}
@@ -122,7 +122,7 @@ func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
 }
 
-func (t *Team) IsOwner(organization string) bool {
+func (t *Team) IsOwner(organization resource.OrganizationName) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 
@@ -131,7 +131,7 @@ func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		// Deny all site-level access
 		return false
 	}
-	if req.Organization != t.Organization {
+	if req.Organization != nil && *req.Organization != t.Organization {
 		// Deny access to other organizations
 		return false
 	}
@@ -171,10 +171,6 @@ func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		}
 	}
 	return false
-}
-
-func (t *Team) Organizations() []string {
-	return []string{t.Organization}
 }
 
 func (t *Team) Update(opts UpdateTeamOptions) error {

@@ -85,7 +85,7 @@ type membershipCLIClient interface {
 }
 
 type teamsCLIClient interface {
-	Get(ctx context.Context, organization, name string) (*team.Team, error)
+	Get(ctx context.Context, org resource.OrganizationName, name string) (*team.Team, error)
 }
 
 func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
@@ -111,7 +111,7 @@ func NewTeamMembershipCommand(apiclient *otfapi.Client) *cobra.Command {
 
 func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 	var (
-		organization string
+		organization resource.OrganizationName
 		name         string // team name
 	)
 
@@ -134,7 +134,7 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "OTF organization in which to perform action")
+	cmd.Flags().Var(&organization, "organization", "OTF organization in which to perform action")
 	cmd.MarkFlagRequired("organization")
 	cmd.Flags().StringVar(&name, "team", "", "Team in which to perform action")
 	cmd.MarkFlagRequired("team")
@@ -144,7 +144,7 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 
 func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 	var (
-		organization string
+		organization resource.OrganizationName
 		name         string // team name
 	)
 
@@ -167,7 +167,7 @@ func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "OTF organization in which to perform action")
+	cmd.Flags().Var(&organization, "organization", "OTF organization in which to perform action")
 	cmd.MarkFlagRequired("organization")
 	cmd.Flags().StringVar(&name, "team", "", "Team in which to perform action")
 	cmd.MarkFlagRequired("team")

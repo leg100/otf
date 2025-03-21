@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -48,7 +49,7 @@ func (r runnerMetaResult) toRunnerMeta() *RunnerMeta {
 		meta.AgentPool = &RunnerMetaAgentPool{
 			ID:               r.AgentPool.AgentPoolID,
 			Name:             r.AgentPool.Name.String,
-			OrganizationName: r.AgentPool.OrganizationName.String,
+			OrganizationName: r.AgentPool.OrganizationName,
 		}
 	}
 	return meta
@@ -128,8 +129,8 @@ func (db *db) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	return agents, nil
 }
 
-func (db *db) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
-	rows, err := q.FindRunnersByOrganization(ctx, db.Conn(ctx), sql.String(organization))
+func (db *db) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
+	rows, err := q.FindRunnersByOrganization(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -168,7 +169,7 @@ type jobResult struct {
 	RunnerID         *resource.ID
 	AgentPoolID      *resource.ID
 	WorkspaceID      resource.ID
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (r jobResult) toJob() *Job {
@@ -178,7 +179,7 @@ func (r jobResult) toJob() *Job {
 		Phase:        internal.PhaseType(r.Phase.String),
 		Status:       JobStatus(r.Status.String),
 		WorkspaceID:  r.WorkspaceID,
-		Organization: r.OrganizationName.String,
+		Organization: r.OrganizationName,
 		RunnerID:     r.RunnerID,
 		AgentPoolID:  r.AgentPoolID,
 	}
@@ -346,7 +347,7 @@ type poolresult struct {
 	AgentPoolID         resource.ID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
+	OrganizationName    resource.OrganizationName
 	OrganizationScoped  pgtype.Bool
 	WorkspaceIds        []pgtype.Text
 	AllowedWorkspaceIds []pgtype.Text
@@ -357,7 +358,7 @@ func (r poolresult) toPool() (*Pool, error) {
 		ID:                 r.AgentPoolID,
 		Name:               r.Name.String,
 		CreatedAt:          r.CreatedAt.Time.UTC(),
-		Organization:       r.OrganizationName.String,
+		Organization:       r.OrganizationName,
 		OrganizationScoped: r.OrganizationScoped.Bool,
 	}
 	pool.AssignedWorkspaces = make([]resource.ID, len(r.WorkspaceIds))
@@ -385,7 +386,7 @@ func (db *db) createPool(ctx context.Context, pool *Pool) error {
 			AgentPoolID:        pool.ID,
 			Name:               sql.String(pool.Name),
 			CreatedAt:          sql.Timestamptz(pool.CreatedAt),
-			OrganizationName:   sql.String(pool.Organization),
+			OrganizationName:   pool.Organization,
 			OrganizationScoped: sql.Bool(pool.OrganizationScoped),
 		})
 		if err != nil {
@@ -458,9 +459,9 @@ func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool,
 	return poolresult(result).toPool()
 }
 
-func (db *db) listPoolsByOrganization(ctx context.Context, organization string, opts listPoolOptions) ([]*Pool, error) {
+func (db *db) listPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
 	rows, err := q.FindAgentPoolsByOrganization(ctx, db.Conn(ctx), FindAgentPoolsByOrganizationParams{
-		OrganizationName:     sql.String(organization),
+		OrganizationName:     organization,
 		NameSubstring:        sql.StringPtr(opts.NameSubstring),
 		AllowedWorkspaceName: sql.StringPtr(opts.AllowedWorkspaceName),
 		AllowedWorkspaceID:   sql.IDPtr(opts.AllowedWorkspaceID),

@@ -36,7 +36,7 @@ func (f *FakeService) Get(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) GetByName(context.Context, string, string) (*Workspace, error) {
+func (f *FakeService) GetByName(context.Context, resource.OrganizationName, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -52,7 +52,7 @@ func (f *FakeService) Unlock(context.Context, resource.ID, *resource.ID, bool) (
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) ListTags(context.Context, string, ListTagsOptions) (*resource.Page[*Tag], error) {
+func (f *FakeService) ListTags(context.Context, resource.OrganizationName, ListTagsOptions) (*resource.Page[*Tag], error) {
 	return nil, nil
 }
 
@@ -85,7 +85,7 @@ func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.ID
 	return f.providers[0], nil
 }
 
-func (f *fakeVCSProviderService) List(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error) {
 	return f.providers, nil
 }
 
@@ -107,6 +107,6 @@ type fakeTeamService struct {
 	teams []*team.Team
 }
 
-func (f *fakeTeamService) List(context.Context, string) ([]*team.Team, error) {
+func (f *fakeTeamService) List(context.Context, resource.OrganizationName) ([]*team.Team, error) {
 	return f.teams, nil
 }

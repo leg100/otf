@@ -29,7 +29,7 @@ type webHandlers struct {
 type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
-	ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
+	ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error)
 	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
 	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
@@ -85,19 +85,20 @@ func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	users, err := h.users.ListOrganizationUsers(r.Context(), name)
+	users, err := h.users.ListOrganizationUsers(r.Context(), params.Name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	props := userListProps{organization: name, users: users}
+	props := userListProps{organization: params.Name, users: users}
 	html.Render(userList(props), w, r)
 }
 
@@ -228,11 +229,11 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	props := getTeamProps{
 		team:            team,
 		members:         members,
-		canUpdateTeam:   user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		canDeleteTeam:   user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		canAddMember:    user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		canRemoveMember: user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		canDelete:       user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
+		canUpdateTeam:   user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: &team.Organization}),
+		canDeleteTeam:   user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: &team.Organization}),
+		canAddMember:    user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization}),
+		canRemoveMember: user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization}),
+		canDelete:       user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: &team.Organization}),
 		isOwner:         user.IsOwner(team.Organization),
 		dropdown: components.SearchDropdownProps{
 			Name:        "username",

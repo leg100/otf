@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
@@ -42,7 +43,7 @@ type Job struct {
 	// the job is allocated to a server runner.
 	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent_pool_id"`
 	// Name of job's organization
-	Organization string `jsonapi:"attribute" json:"organization"`
+	Organization organization.Name `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
 	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters
@@ -69,7 +70,7 @@ func (j *Job) LogValue() slog.Value {
 		slog.String("job_id", j.ID.String()),
 		slog.String("run_id", j.RunID.String()),
 		slog.String("workspace_id", j.WorkspaceID.String()),
-		slog.String("organization", j.Organization),
+		slog.Any("organization", j.Organization),
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
@@ -90,7 +91,7 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		// Job cannot carry out site-wide actions
 		return false
 	}
-	if req.Organization != j.Organization {
+	if req.Organization != nil && *req.Organization != j.Organization {
 		// Job cannot carry out actions on other organizations
 		return false
 	}

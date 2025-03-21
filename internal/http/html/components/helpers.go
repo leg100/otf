@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/resource"
 )
 
 func AssetPath(ctx context.Context, path string) (string, error) {
@@ -29,13 +30,13 @@ func Authenticated(ctx context.Context) bool {
 	return true
 }
 
-func IsOwner(ctx context.Context, organization string) bool {
+func IsOwner(ctx context.Context, organization resource.OrganizationName) bool {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return false
 	}
 	if user, ok := subject.(interface {
-		IsOwner(string) bool
+		IsOwner(resource.OrganizationName) bool
 	}); ok {
 		return user.IsOwner(organization)
 	}

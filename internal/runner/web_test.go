@@ -12,11 +12,12 @@ import (
 )
 
 func TestWebHandlers_createAgentPool(t *testing.T) {
+	organization := resource.NewTestOrganizationName(t)
 	svc := &fakeService{
 		pool: &Pool{ID: testutils.ParseID(t, "pool-123")},
 	}
 	h := &webHandlers{svc: svc}
-	q := "/?organization_name=acme-org&name=my-pool"
+	q := "/?organization_name=" + organization.String() + "&name=my-pool"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 
@@ -24,7 +25,7 @@ func TestWebHandlers_createAgentPool(t *testing.T) {
 
 	want := CreateAgentPoolOptions{
 		Name:         "my-pool",
-		Organization: "acme-org",
+		Organization: organization,
 	}
 	assert.Equal(t, want, svc.createAgentPoolOptions)
 	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))

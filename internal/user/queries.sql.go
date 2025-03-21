@@ -164,7 +164,7 @@ type FindUserByAuthenticationTokenIDRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (q *Queries) FindUserByAuthenticationTokenID(ctx context.Context, db DBTX, tokenID resource.ID) (FindUserByAuthenticationTokenIDRow, error) {
@@ -201,7 +201,7 @@ type FindUserByIDRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (q *Queries) FindUserByID(ctx context.Context, db DBTX, userID resource.ID) (FindUserByIDRow, error) {
@@ -238,7 +238,7 @@ type FindUserByUsernameRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (q *Queries) FindUserByUsername(ctx context.Context, db DBTX, username pgtype.Text) (FindUserByUsernameRow, error) {
@@ -274,7 +274,7 @@ type FindUsersRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (q *Queries) FindUsers(ctx context.Context, db DBTX) ([]FindUsersRow, error) {
@@ -327,10 +327,10 @@ type FindUsersByOrganizationRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
-func (q *Queries) FindUsersByOrganization(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]FindUsersByOrganizationRow, error) {
+func (q *Queries) FindUsersByOrganization(ctx context.Context, db DBTX, organizationName resource.OrganizationName) ([]FindUsersByOrganizationRow, error) {
 	rows, err := db.Query(ctx, findUsersByOrganization, organizationName)
 	if err != nil {
 		return nil, err
@@ -380,7 +380,7 @@ type FindUsersByTeamIDRow struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	SiteAdmin pgtype.Bool
-	Teams     []Team
+	Teams     []TeamModel
 }
 
 func (q *Queries) FindUsersByTeamID(ctx context.Context, db DBTX, teamID resource.ID) ([]FindUsersByTeamIDRow, error) {

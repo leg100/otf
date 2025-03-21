@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/surl/v2"
 )
@@ -55,9 +56,9 @@ type (
 // https://developer.hashicorp.com/terraform/registry/api-docs#list-available-versions-for-a-specific-module
 func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         string `schema:"name,required"`
-		Provider     string `schema:"provider,required"`
-		Organization string `schema:"organization,required"`
+		Name         string                    `schema:"name,required"`
+		Provider     string                    `schema:"provider,required"`
+		Organization resource.OrganizationName `schema:"organization,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -79,7 +80,7 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 	response := listAvailableVersionsResponse{
 		Modules: []listAvailableVersionsModule{
 			{
-				Source: strings.Join([]string{params.Organization, params.Provider, params.Name}, "/"),
+				Source: strings.Join([]string{params.Organization.String(), params.Provider, params.Name}, "/"),
 			},
 		},
 	}
@@ -95,10 +96,10 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 
 func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         string `schema:"name,required"`
-		Provider     string `schema:"provider,required"`
-		Organization string `schema:"organization,required"`
-		Version      string `schema:"version,required"`
+		Name         string                    `schema:"name,required"`
+		Provider     string                    `schema:"provider,required"`
+		Organization resource.OrganizationName `schema:"organization,required"`
+		Version      string                    `schema:"version,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)

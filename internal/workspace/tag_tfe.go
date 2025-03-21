@@ -31,8 +31,10 @@ func (a *tfe) addTagHandlers(r *mux.Router) {
 }
 
 func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -42,7 +44,7 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListTags(r.Context(), org, params)
+	page, err := a.ListTags(r.Context(), pathParams.Organization, params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -57,8 +59,10 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -74,7 +78,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		tagIDs[i] = p.ID
 	}
 
-	if err := a.DeleteTags(r.Context(), org, tagIDs); err != nil {
+	if err := a.DeleteTags(r.Context(), pathParams.Organization, tagIDs); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

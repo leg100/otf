@@ -44,10 +44,10 @@ func TestWritePermissionE2E(t *testing.T) {
 	require.Contains(t, out, "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock and unlock workspace
-	svc.otfcli(t, ctx, "workspaces", "lock", "my-test-workspace", "--organization", org.Name)
-	svc.otfcli(t, ctx, "workspaces", "unlock", "my-test-workspace", "--organization", org.Name)
+	svc.otfcli(t, ctx, "workspaces", "lock", "my-test-workspace", "--organization", org.Name.String())
+	svc.otfcli(t, ctx, "workspaces", "unlock", "my-test-workspace", "--organization", org.Name.String())
 
 	// list workspaces
-	out = svc.otfcli(t, ctx, "workspaces", "list", "--organization", org.Name)
+	out = svc.otfcli(t, ctx, "workspaces", "list", "--organization", org.Name.String())
 	require.Contains(t, out, "my-test-workspace")
 }

@@ -21,8 +21,8 @@ type (
 		ID           resource.ID
 		Name         string
 		CreatedAt    time.Time
-		Organization string // name of OTF organization
-		Hostname     string // hostname of github/gitlab etc
+		Organization resource.OrganizationName // name of OTF organization
+		Hostname     string                    // hostname of github/gitlab etc
 
 		Kind  vcs.Kind // github/gitlab etc. Not necessary if GithubApp is non-nil.
 		Token *string  // personal access token.
@@ -42,7 +42,7 @@ type (
 	}
 
 	CreateOptions struct {
-		Organization string
+		Organization resource.OrganizationName
 		Name         string
 		Kind         *vcs.Kind
 
@@ -172,7 +172,7 @@ func (t *VCSProvider) Update(opts UpdateOptions) error {
 func (t *VCSProvider) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", t.ID.String()),
-		slog.String("organization", t.Organization),
+		slog.Any("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind)),
 	}

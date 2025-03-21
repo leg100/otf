@@ -176,7 +176,7 @@ type WorkspaceCreateOptions struct {
 	Operations *bool `jsonapi:"attribute" json:"operations,omitempty"`
 
 	// Organization the workspace belongs to. Required.
-	Organization *string `schema:"organization_name"`
+	Organization *resource.OrganizationName `schema:"organization_name"`
 
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.

@@ -170,7 +170,7 @@ type FindRunByIDRow struct {
 	AllowEmptyApply        pgtype.Bool
 	ExecutionMode          pgtype.Text
 	Latest                 pgtype.Bool
-	OrganizationName       pgtype.Text
+	OrganizationName       resource.OrganizationName
 	CostEstimationEnabled  pgtype.Bool
 	RunStatusTimestamps    []RunStatusTimestampModel
 	PlanStatusTimestamps   []PhaseStatusTimestampModel
@@ -321,7 +321,7 @@ type FindRunByIDForUpdateRow struct {
 	AllowEmptyApply        pgtype.Bool
 	ExecutionMode          pgtype.Text
 	Latest                 pgtype.Bool
-	OrganizationName       pgtype.Text
+	OrganizationName       resource.OrganizationName
 	CostEstimationEnabled  pgtype.Bool
 	RunStatusTimestamps    []RunStatusTimestampModel
 	PlanStatusTimestamps   []PhaseStatusTimestampModel
@@ -495,7 +495,7 @@ type FindRunsRow struct {
 	AllowEmptyApply        pgtype.Bool
 	ExecutionMode          pgtype.Text
 	Latest                 pgtype.Bool
-	OrganizationName       pgtype.Text
+	OrganizationName       resource.OrganizationName
 	CostEstimationEnabled  pgtype.Bool
 	RunStatusTimestamps    []RunStatusTimestampModel
 	PlanStatusTimestamps   []PhaseStatusTimestampModel

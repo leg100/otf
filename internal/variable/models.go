@@ -25,7 +25,7 @@ type VariableSetModel struct {
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 type VariableSetVariable struct {

@@ -16,7 +16,7 @@ type Model struct {
 	PermissionManageWorkspaces      pgtype.Bool
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
-	OrganizationName                pgtype.Text
+	OrganizationName                resource.OrganizationName
 	SSOTeamID                       pgtype.Text
 	Visibility                      pgtype.Text
 	PermissionManagePolicies        pgtype.Bool

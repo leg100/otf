@@ -205,7 +205,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 }
 
 func TestUpdateWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -285,7 +286,8 @@ func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 }
 
 func TestDeleteWorkspace(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -297,12 +299,13 @@ func TestDeleteWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspaces("acme-corp"), redirect.Path)
+		assert.Equal(t, paths.Workspaces(org1.String()), redirect.Path)
 	}
 }
 
 func TestLockWorkspace(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -323,7 +326,8 @@ func TestLockWorkspace(t *testing.T) {
 }
 
 func TestUnlockWorkspace(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -344,7 +348,8 @@ func TestUnlockWorkspace(t *testing.T) {
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
@@ -364,7 +369,8 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
@@ -389,7 +395,8 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -415,7 +422,8 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := resource.NewTestOrganizationName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}

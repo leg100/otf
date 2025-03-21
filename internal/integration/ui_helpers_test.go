@@ -15,7 +15,7 @@ import (
 )
 
 // createWorkspace creates a workspace via the UI
-func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name string) {
+func createWorkspace(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name string) {
 	t.Helper()
 
 	_, err := page.Goto(organizationURL(hostname, org))
@@ -77,7 +77,7 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, workspaceName string, teamID resource.ID, role string) {
+func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, workspaceName string, teamID resource.ID, role string) {
 	t.Helper()
 
 	// go to workspace
@@ -121,7 +121,7 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, op run.Operation, apply bool) {
+func startRunTasks(t *testing.T, page playwright.Page, hostname string, organization resource.OrganizationName, workspaceName string, op run.Operation, apply bool) {
 	t.Helper()
 
 	// go to workspace page
@@ -142,7 +142,7 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
 }
 
-func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, apply bool) {
+func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, organization resource.OrganizationName, workspaceName string, apply bool) {
 	t.Helper()
 
 	// confirm plan begins and ends
@@ -218,7 +218,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	require.NoError(t, err)
 }
 
-func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, name, provider string) {
+func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name, provider string) {
 	t.Helper()
 
 	// go to workspace
@@ -250,7 +250,7 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, na
 	require.NoError(t, err)
 }
 
-func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, name string) {
+func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name string) {
 	t.Helper()
 
 	// go to workspace

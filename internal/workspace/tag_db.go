@@ -14,7 +14,7 @@ type (
 	tagresult struct {
 		TagID            resource.ID
 		Name             pgtype.Text
-		OrganizationName pgtype.Text
+		OrganizationName resource.OrganizationName
 		InstanceCount    int64
 	}
 )
@@ -24,21 +24,21 @@ func (r tagresult) toTag() *Tag {
 	return &Tag{
 		ID:            r.TagID,
 		Name:          r.Name.String,
-		Organization:  r.OrganizationName.String,
+		Organization:  r.OrganizationName,
 		InstanceCount: int(r.InstanceCount),
 	}
 }
 
-func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+func (db *pgdb) listTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	rows, err := q.FindTags(ctx, db.Conn(ctx), FindTagsParams{
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 		Limit:            sql.GetLimit(opts.PageOptions),
 		Offset:           sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := q.CountTags(ctx, db.Conn(ctx), sql.String(organization))
+	count, err := q.CountTags(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -50,12 +50,12 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
+func (db *pgdb) deleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.ID) error {
 	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, tid := range tagIDs {
 			_, err := q.DeleteTag(ctx, conn, DeleteTagParams{
 				TagID:            tid,
-				OrganizationName: sql.String(organization),
+				OrganizationName: organization,
 			})
 			if err != nil {
 				return err
@@ -66,11 +66,11 @@ func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []re
 	return sql.Error(err)
 }
 
-func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID resource.ID) error {
+func (db *pgdb) addTag(ctx context.Context, organization resource.OrganizationName, name string, tagID resource.ID) error {
 	err := q.InsertTag(ctx, db.Conn(ctx), InsertTagParams{
 		TagID:            tagID,
 		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -78,10 +78,10 @@ func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID res
 	return nil
 }
 
-func (db *pgdb) findTagByName(ctx context.Context, organization string, name string) (*Tag, error) {
+func (db *pgdb) findTagByName(ctx context.Context, organization resource.OrganizationName, name string) (*Tag, error) {
 	tag, err := q.FindTagByName(ctx, db.Conn(ctx), FindTagByNameParams{
 		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -89,10 +89,10 @@ func (db *pgdb) findTagByName(ctx context.Context, organization string, name str
 	return tagresult(tag).toTag(), nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization string, id resource.ID) (*Tag, error) {
+func (db *pgdb) findTagByID(ctx context.Context, organization resource.OrganizationName, id resource.ID) (*Tag, error) {
 	tag, err := q.FindTagByID(ctx, db.Conn(ctx), FindTagByIDParams{
 		TagID:            id,
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)

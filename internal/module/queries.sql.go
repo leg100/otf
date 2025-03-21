@@ -75,7 +75,7 @@ type FindModuleByConnectionRow struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersionModel
@@ -128,7 +128,7 @@ type FindModuleByIDRow struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersionModel
@@ -182,7 +182,7 @@ type FindModuleByModuleVersionIDRow struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersionModel
@@ -231,7 +231,7 @@ AND   m.provider = $3
 `
 
 type FindModuleByNameParams struct {
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	Name             pgtype.Text
 	Provider         pgtype.Text
 }
@@ -243,7 +243,7 @@ type FindModuleByNameRow struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersionModel
@@ -307,7 +307,7 @@ type InsertModuleParams struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 }
 
 func (q *Queries) InsertModule(ctx context.Context, db DBTX, arg InsertModuleParams) error {
@@ -425,13 +425,13 @@ type ListModulesByOrganizationRow struct {
 	Name             pgtype.Text
 	Provider         pgtype.Text
 	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	OrganizationName resource.OrganizationName
 	VCSProviderID    resource.ID
 	RepoPath         pgtype.Text
 	ModuleVersions   []ModuleVersionModel
 }
 
-func (q *Queries) ListModulesByOrganization(ctx context.Context, db DBTX, organizationName pgtype.Text) ([]ListModulesByOrganizationRow, error) {
+func (q *Queries) ListModulesByOrganization(ctx context.Context, db DBTX, organizationName resource.OrganizationName) ([]ListModulesByOrganizationRow, error) {
 	rows, err := db.Query(ctx, listModulesByOrganization, organizationName)
 	if err != nil {
 		return nil, err

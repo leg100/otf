@@ -11,9 +11,10 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func newTeamView(organization string) templ.Component {
+func newTeamView(organization resource.OrganizationName) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -50,7 +51,7 @@ func newTeamView(organization string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 templ.SafeURL = paths.CreateTeam(organization)
+			var templ_7745c5c3_Var3 templ.SafeURL = paths.CreateTeam(organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -63,9 +64,9 @@ func newTeamView(organization string) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new team",
-			Organization: organization,
+			Organization: &organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "teams", Link: paths.Teams(organization)},
+				{Name: "teams", Link: paths.Teams(organization.String())},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -77,7 +78,7 @@ func newTeamView(organization string) templ.Component {
 }
 
 type listTeamsProps struct {
-	organization  string
+	organization  resource.OrganizationName
 	teams         []*Team
 	canCreateTeam bool
 }
@@ -127,7 +128,7 @@ func listTeams(props listTeamsProps) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.Team(team.ID.String())))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/view.templ`, Line: 46, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/view.templ`, Line: 47, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -140,7 +141,7 @@ func listTeams(props listTeamsProps) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("item-team-" + team.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/view.templ`, Line: 46, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/view.templ`, Line: 47, Col: 115}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -153,7 +154,7 @@ func listTeams(props listTeamsProps) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(team.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/view.templ`, Line: 48, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/team/view.templ`, Line: 49, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -186,7 +187,7 @@ func listTeams(props listTeamsProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "teams",
-			Organization: props.organization,
+			Organization: &props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "teams"},
 			},
@@ -225,7 +226,7 @@ func listTeamsActions(props listTeamsProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var10 templ.SafeURL = paths.NewTeam(props.organization)
+			var templ_7745c5c3_Var10 templ.SafeURL = paths.NewTeam(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var10)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

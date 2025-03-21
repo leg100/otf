@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -25,7 +26,7 @@ type (
 		Name      string
 		CreatedAt time.Time
 		// Pool belongs to an organization with this name.
-		Organization string
+		Organization organization.Name
 		// Whether pool of agents is accessible to all workspaces in organization
 		// (true) or only those specified in AllowedWorkspaces (false).
 		OrganizationScoped bool
@@ -40,7 +41,7 @@ type (
 	CreateAgentPoolOptions struct {
 		Name string `schema:"name,required"`
 		// name of org
-		Organization string `schema:"organization_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
 		// defaults to true
 		OrganizationScoped *bool
 		// IDs of workspaces allowed to access the pool.
@@ -72,9 +73,6 @@ type (
 func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 	if opts.Name == "" {
 		return nil, errors.New("name must not be empty")
-	}
-	if opts.Organization == "" {
-		return nil, errors.New("organization must not be empty")
 	}
 	pool := &Pool{
 		ID:                 resource.NewID("apool"),
@@ -119,7 +117,7 @@ func (p *Pool) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("id", p.ID.String()),
 		slog.String("name", p.Name),
-		slog.String("organization", p.Organization),
+		slog.Any("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),
 		slog.Any("workspaces", p.AssignedWorkspaces),
 		slog.Any("allowed_workspaces", p.AllowedWorkspaces),

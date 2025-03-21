@@ -11,21 +11,12 @@ import (
 
 var q = &Queries{}
 
-type (
-	// dbListOptions represents the options for listing organizations via the
-	// database.
-	dbListOptions struct {
-		names []string // filter organizations by name if non-nil
-		resource.PageOptions
-	}
-)
-
 // row is the row result of a database query for organizations
 type row struct {
 	OrganizationID             resource.ID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	Name                       resource.OrganizationName
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	Email                      pgtype.Text
@@ -41,7 +32,7 @@ func (r row) toOrganization() *Organization {
 		ID:                         r.OrganizationID,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
-		Name:                       r.Name.String,
+		Name:                       r.Name,
 		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces.Bool,
 		CostEstimationEnabled:      r.CostEstimationEnabled.Bool,
 	}
@@ -72,7 +63,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		ID:                         org.ID,
 		CreatedAt:                  sql.Timestamptz(org.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
-		Name:                       sql.String(org.Name),
+		Name:                       org.Name,
 		SessionRemember:            sql.Int4Ptr(org.SessionRemember),
 		SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
 		Email:                      sql.StringPtr(org.Email),
@@ -86,12 +77,12 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return nil
 }
 
-func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context, *Organization) error) (*Organization, error) {
+func (db *pgdb) update(ctx context.Context, name resource.OrganizationName, fn func(context.Context, *Organization) error) (*Organization, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context, conn sql.Connection) (*Organization, error) {
-			result, err := q.FindOrganizationByNameForUpdate(ctx, conn, sql.String(name))
+			result, err := q.FindOrganizationByNameForUpdate(ctx, conn, name)
 			if err != nil {
 				return nil, err
 			}
@@ -100,8 +91,8 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context
 		fn,
 		func(ctx context.Context, conn sql.Connection, org *Organization) error {
 			_, err := q.UpdateOrganizationByName(ctx, conn, UpdateOrganizationByNameParams{
-				Name:                       sql.String(name),
-				NewName:                    sql.String(org.Name),
+				Name:                       name,
+				NewName:                    org.Name,
 				Email:                      sql.StringPtr(org.Email),
 				CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
 				CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
@@ -115,20 +106,33 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(context.Context
 	)
 }
 
+// dbListOptions represents the options for listing organizations via the
+// database.
+type dbListOptions struct {
+	names []resource.OrganizationName // filter organizations by name if non-nil
+	resource.PageOptions
+}
+
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
-	if opts.names == nil {
-		opts.names = []string{"%"} // return all organizations
+	// Convert organization name type slice to string slice. By default, return
+	// all organizations by specifying '%'.
+	names := []string{"%"}
+	if opts.names != nil {
+		names = make([]string, len(opts.names))
+		for i, name := range opts.names {
+			names[i] = name.String()
+		}
 	}
 
 	rows, err := q.FindOrganizations(ctx, db.Conn(ctx), FindOrganizationsParams{
-		Names:  sql.StringArray(opts.names),
+		Names:  sql.StringArray(names),
 		Limit:  sql.GetLimit(opts.PageOptions),
 		Offset: sql.GetOffset(opts.PageOptions),
 	})
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountOrganizations(ctx, db.Conn(ctx), sql.StringArray(opts.names))
+	count, err := q.CountOrganizations(ctx, db.Conn(ctx), sql.StringArray(names))
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +144,8 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
-	r, err := q.FindOrganizationByName(ctx, db.Conn(ctx), sql.String(name))
+func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organization, error) {
+	r, err := q.FindOrganizationByName(ctx, db.Conn(ctx), name)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -156,8 +160,8 @@ func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, err
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) delete(ctx context.Context, name string) error {
-	_, err := q.DeleteOrganizationByName(ctx, db.Conn(ctx), sql.String(name))
+func (db *pgdb) delete(ctx context.Context, name resource.OrganizationName) error {
+	_, err := q.DeleteOrganizationByName(ctx, db.Conn(ctx), name)
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -170,17 +174,17 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 
 // tokenRow is the row result of a database query for organization tokens
 type tokenRow struct {
-	OrganizationTokenID resource.ID        `json:"organization_token_id"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	OrganizationName    pgtype.Text        `json:"organization_name"`
-	Expiry              pgtype.Timestamptz `json:"expiry"`
+	OrganizationTokenID resource.ID               `json:"organization_token_id"`
+	CreatedAt           pgtype.Timestamptz        `json:"created_at"`
+	OrganizationName    resource.OrganizationName `json:"organization_name"`
+	Expiry              pgtype.Timestamptz        `json:"expiry"`
 }
 
 func (result tokenRow) toToken() *OrganizationToken {
 	ot := &OrganizationToken{
 		ID:           result.OrganizationTokenID,
 		CreatedAt:    result.CreatedAt.Time.UTC(),
-		Organization: result.OrganizationName.String,
+		Organization: result.OrganizationName,
 	}
 	if result.Expiry.Valid {
 		ot.Expiry = internal.Time(result.Expiry.Time.UTC())
@@ -191,23 +195,23 @@ func (result tokenRow) toToken() *OrganizationToken {
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
 	err := q.UpsertOrganizationToken(ctx, db.Conn(ctx), UpsertOrganizationTokenParams{
 		OrganizationTokenID: token.ID,
-		OrganizationName:    sql.String(token.Organization),
+		OrganizationName:    token.Organization,
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
 		Expiry:              sql.TimestamptzPtr(token.Expiry),
 	})
 	return err
 }
 
-func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization string) (*OrganizationToken, error) {
-	result, err := q.FindOrganizationTokensByName(ctx, db.Conn(ctx), sql.String(organization))
+func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error) {
+	result, err := q.FindOrganizationTokensByName(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return tokenRow(result).toToken(), nil
 }
 
-func (db *pgdb) listOrganizationTokens(ctx context.Context, organization string) ([]*OrganizationToken, error) {
-	result, err := q.FindOrganizationTokens(ctx, db.Conn(ctx), sql.String(organization))
+func (db *pgdb) listOrganizationTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error) {
+	result, err := q.FindOrganizationTokens(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -226,8 +230,8 @@ func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.I
 	return tokenRow(result).toToken(), nil
 }
 
-func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {
-	_, err := q.DeleteOrganiationTokenByName(ctx, db.Conn(ctx), sql.String(organization))
+func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization resource.OrganizationName) error {
+	_, err := q.DeleteOrganiationTokenByName(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return sql.Error(err)
 	}

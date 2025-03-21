@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-func new(organization string) templ.Component {
+func new(organization resource.OrganizationName) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -60,7 +60,7 @@ func new(organization string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 templ.SafeURL = paths.CreateWorkspace(organization)
+			var templ_7745c5c3_Var3 templ.SafeURL = paths.CreateWorkspace(organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -73,9 +73,9 @@ func new(organization string) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new workspace",
-			Organization: organization,
+			Organization: &organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(organization)},
+				{Name: "workspaces", Link: paths.Workspaces(organization.String())},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -87,7 +87,7 @@ func new(organization string) templ.Component {
 }
 
 type listProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	search              string
 	status              []runstatus.Status
 	tags                map[string]bool
@@ -121,10 +121,10 @@ func list(props listProps) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:          "workspaces",
-			Organization:   props.organization,
+			Organization:   &props.organization,
 			ContentActions: listActions(props.organization, props.canCreate),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.organization.String())},
 			},
 		}
 		templ_7745c5c3_Var5 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -143,7 +143,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var6 templ.SafeURL = paths.Workspaces(props.organization)
+			var templ_7745c5c3_Var6 templ.SafeURL = paths.Workspaces(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var6)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -467,7 +467,7 @@ func tag(name string) templ.Component {
 	})
 }
 
-func listActions(organization string, canCreate bool) templ.Component {
+func listActions(organization resource.OrganizationName, canCreate bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -493,7 +493,7 @@ func listActions(organization string, canCreate bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 templ.SafeURL = paths.NewWorkspace(organization)
+			var templ_7745c5c3_Var23 templ.SafeURL = paths.NewWorkspace(organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var23)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -546,10 +546,10 @@ func get(props getProps) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:        "workspaces",
-			Organization: props.ws.Organization,
+			Organization: &props.ws.Organization,
 			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 				{Name: props.ws.Name},
 			},
 		}
@@ -944,10 +944,10 @@ func edit(props editProps) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:        "edit | " + props.ws.ID.String(),
-			Organization: props.ws.Organization,
+			Organization: &props.ws.Organization,
 			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 				{Name: "settings"},
 			},
@@ -1105,7 +1105,7 @@ func edit(props editProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var54 templ.SafeURL = paths.AgentPools(props.ws.Organization)
+			var templ_7745c5c3_Var54 templ.SafeURL = paths.AgentPools(props.ws.Organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var54)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1802,9 +1802,9 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 
 		layoutProps := components.LayoutProps{
 			Title:        "list vcs providers | " + ws.ID.String(),
-			Organization: ws.Organization,
+			Organization: &ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
 				{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 				{Name: "vcs providers"},
 			},
@@ -1825,7 +1825,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var90 templ.SafeURL = paths.VCSProviders(ws.Organization)
+			var templ_7745c5c3_Var90 templ.SafeURL = paths.VCSProviders(ws.Organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var90)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1906,7 +1906,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var95 templ.SafeURL = paths.VCSProviders(ws.Organization)
+				var templ_7745c5c3_Var95 templ.SafeURL = paths.VCSProviders(ws.Organization.String())
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var95)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1954,9 +1954,9 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) temp
 
 		layoutProps := components.LayoutProps{
 			Title:        "list vcs repos | " + ws.ID.String(),
-			Organization: ws.Organization,
+			Organization: &ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
 				{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 				{Name: "vcs repositories"},
 			},

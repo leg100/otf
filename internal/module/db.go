@@ -27,7 +27,7 @@ type (
 		Name             pgtype.Text
 		Provider         pgtype.Text
 		Status           pgtype.Text
-		OrganizationName pgtype.Text
+		OrganizationName resource.OrganizationName
 		VCSProviderID    resource.ID
 		RepoPath         pgtype.Text
 		ModuleVersions   []ModuleVersionModel
@@ -42,7 +42,7 @@ func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
 		Name:             sql.String(mod.Name),
 		Provider:         sql.String(mod.Provider),
 		Status:           sql.String(string(mod.Status)),
-		OrganizationName: sql.String(mod.Organization),
+		OrganizationName: mod.Organization,
 	})
 	return sql.Error(err)
 }
@@ -59,7 +59,7 @@ func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.ID, st
 }
 
 func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	rows, err := q.ListModulesByOrganization(ctx, db.Conn(ctx), sql.String(opts.Organization))
+	rows, err := q.ListModulesByOrganization(ctx, db.Conn(ctx), opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, 
 	row, err := q.FindModuleByName(ctx, db.Conn(ctx), FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
-		OrganizationName: sql.String(opts.Organization),
+		OrganizationName: opts.Organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -172,7 +172,7 @@ func (row moduleRow) toModule() *Module {
 		Name:         row.Name.String,
 		Provider:     row.Provider.String,
 		Status:       ModuleStatus(row.Status.String),
-		Organization: row.OrganizationName.String,
+		Organization: row.OrganizationName,
 	}
 	if row.RepoPath.Valid {
 		module.Connection = &connections.Connection{

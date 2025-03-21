@@ -13,7 +13,7 @@ import (
 )
 
 type newViewProps struct {
-	organization  string
+	organization  resource.OrganizationName
 	providers     []*vcsprovider.VCSProvider
 	repos         []string
 	vcsProviderID resource.ID
@@ -25,9 +25,9 @@ type newViewProps struct {
 templ newView(props newViewProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new module",
-		Organization: props.organization,
+		Organization: &props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "modules", Link: paths.Modules(props.organization)},
+			{Name: "modules", Link: paths.Modules(props.organization.String())},
 			{Name: "new"},
 		},
 	}) {
@@ -39,7 +39,7 @@ templ newView(props newViewProps) {
 					class="text-gray-400"
 				}
 			>
-				<a href={ paths.NewModule(props.organization) + "?step=connect-vcs" }>
+				<a href={ paths.NewModule(props.organization.String()) + "?step=connect-vcs" }>
 					1. connect vcs
 				</a>
 			</div>
@@ -87,7 +87,7 @@ templ newConnect(props newViewProps) {
 				</div>
 				<div>
 					@components.Identifier(provider.ID)
-					<form action={ paths.NewModule(props.organization) } method="GET">
+					<form action={ paths.NewModule(props.organization.String()) } method="GET">
 						<input type="hidden" name="step" id="select-repo-step" value="select-repo"/>
 						<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ provider.ID.String() }/>
 						<button class="btn">connect</button>
@@ -106,7 +106,7 @@ templ newRepo(props newViewProps) {
 	<div>
 		Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
 	</div>
-	<form action={ paths.NewModule(props.organization) } method="GET">
+	<form action={ paths.NewModule(props.organization.String()) } method="GET">
 		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
 		<input type="hidden" name="step" id="select-repo-step" value="confirm-selection"/>
 		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
@@ -117,7 +117,7 @@ templ newRepo(props newViewProps) {
 			<div class="widget">
 				<div>
 					<span>{ repo }</span>
-					<form action={ paths.NewModule(props.organization) } method="GET">
+					<form action={ paths.NewModule(props.organization.String()) } method="GET">
 						<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
 						<input type="hiDden" name="step" id="select-repo-step" value="confirm-selection"/>
 						<input type="hidden" name="identifier" id="identifier" value={ repo }/>
@@ -143,7 +143,7 @@ templ newConfirm(props newViewProps) {
 		</div>
 	</div>
 	<div>
-		<form action={ paths.CreateModule(props.organization) } method="POST">
+		<form action={ paths.CreateModule(props.organization.String()) } method="POST">
 			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProvider.ID.String() }/>
 			<input type="hidden" name="identifier" id="identifier" value={ props.repo }/>
 			<button class="btn">connect</button>
@@ -152,7 +152,7 @@ templ newConfirm(props newViewProps) {
 }
 
 type listProps struct {
-	organization     string
+	organization     resource.OrganizationName
 	modules          []*Module
 	canPublishModule bool
 }
@@ -160,7 +160,7 @@ type listProps struct {
 templ list(props listProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "modules",
-		Organization:   props.organization,
+		Organization:   &props.organization,
 		ContentActions: listActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules"},
@@ -179,7 +179,7 @@ templ list(props listProps) {
 
 templ listActions(props listProps) {
 	if props.canPublishModule {
-		<form action={ paths.NewModule(props.organization) } method="GET">
+		<form action={ paths.NewModule(props.organization.String()) } method="GET">
 			<button class="btn" id="list-module-vcs-providers-button">Publish</button>
 		</form>
 	}
@@ -207,9 +207,9 @@ type getProps struct {
 templ get(props getProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "modules",
-		Organization: props.module.Organization,
+		Organization: &props.module.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "modules", Link: paths.Modules(props.module.Organization)},
+			{Name: "modules", Link: paths.Modules(props.module.Organization.String())},
 			{Name: props.module.Name},
 		},
 	}) {
@@ -246,7 +246,7 @@ templ get(props getProps) {
 							<label for="usage">Usage</label>
 							<textarea class="textarea font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
 								{ `module "{ ` + props.module.Name + `}" {
-	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
+	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization.String() + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
 	version = "{ ` + props.currentVersion.Version + ` }"
 }` }
 							</textarea>

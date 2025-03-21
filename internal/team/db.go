@@ -20,7 +20,7 @@ type TeamRow struct {
 	PermissionManageWorkspaces      pgtype.Bool
 	PermissionManageVCS             pgtype.Bool
 	PermissionManageModules         pgtype.Bool
-	OrganizationName                pgtype.Text
+	OrganizationName                resource.OrganizationName
 	SSOTeamID                       pgtype.Text
 	Visibility                      pgtype.Text
 	PermissionManagePolicies        pgtype.Bool
@@ -33,7 +33,7 @@ func (row TeamRow) ToTeam() *Team {
 		ID:           row.TeamID,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Name:         row.Name.String,
-		Organization: row.OrganizationName.String,
+		Organization: row.OrganizationName,
 		Visibility:   row.Visibility.String,
 		Access: OrganizationAccess{
 			ManageWorkspaces:      row.PermissionManageWorkspaces.Bool,
@@ -61,7 +61,7 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 		ID:                              team.ID,
 		Name:                            sql.String(team.Name),
 		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
-		OrganizationName:                sql.String(team.Organization),
+		OrganizationName:                team.Organization,
 		Visibility:                      sql.String(team.Visibility),
 		SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
 		PermissionManageWorkspaces:      sql.Bool(team.Access.ManageWorkspaces),
@@ -104,10 +104,10 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(cont
 	)
 }
 
-func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {
+func (db *pgdb) getTeam(ctx context.Context, name string, organization resource.OrganizationName) (*Team, error) {
 	result, err := q.FindTeamByName(ctx, db.Conn(ctx), FindTeamByNameParams{
 		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
+		OrganizationName: organization,
 	})
 	if err != nil {
 		return nil, sql.Error(err)
@@ -131,8 +131,8 @@ func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Tea
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, error) {
-	result, err := q.FindTeamsByOrg(ctx, db.Conn(ctx), sql.String(organization))
+func (db *pgdb) listTeams(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
+	result, err := q.FindTeamsByOrg(ctx, db.Conn(ctx), organization)
 	if err != nil {
 		return nil, err
 	}

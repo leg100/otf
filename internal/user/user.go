@@ -94,9 +94,9 @@ func (u *User) IsTeamMember(teamID resource.ID) bool {
 // their membership of teams).
 //
 // NOTE: always returns a non-nil slice
-func (u *User) Organizations() []string {
+func (u *User) Organizations() []resource.OrganizationName {
 	// De-dup organizations using map
-	seen := make(map[string]bool)
+	seen := make(map[resource.OrganizationName]bool)
 	for _, t := range u.Teams {
 		if _, ok := seen[t.Organization]; ok {
 			continue
@@ -105,7 +105,7 @@ func (u *User) Organizations() []string {
 	}
 
 	// Turn map into slice
-	organizations := make([]string, len(seen))
+	organizations := make([]resource.OrganizationName, len(seen))
 	var i int
 	for org := range seen {
 		organizations[i] = org
@@ -156,7 +156,7 @@ func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 }
 
 // IsOwner determines if user is an owner of an organization
-func (u *User) IsOwner(organization string) bool {
+func (u *User) IsOwner(organization resource.OrganizationName) bool {
 	for _, team := range u.Teams {
 		if team.IsOwner(organization) {
 			return true

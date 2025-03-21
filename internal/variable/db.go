@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -32,7 +33,7 @@ type (
 		Global           pgtype.Bool
 		Name             pgtype.Text
 		Description      pgtype.Text
-		OrganizationName pgtype.Text
+		OrganizationName resource.OrganizationName
 		Variables        []VariableModel
 		WorkspaceIds     []pgtype.Text
 	}
@@ -57,7 +58,7 @@ func (row VariableSetRow) convert() (*VariableSet, error) {
 		Global:       row.Global.Bool,
 		Description:  row.Description.String,
 		Name:         row.Name.String,
-		Organization: row.OrganizationName.String,
+		Organization: row.OrganizationName,
 	}
 	set.Variables = make([]*Variable, len(row.Variables))
 	for i, v := range row.Variables {
@@ -128,7 +129,7 @@ func (pdb *pgdb) createVariableSet(ctx context.Context, set *VariableSet) error 
 		Name:             sql.String(set.Name),
 		Description:      sql.String(set.Description),
 		Global:           sql.Bool(set.Global),
-		OrganizationName: sql.String(set.Organization),
+		OrganizationName: set.Organization,
 	})
 	return sql.Error(err)
 }
@@ -175,8 +176,8 @@ func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID reso
 	return VariableSetRow(row).convert()
 }
 
-func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
-	rows, err := q.FindVariableSetsByOrganization(ctx, pdb.Conn(ctx), sql.String(organization))
+func (pdb *pgdb) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
+	rows, err := q.FindVariableSetsByOrganization(ctx, pdb.Conn(ctx), organization)
 	if err != nil {
 		return nil, sql.Error(err)
 	}

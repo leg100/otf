@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -61,13 +62,15 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	org, err := a.Get(r.Context(), name)
+	org, err := a.Get(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -98,8 +101,10 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -109,7 +114,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.Update(r.Context(), name, UpdateOptions{
+	org, err := a.Update(r.Context(), params.Name, UpdateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
@@ -127,13 +132,15 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.Delete(r.Context(), name); err != nil {
+	if err := a.Delete(r.Context(), params.Name); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -142,13 +149,15 @@ func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	entitlements, err := a.GetEntitlements(r.Context(), name)
+	entitlements, err := a.GetEntitlements(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -158,8 +167,10 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -170,7 +181,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ot, token, err := a.CreateToken(r.Context(), CreateOrganizationTokenOptions{
-		Organization: org,
+		Organization: params.Name,
 		Expiry:       opts.ExpiredAt,
 	})
 	if err != nil {
@@ -188,13 +199,15 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ot, err := a.GetOrganizationToken(r.Context(), org)
+	ot, err := a.GetOrganizationToken(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -213,13 +226,15 @@ func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Name resource.OrganizationName `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	err = a.DeleteToken(r.Context(), org)
+	err := a.DeleteToken(r.Context(), params.Name)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

@@ -21,7 +21,7 @@ import (
 )
 
 type newViewProps struct {
-	organization  string
+	organization  resource.OrganizationName
 	providers     []*vcsprovider.VCSProvider
 	repos         []string
 	vcsProviderID resource.ID
@@ -82,7 +82,7 @@ func newView(props newViewProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 templ.SafeURL = paths.NewModule(props.organization) + "?step=connect-vcs"
+			var templ_7745c5c3_Var3 templ.SafeURL = paths.NewModule(props.organization.String()) + "?step=connect-vcs"
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -142,9 +142,9 @@ func newView(props newViewProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new module",
-			Organization: props.organization,
+			Organization: &props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "modules", Link: paths.Modules(props.organization)},
+				{Name: "modules", Link: paths.Modules(props.organization.String())},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -219,7 +219,7 @@ func newConnect(props newViewProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var7 templ.SafeURL = paths.NewModule(props.organization)
+			var templ_7745c5c3_Var7 templ.SafeURL = paths.NewModule(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var7)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -294,7 +294,7 @@ func newRepo(props newViewProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var11 templ.SafeURL = paths.NewModule(props.organization)
+		var templ_7745c5c3_Var11 templ.SafeURL = paths.NewModule(props.organization.String())
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var11)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -334,7 +334,7 @@ func newRepo(props newViewProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var14 templ.SafeURL = paths.NewModule(props.organization)
+			var templ_7745c5c3_Var14 templ.SafeURL = paths.NewModule(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var14)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -435,7 +435,7 @@ func newConfirm(props newViewProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var20 templ.SafeURL = paths.CreateModule(props.organization)
+		var templ_7745c5c3_Var20 templ.SafeURL = paths.CreateModule(props.organization.String())
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var20)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -475,7 +475,7 @@ func newConfirm(props newViewProps) templ.Component {
 }
 
 type listProps struct {
-	organization     string
+	organization     resource.OrganizationName
 	modules          []*Module
 	canPublishModule bool
 }
@@ -537,7 +537,7 @@ func list(props listProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:          "modules",
-			Organization:   props.organization,
+			Organization:   &props.organization,
 			ContentActions: listActions(props),
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "modules"},
@@ -576,7 +576,7 @@ func listActions(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 templ.SafeURL = paths.NewModule(props.organization)
+			var templ_7745c5c3_Var26 templ.SafeURL = paths.NewModule(props.organization.String())
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var26)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -816,7 +816,7 @@ func get(props getProps) templ.Component {
 				}
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(`module "{ ` + props.module.Name + `}" {
-	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
+	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization.String() + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
 	version = "{ ` + props.currentVersion.Version + ` }"
 }`)
 				if templ_7745c5c3_Err != nil {
@@ -925,9 +925,9 @@ func get(props getProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "modules",
-			Organization: props.module.Organization,
+			Organization: &props.module.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "modules", Link: paths.Modules(props.module.Organization)},
+				{Name: "modules", Link: paths.Modules(props.module.Organization.String())},
 				{Name: props.module.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var32), templ_7745c5c3_Buffer)

@@ -12,9 +12,9 @@ import (
 templ newWorkspaceVariable(ws *workspace.Workspace) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new variable",
-		Organization: ws.Organization,
+		Organization: &ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 			{Name: "new"},
 		},
@@ -28,23 +28,23 @@ templ newWorkspaceVariable(ws *workspace.Workspace) {
 }
 
 type newVariableSetProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	availableWorkspaces []workspaceInfo
 }
 
 templ newVariableSet(props newVariableSetProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new variable set",
-		Organization: props.organization,
+		Organization: &props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(props.organization)},
+			{Name: "variable sets", Link: paths.VariableSets(props.organization.String())},
 			{Name: "new"},
 		},
 	}) {
 		<span class="text-xl">Add a new variable set</span>
 		@variableSetForm(variableSetFormProps{
 			set:                 &VariableSet{Global: true}, // set global as default
-			action:              paths.CreateVariableSet(props.organization),
+			action:              paths.CreateVariableSet(props.organization.String()),
 			availableWorkspaces: props.availableWorkspaces,
 			existingWorkspaces:  []workspaceInfo{},
 		})
@@ -54,9 +54,9 @@ templ newVariableSet(props newVariableSetProps) {
 templ newVSV(vs *VariableSet) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new variable | variable sets",
-		Organization: vs.Organization,
+		Organization: &vs.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
+			{Name: "variable sets", Link: paths.VariableSets(vs.Organization.String())},
 			{Name: vs.Name, Link: paths.VariableSet(vs.ID.String())},
 			{Name: "new variable"},
 		},
@@ -107,9 +107,9 @@ func (w workspaceTableProps) CanDeleteVariable() bool {
 templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "variables",
-		Organization: props.ws.Organization,
+		Organization: &props.ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
 		},
@@ -133,7 +133,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 }
 
 type listVariableSetsProps struct {
-	organization         string
+	organization         resource.OrganizationName
 	sets                 []*VariableSet
 	canCreateVariableSet bool
 }
@@ -141,7 +141,7 @@ type listVariableSetsProps struct {
 templ listVariableSets(props listVariableSetsProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "variable sets",
-		Organization:   props.organization,
+		Organization:   &props.organization,
 		ContentActions: listVariableSetsActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets"},
@@ -160,7 +160,7 @@ templ listVariableSets(props listVariableSetsProps) {
 
 templ listVariableSetsActions(props listVariableSetsProps) {
 	if props.canCreateVariableSet {
-		<form action={ paths.NewVariableSet(props.organization) } method="GET">
+		<form action={ paths.NewVariableSet(props.organization.String()) } method="GET">
 			<button class="btn" id="new-variable-set-button">
 				New Variable Set
 			</button>
@@ -192,9 +192,9 @@ type editWorkspaceVariableProps struct {
 templ editWorkspaceVariable(props editWorkspaceVariableProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "edit | " + props.variable.ID.String(),
-		Organization: props.ws.Organization,
+		Organization: &props.ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
 			{Name: "edit"},
@@ -219,9 +219,9 @@ type editVariableSetProps struct {
 templ editVariableSet(props editVariableSetProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "edit variable set",
-		Organization: props.set.Organization,
+		Organization: &props.set.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization.String())},
 			{Name: props.set.Name},
 			{Name: "edit"},
 		},
@@ -251,9 +251,9 @@ type editVSVProps struct {
 templ editVSV(props editVSVProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "edit variable set variable",
-		Organization: props.set.Organization,
+		Organization: &props.set.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization.String())},
 			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID.String())},
 			{Name: "variables"},
 			{Name: props.variable.ID.String()},

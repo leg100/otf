@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 )
@@ -25,7 +26,7 @@ func (f *fakeService) updateAgentPool(ctx context.Context, poolID resource.ID, o
 	return nil, nil
 }
 
-func (f *fakeService) listAgentPoolsByOrganization(context.Context, string, listPoolOptions) ([]*Pool, error) {
+func (f *fakeService) listAgentPoolsByOrganization(context.Context, resource.OrganizationName, listPoolOptions) ([]*Pool, error) {
 	return []*Pool{f.pool}, nil
 }
 
@@ -92,7 +93,7 @@ func (f *fakeService) listRunners(ctx context.Context) ([]*RunnerMeta, error) {
 	return nil, nil
 }
 
-func (f *fakeService) listRunnersByOrganization(ctx context.Context, organization string) ([]*RunnerMeta, error) {
+func (f *fakeService) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
 	return nil, nil
 }
 

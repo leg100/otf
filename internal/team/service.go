@@ -86,10 +86,10 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
-	opts.Authorizer.RegisterOrganizationResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (string, error) {
+	opts.Authorizer.RegisterOrganizationResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.OrganizationName, error) {
 		team, err := svc.db.getTeamByID(ctx, id)
 		if err != nil {
-			return "", err
+			return resource.OrganizationName{}, err
 		}
 		return team.Organization, nil
 	})
@@ -103,8 +103,8 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.CreateTeamAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
+	subject, err := a.Authorize(ctx, authz.CreateTeamAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +163,8 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 }
 
 // List lists teams in the organization.
-func (a *Service) List(ctx context.Context, organization string) ([]*Team, error) {
-	subject, err := a.Authorize(ctx, authz.ListTeamsAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
+	subject, err := a.Authorize(ctx, authz.ListTeamsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +179,8 @@ func (a *Service) List(ctx context.Context, organization string) ([]*Team, error
 	return teams, nil
 }
 
-func (a *Service) Get(ctx context.Context, organization, name string) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) Get(ctx context.Context, organization resource.OrganizationName, name string) (*Team, error) {
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (a *Service) GetByID(ctx context.Context, teamID resource.ID) (*Team, error
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (a *Service) Delete(ctx context.Context, teamID resource.ID) error {
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.ID) (*T
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: &team.Organization})
 	if err != nil {
 		return nil, err
 	}

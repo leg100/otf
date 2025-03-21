@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,9 +45,9 @@ func newFakeCLI(org *Organization) *CLI {
 }
 
 func (f *fakeCLIService) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
-	return &Organization{Name: *opts.Name}, nil
+	return NewOrganization(opts)
 }
 
-func (f *fakeCLIService) DeleteOrganization(context.Context, string) error {
+func (f *fakeCLIService) DeleteOrganization(context.Context, resource.OrganizationName) error {
 	return nil
 }

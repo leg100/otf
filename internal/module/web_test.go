@@ -141,7 +141,7 @@ func TestWeb_Publish(t *testing.T) {
 }
 
 func TestNewModule_Delete(t *testing.T) {
-	mod := Module{Organization: "acme-corp"}
+	mod := Module{Organization: resource.NewTestOrganizationName(t)}
 	h := newTestWebHandlers(t, withMod(&mod))
 
 	q := "/?module_id=mod-123"
@@ -151,7 +151,7 @@ func TestNewModule_Delete(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Modules("acme-corp"), redirect.Path)
+		assert.Equal(t, paths.Modules(mod.Organization.String()), redirect.Path)
 	}
 }
 

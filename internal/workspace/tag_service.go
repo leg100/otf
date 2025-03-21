@@ -25,8 +25,8 @@ type (
 	}
 )
 
-func (s *Service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListTagsAction, &authz.AccessRequest{Organization: organization})
+func (s *Service) ListTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+	subject, err := s.Authorize(ctx, authz.ListTagsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +39,8 @@ func (s *Service) ListTags(ctx context.Context, organization string, opts ListTa
 	return list, nil
 }
 
-func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, &authz.AccessRequest{Organization: organization})
+func (s *Service) DeleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.ID) error {
+	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return err
 	}

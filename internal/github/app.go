@@ -13,8 +13,8 @@ type (
 		WebhookSecret string
 		PrivateKey    string
 
-		// Organization is the name of the organization that owns the app. If
-		// the app is owned by a user then this is nil.
+		// Organization is the name of the *github* organization that owns the
+		// app. If the app is owned by a user then this is nil.
 		Organization *string
 	}
 

@@ -2,17 +2,21 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func Agents(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func Agents(organization resource.OrganizationName) string {
 	return fmt.Sprintf("/app/organizations/%s/agents", organization)
 }
 
-func CreateAgent(organization string) string {
+func CreateAgent(organization resource.OrganizationName) string {
 	return fmt.Sprintf("/app/organizations/%s/agents/create", organization)
 }
 
-func NewAgent(organization string) string {
+func NewAgent(organization resource.OrganizationName) string {
 	return fmt.Sprintf("/app/organizations/%s/agents/new", organization)
 }
 
@@ -32,6 +36,6 @@ func DeleteAgent(agent string) string {
 	return fmt.Sprintf("/app/agents/%s/delete", agent)
 }
 
-func WatchAgent(organization string) string {
+func WatchAgent(organization resource.OrganizationName) string {
 	return fmt.Sprintf("/app/organizations/%s/agents/watch", organization)
 }

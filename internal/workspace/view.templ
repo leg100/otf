@@ -15,16 +15,16 @@ import (
 	"time"
 )
 
-templ new(organization string) {
+templ new(organization resource.OrganizationName) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new workspace",
-		Organization: organization,
+		Organization: &organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(organization)},
+			{Name: "workspaces", Link: paths.Workspaces(organization.String())},
 			{Name: "new"},
 		},
 	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
+		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization.String()) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
 				<input class="input w-80" type="text" name="name" id="name" required/>
@@ -37,7 +37,7 @@ templ new(organization string) {
 }
 
 type listProps struct {
-	organization        string
+	organization        resource.OrganizationName
 	search              string
 	status              []runstatus.Status
 	tags                map[string]bool
@@ -51,16 +51,16 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:          "workspaces",
-		Organization:   props.organization,
+		Organization:   &props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+			{Name: "workspaces", Link: paths.Workspaces(props.organization.String())},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
 		<form
-			action={ paths.Workspaces(props.organization) }
+			action={ paths.Workspaces(props.organization.String()) }
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
 		>
@@ -144,9 +144,9 @@ templ tag(name string) {
 	</span>
 }
 
-templ listActions(organization string, canCreate bool) {
+templ listActions(organization resource.OrganizationName, canCreate bool) {
 	if canCreate {
-		<form action={ paths.NewWorkspace(organization) } method="GET">
+		<form action={ paths.NewWorkspace(organization.String()) } method="GET">
 			<button class="btn" id="new-workspace-button">New Workspace</button>
 		</form>
 	}
@@ -171,10 +171,10 @@ templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
-		Organization: props.ws.Organization,
+		Organization: &props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 			{Name: props.ws.Name},
 		},
 	}
@@ -285,10 +285,10 @@ templ edit(props editProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "edit | " + props.ws.ID.String(),
-		Organization: props.ws.Organization,
+		Organization: &props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
 			{Name: "settings"},
 		},
@@ -343,7 +343,7 @@ templ edit(props editProps) {
 							<label class="text-md" for="agent-pool-id">Agent pool</label>
 							<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
 						</div>
-						<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization) }>here</a>.</span>
+						<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization.String()) }>here</a>.</span>
 					</div>
 				</div>
 			</fieldset>
@@ -564,16 +564,16 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs providers | " + ws.ID.String(),
-		Organization: ws.Organization,
+		Organization: &ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 			{Name: "vcs providers"},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
+		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization.String()) }>VCS provider</a> to connect this workspace to a repository.</div>
 		<div id="content-list">
 			for _, provider := range providers {
 				{{ path := fmt.Sprintf("%s?vcs_provider_id=%s", paths.SetupConnectionRepoWorkspace(ws.ID.String()), provider.ID.String()) }}
@@ -588,7 +588,7 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 				</div>
 			}
 			if len(providers) == 0 {
-				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization.String()) }>here</a>.
 			}
 		</div>
 	}
@@ -598,9 +598,9 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs repos | " + ws.ID.String(),
-		Organization: ws.Organization,
+		Organization: &ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
 			{Name: "vcs repositories"},
 		},
