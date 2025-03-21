@@ -122,7 +122,7 @@ func (u *User) IsSiteAdmin() bool {
 	return u.SiteAdmin || u.ID == SiteAdminID
 }
 
-func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
+func (u *User) CanAccess(action authz.Action, req authz.AccessRequest) bool {
 	// Site admin can do whatever it wants
 	if u.IsSiteAdmin() {
 		return true
@@ -141,9 +141,9 @@ func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 			}
 		}
 	}
-	if req == nil {
-		// nil req means site-level access is being requested and there are no
-		// further allowed actions that are available to user at the site-level.
+	if req.ID == resource.SiteID {
+		// no further allowed actions that are available to user at the
+		// site-level.
 		return false
 	}
 	// All other user perms are inherited from team memberships.

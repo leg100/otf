@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
@@ -24,8 +23,8 @@ type Authorizer struct {
 // Interface provides an interface for services to use to permit swapping out
 // the authorizer for tests.
 type Interface interface {
-	Authorize(ctx context.Context, action Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error)
-	CanAccess(ctx context.Context, action Action, req *AccessRequest) bool
+	Authorize(ctx context.Context, action Action, id resource.ID, opts ...CanAccessOption) (Subject, error)
+	CanAccess(ctx context.Context, action Action, id resource.ID) bool
 }
 
 func NewAuthorizer(logger logr.Logger) *Authorizer {
@@ -37,16 +36,16 @@ func NewAuthorizer(logger logr.Logger) *Authorizer {
 }
 
 type WorkspacePolicyGetter interface {
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (WorkspacePolicy, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (WorkspacePolicy, error)
 }
 
 // OrganizationResolver takes the ID of a resource and returns the name of the
 // organization it belongs to.
-type OrganizationResolver func(ctx context.Context, id resource.TfeID) (resource.OrganizationName, error)
+type OrganizationResolver func(ctx context.Context, id resource.ID) (resource.OrganizationName, error)
 
 // WorkspaceResolver takes the ID of a resource and returns the ID of the
 // workspace it belongs to.
-type WorkspaceResolver func(ctx context.Context, id resource.TfeID) (resource.TfeID, error)
+type WorkspaceResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
 
 // RegisterOrganizationResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the name of the
@@ -88,7 +87,10 @@ type canAccessConfig struct {
 // resource. The subject is expected to be contained within the context. If the
 // access request is nil then it's assumed the request is for access to the
 // entire site (the highest level).
-func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRequest, opts ...CanAccessOption) (Subject, error) {
+func (a *Authorizer) Authorize(ctx context.Context, action Action, resourceID resource.ID, opts ...CanAccessOption) (Subject, error) {
+	if resourceID == nil {
+		return nil, errors.New("authorization request resourceID parameter cannot be nil")
+	}
 	var cfg canAccessConfig
 	for _, fn := range opts {
 		fn(&cfg)
@@ -102,76 +104,91 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRe
 	if SkipAuthz(ctx) {
 		return subj, nil
 	}
-	// Wrapped in function in order to log error messages uniformly.
-	err = func() error {
-		if req != nil && req.ID != nil {
-			// Check if resource kind is registered for its ID to be resolved to workspace
-			// ID.
-			if resolver, ok := a.workspaceResolvers[req.ID.Kind()]; ok {
-				workspaceID, err := resolver(ctx, *req.ID)
-				if err != nil {
-					return fmt.Errorf("resolving workspace ID: %w", err)
-				}
-				// Authorize workspace ID instead
-				req.ID = &workspaceID
-			}
-			// If the resource kind is a workspace, then fetch its policy.
-			if req.ID.Kind() == resource.WorkspaceKind {
-				policy, err := a.GetWorkspacePolicy(ctx, *req.ID)
-				if err != nil {
-					return fmt.Errorf("fetching workspace policy: %w", err)
-				}
-				req.WorkspacePolicy = &policy
-			}
-			// Resolve the organization if not already provided. Every resource
-			// belongs to an organization, so there should be a resolver for each
-			// resource kind to resolve the resource ID to the organization it
-			// belongs to.
-			if req.Organization == nil {
-				resolver, ok := a.organizationResolvers[req.ID.Kind()]
-				if !ok {
-					return errors.New("resource kind is missing organization resolver")
-				}
-				organization, err := resolver(ctx, *req.ID)
-				if err != nil {
-					return fmt.Errorf("resolving organization: %w", err)
-				}
-				req.Organization = &organization
-			}
-		}
+
+	ar, err := a.generateAccessRequest(ctx, resourceID)
+	if err == nil {
 		// Subject determines whether it is allowed to access resource.
-		if !subj.CanAccess(action, req) {
-			return internal.ErrAccessNotPermitted
+		if !subj.CanAccess(action, ar) {
+			err = internal.ErrAccessNotPermitted
 		}
-		return nil
-	}()
-	if err != nil && !cfg.disableLogs {
-		a.Error(err, "authorization failure",
-			"resource", req,
-			"action", action.String(),
-			"subject", subj,
-		)
 	}
-	return subj, err
+	if err != nil {
+		if !cfg.disableLogs {
+			// TODO: disambiguate between logging errors due to subject lacking
+			// sufficient permissions, and errors due to an internal problem
+			// with the authorization process
+			a.Error(err, "authorization failure",
+				"resource", resourceID,
+				"action", action.String(),
+				"subject", subj,
+			)
+		}
+		return nil, err
+	}
+	return subj, nil
+}
+
+func (a *Authorizer) generateAccessRequest(ctx context.Context, resourceID resource.ID) (AccessRequest, error) {
+	if resourceID == resource.SiteID {
+		return AccessRequest{ID: resourceID}, nil
+	}
+	var ar AccessRequest
+	// Check if resource kind is registered for its ID to be resolved to workspace
+	// ID.
+	if resolver, ok := a.workspaceResolvers[resourceID.Kind()]; ok {
+		workspaceID, err := resolver(ctx, resourceID)
+		if err != nil {
+			return AccessRequest{}, fmt.Errorf("resolving workspace ID: %w", err)
+		}
+		// Authorize workspace ID instead
+		resourceID = workspaceID
+	}
+	// If the resource kind is a workspace, then fetch its policy.
+	if resourceID.Kind() == resource.WorkspaceKind {
+		policy, err := a.GetWorkspacePolicy(ctx, resourceID)
+		if err != nil {
+			return AccessRequest{}, fmt.Errorf("fetching workspace policy: %w", err)
+		}
+		ar.WorkspacePolicy = &policy
+	}
+	// Resolve the organization. Apart from an organization or the "site"
+	// resource, every resource belongs to an organization, so there should be a
+	// resolver for each resource kind to resolve the resource ID to the
+	// organization it belongs to.
+	if resourceID.Kind() == resource.OrganizationKind {
+		ar.Organization = resourceID
+	} else {
+		resolver, ok := a.organizationResolvers[resourceID.Kind()]
+		if !ok {
+			return AccessRequest{}, errors.New("resource kind is missing organization resolver")
+		}
+		organization, err := resolver(ctx, resourceID)
+		if err != nil {
+			return AccessRequest{}, fmt.Errorf("resolving organization: %w", err)
+		}
+		ar.Organization = &organization
+	}
+	return ar, nil
 }
 
 // CanAccess is a helper to boil down an access request to a true/false
 // decision, with any error encountered interpreted as false.
-func (a *Authorizer) CanAccess(ctx context.Context, action Action, req *AccessRequest) bool {
-	_, err := a.Authorize(ctx, action, req, WithoutErrorLogging())
+func (a *Authorizer) CanAccess(ctx context.Context, action Action, id resource.ID) bool {
+	_, err := a.Authorize(ctx, action, id, WithoutErrorLogging())
 	return err == nil
 }
 
-// AccessRequest is a request for access to either an organization or an
-// individual resource.
+// AccessRequest is a request for access to a resource.
 type AccessRequest struct {
-	// Organization name to which access is being requested.
-	Organization *resource.OrganizationName
-	// ID of resource to which access is being requested. If nil then the action
-	// is being requested on the organization.
-	ID *resource.TfeID
+	// ID of resource to which access is being requested.
+	ID resource.ID
+	// Organization is the ID of the organization the resource belongs to, or is
+	// the same as the ID above if access is being requested to an organization.
+	// If access is being requested to the "site", then this is nil.
+	Organization resource.ID
 	// WorkspacePolicy specifies workspace-specific permissions for the resource
-	// specified by ID. Only non-nil if ID refers to a workspace.
+	// specified by ID above. This is nil if the resource is not a workspace or
+	// does not belong to a workspace.
 	WorkspacePolicy *WorkspacePolicy
 }
 
@@ -189,17 +206,17 @@ type WorkspacePermission struct {
 	Role   Role
 }
 
-func (r *AccessRequest) LogValue() slog.Value {
-	if r == nil {
-		return slog.StringValue("site")
-	} else {
-		var attrs []slog.Attr
-		if r.Organization != nil {
-			attrs = append(attrs, slog.Any("organization", *r.Organization))
-		}
-		if r.ID != nil {
-			attrs = append(attrs, slog.String("resource_id", r.ID.String()))
-		}
-		return slog.GroupValue(attrs...)
-	}
-}
+//func (r AccessRequest) LogValue() slog.Value {
+//	if r == nil {
+//		return slog.StringValue("site")
+//	} else {
+//		var attrs []slog.Attr
+//		if r.Organization != nil {
+//			attrs = append(attrs, slog.Any("organization", *r.Organization))
+//		}
+//		if r.ID != nil {
+//			attrs = append(attrs, slog.String("resource_id", r.ID.String()))
+//		}
+//		return slog.GroupValue(attrs...)
+//	}
+//}

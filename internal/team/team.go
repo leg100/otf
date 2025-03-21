@@ -126,8 +126,8 @@ func (t *Team) IsOwner(organization resource.OrganizationName) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 
-func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
-	if req == nil {
+func (t *Team) CanAccess(action authz.Action, req authz.AccessRequest) bool {
+	if req.ID == resource.SiteID {
 		// Deny all site-level access
 		return false
 	}
