@@ -114,40 +114,100 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 }
 
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
-	params := InsertWorkspaceParams{
-		ID:                         ws.ID,
-		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
-		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		AgentPoolID:                ws.AgentPoolID,
-		AllowCLIApply:              sql.Bool(false),
-		AllowDestroyPlan:           sql.Bool(ws.AllowDestroyPlan),
-		AutoApply:                  sql.Bool(ws.AutoApply),
-		Branch:                     sql.String(""),
-		CanQueueDestroyPlan:        sql.Bool(ws.CanQueueDestroyPlan),
-		Description:                sql.String(ws.Description),
-		Environment:                sql.String(ws.Environment),
-		ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-		GlobalRemoteState:          sql.Bool(ws.GlobalRemoteState),
-		MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
-		Name:                       sql.String(ws.Name),
-		QueueAllRuns:               sql.Bool(ws.QueueAllRuns),
-		SpeculativeEnabled:         sql.Bool(ws.SpeculativeEnabled),
-		SourceName:                 sql.String(ws.SourceName),
-		SourceURL:                  sql.String(ws.SourceURL),
-		StructuredRunOutputEnabled: sql.Bool(ws.StructuredRunOutputEnabled),
-		TerraformVersion:           sql.String(ws.TerraformVersion),
-		TriggerPrefixes:            sql.StringArray(ws.TriggerPrefixes),
-		TriggerPatterns:            sql.StringArray(ws.TriggerPatterns),
-		VCSTagsRegex:               sql.StringPtr(nil),
-		WorkingDirectory:           sql.String(ws.WorkingDirectory),
-		OrganizationName:           ws.Organization,
-	}
+	var (
+		allowCLIApply bool
+		branch        string
+		VCSTagsRegex  *string
+	)
 	if ws.Connection != nil {
-		params.AllowCLIApply = sql.Bool(ws.Connection.AllowCLIApply)
-		params.Branch = sql.String(ws.Connection.Branch)
-		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
+		allowCLIApply = ws.Connection.AllowCLIApply
+		branch = ws.Connection.Branch
+		VCSTagsRegex = &ws.Connection.TagsRegex
 	}
-	err := q.InsertWorkspace(ctx, db.Conn(ctx), params)
+	_, err := db.Conn(ctx).Exec(ctx, `
+INSERT INTO workspaces (
+    workspace_id,
+    created_at,
+    updated_at,
+    agent_pool_id,
+    allow_cli_apply,
+    allow_destroy_plan,
+    auto_apply,
+    branch,
+    can_queue_destroy_plan,
+    description,
+    environment,
+    execution_mode,
+    global_remote_state,
+    migration_environment,
+    name,
+    queue_all_runs,
+    speculative_enabled,
+    source_name,
+    source_url,
+    structured_run_output_enabled,
+    terraform_version,
+    trigger_prefixes,
+    trigger_patterns,
+    vcs_tags_regex,
+    working_directory,
+    organization_name
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    $17,
+    $18,
+    $19,
+    $20,
+    $21,
+    $22,
+    $23,
+    $24,
+    $25,
+    $26
+)
+`,
+		ws.ID,
+		ws.CreatedAt,
+		ws.UpdatedAt,
+		ws.AgentPoolID,
+		allowCLIApply,
+		ws.AllowDestroyPlan,
+		ws.AutoApply,
+		branch,
+		ws.CanQueueDestroyPlan,
+		ws.Description,
+		ws.Environment,
+		ws.ExecutionMode,
+		ws.GlobalRemoteState,
+		ws.MigrationEnvironment,
+		ws.Name,
+		ws.QueueAllRuns,
+		ws.SpeculativeEnabled,
+		ws.SourceName,
+		ws.SourceURL,
+		ws.StructuredRunOutputEnabled,
+		ws.TerraformVersion,
+		ws.TriggerPrefixes,
+		ws.TriggerPatterns,
+		VCSTagsRegex,
+		ws.WorkingDirectory,
+		ws.Organization,
+	)
 	return sql.Error(err)
 }
 
