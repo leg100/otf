@@ -74,7 +74,7 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.TfeID, fn func(context.Context, *Team) error) (*Team, error) {
+func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(context.Context, *Team) error) (*Team, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -115,8 +115,8 @@ func (db *pgdb) getTeam(ctx context.Context, name string, organization resource.
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) getTeamByID(ctx context.Context, id resource.TfeID) (*Team, error) {
-	result, err := q.FindTeamByID(ctx, db.Conn(ctx), id)
+func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) {
+	result, err := q.FindTeamByID(ctx, db.Conn(ctx), id.(*resource.TfeID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

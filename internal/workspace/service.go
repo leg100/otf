@@ -116,7 +116,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &authz.AccessRequest{Organization: &ws.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -206,13 +206,13 @@ func (s *Service) GetByName(ctx context.Context, organization resource.Organizat
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, nil)
+		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, resource.SiteID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, &authz.AccessRequest{Organization: opts.Organization})
+		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, opts.Organization)
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.

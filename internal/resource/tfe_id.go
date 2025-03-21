@@ -18,6 +18,8 @@ type TfeID struct {
 	id   string
 }
 
+var _ ID = (*TfeID)(nil)
+
 // NewTfeID constructs a resource ID
 func NewTfeID(kind Kind) TfeID {
 	return TfeID{kind: kind, id: GenerateRandomStringFromAlphabet(16, base58)}
