@@ -63,7 +63,7 @@ type IngressAttributeModel struct {
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
@@ -105,14 +105,14 @@ type Log struct {
 }
 
 type Model struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
 	Config                 []byte
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 }
 
 type Module struct {
@@ -214,7 +214,7 @@ type RepoConnection struct {
 	ModuleID      pgtype.Text
 	WorkspaceID   pgtype.Text
 	RepoPath      pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }
 
 type Repohook struct {
@@ -237,7 +237,7 @@ type Run struct {
 	TargetAddrs            []pgtype.Text
 	LockFile               []byte
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	ConfigurationVersionID pgtype.Text
 	AutoApply              pgtype.Bool
 	PlanOnly               pgtype.Bool
@@ -314,7 +314,7 @@ type StateVersionStatus struct {
 }
 
 type StatusTimestampModel struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	Status                 pgtype.Text
 	Timestamp              pgtype.Timestamptz
 }
@@ -326,7 +326,7 @@ type Tag struct {
 }
 
 type Team struct {
-	TeamID                          resource.ID
+	TeamID                          resource.TfeID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
@@ -416,7 +416,7 @@ type VariableSetWorkspace struct {
 }
 
 type Workspace struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -444,7 +444,7 @@ type Workspace struct {
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
+	AgentPoolID                *resource.TfeID
 	LockUserID                 pgtype.Text
 }
 

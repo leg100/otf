@@ -10,7 +10,7 @@ import (
 )
 
 type Model struct {
-	TeamID                          resource.ID
+	TeamID                          resource.TfeID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
@@ -25,9 +25,9 @@ type Model struct {
 }
 
 type TeamToken struct {
-	TeamTokenID resource.ID
+	TeamTokenID resource.TfeID
 	Description pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	TeamID      resource.ID
+	TeamID      resource.TfeID
 	Expiry      pgtype.Timestamptz
 }

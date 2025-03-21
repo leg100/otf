@@ -67,13 +67,13 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var params []struct {
-		ID resource.ID `jsonapi:"primary,tags"`
+		ID resource.TfeID `jsonapi:"primary,tags"`
 	}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	tagIDs := make([]resource.ID, len(params))
+	tagIDs := make([]resource.TfeID, len(params))
 	for i, p := range params {
 		tagIDs[i] = p.ID
 	}
@@ -97,7 +97,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(params))
+	workspaceIDs := make([]resource.TfeID, len(params))
 	for i, p := range params {
 		workspaceIDs[i] = p.ID
 	}

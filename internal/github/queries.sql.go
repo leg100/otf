@@ -106,7 +106,7 @@ type InsertGithubAppInstallParams struct {
 	InstallID     pgtype.Int8
 	Username      pgtype.Text
 	Organization  pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }
 
 func (q *Queries) InsertGithubAppInstall(ctx context.Context, db DBTX, arg InsertGithubAppInstallParams) error {

@@ -26,7 +26,7 @@ type (
 
 	// pgresult is the result of a database query for a run.
 	pgresult struct {
-		RunID                  resource.ID
+		RunID                  resource.TfeID
 		CreatedAt              pgtype.Timestamptz
 		CancelSignaledAt       pgtype.Timestamptz
 		IsDestroy              pgtype.Bool
@@ -43,8 +43,8 @@ type (
 		PlanResourceReport     *Report
 		PlanOutputReport       *Report
 		ApplyResourceReport    *Report
-		ConfigurationVersionID resource.ID
-		WorkspaceID            resource.ID
+		ConfigurationVersionID resource.TfeID
+		WorkspaceID            resource.TfeID
 		PlanOnly               pgtype.Bool
 		CreatedBy              pgtype.Text
 		TerraformVersion       pgtype.Text
@@ -214,7 +214,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
-func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(context.Context, *Run) error) (*Run, error) {
+func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(context.Context, *Run) error) (*Run, error) {
 	var runStatus runstatus.Status
 	var planStatus PhaseStatus
 	var applyStatus PhaseStatus
@@ -295,7 +295,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.ID, fn func(con
 	)
 }
 
-func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.ID, resource, output Report) error {
+func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.TfeID, resource, output Report) error {
 	_, err := q.UpdatePlannedChangesByID(ctx, db.Conn(ctx), UpdatePlannedChangesByIDParams{
 		RunID:                runID,
 		ResourceAdditions:    sql.Int4(resource.Additions),
@@ -311,7 +311,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.ID, resourc
 	return err
 }
 
-func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.ID, report Report) error {
+func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.TfeID, report Report) error {
 	_, err := q.UpdateAppliedChangesByID(ctx, db.Conn(ctx), UpdateAppliedChangesByIDParams{
 		RunID:        runID,
 		Additions:    sql.Int4(report.Additions),
@@ -386,7 +386,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 }
 
 // GetRun retrieves a run using the get options
-func (db *pgdb) GetRun(ctx context.Context, runID resource.ID) (*Run, error) {
+func (db *pgdb) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	result, err := q.FindRunByID(ctx, db.Conn(ctx), runID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -395,7 +395,7 @@ func (db *pgdb) GetRun(ctx context.Context, runID resource.ID) (*Run, error) {
 }
 
 // SetPlanFile writes a plan file to the db
-func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.ID, file []byte, format PlanFormat) error {
+func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.TfeID, file []byte, format PlanFormat) error {
 	switch format {
 	case PlanFormatBinary:
 		_, err := q.UpdatePlanBinByID(ctx, db.Conn(ctx), UpdatePlanBinByIDParams{
@@ -415,7 +415,7 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.ID, file []byte,
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
+func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
 	switch format {
 	case PlanFormatBinary:
 		return q.GetPlanBinByID(ctx, db.Conn(ctx), runID)
@@ -427,12 +427,12 @@ func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.ID, format PlanF
 }
 
 // GetLockFile retrieves the lock file for the run
-func (db *pgdb) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
+func (db *pgdb) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte, error) {
 	return q.GetLockFileByID(ctx, db.Conn(ctx), runID)
 }
 
 // SetLockFile sets the lock file for the run
-func (db *pgdb) SetLockFile(ctx context.Context, runID resource.ID, lockFile []byte) error {
+func (db *pgdb) SetLockFile(ctx context.Context, runID resource.TfeID, lockFile []byte) error {
 	_, err := q.PutLockFile(ctx, db.Conn(ctx), PutLockFileParams{
 		LockFile: lockFile,
 		RunID:    runID,
@@ -441,7 +441,7 @@ func (db *pgdb) SetLockFile(ctx context.Context, runID resource.ID, lockFile []b
 }
 
 // DeleteRun deletes a run from the DB
-func (db *pgdb) DeleteRun(ctx context.Context, id resource.ID) error {
+func (db *pgdb) DeleteRun(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteRunByID(ctx, db.Conn(ctx), id)
 	return err
 }

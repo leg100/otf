@@ -18,8 +18,8 @@ import (
 func TestClient_UnmarshalResponse(t *testing.T) {
 	want := types.WorkspaceList{
 		Items: []*types.Workspace{
-			{ID: resource.NewID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
-			{ID: resource.NewID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
+			{ID: resource.NewTfeID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
+			{ID: resource.NewTfeID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
 		},
 		Pagination: &types.Pagination{},
 	}

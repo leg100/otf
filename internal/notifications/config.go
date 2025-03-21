@@ -40,7 +40,7 @@ var (
 type (
 	// Config represents a Notification Configuration.
 	Config struct {
-		ID              resource.ID
+		ID              resource.TfeID
 		CreatedAt       time.Time
 		UpdatedAt       time.Time
 		DestinationType Destination
@@ -49,7 +49,7 @@ type (
 		Token           string
 		Triggers        []Trigger
 		URL             *string
-		WorkspaceID     resource.ID
+		WorkspaceID     resource.TfeID
 	}
 
 	// Trigger is the event triggering a notification
@@ -98,7 +98,7 @@ type (
 	}
 )
 
-func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, error) {
+func NewConfig(workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error) {
 	if opts.DestinationType != DestinationGeneric &&
 		opts.DestinationType != DestinationEmail &&
 		opts.DestinationType != DestinationSlack &&
@@ -130,7 +130,7 @@ func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, erro
 	}
 
 	return &Config{
-		ID:              resource.NewID(resource.NotificationConfigurationKind),
+		ID:              resource.NewTfeID(resource.NotificationConfigurationKind),
 		CreatedAt:       internal.CurrentTimestamp(nil),
 		UpdatedAt:       internal.CurrentTimestamp(nil),
 		Name:            *opts.Name,

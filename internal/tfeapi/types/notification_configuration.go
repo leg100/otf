@@ -47,7 +47,7 @@ type NotificationConfigurationList struct {
 
 // NotificationConfiguration represents a Notification Configuration.
 type NotificationConfiguration struct {
-	ID                resource.ID                 `jsonapi:"primary,notification-configurations"`
+	ID                resource.TfeID              `jsonapi:"primary,notification-configurations"`
 	CreatedAt         time.Time                   `jsonapi:"attribute" json:"created-at"`
 	DeliveryResponses []*DeliveryResponse         `jsonapi:"attribute" json:"delivery-responses"`
 	DestinationType   NotificationDestinationType `jsonapi:"attribute" json:"destination-type"`

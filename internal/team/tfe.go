@@ -223,7 +223,7 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	to := &types.TeamToken{
-		ID:        ot.ID,
+		ID:        ot.TfeID,
 		CreatedAt: ot.CreatedAt,
 		Token:     string(token),
 		ExpiredAt: ot.Expiry,
@@ -249,7 +249,7 @@ func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	to := &types.TeamToken{
-		ID:        ot.ID,
+		ID:        ot.TfeID,
 		CreatedAt: ot.CreatedAt,
 		ExpiredAt: ot.Expiry,
 	}

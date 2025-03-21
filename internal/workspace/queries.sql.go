@@ -31,7 +31,7 @@ FROM workspace_tags wt
 WHERE wt.workspace_id = $1
 `
 
-func (q *Queries) CountWorkspaceTags(ctx context.Context, db DBTX, workspaceID resource.ID) (int64, error) {
+func (q *Queries) CountWorkspaceTags(ctx context.Context, db DBTX, workspaceID resource.TfeID) (int64, error) {
 	row := db.QueryRow(ctx, countWorkspaceTags, workspaceID)
 	var count int64
 	err := row.Scan(&count)
@@ -106,13 +106,13 @@ RETURNING tag_id
 `
 
 type DeleteTagParams struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	OrganizationName resource.OrganizationName
 }
 
-func (q *Queries) DeleteTag(ctx context.Context, db DBTX, arg DeleteTagParams) (resource.ID, error) {
+func (q *Queries) DeleteTag(ctx context.Context, db DBTX, arg DeleteTagParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteTag, arg.TagID, arg.OrganizationName)
-	var tag_id resource.ID
+	var tag_id resource.TfeID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -123,7 +123,7 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) DeleteWorkspaceByID(ctx context.Context, db DBTX, workspaceID resource.ID) error {
+func (q *Queries) DeleteWorkspaceByID(ctx context.Context, db DBTX, workspaceID resource.TfeID) error {
 	_, err := db.Exec(ctx, deleteWorkspaceByID, workspaceID)
 	return err
 }
@@ -136,8 +136,8 @@ AND team_id = $2
 `
 
 type DeleteWorkspacePermissionByIDParams struct {
-	WorkspaceID resource.ID
-	TeamID      resource.ID
+	WorkspaceID resource.TfeID
+	TeamID      resource.TfeID
 }
 
 func (q *Queries) DeleteWorkspacePermissionByID(ctx context.Context, db DBTX, arg DeleteWorkspacePermissionByIDParams) error {
@@ -154,13 +154,13 @@ RETURNING tag_id
 `
 
 type DeleteWorkspaceTagParams struct {
-	WorkspaceID resource.ID
-	TagID       resource.ID
+	WorkspaceID resource.TfeID
+	TagID       resource.TfeID
 }
 
-func (q *Queries) DeleteWorkspaceTag(ctx context.Context, db DBTX, arg DeleteWorkspaceTagParams) (resource.ID, error) {
+func (q *Queries) DeleteWorkspaceTag(ctx context.Context, db DBTX, arg DeleteWorkspaceTagParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteWorkspaceTag, arg.WorkspaceID, arg.TagID)
-	var tag_id resource.ID
+	var tag_id resource.TfeID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -179,12 +179,12 @@ AND   t.organization_name = $2
 `
 
 type FindTagByIDParams struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	OrganizationName resource.OrganizationName
 }
 
 type FindTagByIDRow struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	Name             pgtype.Text
 	OrganizationName resource.OrganizationName
 	InstanceCount    int64
@@ -221,7 +221,7 @@ type FindTagByNameParams struct {
 }
 
 type FindTagByNameRow struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	Name             pgtype.Text
 	OrganizationName resource.OrganizationName
 	InstanceCount    int64
@@ -260,7 +260,7 @@ type FindTagsParams struct {
 }
 
 type FindTagsRow struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	Name             pgtype.Text
 	OrganizationName resource.OrganizationName
 	InstanceCount    int64
@@ -310,7 +310,7 @@ WHERE w.workspace_id = $1
 `
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -330,23 +330,23 @@ type FindWorkspaceByIDRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              resource.ID
+	VCSProviderID              resource.TfeID
 	RepoPath                   pgtype.Text
 }
 
-func (q *Queries) FindWorkspaceByID(ctx context.Context, db DBTX, id resource.ID) (FindWorkspaceByIDRow, error) {
+func (q *Queries) FindWorkspaceByID(ctx context.Context, db DBTX, id resource.TfeID) (FindWorkspaceByIDRow, error) {
 	row := db.QueryRow(ctx, findWorkspaceByID, id)
 	var i FindWorkspaceByIDRow
 	err := row.Scan(
@@ -408,7 +408,7 @@ FOR UPDATE OF w
 `
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -428,23 +428,23 @@ type FindWorkspaceByIDForUpdateRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              resource.ID
+	VCSProviderID              resource.TfeID
 	RepoPath                   pgtype.Text
 }
 
-func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, db DBTX, id resource.ID) (FindWorkspaceByIDForUpdateRow, error) {
+func (q *Queries) FindWorkspaceByIDForUpdate(ctx context.Context, db DBTX, id resource.TfeID) (FindWorkspaceByIDForUpdateRow, error) {
 	row := db.QueryRow(ctx, findWorkspaceByIDForUpdate, id)
 	var i FindWorkspaceByIDForUpdateRow
 	err := row.Scan(
@@ -512,7 +512,7 @@ type FindWorkspaceByNameParams struct {
 }
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -532,19 +532,19 @@ type FindWorkspaceByNameRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              resource.ID
+	VCSProviderID              resource.TfeID
 	RepoPath                   pgtype.Text
 }
 
@@ -607,7 +607,7 @@ type FindWorkspacePermissionsAndGlobalRemoteStateRow struct {
 	WorkspacePermissions []WorkspacePermission
 }
 
-func (q *Queries) FindWorkspacePermissionsAndGlobalRemoteState(ctx context.Context, db DBTX, workspaceID resource.ID) (FindWorkspacePermissionsAndGlobalRemoteStateRow, error) {
+func (q *Queries) FindWorkspacePermissionsAndGlobalRemoteState(ctx context.Context, db DBTX, workspaceID resource.TfeID) (FindWorkspacePermissionsAndGlobalRemoteStateRow, error) {
 	row := db.QueryRow(ctx, findWorkspacePermissionsAndGlobalRemoteState, workspaceID)
 	var i FindWorkspacePermissionsAndGlobalRemoteStateRow
 	err := row.Scan(&i.GlobalRemoteState, &i.WorkspacePermissions)
@@ -630,13 +630,13 @@ OFFSET $2::int
 `
 
 type FindWorkspaceTagsParams struct {
-	WorkspaceID resource.ID
+	WorkspaceID resource.TfeID
 	Offset      pgtype.Int4
 	Limit       pgtype.Int4
 }
 
 type FindWorkspaceTagsRow struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	Name             pgtype.Text
 	OrganizationName resource.OrganizationName
 	InstanceCount    int64
@@ -704,7 +704,7 @@ type FindWorkspacesParams struct {
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -724,19 +724,19 @@ type FindWorkspacesRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              resource.ID
+	VCSProviderID              resource.TfeID
 	RepoPath                   pgtype.Text
 }
 
@@ -822,12 +822,12 @@ AND   rc.repo_path = $2
 `
 
 type FindWorkspacesByConnectionParams struct {
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	RepoPath      pgtype.Text
 }
 
 type FindWorkspacesByConnectionRow struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -847,19 +847,19 @@ type FindWorkspacesByConnectionRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              resource.ID
+	VCSProviderID              resource.TfeID
 	RepoPath                   pgtype.Text
 }
 
@@ -952,7 +952,7 @@ type FindWorkspacesByUsernameParams struct {
 }
 
 type FindWorkspacesByUsernameRow struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -972,19 +972,19 @@ type FindWorkspacesByUsernameRow struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 	Tags                       []pgtype.Text
 	LatestRunStatus            pgtype.Text
-	VCSProviderID              resource.ID
+	VCSProviderID              resource.TfeID
 	RepoPath                   pgtype.Text
 }
 
@@ -1062,7 +1062,7 @@ INSERT INTO tags (
 `
 
 type InsertTagParams struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	Name             pgtype.Text
 	OrganizationName resource.OrganizationName
 }
@@ -1132,10 +1132,10 @@ INSERT INTO workspaces (
 `
 
 type InsertWorkspaceParams struct {
-	ID                         resource.ID
+	ID                         resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
-	AgentPoolID                *resource.ID
+	AgentPoolID                *resource.TfeID
 	AllowCLIApply              pgtype.Bool
 	AllowDestroyPlan           pgtype.Bool
 	AutoApply                  pgtype.Bool
@@ -1205,13 +1205,13 @@ RETURNING tag_id
 `
 
 type InsertWorkspaceTagParams struct {
-	TagID       resource.ID
-	WorkspaceID resource.ID
+	TagID       resource.TfeID
+	WorkspaceID resource.TfeID
 }
 
-func (q *Queries) InsertWorkspaceTag(ctx context.Context, db DBTX, arg InsertWorkspaceTagParams) (resource.ID, error) {
+func (q *Queries) InsertWorkspaceTag(ctx context.Context, db DBTX, arg InsertWorkspaceTagParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, insertWorkspaceTag, arg.TagID, arg.WorkspaceID)
-	var tag_id resource.ID
+	var tag_id resource.TfeID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -1228,13 +1228,13 @@ RETURNING tag_id
 `
 
 type InsertWorkspaceTagByNameParams struct {
-	WorkspaceID resource.ID
+	WorkspaceID resource.TfeID
 	TagName     pgtype.Text
 }
 
-func (q *Queries) InsertWorkspaceTagByName(ctx context.Context, db DBTX, arg InsertWorkspaceTagByNameParams) (resource.ID, error) {
+func (q *Queries) InsertWorkspaceTagByName(ctx context.Context, db DBTX, arg InsertWorkspaceTagByNameParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, insertWorkspaceTagByName, arg.WorkspaceID, arg.TagName)
-	var tag_id resource.ID
+	var tag_id resource.TfeID
 	err := row.Scan(&tag_id)
 	return tag_id, err
 }
@@ -1265,7 +1265,7 @@ RETURNING workspace_id
 `
 
 type UpdateWorkspaceByIDParams struct {
-	AgentPoolID                *resource.ID
+	AgentPoolID                *resource.TfeID
 	AllowDestroyPlan           pgtype.Bool
 	AllowCLIApply              pgtype.Bool
 	AutoApply                  pgtype.Bool
@@ -1283,10 +1283,10 @@ type UpdateWorkspaceByIDParams struct {
 	VCSTagsRegex               pgtype.Text
 	WorkingDirectory           pgtype.Text
 	UpdatedAt                  pgtype.Timestamptz
-	ID                         resource.ID
+	ID                         resource.TfeID
 }
 
-func (q *Queries) UpdateWorkspaceByID(ctx context.Context, db DBTX, arg UpdateWorkspaceByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateWorkspaceByID(ctx context.Context, db DBTX, arg UpdateWorkspaceByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateWorkspaceByID,
 		arg.AgentPoolID,
 		arg.AllowDestroyPlan,
@@ -1308,7 +1308,7 @@ func (q *Queries) UpdateWorkspaceByID(ctx context.Context, db DBTX, arg UpdateWo
 		arg.UpdatedAt,
 		arg.ID,
 	)
-	var workspace_id resource.ID
+	var workspace_id resource.TfeID
 	err := row.Scan(&workspace_id)
 	return workspace_id, err
 }
@@ -1321,13 +1321,13 @@ RETURNING workspace_id
 `
 
 type UpdateWorkspaceCurrentStateVersionIDParams struct {
-	StateVersionID *resource.ID
-	WorkspaceID    resource.ID
+	StateVersionID *resource.TfeID
+	WorkspaceID    resource.TfeID
 }
 
-func (q *Queries) UpdateWorkspaceCurrentStateVersionID(ctx context.Context, db DBTX, arg UpdateWorkspaceCurrentStateVersionIDParams) (resource.ID, error) {
+func (q *Queries) UpdateWorkspaceCurrentStateVersionID(ctx context.Context, db DBTX, arg UpdateWorkspaceCurrentStateVersionIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateWorkspaceCurrentStateVersionID, arg.StateVersionID, arg.WorkspaceID)
-	var workspace_id resource.ID
+	var workspace_id resource.TfeID
 	err := row.Scan(&workspace_id)
 	return workspace_id, err
 }
@@ -1339,8 +1339,8 @@ WHERE workspace_id = $2
 `
 
 type UpdateWorkspaceLatestRunParams struct {
-	RunID       *resource.ID
-	WorkspaceID resource.ID
+	RunID       *resource.TfeID
+	WorkspaceID resource.TfeID
 }
 
 func (q *Queries) UpdateWorkspaceLatestRun(ctx context.Context, db DBTX, arg UpdateWorkspaceLatestRunParams) error {
@@ -1357,9 +1357,9 @@ WHERE workspace_id = $3
 `
 
 type UpdateWorkspaceLockByIDParams struct {
-	UserID      *resource.ID
-	RunID       *resource.ID
-	WorkspaceID resource.ID
+	UserID      *resource.TfeID
+	RunID       *resource.TfeID
+	WorkspaceID resource.TfeID
 }
 
 func (q *Queries) UpdateWorkspaceLockByID(ctx context.Context, db DBTX, arg UpdateWorkspaceLockByIDParams) error {
@@ -1380,8 +1380,8 @@ INSERT INTO workspace_permissions (
 `
 
 type UpsertWorkspacePermissionParams struct {
-	WorkspaceID resource.ID
-	TeamID      resource.ID
+	WorkspaceID resource.TfeID
+	TeamID      resource.TfeID
 	Role        pgtype.Text
 }
 

@@ -12,7 +12,7 @@ import (
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		ID           resource.ID               `jsonapi:"primary,teams"`
+		ID           resource.TfeID            `jsonapi:"primary,teams"`
 		CreatedAt    time.Time                 `jsonapi:"attribute" json:"created-at"`
 		Name         string                    `jsonapi:"attribute" json:"name"`
 		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization"`
@@ -87,7 +87,7 @@ func newTeam(organization resource.OrganizationName, opts CreateTeamOptions) (*T
 	}
 
 	team := &Team{
-		ID:           resource.NewID("team"),
+		ID:           resource.NewTfeID("team"),
 		Name:         *opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: organization,

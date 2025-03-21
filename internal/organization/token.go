@@ -12,8 +12,7 @@ import (
 type (
 	// OrganizationToken provides information about an API token for an organization
 	OrganizationToken struct {
-		resource.ID
-
+		ID        resource.TfeID
 		CreatedAt time.Time
 		// Token belongs to an organization
 		Organization resource.OrganizationName
@@ -36,7 +35,7 @@ type (
 
 func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
-		ID:           resource.NewID(resource.OrganizationTokenKind),
+		ID:           resource.NewTfeID(resource.OrganizationTokenKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
@@ -50,6 +49,10 @@ func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions)
 		return nil, nil, err
 	}
 	return &ot, token, nil
+}
+
+func (u *OrganizationToken) String() string {
+	return u.ID.String()
 }
 
 func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequest) bool {

@@ -31,7 +31,7 @@ type (
 	}
 
 	sessionStarter interface {
-		StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
+		StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 	}
 
 	// OAuthClient performs the client role in an oauth handshake, requesting

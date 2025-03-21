@@ -16,7 +16,7 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        resource.ID               `jsonapi:"primary,organizations"`
+		ID        resource.TfeID            `jsonapi:"primary,organizations"`
 		CreatedAt time.Time                 `jsonapi:"attribute" json:"created-at"`
 		UpdatedAt time.Time                 `jsonapi:"attribute" json:"updated-at"`
 		Name      resource.OrganizationName `jsonapi:"attribute" json:"name"`
@@ -73,7 +73,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		Name:                   name,
 		CreatedAt:              internal.CurrentTimestamp(nil),
 		UpdatedAt:              internal.CurrentTimestamp(nil),
-		ID:                     resource.NewID(resource.OrganizationKind),
+		ID:                     resource.NewTfeID(resource.OrganizationKind),
 		Email:                  opts.Email,
 		CollaboratorAuthPolicy: opts.CollaboratorAuthPolicy,
 	}

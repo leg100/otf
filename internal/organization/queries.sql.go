@@ -32,9 +32,9 @@ WHERE organization_name = $1
 RETURNING organization_token_id
 `
 
-func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, db DBTX, organizationName resource.OrganizationName) (resource.ID, error) {
+func (q *Queries) DeleteOrganiationTokenByName(ctx context.Context, db DBTX, organizationName resource.OrganizationName) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteOrganiationTokenByName, organizationName)
-	var organization_token_id resource.ID
+	var organization_token_id resource.TfeID
 	err := row.Scan(&organization_token_id)
 	return organization_token_id, err
 }
@@ -46,9 +46,9 @@ WHERE name = $1
 RETURNING organization_id
 `
 
-func (q *Queries) DeleteOrganizationByName(ctx context.Context, db DBTX, name resource.OrganizationName) (resource.ID, error) {
+func (q *Queries) DeleteOrganizationByName(ctx context.Context, db DBTX, name resource.OrganizationName) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteOrganizationByName, name)
-	var organization_id resource.ID
+	var organization_id resource.TfeID
 	err := row.Scan(&organization_id)
 	return organization_id, err
 }
@@ -57,7 +57,7 @@ const findOrganizationByID = `-- name: FindOrganizationByID :one
 SELECT organization_id, created_at, updated_at, name, session_remember, session_timeout, email, collaborator_auth_policy, allow_force_delete_workspaces, cost_estimation_enabled FROM organizations WHERE organization_id = $1
 `
 
-func (q *Queries) FindOrganizationByID(ctx context.Context, db DBTX, organizationID resource.ID) (Model, error) {
+func (q *Queries) FindOrganizationByID(ctx context.Context, db DBTX, organizationID resource.TfeID) (Model, error) {
 	row := db.QueryRow(ctx, findOrganizationByID, organizationID)
 	var i Model
 	err := row.Scan(
@@ -128,7 +128,7 @@ FROM workspaces
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (resource.OrganizationName, error) {
+func (q *Queries) FindOrganizationNameByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.TfeID) (resource.OrganizationName, error) {
 	row := db.QueryRow(ctx, findOrganizationNameByWorkspaceID, workspaceID)
 	var organization_name resource.OrganizationName
 	err := row.Scan(&organization_name)
@@ -172,7 +172,7 @@ FROM organization_tokens
 WHERE organization_token_id = $1
 `
 
-func (q *Queries) FindOrganizationTokensByID(ctx context.Context, db DBTX, organizationTokenID resource.ID) (TokenModel, error) {
+func (q *Queries) FindOrganizationTokensByID(ctx context.Context, db DBTX, organizationTokenID resource.TfeID) (TokenModel, error) {
 	row := db.QueryRow(ctx, findOrganizationTokensByID, organizationTokenID)
 	var i TokenModel
 	err := row.Scan(
@@ -274,7 +274,7 @@ INSERT INTO organizations (
 `
 
 type InsertOrganizationParams struct {
-	ID                         resource.ID
+	ID                         resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       resource.OrganizationName
@@ -329,7 +329,7 @@ type UpdateOrganizationByNameParams struct {
 	Name                       resource.OrganizationName
 }
 
-func (q *Queries) UpdateOrganizationByName(ctx context.Context, db DBTX, arg UpdateOrganizationByNameParams) (resource.ID, error) {
+func (q *Queries) UpdateOrganizationByName(ctx context.Context, db DBTX, arg UpdateOrganizationByNameParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateOrganizationByName,
 		arg.NewName,
 		arg.Email,
@@ -341,7 +341,7 @@ func (q *Queries) UpdateOrganizationByName(ctx context.Context, db DBTX, arg Upd
 		arg.UpdatedAt,
 		arg.Name,
 	)
-	var organization_id resource.ID
+	var organization_id resource.TfeID
 	err := row.Scan(&organization_id)
 	return organization_id, err
 }
@@ -364,7 +364,7 @@ INSERT INTO organization_tokens (
 `
 
 type UpsertOrganizationTokenParams struct {
-	OrganizationTokenID resource.ID
+	OrganizationTokenID resource.TfeID
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    resource.OrganizationName
 	Expiry              pgtype.Timestamptz

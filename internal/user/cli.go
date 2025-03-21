@@ -80,8 +80,8 @@ type membershipCLI struct {
 }
 
 type membershipCLIClient interface {
-	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
 }
 
 type teamsCLIClient interface {

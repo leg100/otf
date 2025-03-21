@@ -32,7 +32,7 @@ type AgentToken struct {
 }
 
 type Apply struct {
-	RunID          resource.ID
+	RunID          resource.TfeID
 	Status         pgtype.Text
 	ResourceReport interface{}
 }
@@ -80,7 +80,7 @@ type IngressAttributeModel struct {
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
@@ -122,7 +122,7 @@ type Log struct {
 }
 
 type Model struct {
-	RunID                  resource.ID
+	RunID                  resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -133,8 +133,8 @@ type Model struct {
 	TargetAddrs            []pgtype.Text
 	LockFile               []byte
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
-	ConfigurationVersionID resource.ID
+	WorkspaceID            resource.TfeID
+	ConfigurationVersionID resource.TfeID
 	AutoApply              pgtype.Bool
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
@@ -217,14 +217,14 @@ type PhaseStatusModel struct {
 }
 
 type PhaseStatusTimestampModel struct {
-	RunID      resource.ID
+	RunID      resource.TfeID
 	PhaseModel pgtype.Text
 	Status     pgtype.Text
 	Timestamp  pgtype.Timestamptz
 }
 
 type Plan struct {
-	RunID          resource.ID
+	RunID          resource.TfeID
 	Status         pgtype.Text
 	PlanBin        []byte
 	PlanJSON       []byte
@@ -242,7 +242,7 @@ type RepoConnection struct {
 	ModuleID      pgtype.Text
 	WorkspaceID   pgtype.Text
 	RepoPath      pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }
 
 type Repohook struct {
@@ -258,13 +258,13 @@ type RunStatus struct {
 }
 
 type RunStatusTimestampModel struct {
-	RunID     resource.ID
+	RunID     resource.TfeID
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
 
 type RunVariable struct {
-	RunID resource.ID
+	RunID resource.TfeID
 	Key   pgtype.Text
 	Value pgtype.Text
 }
@@ -326,7 +326,7 @@ type Tag struct {
 }
 
 type Team struct {
-	TeamID                          resource.ID
+	TeamID                          resource.TfeID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
@@ -416,7 +416,7 @@ type VariableSetWorkspace struct {
 }
 
 type Workspace struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -444,7 +444,7 @@ type Workspace struct {
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
+	AgentPoolID                *resource.TfeID
 	LockUserID                 pgtype.Text
 }
 

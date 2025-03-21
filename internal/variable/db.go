@@ -18,7 +18,7 @@ type (
 	}
 
 	VariableRow struct {
-		VariableID  resource.ID
+		VariableID  resource.TfeID
 		Key         pgtype.Text
 		Value       pgtype.Text
 		Description pgtype.Text
@@ -29,7 +29,7 @@ type (
 	}
 
 	VariableSetRow struct {
-		VariableSetID    resource.ID
+		VariableSetID    resource.TfeID
 		Global           pgtype.Bool
 		Name             pgtype.Text
 		Description      pgtype.Text
@@ -64,7 +64,7 @@ func (row VariableSetRow) convert() (*VariableSet, error) {
 	for i, v := range row.Variables {
 		set.Variables[i] = VariableRow(v).convert()
 	}
-	set.Workspaces = make([]resource.ID, len(row.WorkspaceIds))
+	set.Workspaces = make([]resource.TfeID, len(row.WorkspaceIds))
 	for i, wid := range row.WorkspaceIds {
 		if err := set.Workspaces[i].Scan(wid.String); err != nil {
 			return nil, err
@@ -73,7 +73,7 @@ func (row VariableSetRow) convert() (*VariableSet, error) {
 	return set, nil
 }
 
-func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.ID, v *Variable) error {
+func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, v *Variable) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
@@ -86,7 +86,7 @@ func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resour
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error) {
+func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
 	rows, err := q.FindWorkspaceVariablesByWorkspaceID(ctx, pdb.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -99,7 +99,7 @@ func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID resourc
 	return variables, nil
 }
 
-func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
+func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
 	row, err := q.FindWorkspaceVariableByVariableID(ctx, pdb.Conn(ctx), variableID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -111,7 +111,7 @@ func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID resource.I
 	}, nil
 }
 
-func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
+func (pdb *pgdb) deleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
 	row, err := q.DeleteWorkspaceVariableByID(ctx, pdb.Conn(ctx), variableID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -160,7 +160,7 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, set *VariableSet) error 
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
+func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
 	row, err := q.FindVariableSetBySetID(ctx, pdb.Conn(ctx), setID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -168,7 +168,7 @@ func (pdb *pgdb) getVariableSet(ctx context.Context, setID resource.ID) (*Variab
 	return VariableSetRow(row).convert()
 }
 
-func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error) {
+func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
 	row, err := q.FindVariableSetByVariableID(ctx, pdb.Conn(ctx), variableID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -193,7 +193,7 @@ func (pdb *pgdb) listVariableSets(ctx context.Context, organization organization
 	return sets, nil
 }
 
-func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error) {
+func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error) {
 	rows, err := q.FindVariableSetsByWorkspace(ctx, pdb.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -210,7 +210,7 @@ func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID re
 	return sets, nil
 }
 
-func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.ID) error {
+func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.TfeID) error {
 	_, err := q.DeleteVariableSetByID(ctx, pdb.Conn(ctx), setID)
 	if err != nil {
 		return sql.Error(err)
@@ -218,7 +218,7 @@ func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID resource.ID) error
 	return nil
 }
 
-func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.ID, v *Variable) error {
+func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *Variable) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
@@ -232,7 +232,7 @@ func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.ID, v *Var
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.ID) error {
+func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, wid := range workspaceIDs {
 			err := q.InsertVariableSetWorkspace(ctx, pdb.Conn(ctx), InsertVariableSetWorkspaceParams{
@@ -248,12 +248,12 @@ func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.ID) error {
+func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.TfeID) error {
 	err := q.DeleteVariableSetWorkspaces(ctx, pdb.Conn(ctx), setID)
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.ID) error {
+func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, wid := range workspaceIDs {
 			_, err := q.DeleteVariableSetWorkspace(ctx, pdb.Conn(ctx), DeleteVariableSetWorkspaceParams{
@@ -297,7 +297,7 @@ func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.ID) error {
+func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.TfeID) error {
 	_, err := q.DeleteVariableByID(ctx, pdb.Conn(ctx), variableID)
 	return sql.Error(err)
 }

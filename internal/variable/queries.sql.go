@@ -19,7 +19,7 @@ WHERE variable_id = $1
 RETURNING variable_id, key, value, description, category, sensitive, hcl, version_id
 `
 
-func (q *Queries) DeleteVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (VariableModel, error) {
+func (q *Queries) DeleteVariableByID(ctx context.Context, db DBTX, variableID resource.TfeID) (VariableModel, error) {
 	row := db.QueryRow(ctx, deleteVariableByID, variableID)
 	var i VariableModel
 	err := row.Scan(
@@ -42,7 +42,7 @@ WHERE variable_set_id = $1
 RETURNING variable_set_id, global, name, description, organization_name
 `
 
-func (q *Queries) DeleteVariableSetByID(ctx context.Context, db DBTX, variableSetID resource.ID) (VariableSetModel, error) {
+func (q *Queries) DeleteVariableSetByID(ctx context.Context, db DBTX, variableSetID resource.TfeID) (VariableSetModel, error) {
 	row := db.QueryRow(ctx, deleteVariableSetByID, variableSetID)
 	var i VariableSetModel
 	err := row.Scan(
@@ -64,8 +64,8 @@ RETURNING variable_set_id, variable_id
 `
 
 type DeleteVariableSetVariableParams struct {
-	VariableSetID resource.ID
-	VariableID    resource.ID
+	VariableSetID resource.TfeID
+	VariableID    resource.TfeID
 }
 
 func (q *Queries) DeleteVariableSetVariable(ctx context.Context, db DBTX, arg DeleteVariableSetVariableParams) (VariableSetVariable, error) {
@@ -84,8 +84,8 @@ RETURNING variable_set_id, workspace_id
 `
 
 type DeleteVariableSetWorkspaceParams struct {
-	VariableSetID resource.ID
-	WorkspaceID   resource.ID
+	VariableSetID resource.TfeID
+	WorkspaceID   resource.TfeID
 }
 
 func (q *Queries) DeleteVariableSetWorkspace(ctx context.Context, db DBTX, arg DeleteVariableSetWorkspaceParams) (VariableSetWorkspace, error) {
@@ -101,7 +101,7 @@ FROM variable_set_workspaces
 WHERE variable_set_id = $1
 `
 
-func (q *Queries) DeleteVariableSetWorkspaces(ctx context.Context, db DBTX, variableSetID resource.ID) error {
+func (q *Queries) DeleteVariableSetWorkspaces(ctx context.Context, db DBTX, variableSetID resource.TfeID) error {
 	_, err := db.Exec(ctx, deleteVariableSetWorkspaces, variableSetID)
 	return err
 }
@@ -114,11 +114,11 @@ RETURNING wv.workspace_id, (v.*)::"variables" AS variable
 `
 
 type DeleteWorkspaceVariableByIDRow struct {
-	WorkspaceID   resource.ID
+	WorkspaceID   resource.TfeID
 	VariableModel VariableModel
 }
 
-func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, db DBTX, variableID resource.ID) (DeleteWorkspaceVariableByIDRow, error) {
+func (q *Queries) DeleteWorkspaceVariableByID(ctx context.Context, db DBTX, variableID resource.TfeID) (DeleteWorkspaceVariableByIDRow, error) {
 	row := db.QueryRow(ctx, deleteWorkspaceVariableByID, variableID)
 	var i DeleteWorkspaceVariableByIDRow
 	err := row.Scan(&i.WorkspaceID, &i.VariableModel)
@@ -131,7 +131,7 @@ FROM variables
 WHERE variable_id = $1
 `
 
-func (q *Queries) FindVariable(ctx context.Context, db DBTX, variableID resource.ID) (VariableModel, error) {
+func (q *Queries) FindVariable(ctx context.Context, db DBTX, variableID resource.TfeID) (VariableModel, error) {
 	row := db.QueryRow(ctx, findVariable, variableID)
 	var i VariableModel
 	err := row.Scan(
@@ -166,7 +166,7 @@ WHERE vs.variable_set_id = $1
 `
 
 type FindVariableSetBySetIDRow struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -175,7 +175,7 @@ type FindVariableSetBySetIDRow struct {
 	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetBySetID(ctx context.Context, db DBTX, variableSetID resource.ID) (FindVariableSetBySetIDRow, error) {
+func (q *Queries) FindVariableSetBySetID(ctx context.Context, db DBTX, variableSetID resource.TfeID) (FindVariableSetBySetIDRow, error) {
 	row := db.QueryRow(ctx, findVariableSetBySetID, variableSetID)
 	var i FindVariableSetBySetIDRow
 	err := row.Scan(
@@ -210,7 +210,7 @@ WHERE vsv.variable_id = $1
 `
 
 type FindVariableSetByVariableIDRow struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -219,7 +219,7 @@ type FindVariableSetByVariableIDRow struct {
 	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetByVariableID(ctx context.Context, db DBTX, variableID resource.ID) (FindVariableSetByVariableIDRow, error) {
+func (q *Queries) FindVariableSetByVariableID(ctx context.Context, db DBTX, variableID resource.TfeID) (FindVariableSetByVariableIDRow, error) {
 	row := db.QueryRow(ctx, findVariableSetByVariableID, variableID)
 	var i FindVariableSetByVariableIDRow
 	err := row.Scan(
@@ -254,7 +254,7 @@ FOR UPDATE OF vs
 `
 
 type FindVariableSetForUpdateRow struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -263,7 +263,7 @@ type FindVariableSetForUpdateRow struct {
 	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetForUpdate(ctx context.Context, db DBTX, variableSetID resource.ID) (FindVariableSetForUpdateRow, error) {
+func (q *Queries) FindVariableSetForUpdate(ctx context.Context, db DBTX, variableSetID resource.TfeID) (FindVariableSetForUpdateRow, error) {
 	row := db.QueryRow(ctx, findVariableSetForUpdate, variableSetID)
 	var i FindVariableSetForUpdateRow
 	err := row.Scan(
@@ -297,7 +297,7 @@ WHERE organization_name = $1
 `
 
 type FindVariableSetsByOrganizationRow struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -372,7 +372,7 @@ AND w.workspace_id = $1
 `
 
 type FindVariableSetsByWorkspaceRow struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -381,7 +381,7 @@ type FindVariableSetsByWorkspaceRow struct {
 	WorkspaceIds     []pgtype.Text
 }
 
-func (q *Queries) FindVariableSetsByWorkspace(ctx context.Context, db DBTX, workspaceID resource.ID) ([]FindVariableSetsByWorkspaceRow, error) {
+func (q *Queries) FindVariableSetsByWorkspace(ctx context.Context, db DBTX, workspaceID resource.TfeID) ([]FindVariableSetsByWorkspaceRow, error) {
 	rows, err := db.Query(ctx, findVariableSetsByWorkspace, workspaceID)
 	if err != nil {
 		return nil, err
@@ -419,11 +419,11 @@ WHERE v.variable_id = $1
 `
 
 type FindWorkspaceVariableByVariableIDRow struct {
-	WorkspaceID   resource.ID
+	WorkspaceID   resource.TfeID
 	VariableModel VariableModel
 }
 
-func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, db DBTX, variableID resource.ID) (FindWorkspaceVariableByVariableIDRow, error) {
+func (q *Queries) FindWorkspaceVariableByVariableID(ctx context.Context, db DBTX, variableID resource.TfeID) (FindWorkspaceVariableByVariableIDRow, error) {
 	row := db.QueryRow(ctx, findWorkspaceVariableByVariableID, variableID)
 	var i FindWorkspaceVariableByVariableIDRow
 	err := row.Scan(&i.WorkspaceID, &i.VariableModel)
@@ -437,7 +437,7 @@ JOIN variables v USING (variable_id)
 WHERE workspace_id = $1
 `
 
-func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) ([]VariableModel, error) {
+func (q *Queries) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.TfeID) ([]VariableModel, error) {
 	rows, err := db.Query(ctx, findWorkspaceVariablesByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
@@ -489,7 +489,7 @@ INSERT INTO variables (
 `
 
 type InsertVariableParams struct {
-	VariableID  resource.ID
+	VariableID  resource.TfeID
 	Key         pgtype.Text
 	Value       pgtype.Text
 	Description pgtype.Text
@@ -531,7 +531,7 @@ INSERT INTO variable_sets (
 `
 
 type InsertVariableSetParams struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -561,8 +561,8 @@ INSERT INTO variable_set_variables (
 `
 
 type InsertVariableSetVariableParams struct {
-	VariableSetID resource.ID
-	VariableID    resource.ID
+	VariableSetID resource.TfeID
+	VariableID    resource.TfeID
 }
 
 func (q *Queries) InsertVariableSetVariable(ctx context.Context, db DBTX, arg InsertVariableSetVariableParams) error {
@@ -581,8 +581,8 @@ INSERT INTO variable_set_workspaces (
 `
 
 type InsertVariableSetWorkspaceParams struct {
-	VariableSetID resource.ID
-	WorkspaceID   resource.ID
+	VariableSetID resource.TfeID
+	WorkspaceID   resource.TfeID
 }
 
 func (q *Queries) InsertVariableSetWorkspace(ctx context.Context, db DBTX, arg InsertVariableSetWorkspaceParams) error {
@@ -602,8 +602,8 @@ INSERT INTO workspace_variables (
 `
 
 type InsertWorkspaceVariableParams struct {
-	VariableID  resource.ID
-	WorkspaceID resource.ID
+	VariableID  resource.TfeID
+	WorkspaceID resource.TfeID
 }
 
 // workspace variables
@@ -634,10 +634,10 @@ type UpdateVariableByIDParams struct {
 	Sensitive   pgtype.Bool
 	VersionID   pgtype.Text
 	HCL         pgtype.Bool
-	VariableID  resource.ID
+	VariableID  resource.TfeID
 }
 
-func (q *Queries) UpdateVariableByID(ctx context.Context, db DBTX, arg UpdateVariableByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateVariableByID(ctx context.Context, db DBTX, arg UpdateVariableByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateVariableByID,
 		arg.Key,
 		arg.Value,
@@ -648,7 +648,7 @@ func (q *Queries) UpdateVariableByID(ctx context.Context, db DBTX, arg UpdateVar
 		arg.HCL,
 		arg.VariableID,
 	)
-	var variable_id resource.ID
+	var variable_id resource.TfeID
 	err := row.Scan(&variable_id)
 	return variable_id, err
 }
@@ -667,17 +667,17 @@ type UpdateVariableSetByIDParams struct {
 	Global        pgtype.Bool
 	Name          pgtype.Text
 	Description   pgtype.Text
-	VariableSetID resource.ID
+	VariableSetID resource.TfeID
 }
 
-func (q *Queries) UpdateVariableSetByID(ctx context.Context, db DBTX, arg UpdateVariableSetByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateVariableSetByID(ctx context.Context, db DBTX, arg UpdateVariableSetByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateVariableSetByID,
 		arg.Global,
 		arg.Name,
 		arg.Description,
 		arg.VariableSetID,
 	)
-	var variable_set_id resource.ID
+	var variable_set_id resource.TfeID
 	err := row.Scan(&variable_set_id)
 	return variable_set_id, err
 }

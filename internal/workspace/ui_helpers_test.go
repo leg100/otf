@@ -14,8 +14,8 @@ import (
 )
 
 func TestWorkspace_LockButtonHelper(t *testing.T) {
-	bobby := &user.User{ID: resource.NewID(resource.UserKind), Username: "bobby"}
-	annie := &user.User{ID: resource.NewID(resource.UserKind), Username: "annie"}
+	bobby := &user.User{ID: resource.NewTfeID(resource.UserKind), Username: "bobby"}
+	annie := &user.User{ID: resource.NewTfeID(resource.UserKind), Username: "annie"}
 
 	tests := []struct {
 		name                   string

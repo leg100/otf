@@ -18,7 +18,7 @@ import (
 type (
 	// VCSProvider provides authenticated access to a VCS.
 	VCSProvider struct {
-		ID           resource.ID
+		ID           resource.TfeID
 		Name         string
 		CreatedAt    time.Time
 		Organization resource.OrganizationName // name of OTF organization
@@ -73,7 +73,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 
 func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
-		ID:                  resource.NewID("vcs"),
+		ID:                  resource.NewTfeID("vcs"),
 		Name:                opts.Name,
 		CreatedAt:           internal.CurrentTimestamp(nil),
 		Organization:        opts.Organization,
@@ -105,7 +105,7 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 	return provider, nil
 }
 
-func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id resource.ID, createdAt time.Time) (*VCSProvider, error) {
+func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id resource.TfeID, createdAt time.Time) (*VCSProvider, error) {
 	provider, err := f.newWithGithubCredentials(ctx, opts, creds)
 	if err != nil {
 		return nil, err

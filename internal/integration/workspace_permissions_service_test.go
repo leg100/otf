@@ -68,7 +68,7 @@ func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 	})
 
 	t.Run("workspace not found", func(t *testing.T) {
-		nonExistentID := resource.NewID(resource.WorkspaceKind)
+		nonExistentID := resource.NewTfeID(resource.WorkspaceKind)
 		_, err := svc.Workspaces.GetWorkspacePolicy(ctx, nonExistentID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
 	})

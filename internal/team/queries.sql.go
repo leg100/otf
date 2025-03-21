@@ -19,9 +19,9 @@ WHERE team_id = $1
 RETURNING team_id
 `
 
-func (q *Queries) DeleteTeamByID(ctx context.Context, db DBTX, teamID resource.ID) (resource.ID, error) {
+func (q *Queries) DeleteTeamByID(ctx context.Context, db DBTX, teamID resource.TfeID) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteTeamByID, teamID)
-	var team_id resource.ID
+	var team_id resource.TfeID
 	err := row.Scan(&team_id)
 	return team_id, err
 }
@@ -33,9 +33,9 @@ WHERE team_id = $1
 RETURNING team_token_id
 `
 
-func (q *Queries) DeleteTeamTokenByID(ctx context.Context, db DBTX, teamID resource.ID) (resource.ID, error) {
+func (q *Queries) DeleteTeamTokenByID(ctx context.Context, db DBTX, teamID resource.TfeID) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteTeamTokenByID, teamID)
-	var team_token_id resource.ID
+	var team_token_id resource.TfeID
 	err := row.Scan(&team_token_id)
 	return team_token_id, err
 }
@@ -46,7 +46,7 @@ FROM teams
 WHERE team_id = $1
 `
 
-func (q *Queries) FindTeamByID(ctx context.Context, db DBTX, teamID resource.ID) (Model, error) {
+func (q *Queries) FindTeamByID(ctx context.Context, db DBTX, teamID resource.TfeID) (Model, error) {
 	row := db.QueryRow(ctx, findTeamByID, teamID)
 	var i Model
 	err := row.Scan(
@@ -73,7 +73,7 @@ WHERE team_id = $1
 FOR UPDATE OF t
 `
 
-func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, db DBTX, teamID resource.ID) (Model, error) {
+func (q *Queries) FindTeamByIDForUpdate(ctx context.Context, db DBTX, teamID resource.TfeID) (Model, error) {
 	row := db.QueryRow(ctx, findTeamByIDForUpdate, teamID)
 	var i Model
 	err := row.Scan(
@@ -132,7 +132,7 @@ JOIN team_tokens tt USING (team_id)
 WHERE tt.team_token_id = $1
 `
 
-func (q *Queries) FindTeamByTokenID(ctx context.Context, db DBTX, tokenID resource.ID) (Model, error) {
+func (q *Queries) FindTeamByTokenID(ctx context.Context, db DBTX, tokenID resource.TfeID) (Model, error) {
 	row := db.QueryRow(ctx, findTeamByTokenID, tokenID)
 	var i Model
 	err := row.Scan(
@@ -158,7 +158,7 @@ FROM team_tokens
 WHERE team_id = $1
 `
 
-func (q *Queries) FindTeamTokensByID(ctx context.Context, db DBTX, teamID resource.ID) ([]TeamToken, error) {
+func (q *Queries) FindTeamTokensByID(ctx context.Context, db DBTX, teamID resource.TfeID) ([]TeamToken, error) {
 	rows, err := db.Query(ctx, findTeamTokensByID, teamID)
 	if err != nil {
 		return nil, err
@@ -254,7 +254,7 @@ INSERT INTO teams (
 `
 
 type InsertTeamParams struct {
-	ID                              resource.ID
+	ID                              resource.TfeID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	OrganizationName                resource.OrganizationName
@@ -305,9 +305,9 @@ INSERT INTO team_tokens (
 `
 
 type InsertTeamTokenParams struct {
-	TeamTokenID resource.ID
+	TeamTokenID resource.TfeID
 	CreatedAt   pgtype.Timestamptz
-	TeamID      resource.ID
+	TeamID      resource.TfeID
 	Expiry      pgtype.Timestamptz
 }
 
@@ -348,10 +348,10 @@ type UpdateTeamByIDParams struct {
 	PermissionManageProviders       pgtype.Bool
 	PermissionManagePolicies        pgtype.Bool
 	PermissionManagePolicyOverrides pgtype.Bool
-	TeamID                          resource.ID
+	TeamID                          resource.TfeID
 }
 
-func (q *Queries) UpdateTeamByID(ctx context.Context, db DBTX, arg UpdateTeamByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateTeamByID(ctx context.Context, db DBTX, arg UpdateTeamByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateTeamByID,
 		arg.Name,
 		arg.Visibility,
@@ -364,7 +364,7 @@ func (q *Queries) UpdateTeamByID(ctx context.Context, db DBTX, arg UpdateTeamByI
 		arg.PermissionManagePolicyOverrides,
 		arg.TeamID,
 	)
-	var team_id resource.ID
+	var team_id resource.TfeID
 	err := row.Scan(&team_id)
 	return team_id, err
 }

@@ -80,7 +80,7 @@ type IngressAttributeModel struct {
 	Identifier             pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CommitURL              pgtype.Text
 	PullRequestNumber      pgtype.Int4
 	PullRequestURL         pgtype.Text
@@ -122,7 +122,7 @@ type Log struct {
 }
 
 type Model struct {
-	WorkspaceID                resource.ID
+	WorkspaceID                resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           pgtype.Bool
@@ -142,16 +142,16 @@ type Model struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []pgtype.Text
 	WorkingDirectory           pgtype.Text
-	LockRunID                  *resource.ID
-	LatestRunID                *resource.ID
+	LockRunID                  *resource.TfeID
+	LatestRunID                *resource.TfeID
 	OrganizationName           resource.OrganizationName
 	Branch                     pgtype.Text
-	CurrentStateVersionID      *resource.ID
+	CurrentStateVersionID      *resource.TfeID
 	TriggerPatterns            []pgtype.Text
 	VCSTagsRegex               pgtype.Text
 	AllowCLIApply              pgtype.Bool
-	AgentPoolID                *resource.ID
-	LockUserID                 *resource.ID
+	AgentPoolID                *resource.TfeID
+	LockUserID                 *resource.TfeID
 }
 
 type Module struct {
@@ -253,7 +253,7 @@ type RepoConnection struct {
 	ModuleID      pgtype.Text
 	WorkspaceID   pgtype.Text
 	RepoPath      pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }
 
 type Repohook struct {
@@ -276,7 +276,7 @@ type Run struct {
 	TargetAddrs            []pgtype.Text
 	LockFile               []byte
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	ConfigurationVersionID pgtype.Text
 	AutoApply              pgtype.Bool
 	PlanOnly               pgtype.Bool
@@ -353,13 +353,13 @@ type StateVersionStatus struct {
 }
 
 type TagModel struct {
-	TagID            resource.ID
+	TagID            resource.TfeID
 	Name             pgtype.Text
 	OrganizationName resource.OrganizationName
 }
 
 type Team struct {
-	TeamID                          resource.ID
+	TeamID                          resource.TfeID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
@@ -449,8 +449,8 @@ type VariableSetWorkspace struct {
 }
 
 type WorkspacePermission struct {
-	WorkspaceID resource.ID
-	TeamID      resource.ID
+	WorkspaceID resource.TfeID
+	TeamID      resource.TfeID
 	Role        pgtype.Text
 }
 
@@ -459,8 +459,8 @@ type WorkspaceRole struct {
 }
 
 type WorkspaceTag struct {
-	TagID       resource.ID
-	WorkspaceID resource.ID
+	TagID       resource.TfeID
+	WorkspaceID resource.TfeID
 }
 
 type WorkspaceVariable struct {

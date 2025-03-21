@@ -120,7 +120,7 @@ templ agentPoolListItem(pool *Pool) {
 
 type agentPoolListAllowedProps struct {
 	pools         []*Pool
-	currentPoolID *resource.ID
+	currentPoolID *resource.TfeID
 }
 
 templ agentPoolListAllowed(props agentPoolListAllowedProps) {

@@ -7,6 +7,6 @@ import (
 
 // LatestRun is a summary of the latest run for a workspace
 type LatestRun struct {
-	ID     resource.ID
+	ID     resource.TfeID
 	Status runstatus.Status
 }

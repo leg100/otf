@@ -16,11 +16,11 @@ const TeamTokenKind resource.Kind = "tt"
 type (
 	// Token provides information about an API token for a team.
 	Token struct {
-		resource.ID
+		resource.TfeID
 
 		CreatedAt time.Time
 		// Token belongs to a team
-		TeamID resource.ID
+		TeamID resource.TfeID
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -28,7 +28,7 @@ type (
 	// CreateTokenOptions are options for creating an team token via the service
 	// endpoint
 	CreateTokenOptions struct {
-		TeamID resource.ID
+		TeamID resource.TfeID
 		Expiry *time.Time
 	}
 
@@ -39,7 +39,7 @@ type (
 
 func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte, error) {
 	tt := Token{
-		ID:        resource.NewID(TeamTokenKind),
+		TfeID:     resource.NewTfeID(TeamTokenKind),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
@@ -48,7 +48,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 	if opts.Expiry != nil {
 		newTokenOptions = append(newTokenOptions, tokens.WithExpiry(*opts.Expiry))
 	}
-	token, err := f.tokens.NewToken(tt.ID, newTokenOptions...)
+	token, err := f.tokens.NewToken(tt.TfeID, newTokenOptions...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -57,7 +57,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 
 func (t *Token) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", t.ID.String()),
+		slog.String("id", t.TfeID.String()),
 		slog.String("team_id", t.TeamID.String()),
 	}
 	if t.Expiry != nil {
@@ -88,7 +88,7 @@ func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 	return tt, token, nil
 }
 
-func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token, error) {
+func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Token, error) {
 	_, err := a.Authorize(ctx, authz.GetTeamTokenAction, &authz.AccessRequest{ID: &teamID})
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token,
 	return a.db.getTeamTokenByTeamID(ctx, teamID)
 }
 
-func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.ID) error {
+func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
 	_, err := a.Authorize(ctx, authz.DeleteTeamTokenAction, &authz.AccessRequest{ID: &teamID})
 	if err != nil {
 		return err

@@ -53,7 +53,7 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	bobby := &user.User{ID: resource.NewID(resource.UserKind)}
+	bobby := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	tests := []struct {
 		name      string

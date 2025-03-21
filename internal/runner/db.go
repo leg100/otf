@@ -20,7 +20,7 @@ type db struct {
 // runners
 
 type runnerMetaResult struct {
-	RunnerID     resource.ID
+	RunnerID     resource.TfeID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -28,7 +28,7 @@ type runnerMetaResult struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  *resource.ID
+	AgentPoolID  *resource.TfeID
 	AgentPool    *AgentPool
 	CurrentJobs  int64
 }
@@ -72,7 +72,7 @@ func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	return q.InsertRunner(ctx, db.Conn(ctx), params)
 }
 
-func (db *db) update(ctx context.Context, runnerID resource.ID, fn func(context.Context, *RunnerMeta) error) error {
+func (db *db) update(ctx context.Context, runnerID resource.TfeID, fn func(context.Context, *RunnerMeta) error) error {
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
@@ -97,7 +97,7 @@ func (db *db) update(ctx context.Context, runnerID resource.ID, fn func(context.
 	return err
 }
 
-func (db *db) get(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
+func (db *db) get(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error) {
 	result, err := q.FindRunnerByID(ctx, db.Conn(ctx), runnerID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -141,7 +141,7 @@ func (db *db) listRunnersByOrganization(ctx context.Context, organization organi
 	return agents, nil
 }
 
-func (db *db) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
+func (db *db) listRunnersByPool(ctx context.Context, poolID resource.TfeID) ([]*RunnerMeta, error) {
 	rows, err := q.FindRunnersByPoolID(ctx, db.Conn(ctx), poolID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -153,7 +153,7 @@ func (db *db) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*Run
 	return runners, nil
 }
 
-func (db *db) deleteRunner(ctx context.Context, runnerID resource.ID) error {
+func (db *db) deleteRunner(ctx context.Context, runnerID resource.TfeID) error {
 	_, err := q.DeleteRunner(ctx, db.Conn(ctx), runnerID)
 	return sql.Error(err)
 }
@@ -161,14 +161,14 @@ func (db *db) deleteRunner(ctx context.Context, runnerID resource.ID) error {
 // jobs
 
 type jobResult struct {
-	JobID            resource.ID
-	RunID            resource.ID
+	JobID            resource.TfeID
+	RunID            resource.TfeID
 	Phase            pgtype.Text
 	Status           pgtype.Text
 	Signaled         pgtype.Bool
-	RunnerID         *resource.ID
-	AgentPoolID      *resource.ID
-	WorkspaceID      resource.ID
+	RunnerID         *resource.TfeID
+	AgentPoolID      *resource.TfeID
+	WorkspaceID      resource.TfeID
 	OrganizationName resource.OrganizationName
 }
 
@@ -199,7 +199,7 @@ func (db *db) createJob(ctx context.Context, job *Job) error {
 	return sql.Error(err)
 }
 
-func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, runnerID resource.ID) ([]*Job, error) {
+func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
 	allocated, err := q.FindAllocatedJobs(ctx, db.Conn(ctx), &runnerID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -218,7 +218,7 @@ func (db *db) getAllocatedAndSignaledJobs(ctx context.Context, runnerID resource
 	return jobs, nil
 }
 
-func (db *db) getJob(ctx context.Context, jobID resource.ID) (*Job, error) {
+func (db *db) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
 	result, err := q.FindJob(ctx, db.Conn(ctx), jobID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -238,7 +238,7 @@ func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
 	return jobs, nil
 }
 
-func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
+func (db *db) updateJob(ctx context.Context, jobID resource.TfeID, fn func(context.Context, *Job) error) (*Job, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -262,7 +262,7 @@ func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(context.
 	)
 }
 
-func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
+func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.TfeID, fn func(context.Context, *Job) error) (*Job, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -289,10 +289,10 @@ func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.ID,
 // agent tokens
 
 type agentTokenRow struct {
-	AgentTokenID resource.ID        `json:"agent_token_id"`
+	AgentTokenID resource.TfeID     `json:"agent_token_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	Description  pgtype.Text        `json:"description"`
-	AgentPoolID  resource.ID        `json:"agent_pool_id"`
+	AgentPoolID  resource.TfeID     `json:"agent_pool_id"`
 }
 
 func (row agentTokenRow) toAgentToken() *agentToken {
@@ -313,7 +313,7 @@ func (db *db) createAgentToken(ctx context.Context, token *agentToken) error {
 	})
 }
 
-func (db *db) getAgentTokenByID(ctx context.Context, id resource.ID) (*agentToken, error) {
+func (db *db) getAgentTokenByID(ctx context.Context, id resource.TfeID) (*agentToken, error) {
 	r, err := q.FindAgentTokenByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -321,7 +321,7 @@ func (db *db) getAgentTokenByID(ctx context.Context, id resource.ID) (*agentToke
 	return agentTokenRow(r).toAgentToken(), nil
 }
 
-func (db *db) listAgentTokens(ctx context.Context, poolID resource.ID) ([]*agentToken, error) {
+func (db *db) listAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*agentToken, error) {
 	rows, err := q.FindAgentTokensByAgentPoolID(ctx, db.Conn(ctx), poolID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -333,7 +333,7 @@ func (db *db) listAgentTokens(ctx context.Context, poolID resource.ID) ([]*agent
 	return tokens, nil
 }
 
-func (db *db) deleteAgentToken(ctx context.Context, id resource.ID) error {
+func (db *db) deleteAgentToken(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteAgentTokenByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)
@@ -344,7 +344,7 @@ func (db *db) deleteAgentToken(ctx context.Context, id resource.ID) error {
 // agent pools
 
 type poolresult struct {
-	AgentPoolID         resource.ID
+	AgentPoolID         resource.TfeID
 	Name                pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    resource.OrganizationName
@@ -361,18 +361,18 @@ func (r poolresult) toPool() (*Pool, error) {
 		Organization:       r.OrganizationName,
 		OrganizationScoped: r.OrganizationScoped.Bool,
 	}
-	pool.AssignedWorkspaces = make([]resource.ID, len(r.WorkspaceIds))
+	pool.AssignedWorkspaces = make([]resource.TfeID, len(r.WorkspaceIds))
 	for i, wid := range r.WorkspaceIds {
 		var err error
-		pool.AssignedWorkspaces[i], err = resource.ParseID(wid.String)
+		pool.AssignedWorkspaces[i], err = resource.ParseTfeID(wid.String)
 		if err != nil {
 			return nil, err
 		}
 	}
-	pool.AllowedWorkspaces = make([]resource.ID, len(r.AllowedWorkspaceIds))
+	pool.AllowedWorkspaces = make([]resource.TfeID, len(r.AllowedWorkspaceIds))
 	for i, wid := range r.AllowedWorkspaceIds {
 		var err error
-		pool.AllowedWorkspaces[i], err = resource.ParseID(wid.String)
+		pool.AllowedWorkspaces[i], err = resource.ParseTfeID(wid.String)
 		if err != nil {
 			return nil, err
 		}
@@ -421,7 +421,7 @@ func (db *db) updatePool(ctx context.Context, pool *Pool) error {
 	return nil
 }
 
-func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.ID) error {
+func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.TfeID) error {
 	err := q.InsertAgentPoolAllowedWorkspace(ctx, db.Conn(ctx), InsertAgentPoolAllowedWorkspaceParams{
 		PoolID:      poolID,
 		WorkspaceID: workspaceID,
@@ -432,7 +432,7 @@ func (db *db) addAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspac
 	return nil
 }
 
-func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.ID) error {
+func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, workspaceID resource.TfeID) error {
 	err := q.DeleteAgentPoolAllowedWorkspace(ctx, db.Conn(ctx), DeleteAgentPoolAllowedWorkspaceParams{
 		PoolID:      poolID,
 		WorkspaceID: workspaceID,
@@ -443,7 +443,7 @@ func (db *db) deleteAgentPoolAllowedWorkspace(ctx context.Context, poolID, works
 	return nil
 }
 
-func (db *db) getPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
+func (db *db) getPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
 	result, err := q.FindAgentPool(ctx, db.Conn(ctx), poolID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -451,7 +451,7 @@ func (db *db) getPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	return poolresult(result).toPool()
 }
 
-func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.ID) (*Pool, error) {
+func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.TfeID) (*Pool, error) {
 	result, err := q.FindAgentPoolByAgentTokenID(ctx, db.Conn(ctx), tokenID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -480,7 +480,7 @@ func (db *db) listPoolsByOrganization(ctx context.Context, organization organiza
 	return pools, nil
 }
 
-func (db *db) deleteAgentPool(ctx context.Context, poolID resource.ID) error {
+func (db *db) deleteAgentPool(ctx context.Context, poolID resource.TfeID) error {
 	_, err := q.DeleteAgentPool(ctx, db.Conn(ctx), poolID)
 	if err != nil {
 		return sql.Error(err)

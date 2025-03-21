@@ -31,7 +31,7 @@ var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
 	Module struct {
-		ID           resource.ID
+		ID           resource.TfeID
 		CreatedAt    time.Time
 		UpdatedAt    time.Time
 		Name         string
@@ -45,8 +45,8 @@ type (
 	ModuleStatus string
 
 	ModuleVersion struct {
-		ID          resource.ID
-		ModuleID    resource.ID
+		ID          resource.TfeID
+		ModuleID    resource.TfeID
 		Version     string
 		CreatedAt   time.Time
 		UpdatedAt   time.Time
@@ -59,10 +59,10 @@ type (
 
 	PublishOptions struct {
 		Repo          Repo
-		VCSProviderID resource.ID
+		VCSProviderID resource.TfeID
 	}
 	PublishVersionOptions struct {
-		ModuleID resource.ID
+		ModuleID resource.TfeID
 		Version  string
 		Ref      string
 		Repo     Repo
@@ -74,11 +74,11 @@ type (
 		Organization resource.OrganizationName
 	}
 	CreateModuleVersionOptions struct {
-		ModuleID resource.ID
+		ModuleID resource.TfeID
 		Version  string
 	}
 	UpdateModuleVersionStatusOptions struct {
-		ID     resource.ID
+		ID     resource.TfeID
 		Status ModuleVersionStatus
 		Error  string
 	}
@@ -98,7 +98,7 @@ type (
 
 func newModule(opts CreateOptions) *Module {
 	return &Module{
-		ID:           resource.NewID(resource.ModuleKind),
+		ID:           resource.NewTfeID(resource.ModuleKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		UpdatedAt:    internal.CurrentTimestamp(nil),
 		Name:         opts.Name,
@@ -110,7 +110,7 @@ func newModule(opts CreateOptions) *Module {
 
 func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
-		ID:        resource.NewID(resource.ModuleVersionKind),
+		ID:        resource.NewTfeID(resource.ModuleVersionKind),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
 		ModuleID:  opts.ModuleID,

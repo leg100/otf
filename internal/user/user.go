@@ -20,7 +20,7 @@ const (
 var (
 	// SiteAdminID is the hardcoded user id for the site admin user. The ID must
 	// be the same as the hardcoded value in the database migrations.
-	SiteAdminID               = resource.MustHardcodeID(resource.UserKind, "36atQC2oGQng7pVz")
+	SiteAdminID               = resource.MustHardcodeTfeID(resource.UserKind, "36atQC2oGQng7pVz")
 	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
 	_           authz.Subject = (*User)(nil)
 )
@@ -28,10 +28,10 @@ var (
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        resource.ID `jsonapi:"primary,users"`
-		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
-		UpdatedAt time.Time   `jsonapi:"attribute" json:"updated-at"`
-		SiteAdmin bool        `jsonapi:"attribute" json:"site-admin"`
+		ID        resource.TfeID `jsonapi:"primary,users"`
+		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
+		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`
 
 		// username is globally unique
 		Username string `jsonapi:"attribute" json:"username"`
@@ -53,15 +53,15 @@ type (
 	}
 
 	UserSpec struct {
-		UserID                *resource.ID
+		UserID                *resource.TfeID
 		Username              *string
-		AuthenticationTokenID *resource.ID
+		AuthenticationTokenID *resource.TfeID
 	}
 )
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        resource.NewID(resource.UserKind),
+		ID:        resource.NewTfeID(resource.UserKind),
 		Username:  username,
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
@@ -81,7 +81,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
-func (u *User) IsTeamMember(teamID resource.ID) bool {
+func (u *User) IsTeamMember(teamID resource.TfeID) bool {
 	for _, t := range u.Teams {
 		if t.ID == teamID {
 			return true

@@ -9,12 +9,12 @@ import (
 )
 
 type outputRow struct {
-	StateVersionOutputID resource.ID `json:"state_version_output_id"`
-	Name                 pgtype.Text `json:"name"`
-	Sensitive            pgtype.Bool `json:"sensitive"`
-	Type                 pgtype.Text `json:"type"`
-	Value                []byte      `json:"value"`
-	StateVersionID       resource.ID `json:"state_version_id"`
+	StateVersionOutputID resource.TfeID `json:"state_version_output_id"`
+	Name                 pgtype.Text    `json:"name"`
+	Sensitive            pgtype.Bool    `json:"sensitive"`
+	Type                 pgtype.Text    `json:"type"`
+	Value                []byte         `json:"value"`
+	StateVersionID       resource.TfeID `json:"state_version_id"`
 }
 
 // unmarshalVersionOutputRow unmarshals a database row into a state version
@@ -30,7 +30,7 @@ func (row outputRow) toOutput() *Output {
 	}
 }
 
-func (db *pgdb) getOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
+func (db *pgdb) getOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
 	result, err := q.FindStateVersionOutputByID(ctx, db.Conn(ctx), outputID)
 	if err != nil {
 		return nil, sql.Error(err)

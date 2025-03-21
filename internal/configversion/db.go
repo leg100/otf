@@ -62,7 +62,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 	})
 }
 
-func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
+func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.TfeID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
 	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		// select ...for update
 		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, conn, id)
@@ -78,7 +78,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, 
 	})
 }
 
-func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	rows, err := q.FindConfigurationVersionsByWorkspaceID(ctx, db.Conn(ctx), FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: workspaceID,
 		Limit:       sql.GetLimit(opts.PageOptions),
@@ -117,7 +117,7 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 	}
 }
 
-func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
+func (db *pgdb) GetConfig(ctx context.Context, id resource.TfeID) ([]byte, error) {
 	cfg, err := q.DownloadConfigurationVersion(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -125,7 +125,7 @@ func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
 	return cfg, nil
 }
 
-func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.ID) error {
+func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteConfigurationVersionByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)
@@ -148,13 +148,13 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 
 // pgRow represents the result of a database query for a configuration version.
 type pgRow struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	StatusTimestamps       []StatusTimestampModel
 	IngressAttributes      *IngressAttributeModel
 }

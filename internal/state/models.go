@@ -10,10 +10,10 @@ import (
 )
 
 type StateVersionOutput struct {
-	StateVersionOutputID resource.ID
+	StateVersionOutputID resource.TfeID
 	Name                 pgtype.Text
 	Sensitive            pgtype.Bool
 	Type                 pgtype.Text
 	Value                []byte
-	StateVersionID       resource.ID
+	StateVersionID       resource.TfeID
 }

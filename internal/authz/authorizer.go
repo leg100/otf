@@ -37,16 +37,16 @@ func NewAuthorizer(logger logr.Logger) *Authorizer {
 }
 
 type WorkspacePolicyGetter interface {
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (WorkspacePolicy, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (WorkspacePolicy, error)
 }
 
 // OrganizationResolver takes the ID of a resource and returns the name of the
 // organization it belongs to.
-type OrganizationResolver func(ctx context.Context, id resource.ID) (resource.OrganizationName, error)
+type OrganizationResolver func(ctx context.Context, id resource.TfeID) (resource.OrganizationName, error)
 
 // WorkspaceResolver takes the ID of a resource and returns the ID of the
 // workspace it belongs to.
-type WorkspaceResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
+type WorkspaceResolver func(ctx context.Context, id resource.TfeID) (resource.TfeID, error)
 
 // RegisterOrganizationResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the name of the
@@ -169,7 +169,7 @@ type AccessRequest struct {
 	Organization *resource.OrganizationName
 	// ID of resource to which access is being requested. If nil then the action
 	// is being requested on the organization.
-	ID *resource.ID
+	ID *resource.TfeID
 	// WorkspacePolicy specifies workspace-specific permissions for the resource
 	// specified by ID. Only non-nil if ID refers to a workspace.
 	WorkspacePolicy *WorkspacePolicy
@@ -185,7 +185,7 @@ type WorkspacePolicy struct {
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	TeamID resource.ID
+	TeamID resource.TfeID
 	Role   Role
 }
 

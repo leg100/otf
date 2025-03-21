@@ -21,11 +21,11 @@ type (
 
 	// pgRow is a row from a postgres query for a state version.
 	pgRow struct {
-		StateVersionID      resource.ID          `json:"state_version_id"`
+		StateVersionID      resource.TfeID       `json:"state_version_id"`
 		CreatedAt           pgtype.Timestamptz   `json:"created_at"`
 		Serial              pgtype.Int4          `json:"serial"`
 		State               []byte               `json:"state"`
-		WorkspaceID         resource.ID          `json:"workspace_id"`
+		WorkspaceID         resource.TfeID       `json:"workspace_id"`
 		Status              pgtype.Text          `json:"status"`
 		StateVersionOutputs []StateVersionOutput `json:"state_version_outputs"`
 	}
@@ -97,7 +97,7 @@ func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
 	})
 }
 
-func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error {
+func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error {
 	err := q.UpdateState(ctx, db.Conn(ctx), UpdateStateParams{
 		State:          state,
 		StateVersionID: svID,
@@ -105,7 +105,7 @@ func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.ID, st
 	return sql.Error(err)
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	rows, err := q.FindStateVersionsByWorkspaceID(ctx, db.Conn(ctx), FindStateVersionsByWorkspaceIDParams{
 		WorkspaceID: workspaceID,
 		Limit:       sql.GetLimit(opts),
@@ -127,7 +127,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.ID, opts 
 	return resource.NewPage(items, opts, internal.Int64(count)), nil
 }
 
-func (db *pgdb) getVersion(ctx context.Context, svID resource.ID) (*Version, error) {
+func (db *pgdb) getVersion(ctx context.Context, svID resource.TfeID) (*Version, error) {
 	result, err := q.FindStateVersionByID(ctx, db.Conn(ctx), svID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -135,7 +135,7 @@ func (db *pgdb) getVersion(ctx context.Context, svID resource.ID) (*Version, err
 	return pgRow(result).toVersion(), nil
 }
 
-func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.ID) (*Version, error) {
+func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.TfeID) (*Version, error) {
 	result, err := q.FindStateVersionByIDForUpdate(ctx, db.Conn(ctx), svID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -143,7 +143,7 @@ func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.ID) (*Ver
 	return pgRow(result).toVersion(), nil
 }
 
-func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error) {
+func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
 	result, err := q.FindCurrentStateVersionByWorkspaceID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -151,12 +151,12 @@ func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.ID) 
 	return pgRow(result).toVersion(), nil
 }
 
-func (db *pgdb) getState(ctx context.Context, id resource.ID) ([]byte, error) {
+func (db *pgdb) getState(ctx context.Context, id resource.TfeID) ([]byte, error) {
 	return q.FindStateVersionStateByID(ctx, db.Conn(ctx), id)
 }
 
 // deleteVersion deletes a state version from the DB
-func (db *pgdb) deleteVersion(ctx context.Context, id resource.ID) error {
+func (db *pgdb) deleteVersion(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteStateVersionByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		err = sql.Error(err)
@@ -171,7 +171,7 @@ func (db *pgdb) deleteVersion(ctx context.Context, id resource.ID) error {
 	return nil
 }
 
-func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.ID) error {
+func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.TfeID) error {
 	_, err := (&workspace.Queries{}).UpdateWorkspaceCurrentStateVersionID(ctx, db.Conn(ctx), workspace.UpdateWorkspaceCurrentStateVersionIDParams{
 		StateVersionID: &svID,
 		WorkspaceID:    workspaceID,
@@ -182,7 +182,7 @@ func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID reso
 	return nil
 }
 
-func (db *pgdb) discardPending(ctx context.Context, workspaceID resource.ID) error {
+func (db *pgdb) discardPending(ctx context.Context, workspaceID resource.TfeID) error {
 	err := q.DiscardPendingStateVersionsByWorkspaceID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return sql.Error(err)

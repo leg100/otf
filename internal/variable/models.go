@@ -10,7 +10,7 @@ import (
 )
 
 type VariableModel struct {
-	VariableID  resource.ID
+	VariableID  resource.TfeID
 	Key         pgtype.Text
 	Value       pgtype.Text
 	Description pgtype.Text
@@ -21,7 +21,7 @@ type VariableModel struct {
 }
 
 type VariableSetModel struct {
-	VariableSetID    resource.ID
+	VariableSetID    resource.TfeID
 	Global           pgtype.Bool
 	Name             pgtype.Text
 	Description      pgtype.Text
@@ -29,11 +29,11 @@ type VariableSetModel struct {
 }
 
 type VariableSetVariable struct {
-	VariableSetID resource.ID
-	VariableID    resource.ID
+	VariableSetID resource.TfeID
+	VariableID    resource.TfeID
 }
 
 type VariableSetWorkspace struct {
-	VariableSetID resource.ID
-	WorkspaceID   resource.ID
+	VariableSetID resource.TfeID
+	WorkspaceID   resource.TfeID
 }

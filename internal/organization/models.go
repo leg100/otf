@@ -10,7 +10,7 @@ import (
 )
 
 type Model struct {
-	OrganizationID             resource.ID
+	OrganizationID             resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       resource.OrganizationName
@@ -23,7 +23,7 @@ type Model struct {
 }
 
 type TokenModel struct {
-	OrganizationTokenID resource.ID
+	OrganizationTokenID resource.TfeID
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    resource.OrganizationName
 	Expiry              pgtype.Timestamptz

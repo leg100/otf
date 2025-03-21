@@ -31,9 +31,9 @@ const (
 // Job is the unit of work corresponding to a run phase. A job is allocated to
 // a runner, which then executes the work through to completion.
 type Job struct {
-	ID resource.ID `jsonapi:"primary,jobs"`
+	ID resource.TfeID `jsonapi:"primary,jobs"`
 	// ID of the run that this job is for.
-	RunID resource.ID `jsonapi:"attribute" json:"run_id"`
+	RunID resource.TfeID `jsonapi:"attribute" json:"run_id"`
 	// Phase of run that this job is for.
 	Phase internal.PhaseType `jsonapi:"attribute" json:"phase"`
 	// Current status of job.
@@ -41,14 +41,14 @@ type Job struct {
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
 	// the job is allocated to an agent runner belonging to the pool. If nil then
 	// the job is allocated to a server runner.
-	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent_pool_id"`
+	AgentPoolID *resource.TfeID `jsonapi:"attribute" json:"agent_pool_id"`
 	// Name of job's organization
 	Organization organization.Name `jsonapi:"attribute" json:"organization"`
 	// ID of job's workspace
-	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id"`
+	WorkspaceID resource.TfeID `jsonapi:"attribute" json:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
-	RunnerID *resource.ID `jsonapi:"attribute" json:"runner_id"`
+	RunnerID *resource.TfeID `jsonapi:"attribute" json:"runner_id"`
 	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
 	Signaled *bool `jsonapi:"attribute" json:"signaled"`
@@ -56,7 +56,7 @@ type Job struct {
 
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
-		ID:           resource.NewID(resource.JobKind),
+		ID:           resource.NewTfeID(resource.JobKind),
 		RunID:        run.ID,
 		Phase:        run.Phase(),
 		Status:       JobUnallocated,
@@ -137,7 +137,7 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	return false
 }
 
-func (j *Job) allocate(runnerID resource.ID) error {
+func (j *Job) allocate(runnerID resource.TfeID) error {
 	if err := j.updateStatus(JobAllocated); err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (j *Job) allocate(runnerID resource.ID) error {
 	return nil
 }
 
-func (j *Job) reallocate(runnerID resource.ID) error {
+func (j *Job) reallocate(runnerID resource.TfeID) error {
 	if j.Status != JobAllocated {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}

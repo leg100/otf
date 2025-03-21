@@ -23,7 +23,7 @@ func TestListRunsHandler(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withWorkspace(&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")}),
 	)
-	user := &user.User{ID: resource.NewID(resource.UserKind)}
+	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page=1", nil)

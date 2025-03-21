@@ -441,10 +441,10 @@ func TestWorkspace_UpdateConnection(t *testing.T) {
 }
 
 var (
-	bobby         = resource.NewID(resource.UserKind)
-	burglarTestID = resource.NewID(resource.UserKind)
-	runTestID1    = resource.NewID(resource.RunKind)
-	runTestID2    = resource.NewID(resource.RunKind)
+	bobby         = resource.NewTfeID(resource.UserKind)
+	burglarTestID = resource.NewTfeID(resource.UserKind)
+	runTestID1    = resource.NewTfeID(resource.RunKind)
+	runTestID2    = resource.NewTfeID(resource.RunKind)
 )
 
 func TestWorkspace_Lock(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 
 func TestMiddleware(t *testing.T) {
 	secret := testutils.NewSecret(t)
-	testID := resource.NewID(resource.Kind("test"))
+	testID := resource.NewTfeID(resource.Kind("test"))
 
 	t.Run("skip non-protected path", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/login", nil)

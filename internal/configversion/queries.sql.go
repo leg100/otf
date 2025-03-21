@@ -18,7 +18,7 @@ FROM configuration_versions
 WHERE configuration_versions.workspace_id = $1
 `
 
-func (q *Queries) CountConfigurationVersionsByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (int64, error) {
+func (q *Queries) CountConfigurationVersionsByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.TfeID) (int64, error) {
 	row := db.QueryRow(ctx, countConfigurationVersionsByWorkspaceID, workspaceID)
 	var count int64
 	err := row.Scan(&count)
@@ -32,9 +32,9 @@ WHERE configuration_version_id = $1
 RETURNING configuration_version_id
 `
 
-func (q *Queries) DeleteConfigurationVersionByID(ctx context.Context, db DBTX, id resource.ID) (resource.ID, error) {
+func (q *Queries) DeleteConfigurationVersionByID(ctx context.Context, db DBTX, id resource.TfeID) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteConfigurationVersionByID, id)
-	var configuration_version_id resource.ID
+	var configuration_version_id resource.TfeID
 	err := row.Scan(&configuration_version_id)
 	return configuration_version_id, err
 }
@@ -48,7 +48,7 @@ AND   status                   = 'uploaded'
 
 // DownloadConfigurationVersion gets a configuration_version config
 // tarball.
-func (q *Queries) DownloadConfigurationVersion(ctx context.Context, db DBTX, configurationVersionID resource.ID) ([]byte, error) {
+func (q *Queries) DownloadConfigurationVersion(ctx context.Context, db DBTX, configurationVersionID resource.TfeID) ([]byte, error) {
 	row := db.QueryRow(ctx, downloadConfigurationVersion, configurationVersionID)
 	var config []byte
 	err := row.Scan(&config)
@@ -78,19 +78,19 @@ WHERE cv.configuration_version_id = $1
 `
 
 type FindConfigurationVersionByIDRow struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	StatusTimestamps       []StatusTimestampModel
 	IngressAttributes      *IngressAttributeModel
 }
 
 // FindConfigurationVersionByID finds a configuration_version by its id.
-func (q *Queries) FindConfigurationVersionByID(ctx context.Context, db DBTX, configurationVersionID resource.ID) (FindConfigurationVersionByIDRow, error) {
+func (q *Queries) FindConfigurationVersionByID(ctx context.Context, db DBTX, configurationVersionID resource.TfeID) (FindConfigurationVersionByIDRow, error) {
 	row := db.QueryRow(ctx, findConfigurationVersionByID, configurationVersionID)
 	var i FindConfigurationVersionByIDRow
 	err := row.Scan(
@@ -131,18 +131,18 @@ FOR UPDATE OF cv
 `
 
 type FindConfigurationVersionByIDForUpdateRow struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	StatusTimestamps       []StatusTimestampModel
 	IngressAttributes      *IngressAttributeModel
 }
 
-func (q *Queries) FindConfigurationVersionByIDForUpdate(ctx context.Context, db DBTX, configurationVersionID resource.ID) (FindConfigurationVersionByIDForUpdateRow, error) {
+func (q *Queries) FindConfigurationVersionByIDForUpdate(ctx context.Context, db DBTX, configurationVersionID resource.TfeID) (FindConfigurationVersionByIDForUpdateRow, error) {
 	row := db.QueryRow(ctx, findConfigurationVersionByIDForUpdate, configurationVersionID)
 	var i FindConfigurationVersionByIDForUpdateRow
 	err := row.Scan(
@@ -183,18 +183,18 @@ ORDER BY cv.created_at DESC
 `
 
 type FindConfigurationVersionLatestByWorkspaceIDRow struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	StatusTimestamps       []StatusTimestampModel
 	IngressAttributes      *IngressAttributeModel
 }
 
-func (q *Queries) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.ID) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
+func (q *Queries) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, db DBTX, workspaceID resource.TfeID) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
 	row := db.QueryRow(ctx, findConfigurationVersionLatestByWorkspaceID, workspaceID)
 	var i FindConfigurationVersionLatestByWorkspaceIDRow
 	err := row.Scan(
@@ -236,19 +236,19 @@ OFFSET $2::int
 `
 
 type FindConfigurationVersionsByWorkspaceIDParams struct {
-	WorkspaceID resource.ID
+	WorkspaceID resource.TfeID
 	Offset      pgtype.Int4
 	Limit       pgtype.Int4
 }
 
 type FindConfigurationVersionsByWorkspaceIDRow struct {
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	AutoQueueRuns          pgtype.Bool
 	Source                 pgtype.Text
 	Speculative            pgtype.Bool
 	Status                 pgtype.Text
-	WorkspaceID            resource.ID
+	WorkspaceID            resource.TfeID
 	StatusTimestamps       []StatusTimestampModel
 	IngressAttributes      *IngressAttributeModel
 }
@@ -306,13 +306,13 @@ INSERT INTO configuration_versions (
 `
 
 type InsertConfigurationVersionParams struct {
-	ID            resource.ID
+	ID            resource.TfeID
 	CreatedAt     pgtype.Timestamptz
 	AutoQueueRuns pgtype.Bool
 	Source        pgtype.Text
 	Speculative   pgtype.Bool
 	Status        pgtype.Text
-	WorkspaceID   resource.ID
+	WorkspaceID   resource.TfeID
 }
 
 func (q *Queries) InsertConfigurationVersion(ctx context.Context, db DBTX, arg InsertConfigurationVersionParams) error {
@@ -342,7 +342,7 @@ RETURNING configuration_version_id, status, timestamp
 `
 
 type InsertConfigurationVersionStatusTimestampParams struct {
-	ID        resource.ID
+	ID        resource.TfeID
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
@@ -402,7 +402,7 @@ type InsertIngressAttributesParams struct {
 	Tag                    pgtype.Text
 	IsPullRequest          pgtype.Bool
 	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID resource.ID
+	ConfigurationVersionID resource.TfeID
 }
 
 func (q *Queries) InsertIngressAttributes(ctx context.Context, db DBTX, arg InsertIngressAttributesParams) error {
@@ -436,12 +436,12 @@ RETURNING configuration_version_id
 
 type UpdateConfigurationVersionConfigByIDParams struct {
 	Config []byte
-	ID     resource.ID
+	ID     resource.TfeID
 }
 
-func (q *Queries) UpdateConfigurationVersionConfigByID(ctx context.Context, db DBTX, arg UpdateConfigurationVersionConfigByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateConfigurationVersionConfigByID(ctx context.Context, db DBTX, arg UpdateConfigurationVersionConfigByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateConfigurationVersionConfigByID, arg.Config, arg.ID)
-	var configuration_version_id resource.ID
+	var configuration_version_id resource.TfeID
 	err := row.Scan(&configuration_version_id)
 	return configuration_version_id, err
 }
@@ -454,9 +454,9 @@ WHERE configuration_version_id = $1
 RETURNING configuration_version_id
 `
 
-func (q *Queries) UpdateConfigurationVersionErroredByID(ctx context.Context, db DBTX, id resource.ID) (resource.ID, error) {
+func (q *Queries) UpdateConfigurationVersionErroredByID(ctx context.Context, db DBTX, id resource.TfeID) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateConfigurationVersionErroredByID, id)
-	var configuration_version_id resource.ID
+	var configuration_version_id resource.TfeID
 	err := row.Scan(&configuration_version_id)
 	return configuration_version_id, err
 }

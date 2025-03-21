@@ -48,7 +48,7 @@ WHERE w.repohook_id = $1
 type FindRepohookByIDRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -84,13 +84,13 @@ AND   w.vcs_provider_id = $2
 
 type FindRepohookByRepoAndProviderParams struct {
 	RepoPath      pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }
 
 type FindRepohookByRepoAndProviderRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -138,7 +138,7 @@ JOIN vcs_providers v USING (vcs_provider_id)
 type FindRepohooksRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -191,7 +191,7 @@ WHERE NOT EXISTS (
 type FindUnreferencedRepohooksRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text
@@ -255,7 +255,7 @@ JOIN vcs_providers v USING (vcs_provider_id)
 type InsertRepohookParams struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 }
@@ -263,7 +263,7 @@ type InsertRepohookParams struct {
 type InsertRepohookRow struct {
 	RepohookID    pgtype.UUID
 	VCSID         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
 	VCSKind       pgtype.Text

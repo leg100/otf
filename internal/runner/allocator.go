@@ -18,11 +18,11 @@ type allocator struct {
 	// allocating jobs to runners.
 	client allocatorClient
 	// runners keyed by runner ID
-	runners map[resource.ID]*RunnerMeta
+	runners map[resource.TfeID]*RunnerMeta
 	// jobs keyed by job ID
-	jobs map[resource.ID]*Job
+	jobs map[resource.TfeID]*Job
 	// total current jobs allocated to each runner keyed by runner ID
-	currentJobs map[resource.ID]int
+	currentJobs map[resource.TfeID]int
 }
 
 type allocatorClient interface {
@@ -32,8 +32,8 @@ type allocatorClient interface {
 	listRunners(ctx context.Context) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
-	allocateJob(ctx context.Context, jobID, runnerID resource.ID) (*Job, error)
-	reallocateJob(ctx context.Context, jobID, runnerID resource.ID) (*Job, error)
+	allocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
+	reallocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
 }
 
 // Start the allocator. Should be invoked in a go routine.
@@ -110,12 +110,12 @@ func (a *allocator) Start(ctx context.Context) error {
 }
 
 func (a *allocator) seed(runners []*RunnerMeta, jobs []*Job) {
-	a.runners = make(map[resource.ID]*RunnerMeta, len(runners))
-	a.currentJobs = make(map[resource.ID]int, len(runners))
+	a.runners = make(map[resource.TfeID]*RunnerMeta, len(runners))
+	a.currentJobs = make(map[resource.TfeID]int, len(runners))
 	for _, runner := range runners {
 		a.addRunner(runner)
 	}
-	a.jobs = make(map[resource.ID]*Job, len(jobs))
+	a.jobs = make(map[resource.TfeID]*Job, len(jobs))
 	for _, job := range jobs {
 		// skip jobs in terminal state
 		switch job.Status {
@@ -251,12 +251,12 @@ func (a *allocator) deleteRunner(runner *RunnerMeta) {
 	currentJobsMetric.DeleteLabelValues(runner.ID.String())
 }
 
-func (a *allocator) incrementCurrentJobs(runnerID resource.ID) {
+func (a *allocator) incrementCurrentJobs(runnerID resource.TfeID) {
 	a.currentJobs[runnerID]++
 	currentJobsMetric.WithLabelValues(runnerID.String()).Inc()
 }
 
-func (a *allocator) decrementCurrentJobs(runnerID resource.ID) {
+func (a *allocator) decrementCurrentJobs(runnerID resource.TfeID) {
 	a.currentJobs[runnerID]--
 	currentJobsMetric.WithLabelValues(runnerID.String()).Dec()
 }

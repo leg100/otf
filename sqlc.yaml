@@ -26,28 +26,28 @@ overrides:
       - column: "workspaces.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspaces.agent_pool_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "teams.team_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "repo_connections.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "ingress_attributes.configuration_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "runs.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspaces.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -88,7 +88,7 @@ sql:
       - column: "organizations.organization_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "organizations.name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -96,7 +96,7 @@ sql:
       - column: "organization_tokens.organization_token_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "organization_tokens.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -119,7 +119,7 @@ sql:
       - column: "tags.tag_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "tags.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -127,39 +127,39 @@ sql:
       - column: "workspaces.current_state_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "workspaces.lock_run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "workspaces.lock_user_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "workspaces.latest_run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "workspace_permissions.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspace_permissions.team_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspace_tags.tag_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspace_tags.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/run/queries.sql"
   schema: "./internal/sql/migrations"
@@ -192,31 +192,31 @@ sql:
       - column: "applies.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "phase_status_timestamps.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "plans.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "run_status_timestamps.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "run_variables.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "runs.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "runs.configuration_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/configversion/queries.sql"
   schema: "./internal/sql/migrations"
@@ -232,15 +232,15 @@ sql:
       - column: "configuration_version_status_timestamps.configuration_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "configuration_versions.configuration_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "configuration_versions.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - db_type: "configuration_version_status_timestamps"
         go_type:
           type: StatusTimestampModel
@@ -258,11 +258,11 @@ sql:
       - column: "notification_configurations.notification_configuration_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "notification_configurations.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/user/queries.sql"
   schema: "./internal/sql/migrations"
@@ -278,18 +278,18 @@ sql:
       - column: "users.user_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - db_type: "teams"
         go_type:
           type: "TeamModel"
       - column: "tokens.token_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "team_memberships.team_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "teams.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -309,11 +309,11 @@ sql:
       - column: "team_tokens.team_token_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "team_tokens.team_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "teams.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -331,11 +331,11 @@ sql:
       - column: "repohooks.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "vcs_providers.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/github/queries.sql"
   schema: "./internal/sql/migrations"
@@ -349,7 +349,7 @@ sql:
       - column: "github_app_installs.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/connections/queries.sql"
   schema: "./internal/sql/migrations"
@@ -363,17 +363,17 @@ sql:
       - column: "repo_connections.module_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "repo_connections.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "repo_connections.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/vcsprovider/queries.sql"
   schema: "./internal/sql/migrations"
@@ -388,7 +388,7 @@ sql:
       - column: "vcs_providers.vcs_provider_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "vcs_providers.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -422,7 +422,7 @@ sql:
       - column: "agent_pools.agent_pool_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "agent_pools.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -430,40 +430,40 @@ sql:
       - column: "agent_pool_allowed_workspaces.agent_pool_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "agent_pool_allowed_workspaces.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "agent_tokens.agent_token_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "agent_tokens.agent_pool_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "jobs.job_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "jobs.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "jobs.runner_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
       - column: "runners.runner_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "runners.agent_pool_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
           pointer: true
 - engine: "postgresql"
   queries: "./internal/state/queries.sql"
@@ -481,19 +481,19 @@ sql:
       - column: "state_version_outputs.state_version_output_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "state_version_outputs.state_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "state_versions.state_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "state_versions.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/releases/queries.sql"
   schema: "./internal/sql/migrations"
@@ -516,11 +516,11 @@ sql:
       - column: "logs.run_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "logs.chunk_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
 - engine: "postgresql"
   queries: "./internal/variable/queries.sql"
   schema: "./internal/sql/migrations"
@@ -541,35 +541,35 @@ sql:
       - column: "variable_set_variables.variable_set_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "variable_set_variables.variable_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "variable_set_workspaces.variable_set_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "variable_set_workspaces.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "variable_sets.variable_set_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "variables.variable_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspace_variables.workspace_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "workspace_variables.variable_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "variable_sets.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
@@ -589,22 +589,22 @@ sql:
       - column: "module_tarballs.module_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - db_type: "module_versions"
         go_type:
           type: "ModuleVersionModel"
       - column: "module_versions.module_version_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "module_versions.module_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "modules.module_id"
         go_type:
           import: "github.com/leg100/otf/internal/resource"
-          type: "ID"
+          type: "TfeID"
       - column: "modules.organization_name"
         go_type:
           import: "github.com/leg100/otf/internal/resource"

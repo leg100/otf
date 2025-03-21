@@ -21,8 +21,7 @@ type (
 	// Pool is a group of remote runners sharing one or more tokens, assigned to
 	// an organization or particular workspaces within the organization.
 	Pool struct {
-		resource.ID
-
+		ID        resource.TfeID
 		Name      string
 		CreatedAt time.Time
 		// Pool belongs to an organization with this name.
@@ -32,10 +31,10 @@ type (
 		OrganizationScoped bool
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
-		AllowedWorkspaces []resource.ID
+		AllowedWorkspaces []resource.TfeID
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
-		AssignedWorkspaces []resource.ID
+		AssignedWorkspaces []resource.TfeID
 	}
 
 	CreateAgentPoolOptions struct {
@@ -45,17 +44,17 @@ type (
 		// defaults to true
 		OrganizationScoped *bool
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []resource.ID
+		AllowedWorkspaces []resource.TfeID
 	}
 
 	updatePoolOptions struct {
 		Name               *string
 		OrganizationScoped *bool `schema:"organization_scoped"`
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []resource.ID `schema:"allowed_workspaces"`
+		AllowedWorkspaces []resource.TfeID `schema:"allowed_workspaces"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AssignedWorkspaces.
-		AssignedWorkspaces []resource.ID `schema:"assigned_workspaces"`
+		AssignedWorkspaces []resource.TfeID `schema:"assigned_workspaces"`
 	}
 
 	listPoolOptions struct {
@@ -64,7 +63,7 @@ type (
 		// Filter pools to those accessible to the named workspace. Optional.
 		AllowedWorkspaceName *string
 		// Filter pools to those accessible to the workspace with the given ID. Optional.
-		AllowedWorkspaceID *resource.ID
+		AllowedWorkspaceID *resource.TfeID
 	}
 )
 
@@ -75,7 +74,7 @@ func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 		return nil, errors.New("name must not be empty")
 	}
 	pool := &Pool{
-		ID:                 resource.NewID("apool"),
+		ID:                 resource.NewTfeID("apool"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		Name:               opts.Name,
 		Organization:       opts.Organization,

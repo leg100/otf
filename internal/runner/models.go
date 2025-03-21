@@ -12,7 +12,7 @@ import (
 )
 
 type AgentPool struct {
-	AgentPoolID        resource.ID
+	AgentPoolID        resource.TfeID
 	Name               pgtype.Text
 	CreatedAt          pgtype.Timestamptz
 	OrganizationName   resource.OrganizationName
@@ -20,23 +20,23 @@ type AgentPool struct {
 }
 
 type AgentToken struct {
-	AgentTokenID resource.ID
+	AgentTokenID resource.TfeID
 	CreatedAt    pgtype.Timestamptz
 	Description  pgtype.Text
-	AgentPoolID  resource.ID
+	AgentPoolID  resource.TfeID
 }
 
 type JobModel struct {
-	RunID    resource.ID
+	RunID    resource.TfeID
 	Phase    pgtype.Text
 	Status   pgtype.Text
-	RunnerID *resource.ID
+	RunnerID *resource.TfeID
 	Signaled pgtype.Bool
-	JobID    resource.ID
+	JobID    resource.TfeID
 }
 
 type RunnerModel struct {
-	RunnerID     resource.ID
+	RunnerID     resource.TfeID
 	Name         pgtype.Text
 	Version      pgtype.Text
 	MaxJobs      pgtype.Int4
@@ -44,5 +44,5 @@ type RunnerModel struct {
 	LastPingAt   pgtype.Timestamptz
 	LastStatusAt pgtype.Timestamptz
 	Status       pgtype.Text
-	AgentPoolID  *resource.ID
+	AgentPoolID  *resource.TfeID
 }

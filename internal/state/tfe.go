@@ -287,7 +287,7 @@ func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		StateVersionID resource.ID `schema:"id,required"`
+		StateVersionID resource.TfeID `schema:"id,required"`
 		types.ListOptions
 	}
 	if err := decode.All(&params, r); err != nil {

@@ -10,11 +10,11 @@ import (
 )
 
 type ModuleVersionModel struct {
-	ModuleVersionID resource.ID
+	ModuleVersionID resource.TfeID
 	Version         pgtype.Text
 	CreatedAt       pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
 	Status          pgtype.Text
 	StatusError     pgtype.Text
-	ModuleID        resource.ID
+	ModuleID        resource.TfeID
 }

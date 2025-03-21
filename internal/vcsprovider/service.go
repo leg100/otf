@@ -121,7 +121,7 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider,
 	return provider, nil
 }
 
-func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error) {
+func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*VCSProvider, error) {
 	var (
 		subject authz.Subject
 		before  VCSProvider
@@ -194,7 +194,7 @@ func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, instal
 	return providers, nil
 }
 
-func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
+func (a *Service) Get(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -212,7 +212,7 @@ func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 	return provider, nil
 }
 
-func (a *Service) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
+func (a *Service) GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error) {
 	provider, err := a.Get(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -220,7 +220,7 @@ func (a *Service) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs
 	return provider.NewClient()
 }
 
-func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, error) {
+func (a *Service) Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
 	var (
 		provider *VCSProvider
 		subject  authz.Subject

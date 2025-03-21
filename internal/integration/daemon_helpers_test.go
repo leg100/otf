@@ -192,7 +192,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	return ws
 }
 
-func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID resource.ID) *workspace.Workspace {
+func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID resource.TfeID) *workspace.Workspace {
 	t.Helper()
 
 	ws, err := s.Workspaces.Get(ctx, workspaceID)
@@ -200,7 +200,7 @@ func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID
 	return ws
 }
 
-func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.ID) *run.Run {
+func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.TfeID) *run.Run {
 	t.Helper()
 
 	run, err := s.Runs.Get(ctx, runID)
@@ -208,7 +208,7 @@ func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.ID
 	return run
 }
 
-func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.ID, status runstatus.Status) *run.Run {
+func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.TfeID, status runstatus.Status) *run.Run {
 	t.Helper()
 
 	for event := range s.runEvents {
@@ -394,7 +394,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
-func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID resource.ID) *state.Version {
+func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID resource.TfeID) *state.Version {
 	t.Helper()
 
 	sv, err := s.State.GetCurrent(ctx, wsID)
@@ -438,7 +438,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org resource.OrganizationName, poolID *resource.ID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org resource.OrganizationName, poolID *resource.TfeID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default

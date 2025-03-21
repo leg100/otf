@@ -119,7 +119,7 @@ func (r *Runner) Start(ctx context.Context) error {
 
 	// Initialize terminator, which is responsible for terminating jobs in
 	// response to cancelation signals.
-	terminator := &terminator{mapping: make(map[resource.ID]cancelable)}
+	terminator := &terminator{mapping: make(map[resource.TfeID]cancelable)}
 
 	// Authenticate as unregistered runner with the registration endpoint. This
 	// is only necessary for the server runner; the agent runner relies on

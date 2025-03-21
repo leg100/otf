@@ -10,8 +10,8 @@ import (
 )
 
 type RepoConnection struct {
-	ModuleID      *resource.ID
-	WorkspaceID   *resource.ID
+	ModuleID      *resource.TfeID
+	WorkspaceID   *resource.TfeID
 	RepoPath      pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }

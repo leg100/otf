@@ -18,7 +18,7 @@ import (
 
 func TestListModules(t *testing.T) {
 	h := newTestWebHandlers(t, withMod(&Module{}))
-	user := &user.User{ID: resource.NewID(resource.UserKind)}
+	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)

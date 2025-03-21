@@ -227,11 +227,11 @@ func (p workspaceTableProps) Variables() []*Variable {
 	return p.variables
 }
 
-func (workspaceTableProps) EditPath(variableID resource.ID) templ.SafeURL {
+func (workspaceTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
 	return paths.EditVariable(variableID.String())
 }
 
-func (workspaceTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
+func (workspaceTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
 	return paths.DeleteVariable(variableID.String())
 }
 
@@ -1139,11 +1139,11 @@ func (p setTableProps) Variables() []*Variable {
 	return p.set.Variables
 }
 
-func (setTableProps) EditPath(variableID resource.ID) templ.SafeURL {
+func (setTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
 	return paths.EditVariableSetVariable(variableID.String())
 }
 
-func (setTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
+func (setTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
 	return paths.DeleteVariableSetVariable(variableID.String())
 }
 
@@ -1160,8 +1160,8 @@ func (w setTableProps) CanDeleteVariable() bool {
 
 type tableProps interface {
 	Variables() []*Variable
-	EditPath(variableID resource.ID) templ.SafeURL
-	DeletePath(variableID resource.ID) templ.SafeURL
+	EditPath(variableID resource.TfeID) templ.SafeURL
+	DeletePath(variableID resource.TfeID) templ.SafeURL
 	IsOverwritten(v *Variable) bool
 	CanDeleteVariable() bool
 }

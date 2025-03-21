@@ -10,13 +10,13 @@ import (
 )
 
 type ConfigModel struct {
-	NotificationConfigurationID resource.ID
+	NotificationConfigurationID resource.TfeID
 	CreatedAt                   pgtype.Timestamptz
 	UpdatedAt                   pgtype.Timestamptz
 	Name                        pgtype.Text
 	URL                         pgtype.Text
 	Triggers                    []pgtype.Text
 	DestinationType             pgtype.Text
-	WorkspaceID                 resource.ID
+	WorkspaceID                 resource.TfeID
 	Enabled                     pgtype.Bool
 }

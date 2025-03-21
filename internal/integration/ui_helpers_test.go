@@ -69,7 +69,7 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, workspaceName string, teamID resource.ID, role string) {
+func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, workspaceName string, teamID resource.TfeID, role string) {
 	t.Helper()
 
 	// go to workspace

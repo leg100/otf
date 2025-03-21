@@ -19,7 +19,7 @@ WHERE module_id = $1
 RETURNING module_id, workspace_id, repo_path, vcs_provider_id
 `
 
-func (q *Queries) DeleteModuleConnectionByID(ctx context.Context, db DBTX, moduleID *resource.ID) (RepoConnection, error) {
+func (q *Queries) DeleteModuleConnectionByID(ctx context.Context, db DBTX, moduleID *resource.TfeID) (RepoConnection, error) {
 	row := db.QueryRow(ctx, deleteModuleConnectionByID, moduleID)
 	var i RepoConnection
 	err := row.Scan(
@@ -38,7 +38,7 @@ WHERE workspace_id = $1
 RETURNING module_id, workspace_id, repo_path, vcs_provider_id
 `
 
-func (q *Queries) DeleteWorkspaceConnectionByID(ctx context.Context, db DBTX, workspaceID *resource.ID) (RepoConnection, error) {
+func (q *Queries) DeleteWorkspaceConnectionByID(ctx context.Context, db DBTX, workspaceID *resource.TfeID) (RepoConnection, error) {
 	row := db.QueryRow(ctx, deleteWorkspaceConnectionByID, workspaceID)
 	var i RepoConnection
 	err := row.Scan(
@@ -65,10 +65,10 @@ INSERT INTO repo_connections (
 `
 
 type InsertRepoConnectionParams struct {
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 	RepoPath      pgtype.Text
-	WorkspaceID   *resource.ID
-	ModuleID      *resource.ID
+	WorkspaceID   *resource.TfeID
+	ModuleID      *resource.TfeID
 }
 
 func (q *Queries) InsertRepoConnection(ctx context.Context, db DBTX, arg InsertRepoConnectionParams) error {

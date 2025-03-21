@@ -16,22 +16,22 @@ import (
 type (
 	// Connection is a connection between a VCS repo and an OTF resource.
 	Connection struct {
-		VCSProviderID resource.ID
+		VCSProviderID resource.TfeID
 		Repo          string
 	}
 
 	ConnectOptions struct {
-		VCSProviderID resource.ID // vcs provider of repo
-		ResourceID    resource.ID // ID of OTF resource to connect.
+		VCSProviderID resource.TfeID // vcs provider of repo
+		ResourceID    resource.TfeID // ID of OTF resource to connect.
 		RepoPath      string
 	}
 
 	DisconnectOptions struct {
-		ResourceID resource.ID // ID of OTF resource to disconnect
+		ResourceID resource.TfeID // ID of OTF resource to disconnect
 	}
 
 	SynchroniseOptions struct {
-		VCSProviderID resource.ID // vcs provider of repo
+		VCSProviderID resource.TfeID // vcs provider of repo
 		RepoPath      string
 	}
 

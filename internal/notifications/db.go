@@ -18,14 +18,14 @@ type (
 	}
 
 	pgresult struct {
-		NotificationConfigurationID resource.ID
+		NotificationConfigurationID resource.TfeID
 		CreatedAt                   pgtype.Timestamptz
 		UpdatedAt                   pgtype.Timestamptz
 		Name                        pgtype.Text
 		URL                         pgtype.Text
 		Triggers                    []pgtype.Text
 		DestinationType             pgtype.Text
-		WorkspaceID                 resource.ID
+		WorkspaceID                 resource.TfeID
 		Enabled                     pgtype.Bool
 	}
 )
@@ -70,7 +70,7 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(context.Context, *Config) error) (*Config, error) {
+func (db *pgdb) update(ctx context.Context, id resource.TfeID, updateFunc func(context.Context, *Config) error) (*Config, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -102,7 +102,7 @@ func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(cont
 	)
 }
 
-func (db *pgdb) list(ctx context.Context, workspaceID resource.ID) ([]*Config, error) {
+func (db *pgdb) list(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error) {
 	results, err := q.FindNotificationConfigurationsByWorkspaceID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -128,7 +128,7 @@ func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
 	return configs, nil
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
+func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*Config, error) {
 	row, err := q.FindNotificationConfiguration(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -136,7 +136,7 @@ func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
 	return pgresult(row).toNotificationConfiguration(), nil
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteNotificationConfigurationByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)

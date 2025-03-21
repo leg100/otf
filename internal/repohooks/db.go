@@ -21,12 +21,12 @@ type (
 	}
 
 	hookRow struct {
-		RepohookID    pgtype.UUID `json:"repohook_id"`
-		VCSID         pgtype.Text `json:"vcs_id"`
-		VCSProviderID resource.ID `json:"vcs_provider_id"`
-		Secret        pgtype.Text `json:"secret"`
-		RepoPath      pgtype.Text `json:"repo_path"`
-		VCSKind       pgtype.Text `json:"vcs_kind"`
+		RepohookID    pgtype.UUID    `json:"repohook_id"`
+		VCSID         pgtype.Text    `json:"vcs_id"`
+		VCSProviderID resource.TfeID `json:"vcs_provider_id"`
+		Secret        pgtype.Text    `json:"secret"`
+		RepoPath      pgtype.Text    `json:"repo_path"`
+		VCSKind       pgtype.Text    `json:"vcs_kind"`
 	}
 )
 

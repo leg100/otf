@@ -116,12 +116,12 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 }
 
 // ID converts a resource ID into an ID suitable for postgres.
-func ID(s resource.ID) pgtype.Text {
+func ID(s resource.TfeID) pgtype.Text {
 	return pgtype.Text{String: s.String(), Valid: true}
 }
 
 // IDPtr converts a resource ID pointer into an ID suitable for postgres.
-func IDPtr(s *resource.ID) pgtype.Text {
+func IDPtr(s *resource.TfeID) pgtype.Text {
 	if s != nil {
 		return pgtype.Text{String: s.String(), Valid: true}
 	}

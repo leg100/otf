@@ -73,7 +73,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
-		func(ctx context.Context, id resource.ID, action sql.Action) (*Workspace, error) {
+		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Workspace, error) {
 			if action == sql.DeleteAction {
 				return &Workspace{ID: id}, nil
 			}
@@ -85,7 +85,7 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
 	// Instruct the authorizer to resolve workspace IDs to organization names.
-	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.ID) (resource.OrganizationName, error) {
+	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.TfeID) (resource.OrganizationName, error) {
 		ws, err := svc.db.get(ctx, id)
 		if err != nil {
 			return resource.OrganizationName{}, err
@@ -169,7 +169,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 	s.afterCreateHooks = append(s.afterCreateHooks, hook)
 }
 
-func (s *Service) Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
+func (s *Service) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 	return s.db.list(ctx, opts)
 }
 
-func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
+func (s *Service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
 	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 
@@ -239,7 +239,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 	s.beforeUpdateHooks = append(s.beforeUpdateHooks, hook)
 }
 
-func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error) {
+func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -284,7 +284,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.ID, opts Upda
 	return updated, nil
 }
 
-func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
+func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
 	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -312,7 +312,7 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.ID) (*Workspa
 	return ws, nil
 }
 
-func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
+func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
 	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return err
@@ -330,7 +330,7 @@ func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resourc
 	return nil
 }
 
-func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error {
+func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
@@ -346,12 +346,12 @@ func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resou
 //
 // NOTE: there is no auth because it is used in the process of making an auth
 // decision.
-func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 // connect connects the workspace to a repo.
-func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connection *Connection) error {
+func (s *Service) connect(ctx context.Context, workspaceID resource.TfeID, connection *Connection) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -371,7 +371,7 @@ func (s *Service) connect(ctx context.Context, workspaceID resource.ID, connecti
 	return nil
 }
 
-func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error {
+func (s *Service) disconnect(ctx context.Context, workspaceID resource.TfeID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -391,6 +391,6 @@ func (s *Service) disconnect(ctx context.Context, workspaceID resource.ID) error
 }
 
 // SetLatestRun sets the latest run for the workspace
-func (s *Service) SetLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
+func (s *Service) SetLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
 	return s.db.setLatestRun(ctx, workspaceID, runID)
 }

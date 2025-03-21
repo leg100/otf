@@ -13,7 +13,7 @@ import (
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	ID resource.ID `jsonapi:"primary,runners"`
+	ID resource.TfeID `jsonapi:"primary,runners"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -37,13 +37,13 @@ type RunnerMeta struct {
 
 type RunnerMetaAgentPool struct {
 	// ID of agent's pool.
-	ID resource.ID `json:"id"`
+	ID resource.TfeID `json:"id"`
 	// Name of agent's pool
 	Name string `json:"name"`
 	// Agent pool's organization.
 	OrganizationName resource.OrganizationName `json:"organization-name"`
 	// ID of agent token that was used to authenticate runner.
-	TokenID resource.ID `json:"token-id"`
+	TokenID resource.TfeID `json:"token-id"`
 }
 
 type registerOptions struct {
@@ -61,14 +61,14 @@ type registerOptions struct {
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
 	// versions.
-	CurrentJobs []resource.ID `json:"current-jobs,omitempty"`
+	CurrentJobs []resource.TfeID `json:"current-jobs,omitempty"`
 }
 
 // register registers an unregistered runner, constructing a RunnerMeta which
 // provides info about the newly registered runner.
 func register(runner *unregistered, opts registerOptions) (*RunnerMeta, error) {
 	meta := &RunnerMeta{
-		ID:        resource.NewID(resource.RunnerKind),
+		ID:        resource.NewTfeID(resource.RunnerKind),
 		Name:      opts.Name,
 		Version:   opts.Version,
 		MaxJobs:   opts.Concurrency,
@@ -175,7 +175,7 @@ func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 	return meta, nil
 }
 
-func authorizeRunner(ctx context.Context, id resource.ID) error {
+func authorizeRunner(ctx context.Context, id resource.TfeID) error {
 	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return err

@@ -25,29 +25,29 @@ type (
 
 	// webVariablesClient provides web handlers with access to variables
 	webVariablesClient interface {
-		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error)
-		GetWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
-		ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error)
-		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error)
-		UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-		DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
+		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
+		GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
+		ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
+		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error)
+		UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+		DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
 
 		createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
-		updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error)
-		getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
-		getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error)
+		updateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error)
+		getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
+		getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
 		listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
-		deleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
-		createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error)
-		updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error)
-		deleteVariableSetVariable(ctx context.Context, variableID resource.ID) (*VariableSet, error)
+		deleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
+		createVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
+		updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
+		deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
 	}
 
 	// webWorkspaceClient provides web handlers with access to workspaces
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {
@@ -55,8 +55,8 @@ type (
 	}
 
 	workspaceInfo struct {
-		ID   resource.ID `json:"id"`
-		Name string      `json:"name"`
+		ID   resource.TfeID `json:"id"`
+		Name string         `json:"name"`
 	}
 
 	createVariableParams struct {
@@ -75,7 +75,7 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         bool
-		VariableID  resource.ID `schema:"variable_id,required"`
+		VariableID  resource.TfeID `schema:"variable_id,required"`
 	}
 )
 
@@ -122,7 +122,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -324,7 +324,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(workspaces))
+	workspaceIDs := make([]resource.TfeID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -393,7 +393,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		SetID          resource.ID `schema:"variable_set_id,required"`
+		SetID          resource.TfeID `schema:"variable_set_id,required"`
 		Name           *string
 		Description    *string
 		Global         *bool
@@ -409,7 +409,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(workspaces))
+	workspaceIDs := make([]resource.TfeID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -466,7 +466,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		SetID resource.ID `schema:"variable_set_id,required"`
+		SetID resource.TfeID `schema:"variable_set_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

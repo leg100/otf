@@ -28,10 +28,10 @@ type webHandlers struct {
 
 type webClient interface {
 	Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
-	Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error)
-	Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
+	Update(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*VCSProvider, error)
+	Get(ctx context.Context, id resource.TfeID) (*VCSProvider, error)
 	List(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error)
-	Delete(ctx context.Context, id resource.ID) (*VCSProvider, error)
+	Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, error)
 }
 
 type webGithubAppClient interface {
@@ -153,9 +153,9 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID    resource.ID `schema:"vcs_provider_id,required"`
-		Token string      `schema:"token"`
-		Name  string      `schema:"name"`
+		ID    resource.TfeID `schema:"vcs_provider_id,required"`
+		Token string         `schema:"token"`
+		Name  string         `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

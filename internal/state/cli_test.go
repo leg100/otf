@@ -133,26 +133,26 @@ func withState(state []byte) fakeCLIOption {
 	}
 }
 
-func (f *fakeCLIService) List(context.Context, resource.ID, resource.PageOptions) (*resource.Page[*Version], error) {
+func (f *fakeCLIService) List(context.Context, resource.TfeID, resource.PageOptions) (*resource.Page[*Version], error) {
 	return f.stateVersionList, nil
 }
 
-func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
+func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
 	if f.stateVersion == nil {
 		return nil, internal.ErrResourceNotFound
 	}
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Delete(ctx context.Context, svID resource.ID) error {
+func (f *fakeCLIService) Delete(ctx context.Context, svID resource.TfeID) error {
 	return nil
 }
 
-func (f *fakeCLIService) Rollback(ctx context.Context, svID resource.ID) (*Version, error) {
+func (f *fakeCLIService) Rollback(ctx context.Context, svID resource.TfeID) (*Version, error) {
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
+func (f *fakeCLIService) Download(ctx context.Context, svID resource.TfeID) ([]byte, error) {
 	return f.state, nil
 }
 

@@ -9,7 +9,7 @@ import (
 
 type cvUploader struct {
 	conn sql.Connection
-	id   resource.ID
+	id   resource.TfeID
 }
 
 func (u *cvUploader) SetErrored(ctx context.Context) error {

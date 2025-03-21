@@ -62,9 +62,9 @@ WHERE run_id = $1
 RETURNING run_id
 `
 
-func (q *Queries) DeleteRunByID(ctx context.Context, db DBTX, runID resource.ID) (resource.ID, error) {
+func (q *Queries) DeleteRunByID(ctx context.Context, db DBTX, runID resource.TfeID) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteRunByID, runID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -145,7 +145,7 @@ WHERE runs.run_id = $1
 `
 
 type FindRunByIDRow struct {
-	RunID                  resource.ID
+	RunID                  resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -162,8 +162,8 @@ type FindRunByIDRow struct {
 	PlanResourceReport     *Report
 	PlanOutputReport       *Report
 	ApplyResourceReport    *Report
-	ConfigurationVersionID resource.ID
-	WorkspaceID            resource.ID
+	ConfigurationVersionID resource.TfeID
+	WorkspaceID            resource.TfeID
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
@@ -179,7 +179,7 @@ type FindRunByIDRow struct {
 	IngressAttributes      *IngressAttributeModel
 }
 
-func (q *Queries) FindRunByID(ctx context.Context, db DBTX, runID resource.ID) (FindRunByIDRow, error) {
+func (q *Queries) FindRunByID(ctx context.Context, db DBTX, runID resource.TfeID) (FindRunByIDRow, error) {
 	row := db.QueryRow(ctx, findRunByID, runID)
 	var i FindRunByIDRow
 	err := row.Scan(
@@ -296,7 +296,7 @@ FOR UPDATE OF runs, plans, applies
 `
 
 type FindRunByIDForUpdateRow struct {
-	RunID                  resource.ID
+	RunID                  resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -313,8 +313,8 @@ type FindRunByIDForUpdateRow struct {
 	PlanResourceReport     *Report
 	PlanOutputReport       *Report
 	ApplyResourceReport    *Report
-	ConfigurationVersionID resource.ID
-	WorkspaceID            resource.ID
+	ConfigurationVersionID resource.TfeID
+	WorkspaceID            resource.TfeID
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
@@ -330,7 +330,7 @@ type FindRunByIDForUpdateRow struct {
 	IngressAttributes      *IngressAttributeModel
 }
 
-func (q *Queries) FindRunByIDForUpdate(ctx context.Context, db DBTX, runID resource.ID) (FindRunByIDForUpdateRow, error) {
+func (q *Queries) FindRunByIDForUpdate(ctx context.Context, db DBTX, runID resource.TfeID) (FindRunByIDForUpdateRow, error) {
 	row := db.QueryRow(ctx, findRunByIDForUpdate, runID)
 	var i FindRunByIDForUpdateRow
 	err := row.Scan(
@@ -470,7 +470,7 @@ type FindRunsParams struct {
 }
 
 type FindRunsRow struct {
-	RunID                  resource.ID
+	RunID                  resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	CancelSignaledAt       pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
@@ -487,8 +487,8 @@ type FindRunsRow struct {
 	PlanResourceReport     *Report
 	PlanOutputReport       *Report
 	ApplyResourceReport    *Report
-	ConfigurationVersionID resource.ID
-	WorkspaceID            resource.ID
+	ConfigurationVersionID resource.TfeID
+	WorkspaceID            resource.TfeID
 	PlanOnly               pgtype.Bool
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
@@ -574,7 +574,7 @@ FROM runs
 WHERE run_id = $1
 `
 
-func (q *Queries) GetLockFileByID(ctx context.Context, db DBTX, runID resource.ID) ([]byte, error) {
+func (q *Queries) GetLockFileByID(ctx context.Context, db DBTX, runID resource.TfeID) ([]byte, error) {
 	row := db.QueryRow(ctx, getLockFileByID, runID)
 	var lock_file []byte
 	err := row.Scan(&lock_file)
@@ -587,7 +587,7 @@ FROM plans
 WHERE run_id = $1
 `
 
-func (q *Queries) GetPlanBinByID(ctx context.Context, db DBTX, runID resource.ID) ([]byte, error) {
+func (q *Queries) GetPlanBinByID(ctx context.Context, db DBTX, runID resource.TfeID) ([]byte, error) {
 	row := db.QueryRow(ctx, getPlanBinByID, runID)
 	var plan_bin []byte
 	err := row.Scan(&plan_bin)
@@ -600,7 +600,7 @@ FROM plans
 WHERE run_id = $1
 `
 
-func (q *Queries) GetPlanJSONByID(ctx context.Context, db DBTX, runID resource.ID) ([]byte, error) {
+func (q *Queries) GetPlanJSONByID(ctx context.Context, db DBTX, runID resource.TfeID) ([]byte, error) {
 	row := db.QueryRow(ctx, getPlanJSONByID, runID)
 	var plan_json []byte
 	err := row.Scan(&plan_json)
@@ -618,7 +618,7 @@ INSERT INTO applies (
 `
 
 type InsertApplyParams struct {
-	RunID  resource.ID
+	RunID  resource.TfeID
 	Status pgtype.Text
 }
 
@@ -642,7 +642,7 @@ INSERT INTO phase_status_timestamps (
 `
 
 type InsertPhaseStatusTimestampParams struct {
-	RunID      resource.ID
+	RunID      resource.TfeID
 	PhaseModel pgtype.Text
 	Status     pgtype.Text
 	Timestamp  pgtype.Timestamptz
@@ -669,7 +669,7 @@ INSERT INTO plans (
 `
 
 type InsertPlanParams struct {
-	RunID  resource.ID
+	RunID  resource.TfeID
 	Status pgtype.Text
 }
 
@@ -719,7 +719,7 @@ INSERT INTO runs (
 `
 
 type InsertRunParams struct {
-	ID                     resource.ID
+	ID                     resource.TfeID
 	CreatedAt              pgtype.Timestamptz
 	IsDestroy              pgtype.Bool
 	PositionInQueue        pgtype.Int4
@@ -731,8 +731,8 @@ type InsertRunParams struct {
 	TargetAddrs            []pgtype.Text
 	AutoApply              pgtype.Bool
 	PlanOnly               pgtype.Bool
-	ConfigurationVersionID resource.ID
-	WorkspaceID            resource.ID
+	ConfigurationVersionID resource.TfeID
+	WorkspaceID            resource.TfeID
 	CreatedBy              pgtype.Text
 	TerraformVersion       pgtype.Text
 	AllowEmptyApply        pgtype.Bool
@@ -774,7 +774,7 @@ INSERT INTO run_status_timestamps (
 `
 
 type InsertRunStatusTimestampParams struct {
-	ID        resource.ID
+	ID        resource.TfeID
 	Status    pgtype.Text
 	Timestamp pgtype.Timestamptz
 }
@@ -797,7 +797,7 @@ INSERT INTO run_variables (
 `
 
 type InsertRunVariableParams struct {
-	RunID resource.ID
+	RunID resource.TfeID
 	Key   pgtype.Text
 	Value pgtype.Text
 }
@@ -816,12 +816,12 @@ RETURNING run_id
 
 type PutLockFileParams struct {
 	LockFile []byte
-	RunID    resource.ID
+	RunID    resource.TfeID
 }
 
-func (q *Queries) PutLockFile(ctx context.Context, db DBTX, arg PutLockFileParams) (resource.ID, error) {
+func (q *Queries) PutLockFile(ctx context.Context, db DBTX, arg PutLockFileParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, putLockFile, arg.LockFile, arg.RunID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -838,20 +838,20 @@ RETURNING run_id
 `
 
 type UpdateAppliedChangesByIDParams struct {
-	RunID        resource.ID
+	RunID        resource.TfeID
 	Additions    pgtype.Int4
 	Changes      pgtype.Int4
 	Destructions pgtype.Int4
 }
 
-func (q *Queries) UpdateAppliedChangesByID(ctx context.Context, db DBTX, arg UpdateAppliedChangesByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateAppliedChangesByID(ctx context.Context, db DBTX, arg UpdateAppliedChangesByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateAppliedChangesByID,
 		arg.RunID,
 		arg.Additions,
 		arg.Changes,
 		arg.Destructions,
 	)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -864,13 +864,13 @@ RETURNING run_id
 `
 
 type UpdateApplyStatusByIDParams struct {
-	RunID  resource.ID
+	RunID  resource.TfeID
 	Status pgtype.Text
 }
 
-func (q *Queries) UpdateApplyStatusByID(ctx context.Context, db DBTX, arg UpdateApplyStatusByIDParams) (resource.ID, error) {
+func (q *Queries) UpdateApplyStatusByID(ctx context.Context, db DBTX, arg UpdateApplyStatusByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateApplyStatusByID, arg.RunID, arg.Status)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -885,12 +885,12 @@ RETURNING run_id
 
 type UpdateCancelSignaledAtParams struct {
 	CancelSignaledAt pgtype.Timestamptz
-	ID               resource.ID
+	ID               resource.TfeID
 }
 
-func (q *Queries) UpdateCancelSignaledAt(ctx context.Context, db DBTX, arg UpdateCancelSignaledAtParams) (resource.ID, error) {
+func (q *Queries) UpdateCancelSignaledAt(ctx context.Context, db DBTX, arg UpdateCancelSignaledAtParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateCancelSignaledAt, arg.CancelSignaledAt, arg.ID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -904,12 +904,12 @@ RETURNING run_id
 
 type UpdatePlanBinByIDParams struct {
 	PlanBin []byte
-	RunID   resource.ID
+	RunID   resource.TfeID
 }
 
-func (q *Queries) UpdatePlanBinByID(ctx context.Context, db DBTX, arg UpdatePlanBinByIDParams) (resource.ID, error) {
+func (q *Queries) UpdatePlanBinByID(ctx context.Context, db DBTX, arg UpdatePlanBinByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updatePlanBinByID, arg.PlanBin, arg.RunID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -923,12 +923,12 @@ RETURNING run_id
 
 type UpdatePlanJSONByIDParams struct {
 	PlanJSON []byte
-	RunID    resource.ID
+	RunID    resource.TfeID
 }
 
-func (q *Queries) UpdatePlanJSONByID(ctx context.Context, db DBTX, arg UpdatePlanJSONByIDParams) (resource.ID, error) {
+func (q *Queries) UpdatePlanJSONByID(ctx context.Context, db DBTX, arg UpdatePlanJSONByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updatePlanJSONByID, arg.PlanJSON, arg.RunID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -942,12 +942,12 @@ RETURNING run_id
 
 type UpdatePlanStatusByIDParams struct {
 	Status pgtype.Text
-	RunID  resource.ID
+	RunID  resource.TfeID
 }
 
-func (q *Queries) UpdatePlanStatusByID(ctx context.Context, db DBTX, arg UpdatePlanStatusByIDParams) (resource.ID, error) {
+func (q *Queries) UpdatePlanStatusByID(ctx context.Context, db DBTX, arg UpdatePlanStatusByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updatePlanStatusByID, arg.Status, arg.RunID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -975,10 +975,10 @@ type UpdatePlannedChangesByIDParams struct {
 	OutputAdditions      interface{}
 	OutputChanges        interface{}
 	OutputDestructions   interface{}
-	RunID                resource.ID
+	RunID                resource.TfeID
 }
 
-func (q *Queries) UpdatePlannedChangesByID(ctx context.Context, db DBTX, arg UpdatePlannedChangesByIDParams) (resource.ID, error) {
+func (q *Queries) UpdatePlannedChangesByID(ctx context.Context, db DBTX, arg UpdatePlannedChangesByIDParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updatePlannedChangesByID,
 		arg.ResourceAdditions,
 		arg.ResourceChanges,
@@ -988,7 +988,7 @@ func (q *Queries) UpdatePlannedChangesByID(ctx context.Context, db DBTX, arg Upd
 		arg.OutputDestructions,
 		arg.RunID,
 	)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }
@@ -1003,12 +1003,12 @@ RETURNING run_id
 
 type UpdateRunStatusParams struct {
 	Status pgtype.Text
-	ID     resource.ID
+	ID     resource.TfeID
 }
 
-func (q *Queries) UpdateRunStatus(ctx context.Context, db DBTX, arg UpdateRunStatusParams) (resource.ID, error) {
+func (q *Queries) UpdateRunStatus(ctx context.Context, db DBTX, arg UpdateRunStatusParams) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, updateRunStatus, arg.Status, arg.ID)
-	var run_id resource.ID
+	var run_id resource.TfeID
 	err := row.Scan(&run_id)
 	return run_id, err
 }

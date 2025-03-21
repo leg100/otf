@@ -21,14 +21,14 @@ type (
 
 	// moduleRow is a row from a database query for modules.
 	moduleRow struct {
-		ModuleID         resource.ID
+		ModuleID         resource.TfeID
 		CreatedAt        pgtype.Timestamptz
 		UpdatedAt        pgtype.Timestamptz
 		Name             pgtype.Text
 		Provider         pgtype.Text
 		Status           pgtype.Text
 		OrganizationName resource.OrganizationName
-		VCSProviderID    resource.ID
+		VCSProviderID    resource.TfeID
 		RepoPath         pgtype.Text
 		ModuleVersions   []ModuleVersionModel
 	}
@@ -47,7 +47,7 @@ func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.ID, status ModuleStatus) error {
+func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.TfeID, status ModuleStatus) error {
 	_, err := q.UpdateModuleStatusByID(ctx, db.Conn(ctx), UpdateModuleStatusByIDParams{
 		Status:   sql.String(string(status)),
 		ModuleID: moduleID,
@@ -84,7 +84,7 @@ func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, 
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) getModuleByID(ctx context.Context, id resource.ID) (*Module, error) {
+func (db *pgdb) getModuleByID(ctx context.Context, id resource.TfeID) (*Module, error) {
 	row, err := q.FindModuleByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -93,7 +93,7 @@ func (db *pgdb) getModuleByID(ctx context.Context, id resource.ID) (*Module, err
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
+func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) (*Module, error) {
 	row, err := q.FindModuleByConnection(ctx, db.Conn(ctx), FindModuleByConnectionParams{
 		VCSProviderID: vcsProviderID,
 		RepoPath:      sql.String(repoPath),
@@ -105,7 +105,7 @@ func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resourc
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteModuleByID(ctx, db.Conn(ctx), id)
 	return sql.Error(err)
 }
@@ -134,7 +134,7 @@ func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModule
 	return sql.Error(err)
 }
 
-func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.ID) (*Module, error) {
+func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.TfeID) (*Module, error) {
 	row, err := q.FindModuleByModuleVersionID(ctx, db.Conn(ctx), versionID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -142,12 +142,12 @@ func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.ID)
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID resource.ID) error {
+func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID resource.TfeID) error {
 	_, err := q.DeleteModuleVersionByID(ctx, db.Conn(ctx), versionID)
 	return sql.Error(err)
 }
 
-func (db *pgdb) saveTarball(ctx context.Context, versionID resource.ID, tarball []byte) error {
+func (db *pgdb) saveTarball(ctx context.Context, versionID resource.TfeID, tarball []byte) error {
 	_, err := q.InsertModuleTarball(ctx, db.Conn(ctx), InsertModuleTarballParams{
 		Tarball:         tarball,
 		ModuleVersionID: versionID,
@@ -155,7 +155,7 @@ func (db *pgdb) saveTarball(ctx context.Context, versionID resource.ID, tarball 
 	return sql.Error(err)
 }
 
-func (db *pgdb) getTarball(ctx context.Context, versionID resource.ID) ([]byte, error) {
+func (db *pgdb) getTarball(ctx context.Context, versionID resource.TfeID) ([]byte, error) {
 	tarball, err := q.FindModuleTarball(ctx, db.Conn(ctx), versionID)
 	if err != nil {
 		return nil, sql.Error(err)

@@ -18,7 +18,7 @@ const (
 
 // StateVersion is a state version suitable for marshaling into JSONAPI
 type StateVersion struct {
-	ID                 resource.ID        `jsonapi:"primary,state-versions"`
+	ID                 resource.TfeID     `jsonapi:"primary,state-versions"`
 	CreatedAt          time.Time          `jsonapi:"attribute" json:"created-at"`
 	DownloadURL        string             `jsonapi:"attribute" json:"hosted-state-download-url"`
 	UploadURL          string             `jsonapi:"attribute" json:"hosted-state-upload-url"`
@@ -42,11 +42,11 @@ type StateVersionList struct {
 }
 
 type StateVersionOutput struct {
-	ID        resource.ID `jsonapi:"primary,state-version-outputs"`
-	Name      string      `jsonapi:"attribute" json:"name"`
-	Sensitive bool        `jsonapi:"attribute" json:"sensitive"`
-	Type      string      `jsonapi:"attribute" json:"type"`
-	Value     any         `jsonapi:"attribute" json:"value"`
+	ID        resource.TfeID `jsonapi:"primary,state-version-outputs"`
+	Name      string         `jsonapi:"attribute" json:"name"`
+	Sensitive bool           `jsonapi:"attribute" json:"sensitive"`
+	Type      string         `jsonapi:"attribute" json:"type"`
+	Value     any            `jsonapi:"attribute" json:"value"`
 }
 
 // StateVersionCreateVersionOptions are options for creating a state version via

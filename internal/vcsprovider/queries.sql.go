@@ -19,9 +19,9 @@ WHERE vcs_provider_id = $1
 RETURNING vcs_provider_id
 `
 
-func (q *Queries) DeleteVCSProviderByID(ctx context.Context, db DBTX, vcsProviderID resource.ID) (resource.ID, error) {
+func (q *Queries) DeleteVCSProviderByID(ctx context.Context, db DBTX, vcsProviderID resource.TfeID) (resource.TfeID, error) {
 	row := db.QueryRow(ctx, deleteVCSProviderByID, vcsProviderID)
-	var vcs_provider_id resource.ID
+	var vcs_provider_id resource.TfeID
 	err := row.Scan(&vcs_provider_id)
 	return vcs_provider_id, err
 }
@@ -37,7 +37,7 @@ WHERE v.vcs_provider_id = $1
 `
 
 type FindVCSProviderRow struct {
-	VCSProviderID    resource.ID
+	VCSProviderID    resource.TfeID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -48,7 +48,7 @@ type FindVCSProviderRow struct {
 	GithubAppInstall *GithubAppInstall
 }
 
-func (q *Queries) FindVCSProvider(ctx context.Context, db DBTX, vcsProviderID resource.ID) (FindVCSProviderRow, error) {
+func (q *Queries) FindVCSProvider(ctx context.Context, db DBTX, vcsProviderID resource.TfeID) (FindVCSProviderRow, error) {
 	row := db.QueryRow(ctx, findVCSProvider, vcsProviderID)
 	var i FindVCSProviderRow
 	err := row.Scan(
@@ -77,7 +77,7 @@ FOR UPDATE OF v
 `
 
 type FindVCSProviderForUpdateRow struct {
-	VCSProviderID    resource.ID
+	VCSProviderID    resource.TfeID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -88,7 +88,7 @@ type FindVCSProviderForUpdateRow struct {
 	GithubAppInstall *GithubAppInstall
 }
 
-func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, db DBTX, vcsProviderID resource.ID) (FindVCSProviderForUpdateRow, error) {
+func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, db DBTX, vcsProviderID resource.TfeID) (FindVCSProviderForUpdateRow, error) {
 	row := db.QueryRow(ctx, findVCSProviderForUpdate, vcsProviderID)
 	var i FindVCSProviderForUpdateRow
 	err := row.Scan(
@@ -115,7 +115,7 @@ LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USI
 `
 
 type FindVCSProvidersRow struct {
-	VCSProviderID    resource.ID
+	VCSProviderID    resource.TfeID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -167,7 +167,7 @@ WHERE gi.install_id = $1
 `
 
 type FindVCSProvidersByGithubAppInstallIDRow struct {
-	VCSProviderID    resource.ID
+	VCSProviderID    resource.TfeID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -219,7 +219,7 @@ WHERE v.organization_name = $1
 `
 
 type FindVCSProvidersByOrganizationRow struct {
-	VCSProviderID    resource.ID
+	VCSProviderID    resource.TfeID
 	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
@@ -281,7 +281,7 @@ INSERT INTO vcs_providers (
 `
 
 type InsertVCSProviderParams struct {
-	VCSProviderID    resource.ID
+	VCSProviderID    resource.TfeID
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
@@ -313,7 +313,7 @@ RETURNING vcs_provider_id, token, created_at, name, vcs_kind, organization_name,
 type UpdateVCSProviderParams struct {
 	Name          pgtype.Text
 	Token         pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }
 
 func (q *Queries) UpdateVCSProvider(ctx context.Context, db DBTX, arg UpdateVCSProviderParams) (Model, error) {

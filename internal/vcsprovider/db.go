@@ -21,7 +21,7 @@ type (
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
-		VCSProviderID    resource.ID
+		VCSProviderID    resource.TfeID
 		Token            pgtype.Text
 		CreatedAt        pgtype.Timestamptz
 		Name             pgtype.Text
@@ -66,7 +66,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Context, *VCSProvider) error) error {
+func (db *pgdb) update(ctx context.Context, id resource.TfeID, fn func(context.Context, *VCSProvider) error) error {
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
@@ -90,7 +90,7 @@ func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Cont
 	return err
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
+func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
 	row, err := q.FindVCSProvider(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -146,7 +146,7 @@ func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]
 	return providers, nil
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
 	_, err := q.DeleteVCSProviderByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return sql.Error(err)

@@ -14,5 +14,5 @@ type Repohook struct {
 	VCSID         pgtype.Text
 	Secret        pgtype.Text
 	RepoPath      pgtype.Text
-	VCSProviderID resource.ID
+	VCSProviderID resource.TfeID
 }

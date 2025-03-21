@@ -14,7 +14,7 @@ func (f *fakeService) Create(context.Context, resource.OrganizationName, CreateT
 	return f.team, nil
 }
 
-func (f *fakeService) Update(context.Context, resource.ID, UpdateTeamOptions) (*Team, error) {
+func (f *fakeService) Update(context.Context, resource.TfeID, UpdateTeamOptions) (*Team, error) {
 	return f.team, nil
 }
 
@@ -22,7 +22,7 @@ func (f *fakeService) Get(context.Context, resource.OrganizationName, string) (*
 	return f.team, nil
 }
 
-func (f *fakeService) GetByID(context.Context, resource.ID) (*Team, error) {
+func (f *fakeService) GetByID(context.Context, resource.TfeID) (*Team, error) {
 	return f.team, nil
 }
 
@@ -30,6 +30,6 @@ func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*Team,
 	return []*Team{f.team}, nil
 }
 
-func (f *fakeService) Delete(context.Context, resource.ID) error {
+func (f *fakeService) Delete(context.Context, resource.TfeID) error {
 	return nil
 }

@@ -25,14 +25,14 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                resource.ID
+		ID                resource.TfeID
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []ConfigurationVersionStatusTimestamp
-		WorkspaceID       resource.ID
+		WorkspaceID       resource.TfeID
 		IngressAttributes *IngressAttributes
 	}
 
@@ -67,10 +67,10 @@ type (
 	// version. Either ID *or* WorkspaceID must be specfiied.
 	ConfigurationVersionGetOptions struct {
 		// ID of config version to retrieve
-		ID *resource.ID
+		ID *resource.TfeID
 
 		// Get latest config version for this workspace ID
-		WorkspaceID *resource.ID
+		WorkspaceID *resource.TfeID
 
 		// A list of relations to include
 		Include *string `schema:"include"`
@@ -86,7 +86,7 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     resource.ID
+		// ID     resource.TfeID
 		Branch string
 		// CloneURL          string
 		// CommitMessage     string
@@ -108,9 +108,9 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            resource.NewID(resource.ConfigVersionKind),
+		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,

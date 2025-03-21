@@ -11,7 +11,7 @@ import (
 
 // Run is a terraform run.
 type Run struct {
-	ID                     resource.ID          `jsonapi:"primary,runs"`
+	ID                     resource.TfeID       `jsonapi:"primary,runs"`
 	Actions                *RunActions          `jsonapi:"attribute" json:"actions"`
 	AllowEmptyApply        bool                 `jsonapi:"attribute" json:"allow-empty-apply"`
 	AutoApply              bool                 `jsonapi:"attribute" json:"auto-apply"`
@@ -161,7 +161,7 @@ type RunListOptions struct {
 
 	Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
 
-	WorkspaceID *resource.ID `schema:"workspace_id,omitempty"`
+	WorkspaceID *resource.TfeID `schema:"workspace_id,omitempty"`
 
 	// Optional: Searches runs that matches the supplied VCS username.
 	User *string `schema:"search[user],omitempty"`
@@ -207,7 +207,7 @@ type PhaseStatusTimestamps struct {
 
 // Apply is a terraform apply
 type Apply struct {
-	ID               resource.ID            `jsonapi:"primary,applies"`
+	ID               resource.TfeID         `jsonapi:"primary,applies"`
 	LogReadURL       string                 `jsonapi:"attribute" json:"log-read-url"`
 	Status           string                 `jsonapi:"attribute" json:"status"`
 	StatusTimestamps *PhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
@@ -217,7 +217,7 @@ type Apply struct {
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID               resource.ID            `jsonapi:"primary,plans"`
+	ID               resource.TfeID         `jsonapi:"primary,plans"`
 	HasChanges       bool                   `jsonapi:"attribute" json:"has-changes"`
 	LogReadURL       string                 `jsonapi:"attribute" json:"log-read-url"`
 	Status           string                 `jsonapi:"attribute" json:"status"`

@@ -14,7 +14,7 @@ var q = &Queries{}
 
 // TeamRow represents the result of a database query for a team.
 type TeamRow struct {
-	TeamID                          resource.ID
+	TeamID                          resource.TfeID
 	Name                            pgtype.Text
 	CreatedAt                       pgtype.Timestamptz
 	PermissionManageWorkspaces      pgtype.Bool
@@ -74,7 +74,7 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(context.Context, *Team) error) (*Team, error) {
+func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.TfeID, fn func(context.Context, *Team) error) (*Team, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -115,7 +115,7 @@ func (db *pgdb) getTeam(ctx context.Context, name string, organization resource.
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) {
+func (db *pgdb) getTeamByID(ctx context.Context, id resource.TfeID) (*Team, error) {
 	result, err := q.FindTeamByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -123,7 +123,7 @@ func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) 
 	return TeamRow(result).ToTeam(), nil
 }
 
-func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
+func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.TfeID) (*Team, error) {
 	result, err := q.FindTeamByTokenID(ctx, db.Conn(ctx), tokenID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -144,7 +144,7 @@ func (db *pgdb) listTeams(ctx context.Context, organization resource.Organizatio
 	return items, nil
 }
 
-func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.ID) error {
+func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.TfeID) error {
 	_, err := q.DeleteTeamByID(ctx, db.Conn(ctx), teamID)
 	if err != nil {
 		return sql.Error(err)
@@ -158,7 +158,7 @@ func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.ID) error {
 
 func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
 	err := q.InsertTeamToken(ctx, db.Conn(ctx), InsertTeamTokenParams{
-		TeamTokenID: token.ID,
+		TeamTokenID: token.TfeID,
 		TeamID:      token.TeamID,
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
 		Expiry:      sql.TimestamptzPtr(token.Expiry),
@@ -166,7 +166,7 @@ func (db *pgdb) createTeamToken(ctx context.Context, token *Token) error {
 	return err
 }
 
-func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*Token, error) {
+func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.TfeID) (*Token, error) {
 	// query only returns 0 or 1 tokens
 	result, err := q.FindTeamTokensByID(ctx, db.Conn(ctx), teamID)
 	if err != nil {
@@ -176,7 +176,7 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*
 		return nil, nil
 	}
 	ot := &Token{
-		ID:        result[0].TeamTokenID,
+		TfeID:     result[0].TeamTokenID,
 		CreatedAt: result[0].CreatedAt.Time.UTC(),
 		TeamID:    result[0].TeamID,
 	}
@@ -186,7 +186,7 @@ func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.ID) (*
 	return ot, nil
 }
 
-func (db *pgdb) deleteTeamToken(ctx context.Context, teamID resource.ID) error {
+func (db *pgdb) deleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
 	_, err := q.DeleteTeamTokenByID(ctx, db.Conn(ctx), teamID)
 	if err != nil {
 		return sql.Error(err)

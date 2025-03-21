@@ -8,7 +8,7 @@ import "github.com/leg100/otf/internal/resource"
 type (
 	// OrganizationTag represents a Terraform Enterprise Organization tag
 	OrganizationTag struct {
-		ID resource.ID `jsonapi:"primary,tags"`
+		ID resource.TfeID `jsonapi:"primary,tags"`
 
 		// Optional:
 		Name string `jsonapi:"attribute" json:"name,omitempty"`
@@ -23,8 +23,8 @@ type (
 	// Tag is owned by an organization and applied to workspaces. Used for
 	// grouping and search. Only one of ID or name must be specified.
 	Tag struct {
-		ID   *resource.ID `jsonapi:"primary,tags"`
-		Name string       `jsonapi:"attribute" json:"name,omitempty"`
+		ID   *resource.TfeID `jsonapi:"primary,tags"`
+		Name string          `jsonapi:"attribute" json:"name,omitempty"`
 	}
 )
 
@@ -35,6 +35,6 @@ func (t *Tag) UnmarshalID(id string) error {
 	if id == "" {
 		return nil
 	}
-	t.ID = new(resource.ID)
+	t.ID = new(resource.TfeID)
 	return t.ID.UnmarshalText([]byte(id))
 }

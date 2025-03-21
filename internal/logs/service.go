@@ -59,9 +59,9 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, chunkID resource.ID, action sql.Action) (Chunk, error) {
+		func(ctx context.Context, chunkID resource.TfeID, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
-				return Chunk{ID: chunkID}, nil
+				return Chunk{TfeID: chunkID}, nil
 			}
 			return db.getChunk(ctx, chunkID)
 		},
@@ -110,7 +110,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		return err
 	}
 	if err := s.put(ctx, chunk); err != nil {
-		s.Error(err, "writing logs", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+		s.Error(err, "writing logs", "chunk_id", chunk.TfeID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
 	s.V(3).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)

@@ -35,29 +35,29 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          resource.ID        `jsonapi:"primary,state-versions"`
+		ID          resource.TfeID     `jsonapi:"primary,state-versions"`
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
 		Status      Status             `jsonapi:"attribute" json:"status"`
 		Outputs     map[string]*Output `jsonapi:"attribute" json:"outputs"`
-		WorkspaceID resource.ID        `jsonapi:"attribute" json:"workspace-id"`
+		WorkspaceID resource.TfeID     `jsonapi:"attribute" json:"workspace-id"`
 	}
 
 	Output struct {
-		ID             resource.ID
+		ID             resource.TfeID
 		Name           string
 		Type           string
 		Value          json.RawMessage
 		Sensitive      bool
-		StateVersionID resource.ID
+		StateVersionID resource.TfeID
 	}
 
 	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {
-		State       []byte      // Terraform state file. Optional.
-		WorkspaceID resource.ID // ID of state version's workspace. Required.
-		Serial      *int64      // State serial number. Required.
+		State       []byte         // Terraform state file. Optional.
+		WorkspaceID resource.TfeID // ID of state version's workspace. Required.
+		Serial      *int64         // State serial number. Required.
 	}
 
 	// factory creates state versions - creation requires pre-requisite checking
@@ -71,11 +71,11 @@ type (
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
-		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
-		getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
-		updateCurrentVersion(context.Context, resource.ID, resource.ID) error
-		uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error
-		discardPending(ctx context.Context, workspaceID resource.ID) error
+		getVersion(ctx context.Context, svID resource.TfeID) (*Version, error)
+		getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
+		updateCurrentVersion(context.Context, resource.TfeID, resource.TfeID) error
+		uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error
+		discardPending(ctx context.Context, workspaceID resource.TfeID) error
 	}
 )
 
@@ -113,7 +113,7 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 // newWithoutValidation creates a state version without validating the options.
 func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
-		ID:          resource.NewID(resource.StateVersionKind),
+		ID:          resource.NewTfeID(resource.StateVersionKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Serial:      *opts.Serial,
 		State:       opts.State,
@@ -152,7 +152,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 			return nil, err
 		}
 		outputs[k] = &Output{
-			ID:             resource.NewID(resource.StateVersionOutputKind),
+			ID:             resource.NewTfeID(resource.StateVersionOutputKind),
 			Name:           k,
 			Type:           typ,
 			Value:          v.Value,
@@ -185,7 +185,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 	return sv, err
 }
 
-func (f *factory) rollback(ctx context.Context, svID resource.ID) (*Version, error) {
+func (f *factory) rollback(ctx context.Context, svID resource.TfeID) (*Version, error) {
 	sv, err := f.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

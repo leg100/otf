@@ -60,7 +60,7 @@ func TestWebHandlers_createAgentToken(t *testing.T) {
 }
 
 func TestAgentToken_DeleteHandler(t *testing.T) {
-	agentPoolID := resource.NewID(resource.AgentPoolKind)
+	agentPoolID := resource.NewTfeID(resource.AgentPoolKind)
 
 	h := &webHandlers{
 		svc: &fakeService{

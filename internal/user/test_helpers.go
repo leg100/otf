@@ -23,7 +23,7 @@ func (f *fakeService) List(ctx context.Context) ([]*User, error) {
 	return []*User{f.user}, nil
 }
 
-func (f *fakeService) ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error) {
+func (f *fakeService) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error) {
 	return []*User{f.user}, nil
 }
 
@@ -31,11 +31,11 @@ func (f *fakeService) Delete(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeService) AddTeamMembership(context.Context, resource.ID, []string) error {
+func (f *fakeService) AddTeamMembership(context.Context, resource.TfeID, []string) error {
 	return nil
 }
 
-func (f *fakeService) RemoveTeamMembership(context.Context, resource.ID, []string) error {
+func (f *fakeService) RemoveTeamMembership(context.Context, resource.TfeID, []string) error {
 	return nil
 }
 
@@ -47,7 +47,7 @@ func (f *fakeService) ListTokens(context.Context) ([]*UserToken, error) {
 	return []*UserToken{f.ut}, nil
 }
 
-func (f *fakeService) DeleteToken(context.Context, resource.ID) error {
+func (f *fakeService) DeleteToken(context.Context, resource.TfeID) error {
 	return nil
 }
 
@@ -59,6 +59,6 @@ func (f *fakeTeamService) Get(context.Context, resource.OrganizationName, string
 	return f.team, nil
 }
 
-func (f *fakeTeamService) GetByID(context.Context, resource.ID) (*team.Team, error) {
+func (f *fakeTeamService) GetByID(context.Context, resource.TfeID) (*team.Team, error) {
 	return f.team, nil
 }

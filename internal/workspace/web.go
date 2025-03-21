@@ -59,10 +59,10 @@ type (
 	}
 
 	webVCSProvidersClient interface {
-		Get(ctx context.Context, providerID resource.ID) (*vcsprovider.VCSProvider, error)
+		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
 		List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error)
 
-		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 
 	webAuthorizer interface {
@@ -72,21 +72,21 @@ type (
 	// webClient provides web handlers with access to the workspace service
 	webClient interface {
 		Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
-		Get(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
+		Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
 		GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-		Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
-		Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
-		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error)
-		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error)
+		Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
+		Delete(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
 
-		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
-		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
+		AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
+		RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
 		ListTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
-		SetPermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error
-		UnsetPermission(ctx context.Context, workspaceID, teamID resource.ID) error
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
+		SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
+		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
 	}
 )
 
@@ -416,15 +416,15 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID       *resource.ID `schema:"agent_pool_id"`
-		AutoApply         bool         `schema:"auto_apply"`
+		AgentPoolID       *resource.TfeID `schema:"agent_pool_id"`
+		AutoApply         bool            `schema:"auto_apply"`
 		Name              string
 		Description       string
-		ExecutionMode     ExecutionMode `schema:"execution_mode"`
-		TerraformVersion  string        `schema:"terraform_version"`
-		WorkingDirectory  string        `schema:"working_directory"`
-		WorkspaceID       resource.ID   `schema:"workspace_id,required"`
-		GlobalRemoteState bool          `schema:"global_remote_state"`
+		ExecutionMode     ExecutionMode  `schema:"execution_mode"`
+		TerraformVersion  string         `schema:"terraform_version"`
+		WorkingDirectory  string         `schema:"working_directory"`
+		WorkspaceID       resource.TfeID `schema:"workspace_id,required"`
+		GlobalRemoteState bool           `schema:"global_remote_state"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`
@@ -582,8 +582,8 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   resource.ID `schema:"workspace_id,required"`
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.TfeID `schema:"workspace_id,required"`
+		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
 
 		// TODO: filters, public/private, etc
 	}
@@ -615,9 +615,9 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   resource.ID  `schema:"workspace_id,required"`
-		RepoPath      *string      `schema:"identifier,required"`
-		VCSProviderID *resource.ID `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.TfeID  `schema:"workspace_id,required"`
+		RepoPath      *string         `schema:"identifier,required"`
+		VCSProviderID *resource.TfeID `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -660,9 +660,9 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		TeamID      resource.ID `schema:"team_id,required"`
-		Role        string      `schema:"role,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		TeamID      resource.TfeID `schema:"team_id,required"`
+		Role        string         `schema:"role,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -685,8 +685,8 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		TeamID      resource.ID `schema:"team_id,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		TeamID      resource.TfeID `schema:"team_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -708,7 +708,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
 func filterUnassigned(policy authz.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
-	assigned := make(map[resource.ID]struct{}, len(teams))
+	assigned := make(map[resource.TfeID]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.TeamID] = struct{}{}
 	}

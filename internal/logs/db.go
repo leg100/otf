@@ -19,7 +19,7 @@ type pgdb struct {
 
 func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
 	err := q.InsertLogChunk(ctx, db.Conn(ctx), InsertLogChunkParams{
-		ChunkID: chunk.ID,
+		ChunkID: chunk.TfeID,
 		RunID:   chunk.RunID,
 		Phase:   sql.String(string(chunk.Phase)),
 		Chunk:   chunk.Data,
@@ -31,13 +31,13 @@ func (db *pgdb) put(ctx context.Context, chunk Chunk) error {
 	return nil
 }
 
-func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error) {
+func (db *pgdb) getChunk(ctx context.Context, chunkID resource.TfeID) (Chunk, error) {
 	chunk, err := q.FindLogChunkByID(ctx, db.Conn(ctx), chunkID)
 	if err != nil {
 		return Chunk{}, sql.Error(err)
 	}
 	return Chunk{
-		ID:     chunkID,
+		TfeID:  chunkID,
 		RunID:  chunk.RunID,
 		Phase:  internal.PhaseType(chunk.Phase.String),
 		Data:   chunk.Chunk,
@@ -45,7 +45,7 @@ func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error
 	}, nil
 }
 
-func (db *pgdb) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
+func (db *pgdb) getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
 	data, err := q.FindLogs(ctx, db.Conn(ctx), FindLogsParams{
 		RunID: runID,
 		Phase: sql.String(string(phase)),

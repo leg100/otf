@@ -8,7 +8,7 @@ import (
 )
 
 func TestID(t *testing.T) {
-	id := NewID("foo")
+	id := NewTfeID("foo")
 	got := fmt.Sprintf("%v", id)
 	assert.Regexp(t, `foo-.*`, got)
 }

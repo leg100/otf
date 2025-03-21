@@ -154,7 +154,7 @@ func TestUserDiff(t *testing.T) {
 
 type fakeTokensService struct{}
 
-func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
+func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

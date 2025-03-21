@@ -13,7 +13,7 @@ var q = &Queries{}
 
 // row is the row result of a database query for organizations
 type row struct {
-	OrganizationID             resource.ID
+	OrganizationID             resource.TfeID
 	CreatedAt                  pgtype.Timestamptz
 	UpdatedAt                  pgtype.Timestamptz
 	Name                       resource.OrganizationName
@@ -152,7 +152,7 @@ func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organ
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
+func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, error) {
 	r, err := q.FindOrganizationByID(ctx, db.Conn(ctx), id)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -174,7 +174,7 @@ func (db *pgdb) delete(ctx context.Context, name resource.OrganizationName) erro
 
 // tokenRow is the row result of a database query for organization tokens
 type tokenRow struct {
-	OrganizationTokenID resource.ID               `json:"organization_token_id"`
+	OrganizationTokenID resource.TfeID            `json:"organization_token_id"`
 	CreatedAt           pgtype.Timestamptz        `json:"created_at"`
 	OrganizationName    resource.OrganizationName `json:"organization_name"`
 	Expiry              pgtype.Timestamptz        `json:"expiry"`
@@ -222,7 +222,7 @@ func (db *pgdb) listOrganizationTokens(ctx context.Context, organization resourc
 	return items, nil
 }
 
-func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
+func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error) {
 	result, err := q.FindOrganizationTokensByID(ctx, db.Conn(ctx), tokenID)
 	if err != nil {
 		return nil, sql.Error(err)

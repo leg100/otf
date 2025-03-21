@@ -21,7 +21,7 @@ type (
 
 	// pgresult represents the result of a database query for a workspace.
 	pgresult struct {
-		WorkspaceID                resource.ID
+		WorkspaceID                resource.TfeID
 		CreatedAt                  pgtype.Timestamptz
 		UpdatedAt                  pgtype.Timestamptz
 		AllowDestroyPlan           pgtype.Bool
@@ -41,19 +41,19 @@ type (
 		TerraformVersion           pgtype.Text
 		TriggerPrefixes            []pgtype.Text
 		WorkingDirectory           pgtype.Text
-		LockRunID                  *resource.ID
-		LatestRunID                *resource.ID
+		LockRunID                  *resource.TfeID
+		LatestRunID                *resource.TfeID
 		OrganizationName           resource.OrganizationName
 		Branch                     pgtype.Text
-		CurrentStateVersionID      *resource.ID
+		CurrentStateVersionID      *resource.TfeID
 		TriggerPatterns            []pgtype.Text
 		VCSTagsRegex               pgtype.Text
 		AllowCLIApply              pgtype.Bool
-		AgentPoolID                *resource.ID
-		LockUserID                 *resource.ID
+		AgentPoolID                *resource.TfeID
+		LockUserID                 *resource.TfeID
 		Tags                       []pgtype.Text
 		LatestRunStatus            pgtype.Text
-		VCSProviderID              resource.ID
+		VCSProviderID              resource.TfeID
 		RepoPath                   pgtype.Text
 	}
 )
@@ -151,7 +151,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
+func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -197,7 +197,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(con
 }
 
 // setLatestRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
+func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
 	err := q.UpdateWorkspaceLatestRun(ctx, db.Conn(ctx), UpdateWorkspaceLatestRunParams{
 		RunID:       &runID,
 		WorkspaceID: workspaceID,
@@ -259,7 +259,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
+func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
 	rows, err := q.FindWorkspacesByConnection(ctx, db.Conn(ctx), FindWorkspacesByConnectionParams{
 		VCSProviderID: vcsProviderID,
 		RepoPath:      sql.String(repoPath),
@@ -309,7 +309,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	return resource.NewPage(items, opts, internal.Int64(count)), nil
 }
 
-func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
+func (db *pgdb) get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
 	result, err := q.FindWorkspaceByID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -328,7 +328,7 @@ func (db *pgdb) getByName(ctx context.Context, organization resource.Organizatio
 	return pgresult(result).toWorkspace()
 }
 
-func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
+func (db *pgdb) delete(ctx context.Context, workspaceID resource.TfeID) error {
 	err := q.DeleteWorkspaceByID(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return sql.Error(err)
@@ -336,7 +336,7 @@ func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 	return nil
 }
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
 	err := q.UpsertWorkspacePermission(ctx, db.Conn(ctx), UpsertWorkspacePermissionParams{
 		WorkspaceID: workspaceID,
 		TeamID:      teamID,
@@ -348,7 +348,7 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID 
 	return nil
 }
 
-func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
+func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
 	err := q.DeleteWorkspacePermissionByID(ctx, db.Conn(ctx), DeleteWorkspacePermissionByIDParams{
 		WorkspaceID: workspaceID,
 		TeamID:      teamID,
@@ -359,7 +359,7 @@ func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamI
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
 	perms, err := q.FindWorkspacePermissionsAndGlobalRemoteState(ctx, db.Conn(ctx), workspaceID)
 	if err != nil {
 		return authz.WorkspacePolicy{}, sql.Error(err)

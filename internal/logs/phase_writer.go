@@ -13,7 +13,7 @@ type (
 	PhaseWriter struct {
 		ctx     context.Context    // permits canceling mid-flow
 		started bool               // has first chunk been sent?
-		runID   resource.ID        // ID of run to write logs on behalf of.
+		runID   resource.TfeID     // ID of run to write logs on behalf of.
 		phase   internal.PhaseType // run phase
 		offset  int                // current position in stream
 
@@ -21,7 +21,7 @@ type (
 	}
 
 	PhaseWriterOptions struct {
-		RunID  resource.ID
+		RunID  resource.TfeID
 		Phase  internal.PhaseType
 		Writer PutChunkService
 	}

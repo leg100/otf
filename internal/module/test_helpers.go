@@ -24,11 +24,11 @@ func (f *fakeService) PublishModule(context.Context, PublishOptions) (*Module, e
 	return f.mod, nil
 }
 
-func (f *fakeService) GetModuleByID(context.Context, resource.ID) (*Module, error) {
+func (f *fakeService) GetModuleByID(context.Context, resource.TfeID) (*Module, error) {
 	return f.mod, nil
 }
 
-func (f *fakeService) DeleteModule(context.Context, resource.ID) (*Module, error) {
+func (f *fakeService) DeleteModule(context.Context, resource.TfeID) (*Module, error) {
 	return f.mod, nil
 }
 
@@ -36,7 +36,7 @@ func (f *fakeService) ListModules(context.Context, ListModulesOptions) ([]*Modul
 	return []*Module{f.mod}, nil
 }
 
-func (f *fakeService) Get(context.Context, resource.ID) (*vcsprovider.VCSProvider, error) {
+func (f *fakeService) Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs[0], nil
 }
 
@@ -44,11 +44,11 @@ func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*vcspr
 	return f.vcsprovs, nil
 }
 
-func (f *fakeService) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
+func (f *fakeService) GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error) {
 	return &fakeModulesCloudClient{repos: f.repos}, nil
 }
 
-func (f *fakeService) GetModuleInfo(context.Context, resource.ID) (*TerraformModule, error) {
+func (f *fakeService) GetModuleInfo(context.Context, resource.TfeID) (*TerraformModule, error) {
 	return unmarshalTerraformModule(f.tarball)
 }
 
