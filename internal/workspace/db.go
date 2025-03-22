@@ -440,3 +440,40 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.Tfe
 	}
 	return p, nil
 }
+
+func (db *pgdb) scanWorkspace(scanner sql.Scanner) (*Workspace, error) {
+	var (
+		ws       Workspace
+		repoPath string
+		conn     Connection
+	)
+	err := scanner.Scan(
+		&ws.ID,
+		&ws.CreatedAt,
+		&ws.UpdatedAt,
+		&ws.AllowDestroyPlan,
+		&ws.AutoApply,
+		&ws.CanQueueDestroyPlan,
+		&ws.Description,
+		&ws.Environment,
+		&ws.ExecutionMode,
+		&ws.GlobalRemoteState,
+		&ws.MigrationEnvironment,
+		&ws.Name,
+		&ws.QueueAllRuns,
+		&ws.SpeculativeEnabled,
+		&ws.StructuredRunOutputEnabled,
+		&ws.SourceName,
+		&ws.SourceURL,
+		&ws.TerraformVersion,
+		&ws.TriggerPrefixes,
+		&ws.TriggerPatterns,
+		&ws.WorkingDirectory,
+		&ws.Organization,
+		&ws.Tags,
+		&ws.AgentPoolID,
+		&conn.VCSProviderID,
+		&repoPath,
+	)
+	return &ws, sql.Error(err)
+}

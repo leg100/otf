@@ -249,11 +249,7 @@ WHERE organization_name = $1
 	return sql.Error(err)
 }
 
-type scanner interface {
-	Scan(dest ...any) error
-}
-
-func (db *pgdb) scan(row scanner) (*Organization, error) {
+func (db *pgdb) scan(row sql.Scanner) (*Organization, error) {
 	var org Organization
 	err := row.Scan(
 		&org.ID,
@@ -272,7 +268,7 @@ func (db *pgdb) scan(row scanner) (*Organization, error) {
 	return &org, sql.Error(err)
 }
 
-func (db *pgdb) scanToken(row scanner) (*OrganizationToken, error) {
+func (db *pgdb) scanToken(row sql.Scanner) (*OrganizationToken, error) {
 	var token OrganizationToken
 	err := row.Scan(
 		&token.ID,

@@ -16,6 +16,11 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
+// Scanner populates variables with the values of a query row.
+type Scanner interface {
+	Scan(dest ...any) error
+}
+
 // Bool converts a go-boolean into a postgres non-null boolean
 func Bool(b bool) pgtype.Bool {
 	return pgtype.Bool{Bool: b, Valid: true}
