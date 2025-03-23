@@ -160,6 +160,16 @@ func CollectRows[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) ([]T, error) {
 	return collected, nil
 }
 
+// CollectOneType scans the row from a query and expects one result with the
+// given type.
+func CollectOneType[T any](row pgx.Rows) (T, error) {
+	result, err := pgx.CollectOneRow(row, pgx.RowTo[T])
+	if err != nil {
+		return *new(T), Error(err)
+	}
+	return result, nil
+}
+
 // Error converts the sql error into a domain error.
 func Error(err error) error {
 	var pgErr *pgconn.PgError

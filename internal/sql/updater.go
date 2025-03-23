@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"fmt"
 )
 
 // Updater handles the common flow of a database update:
@@ -35,13 +36,13 @@ func Updater[T any](
 		var err error
 		row, err = getForUpdate(ctx, conn)
 		if err != nil {
-			return err
+			return fmt.Errorf("finding row for update: %w", err)
 		}
 		if err := update(ctx, row); err != nil {
 			return err
 		}
 		if err := updateDB(ctx, conn, row); err != nil {
-			return err
+			return fmt.Errorf("updating row: %w", err)
 		}
 		return nil
 	})

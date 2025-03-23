@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/leg100/otf/internal"
 )
 
 // max conns avail in a pgx pool
@@ -89,10 +90,16 @@ func (db *DB) Query(ctx context.Context, sql string, args ...any) pgx.Rows {
 	return rows
 }
 
+// Exec executes the sql with the given args. It assumes the command is a row
+// affecting command and returns and error if the command does not affect any
+// rows.
 func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	cmdTag, err := db.Conn(ctx).Exec(ctx, sql, args...)
 	if err != nil {
 		return pgconn.CommandTag{}, Error(err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return pgconn.CommandTag{}, internal.ErrResourceNotFound
 	}
 	return cmdTag, nil
 }
