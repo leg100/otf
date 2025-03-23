@@ -371,7 +371,7 @@ OFFSET $4::int
 		return nil, err
 	}
 
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Conn(ctx).QueryRow(ctx, `
 SELECT count(*)
 FROM workspaces w
 JOIN workspace_permissions p USING (workspace_id)
