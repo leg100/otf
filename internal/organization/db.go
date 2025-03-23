@@ -14,7 +14,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 		INSERT INTO organizations (
 			organization_id,
 			created_at,
@@ -39,7 +39,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		org.AllowForceDeleteWorkspaces,
 	)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
@@ -55,7 +55,7 @@ FROM organizations
 WHERE name = $1
 FOR UPDATE`,
 				name)
-			return pgx.CollectOneRow(row, db.scan)
+			return sql.CollectOneRow(row, db.scan)
 		},
 		fn,
 		func(ctx context.Context, conn sql.Connection, org *Organization) error {
@@ -104,7 +104,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 		}
 	}
 
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT *
 FROM organizations
 WHERE name LIKE ANY($1::text[])
@@ -115,49 +115,48 @@ LIMIT $2::int OFFSET $3::int
 		sql.GetLimit(opts.PageOptions),
 		sql.GetOffset(opts.PageOptions),
 	)
-	items, err := pgx.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
 		return nil, err
 	}
 
-	countRow := db.Conn(ctx).QueryRow(ctx, `
+	count, err := db.Int(ctx, `
 SELECT count(*)
 FROM organizations
 WHERE name LIKE ANY($1::text[])
 `,
 		sql.StringArray(names),
 	)
-	var count int64
-	if err := countRow.Scan(&count); err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return resource.NewPage(items, opts.PageOptions, &count), nil
 }
 
 func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organization, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT * FROM organizations WHERE name = $1
 `,
 		name)
-	return pgx.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT * FROM organizations WHERE organization_id = $1
 `,
 		id)
-	return pgx.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) delete(ctx context.Context, name resource.OrganizationName) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 DELETE
 FROM organizations
 WHERE name = $1
 `,
 		name)
-	return sql.Error(err)
+	return err
 }
 
 //
@@ -165,7 +164,7 @@ WHERE name = $1
 //
 
 func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 INSERT INTO organization_tokens (
     organization_token_id,
     created_at,
@@ -189,44 +188,44 @@ INSERT INTO organization_tokens (
 }
 
 func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT *
 FROM organization_tokens
 WHERE organization_name = $1
 `,
 		organization)
-	return pgx.CollectOneRow(row, db.scanToken)
+	return sql.CollectOneRow(row, db.scanToken)
 }
 
 func (db *pgdb) listOrganizationTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error) {
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT organization_token_id, created_at, organization_name, expiry
 FROM organization_tokens
 WHERE organization_name = $1
 `,
 		organization,
 	)
-	return pgx.CollectRows(rows, db.scanToken)
+	return sql.CollectRows(rows, db.scanToken)
 }
 
 func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT *
 FROM organization_tokens
 WHERE organization_token_id = $1
 `,
 		tokenID)
-	return pgx.CollectOneRow(row, db.scanToken)
+	return sql.CollectOneRow(row, db.scanToken)
 }
 
 func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization resource.OrganizationName) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 DELETE
 FROM organization_tokens
 WHERE organization_name = $1
 `,
 		organization)
-	return sql.Error(err)
+	return err
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*Organization, error) {
@@ -245,7 +244,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Organization, error) {
 	)
 	org.CreatedAt = org.CreatedAt.UTC()
 	org.UpdatedAt = org.UpdatedAt.UTC()
-	return &org, sql.Error(err)
+	return &org, err
 }
 
 func (db *pgdb) scanToken(row pgx.CollectableRow) (*OrganizationToken, error) {
@@ -257,27 +256,5 @@ func (db *pgdb) scanToken(row pgx.CollectableRow) (*OrganizationToken, error) {
 		&token.Expiry,
 	)
 	token.CreatedAt = token.CreatedAt.UTC()
-	return &token, sql.Error(err)
+	return &token, err
 }
-
-//type scanResource[T any] interface {
-//	scan(scanner) (T, error)
-//}
-//
-//func scanRows[T any](ctx context.Context, conn sql.Connection, scanner scanResource[T], query string, params ...any) ([]T, error) {
-//	rows, err := conn.Query(ctx, query, params...)
-//	if err != nil {
-//		return nil, err
-//	}
-//	defer rows.Close()
-//
-//	var items []T
-//	for rows.Next() {
-//		item, err := scanner.scan(rows)
-//		if err != nil {
-//			return nil, err
-//		}
-//		items = append(items, item)
-//	}
-//	return items, nil
-//}

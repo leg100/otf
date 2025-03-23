@@ -84,6 +84,30 @@ func (db *DB) Conn(ctx context.Context) Connection {
 	return db.Pool
 }
 
+func (db *DB) Query(ctx context.Context, sql string, args ...any) pgx.Rows {
+	rows, _ := db.Conn(ctx).Query(ctx, sql, args...)
+	return rows
+}
+
+func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	cmdTag, err := db.Conn(ctx).Exec(ctx, sql, args...)
+	if err != nil {
+		return pgconn.CommandTag{}, Error(err)
+	}
+	return cmdTag, nil
+}
+
+// Int is a convenience wrapper for executing a query that returns a single
+// integer.
+func (db *DB) Int(ctx context.Context, sql string, args ...any) (int64, error) {
+	row := db.Conn(ctx).QueryRow(ctx, sql, args...)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, Error(err)
+	}
+	return count, nil
+}
+
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
 func (db *DB) Tx(ctx context.Context, callback func(context.Context, Connection) error) error {

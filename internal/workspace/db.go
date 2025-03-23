@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
@@ -28,7 +27,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		branch = ws.Connection.Branch
 		VCSTagsRegex = &ws.Connection.TagsRegex
 	}
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 INSERT INTO workspaces (
     workspace_id,
     created_at,
@@ -112,7 +111,7 @@ INSERT INTO workspaces (
 		ws.WorkingDirectory,
 		ws.Organization,
 	)
-	return sql.Error(err)
+	return err
 }
 
 func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
@@ -134,7 +133,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 				branch = ws.Connection.Branch
 				VCSTagsRegex = &ws.Connection.TagsRegex
 			}
-			_, err := db.Conn(ctx).Exec(ctx, `
+			_, err := db.Exec(ctx, `
 				UPDATE workspaces
 				SET
 					agent_pool_id                 = $1,
@@ -202,12 +201,12 @@ WHERE w.workspace_id = $1
 FOR UPDATE OF w
 `,
 		workspaceID)
-	return pgx.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, db.scan)
 }
 
 // setLatestRun sets the ID of the current run for the specified workspace.
 func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 UPDATE workspaces
 SET latest_run_id = $1
 WHERE workspace_id = $2
@@ -216,7 +215,7 @@ WHERE workspace_id = $2
 		workspaceID,
 	)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 
 	return db.get(ctx, workspaceID)
@@ -239,7 +238,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 		status = internal.ToStringSlice(opts.Status)
 	}
 
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
@@ -272,12 +271,12 @@ OFFSET $6::int
 		sql.GetLimit(opts.PageOptions),
 		sql.GetOffset(opts.PageOptions),
 	)
-	items, err := pgx.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 
-	row := db.Conn(ctx).QueryRow(ctx, `
+	count, err := db.Int(ctx, `
 WITH
     workspaces AS (
         SELECT w.workspace_id
@@ -298,15 +297,14 @@ FROM workspaces
 		status,
 		tags,
 	)
-	var count int64
-	if err := row.Scan(&count); err != nil {
-		return nil, fmt.Errorf("counting workspaces: %w", err)
+	if err != nil {
+		return nil, err
 	}
-	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
+	return resource.NewPage(items, opts.PageOptions, &count), nil
 }
 
 func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
@@ -328,7 +326,7 @@ AND   rc.repo_path = $2
 		vcsProviderID,
 		repoPath,
 	)
-	items, err := pgx.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +334,7 @@ AND   rc.repo_path = $2
 }
 
 func (db *pgdb) listByUsername(ctx context.Context, username string, organization resource.OrganizationName, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
@@ -366,12 +364,12 @@ OFFSET $4::int
 		sql.GetLimit(opts),
 		sql.GetOffset(opts),
 	)
-	items, err := pgx.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
 		return nil, err
 	}
 
-	row := db.Conn(ctx).QueryRow(ctx, `
+	count, err := db.Int(ctx, `
 SELECT count(*)
 FROM workspaces w
 JOIN workspace_permissions p USING (workspace_id)
@@ -384,15 +382,14 @@ AND   u.username          = $2
 		organization,
 		username,
 	)
-	var count int64
-	if err := row.Scan(&count); err != nil {
+	if err != nil {
 		return nil, err
 	}
-	return resource.NewPage(items, opts, internal.Int64(count)), nil
+	return resource.NewPage(items, opts, &count), nil
 }
 
 func (db *pgdb) get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
@@ -411,11 +408,11 @@ LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = $1
 `,
 		workspaceID)
-	return pgx.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) getByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
     (
@@ -437,11 +434,11 @@ AND   w.organization_name = $2
 		workspace,
 		organization,
 	)
-	return pgx.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) delete(ctx context.Context, workspaceID resource.TfeID) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 DELETE
 FROM workspaces
 WHERE workspace_id = $1
@@ -454,7 +451,7 @@ WHERE workspace_id = $1
 }
 
 func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 INSERT INTO workspace_permissions (
     workspace_id,
     team_id,
@@ -476,7 +473,7 @@ INSERT INTO workspace_permissions (
 }
 
 func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 DELETE
 FROM workspace_permissions
 WHERE workspace_id = $1

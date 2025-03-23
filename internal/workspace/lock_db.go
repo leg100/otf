@@ -33,7 +33,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togg
 					return ErrWorkspaceInvalidLock
 				}
 			}
-			_, err := db.Conn(ctx).Exec(ctx, `
+			_, err := db.Exec(ctx, `
 UPDATE workspaces
 SET
     lock_user_id = $1,

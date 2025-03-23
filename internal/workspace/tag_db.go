@@ -10,7 +10,7 @@ import (
 )
 
 func (db *pgdb) listTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
     (
@@ -23,9 +23,9 @@ WHERE t.organization_name = $1
 `,
 		organization,
 	)
-	items, err := pgx.CollectRows(rows, db.scanWorkspaceTag)
+	items, err := sql.CollectRows(rows, db.scanWorkspaceTag)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	return resource.NewPage(items, opts.PageOptions, nil), nil
 }
@@ -33,7 +33,7 @@ WHERE t.organization_name = $1
 func (db *pgdb) deleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.TfeID) error {
 	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, tid := range tagIDs {
-			_, err := db.Conn(ctx).Exec(ctx, `
+			_, err := conn.Exec(ctx, `
 DELETE
 FROM tags
 WHERE tag_id            = $1
@@ -45,11 +45,11 @@ AND   organization_name = $2
 		}
 		return nil
 	})
-	return sql.Error(err)
+	return err
 }
 
 func (db *pgdb) addTag(ctx context.Context, organization resource.OrganizationName, name string, tagID resource.TfeID) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 INSERT INTO tags (
     tag_id,
     name,
@@ -61,13 +61,13 @@ INSERT INTO tags (
 ) ON CONFLICT (organization_name, name) DO NOTHING
 `, tagID, name, organization)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
 
 func (db *pgdb) findTagByName(ctx context.Context, organization resource.OrganizationName, name string) (*Tag, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
     (
@@ -79,15 +79,15 @@ FROM tags t
 WHERE t.name = $1
 AND   t.organization_name = $2
 `, name, organization)
-	tag, err := pgx.CollectOneRow(row, db.scanWorkspaceTag)
+	tag, err := sql.CollectOneRow(row, db.scanWorkspaceTag)
 	if err != nil {
-		return tag, sql.Error(err)
+		return tag, err
 	}
 	return tag, nil
 }
 
 func (db *pgdb) findTagByID(ctx context.Context, organization resource.OrganizationName, id resource.TfeID) (*Tag, error) {
-	row, _ := db.Conn(ctx).Query(ctx, `
+	row := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
     (
@@ -102,15 +102,15 @@ AND   t.organization_name = $2
 		id,
 		organization,
 	)
-	tag, err := pgx.CollectOneRow(row, db.scanWorkspaceTag)
+	tag, err := sql.CollectOneRow(row, db.scanWorkspaceTag)
 	if err != nil {
-		return tag, sql.Error(err)
+		return tag, err
 	}
 	return tag, nil
 }
 
 func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.TfeID) error {
-	result, err := db.Conn(ctx).Exec(ctx, `
+	result, err := db.Exec(ctx, `
 INSERT INTO workspace_tags (
     workspace_id,
     tag_id
@@ -126,11 +126,11 @@ INSERT INTO workspace_tags (
 	if result.RowsAffected() == 0 {
 		return internal.ErrResourceNotFound
 	}
-	return sql.Error(err)
+	return err
 }
 
 func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.TfeID) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 DELETE
 FROM workspace_tags
 WHERE workspace_id  = $1
@@ -138,11 +138,11 @@ AND   tag_id        = $2
 `,
 		workspaceID,
 		tagID)
-	return sql.Error(err)
+	return err
 }
 
 func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	rows, _ := db.Conn(ctx).Query(ctx, `
+	rows := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
     (
@@ -157,9 +157,9 @@ WHERE wt.workspace_id = $1
 
 		workspaceID,
 	)
-	items, err := pgx.CollectRows(rows, db.scanWorkspaceTag)
+	items, err := sql.CollectRows(rows, db.scanWorkspaceTag)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	return resource.NewPage(items, opts.PageOptions, nil), nil
 }

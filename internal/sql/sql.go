@@ -144,6 +144,23 @@ func GetLimit(opts resource.PageOptions) pgtype.Int4 {
 	return Int4(opts.Normalize().PageSize)
 }
 
+func CollectOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
+	row, err := pgx.CollectOneRow(rows, fn)
+	if err != nil {
+		return *new(T), Error(err)
+	}
+	return row, nil
+}
+
+func CollectRows[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) ([]T, error) {
+	collected, err := pgx.CollectRows(rows, fn)
+	if err != nil {
+		return nil, Error(err)
+	}
+	return collected, nil
+}
+
+// Error converts the sql error into a domain error.
 func Error(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
