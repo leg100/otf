@@ -235,10 +235,15 @@ func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *
 func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, wid := range workspaceIDs {
-			err := q.InsertVariableSetWorkspace(ctx, pdb.Conn(ctx), InsertVariableSetWorkspaceParams{
-				VariableSetID: setID,
-				WorkspaceID:   wid,
-			})
+			_, err := pdb.Exec(ctx, `
+INSERT INTO variable_set_workspaces (
+    variable_set_id,
+    workspace_id
+) VALUES (
+    $1,
+    $2
+)
+`, setID, wid)
 			if err != nil {
 				return err
 			}
@@ -249,8 +254,12 @@ func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource
 }
 
 func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.TfeID) error {
-	err := q.DeleteVariableSetWorkspaces(ctx, pdb.Conn(ctx), setID)
-	return sql.Error(err)
+	_, err := pdb.Exec(ctx, `
+DELETE
+FROM variable_set_workspaces
+WHERE variable_set_id = $1
+`, setID)
+	return err
 }
 
 func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
@@ -270,34 +279,70 @@ func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource
 }
 
 func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
-	err := q.InsertVariable(ctx, pdb.Conn(ctx), InsertVariableParams{
-		VariableID:  v.ID,
-		Key:         sql.String(v.Key),
-		Value:       sql.String(v.Value),
-		Description: sql.String(v.Description),
-		Category:    sql.String(string(v.Category)),
-		Sensitive:   sql.Bool(v.Sensitive),
-		VersionID:   sql.String(v.VersionID),
-		HCL:         sql.Bool(v.HCL),
-	})
+	_, err := pdb.Exec(ctx, `
+INSERT INTO variables (
+    variable_id,
+    key,
+    value,
+    description,
+    category,
+    sensitive,
+    hcl,
+    version_id
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+`,
+		v.ID,
+		v.Key,
+		v.Value,
+		v.Description,
+		v.Category,
+		v.Sensitive,
+		v.VersionID,
+		v.HCL,
+	)
 	return sql.Error(err)
 }
 
 func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {
-	_, err := q.UpdateVariableByID(ctx, pdb.Conn(ctx), UpdateVariableByIDParams{
-		VariableID:  v.ID,
-		Key:         sql.String(v.Key),
-		Value:       sql.String(v.Value),
-		Description: sql.String(v.Description),
-		Category:    sql.String(string(v.Category)),
-		Sensitive:   sql.Bool(v.Sensitive),
-		VersionID:   sql.String(v.VersionID),
-		HCL:         sql.Bool(v.HCL),
-	})
-	return sql.Error(err)
+	_, err := pdb.Exec(ctx, `
+UPDATE variables
+SET
+    key = $1,
+    value = $2,
+    description = $3,
+    category = $4,
+    sensitive = $5,
+    version_id = $6,
+    hcl = $7
+WHERE variable_id = $8
+`,
+		v.Key,
+		v.Value,
+		v.Description,
+		v.Category,
+		v.Sensitive,
+		v.VersionID,
+		v.HCL,
+		v.ID,
+	)
+	return err
 }
 
 func (pdb *pgdb) deleteVariable(ctx context.Context, variableID resource.TfeID) error {
-	_, err := q.DeleteVariableByID(ctx, pdb.Conn(ctx), variableID)
-	return sql.Error(err)
+	_, err := pdb.Exec(ctx, `
+DELETE
+FROM variables
+WHERE variable_id = $1
+RETURNING variable_id, key, value, description, category, sensitive, hcl, version_id
+`, variableID)
+	return err
 }
