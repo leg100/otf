@@ -3,6 +3,7 @@ package vcsprovider
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
@@ -35,27 +36,58 @@ type (
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
-		params := InsertVCSProviderParams{
-			VCSProviderID:    provider.ID,
-			Name:             sql.String(provider.Name),
-			VCSKind:          sql.String(string(provider.Kind)),
-			OrganizationName: provider.Organization,
-			CreatedAt:        sql.Timestamptz(provider.CreatedAt),
-			Token:            sql.StringPtr(provider.Token),
+		args := pgx.NamedArgs{
+			"id":           provider.ID,
+			"created_at":   provider.CreatedAt,
+			"name":         provider.Name,
+			"vcs_kind":     provider.Kind,
+			"token":        provider.Token,
+			"organization": provider.Organization,
 		}
 		if provider.GithubApp != nil {
-			params.GithubAppID = pgtype.Int8{Int64: provider.GithubApp.AppCredentials.ID, Valid: true}
+			args["github_app_id"] = provider.GithubApp.AppCredentials.ID
 		}
-		if err := q.InsertVCSProvider(ctx, conn, params); err != nil {
+		_, err := db.Exec(ctx, `
+INSERT INTO vcs_providers (
+    vcs_provider_id,
+    created_at,
+    name,
+    vcs_kind,
+    token,
+    github_app_id,
+    organization_name
+) VALUES (
+	@id,
+	@created_at,
+	@name,
+	@vcs_kind,
+	@token,
+	@github_app_id,
+	@organization
+)`, args)
+		if err != nil {
 			return err
 		}
 		if provider.GithubApp != nil {
-			err := (&github.Queries{}).InsertGithubAppInstall(ctx, conn, github.InsertGithubAppInstallParams{
-				GithubAppID:   pgtype.Int8{Int64: provider.GithubApp.AppCredentials.ID, Valid: true},
-				InstallID:     pgtype.Int8{Int64: provider.GithubApp.ID, Valid: true},
-				Username:      sql.StringPtr(provider.GithubApp.User),
-				Organization:  sql.StringPtr(provider.GithubApp.Organization),
-				VCSProviderID: provider.ID,
+			_, err := db.Exec(ctx, `
+INSERT INTO github_app_installs (
+    github_app_id,
+    install_id,
+    username,
+    organization,
+    vcs_provider_id
+) VALUES (
+	@id,
+	@install_id,
+	@username,
+	@organization
+	@vcs_provider_id,
+)`, pgx.NamedArgs{
+				"id":              provider.GithubApp.AppCredentials.ID,
+				"install_id":      provider.GithubApp.ID,
+				"username":        provider.GithubApp.User,
+				"organization":    provider.GithubApp.Organization,
+				"vcs_provider_id": provider.ID,
 			})
 			if err != nil {
 				return err
@@ -71,6 +103,16 @@ func (db *pgdb) update(ctx context.Context, id resource.TfeID, fn func(context.C
 		ctx,
 		db.DB,
 		func(ctx context.Context, conn sql.Connection) (*VCSProvider, error) {
+			rows := db.Query(ctx, `
+SELECT
+    v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
+    (ga.*)::"github_apps" AS github_app,
+    (gi.*)::"github_app_installs" AS github_app_install
+FROM vcs_providers v
+LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USING (vcs_provider_id)
+WHERE v.vcs_provider_id = $1
+FOR UPDATE OF v
+`, id)
 			row, err := q.FindVCSProviderForUpdate(ctx, conn, id)
 			if err != nil {
 				return nil, err
@@ -159,7 +201,6 @@ func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error)
 	opts := CreateOptions{
 		Organization: row.OrganizationName,
 		Name:         row.Name.String,
-		// GithubAppService: db.Git
 	}
 	if row.Token.Valid {
 		opts.Token = &row.Token.String

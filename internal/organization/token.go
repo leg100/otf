@@ -12,10 +12,10 @@ import (
 type (
 	// OrganizationToken provides information about an API token for an organization
 	OrganizationToken struct {
-		ID        resource.TfeID
-		CreatedAt time.Time
+		ID        resource.TfeID `db:"organization_token_id"`
+		CreatedAt time.Time      `db:"created_at"`
 		// Token belongs to an organization
-		Organization resource.OrganizationName
+		Organization resource.OrganizationName `db:"organization_name"`
 		// Optional expiry.
 		Expiry *time.Time
 	}

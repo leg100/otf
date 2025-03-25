@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
-type outputRow struct {
+type outputModel struct {
 	StateVersionOutputID resource.TfeID `db:"state_version_output_id"`
 	Name                 string         `db:"name"`
 	Sensitive            bool           `db:"sensitive"`
@@ -17,11 +17,30 @@ type outputRow struct {
 	StateVersionID       resource.TfeID `db:"state_version_id"`
 }
 
+func (m outputModel) toOutput() *Output {
+	return &Output{
+		ID:             m.StateVersionID,
+		Name:           m.Name,
+		Type:           m.Type,
+		Value:          m.Value,
+		Sensitive:      m.Sensitive,
+		StateVersionID: m.StateVersionID,
+	}
+}
+
 func (db *pgdb) getOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
 	rows := db.Query(ctx, `
 SELECT state_version_output_id, name, sensitive, type, value, state_version_id
 FROM state_version_outputs
 WHERE state_version_output_id = $1
 `, outputID)
-	return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[agentToken])
+	return sql.CollectOneRow(rows, scanOutput)
+}
+
+func scanOutput(row pgx.CollectableRow) (*Output, error) {
+	model, err := pgx.RowToStructByName[outputModel](row)
+	if err != nil {
+		return nil, err
+	}
+	return model.toOutput(), nil
 }

@@ -134,28 +134,17 @@ WHERE name LIKE ANY($1::text[])
 }
 
 func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organization, error) {
-	row := db.Query(ctx, `
-SELECT * FROM organizations WHERE name = $1
-`,
-		name)
+	row := db.Query(ctx, ` SELECT * FROM organizations WHERE name = $1 `, name)
 	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, error) {
-	row := db.Query(ctx, `
-SELECT * FROM organizations WHERE organization_id = $1
-`,
-		id)
+	row := db.Query(ctx, ` SELECT * FROM organizations WHERE organization_id = $1 `, id)
 	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) delete(ctx context.Context, name resource.OrganizationName) error {
-	_, err := db.Exec(ctx, `
-DELETE
-FROM organizations
-WHERE name = $1
-`,
-		name)
+	_, err := db.Exec(ctx, ` DELETE FROM organizations WHERE name = $1 `, name)
 	return err
 }
 
@@ -188,12 +177,7 @@ INSERT INTO organization_tokens (
 }
 
 func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error) {
-	row := db.Query(ctx, `
-SELECT *
-FROM organization_tokens
-WHERE organization_name = $1
-`,
-		organization)
+	row := db.Query(ctx, ` SELECT * FROM organization_tokens WHERE organization_name = $1 `, organization)
 	return sql.CollectOneRow(row, db.scanToken)
 }
 
@@ -229,32 +213,14 @@ WHERE organization_name = $1
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*Organization, error) {
-	var org Organization
-	err := row.Scan(
-		&org.ID,
-		&org.CreatedAt,
-		&org.UpdatedAt,
-		&org.Name,
-		&org.SessionRemember,
-		&org.SessionTimeout,
-		&org.Email,
-		&org.CollaboratorAuthPolicy,
-		&org.AllowForceDeleteWorkspaces,
-		&org.CostEstimationEnabled,
-	)
+	org, err := pgx.RowToAddrOfStructByName[Organization](row)
 	org.CreatedAt = org.CreatedAt.UTC()
 	org.UpdatedAt = org.UpdatedAt.UTC()
-	return &org, err
+	return org, err
 }
 
 func (db *pgdb) scanToken(row pgx.CollectableRow) (*OrganizationToken, error) {
-	var token OrganizationToken
-	err := row.Scan(
-		&token.ID,
-		&token.CreatedAt,
-		&token.Organization,
-		&token.Expiry,
-	)
+	token, err := pgx.RowToAddrOfStructByName[OrganizationToken](row)
 	token.CreatedAt = token.CreatedAt.UTC()
-	return &token, err
+	return token, err
 }

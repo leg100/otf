@@ -25,7 +25,7 @@ type (
 		State               []byte         `db:"state"`
 		WorkspaceID         resource.TfeID `db:"workspace_id"`
 		Status              Status         `db:"status"`
-		StateVersionOutputs []Output       `db:"state_version_outputs"`
+		StateVersionOutputs []outputModel  `db:"state_version_outputs"`
 	}
 )
 
@@ -139,22 +139,22 @@ AND status = 'finalized'
 	return resource.NewPage(items, opts, &count), nil
 }
 
-func (db *pgdb) scanVersion(r pgx.CollectableRow) (*Version, error) {
-	row, err := pgx.RowToStructByName[versionModel](r)
+func (db *pgdb) scanVersion(row pgx.CollectableRow) (*Version, error) {
+	model, err := pgx.RowToStructByName[versionModel](row)
 	if err != nil {
 		return nil, err
 	}
 	sv := Version{
-		ID:          row.StateVersionID,
-		CreatedAt:   row.CreatedAt.UTC(),
-		Serial:      row.Serial,
-		State:       row.State,
-		Status:      row.Status,
-		WorkspaceID: row.WorkspaceID,
-		Outputs:     make(map[string]*Output, len(row.StateVersionOutputs)),
+		ID:          model.StateVersionID,
+		CreatedAt:   model.CreatedAt.UTC(),
+		Serial:      model.Serial,
+		State:       model.State,
+		Status:      model.Status,
+		WorkspaceID: model.WorkspaceID,
+		Outputs:     make(map[string]*Output, len(model.StateVersionOutputs)),
 	}
-	for _, output := range row.StateVersionOutputs {
-		sv.Outputs[output.Name] = &output
+	for _, output := range model.StateVersionOutputs {
+		sv.Outputs[output.Name] = output.toOutput()
 	}
 	return &sv, nil
 
@@ -215,7 +215,7 @@ func (db *pgdb) getState(ctx context.Context, id resource.TfeID) ([]byte, error)
 SELECT state
 FROM state_versions
 WHERE state_version_id = $1
-`)
+`, id)
 	return sql.CollectOneRow(rows, pgx.RowTo[[]byte])
 }
 

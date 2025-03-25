@@ -8,14 +8,14 @@ import (
 
 type (
 	App struct {
-		ID            int64  // github's app id
+		ID            int64  `db:"github_app_id"` // github's app id
 		Slug          string // github's "slug" name
-		WebhookSecret string
-		PrivateKey    string
+		WebhookSecret string `db:"webhook_secret"`
+		PrivateKey    string `db:"private_key"`
 
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
-		Organization *string
+		Organization *string `db:"organization_name"`
 	}
 
 	CreateAppOptions struct {
