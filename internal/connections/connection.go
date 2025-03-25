@@ -16,7 +16,9 @@ import (
 type (
 	// Connection is a connection between a VCS repo and an OTF resource.
 	Connection struct {
-		VCSProviderID resource.TfeID
+		ModuleID      *resource.TfeID `db:"module_id"`
+		WorkspaceID   *resource.TfeID `db:"workspace_id"`
+		VCSProviderID resource.TfeID  `db:"vcs_provider_id"`
 		Repo          string
 	}
 

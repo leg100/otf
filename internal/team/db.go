@@ -101,11 +101,11 @@ RETURNING team_id
 					"visibility":                         team.Visibility,
 					"sso_team_id":                        team.SSOTeamID,
 					"permission_manage_workspaces":       team.ManageWorkspaces,
-					"permission_manage_vcs":              team.ManageWorkspaces,
-					"permission_manage_modules":          team.ManageWorkspaces,
-					"permission_manage_providers":        team.ManageWorkspaces,
-					"permission_manage_policies":         team.ManageWorkspaces,
-					"permission_manage_policy_overrides": team.ManageWorkspaces,
+					"permission_manage_vcs":              team.ManageVCS,
+					"permission_manage_modules":          team.ManageModules,
+					"permission_manage_providers":        team.ManageProviders,
+					"permission_manage_policies":         team.ManagePolicies,
+					"permission_manage_policy_overrides": team.ManagePolicyOverrides,
 				},
 			)
 			return err
@@ -174,9 +174,9 @@ INSERT INTO team_tokens (
     expiry
 ) VALUES (
     @team_token_id,
-    $created_at,
-    $team_id,
-    $expiry
+    @created_at,
+    @team_id,
+    @expiry
 ) ON CONFLICT (team_id) DO UPDATE
   SET team_token_id = @team_token_id,
       created_at    = @created_at,
@@ -194,7 +194,7 @@ INSERT INTO team_tokens (
 func (db *pgdb) getTeamTokenByTeamID(ctx context.Context, teamID resource.TfeID) (*Token, error) {
 	// query only returns 0 or 1 tokens
 	rows := db.Query(ctx, `
-SELECT team_token_id, description, created_at, team_id, expiry
+SELECT *
 FROM team_tokens
 WHERE team_id = $1
 `, teamID)

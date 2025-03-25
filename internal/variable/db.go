@@ -2,8 +2,11 @@ package variable
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -109,13 +112,15 @@ WHERE variable_set_id = $4
 			set.ID,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("updating variable set: %w", err)
 		}
 		// lazily delete all variable set workspaces, and then add them again,
 		// regardless of whether there are any changes
 		return pdb.Lock(ctx, "variable_set_workspaces", func(ctx context.Context, _ sql.Connection) error {
 			if err := pdb.deleteAllVariableSetWorkspaces(ctx, set.ID); err != nil {
-				return err
+				if !errors.Is(err, internal.ErrResourceNotFound) {
+					return err
+				}
 			}
 			if err := pdb.createVariableSetWorkspaces(ctx, set.ID, set.Workspaces); err != nil {
 				return err
@@ -278,7 +283,7 @@ INSERT INTO variable_set_workspaces (
 		}
 		return nil
 	})
-	return sql.Error(err)
+	return err
 }
 
 func (pdb *pgdb) deleteAllVariableSetWorkspaces(ctx context.Context, setID resource.TfeID) error {

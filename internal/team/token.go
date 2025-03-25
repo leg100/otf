@@ -22,6 +22,10 @@ type (
 		TeamID resource.TfeID `db:"team_id"`
 		// Optional expiry.
 		Expiry *time.Time
+		// Description
+		//
+		// TODO: unused; create migration to remove from db.
+		Description *string `db:"description"`
 	}
 
 	// CreateTokenOptions are options for creating an team token via the service
@@ -92,7 +96,12 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Tok
 	if err != nil {
 		return nil, err
 	}
-	return a.db.getTeamTokenByTeamID(ctx, teamID)
+	token, err := a.db.getTeamTokenByTeamID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team token", "team_id", teamID)
+		return nil, err
+	}
+	return token, nil
 }
 
 func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
