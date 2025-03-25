@@ -168,7 +168,7 @@ WHERE t.token_id = $1
 	}
 	user, err := sql.CollectOneRow(rows, scan)
 	if err != nil {
-		return nil, fmt.Errorf("getting user with spec %#v: %w", spec, err)
+		return nil, err
 	}
 	return user, nil
 }
