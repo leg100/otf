@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
@@ -34,7 +33,7 @@ INSERT INTO users (
 )
 `,
 			pgx.NamedArgs{
-				"id":         user.ID,
+				"user_id":    user.ID,
 				"created_at": user.CreatedAt,
 				"updated_at": user.UpdatedAt,
 				"username":   user.Username,
@@ -53,7 +52,6 @@ WITH
 INSERT INTO team_memberships (username, team_id)
 SELECT username, $1
 FROM users
-RETURNING username
 `, team.ID, []string{user.Username})
 			if err != nil {
 				return err
@@ -76,7 +74,7 @@ SELECT
     ) AS teams
 FROM users u
 `)
-	return sql.CollectRows(rows, db.scan)
+	return sql.CollectRows(rows, scan)
 }
 
 func (db *pgdb) listOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
@@ -96,7 +94,7 @@ JOIN teams t USING (team_id)
 WHERE t.organization_name = $1
 GROUP BY u.user_id
 `, organization)
-	return sql.CollectRows(rows, db.scan)
+	return sql.CollectRows(rows, scan)
 }
 
 func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error) {
@@ -116,7 +114,7 @@ JOIN teams t USING (team_id)
 WHERE t.team_id = $1
 GROUP BY u.user_id
 `, teamID)
-	return sql.CollectRows(rows, db.scan)
+	return sql.CollectRows(rows, scan)
 }
 
 // getUser retrieves a user from the DB, along with its sessions.
@@ -168,7 +166,11 @@ WHERE t.token_id = $1
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}
-	return sql.CollectOneRow(rows, db.scan)
+	user, err := sql.CollectOneRow(rows, scan)
+	if err != nil {
+		return nil, fmt.Errorf("getting user with spec %#v: %w", spec, err)
+	}
+	return user, nil
 }
 
 func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...string) error {
@@ -181,7 +183,6 @@ WITH
 INSERT INTO team_memberships (username, team_id)
 SELECT username, $1
 FROM users
-RETURNING username
 `, teamID, usernames)
 	return err
 }
@@ -199,7 +200,6 @@ USING users
 WHERE
     tm.username = users.username AND
     tm.team_id  = $1
-RETURNING tm.username
 `, teamID, usernames)
 	return err
 }
@@ -211,7 +211,6 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 DELETE
 FROM users
 WHERE user_id = $1
-RETURNING user_id
 `, *spec.UserID)
 		return err
 	} else if spec.Username != nil {
@@ -219,7 +218,6 @@ RETURNING user_id
 DELETE
 FROM users
 WHERE username = $1
-RETURNING user_id
 `, *spec.Username)
 		return err
 	} else {
@@ -265,29 +263,14 @@ RETURNING username
 	return internal.Diff(updated, resetted), internal.Diff(resetted, updated), nil
 }
 
-func (db *pgdb) scan(row pgx.CollectableRow) (*User, error) {
+func scan(row pgx.CollectableRow) (*User, error) {
 	user, err := pgx.RowToAddrOfStructByName[User](row)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scanning user row: %w", err)
 	}
 	user.CreatedAt = user.CreatedAt.UTC()
 	user.UpdatedAt = user.UpdatedAt.UTC()
 	return user, nil
-}
-
-// pgtextSliceDiff returns the elements in `a` that aren't in `b`.
-func pgtextSliceDiff(a, b []pgtype.Text) []string {
-	mb := make(map[string]struct{}, len(b))
-	for _, x := range b {
-		mb[x.String] = struct{}{}
-	}
-	var diff []string
-	for _, x := range a {
-		if _, found := mb[x.String]; !found {
-			diff = append(diff, x.String)
-		}
-	}
-	return diff
 }
 
 //
@@ -307,50 +290,47 @@ INSERT INTO tokens (
     $3,
     $4
 )
-`
-	err := q.InsertToken(ctx, db.Conn(ctx), InsertTokenParams{
-		TokenID:     token.ID,
-		Description: sql.String(token.Description),
-		Username:    sql.String(token.Username),
-		CreatedAt:   sql.Timestamptz(token.CreatedAt),
-	})
+`,
+		token.ID,
+		token.CreatedAt,
+		token.Description,
+		token.Username,
+	)
 	return err
 }
 
 func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserToken, error) {
-	result, err := q.FindTokensByUsername(ctx, db.Conn(ctx), sql.String(username))
-	if err != nil {
-		return nil, err
-	}
-	tokens := make([]*UserToken, len(result))
-	for i, row := range result {
-		tokens[i] = &UserToken{
-			ID:          row.TokenID,
-			CreatedAt:   row.CreatedAt.Time.UTC(),
-			Description: row.Description.String,
-			Username:    row.Username.String,
-		}
-	}
-	return tokens, nil
+	rows := db.Query(ctx, `
+SELECT token_id, created_at, description, username
+FROM tokens
+WHERE username = $1
+`, username)
+	return sql.CollectRows(rows, scanToken)
 }
 
 func (db *pgdb) getUserToken(ctx context.Context, id resource.TfeID) (*UserToken, error) {
-	row, err := q.FindTokenByID(ctx, db.Conn(ctx), id)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return &UserToken{
-		ID:          row.TokenID,
-		CreatedAt:   row.CreatedAt.Time.UTC(),
-		Description: row.Description.String,
-		Username:    row.Username.String,
-	}, nil
+	rows := db.Query(ctx, `
+SELECT token_id, created_at, description, username
+FROM tokens
+WHERE token_id = $1
+`, id)
+	return sql.CollectOneRow(rows, scanToken)
 }
 
 func (db *pgdb) deleteUserToken(ctx context.Context, id resource.TfeID) error {
-	_, err := q.DeleteTokenByID(ctx, db.Conn(ctx), id)
+	_, err := db.Exec(ctx, `
+DELETE
+FROM tokens
+WHERE token_id = $1
+`, id)
+	return err
+}
+
+func scanToken(row pgx.CollectableRow) (*UserToken, error) {
+	token, err := pgx.RowToAddrOfStructByName[UserToken](row)
 	if err != nil {
-		return sql.Error(err)
+		return nil, err
 	}
-	return nil
+	token.CreatedAt = token.CreatedAt.UTC()
+	return token, nil
 }

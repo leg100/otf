@@ -13,7 +13,7 @@ import (
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	ID resource.TfeID `jsonapi:"primary,runners"`
+	ID resource.TfeID `jsonapi:"primary,runners" db:"runner_id"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -21,29 +21,18 @@ type RunnerMeta struct {
 	// Current status of runner
 	Status RunnerStatus `jsonapi:"attribute" json:"status"`
 	// Max number of jobs runner can execute
-	MaxJobs int `jsonapi:"attribute" json:"max_jobs"`
+	MaxJobs int `jsonapi:"attribute" json:"max_jobs" db:"max_jobs"`
 	// Current number of jobs allocated to runner.
-	CurrentJobs int `jsonapi:"attribute" json:"current_jobs"`
+	CurrentJobs int `jsonapi:"attribute" json:"current_jobs" db:"current_jobs"`
 	// Last time a ping was received from the runner.
-	LastPingAt time.Time `jsonapi:"attribute" json:"last-ping-at"`
+	LastPingAt time.Time `jsonapi:"attribute" json:"last-ping-at" db:"last_ping_at"`
 	// Last time the status was updated
-	LastStatusAt time.Time `jsonapi:"attribute" json:"last-status-at"`
+	LastStatusAt time.Time `jsonapi:"attribute" json:"last-status-at" db:"last_status_at"`
 	// IP address of runner.
-	IPAddress netip.Addr `jsonapi:"attribute" json:"ip-address"`
+	IPAddress netip.Addr `jsonapi:"attribute" json:"ip-address" db:"ip_address"`
 	// Info about the runner's agent pool. Non-nil if agent runner; nil if server
 	// runner.
-	AgentPool *RunnerMetaAgentPool `jsonapi:"attribute" json:"agent-pool"`
-}
-
-type RunnerMetaAgentPool struct {
-	// ID of agent's pool.
-	ID resource.TfeID `json:"id"`
-	// Name of agent's pool
-	Name string `json:"name"`
-	// Agent pool's organization.
-	OrganizationName resource.OrganizationName `json:"organization-name"`
-	// ID of agent token that was used to authenticate runner.
-	TokenID resource.TfeID `json:"token-id"`
+	AgentPool *Pool `jsonapi:"attribute" json:"agent-pool" db:"agent_pool"`
 }
 
 type registerOptions struct {
@@ -135,15 +124,6 @@ func (m *RunnerMeta) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (m *RunnerMetaAgentPool) LogValue() slog.Value {
-	return slog.GroupValue(
-		slog.String("id", m.ID.String()),
-		slog.String("name", m.Name),
-		slog.Any("organization", m.OrganizationName),
-		slog.String("token-id", m.TokenID.String()),
-	)
-}
-
 func (m *RunnerMeta) String() string { return m.ID.String() }
 
 func (m *RunnerMeta) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
@@ -156,7 +136,7 @@ func (m *RunnerMeta) CanAccess(action authz.Action, req *authz.AccessRequest) bo
 	if m.IsAgent() {
 		// Agents can only carry out actions on the organization their pool
 		// belongs to.
-		return req.Organization != nil && m.AgentPool.OrganizationName == *req.Organization
+		return req.Organization != nil && m.AgentPool.Organization == *req.Organization
 	} else {
 		// Server runners can carry out actions on all organizations.
 		return true

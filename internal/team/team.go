@@ -12,17 +12,16 @@ import (
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {
-		ID           resource.TfeID            `jsonapi:"primary,teams"`
-		CreatedAt    time.Time                 `jsonapi:"attribute" json:"created-at"`
-		Name         string                    `jsonapi:"attribute" json:"name"`
-		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization"`
-
-		Access OrganizationAccess
+		ID        resource.TfeID `jsonapi:"primary,teams" db:"team_id"`
+		Name      string         `jsonapi:"attribute" json:"name" db:"name"`
+		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
+		OrganizationAccess
+		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization" db:"organization_name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
 		Visibility string
-		SSOTeamID  *string
+		SSOTeamID  *string `db:"sso_team_id"`
 	}
 
 	CreateTeamOptions struct {
@@ -50,15 +49,15 @@ type (
 
 	// OrganizationAccess defines a team's organization access.
 	OrganizationAccess struct {
-		ManageWorkspaces bool // admin access on all workspaces
-		ManageVCS        bool // manage VCS providers
-		ManageModules    bool // manage module registry
+		ManageWorkspaces bool `db:"permission_manage_workspaces"` // admin access on all workspaces
+		ManageVCS        bool `db:"permission_manage_vcs"`        // manage VCS providers
+		ManageModules    bool `db:"permission_manage_modules"`    // manage module registry
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
-		ManageProviders       bool
-		ManagePolicies        bool
-		ManagePolicyOverrides bool
+		ManageProviders       bool `db:"permission_manage_providers"`
+		ManagePolicies        bool `db:"permission_manage_policies"`
+		ManagePolicyOverrides bool `db:"permission_manage_policy_overrides"`
 	}
 
 	// OrganizationAccessOptions defines access to be granted upon team creation
@@ -95,28 +94,27 @@ func newTeam(organization resource.OrganizationName, opts CreateTeamOptions) (*T
 		Visibility:   *opts.Visibility,
 	}
 	if opts.ManageWorkspaces != nil {
-		team.Access.ManageWorkspaces = *opts.ManageWorkspaces
+		team.ManageWorkspaces = *opts.ManageWorkspaces
 	}
 	if opts.ManageVCS != nil {
-		team.Access.ManageVCS = *opts.ManageVCS
+		team.ManageVCS = *opts.ManageVCS
 	}
 	if opts.ManageModules != nil {
-		team.Access.ManageModules = *opts.ManageModules
+		team.ManageModules = *opts.ManageModules
 	}
 	if opts.ManageProviders != nil {
-		team.Access.ManageProviders = *opts.ManageProviders
+		team.ManageProviders = *opts.ManageProviders
 	}
 	if opts.ManagePolicies != nil {
-		team.Access.ManagePolicies = *opts.ManagePolicies
+		team.ManagePolicies = *opts.ManagePolicies
 	}
 	if opts.ManagePolicyOverrides != nil {
-		team.Access.ManagePolicyOverrides = *opts.ManagePolicyOverrides
+		team.ManagePolicyOverrides = *opts.ManagePolicyOverrides
 	}
 	return team, nil
 }
 
-func (t *Team) String() string                         { return t.Name }
-func (t *Team) OrganizationAccess() OrganizationAccess { return t.Access }
+func (t *Team) String() string { return t.Name }
 
 func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
@@ -142,17 +140,17 @@ func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	if authz.OrganizationMinPermissions.IsAllowed(action) {
 		return true
 	}
-	if t.Access.ManageWorkspaces {
+	if t.ManageWorkspaces {
 		if authz.WorkspaceManagerRole.IsAllowed(action) {
 			return true
 		}
 	}
-	if t.Access.ManageVCS {
+	if t.ManageVCS {
 		if authz.VCSManagerRole.IsAllowed(action) {
 			return true
 		}
 	}
-	if t.Access.ManageModules {
+	if t.ManageModules {
 		if authz.RegistryManagerRole.IsAllowed(action) {
 			return true
 		}
@@ -184,22 +182,22 @@ func (t *Team) Update(opts UpdateTeamOptions) error {
 		t.Visibility = *opts.Visibility
 	}
 	if opts.ManageWorkspaces != nil {
-		t.Access.ManageWorkspaces = *opts.ManageWorkspaces
+		t.ManageWorkspaces = *opts.ManageWorkspaces
 	}
 	if opts.ManageVCS != nil {
-		t.Access.ManageVCS = *opts.ManageVCS
+		t.ManageVCS = *opts.ManageVCS
 	}
 	if opts.ManageModules != nil {
-		t.Access.ManageModules = *opts.ManageModules
+		t.ManageModules = *opts.ManageModules
 	}
 	if opts.ManageProviders != nil {
-		t.Access.ManageProviders = *opts.ManageProviders
+		t.ManageProviders = *opts.ManageProviders
 	}
 	if opts.ManagePolicies != nil {
-		t.Access.ManagePolicies = *opts.ManagePolicies
+		t.ManagePolicies = *opts.ManagePolicies
 	}
 	if opts.ManagePolicyOverrides != nil {
-		t.Access.ManagePolicyOverrides = *opts.ManagePolicyOverrides
+		t.ManagePolicyOverrides = *opts.ManagePolicyOverrides
 	}
 	return nil
 }

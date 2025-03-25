@@ -44,7 +44,7 @@ INSERT INTO teams (
     @permission_manage_modules,
     @permission_manage_providers,
     @permission_manage_policies,
-    @permission_manage_policy_overrides,
+    @permission_manage_policy_overrides
 )
 `,
 		pgx.NamedArgs{
@@ -54,12 +54,12 @@ INSERT INTO teams (
 			"organization":                       team.Organization,
 			"visibility":                         team.Visibility,
 			"sso_team_id":                        team.SSOTeamID,
-			"permission_manage_workspaces":       team.Access.ManageWorkspaces,
-			"permission_manage_vcs":              team.Access.ManageWorkspaces,
-			"permission_manage_modules":          team.Access.ManageWorkspaces,
-			"permission_manage_providers":        team.Access.ManageWorkspaces,
-			"permission_manage_policies":         team.Access.ManageWorkspaces,
-			"permission_manage_policy_overrides": team.Access.ManageWorkspaces,
+			"permission_manage_workspaces":       team.ManageWorkspaces,
+			"permission_manage_vcs":              team.ManageVCS,
+			"permission_manage_modules":          team.ManageModules,
+			"permission_manage_providers":        team.ManageProviders,
+			"permission_manage_policies":         team.ManagePolicies,
+			"permission_manage_policy_overrides": team.ManagePolicyOverrides,
 		},
 	)
 	return err
@@ -76,7 +76,7 @@ FROM teams t
 WHERE team_id = $1
 FOR UPDATE OF t
 `, teamID)
-			return sql.CollectOneRow(rows, db.scan)
+			return sql.CollectOneRow(rows, scan)
 		},
 		fn,
 		func(ctx context.Context, conn sql.Connection, team *Team) error {
@@ -100,12 +100,12 @@ RETURNING team_id
 					"name":                               team.Name,
 					"visibility":                         team.Visibility,
 					"sso_team_id":                        team.SSOTeamID,
-					"permission_manage_workspaces":       team.Access.ManageWorkspaces,
-					"permission_manage_vcs":              team.Access.ManageWorkspaces,
-					"permission_manage_modules":          team.Access.ManageWorkspaces,
-					"permission_manage_providers":        team.Access.ManageWorkspaces,
-					"permission_manage_policies":         team.Access.ManageWorkspaces,
-					"permission_manage_policy_overrides": team.Access.ManageWorkspaces,
+					"permission_manage_workspaces":       team.ManageWorkspaces,
+					"permission_manage_vcs":              team.ManageWorkspaces,
+					"permission_manage_modules":          team.ManageWorkspaces,
+					"permission_manage_providers":        team.ManageWorkspaces,
+					"permission_manage_policies":         team.ManageWorkspaces,
+					"permission_manage_policy_overrides": team.ManageWorkspaces,
 				},
 			)
 			return err
@@ -120,7 +120,7 @@ FROM teams
 WHERE name              = $1
 AND   organization_name = $2
 `, name, organization)
-	return sql.CollectOneRow(rows, db.scan)
+	return sql.CollectOneRow(rows, scan)
 }
 
 func (db *pgdb) getTeamByID(ctx context.Context, id resource.TfeID) (*Team, error) {
@@ -129,7 +129,7 @@ SELECT team_id, name, created_at, permission_manage_workspaces, permission_manag
 FROM teams
 WHERE team_id = $1
 `, id)
-	return sql.CollectOneRow(rows, db.scan)
+	return sql.CollectOneRow(rows, scan)
 }
 
 func (db *pgdb) getTeamByTokenID(ctx context.Context, tokenID resource.TfeID) (*Team, error) {
@@ -139,7 +139,7 @@ FROM teams t
 JOIN team_tokens tt USING (team_id)
 WHERE tt.team_token_id = $1
 `, tokenID)
-	return sql.CollectOneRow(rows, db.scan)
+	return sql.CollectOneRow(rows, scan)
 }
 
 func (db *pgdb) listTeams(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
@@ -148,7 +148,7 @@ SELECT team_id, name, created_at, permission_manage_workspaces, permission_manag
 FROM teams
 WHERE organization_name = $1
 `, organization)
-	return sql.CollectRows(rows, db.scan)
+	return sql.CollectRows(rows, scan)
 }
 
 func (db *pgdb) deleteTeam(ctx context.Context, teamID resource.TfeID) error {
@@ -183,7 +183,7 @@ INSERT INTO team_tokens (
       expiry        = @expiry
 `,
 		pgx.NamedArgs{
-			"team_token_id": token.TfeID,
+			"team_token_id": token.ID,
 			"team_id":       token.TeamID,
 			"created_at":    token.CreatedAt,
 			"expiry":        token.Expiry,
@@ -198,7 +198,7 @@ SELECT team_token_id, description, created_at, team_id, expiry
 FROM team_tokens
 WHERE team_id = $1
 `, teamID)
-	token, err := pgx.CollectExactlyOneRow(rows, db.scanToken)
+	token, err := pgx.CollectExactlyOneRow(rows, scanToken)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, internal.ErrResourceNotFound
 	} else if err != nil {
@@ -216,7 +216,7 @@ WHERE team_id = $1
 	return err
 }
 
-func (db *pgdb) scan(row pgx.CollectableRow) (*Team, error) {
+func scan(row pgx.CollectableRow) (*Team, error) {
 	team, err := pgx.RowToAddrOfStructByName[Team](row)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Team, error) {
 	return team, nil
 }
 
-func (db *pgdb) scanToken(row pgx.CollectableRow) (*Token, error) {
+func scanToken(row pgx.CollectableRow) (*Token, error) {
 	token, err := pgx.RowToAddrOfStructByName[Token](row)
 	if err != nil {
 		return nil, err

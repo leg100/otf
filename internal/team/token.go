@@ -16,11 +16,10 @@ const TeamTokenKind resource.Kind = "tt"
 type (
 	// Token provides information about an API token for a team.
 	Token struct {
-		resource.TfeID
-
-		CreatedAt time.Time
+		ID        resource.TfeID `db:"team_token_id"`
+		CreatedAt time.Time      `db:"created_at"`
 		// Token belongs to a team
-		TeamID resource.TfeID
+		TeamID resource.TfeID `db:"team_id"`
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -39,7 +38,7 @@ type (
 
 func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte, error) {
 	tt := Token{
-		TfeID:     resource.NewTfeID(TeamTokenKind),
+		ID:        resource.NewTfeID(TeamTokenKind),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		TeamID:    opts.TeamID,
 		Expiry:    opts.Expiry,
@@ -48,7 +47,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 	if opts.Expiry != nil {
 		newTokenOptions = append(newTokenOptions, tokens.WithExpiry(*opts.Expiry))
 	}
-	token, err := f.tokens.NewToken(tt.TfeID, newTokenOptions...)
+	token, err := f.tokens.NewToken(tt.ID, newTokenOptions...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -57,7 +56,7 @@ func (f *teamTokenFactory) NewTeamToken(opts CreateTokenOptions) (*Token, []byte
 
 func (t *Token) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", t.TfeID.String()),
+		slog.String("id", t.ID.String()),
 		slog.String("team_id", t.TeamID.String()),
 	}
 	if t.Expiry != nil {

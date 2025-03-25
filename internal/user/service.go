@@ -223,7 +223,7 @@ func (a *Service) Delete(ctx context.Context, username string) error {
 func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving team: %w", err)
 	}
 
 	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization})

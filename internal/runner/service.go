@@ -144,12 +144,7 @@ func NewService(opts ServiceOptions) *Service {
 		}
 		// Agent runner hasn't registered yet, so set subject to a runner with a
 		// agent pool info, which will be used when registering the runner below.
-		return &unregistered{pool: &RunnerMetaAgentPool{
-			ID:               pool.ID,
-			Name:             pool.Name,
-			OrganizationName: pool.Organization,
-			TokenID:          tokenID,
-		}}, nil
+		return &unregistered{pool: pool}, nil
 	})
 	// create jobs when a plan or apply is enqueued
 	opts.RunService.AfterEnqueuePlan(svc.createJob)

@@ -100,7 +100,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_workspaces"
 						id="manage_workspaces"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageWorkspaces || props.team.IsOwners() }
+						checked?={ props.team.ManageWorkspaces || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -115,7 +115,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_vcs"
 						id="manage_vcs"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageVCS || props.team.IsOwners() }
+						checked?={ props.team.ManageVCS || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -130,7 +130,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_modules"
 						id="manage_modules"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageModules || props.team.IsOwners() }
+						checked?={ props.team.ManageModules || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
