@@ -170,6 +170,14 @@ func CollectOneType[T any](row pgx.Rows) (T, error) {
 	return result, nil
 }
 
+func CollectExactlyOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
+	collected, err := pgx.CollectExactlyOneRow(rows, fn)
+	if err != nil {
+		return *new(T), Error(err)
+	}
+	return collected, nil
+}
+
 // Error converts the sql error into a domain error.
 func Error(err error) error {
 	var pgErr *pgconn.PgError
