@@ -351,8 +351,8 @@ SET
     description = $3,
     category = $4,
     sensitive = $5,
-    hcl = $6
-    version_id = $7,
+    hcl = $6,
+    version_id = $7
 WHERE variable_id = $8
 `,
 		v.Key,

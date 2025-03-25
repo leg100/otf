@@ -31,10 +31,10 @@ type (
 		OrganizationScoped bool `db:"organization_scoped"`
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
-		AllowedWorkspaces []resource.TfeID `db:"allowed_workspaces"`
+		AllowedWorkspaces []resource.TfeID `db:"allowed_workspace_ids"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
-		AssignedWorkspaces []resource.TfeID `db:"assigned_workspaces"`
+		AssignedWorkspaces []resource.TfeID `db:"workspace_ids"`
 	}
 
 	CreateAgentPoolOptions struct {

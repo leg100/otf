@@ -296,9 +296,9 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeI
 func (a *Service) SetSiteAdmins(ctx context.Context, usernames ...string) error {
 	for _, username := range usernames {
 		_, err := a.db.getUser(ctx, UserSpec{Username: &username})
-		if err == internal.ErrResourceNotFound {
+		if errors.Is(err, internal.ErrResourceNotFound) {
 			if _, err = a.Create(ctx, username); err != nil {
-				return err
+				return fmt.Errorf("creating site admin users: %w", err)
 			}
 		}
 	}

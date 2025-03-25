@@ -11,17 +11,33 @@ import (
 
 type (
 	// Team is a group of users sharing a level of authorization.
+	//
+	// NOTE: the ordering of fields must match the ordering of their respective
+	// columns of the `teams` table in postgres in order for pgx.RowToStruct...
+	// to scan teams into the user struct. See:
+	//
+	// https://github.com/jackc/pgx/issues/2180#issuecomment-2508089376
 	Team struct {
 		ID        resource.TfeID `jsonapi:"primary,teams" db:"team_id"`
 		Name      string         `jsonapi:"attribute" json:"name" db:"name"`
 		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
-		OrganizationAccess
+
+		ManageWorkspaces bool `db:"permission_manage_workspaces"` // admin access on all workspaces
+		ManageVCS        bool `db:"permission_manage_vcs"`        // manage VCS providers
+		ManageModules    bool `db:"permission_manage_modules"`    // manage module registry
+
 		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization" db:"organization_name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
-		Visibility string
 		SSOTeamID  *string `db:"sso_team_id"`
+		Visibility string
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		ManagePolicies        bool `db:"permission_manage_policies"`
+		ManagePolicyOverrides bool `db:"permission_manage_policy_overrides"`
+		ManageProviders       bool `db:"permission_manage_providers"`
 	}
 
 	CreateTeamOptions struct {
@@ -45,19 +61,6 @@ type (
 		// go-tfe integration tests
 		SSOTeamID  *string
 		Visibility *string
-	}
-
-	// OrganizationAccess defines a team's organization access.
-	OrganizationAccess struct {
-		ManageWorkspaces bool `db:"permission_manage_workspaces"` // admin access on all workspaces
-		ManageVCS        bool `db:"permission_manage_vcs"`        // manage VCS providers
-		ManageModules    bool `db:"permission_manage_modules"`    // manage module registry
-
-		// TFE fields that OTF does not support but persists merely to pass the
-		// go-tfe integration tests
-		ManageProviders       bool `db:"permission_manage_providers"`
-		ManagePolicies        bool `db:"permission_manage_policies"`
-		ManagePolicyOverrides bool `db:"permission_manage_policy_overrides"`
 	}
 
 	// OrganizationAccessOptions defines access to be granted upon team creation

@@ -18,9 +18,9 @@ type (
 	// agentToken represents the authentication token for an agent.
 	// NOTE: the cryptographic token itself is not retained.
 	agentToken struct {
-		ID          resource.TfeID `jsonapi:"primary,agent_tokens"`
+		ID          resource.TfeID `jsonapi:"primary,agent_tokens" db:"agent_token_id"`
 		CreatedAt   time.Time
-		AgentPoolID resource.TfeID `jsonapi:"attribute" json:"agent_pool_id"`
+		AgentPoolID resource.TfeID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
 		Description string         `jsonapi:"attribute" json:"description"`
 	}
 

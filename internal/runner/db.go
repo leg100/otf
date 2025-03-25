@@ -175,7 +175,7 @@ SELECT
       AND j.status IN ('allocated', 'running')
     ) AS current_jobs
 FROM runners a
-JOIN agent_pools ap USING (agent_poorunner_idl_id)
+JOIN agent_pools ap USING (agent_pool_id)
 WHERE ap.agent_pool_id = $1
 ORDER BY last_ping_at DESC
 `, poolID)

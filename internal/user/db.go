@@ -270,6 +270,9 @@ func scan(row pgx.CollectableRow) (*User, error) {
 	}
 	user.CreatedAt = user.CreatedAt.UTC()
 	user.UpdatedAt = user.UpdatedAt.UTC()
+	for _, team := range user.Teams {
+		team.CreatedAt = team.CreatedAt.UTC()
+	}
 	return user, nil
 }
 
