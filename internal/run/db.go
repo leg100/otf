@@ -667,12 +667,24 @@ INSERT INTO phase_status_timestamps (
 	return err
 }
 
+type phaseStatusTimestampModel struct {
+	RunID      resource.TfeID
+	PhaseModel string
+	Status     PhaseStatus
+	Timestamp  time.Time
+}
+
+type runStatusTimestampModel struct {
+	RunID     resource.TfeID
+	Status    runstatus.Status
+	Timestamp time.Time
+}
+
 func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	var (
 		run                   Run
-		runStatusTimestamps   []RunStatusTimestampModel
-		planStatusTimestamps  []PhaseStatusTimestampModel
-		applyStatusTimestamps []PhaseStatusTimestampModel
+		planStatusTimestamps  []PhaseStatusTimestamp
+		applyStatusTimestamps []PhaseStatusTimestamp
 	)
 	err := row.Scan(
 		&run.ID,
@@ -702,47 +714,27 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		&run.Latest,
 		&run.Organization,
 		&run.CostEstimationEnabled,
-		&runStatusTimestamps,
+		&run.StatusTimestamps,
 		&planStatusTimestamps,
 		&applyStatusTimestamps,
 		&run.Variables,
 		&run.IngressAttributes,
 	)
-	// convert timestamps from db result and sort them according to timestamp
-	// (earliest first)
-	run.StatusTimestamps = make([]StatusTimestamp, len(runStatusTimestamps))
-	for i, rst := range runStatusTimestamps {
-		run.StatusTimestamps[i] = StatusTimestamp{
-			Status:    runstatus.Status(rst.Status.String),
-			Timestamp: rst.Timestamp.Time,
-		}
-	}
+	run.Plan.RunID = run.ID
+	run.Plan.PhaseType = internal.PlanPhase
+	run.Plan.StatusTimestamps = planStatusTimestamps
+	run.Apply.RunID = run.ID
+	run.Apply.PhaseType = internal.ApplyPhase
+	run.Apply.StatusTimestamps = applyStatusTimestamps
+	// sort them according to timestamp (earliest first)
 	sort.Slice(run.StatusTimestamps, func(i, j int) bool {
 		return run.StatusTimestamps[i].Timestamp.Before(run.StatusTimestamps[j].Timestamp)
 	})
-	run.Plan.StatusTimestamps = make([]PhaseStatusTimestamp, len(planStatusTimestamps))
-	for i, pst := range planStatusTimestamps {
-		run.Plan.StatusTimestamps[i] = PhaseStatusTimestamp{
-			Status:    PhaseStatus(pst.Status.String),
-			Timestamp: pst.Timestamp.Time,
-		}
-	}
 	sort.Slice(run.Plan.StatusTimestamps, func(i, j int) bool {
 		return run.Plan.StatusTimestamps[i].Timestamp.Before(run.Plan.StatusTimestamps[j].Timestamp)
 	})
-	run.Apply.StatusTimestamps = make([]PhaseStatusTimestamp, len(applyStatusTimestamps))
-	for i, ast := range applyStatusTimestamps {
-		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
-			Status:    PhaseStatus(ast.Status.String),
-			Timestamp: ast.Timestamp.Time,
-		}
-	}
 	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
 		return run.Apply.StatusTimestamps[i].Timestamp.Before(run.Apply.StatusTimestamps[j].Timestamp)
 	})
-	run.Plan.RunID = run.ID
-	run.Plan.PhaseType = internal.PlanPhase
-	run.Apply.RunID = run.ID
-	run.Apply.PhaseType = internal.ApplyPhase
 	return &run, err
 }
