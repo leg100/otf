@@ -234,6 +234,6 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*VCSProvider, error) {
 		return nil, err
 	}
 	provider.ID = model.VCSProviderID
-	provider.CreatedAt = model.CreatedAt.UTC()
+	provider.CreatedAt = model.CreatedAt
 	return provider, nil
 }

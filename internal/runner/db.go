@@ -193,13 +193,7 @@ RETURNING runner_id, name, version, max_jobs, ip_address, last_ping_at, last_sta
 }
 
 func scanRunner(row pgx.CollectableRow) (*RunnerMeta, error) {
-	runner, err := pgx.RowToAddrOfStructByName[RunnerMeta](row)
-	if err != nil {
-		return nil, err
-	}
-	runner.LastPingAt = runner.LastPingAt.UTC()
-	runner.LastStatusAt = runner.LastStatusAt.UTC()
-	return runner, nil
+	return pgx.RowToAddrOfStructByName[RunnerMeta](row)
 }
 
 // jobs
@@ -453,12 +447,7 @@ WHERE agent_token_id = $1
 }
 
 func scanAgentToken(row pgx.CollectableRow) (*agentToken, error) {
-	token, err := pgx.RowToAddrOfStructByName[agentToken](row)
-	if err != nil {
-		return nil, err
-	}
-	token.CreatedAt = token.CreatedAt.UTC()
-	return token, nil
+	return pgx.RowToAddrOfStructByName[agentToken](row)
 }
 
 // agent pools
@@ -631,10 +620,5 @@ RETURNING agent_pool_id, name, created_at, organization_name, organization_scope
 }
 
 func scanAgentPool(row pgx.CollectableRow) (*Pool, error) {
-	pool, err := pgx.RowToAddrOfStructByName[Pool](row)
-	if err != nil {
-		return nil, err
-	}
-	pool.CreatedAt = pool.CreatedAt.UTC()
-	return pool, nil
+	return pgx.RowToAddrOfStructByName[Pool](row)
 }

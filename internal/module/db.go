@@ -262,12 +262,6 @@ func (db *pgdb) scanModule(row pgx.CollectableRow) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	mod.CreatedAt = mod.CreatedAt.UTC()
-	mod.UpdatedAt = mod.UpdatedAt.UTC()
-	for _, v := range mod.Versions {
-		v.CreatedAt = v.CreatedAt.UTC()
-		v.UpdatedAt = v.UpdatedAt.UTC()
-	}
 	// versions are always maintained in descending order
 	//
 	// TODO: this invariant should be part of a constructor

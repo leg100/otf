@@ -597,7 +597,5 @@ func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
 	} else if lockRunID != nil {
 		ws.Lock = lockRunID
 	}
-	ws.CreatedAt = ws.CreatedAt.UTC()
-	ws.UpdatedAt = ws.UpdatedAt.UTC()
 	return &ws, err
 }

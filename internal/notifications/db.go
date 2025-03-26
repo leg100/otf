@@ -128,11 +128,5 @@ RETURNING notification_configuration_id
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*Config, error) {
-	cfg, err := pgx.RowToAddrOfStructByName[Config](row)
-	if err != nil {
-		return nil, err
-	}
-	cfg.CreatedAt = cfg.CreatedAt.UTC()
-	cfg.UpdatedAt = cfg.UpdatedAt.UTC()
-	return cfg, nil
+	return pgx.RowToAddrOfStructByName[Config](row)
 }

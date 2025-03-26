@@ -146,7 +146,7 @@ func (db *pgdb) scanVersion(row pgx.CollectableRow) (*Version, error) {
 	}
 	sv := Version{
 		ID:          model.StateVersionID,
-		CreatedAt:   model.CreatedAt.UTC(),
+		CreatedAt:   model.CreatedAt,
 		Serial:      model.Serial,
 		State:       model.State,
 		Status:      model.Status,

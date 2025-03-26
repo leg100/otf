@@ -213,14 +213,9 @@ WHERE organization_name = $1
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*Organization, error) {
-	org, err := pgx.RowToAddrOfStructByName[Organization](row)
-	org.CreatedAt = org.CreatedAt.UTC()
-	org.UpdatedAt = org.UpdatedAt.UTC()
-	return org, err
+	return pgx.RowToAddrOfStructByName[Organization](row)
 }
 
 func (db *pgdb) scanToken(row pgx.CollectableRow) (*OrganizationToken, error) {
-	token, err := pgx.RowToAddrOfStructByName[OrganizationToken](row)
-	token.CreatedAt = token.CreatedAt.UTC()
-	return token, err
+	return pgx.RowToAddrOfStructByName[OrganizationToken](row)
 }

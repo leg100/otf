@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
@@ -674,7 +673,6 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		runStatusTimestamps   []RunStatusTimestampModel
 		planStatusTimestamps  []PhaseStatusTimestampModel
 		applyStatusTimestamps []PhaseStatusTimestampModel
-		ingressAttributes     *IngressAttributeModel
 	)
 	err := row.Scan(
 		&run.ID,
@@ -708,19 +706,15 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 		&planStatusTimestamps,
 		&applyStatusTimestamps,
 		&run.Variables,
-		&ingressAttributes,
+		&run.IngressAttributes,
 	)
-	run.CreatedAt = run.CreatedAt.UTC()
-	if run.CancelSignaledAt != nil {
-		run.CancelSignaledAt = internal.Time(run.CancelSignaledAt.UTC())
-	}
 	// convert timestamps from db result and sort them according to timestamp
 	// (earliest first)
 	run.StatusTimestamps = make([]StatusTimestamp, len(runStatusTimestamps))
 	for i, rst := range runStatusTimestamps {
 		run.StatusTimestamps[i] = StatusTimestamp{
 			Status:    runstatus.Status(rst.Status.String),
-			Timestamp: rst.Timestamp.Time.UTC(),
+			Timestamp: rst.Timestamp.Time,
 		}
 	}
 	sort.Slice(run.StatusTimestamps, func(i, j int) bool {
@@ -730,7 +724,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	for i, pst := range planStatusTimestamps {
 		run.Plan.StatusTimestamps[i] = PhaseStatusTimestamp{
 			Status:    PhaseStatus(pst.Status.String),
-			Timestamp: pst.Timestamp.Time.UTC(),
+			Timestamp: pst.Timestamp.Time,
 		}
 	}
 	sort.Slice(run.Plan.StatusTimestamps, func(i, j int) bool {
@@ -740,7 +734,7 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	for i, ast := range applyStatusTimestamps {
 		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
 			Status:    PhaseStatus(ast.Status.String),
-			Timestamp: ast.Timestamp.Time.UTC(),
+			Timestamp: ast.Timestamp.Time,
 		}
 	}
 	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
@@ -750,9 +744,5 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	run.Plan.PhaseType = internal.PlanPhase
 	run.Apply.RunID = run.ID
 	run.Apply.PhaseType = internal.ApplyPhase
-	if ingressAttributes != nil {
-		run.IngressAttributes = configversion.NewIngressFromRow((*configversion.IngressAttributeModel)(ingressAttributes))
-	}
 	return &run, err
-
 }

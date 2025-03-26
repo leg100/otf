@@ -285,53 +285,5 @@ INSERT INTO configuration_version_status_timestamps (
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*ConfigurationVersion, error) {
-	var (
-		cv         ConfigurationVersion
-		timestamps []StatusTimestampModel
-		ingress    *IngressAttributeModel
-	)
-	err := row.Scan(
-		&cv.ID,
-		&cv.CreatedAt,
-		&cv.AutoQueueRuns,
-		&cv.Source,
-		&cv.Speculative,
-		&cv.Status,
-		&cv.WorkspaceID,
-		&timestamps,
-		&ingress,
-	)
-	if err != nil {
-		return nil, err
-	}
-	cv.CreatedAt = cv.CreatedAt.UTC()
-	if ingress != nil {
-		cv.IngressAttributes = NewIngressFromRow(ingress)
-	}
-	cv.StatusTimestamps = make([]ConfigurationVersionStatusTimestamp, len(timestamps))
-	for i, ty := range timestamps {
-		cv.StatusTimestamps[i] = ConfigurationVersionStatusTimestamp{
-			Status:    ConfigurationStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time.UTC(),
-		}
-	}
-	return &cv, nil
-}
-
-func NewIngressFromRow(row *IngressAttributeModel) *IngressAttributes {
-	return &IngressAttributes{
-		Branch:            row.Branch.String,
-		CommitSHA:         row.CommitSHA.String,
-		CommitURL:         row.CommitURL.String,
-		Repo:              row.Identifier.String,
-		IsPullRequest:     row.IsPullRequest.Bool,
-		PullRequestNumber: int(row.PullRequestNumber.Int32),
-		PullRequestURL:    row.PullRequestURL.String,
-		PullRequestTitle:  row.PullRequestTitle.String,
-		SenderUsername:    row.SenderUsername.String,
-		SenderAvatarURL:   row.SenderAvatarURL.String,
-		SenderHTMLURL:     row.SenderHTMLURL.String,
-		Tag:               row.Tag.String,
-		OnDefaultBranch:   row.IsPullRequest.Bool,
-	}
+	return pgx.RowToAddrOfStructByName[ConfigurationVersion](row)
 }

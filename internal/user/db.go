@@ -264,16 +264,7 @@ RETURNING username
 }
 
 func scan(row pgx.CollectableRow) (*User, error) {
-	user, err := pgx.RowToAddrOfStructByName[User](row)
-	if err != nil {
-		return nil, fmt.Errorf("scanning user row: %w", err)
-	}
-	user.CreatedAt = user.CreatedAt.UTC()
-	user.UpdatedAt = user.UpdatedAt.UTC()
-	for _, team := range user.Teams {
-		team.CreatedAt = team.CreatedAt.UTC()
-	}
-	return user, nil
+	return pgx.RowToAddrOfStructByName[User](row)
 }
 
 //
@@ -330,10 +321,5 @@ WHERE token_id = $1
 }
 
 func scanToken(row pgx.CollectableRow) (*UserToken, error) {
-	token, err := pgx.RowToAddrOfStructByName[UserToken](row)
-	if err != nil {
-		return nil, err
-	}
-	token.CreatedAt = token.CreatedAt.UTC()
-	return token, nil
+	return pgx.RowToAddrOfStructByName[UserToken](row)
 }

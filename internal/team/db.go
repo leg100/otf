@@ -217,19 +217,9 @@ WHERE team_id = $1
 }
 
 func scan(row pgx.CollectableRow) (*Team, error) {
-	team, err := pgx.RowToAddrOfStructByName[Team](row)
-	if err != nil {
-		return nil, err
-	}
-	team.CreatedAt = team.CreatedAt.UTC()
-	return team, nil
+	return pgx.RowToAddrOfStructByName[Team](row)
 }
 
 func scanToken(row pgx.CollectableRow) (*Token, error) {
-	token, err := pgx.RowToAddrOfStructByName[Token](row)
-	if err != nil {
-		return nil, err
-	}
-	token.CreatedAt = token.CreatedAt.UTC()
-	return token, nil
+	return pgx.RowToAddrOfStructByName[Token](row)
 }

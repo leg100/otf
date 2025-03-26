@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leg100/otf/internal"
 )
@@ -65,6 +67,15 @@ func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error
 			}
 			conn.TypeMap().RegisterType(dt)
 		}
+		// Set location to UTC for times scanned from database. This ensures
+		// that tests for equality pass.
+		//
+		// See: https://github.com/jackc/pgx/issues/1945#issuecomment-2002077247
+		conn.TypeMap().RegisterType(&pgtype.Type{
+			Name:  "timestamptz",
+			OID:   pgtype.TimestamptzOID,
+			Codec: &pgtype.TimestamptzCodec{ScanLocation: time.UTC},
+		})
 		return nil
 	}
 
