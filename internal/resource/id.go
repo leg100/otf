@@ -56,7 +56,7 @@ func MustHardcodeTfeID(kind Kind, suffix string) TfeID {
 func ParseTfeID(s string) (TfeID, error) {
 	parts := strings.Split(s, "-")
 	if len(parts) != 2 {
-		return TfeID{}, fmt.Errorf("malformed resource ID: %s", s)
+		return TfeID{}, fmt.Errorf("malformed ID: %s", s)
 	}
 	kind := parts[0]
 	if len(kind) < 2 {
