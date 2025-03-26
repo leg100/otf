@@ -36,9 +36,9 @@ type (
 		UpdatedAt    time.Time      `db:"updated_at"`
 		Name         string
 		Provider     string
-		Organization resource.OrganizationName // Module belongs to an organization
+		Organization resource.OrganizationName `db:"organization_name"` // Module belongs to an organization
 		Status       ModuleStatus
-		Versions     []ModuleVersion         // versions sorted in descending order
+		Versions     []ModuleVersion         `db:"module_versions"` // versions sorted in descending order
 		Connection   *connections.Connection // optional vcs repo connection
 	}
 

@@ -249,12 +249,16 @@ RETURNING workspace_id
 	return err
 }
 
-func (db *pgdb) discardPending(ctx context.Context, workspaceID resource.TfeID) error {
+func (db *pgdb) discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error {
 	_, err := db.Exec(ctx, `
 UPDATE state_versions
 SET status = 'discarded'
 WHERE workspace_id = $1
 AND status = 'pending'
 `, workspaceID)
+	// Not an error if there are no pending versions to discard.
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		return nil
+	}
 	return err
 }

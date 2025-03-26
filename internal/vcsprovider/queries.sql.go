@@ -44,8 +44,8 @@ type FindVCSProviderRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
-	GithubApp        *GithubApp
-	GithubAppInstall *GithubAppInstall
+	GithubApp        *githubAppModel
+	GithubAppInstall *githubAppInstallModel
 }
 
 func (q *Queries) FindVCSProvider(ctx context.Context, db DBTX, vcsProviderID resource.TfeID) (FindVCSProviderRow, error) {
@@ -84,8 +84,8 @@ type FindVCSProviderForUpdateRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
-	GithubApp        *GithubApp
-	GithubAppInstall *GithubAppInstall
+	GithubApp        *githubAppModel
+	GithubAppInstall *githubAppInstallModel
 }
 
 func (q *Queries) FindVCSProviderForUpdate(ctx context.Context, db DBTX, vcsProviderID resource.TfeID) (FindVCSProviderForUpdateRow, error) {
@@ -122,8 +122,8 @@ type FindVCSProvidersRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
-	GithubApp        *GithubApp
-	GithubAppInstall *GithubAppInstall
+	GithubApp        *githubAppModel
+	GithubAppInstall *githubAppInstallModel
 }
 
 func (q *Queries) FindVCSProviders(ctx context.Context, db DBTX) ([]FindVCSProvidersRow, error) {
@@ -174,8 +174,8 @@ type FindVCSProvidersByGithubAppInstallIDRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
-	GithubApp        *GithubApp
-	GithubAppInstall *GithubAppInstall
+	GithubApp        *githubAppModel
+	GithubAppInstall *githubAppInstallModel
 }
 
 func (q *Queries) FindVCSProvidersByGithubAppInstallID(ctx context.Context, db DBTX, installID pgtype.Int8) ([]FindVCSProvidersByGithubAppInstallIDRow, error) {
@@ -226,8 +226,8 @@ type FindVCSProvidersByOrganizationRow struct {
 	VCSKind          pgtype.Text
 	OrganizationName resource.OrganizationName
 	GithubAppID      pgtype.Int8
-	GithubApp        *GithubApp
-	GithubAppInstall *GithubAppInstall
+	GithubApp        *githubAppModel
+	GithubAppInstall *githubAppInstallModel
 }
 
 func (q *Queries) FindVCSProvidersByOrganization(ctx context.Context, db DBTX, organizationName resource.OrganizationName) ([]FindVCSProvidersByOrganizationRow, error) {

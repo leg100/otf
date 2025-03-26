@@ -66,7 +66,7 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-	(r.*)::"repo_connection" AS repo_connection,
+	(r.*)::"repo_connections" AS repo_connection,
     (
         SELECT array_agg(v.*)::module_versions[]
         FROM module_versions v

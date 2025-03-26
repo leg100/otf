@@ -58,22 +58,6 @@ type DestinationType struct {
 	Name pgtype.Text
 }
 
-type GithubApp struct {
-	GithubAppID   pgtype.Int8
-	WebhookSecret pgtype.Text
-	PrivateKey    pgtype.Text
-	Slug          pgtype.Text
-	Organization  pgtype.Text
-}
-
-type GithubAppInstall struct {
-	GithubAppID   pgtype.Int8
-	InstallID     pgtype.Int8
-	Username      pgtype.Text
-	Organization  pgtype.Text
-	VCSProviderID pgtype.Text
-}
-
 type IngressAttributeModel struct {
 	Branch                 pgtype.Text
 	CommitSHA              pgtype.Text
