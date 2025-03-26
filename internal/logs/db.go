@@ -78,12 +78,12 @@ GROUP BY run_id, phase
 `, runID, phase)
 	logs, err := sql.CollectOneRow(rows, pgx.RowTo[[]byte])
 	if err != nil {
-		// Don't consider no rows an error because logs may not have been
+		// Don't consider no logs an error because logs may not have been
 		// uploaded yet.
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, internal.ErrResourceNotFound) {
 			return nil, nil
 		}
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	return logs, nil
 }

@@ -445,7 +445,7 @@ WHERE workspace_id = $1
 `,
 		workspaceID)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
@@ -467,7 +467,7 @@ INSERT INTO workspace_permissions (
 		role.String(),
 	)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
@@ -483,14 +483,14 @@ AND team_id = $2
 		teamID,
 	)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
 
-	row := db.Conn(ctx).QueryRow(ctx, `
+	row := db.QueryRow(ctx, `
 SELECT
     w.global_remote_state,
     (
@@ -507,7 +507,7 @@ WHERE w.workspace_id = $1
 		perms             []WorkspacePermission
 	)
 	if err := row.Scan(&globalRemoteState, &perms); err != nil {
-		return authz.WorkspacePolicy{}, sql.Error(err)
+		return authz.WorkspacePolicy{}, err
 	}
 	p := authz.WorkspacePolicy{
 		GlobalRemoteState: globalRemoteState,
@@ -599,5 +599,5 @@ func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
 	}
 	ws.CreatedAt = ws.CreatedAt.UTC()
 	ws.UpdatedAt = ws.UpdatedAt.UTC()
-	return &ws, sql.Error(err)
+	return &ws, err
 }

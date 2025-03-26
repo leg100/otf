@@ -90,13 +90,30 @@ func (db *DB) Query(ctx context.Context, sql string, args ...any) pgx.Rows {
 	return rows
 }
 
+// queryRowResult wraps the error returned by pgx.Row.Scan()
+type queryRowResult struct {
+	pgx.Row
+}
+
+func (r *queryRowResult) Scan(dest ...any) error {
+	if err := r.Row.Scan(dest...); err != nil {
+		return toError(err)
+	}
+	return nil
+}
+
+func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) *queryRowResult {
+	row := db.Conn(ctx).QueryRow(ctx, sql, args...)
+	return &queryRowResult{Row: row}
+}
+
 // Exec executes the sql with the given args. It assumes the command is a row
-// affecting command and returns and error if the command does not affect any
+// affecting command and returns an error if the command does not affect any
 // rows.
 func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	cmdTag, err := db.Conn(ctx).Exec(ctx, sql, args...)
 	if err != nil {
-		return pgconn.CommandTag{}, Error(err)
+		return pgconn.CommandTag{}, toError(err)
 	}
 	if cmdTag.RowsAffected() == 0 {
 		return pgconn.CommandTag{}, internal.ErrResourceNotFound
@@ -107,12 +124,8 @@ func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.Command
 // Int is a convenience wrapper for executing a query that returns a single
 // integer.
 func (db *DB) Int(ctx context.Context, sql string, args ...any) (int64, error) {
-	row := db.Conn(ctx).QueryRow(ctx, sql, args...)
-	var count int64
-	if err := row.Scan(&count); err != nil {
-		return 0, Error(err)
-	}
-	return count, nil
+	rows := db.Query(ctx, sql, args...)
+	return CollectOneRow(rows, pgx.RowTo[int64])
 }
 
 // Tx provides the caller with a callback in which all operations are conducted

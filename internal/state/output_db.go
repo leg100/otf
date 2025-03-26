@@ -19,7 +19,7 @@ type outputModel struct {
 
 func (m outputModel) toOutput() *Output {
 	return &Output{
-		ID:             m.StateVersionID,
+		ID:             m.StateVersionOutputID,
 		Name:           m.Name,
 		Type:           m.Type,
 		Value:          m.Value,

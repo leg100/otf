@@ -47,7 +47,7 @@ FROM latest_terraform_version
 		checkpoint time.Time
 	)
 	if err := rows.Scan(&version, &checkpoint); err != nil {
-		return "", time.Time{}, sql.Error(err)
+		return "", time.Time{}, err
 	}
 	return version, checkpoint, nil
 }

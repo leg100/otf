@@ -66,7 +66,7 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-	(r.*)::"repo_connections" AS repo_connection,
+	(r.*)::"repo_connections" AS connection,
     (
         SELECT array_agg(v.*)::module_versions[]
         FROM module_versions v
@@ -174,12 +174,12 @@ INSERT INTO module_versions (
     module_id,
     status
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
+	@id,
+	@version,
+	@created_at,
+	@updated_at,
+	@module_id,
+	@status
 )`, pgx.NamedArgs{
 		"id":         version.ID,
 		"version":    version.Version,

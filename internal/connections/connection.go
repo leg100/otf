@@ -15,11 +15,13 @@ import (
 
 type (
 	// Connection is a connection between a VCS repo and an OTF resource.
+	//
+	// NOTE: order of fields must be same as that of its postgres table columns.
 	Connection struct {
 		ModuleID      *resource.TfeID `db:"module_id"`
 		WorkspaceID   *resource.TfeID `db:"workspace_id"`
-		VCSProviderID resource.TfeID  `db:"vcs_provider_id"`
 		Repo          string
+		VCSProviderID resource.TfeID `db:"vcs_provider_id"`
 	}
 
 	ConnectOptions struct {

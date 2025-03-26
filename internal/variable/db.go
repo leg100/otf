@@ -310,7 +310,7 @@ AND workspace_id = $2
 		}
 		return nil
 	})
-	return sql.Error(err)
+	return err
 }
 
 func (pdb *pgdb) createVariable(ctx context.Context, v *Variable) error {
@@ -344,7 +344,7 @@ INSERT INTO variables (
 		v.HCL,
 		v.VersionID,
 	)
-	return sql.Error(err)
+	return err
 }
 
 func (pdb *pgdb) updateVariable(ctx context.Context, v *Variable) error {

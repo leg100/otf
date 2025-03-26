@@ -46,5 +46,5 @@ func Updater[T any](
 		}
 		return nil
 	})
-	return row, Error(err)
+	return row, toError(err)
 }

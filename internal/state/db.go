@@ -227,7 +227,6 @@ FROM state_versions
 WHERE state_version_id = $1
 `, id)
 	if err != nil {
-		err = sql.Error(err)
 		var fkerr *internal.ForeignKeyError
 		if errors.As(err, &fkerr) {
 			if fkerr.ConstraintName == "current_state_version_id_fk" && fkerr.TableName == "workspaces" {

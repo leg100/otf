@@ -38,7 +38,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 		VCSProviderID: hook.vcsProviderID,
 	})
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	if len(result) > 0 {
 		return db.fromRow(hookRow(result[0]))
@@ -54,7 +54,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 		VCSProviderID: hook.vcsProviderID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("inserting webhook into db: %w", sql.Error(err))
+		return nil, fmt.Errorf("inserting webhook into db: %w", err)
 	}
 	return db.fromRow(hookRow(insertResult))
 }
@@ -62,7 +62,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 	result, err := q.FindRepohookByID(ctx, db.Conn(ctx), sql.UUID(id))
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	return db.fromRow(hookRow(result))
 }
@@ -70,13 +70,13 @@ func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 	result, err := q.FindRepohooks(ctx, db.Conn(ctx))
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	hooks := make([]*hook, len(result))
 	for i, row := range result {
 		hook, err := db.fromRow(hookRow(row))
 		if err != nil {
-			return nil, sql.Error(err)
+			return nil, err
 		}
 		hooks[i] = hook
 	}
@@ -86,13 +86,13 @@ func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 	result, err := q.FindUnreferencedRepohooks(ctx, db.Conn(ctx))
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	hooks := make([]*hook, len(result))
 	for i, row := range result {
 		hook, err := db.fromRow(hookRow(row))
 		if err != nil {
-			return nil, sql.Error(err)
+			return nil, err
 		}
 		hooks[i] = hook
 	}
@@ -105,7 +105,7 @@ func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID strin
 		RepohookID: sql.UUID(id),
 	})
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID strin
 func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
 	_, err := q.DeleteRepohookByID(ctx, db.Conn(ctx), sql.UUID(id))
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }

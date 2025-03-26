@@ -6,13 +6,9 @@ package sql
 import (
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -147,7 +143,7 @@ func GetLimit(opts resource.PageOptions) pgtype.Int4 {
 func CollectOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
 	row, err := pgx.CollectOneRow(rows, fn)
 	if err != nil {
-		return *new(T), Error(err)
+		return *new(T), toError(err)
 	}
 	return row, nil
 }
@@ -155,7 +151,7 @@ func CollectOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
 func CollectRows[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) ([]T, error) {
 	collected, err := pgx.CollectRows(rows, fn)
 	if err != nil {
-		return nil, Error(err)
+		return nil, toError(err)
 	}
 	return collected, nil
 }
@@ -165,7 +161,7 @@ func CollectRows[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) ([]T, error) {
 func CollectOneType[T any](row pgx.Rows) (T, error) {
 	result, err := pgx.CollectOneRow(row, pgx.RowTo[T])
 	if err != nil {
-		return *new(T), Error(err)
+		return *new(T), toError(err)
 	}
 	return result, nil
 }
@@ -173,24 +169,7 @@ func CollectOneType[T any](row pgx.Rows) (T, error) {
 func CollectExactlyOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
 	collected, err := pgx.CollectExactlyOneRow(rows, fn)
 	if err != nil {
-		return *new(T), Error(err)
+		return *new(T), toError(err)
 	}
 	return collected, nil
-}
-
-// Error converts the sql error into a domain error.
-func Error(err error) error {
-	var pgErr *pgconn.PgError
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
-		return internal.ErrResourceNotFound
-	case errors.As(err, &pgErr):
-		switch pgErr.Code {
-		case "23503": // foreign key violation
-			return &internal.ForeignKeyError{PgError: pgErr}
-		case "23505": // unique violation
-			return internal.ErrResourceAlreadyExists
-		}
-	}
-	return err
 }

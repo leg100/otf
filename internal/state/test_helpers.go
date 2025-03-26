@@ -39,7 +39,7 @@ func (f *fakeDB) getCurrentVersion(ctx context.Context, workspaceID resource.Tfe
 	return f.current, nil
 }
 
-func (f *fakeDB) discardPending(ctx context.Context, workspaceID resource.TfeID) error {
+func (f *fakeDB) discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error {
 	return nil
 }
 

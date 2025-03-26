@@ -601,7 +601,7 @@ func (s *Service) getLogs(ctx context.Context, runID resource.TfeID, phase inter
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	return data, nil
 }

@@ -15,7 +15,7 @@ type (
 
 		// Organization is the name of the *github* organization that owns the
 		// app. If the app is owned by a user then this is nil.
-		Organization *string `db:"organization_name"`
+		Organization *string `db:"organization"`
 	}
 
 	CreateAppOptions struct {

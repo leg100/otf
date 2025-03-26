@@ -36,10 +36,10 @@ type (
 		UpdatedAt    time.Time      `db:"updated_at"`
 		Name         string
 		Provider     string
-		Organization resource.OrganizationName `db:"organization_name"` // Module belongs to an organization
 		Status       ModuleStatus
-		Versions     []ModuleVersion         `db:"module_versions"` // versions sorted in descending order
-		Connection   *connections.Connection // optional vcs repo connection
+		Organization resource.OrganizationName `db:"organization_name"` // Module belongs to an organization
+		Versions     []ModuleVersion           `db:"module_versions"`   // versions sorted in descending order
+		Connection   *connections.Connection   // optional vcs repo connection
 	}
 
 	ModuleStatus string
@@ -53,7 +53,7 @@ type (
 		CreatedAt   time.Time `db:"created_at"`
 		UpdatedAt   time.Time `db:"updated_at"`
 		Status      ModuleVersionStatus
-		StatusError string         `db:"status_error"`
+		StatusError *string        `db:"status_error"`
 		ModuleID    resource.TfeID `db:"module_id"`
 
 		// TODO: download counters

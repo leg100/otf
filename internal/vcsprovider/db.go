@@ -64,8 +64,8 @@ INSERT INTO github_app_installs (
 	@id,
 	@install_id,
 	@username,
-	@organization
-	@vcs_provider_id,
+	@organization,
+	@vcs_provider_id
 )`, pgx.NamedArgs{
 				"id":              provider.GithubApp.AppCredentials.ID,
 				"install_id":      provider.GithubApp.ID,
@@ -193,7 +193,7 @@ type (
 		WebhookSecret string `db:"webhook_secret"`
 		PrivateKey    string `db:"private_key"`
 		Slug          string
-		Organization  string
+		Organization  *string
 	}
 
 	githubAppInstallModel struct {
@@ -234,6 +234,6 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*VCSProvider, error) {
 		return nil, err
 	}
 	provider.ID = model.VCSProviderID
-	provider.CreatedAt = provider.CreatedAt.UTC()
+	provider.CreatedAt = model.CreatedAt.UTC()
 	return provider, nil
 }
