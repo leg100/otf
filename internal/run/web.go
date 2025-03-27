@@ -24,6 +24,7 @@ type (
 	webHandlers struct {
 		logger               logr.Logger
 		runs                 webRunClient
+		logs                 webLogsClient
 		workspaces           webWorkspaceClient
 		authorizer           webAuthorizer
 		websocketListHandler *components.WebsocketListHandler[*Run, ListOptions]
@@ -39,8 +40,11 @@ type (
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
 
-		getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
+	}
+
+	webLogsClient interface {
+		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
 	}
 
 	webWorkspaceClient interface {
@@ -59,6 +63,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		logger:     opts.Logger,
 		runs:       service,
 		workspaces: opts.WorkspaceService,
+		logs:       opts.LogsService,
 		websocketListHandler: &components.WebsocketListHandler[*Run, ListOptions]{
 			Logger: opts.Logger,
 			Client: service,
@@ -173,12 +178,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return

@@ -12,17 +12,6 @@ type Report struct {
 	Destructions int `json:"destructions"`
 }
 
-func reportFromDB(row *Report) *Report {
-	if row == nil {
-		return nil
-	}
-	return &Report{
-		Additions:    int(row.Additions),
-		Changes:      int(row.Changes),
-		Destructions: int(row.Destructions),
-	}
-}
-
 func (r Report) HasChanges() bool {
 	return r != Report{}
 }

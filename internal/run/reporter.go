@@ -84,7 +84,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	cv, err := r.Configs.Get(ctx, run.ConfigurationVersionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving config: %w", err)
 	}
 
 	// Skip runs with a configuration not sourced from a repo
@@ -94,7 +94,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	ws, err := r.Workspaces.Get(ctx, run.WorkspaceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving workspace: %w", err)
 	}
 	if ws.Connection == nil {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
@@ -102,7 +102,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	client, err := r.VCS.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving vcs client: %w", err)
 	}
 
 	// Report the status and description of the run state

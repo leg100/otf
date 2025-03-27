@@ -16,19 +16,19 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        resource.TfeID            `jsonapi:"primary,organizations"`
-		CreatedAt time.Time                 `jsonapi:"attribute" json:"created-at"`
-		UpdatedAt time.Time                 `jsonapi:"attribute" json:"updated-at"`
-		Name      resource.OrganizationName `jsonapi:"attribute" json:"name"`
+		ID        resource.TfeID            `jsonapi:"primary,organizations" db:"organization_id"`
+		CreatedAt time.Time                 `jsonapi:"attribute" json:"created-at" db:"created_at"`
+		UpdatedAt time.Time                 `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
+		Name      resource.OrganizationName `jsonapi:"attribute" json:"name" db:"name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
-		Email                      *string
-		CollaboratorAuthPolicy     *string
-		SessionRemember            *int
-		SessionTimeout             *int
-		AllowForceDeleteWorkspaces bool
-		CostEstimationEnabled      bool
+		Email                      *string `db:"email"`
+		CollaboratorAuthPolicy     *string `db:"collaborator_auth_policy"`
+		SessionRemember            *int    `db:"session_remember"`
+		SessionTimeout             *int    `db:"session_timeout"`
+		AllowForceDeleteWorkspaces bool    `db:"allow_force_delete_workspaces"`
+		CostEstimationEnabled      bool    `db:"cost_estimation_enabled"`
 	}
 
 	// UpdateOptions represents the options for updating an organization.

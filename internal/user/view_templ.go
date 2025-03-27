@@ -356,7 +356,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if props.team.OrganizationAccess().ManageWorkspaces || props.team.IsOwners() {
+				if props.team.ManageWorkspaces || props.team.IsOwners() {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -372,7 +372,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if props.team.OrganizationAccess().ManageVCS || props.team.IsOwners() {
+				if props.team.ManageVCS || props.team.IsOwners() {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -388,7 +388,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if props.team.OrganizationAccess().ManageModules || props.team.IsOwners() {
+				if props.team.ManageModules || props.team.IsOwners() {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err

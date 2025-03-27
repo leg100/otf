@@ -187,12 +187,12 @@ func (a *tfe) convertTeam(from *Team) *types.Team {
 		SSOTeamID:  from.SSOTeamID,
 		Visibility: from.Visibility,
 		OrganizationAccess: &types.OrganizationAccess{
-			ManageWorkspaces:      from.Access.ManageWorkspaces,
-			ManageVCSSettings:     from.Access.ManageVCS,
-			ManageModules:         from.Access.ManageModules,
-			ManageProviders:       from.Access.ManageProviders,
-			ManagePolicies:        from.Access.ManagePolicies,
-			ManagePolicyOverrides: from.Access.ManagePolicyOverrides,
+			ManageWorkspaces:      from.ManageWorkspaces,
+			ManageVCSSettings:     from.ManageVCS,
+			ManageModules:         from.ManageModules,
+			ManageProviders:       from.ManageProviders,
+			ManagePolicies:        from.ManagePolicies,
+			ManagePolicyOverrides: from.ManagePolicyOverrides,
 		},
 		// Hardcode these values until proper support is added
 		Permissions: &types.TeamPermissions{
@@ -223,7 +223,7 @@ func (a *tfe) createTeamToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	to := &types.TeamToken{
-		ID:        ot.TfeID,
+		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		Token:     string(token),
 		ExpiredAt: ot.Expiry,
@@ -249,7 +249,7 @@ func (a *tfe) getTeamToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	to := &types.TeamToken{
-		ID:        ot.TfeID,
+		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		ExpiredAt: ot.Expiry,
 	}

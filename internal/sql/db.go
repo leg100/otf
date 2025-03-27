@@ -6,11 +6,14 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/leg100/otf/internal"
 )
 
 // max conns avail in a pgx pool
@@ -64,6 +67,15 @@ func New(ctx context.Context, logger logr.Logger, connString string) (*DB, error
 			}
 			conn.TypeMap().RegisterType(dt)
 		}
+		// Set location to UTC for times scanned from database. This ensures
+		// that tests for equality pass.
+		//
+		// See: https://github.com/jackc/pgx/issues/1945#issuecomment-2002077247
+		conn.TypeMap().RegisterType(&pgtype.Type{
+			Name:  "timestamptz",
+			OID:   pgtype.TimestamptzOID,
+			Codec: &pgtype.TimestamptzCodec{ScanLocation: time.UTC},
+		})
 		return nil
 	}
 
@@ -82,6 +94,49 @@ func (db *DB) Conn(ctx context.Context) Connection {
 		return conn
 	}
 	return db.Pool
+}
+
+func (db *DB) Query(ctx context.Context, sql string, args ...any) pgx.Rows {
+	rows, _ := db.Conn(ctx).Query(ctx, sql, args...)
+	return rows
+}
+
+// queryRowResult wraps the error returned by pgx.Row.Scan()
+type queryRowResult struct {
+	pgx.Row
+}
+
+func (r *queryRowResult) Scan(dest ...any) error {
+	if err := r.Row.Scan(dest...); err != nil {
+		return toError(err)
+	}
+	return nil
+}
+
+func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) *queryRowResult {
+	row := db.Conn(ctx).QueryRow(ctx, sql, args...)
+	return &queryRowResult{Row: row}
+}
+
+// Exec executes the sql with the given args. It assumes the command is a row
+// affecting command and returns an error if the command does not affect any
+// rows.
+func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	cmdTag, err := db.Conn(ctx).Exec(ctx, sql, args...)
+	if err != nil {
+		return pgconn.CommandTag{}, toError(err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return pgconn.CommandTag{}, internal.ErrResourceNotFound
+	}
+	return cmdTag, nil
+}
+
+// Int is a convenience wrapper for executing a query that returns a single
+// integer.
+func (db *DB) Int(ctx context.Context, sql string, args ...any) (int64, error) {
+	rows := db.Query(ctx, sql, args...)
+	return CollectOneRow(rows, pgx.RowTo[int64])
 }
 
 // Tx provides the caller with a callback in which all operations are conducted

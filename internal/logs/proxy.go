@@ -21,7 +21,7 @@ type (
 	}
 
 	proxydb interface {
-		getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		getAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
 		put(ctx context.Context, chunk Chunk) error
 	}
 )
@@ -47,7 +47,7 @@ func (p *proxy) Start(ctx context.Context) error {
 		} else {
 			if existing, err := p.cache.Get(key); err != nil {
 				// no cache entry; retrieve logs from db
-				logs, err = p.db.getLogs(ctx, chunk.RunID, chunk.Phase)
+				logs, err = p.db.getAllLogs(ctx, chunk.RunID, chunk.Phase)
 				if err != nil {
 					return err
 				}
@@ -71,7 +71,7 @@ func (p *proxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	data, err := p.cache.Get(key)
 	if err != nil {
 		// fall back to retrieving from db...
-		data, err = p.db.getLogs(ctx, opts.RunID, opts.Phase)
+		data, err = p.db.getAllLogs(ctx, opts.RunID, opts.Phase)
 		if err != nil {
 			return Chunk{}, err
 		}

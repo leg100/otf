@@ -68,10 +68,10 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 			return nil, err
 		}
 	}
-	return f.newWithGithubCredentials(ctx, opts, creds)
+	return f.newWithGithubCredentials(opts, creds)
 }
 
-func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
+func (f *factory) newWithGithubCredentials(opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
 		ID:                  resource.NewTfeID("vcs"),
 		Name:                opts.Name,
@@ -102,16 +102,6 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 	} else {
 		return nil, errors.New("must specify either token or github app installation ID")
 	}
-	return provider, nil
-}
-
-func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id resource.TfeID, createdAt time.Time) (*VCSProvider, error) {
-	provider, err := f.newWithGithubCredentials(ctx, opts, creds)
-	if err != nil {
-		return nil, err
-	}
-	provider.ID = id
-	provider.CreatedAt = createdAt
 	return provider, nil
 }
 

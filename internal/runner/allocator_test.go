@@ -111,7 +111,7 @@ func TestAllocator_allocate(t *testing.T) {
 					ID:        runner1ID,
 					Status:    RunnerIdle,
 					MaxJobs:   1,
-					AgentPool: &RunnerMetaAgentPool{ID: pool1ID},
+					AgentPool: &Pool{ID: pool1ID},
 				},
 			},
 			job: &Job{
@@ -128,7 +128,7 @@ func TestAllocator_allocate(t *testing.T) {
 				RunnerID:    &runner1ID,
 			},
 			wantRunners: map[resource.TfeID]*RunnerMeta{
-				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, AgentPool: &RunnerMetaAgentPool{ID: pool1ID}},
+				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, AgentPool: &Pool{ID: pool1ID}},
 			},
 			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 1},
 		},

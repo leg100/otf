@@ -2,6 +2,7 @@ package variable
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -263,7 +264,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.TfeID, o
 	err := s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context, _ sql.Connection) (err error) {
 		before, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
-			return err
+			return fmt.Errorf("retrieving variable set: %w", err)
 		}
 
 		subject, err = s.Authorize(ctx, authz.UpdateVariableSetAction, &authz.AccessRequest{Organization: &before.Organization})
@@ -273,7 +274,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.TfeID, o
 
 		organizationSets, err := s.db.listVariableSets(ctx, before.Organization)
 		if err != nil {
-			return err
+			return fmt.Errorf("listing variable sets: %w", err)
 		}
 
 		// update copy of set

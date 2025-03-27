@@ -133,7 +133,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization
 	})
 	if err != nil {
 		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
 	return org, nil
