@@ -18,7 +18,7 @@ type Client struct {
 }
 
 // DownloadConfig downloads a configuration version tarball.  Only configuration versions in the uploaded state may be downloaded.
-func (c *Client) DownloadConfig(ctx context.Context, cvID resource.TfeID) ([]byte, error) {
+func (c *Client) DownloadConfig(ctx context.Context, cvID resource.ID) ([]byte, error) {
 	u := fmt.Sprintf("configuration-versions/%s/download", url.QueryEscape(cvID.String()))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {

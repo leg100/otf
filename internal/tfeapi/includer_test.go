@@ -13,15 +13,15 @@ import (
 func TestIncluder(t *testing.T) {
 	type (
 		baz struct {
-			ID resource.TfeID
+			ID resource.ID
 		}
 		bar struct {
 			Baz baz
-			ID  resource.TfeID
+			ID  resource.ID
 		}
 		foo struct {
 			Bar bar
-			ID  resource.TfeID
+			ID  resource.ID
 		}
 	)
 	fooResource := foo{ID: resource.NewTfeID("foo")}

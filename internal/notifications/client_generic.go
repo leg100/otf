@@ -18,13 +18,13 @@ type (
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/notification-configurations#run-notification-payload
 	GenericPayload struct {
 		PayloadVersion              int
-		NotificationConfigurationID resource.TfeID
+		NotificationConfigurationID resource.ID
 		RunURL                      string
-		RunID                       resource.TfeID
+		RunID                       resource.ID
 		RunMessage                  string
 		RunCreatedAt                time.Time
 		RunCreatedBy                string
-		WorkspaceID                 resource.TfeID
+		WorkspaceID                 resource.ID
 		WorkspaceName               string
 		OrganizationName            resource.OrganizationName
 		Notifications               []genericNotificationPayload

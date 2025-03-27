@@ -10,11 +10,11 @@ import (
 type (
 	// VariableSet is a set of variables
 	VariableSet struct {
-		ID           resource.TfeID `db:"variable_set_id"`
+		ID           resource.ID `db:"variable_set_id"`
 		Name         string
 		Description  string
 		Global       bool
-		Workspaces   []resource.TfeID          `db:"workspace_ids"`
+		Workspaces   []resource.ID             `db:"workspace_ids"`
 		Organization resource.OrganizationName `db:"organization_name"`
 		Variables    []*Variable
 	}
@@ -23,14 +23,14 @@ type (
 		Name        string
 		Description string
 		Global      bool
-		Workspaces  []resource.TfeID
+		Workspaces  []resource.ID
 	}
 
 	UpdateVariableSetOptions struct {
 		Name        *string
 		Description *string
 		Global      *bool
-		Workspaces  []resource.TfeID
+		Workspaces  []resource.ID
 	}
 )
 
@@ -66,7 +66,7 @@ func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVa
 	return v, nil
 }
 
-func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID resource.TfeID, opts UpdateVariableOptions) (*Variable, error) {
+func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID resource.ID, opts UpdateVariableOptions) (*Variable, error) {
 	v := s.getVariable(variableID)
 	if v == nil {
 		return nil, fmt.Errorf("cannot find variable %s in set", v.ID)
@@ -99,7 +99,7 @@ func (s *VariableSet) updateProperties(organizationSets []*VariableSet, opts Upd
 	return nil
 }
 
-func (s *VariableSet) getVariable(variableID resource.TfeID) *Variable {
+func (s *VariableSet) getVariable(variableID resource.ID) *Variable {
 	for _, v := range s.Variables {
 		if v.ID == variableID {
 			return v

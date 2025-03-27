@@ -18,9 +18,9 @@ type CLI struct {
 type cliClient interface {
 	List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 	GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error)
-	Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
-	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
+	Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
+	Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*Workspace, error)
+	Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
 
 func NewCommand(apiClient *otfapi.Client) *cobra.Command {

@@ -38,7 +38,7 @@ type (
 	}
 
 	notifierWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	notifierRunClient interface {

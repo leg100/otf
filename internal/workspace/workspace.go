@@ -31,10 +31,10 @@ var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         resource.TfeID            `jsonapi:"primary,workspaces"`
+		ID                         resource.ID               `jsonapi:"primary,workspaces"`
 		CreatedAt                  time.Time                 `jsonapi:"attribute" json:"created_at"`
 		UpdatedAt                  time.Time                 `jsonapi:"attribute" json:"updated_at"`
-		AgentPoolID                *resource.TfeID           `jsonapi:"attribute" json:"agent-pool-id"`
+		AgentPoolID                *resource.ID              `jsonapi:"attribute" json:"agent-pool-id"`
 		AllowDestroyPlan           bool                      `jsonapi:"attribute" json:"allow_destroy_plan"`
 		AutoApply                  bool                      `jsonapi:"attribute" json:"auto_apply"`
 		CanQueueDestroyPlan        bool                      `jsonapi:"attribute" json:"can_queue_destroy_plan"`
@@ -54,7 +54,7 @@ type (
 		Organization               resource.OrganizationName `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun                `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string                  `jsonapi:"attribute" json:"tags"`
-		Lock                       *resource.TfeID           `jsonapi:"attribute" json:"lock"`
+		Lock                       *resource.ID              `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -80,7 +80,7 @@ type (
 		// exclusive with TriggerPatterns.
 		TagsRegex string
 
-		VCSProviderID resource.TfeID
+		VCSProviderID resource.ID
 		Repo          string
 
 		// By default, once a workspace is connected to a repo it is not
@@ -91,7 +91,7 @@ type (
 
 	ConnectOptions struct {
 		RepoPath      *string
-		VCSProviderID *resource.TfeID
+		VCSProviderID *resource.ID
 
 		Branch        *string
 		TagsRegex     *string
@@ -102,7 +102,7 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
-		AgentPoolID                *resource.TfeID
+		AgentPoolID                *resource.ID
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
@@ -130,7 +130,7 @@ type (
 	}
 
 	UpdateOptions struct {
-		AgentPoolID                *resource.TfeID `json:"agent-pool-id,omitempty"`
+		AgentPoolID                *resource.ID `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string
@@ -283,7 +283,7 @@ func (ws *Workspace) Locked() bool {
 }
 
 // Enlock locks the workspace with the given ID. The ID must be either a run or user ID.
-func (ws *Workspace) Enlock(id resource.TfeID) error {
+func (ws *Workspace) Enlock(id resource.ID) error {
 	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
@@ -303,7 +303,7 @@ func (ws *Workspace) Enlock(id resource.TfeID) error {
 
 // Unlock the workspace with the given ID. The ID must be either a run or user
 // ID.
-func (ws *Workspace) Unlock(id resource.TfeID, force bool) error {
+func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
@@ -518,7 +518,7 @@ func (ws *Workspace) setName(name string) error {
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.TfeID) (bool, error) {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.ID) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done

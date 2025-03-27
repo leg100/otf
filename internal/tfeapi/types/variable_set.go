@@ -7,10 +7,10 @@ import "github.com/leg100/otf/internal/resource"
 
 // VariableSet represents a Terraform Enterprise variable set.
 type VariableSet struct {
-	ID          resource.TfeID `jsonapi:"primary,varsets"`
-	Name        string         `jsonapi:"attribute" json:"name"`
-	Description string         `jsonapi:"attribute" json:"description"`
-	Global      bool           `jsonapi:"attribute" json:"global"`
+	ID          resource.ID `jsonapi:"primary,varsets"`
+	Name        string      `jsonapi:"attribute" json:"name"`
+	Description string      `jsonapi:"attribute" json:"description"`
+	Global      bool        `jsonapi:"attribute" json:"global"`
 
 	// Relations
 	Organization *Organization          `jsonapi:"relationship" json:"organization"`

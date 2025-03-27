@@ -5,16 +5,16 @@ package variable
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"encoding/json"
+	"strconv"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
-	"strconv"
 )
 
 func newWorkspaceVariable(ws *workspace.Workspace) templ.Component {
@@ -227,11 +227,11 @@ func (p workspaceTableProps) Variables() []*Variable {
 	return p.variables
 }
 
-func (workspaceTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
+func (workspaceTableProps) EditPath(variableID resource.ID) templ.SafeURL {
 	return paths.EditVariable(variableID)
 }
 
-func (workspaceTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
+func (workspaceTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
 	return paths.DeleteVariable(variableID)
 }
 
@@ -1139,11 +1139,11 @@ func (p setTableProps) Variables() []*Variable {
 	return p.set.Variables
 }
 
-func (setTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
+func (setTableProps) EditPath(variableID resource.ID) templ.SafeURL {
 	return paths.EditVariableSetVariable(variableID)
 }
 
-func (setTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
+func (setTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
 	return paths.DeleteVariableSetVariable(variableID)
 }
 
@@ -1160,8 +1160,8 @@ func (w setTableProps) CanDeleteVariable() bool {
 
 type tableProps interface {
 	Variables() []*Variable
-	EditPath(variableID resource.TfeID) templ.SafeURL
-	DeletePath(variableID resource.TfeID) templ.SafeURL
+	EditPath(variableID resource.ID) templ.SafeURL
+	DeletePath(variableID resource.ID) templ.SafeURL
 	IsOverwritten(v *Variable) bool
 	CanDeleteVariable() bool
 }

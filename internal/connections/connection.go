@@ -18,24 +18,24 @@ type (
 	//
 	// NOTE: order of fields must be same as that of its postgres table columns.
 	Connection struct {
-		ModuleID      *resource.TfeID `db:"module_id"`
-		WorkspaceID   *resource.TfeID `db:"workspace_id"`
+		ModuleID      *resource.ID `db:"module_id"`
+		WorkspaceID   *resource.ID `db:"workspace_id"`
 		Repo          string
-		VCSProviderID resource.TfeID `db:"vcs_provider_id"`
+		VCSProviderID resource.ID `db:"vcs_provider_id"`
 	}
 
 	ConnectOptions struct {
-		VCSProviderID resource.TfeID // vcs provider of repo
-		ResourceID    resource.TfeID // ID of OTF resource to connect.
+		VCSProviderID resource.ID // vcs provider of repo
+		ResourceID    resource.ID // ID of OTF resource to connect.
 		RepoPath      string
 	}
 
 	DisconnectOptions struct {
-		ResourceID resource.TfeID // ID of OTF resource to disconnect
+		ResourceID resource.ID // ID of OTF resource to disconnect
 	}
 
 	SynchroniseOptions struct {
-		VCSProviderID resource.TfeID // vcs provider of repo
+		VCSProviderID resource.ID // vcs provider of repo
 		RepoPath      string
 	}
 

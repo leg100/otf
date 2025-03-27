@@ -5,13 +5,14 @@ package workspace
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components"
@@ -20,7 +21,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"time"
 )
 
 func new(organization resource.OrganizationName) templ.Component {
@@ -1930,7 +1930,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 	})
 }
 
-func listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) templ.Component {
+func listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -2073,7 +2073,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) t
 	})
 }
 
-func WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) templ.Component {
+func WorkspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

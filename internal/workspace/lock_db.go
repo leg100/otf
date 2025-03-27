@@ -8,7 +8,7 @@ import (
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togglefn func(*Workspace) error) (*Workspace, error) {
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglefn func(*Workspace) error) (*Workspace, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -20,8 +20,8 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togg
 		},
 		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
 			var (
-				runID  *resource.TfeID
-				userID *resource.TfeID
+				runID  *resource.ID
+				userID *resource.ID
 			)
 			if ws.Locked() {
 				switch ws.Lock.Kind() {

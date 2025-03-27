@@ -11,8 +11,8 @@ import (
 type (
 	// UserToken provides information about an API token for a user.
 	UserToken struct {
-		ID          resource.TfeID `db:"token_id"`
-		CreatedAt   time.Time      `db:"created_at"`
+		ID          resource.ID `db:"token_id"`
+		CreatedAt   time.Time   `db:"created_at"`
 		Description string
 		Username    string // Token belongs to a user
 	}

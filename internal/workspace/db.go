@@ -114,7 +114,7 @@ INSERT INTO workspaces (
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
+func (db *pgdb) update(ctx context.Context, workspaceID resource.ID, fn func(context.Context, *Workspace) error) (*Workspace, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -181,7 +181,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 	)
 }
 
-func (db *pgdb) forUpdate(ctx context.Context, conn sql.Connection, workspaceID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) forUpdate(ctx context.Context, conn sql.Connection, workspaceID resource.ID) (*Workspace, error) {
 	row, _ := conn.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -205,7 +205,7 @@ FOR UPDATE OF w
 }
 
 // setLatestRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) setLatestRun(ctx context.Context, workspaceID, runID resource.ID) (*Workspace, error) {
 	_, err := db.Exec(ctx, `
 UPDATE workspaces
 SET latest_run_id = $1
@@ -303,7 +303,7 @@ FROM workspaces
 	return resource.NewPage(items, opts.PageOptions, &count), nil
 }
 
-func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
+func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*Workspace, error) {
 	rows := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -388,7 +388,7 @@ AND   u.username          = $2
 	return resource.NewPage(items, opts, &count), nil
 }
 
-func (db *pgdb) get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	row := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -437,7 +437,7 @@ AND   w.organization_name = $2
 	return sql.CollectOneRow(row, db.scan)
 }
 
-func (db *pgdb) delete(ctx context.Context, workspaceID resource.TfeID) error {
+func (db *pgdb) delete(ctx context.Context, workspaceID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM workspaces
@@ -450,7 +450,7 @@ WHERE workspace_id = $1
 	return nil
 }
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
+func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID, role authz.Role) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO workspace_permissions (
     workspace_id,
@@ -472,7 +472,7 @@ INSERT INTO workspace_permissions (
 	return nil
 }
 
-func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
+func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, teamID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM workspace_permissions
@@ -488,7 +488,7 @@ AND team_id = $2
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
 
 	row := db.QueryRow(ctx, `
 SELECT
@@ -503,8 +503,8 @@ WHERE w.workspace_id = $1
 `,
 		workspaceID)
 	type workspacePermissionModel struct {
-		WorkspaceID resource.TfeID `db:"workspace_id"`
-		TeamID      resource.TfeID `db:"team_id"`
+		WorkspaceID resource.ID `db:"workspace_id"`
+		TeamID      resource.ID `db:"team_id"`
 		Role        string
 	}
 	var (
@@ -537,11 +537,11 @@ func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
 		repoPath              *string
 		conn                  Connection
 		tagsRegex             *string
-		lockRunID             *resource.TfeID
-		lockUserID            *resource.TfeID
-		latestRunID           *resource.TfeID
+		lockRunID             *resource.ID
+		lockUserID            *resource.ID
+		latestRunID           *resource.ID
 		latestRunStatus       *runstatus.Status
-		currentStateVersionID *resource.TfeID
+		currentStateVersionID *resource.ID
 	)
 	err := scanner.Scan(
 		&ws.ID,

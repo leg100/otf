@@ -28,10 +28,10 @@ var (
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        resource.TfeID `jsonapi:"primary,users" db:"user_id"`
-		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
-		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
-		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin" db:"site_admin"`
+		ID        resource.ID `jsonapi:"primary,users" db:"user_id"`
+		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at" db:"created_at"`
+		UpdatedAt time.Time   `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
+		SiteAdmin bool        `jsonapi:"attribute" json:"site-admin" db:"site_admin"`
 
 		// username is globally unique
 		Username string `jsonapi:"attribute" json:"username"`
@@ -53,9 +53,9 @@ type (
 	}
 
 	UserSpec struct {
-		UserID                *resource.TfeID
+		UserID                *resource.ID
 		Username              *string
-		AuthenticationTokenID *resource.TfeID
+		AuthenticationTokenID *resource.ID
 	}
 )
 
@@ -81,7 +81,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
-func (u *User) IsTeamMember(teamID resource.TfeID) bool {
+func (u *User) IsTeamMember(teamID resource.ID) bool {
 	for _, t := range u.Teams {
 		if t.ID == teamID {
 			return true

@@ -33,14 +33,14 @@ type tfe struct {
 
 // tfeConfigsClient gives the tfe handlers access to config version services
 type tfeClient interface {
-	Create(ctx context.Context, workspaceid resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error)
-	Get(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error)
-	GetLatest(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error)
-	List(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
-	Delete(ctx context.Context, cvID resource.TfeID) error
+	Create(ctx context.Context, workspaceid resource.ID, opts CreateOptions) (*ConfigurationVersion, error)
+	Get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error)
+	GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error)
+	List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
+	Delete(ctx context.Context, cvID resource.ID) error
 
-	UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
-	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+	UploadConfig(ctx context.Context, id resource.ID, config []byte) error
+	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -116,7 +116,7 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
 		types.ListOptions
 	}
 	var params parameters
@@ -192,7 +192,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// v must be a struct with a field named ConfigurationVersionID of kind
-	// resource.TfeID
+	// resource.ID
 	if dst.Kind() != reflect.Struct {
 		return nil, nil
 	}
@@ -200,7 +200,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !id.IsValid() {
 		return nil, nil
 	}
-	resourceID, ok := id.Interface().(resource.TfeID)
+	resourceID, ok := id.Interface().(resource.ID)
 	if !ok {
 		return nil, nil
 	}

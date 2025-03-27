@@ -82,7 +82,7 @@ INSERT INTO github_app_installs (
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.TfeID, fn func(context.Context, *VCSProvider) error) error {
+func (db *pgdb) update(ctx context.Context, id resource.ID, fn func(context.Context, *VCSProvider) error) error {
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
@@ -113,7 +113,7 @@ RETURNING vcs_provider_id, token, created_at, name, vcs_kind, organization_name,
 	return err
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
+func (db *pgdb) get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
 	rows := db.Query(ctx, `
 SELECT
     v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
@@ -165,7 +165,7 @@ WHERE gi.install_id = $1
 	return sql.CollectRows(rows, db.scan)
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM vcs_providers
@@ -177,7 +177,7 @@ WHERE vcs_provider_id = $1
 type (
 	// model represents a database row for a vcs provider
 	model struct {
-		VCSProviderID    resource.TfeID `db:"vcs_provider_id"`
+		VCSProviderID    resource.ID `db:"vcs_provider_id"`
 		Token            *string
 		CreatedAt        time.Time `db:"created_at"`
 		Name             string

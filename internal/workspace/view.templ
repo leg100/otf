@@ -594,7 +594,7 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	}
 }
 
-templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) {
+templ listVCSRepos(ws *Workspace, vcsProviderID resource.ID, repos []string) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs repos | " + ws.ID.String(),
@@ -635,7 +635,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 	}
 }
 
-templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
+templ WorkspaceHeaderLinks(workspaceID resource.ID, canUpdate bool) {
 	{{
 	var links = map[string]templ.SafeURL{
 		"runs":      paths.Runs(workspaceID),

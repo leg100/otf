@@ -38,7 +38,7 @@ type (
 	}
 
 	runClient interface {
-		Get(ctx context.Context, runID resource.TfeID) (*run.Run, error)
+		Get(ctx context.Context, runID resource.ID) (*run.Run, error)
 	}
 )
 
@@ -73,7 +73,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*Variable, error) {
+func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*Variable, error) {
 	run, err := s.runs.Get(ctx, runID)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.Tfe
 	return mergeVariables(sets, vars, run), nil
 }
 
-func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
+func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error) {
 	subject, err := s.Authorize(ctx, authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resou
 	return v, nil
 }
 
-func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
+func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
 	var (
 		subject authz.Subject
 		before  *WorkspaceVariable
@@ -164,7 +164,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resour
 	return &after, nil
 }
 
-func (s *Service) ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
+func (s *Service) ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error) {
 	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (s *Service) ListWorkspaceVariables(ctx context.Context, workspaceID resour
 	return vars, nil
 }
 
-func (s *Service) GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
+func (s *Service) GetWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
 	wv, err := s.db.getWorkspaceVariable(ctx, variableID)
 	if err != nil {
 		s.Error(err, "retrieving workspace variable", "variable_id", variableID)
@@ -198,7 +198,7 @@ func (s *Service) GetWorkspaceVariable(ctx context.Context, variableID resource.
 	return wv, nil
 }
 
-func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error) {
+func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error) {
 	var (
 		subject authz.Subject
 		wv      *WorkspaceVariable
@@ -255,7 +255,7 @@ func (s *Service) createVariableSet(ctx context.Context, organization organizati
 	return set, nil
 }
 
-func (s *Service) updateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error) {
+func (s *Service) updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error) {
 	var (
 		subject authz.Subject
 		before  *VariableSet
@@ -310,7 +310,7 @@ func (s *Service) listVariableSets(ctx context.Context, organization organizatio
 	return sets, nil
 }
 
-func (s *Service) listWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error) {
+func (s *Service) listWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error) {
 	subject, err := s.Authorize(ctx, authz.ListVariableSetsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -326,7 +326,7 @@ func (s *Service) listWorkspaceVariableSets(ctx context.Context, workspaceID res
 	return sets, nil
 }
 
-func (s *Service) getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
+func (s *Service) getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
 		s.Error(err, "retrieving variable set", "set_id", setID)
@@ -343,7 +343,7 @@ func (s *Service) getVariableSet(ctx context.Context, setID resource.TfeID) (*Va
 	return set, nil
 }
 
-func (s *Service) getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
+func (s *Service) getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error) {
 	set, err := s.db.getVariableSetByVariableID(ctx, variableID)
 	if err != nil {
 		s.Error(err, "retrieving variable set", "variable_id", variableID)
@@ -360,7 +360,7 @@ func (s *Service) getVariableSetByVariableID(ctx context.Context, variableID res
 	return set, nil
 }
 
-func (s *Service) deleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error) {
+func (s *Service) deleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error) {
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
 		s.Error(err, "retrieving variable set", "set_id", setID)
@@ -381,7 +381,7 @@ func (s *Service) deleteVariableSet(ctx context.Context, setID resource.TfeID) (
 	return set, nil
 }
 
-func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
+func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error) {
 	var (
 		subject authz.Subject
 		set     *VariableSet
@@ -423,7 +423,7 @@ func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.
 	return v, nil
 }
 
-func (s *Service) updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error) {
+func (s *Service) updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error) {
 	var (
 		subject authz.Subject
 		set     *VariableSet
@@ -466,7 +466,7 @@ func (s *Service) updateVariableSetVariable(ctx context.Context, variableID reso
 	return set, nil
 }
 
-func (s *Service) deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error) {
+func (s *Service) deleteVariableSetVariable(ctx context.Context, variableID resource.ID) (*VariableSet, error) {
 	set, err := s.db.getVariableSetByVariableID(ctx, variableID)
 	if err != nil {
 		return nil, err
@@ -488,7 +488,7 @@ func (s *Service) deleteVariableSetVariable(ctx context.Context, variableID reso
 	return set, nil
 }
 
-func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
 	// retrieve set first in order to retrieve organization name for authorization
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
@@ -509,7 +509,7 @@ func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.TfeID
 	return nil
 }
 
-func (s *Service) deleteSetFromWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (s *Service) deleteSetFromWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
 	// retrieve set first in order to retrieve organization name for authorization
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {

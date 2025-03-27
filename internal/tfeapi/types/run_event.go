@@ -18,10 +18,10 @@ type RunEventList struct {
 
 // RunEvent represents a Terraform Enterprise run event.
 type RunEvent struct {
-	ID          resource.TfeID `jsonapi:"primary,run-events"`
-	Action      string         `jsonapi:"attr,action"`
-	CreatedAt   time.Time      `jsonapi:"attr,created-at,iso8601"`
-	Description string         `jsonapi:"attr,description"`
+	ID          resource.ID `jsonapi:"primary,run-events"`
+	Action      string      `jsonapi:"attr,action"`
+	CreatedAt   time.Time   `jsonapi:"attr,created-at,iso8601"`
+	Description string      `jsonapi:"attr,description"`
 
 	// Relations - Note that `target` is not supported yet
 	Actor *User `jsonapi:"relation,actor"`

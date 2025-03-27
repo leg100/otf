@@ -30,22 +30,22 @@ type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
 	ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error)
-	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error)
+	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
-	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
 
 	CreateToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*UserToken, error)
-	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
+	DeleteToken(ctx context.Context, tokenID resource.ID) error
 }
 
 type tokensClient interface {
-	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
+	StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
 }
 
 type teamsClient interface {
-	GetByID(ctx context.Context, teamID resource.TfeID) (*otfteam.Team, error)
+	GetByID(ctx context.Context, teamID resource.ID) (*otfteam.Team, error)
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -140,8 +140,8 @@ func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username *string        `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username *string     `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -160,8 +160,8 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username string         `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

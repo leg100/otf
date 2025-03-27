@@ -32,7 +32,7 @@ var (
 
 type (
 	Variable struct {
-		ID          resource.TfeID   `jsonapi:"primary,variables" db:"variable_id"`
+		ID          resource.ID      `jsonapi:"primary,variables" db:"variable_id"`
 		Key         string           `jsonapi:"attribute" json:"key"`
 		Value       string           `jsonapi:"attribute" json:"value"`
 		Description string           `jsonapi:"attribute" json:"description"`
@@ -47,7 +47,7 @@ type (
 
 	WorkspaceVariable struct {
 		*Variable
-		WorkspaceID resource.TfeID
+		WorkspaceID resource.ID
 	}
 
 	CreateVariableOptions struct {

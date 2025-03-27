@@ -390,7 +390,7 @@ func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	workspaceIDs := make([]resource.TfeID, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -415,7 +415,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]resource.TfeID, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -429,7 +429,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.TfeID) *types.WorkspaceVariable {
+func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.ID) *types.WorkspaceVariable {
 	return &types.WorkspaceVariable{
 		Variable: a.convertVariable(from, true),
 		Workspace: &types.Workspace{
@@ -466,7 +466,7 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	return to
 }
 
-func (a *tfe) convertVariableSetVariable(from *Variable, setID resource.TfeID) *types.VariableSetVariable {
+func (a *tfe) convertVariableSetVariable(from *Variable, setID resource.ID) *types.VariableSetVariable {
 	return &types.VariableSetVariable{
 		Variable:    a.convertVariable(from, true),
 		VariableSet: &types.VariableSet{ID: setID},

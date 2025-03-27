@@ -25,14 +25,14 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                resource.TfeID `db:"configuration_version_id"`
-		CreatedAt         time.Time      `db:"created_at"`
-		AutoQueueRuns     bool           `db:"auto_queue_runs"`
+		ID                resource.ID `db:"configuration_version_id"`
+		CreatedAt         time.Time   `db:"created_at"`
+		AutoQueueRuns     bool        `db:"auto_queue_runs"`
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []StatusTimestamp  `db:"status_timestamps"`
-		WorkspaceID       resource.TfeID     `db:"workspace_id"`
+		WorkspaceID       resource.ID        `db:"workspace_id"`
 		IngressAttributes *IngressAttributes `db:"ingress_attributes"`
 	}
 
@@ -50,7 +50,7 @@ type (
 	ConfigurationStatus string
 
 	StatusTimestamp struct {
-		ConfigurationVersionID resource.TfeID `db:"-"`
+		ConfigurationVersionID resource.ID `db:"-"`
 		Status                 ConfigurationStatus
 		Timestamp              time.Time
 	}
@@ -68,10 +68,10 @@ type (
 	// version. Either ID *or* WorkspaceID must be specfiied.
 	ConfigurationVersionGetOptions struct {
 		// ID of config version to retrieve
-		ID *resource.TfeID
+		ID *resource.ID
 
 		// Get latest config version for this workspace ID
-		WorkspaceID *resource.TfeID
+		WorkspaceID *resource.ID
 
 		// A list of relations to include
 		Include *string `schema:"include"`
@@ -87,19 +87,19 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     resource.TfeID
+		// ID     resource.ID
 		Branch string
 		// CloneURL          string
 		// CommitMessage     string
-		CommitSHA              string         `db:"commit_sha"`
-		Repo                   string         `db:"identifier"`
-		IsPullRequest          bool           `db:"is_pull_request"`
-		OnDefaultBranch        bool           `db:"on_default_branch"`
-		ConfigurationVersionID resource.TfeID `db:"configuration_version_id"`
-		CommitURL              string         `db:"commit_url"`
-		PullRequestNumber      int            `db:"pull_request_number"`
-		PullRequestURL         string         `db:"pull_request_url"`
-		PullRequestTitle       string         `db:"pull_request_title"`
+		CommitSHA              string      `db:"commit_sha"`
+		Repo                   string      `db:"identifier"`
+		IsPullRequest          bool        `db:"is_pull_request"`
+		OnDefaultBranch        bool        `db:"on_default_branch"`
+		ConfigurationVersionID resource.ID `db:"configuration_version_id"`
+		CommitURL              string      `db:"commit_url"`
+		PullRequestNumber      int         `db:"pull_request_number"`
+		PullRequestURL         string      `db:"pull_request_url"`
+		PullRequestTitle       string      `db:"pull_request_title"`
 		// CompareURL        string
 		// PullRequestBody   string
 		Tag             string
@@ -110,7 +110,7 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),

@@ -8,12 +8,12 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-func lockFileCacheKey(runID resource.TfeID) string {
+func lockFileCacheKey(runID resource.ID) string {
 	return fmt.Sprintf("%s.terraform.lock.hcl", runID)
 }
 
 // GetLockFile returns the lock file for the run.
-func (s *Service) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte, error) {
+func (s *Service) GetLockFile(ctx context.Context, runID resource.ID) ([]byte, error) {
 	subject, err := s.Authorize(ctx, authz.GetLockFileAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (s *Service) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte
 }
 
 // UploadLockFile persists the lock file for a run.
-func (s *Service) UploadLockFile(ctx context.Context, runID resource.TfeID, file []byte) error {
+func (s *Service) UploadLockFile(ctx context.Context, runID resource.ID, file []byte) error {
 	subject, err := s.Authorize(ctx, authz.UploadLockFileAction, &authz.AccessRequest{ID: &runID})
 	if err != nil {
 		return err

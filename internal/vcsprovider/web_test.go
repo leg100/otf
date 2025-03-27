@@ -111,7 +111,7 @@ func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*VCSPr
 	return []*VCSProvider{f.provider}, nil
 }
 
-func (f *fakeService) Delete(context.Context, resource.TfeID) (*VCSProvider, error) {
+func (f *fakeService) Delete(context.Context, resource.ID) (*VCSProvider, error) {
 	return f.provider, nil
 }
 

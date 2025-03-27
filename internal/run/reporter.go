@@ -35,19 +35,19 @@ type (
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		//
 		// Key is the run ID.
-		Cache map[resource.TfeID]vcs.Status
+		Cache map[resource.ID]vcs.Status
 	}
 
 	reporterWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	reporterConfigClient interface {
-		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	reporterRunClient interface {

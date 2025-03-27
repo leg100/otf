@@ -27,22 +27,22 @@ type (
 	}
 
 	spawnerWorkspaceClient interface {
-		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*workspace.Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.ID, repoPath string) ([]*workspace.Workspace, error)
 	}
 
 	spawnerConfigClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
-		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
+		Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID resource.ID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.ID, config []byte) error
 	}
 
 	spawnerVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	spawnerRunClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
 	}
 )
 
@@ -193,7 +193,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == vcs.EventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
-				// ID     resource.TfeID
+				// ID     resource.ID
 				Branch: event.Branch,
 				// CloneURL          string
 				// CommitMessage     string

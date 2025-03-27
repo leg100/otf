@@ -13,7 +13,7 @@ type (
 	// Tag is a symbol associated with one or more workspaces. Helps searching and
 	// grouping workspaces.
 	Tag struct {
-		ID            resource.TfeID            // ID of the form 'tag-*'. Globally unique.
+		ID            resource.ID               // ID of the form 'tag-*'. Globally unique.
 		Name          string                    // Meaningful symbol. Unique to an organization.
 		InstanceCount int                       // Number of workspaces that have this tag
 		Organization  resource.OrganizationName // Organization this tag belongs to.
@@ -22,7 +22,7 @@ type (
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to
 	// be valid.
 	TagSpec struct {
-		ID   *resource.TfeID
+		ID   *resource.ID
 		Name string
 	}
 
@@ -38,7 +38,7 @@ func (s TagSpec) Valid() error {
 
 func (specs TagSpecs) LogValue() slog.Value {
 	var (
-		ids   []resource.TfeID
+		ids   []resource.ID
 		names []string
 	)
 	for _, s := range specs {

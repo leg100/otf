@@ -24,7 +24,7 @@ const (
 
 // CostEstimate represents a Terraform Enterprise costEstimate.
 type CostEstimate struct {
-	ID                      resource.TfeID                `jsonapi:"primary,cost-estimates"`
+	ID                      resource.ID                   `jsonapi:"primary,cost-estimates"`
 	DeltaMonthlyCost        string                        `jsonapi:"attribute" json:"delta-monthly-cost"`
 	ErrorMessage            string                        `jsonapi:"attribute" json:"error-message"`
 	MatchedResourcesCount   int                           `jsonapi:"attribute" json:"matched-resources-count"`

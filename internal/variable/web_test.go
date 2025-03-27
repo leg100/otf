@@ -101,7 +101,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 	}
 }
 
-func fakeWebApp(t *testing.T, workspaceID resource.TfeID, v *Variable) *web {
+func fakeWebApp(t *testing.T, workspaceID resource.ID, v *Variable) *web {
 	return &web{
 		variables: &fakeService{v: v, workspaceID: workspaceID},
 	}
