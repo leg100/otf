@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var _ ID = (*OrganizationName)(nil)
+
 type OrganizationName struct {
 	name string
 }
