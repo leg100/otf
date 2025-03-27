@@ -16,10 +16,10 @@ const TeamTokenKind resource.Kind = "tt"
 type (
 	// Token provides information about an API token for a team.
 	Token struct {
-		ID        resource.TfeID `db:"team_token_id"`
-		CreatedAt time.Time      `db:"created_at"`
+		ID        resource.ID `db:"team_token_id"`
+		CreatedAt time.Time   `db:"created_at"`
 		// Token belongs to a team
-		TeamID resource.TfeID `db:"team_id"`
+		TeamID resource.ID `db:"team_id"`
 		// Optional expiry.
 		Expiry *time.Time
 		// Description
@@ -31,7 +31,7 @@ type (
 	// CreateTokenOptions are options for creating an team token via the service
 	// endpoint
 	CreateTokenOptions struct {
-		TeamID resource.TfeID
+		TeamID resource.ID
 		Expiry *time.Time
 	}
 
@@ -91,7 +91,7 @@ func (a *Service) CreateTeamToken(ctx context.Context, opts CreateTokenOptions) 
 	return tt, token, nil
 }
 
-func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Token, error) {
+func (a *Service) GetTeamToken(ctx context.Context, teamID resource.ID) (*Token, error) {
 	_, err := a.Authorize(ctx, authz.GetTeamTokenAction, &authz.AccessRequest{ID: &teamID})
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (a *Service) GetTeamToken(ctx context.Context, teamID resource.TfeID) (*Tok
 	return token, nil
 }
 
-func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.TfeID) error {
+func (a *Service) DeleteTeamToken(ctx context.Context, teamID resource.ID) error {
 	_, err := a.Authorize(ctx, authz.DeleteTeamTokenAction, &authz.AccessRequest{ID: &teamID})
 	if err != nil {
 		return err

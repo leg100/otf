@@ -15,7 +15,7 @@ const (
 	defaultSessionExpiry = 24 * time.Hour
 )
 
-func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+func (a *Service) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultSessionExpiry)
 	token, err := a.NewToken(userID, WithExpiry(expiry))
 	if err != nil {

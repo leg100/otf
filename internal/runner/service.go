@@ -53,9 +53,9 @@ type (
 	}
 
 	phaseClient interface {
-		StartPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
-		FinishPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
-		Cancel(ctx context.Context, runID resource.TfeID) error
+		StartPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, _ otfrun.PhaseStartOptions) (*otfrun.Run, error)
+		FinishPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, opts otfrun.PhaseFinishOptions) (*otfrun.Run, error)
+		Cancel(ctx context.Context, runID resource.ID) error
 	}
 )
 
@@ -87,7 +87,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"agent_pools",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Pool, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Pool, error) {
 			if action == sql.DeleteAction {
 				return &Pool{ID: id}, nil
 			}
@@ -98,7 +98,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runners",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*RunnerMeta, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*RunnerMeta, error) {
 			if action == sql.DeleteAction {
 				return &RunnerMeta{ID: id}, nil
 			}
@@ -109,7 +109,7 @@ func NewService(opts ServiceOptions) *Service {
 		opts.Logger,
 		opts.Listener,
 		"jobs",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Job, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Job, error) {
 			if action == sql.DeleteAction {
 				return &Job{ID: id}, nil
 			}
@@ -118,7 +118,7 @@ func NewService(opts ServiceOptions) *Service {
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
-	opts.TokensService.RegisterKind(resource.AgentTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(resource.AgentTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		// Fetch agent pool corresponding to the provided token. This
 		// effectively authenticates the token.
 		pool, err := svc.db.getPoolByTokenID(ctx, tokenID)
@@ -159,7 +159,7 @@ func NewService(opts ServiceOptions) *Service {
 	opts.WorkspaceService.BeforeUpdateWorkspace(svc.checkWorkspacePoolAccess)
 	// Register with auth middleware the job token and a means of
 	// retrieving Job corresponding to token.
-	opts.TokensService.RegisterKind(resource.JobKind, func(ctx context.Context, jobID resource.TfeID) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(resource.JobKind, func(ctx context.Context, jobID resource.ID) (authz.Subject, error) {
 		return svc.getJob(ctx, jobID)
 	})
 	return svc
@@ -219,7 +219,7 @@ func (s *Service) register(ctx context.Context, opts registerOptions) (*RunnerMe
 	return runner, nil
 }
 
-func (s *Service) getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error) {
+func (s *Service) getRunner(ctx context.Context, runnerID resource.ID) (*RunnerMeta, error) {
 	runner, err := s.db.get(ctx, runnerID)
 	if err != nil {
 		s.Error(err, "retrieving runner", "runner_id", runnerID)
@@ -229,7 +229,7 @@ func (s *Service) getRunner(ctx context.Context, runnerID resource.TfeID) (*Runn
 	return runner, err
 }
 
-func (s *Service) updateStatus(ctx context.Context, runnerID resource.TfeID, to RunnerStatus) error {
+func (s *Service) updateStatus(ctx context.Context, runnerID resource.ID, to RunnerStatus) error {
 	// only these subjects may call this endpoint:
 	// (a) the manager, or
 	// (b) an runner with an ID matching runnerID
@@ -283,11 +283,11 @@ func (s *Service) listRunnersByOrganization(ctx context.Context, organization or
 	return s.db.listRunnersByOrganization(ctx, organization)
 }
 
-func (s *Service) listRunnersByPool(ctx context.Context, poolID resource.TfeID) ([]*RunnerMeta, error) {
+func (s *Service) listRunnersByPool(ctx context.Context, poolID resource.ID) ([]*RunnerMeta, error) {
 	return s.db.listRunnersByPool(ctx, poolID)
 }
 
-func (s *Service) deleteRunner(ctx context.Context, runnerID resource.TfeID) error {
+func (s *Service) deleteRunner(ctx context.Context, runnerID resource.ID) error {
 	if err := s.db.deleteRunner(ctx, runnerID); err != nil {
 		s.Error(err, "deleting runner", "runner_id", runnerID)
 		return err
@@ -335,7 +335,7 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 //
 // getJobs is intended to be called by an runner in order to retrieve jobs to
 // execute and jobs to cancel.
-func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
+func (s *Service) getJobs(ctx context.Context, runnerID resource.ID) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) a runner with an ID matching runnerID
 	if err := authorizeRunner(ctx, runnerID); err != nil {
@@ -373,7 +373,7 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job,
 	return nil, nil
 }
 
-func (s *Service) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+func (s *Service) getJob(ctx context.Context, jobID resource.ID) (*Job, error) {
 	return s.db.getJob(ctx, jobID)
 }
 
@@ -381,7 +381,7 @@ func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *Service) allocateJob(ctx context.Context, jobID resource.TfeID, runnerID resource.TfeID) (*Job, error) {
+func (s *Service) allocateJob(ctx context.Context, jobID resource.ID, runnerID resource.TfeID) (*Job, error) {
 	allocated, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
 		return job.allocate(runnerID)
 	})
@@ -393,9 +393,9 @@ func (s *Service) allocateJob(ctx context.Context, jobID resource.TfeID, runnerI
 	return allocated, nil
 }
 
-func (s *Service) reallocateJob(ctx context.Context, jobID resource.TfeID, runnerID resource.TfeID) (*Job, error) {
+func (s *Service) reallocateJob(ctx context.Context, jobID resource.ID, runnerID resource.TfeID) (*Job, error) {
 	var (
-		from        resource.TfeID // ID of runner that job *was* allocated to
+		from        resource.ID // ID of runner that job *was* allocated to
 		reallocated *Job
 	)
 	reallocated, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
@@ -413,7 +413,7 @@ func (s *Service) reallocateJob(ctx context.Context, jobID resource.TfeID, runne
 // startJob starts a job and returns a job token with permissions to
 // carry out the job. Only a runner that has been allocated the job can
 // call this method.
-func (s *Service) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
+func (s *Service) startJob(ctx context.Context, jobID resource.ID) ([]byte, error) {
 	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return nil, internal.ErrAccessNotPermitted
@@ -451,7 +451,7 @@ type finishJobOptions struct {
 }
 
 // finishJob finishes a job. Only the job itself may call this endpoint.
-func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
+func (s *Service) finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error {
 	{
 		subject, err := authz.SubjectFromContext(ctx)
 		if err != nil {
@@ -491,7 +491,7 @@ func (s *Service) finishJob(ctx context.Context, jobID resource.TfeID, opts fini
 
 // agent tokens
 
-func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	at, token, subject, err := func() (*agentToken, []byte, authz.Subject, error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
@@ -519,7 +519,7 @@ func (s *Service) CreateAgentToken(ctx context.Context, poolID resource.TfeID, o
 	return at, token, nil
 }
 
-func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error) {
+func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, authz.Subject, error) {
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
 		if err != nil {
@@ -543,7 +543,7 @@ func (s *Service) GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*a
 	return at, nil
 }
 
-func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*agentToken, error) {
+func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.ID) ([]*agentToken, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		return nil, err
@@ -562,7 +562,7 @@ func (s *Service) ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([
 	return tokens, nil
 }
 
-func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error) {
+func (s *Service) DeleteAgentToken(ctx context.Context, tokenID resource.ID) (*agentToken, error) {
 	at, subject, err := func() (*agentToken, authz.Subject, error) {
 		// retrieve agent token and pool in order to get organization for authorization
 		at, err := s.db.getAgentTokenByID(ctx, tokenID)
@@ -637,7 +637,7 @@ func (s *Service) CreateAgentPool(ctx context.Context, opts CreateAgentPoolOptio
 	return pool, nil
 }
 
-func (s *Service) updateAgentPool(ctx context.Context, poolID resource.TfeID, opts updatePoolOptions) (*Pool, error) {
+func (s *Service) updateAgentPool(ctx context.Context, poolID resource.ID, opts updatePoolOptions) (*Pool, error) {
 	var (
 		subject       authz.Subject
 		before, after Pool
@@ -682,7 +682,7 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID resource.TfeID, op
 	return &after, nil
 }
 
-func (s *Service) GetAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
+func (s *Service) GetAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	pool, err := s.db.getPool(ctx, poolID)
 	if err != nil {
 		s.Error(err, "retrieving agent pool", "agent_pool_id", poolID)
@@ -710,7 +710,7 @@ func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization
 	return pools, nil
 }
 
-func (s *Service) deleteAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error) {
+func (s *Service) deleteAgentPool(ctx context.Context, poolID resource.ID) (*Pool, error) {
 	pool, subject, err := func() (*Pool, authz.Subject, error) {
 		// retrieve pool in order to get organization for authorization
 		pool, err := s.db.getPool(ctx, poolID)

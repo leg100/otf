@@ -46,7 +46,7 @@ func (c *Client) Get(ctx context.Context, organization resource.OrganizationName
 }
 
 // Delete deletes a team via HTTP/JSONAPI.
-func (c *Client) Delete(ctx context.Context, id resource.TfeID) error {
+func (c *Client) Delete(ctx context.Context, id resource.ID) error {
 	u := fmt.Sprintf("teams/%s", url.QueryEscape(id.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {

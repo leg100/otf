@@ -135,7 +135,7 @@ func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organ
 	return sql.CollectOneRow(row, db.scan)
 }
 
-func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, error) {
+func (db *pgdb) getByID(ctx context.Context, id resource.ID) (*Organization, error) {
 	row := db.Query(ctx, ` SELECT * FROM organizations WHERE organization_id = $1 `, id)
 	return sql.CollectOneRow(row, db.scan)
 }
@@ -189,7 +189,7 @@ WHERE organization_name = $1
 	return sql.CollectRows(rows, db.scanToken)
 }
 
-func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error) {
+func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
 	row := db.Query(ctx, `
 SELECT *
 FROM organization_tokens

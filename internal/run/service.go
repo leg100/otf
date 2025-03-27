@@ -127,7 +127,7 @@ func NewService(opts Options) *Service {
 
 	// Resolve authorization requests for run IDs to a workspace IDs
 	opts.Authorizer.RegisterWorkspaceResolver(resource.RunKind,
-		func(ctx context.Context, runID resource.ID) (resource.TfeID, error) {
+		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
 			run, err := db.GetRun(ctx, runID)
 			if err != nil {
 				return resource.ID{}, err

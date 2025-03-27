@@ -12,7 +12,7 @@ import (
 // Lock locks the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*Workspace, error) {
+func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error) {
 	var id resource.ID
 	if runID != nil {
 		id = *runID
@@ -42,7 +42,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *reso
 // Unlock unlocks the workspace. A workspace can only be unlocked on behalf of a run or
 // a user. If the former then runID must be non-nil; otherwise a user is
 // extracted from the context.
-func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*Workspace, error) {
+func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error) {
 	var id resource.ID
 	if runID != nil {
 		id = *runID

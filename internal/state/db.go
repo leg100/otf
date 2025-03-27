@@ -19,13 +19,13 @@ type (
 
 	// versionModel is the database model for a state version row.
 	versionModel struct {
-		StateVersionID      resource.TfeID `db:"state_version_id"`
-		CreatedAt           time.Time      `db:"created_at"`
-		Serial              int64          `db:"serial"`
-		State               []byte         `db:"state"`
-		WorkspaceID         resource.TfeID `db:"workspace_id"`
-		Status              Status         `db:"status"`
-		StateVersionOutputs []outputModel  `db:"state_version_outputs"`
+		StateVersionID      resource.ID   `db:"state_version_id"`
+		CreatedAt           time.Time     `db:"created_at"`
+		Serial              int64         `db:"serial"`
+		State               []byte        `db:"state"`
+		WorkspaceID         resource.ID   `db:"workspace_id"`
+		Status              Status        `db:"status"`
+		StateVersionOutputs []outputModel `db:"state_version_outputs"`
 	}
 )
 
@@ -95,7 +95,7 @@ INSERT INTO state_version_outputs (
 	})
 }
 
-func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error {
+func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error {
 	_, err := db.Exec(ctx, `
 UPDATE state_versions
 SET state = $1, status = 'finalized'
@@ -104,7 +104,7 @@ WHERE state_version_id = $2
 	return err
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	rows := db.Query(ctx, `
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
@@ -160,7 +160,7 @@ func (db *pgdb) scanVersion(row pgx.CollectableRow) (*Version, error) {
 
 }
 
-func (db *pgdb) getVersion(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (db *pgdb) getVersion(ctx context.Context, svID resource.ID) (*Version, error) {
 	rows := db.Query(ctx, `
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
@@ -176,7 +176,7 @@ WHERE sv.state_version_id = $1
 	return sql.CollectOneRow(rows, db.scanVersion)
 }
 
-func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.ID) (*Version, error) {
 	rows := db.Query(ctx, `
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
@@ -193,7 +193,7 @@ FOR UPDATE OF sv
 	return sql.CollectOneRow(rows, db.scanVersion)
 }
 
-func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	rows := db.Query(ctx, `
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
@@ -210,7 +210,7 @@ WHERE w.workspace_id = $1
 	return sql.CollectOneRow(rows, db.scanVersion)
 }
 
-func (db *pgdb) getState(ctx context.Context, id resource.TfeID) ([]byte, error) {
+func (db *pgdb) getState(ctx context.Context, id resource.ID) ([]byte, error) {
 	rows := db.Query(ctx, `
 SELECT state
 FROM state_versions
@@ -220,7 +220,7 @@ WHERE state_version_id = $1
 }
 
 // deleteVersion deletes a state version from the DB
-func (db *pgdb) deleteVersion(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) deleteVersion(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM state_versions
@@ -238,7 +238,7 @@ WHERE state_version_id = $1
 	return nil
 }
 
-func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.TfeID) error {
+func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.ID) error {
 	_, err := db.Exec(ctx, `
 UPDATE workspaces
 SET current_state_version_id = $1
@@ -248,7 +248,7 @@ RETURNING workspace_id
 	return err
 }
 
-func (db *pgdb) discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error {
+func (db *pgdb) discardAnyPending(ctx context.Context, workspaceID resource.ID) error {
 	_, err := db.Exec(ctx, `
 UPDATE state_versions
 SET status = 'discarded'

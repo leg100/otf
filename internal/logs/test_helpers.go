@@ -52,7 +52,7 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	return val, nil
 }
 
-func (s *fakeDB) getAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+func (s *fakeDB) getAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	return s.data, nil
 }
 

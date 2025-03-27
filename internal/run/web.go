@@ -31,25 +31,25 @@ type (
 	}
 
 	webRunClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Get(ctx context.Context, id resource.TfeID) (*Run, error)
-		Delete(ctx context.Context, runID resource.TfeID) error
-		Cancel(ctx context.Context, runID resource.TfeID) error
-		ForceCancel(ctx context.Context, runID resource.TfeID) error
-		Apply(ctx context.Context, runID resource.TfeID) error
-		Discard(ctx context.Context, runID resource.TfeID) error
+		Get(ctx context.Context, id resource.ID) (*Run, error)
+		Delete(ctx context.Context, runID resource.ID) error
+		Cancel(ctx context.Context, runID resource.ID) error
+		ForceCancel(ctx context.Context, runID resource.ID) error
+		Apply(ctx context.Context, runID resource.ID) error
+		Discard(ctx context.Context, runID resource.ID) error
 
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
 
 	webLogsClient interface {
-		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		GetAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
 	}
 
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {
@@ -96,8 +96,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
-		Operation   Operation      `schema:"operation,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		Operation   Operation   `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -326,9 +326,9 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID  `schema:"workspace_id,required"`
-		Latest      bool            `schema:"latest"`
-		RunID       *resource.TfeID `schema:"run_id"`
+		WorkspaceID resource.ID  `schema:"workspace_id,required"`
+		Latest      bool         `schema:"latest"`
+		RunID       *resource.ID `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

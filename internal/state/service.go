@@ -19,7 +19,7 @@ import (
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
 
 // cacheKey generates a key for caching state files
-func cacheKey(svID resource.TfeID) string { return fmt.Sprintf("%s.json", svID) }
+func cacheKey(svID resource.ID) string { return fmt.Sprintf("%s.json", svID) }
 
 type (
 	// Service provides access to state and state versions
@@ -77,10 +77,10 @@ func NewService(opts Options) *Service {
 
 	// Resolve authorization requests for state version IDs to a workspace IDs
 	opts.Authorizer.RegisterWorkspaceResolver(resource.StateVersionKind,
-		func(ctx context.Context, svID resource.TfeID) (resource.TfeID, error) {
+		func(ctx context.Context, svID resource.ID) (resource.TfeID, error) {
 			sv, err := db.getVersion(ctx, svID)
 			if err != nil {
-				return resource.TfeID{}, err
+				return resource.ID{}, err
 			}
 			return sv.WorkspaceID, nil
 		},
@@ -114,7 +114,7 @@ func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*
 	return sv, nil
 }
 
-func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.TfeID) ([]byte, error) {
+func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.ID) ([]byte, error) {
 	v, err := a.GetCurrent(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.TfeI
 	return a.Download(ctx, v.ID)
 }
 
-func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+func (a *Service) List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts res
 	return svl, nil
 }
 
-func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, &authz.AccessRequest{ID: &workspaceID})
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*
 	return sv, nil
 }
 
-func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+func (a *Service) Get(ctx context.Context, versionID resource.ID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, &authz.AccessRequest{ID: &versionID})
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, 
 	return sv, nil
 }
 
-func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
+func (a *Service) Delete(ctx context.Context, versionID resource.ID) error {
 	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, &authz.AccessRequest{ID: &versionID})
 	if err != nil {
 		return err
@@ -186,7 +186,7 @@ func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
 	return nil
 }
 
-func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+func (a *Service) Rollback(ctx context.Context, versionID resource.ID) (*Version, error) {
 	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, &authz.AccessRequest{ID: &versionID})
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Vers
 	return sv, nil
 }
 
-func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte) error {
+func (a *Service) Upload(ctx context.Context, svID resource.ID, state []byte) error {
 	var sv *Version
 	err := a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		var err error
@@ -226,7 +226,7 @@ func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte)
 	return nil
 }
 
-func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, error) {
+func (a *Service) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
 	subject, err := a.Authorize(ctx, authz.DownloadStateAction, &authz.AccessRequest{ID: &svID})
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, er
 	return state, nil
 }
 
-func (a *Service) GetOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
+func (a *Service) GetOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
 	out, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)

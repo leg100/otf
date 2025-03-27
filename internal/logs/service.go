@@ -61,7 +61,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, chunkID resource.TfeID, action sql.Action) (Chunk, error) {
+		func(ctx context.Context, chunkID resource.ID, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
 				return Chunk{ID: chunkID}, nil
 			}
@@ -86,7 +86,7 @@ func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], fu
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+func (s *Service) GetAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	logs, err := s.db.getAllLogs(ctx, runID, phase)
 	if err != nil {
 		s.Error(err, "reading all logs", "run_id", runID, "phase", phase)

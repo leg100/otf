@@ -43,7 +43,7 @@ func TestRunner(t *testing.T) {
 type fakeRunnerClient struct {
 	client
 
-	registeredID resource.TfeID
+	registeredID resource.ID
 	updates      chan RunnerStatus
 }
 
@@ -51,13 +51,13 @@ func (f *fakeRunnerClient) register(ctx context.Context, opts registerOptions) (
 	return &RunnerMeta{ID: f.registeredID}, nil
 }
 
-func (f *fakeRunnerClient) getJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
+func (f *fakeRunnerClient) getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
 	// Block until context canceled
 	<-ctx.Done()
 	return nil, nil
 }
 
-func (f *fakeRunnerClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
+func (f *fakeRunnerClient) updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error {
 	f.updates <- status
 	return nil
 }

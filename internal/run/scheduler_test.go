@@ -211,7 +211,7 @@ type fakeSchedulerWorkspaceClient struct {
 	unlocked bool
 }
 
-func (f *fakeSchedulerWorkspaceClient) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*workspace.Workspace, error) {
+func (f *fakeSchedulerWorkspaceClient) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*workspace.Workspace, error) {
 	f.unlocked = true
 	return nil, nil
 }

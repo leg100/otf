@@ -13,7 +13,7 @@ import (
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	ID resource.TfeID `jsonapi:"primary,runners" db:"runner_id"`
+	ID resource.ID `jsonapi:"primary,runners" db:"runner_id"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner
@@ -50,7 +50,7 @@ type registerOptions struct {
 	// CurrentJobs are those jobs the agent has discovered leftover from a
 	// previous agent. Not currently used but may be made use of in later
 	// versions.
-	CurrentJobs []resource.TfeID `json:"current-jobs,omitempty"`
+	CurrentJobs []resource.ID `json:"current-jobs,omitempty"`
 }
 
 // register registers an unregistered runner, constructing a RunnerMeta which
@@ -155,7 +155,7 @@ func runnerFromContext(ctx context.Context) (*RunnerMeta, error) {
 	return meta, nil
 }
 
-func authorizeRunner(ctx context.Context, id resource.TfeID) error {
+func authorizeRunner(ctx context.Context, id resource.ID) error {
 	runner, err := runnerFromContext(ctx)
 	if err != nil {
 		return err

@@ -57,9 +57,9 @@ func TestAllocator_allocate(t *testing.T) {
 		// want this job after allocation
 		wantJob *Job
 		// want these runners after allocation
-		wantRunners map[resource.TfeID]*RunnerMeta
+		wantRunners map[resource.ID]*RunnerMeta
 		// want this tally of current jobs after allocation
-		wantCurrentJobs map[resource.TfeID]int
+		wantCurrentJobs map[resource.ID]int
 	}{
 		{
 			name: "allocate job to server runner",
@@ -77,10 +77,10 @@ func TestAllocator_allocate(t *testing.T) {
 				Status:   JobAllocated,
 				RunnerID: &runner1ID,
 			},
-			wantRunners: map[resource.TfeID]*RunnerMeta{
+			wantRunners: map[resource.ID]*RunnerMeta{
 				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1},
 			},
-			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 1},
+			wantCurrentJobs: map[resource.ID]int{runner1ID: 1},
 		},
 		{
 			name: "allocate job to agent that has pinged more recently than another",
@@ -97,11 +97,11 @@ func TestAllocator_allocate(t *testing.T) {
 				Status:   JobAllocated,
 				RunnerID: &runner1ID,
 			},
-			wantRunners: map[resource.TfeID]*RunnerMeta{
+			wantRunners: map[resource.ID]*RunnerMeta{
 				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, LastPingAt: now},
 				runner2ID: {ID: runner2ID, Status: RunnerIdle, MaxJobs: 1, LastPingAt: now.Add(-time.Second)},
 			},
-			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 1},
+			wantCurrentJobs: map[resource.ID]int{runner1ID: 1},
 		},
 		{
 			name:  "allocate job to pool agent",
@@ -127,10 +127,10 @@ func TestAllocator_allocate(t *testing.T) {
 				AgentPoolID: &pool1ID,
 				RunnerID:    &runner1ID,
 			},
-			wantRunners: map[resource.TfeID]*RunnerMeta{
+			wantRunners: map[resource.ID]*RunnerMeta{
 				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, AgentPool: &Pool{ID: pool1ID}},
 			},
-			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 1},
+			wantCurrentJobs: map[resource.ID]int{runner1ID: 1},
 		},
 		{
 			name:  "do not allocate job to agent with insufficient capacity",
@@ -146,7 +146,7 @@ func TestAllocator_allocate(t *testing.T) {
 				ID:     job1ID,
 				Status: JobUnallocated,
 			},
-			wantRunners: map[resource.TfeID]*RunnerMeta{
+			wantRunners: map[resource.ID]*RunnerMeta{
 				runner1ID: {ID: runner1ID, Status: RunnerIdle, MaxJobs: 1, CurrentJobs: 1},
 			},
 		},
@@ -166,11 +166,11 @@ func TestAllocator_allocate(t *testing.T) {
 				Status:   JobAllocated,
 				RunnerID: &runner2ID,
 			},
-			wantRunners: map[resource.TfeID]*RunnerMeta{
+			wantRunners: map[resource.ID]*RunnerMeta{
 				runner1ID: {ID: runner1ID, Status: RunnerUnknown},
 				runner2ID: {ID: runner2ID, Status: RunnerIdle, MaxJobs: 1},
 			},
-			wantCurrentJobs: map[resource.TfeID]int{runner2ID: 1},
+			wantCurrentJobs: map[resource.ID]int{runner2ID: 1},
 		},
 		{
 			name:    "deallocate finished job",
@@ -181,8 +181,8 @@ func TestAllocator_allocate(t *testing.T) {
 				RunnerID: &runner1ID,
 			},
 			wantJob:         nil,
-			wantRunners:     map[resource.TfeID]*RunnerMeta{runner1ID: {ID: runner1ID, CurrentJobs: 1}},
-			wantCurrentJobs: map[resource.TfeID]int{runner1ID: 0},
+			wantRunners:     map[resource.ID]*RunnerMeta{runner1ID: {ID: runner1ID, CurrentJobs: 1}},
+			wantCurrentJobs: map[resource.ID]int{runner1ID: 0},
 		},
 		{
 			name: "ignore running job",

@@ -21,7 +21,7 @@ type (
 	}
 
 	proxydb interface {
-		getAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		getAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
 		put(ctx context.Context, chunk Chunk) error
 	}
 )
@@ -92,6 +92,6 @@ func (p *proxy) put(ctx context.Context, chunk Chunk) error {
 }
 
 // cacheKey generates a key for caching log chunks.
-func cacheKey(runID resource.TfeID, phase internal.PhaseType) string {
+func cacheKey(runID resource.ID, phase internal.PhaseType) string {
 	return fmt.Sprintf("%s.%s.log", runID, string(phase))
 }

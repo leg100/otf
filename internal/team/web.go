@@ -23,10 +23,10 @@ type webHandlers struct {
 type webClient interface {
 	Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error)
 	Get(ctx context.Context, organization resource.OrganizationName, team string) (*Team, error)
-	GetByID(ctx context.Context, teamID resource.TfeID) (*Team, error)
+	GetByID(ctx context.Context, teamID resource.ID) (*Team, error)
 	List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error)
-	Update(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error)
-	Delete(ctx context.Context, teamID resource.TfeID) error
+	Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
+	Delete(ctx context.Context, teamID resource.ID) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -83,7 +83,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID resource.TfeID `schema:"team_id,required"`
+		TeamID resource.ID `schema:"team_id,required"`
 		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {

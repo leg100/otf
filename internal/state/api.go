@@ -35,7 +35,7 @@ func (a *api) addHandlers(r *mux.Router) {
 
 func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
 		resource.PageOptions
 	}
 	if err := decode.All(&params, r); err != nil {

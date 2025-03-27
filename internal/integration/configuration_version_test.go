@@ -69,7 +69,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 		tests := []struct {
 			name        string
-			workspaceID resource.TfeID
+			workspaceID resource.ID
 			opts        configversion.ListOptions
 			want        func(*testing.T, *resource.Page[*configversion.ConfigurationVersion], error)
 		}{

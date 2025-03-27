@@ -265,7 +265,7 @@ INSERT INTO variable_set_variables (
 	})
 }
 
-func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
+func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.ID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Exec(ctx, `
@@ -295,7 +295,7 @@ WHERE variable_set_id = $1
 	return err
 }
 
-func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
+func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.ID) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Exec(ctx, `

@@ -83,25 +83,25 @@ func TestWebhook_Purger(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		event func(*testing.T, resource.OrganizationName, resource.TfeID, resource.TfeID)
+		event func(*testing.T, resource.OrganizationName, resource.ID, resource.TfeID)
 	}{
 		{
 			name: "delete organization",
-			event: func(t *testing.T, org resource.OrganizationName, _, vcsProviderID resource.TfeID) {
+			event: func(t *testing.T, org resource.OrganizationName, _, vcsProviderID resource.ID) {
 				err := daemon.Organizations.Delete(ctx, org)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete vcs provider",
-			event: func(t *testing.T, _ resource.OrganizationName, _, vcsProviderID resource.TfeID) {
+			event: func(t *testing.T, _ resource.OrganizationName, _, vcsProviderID resource.ID) {
 				_, err := daemon.VCSProviders.Delete(ctx, vcsProviderID)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete workspace",
-			event: func(t *testing.T, _ resource.OrganizationName, workspaceID, _ resource.TfeID) {
+			event: func(t *testing.T, _ resource.OrganizationName, workspaceID, _ resource.ID) {
 				_, err := daemon.Workspaces.Delete(ctx, workspaceID)
 				require.NoError(t, err)
 			},

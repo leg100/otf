@@ -102,10 +102,10 @@ func Param(name string, r *http.Request) (string, error) {
 
 // ID retrieves a single parameter by name from the request and parses into a
 // resource ID.
-func ID(name string, r *http.Request) (resource.TfeID, error) {
+func ID(name string, r *http.Request) (resource.ID, error) {
 	s, err := Param(name, r)
 	if err != nil {
-		return resource.TfeID{}, err
+		return resource.ID{}, err
 	}
 	return resource.ParseTfeID(s)
 }

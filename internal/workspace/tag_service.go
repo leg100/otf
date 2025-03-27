@@ -53,7 +53,7 @@ func (s *Service) DeleteTags(ctx context.Context, organization resource.Organiza
 	return nil
 }
 
-func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.TfeID) error {
+func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.ID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err

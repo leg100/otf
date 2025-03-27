@@ -18,10 +18,10 @@ type (
 	// agentToken represents the authentication token for an agent.
 	// NOTE: the cryptographic token itself is not retained.
 	agentToken struct {
-		ID          resource.TfeID `jsonapi:"primary,agent_tokens" db:"agent_token_id"`
+		ID          resource.ID `jsonapi:"primary,agent_tokens" db:"agent_token_id"`
 		CreatedAt   time.Time
-		AgentPoolID resource.TfeID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
-		Description string         `jsonapi:"attribute" json:"description"`
+		AgentPoolID resource.ID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
+		Description string      `jsonapi:"attribute" json:"description"`
 	}
 
 	CreateAgentTokenOptions struct {
@@ -43,14 +43,14 @@ type tokenFactory struct {
 }
 
 // createJobToken constructs a job token
-func (f *tokenFactory) createJobToken(jobID resource.TfeID) ([]byte, error) {
+func (f *tokenFactory) createJobToken(jobID resource.ID) ([]byte, error) {
 	expiry := internal.CurrentTimestamp(nil).Add(defaultJobTokenExpiry)
 	return f.tokens.NewToken(jobID, tokens.WithExpiry(expiry))
 }
 
 // NewAgentToken constructs a token for an agent, returning both the
 // representation of the token, and the cryptographic token itself.
-func (f *tokenFactory) NewAgentToken(poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (f *tokenFactory) NewAgentToken(poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	if opts.Description == "" {
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}

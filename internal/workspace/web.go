@@ -77,8 +77,8 @@ type (
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
 		Delete(ctx context.Context, workspaceID resource.ID) (*Workspace, error)
-		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID) (*Workspace, error)
-		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.TfeID, force bool) (*Workspace, error)
+		Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error)
 
 		AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error
 		RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error

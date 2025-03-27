@@ -64,7 +64,7 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
 	// Resolve authorization requests for config version IDs to a workspace IDs
 	opts.Authorizer.RegisterWorkspaceResolver(resource.ConfigVersionKind,
-		func(ctx context.Context, cvID resource.ID) (resource.TfeID, error) {
+		func(ctx context.Context, cvID resource.ID) (resource.ID, error) {
 			sv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
 				ID: &cvID,
 			})

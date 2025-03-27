@@ -488,7 +488,7 @@ func (s *Service) deleteVariableSetVariable(ctx context.Context, variableID reso
 	return set, nil
 }
 
-func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
+func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.ID) error {
 	// retrieve set first in order to retrieve organization name for authorization
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
@@ -509,7 +509,7 @@ func (s *Service) applySetToWorkspaces(ctx context.Context, setID resource.ID, w
 	return nil
 }
 
-func (s *Service) deleteSetFromWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.TfeID) error {
+func (s *Service) deleteSetFromWorkspaces(ctx context.Context, setID resource.ID, workspaceIDs []resource.ID) error {
 	// retrieve set first in order to retrieve organization name for authorization
 	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
