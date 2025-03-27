@@ -14,6 +14,8 @@ type ID interface {
 	encoding.TextUnmarshaler
 	sql.Scanner
 	driver.Valuer
+
+	Kind() Kind
 }
 
 // ReStringID is a regular expression used to validate common string ID patterns.
