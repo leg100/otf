@@ -29,6 +29,8 @@ type (
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)
+
+	fakeWebLogsService struct{}
 )
 
 func withWorkspace(workspace *workspace.Workspace) fakeWebServiceOption {
@@ -43,7 +45,7 @@ func withRuns(runs ...*Run) fakeWebServiceOption {
 	}
 }
 
-func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
+func newTestWebHandlers(_ *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 	var svc fakeWebServices
 	for _, fn := range opts {
 		fn(&svc)
@@ -55,6 +57,7 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 			Workspaces: []*workspace.Workspace{svc.ws},
 		},
 		runs: &svc,
+		logs: &fakeWebLogsService{},
 	}
 }
 
@@ -70,10 +73,6 @@ func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebServices) getLogs(context.Context, resource.TfeID, internal.PhaseType) ([]byte, error) {
-	return nil, nil
-}
-
 func (f *fakeWebServices) Cancel(context.Context, resource.TfeID) error { return nil }
 
 func (f *fakeWebServices) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
@@ -82,4 +81,8 @@ func (f *fakeWebServices) Get(ctx context.Context, runID resource.TfeID) (*Run, 
 
 func (f *fakeWebServices) Apply(ctx context.Context, runID resource.TfeID) error {
 	return nil
+}
+
+func (f *fakeWebLogsService) GetAllLogs(context.Context, resource.TfeID, internal.PhaseType) ([]byte, error) {
+	return nil, nil
 }

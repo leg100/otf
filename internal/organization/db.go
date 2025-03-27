@@ -38,10 +38,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 		org.SessionTimeout,
 		org.AllowForceDeleteWorkspaces,
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (db *pgdb) update(ctx context.Context, name resource.OrganizationName, fn func(context.Context, *Organization) error) (*Organization, error) {

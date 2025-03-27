@@ -228,6 +228,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		MaxConfigSize: cfg.MaxConfigSize,
 	})
 
+	logsService := logs.NewService(logs.Options{
+		Logger:     logger,
+		Authorizer: authorizer,
+		DB:         db,
+		Cache:      cache,
+		Listener:   listener,
+		Verifier:   signer,
+	})
 	runService := run.NewService(run.Options{
 		Logger:               logger,
 		Authorizer:           authorizer,
@@ -236,6 +244,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:            responder,
 		OrganizationService:  orgService,
 		WorkspaceService:     workspaceService,
+		LogsService:          logsService,
 		ConfigVersionService: configService,
 		VCSProviderService:   vcsProviderService,
 		Cache:                cache,
@@ -243,14 +252,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Signer:               signer,
 		ReleasesService:      releasesService,
 		TokensService:        tokensService,
-	})
-	logsService := logs.NewService(logs.Options{
-		Logger:     logger,
-		Authorizer: authorizer,
-		DB:         db,
-		Cache:      cache,
-		Listener:   listener,
-		Verifier:   signer,
 	})
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,

@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
@@ -42,6 +41,7 @@ type (
 		tfeapi                 *tfe
 		api                    *api
 		web                    *webHandlers
+		logs                   *logs.Service
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -61,6 +61,7 @@ type (
 		ReleasesService      *releases.Service
 		VCSProviderService   *vcsprovider.Service
 		TokensService        *tokens.Service
+		LogsService          *logs.Service
 
 		logr.Logger
 		internal.Cache
@@ -79,6 +80,7 @@ func NewService(opts Options) *Service {
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
+		logs:       opts.LogsService,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -576,7 +578,7 @@ func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (
 }
 
 func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (Report, error) {
-	logs, err := s.getLogs(ctx, runID, internal.ApplyPhase)
+	logs, err := s.logs.GetAllLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return Report{}, err
 	}
@@ -588,22 +590,6 @@ func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (
 		return Report{}, err
 	}
 	return report, nil
-}
-
-func (s *Service) getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
-	data, err := (&logs.Queries{}).FindLogs(ctx, s.db.Conn(ctx), logs.FindLogsParams{
-		RunID: runID,
-		Phase: sql.String(string(phase)),
-	})
-	if err != nil {
-		// Don't consider no rows an error because logs may not have been
-		// uploaded yet.
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return data, nil
 }
 
 func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {

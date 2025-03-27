@@ -502,9 +502,14 @@ FROM workspaces w
 WHERE w.workspace_id = $1
 `,
 		workspaceID)
+	type workspacePermissionModel struct {
+		WorkspaceID resource.TfeID `db:"workspace_id"`
+		TeamID      resource.TfeID `db:"team_id"`
+		Role        string
+	}
 	var (
 		globalRemoteState bool
-		perms             []WorkspacePermission
+		perms             []workspacePermissionModel
 	)
 	if err := row.Scan(&globalRemoteState, &perms); err != nil {
 		return authz.WorkspacePolicy{}, err
@@ -514,7 +519,7 @@ WHERE w.workspace_id = $1
 		Permissions:       make([]authz.WorkspacePermission, len(perms)),
 	}
 	for i, perm := range perms {
-		role, err := authz.WorkspaceRoleFromString(perm.Role.String)
+		role, err := authz.WorkspaceRoleFromString(perm.Role)
 		if err != nil {
 			return authz.WorkspacePolicy{}, err
 		}

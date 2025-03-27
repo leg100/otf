@@ -63,7 +63,7 @@ WHERE chunk_id = $1
 	})
 }
 
-func (db *pgdb) getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+func (db *pgdb) getAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
 	rows := db.Query(ctx, `
 SELECT
     string_agg(chunk, '')
