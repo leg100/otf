@@ -147,7 +147,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		}
 		props.organization = ws.Organization
 		props.ws = ws
-		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: ws.ID})
 	} else if opts.ListOptions.Organization != nil {
 		props.organization = *opts.ListOptions.Organization
 	} else {

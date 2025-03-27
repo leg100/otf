@@ -17,7 +17,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID resou
 	if runID != nil {
 		id = *runID
 	} else {
-		subject, err := s.Authorize(ctx, authz.LockWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+		subject, err := s.Authorize(ctx, authz.LockWorkspaceAction, &authz.AccessRequest{ID: workspaceID})
 		if err != nil {
 			return nil, err
 		}

@@ -61,7 +61,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspac
 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		for _, wid := range workspaceIDs {
-			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, &authz.AccessRequest{ID: &wid})
+			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, &authz.AccessRequest{ID: wid})
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspac
 }
 
 func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.AddTagsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.AddTagsAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []T
 }
 
 func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return err
 	}
