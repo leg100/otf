@@ -32,7 +32,7 @@ type (
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []StatusTimestamp  `db:"status_timestamps"`
-		WorkspaceID       resource.ID        `db:"workspace_id"`
+		WorkspaceID       resource.TfeID     `db:"workspace_id"`
 		IngressAttributes *IngressAttributes `db:"ingress_attributes"`
 	}
 
@@ -110,7 +110,7 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),

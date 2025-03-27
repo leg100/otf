@@ -83,7 +83,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
+func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
 	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return nil, err
