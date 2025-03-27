@@ -13,8 +13,9 @@ import (
 
 func TestWebHandlers_createAgentPool(t *testing.T) {
 	organization := resource.NewTestOrganizationName(t)
+	id := testutils.ParseID(t, "pool-123")
 	svc := &fakeService{
-		pool: &Pool{ID: testutils.ParseID(t, "pool-123")},
+		pool: &Pool{ID: id},
 	}
 	h := &webHandlers{svc: svc}
 	q := "/?organization_name=" + organization.String() + "&name=my-pool"
@@ -28,7 +29,7 @@ func TestWebHandlers_createAgentPool(t *testing.T) {
 		Organization: organization,
 	}
 	assert.Equal(t, want, svc.createAgentPoolOptions)
-	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
+	testutils.AssertRedirect(t, w, paths.AgentPool(id))
 }
 
 func TestWebHandlers_listAgentPools(t *testing.T) {
@@ -47,6 +48,7 @@ func TestWebHandlers_listAgentPools(t *testing.T) {
 }
 
 func TestWebHandlers_createAgentToken(t *testing.T) {
+	id := testutils.ParseID(t, "pool-123")
 	h := &webHandlers{
 		svc: &fakeService{},
 	}
@@ -56,7 +58,7 @@ func TestWebHandlers_createAgentToken(t *testing.T) {
 
 	h.createAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
+	testutils.AssertRedirect(t, w, paths.AgentPool(id))
 }
 
 func TestAgentToken_DeleteHandler(t *testing.T) {
@@ -75,5 +77,5 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 
 	h.deleteAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID.String()))
+	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID))
 }

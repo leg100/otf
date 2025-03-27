@@ -56,7 +56,7 @@ func newWorkspaceVariable(ws *workspace.Workspace) templ.Component {
 			}
 			templ_7745c5c3_Err = form(formProps{
 				variable: &Variable{},
-				action:   paths.CreateVariable(ws.ID.String()),
+				action:   paths.CreateVariable(ws.ID),
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -67,8 +67,8 @@ func newWorkspaceVariable(ws *workspace.Workspace) templ.Component {
 			Title:        "new variable",
 			Organization: &ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
-				{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
+				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -123,7 +123,7 @@ func newVariableSet(props newVariableSetProps) templ.Component {
 			}
 			templ_7745c5c3_Err = variableSetForm(variableSetFormProps{
 				set:                 &VariableSet{Global: true}, // set global as default
-				action:              paths.CreateVariableSet(props.organization.String()),
+				action:              paths.CreateVariableSet(props.organization),
 				availableWorkspaces: props.availableWorkspaces,
 				existingWorkspaces:  []workspaceInfo{},
 			}).Render(ctx, templ_7745c5c3_Buffer)
@@ -136,7 +136,7 @@ func newVariableSet(props newVariableSetProps) templ.Component {
 			Title:        "new variable set",
 			Organization: &props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.organization.String())},
+				{Name: "variable sets", Link: paths.VariableSets(props.organization)},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
@@ -186,7 +186,7 @@ func newVSV(vs *VariableSet) templ.Component {
 			}
 			templ_7745c5c3_Err = form(formProps{
 				variable: &Variable{},
-				action:   paths.CreateVariableSetVariable(vs.ID.String()),
+				action:   paths.CreateVariableSetVariable(vs.ID),
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -197,8 +197,8 @@ func newVSV(vs *VariableSet) templ.Component {
 			Title:        "new variable | variable sets",
 			Organization: &vs.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(vs.Organization.String())},
-				{Name: vs.Name, Link: paths.VariableSet(vs.ID.String())},
+				{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
+				{Name: vs.Name, Link: paths.VariableSet(vs.ID)},
 				{Name: "new variable"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
@@ -228,11 +228,11 @@ func (p workspaceTableProps) Variables() []*Variable {
 }
 
 func (workspaceTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
-	return paths.EditVariable(variableID.String())
+	return paths.EditVariable(variableID)
 }
 
 func (workspaceTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
-	return paths.DeleteVariable(variableID.String())
+	return paths.DeleteVariable(variableID)
 }
 
 func (w workspaceTableProps) IsOverwritten(v *Variable) bool {
@@ -307,7 +307,7 @@ func listWorkspaceVariables(props listWorkspaceVariablesProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var10 templ.SafeURL = paths.NewVariable(props.ws.ID.String())
+				var templ_7745c5c3_Var10 templ.SafeURL = paths.NewVariable(props.ws.ID)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var10)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -371,9 +371,9 @@ func listWorkspaceVariables(props listWorkspaceVariablesProps) templ.Component {
 			Title:        "variables",
 			Organization: &props.ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-				{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+				{Name: "variables", Link: paths.Variables(props.ws.ID)},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -485,7 +485,7 @@ func listVariableSetsActions(props listVariableSetsProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var16 templ.SafeURL = paths.NewVariableSet(props.organization.String())
+			var templ_7745c5c3_Var16 templ.SafeURL = paths.NewVariableSet(props.organization)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var16)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -538,9 +538,9 @@ func variableSetItem(vs *VariableSet) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.EditVariableSet(vs.ID.String())))
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.EditVariableSet(vs.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 172, Col: 127}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/variable/view.templ`, Line: 172, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -644,7 +644,7 @@ func editWorkspaceVariable(props editWorkspaceVariableProps) templ.Component {
 			templ_7745c5c3_Err = form(formProps{
 				variable: props.variable,
 				edit:     true,
-				action:   paths.UpdateVariable(props.variable.ID.String()),
+				action:   paths.UpdateVariable(props.variable.ID),
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -655,9 +655,9 @@ func editWorkspaceVariable(props editWorkspaceVariableProps) templ.Component {
 			Title:        "edit | " + props.variable.ID.String(),
 			Organization: &props.ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-				{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+				{Name: "variables", Link: paths.Variables(props.ws.ID)},
 				{Name: "edit"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
@@ -715,7 +715,7 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 			templ_7745c5c3_Err = variableSetForm(variableSetFormProps{
 				set:                 props.set,
 				edit:                true,
-				action:              paths.EditVariableSet(props.set.ID.String()),
+				action:              paths.EditVariableSet(props.set.ID),
 				availableWorkspaces: props.availableWorkspaces,
 				existingWorkspaces:  props.existingWorkspaces,
 			}).Render(ctx, templ_7745c5c3_Buffer)
@@ -734,7 +734,7 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 templ.SafeURL = paths.NewVariableSetVariable(props.set.ID.String())
+			var templ_7745c5c3_Var26 templ.SafeURL = paths.NewVariableSetVariable(props.set.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var26)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -749,7 +749,7 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 			Title:        "edit variable set",
 			Organization: &props.set.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization.String())},
+				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
 				{Name: props.set.Name},
 				{Name: "edit"},
 			},
@@ -806,7 +806,7 @@ func editVSV(props editVSVProps) templ.Component {
 			templ_7745c5c3_Err = form(formProps{
 				variable: props.variable,
 				edit:     true,
-				action:   paths.UpdateVariableSetVariable(props.variable.ID.String()),
+				action:   paths.UpdateVariableSetVariable(props.variable.ID),
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -817,8 +817,8 @@ func editVSV(props editVSVProps) templ.Component {
 			Title:        "edit variable set variable",
 			Organization: &props.set.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization.String())},
-				{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID.String())},
+				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+				{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID)},
 				{Name: "variables"},
 				{Name: props.variable.ID.String()},
 				{Name: "edit"},
@@ -1140,11 +1140,11 @@ func (p setTableProps) Variables() []*Variable {
 }
 
 func (setTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
-	return paths.EditVariableSetVariable(variableID.String())
+	return paths.EditVariableSetVariable(variableID)
 }
 
 func (setTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
-	return paths.DeleteVariableSetVariable(variableID.String())
+	return paths.DeleteVariableSetVariable(variableID)
 }
 
 func (w setTableProps) IsOverwritten(v *Variable) bool {

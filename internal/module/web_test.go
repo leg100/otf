@@ -136,7 +136,7 @@ func TestWeb_Publish(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Module(mod.ID.String()), redirect.Path)
+		assert.Equal(t, paths.Module(mod.ID), redirect.Path)
 	}
 }
 
@@ -151,7 +151,7 @@ func TestNewModule_Delete(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Modules(mod.Organization.String()), redirect.Path)
+		assert.Equal(t, paths.Modules(mod.Organization), redirect.Path)
 	}
 }
 

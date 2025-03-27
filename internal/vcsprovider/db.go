@@ -189,9 +189,9 @@ type (
 	}
 
 	githubAppModel struct {
-		GithubAppID   int64  `db:"github_app_id"`
-		WebhookSecret string `db:"webhook_secret"`
-		PrivateKey    string `db:"private_key"`
+		GithubAppID   github.AppID `db:"github_app_id"`
+		WebhookSecret string       `db:"webhook_secret"`
+		PrivateKey    string       `db:"private_key"`
 		Slug          string
 		Organization  *string
 	}

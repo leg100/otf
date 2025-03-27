@@ -87,13 +87,13 @@ templ getTeam(props getTeamProps) {
 		Title:        props.team.ID.String(),
 		Organization: &props.team.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "teams", Link: paths.Teams(props.team.Organization.String())},
+			{Name: "teams", Link: paths.Teams(props.team.Organization)},
 			{Name: props.team.Name},
 		},
 	}) {
 		if props.canUpdateTeam {
 			<h3 class="font-semibold my-2 text-lg">Permissions</h3>
-			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID.String()) } method="POST">
+			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID) } method="POST">
 				<div class="form-checkbox">
 					<input
 						type="checkbox"
@@ -160,7 +160,7 @@ templ getTeam(props getTeamProps) {
 					<div>
 						@components.Identifier(member.ID)
 						if props.canRemoveMember {
-							<form action={ paths.RemoveMemberTeam(props.team.ID.String()) } method="POST">
+							<form action={ paths.RemoveMemberTeam(props.team.ID) } method="POST">
 								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
 								<button id="remove-member-button" class="btn btn-error btn-outline">
 									Remove member
@@ -177,7 +177,7 @@ templ getTeam(props getTeamProps) {
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
-			<form action={ paths.DeleteTeam(props.team.ID.String()) } method="POST">
+			<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
 				<button class="btn btn-error btn-outline text-green-800" onclick="return confirm('Are you sure you want to delete?')">
 					Delete team
 				</button>

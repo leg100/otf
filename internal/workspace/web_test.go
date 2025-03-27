@@ -48,7 +48,7 @@ func TestWorkspace_Create(t *testing.T) {
 	if assert.Equal(t, 302, w.Code, "output: %s", w.Body.String()) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspace(ws.ID.String()), redirect.Path)
+		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
 	}
 }
 
@@ -100,7 +100,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspace(ws.ID.String()), redirect.Path)
+		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
 	}
 }
 
@@ -299,7 +299,7 @@ func TestDeleteWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspaces(org1.String()), redirect.Path)
+		assert.Equal(t, paths.Workspaces(org1), redirect.Path)
 	}
 }
 

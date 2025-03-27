@@ -155,7 +155,7 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "added team member: "+*params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +175,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "removed team member: "+params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +239,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Name:        "username",
 			Available:   nonMemberUsernames,
 			Existing:    usernames,
-			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID.String())),
+			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID)),
 			Placeholder: "Add user",
 			Width:       components.WideDropDown,
 		},

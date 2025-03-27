@@ -8,58 +8,58 @@ import (
 	"github.com/a-h/templ"
 )
 
-func Runs(workspace string) templ.SafeURL {
+func Runs(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs", workspace))
 }
 
-func CreateRun(workspace string) templ.SafeURL {
+func CreateRun(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs/create", workspace))
 }
 
-func NewRun(workspace string) templ.SafeURL {
+func NewRun(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs/new", workspace))
 }
 
-func Run(run string) templ.SafeURL {
+func Run(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s", run))
 }
 
-func EditRun(run string) templ.SafeURL {
+func EditRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/edit", run))
 }
 
-func UpdateRun(run string) templ.SafeURL {
+func UpdateRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/update", run))
 }
 
-func DeleteRun(run string) templ.SafeURL {
+func DeleteRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/delete", run))
 }
 
-func ApplyRun(run string) templ.SafeURL {
+func ApplyRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/apply", run))
 }
 
-func DiscardRun(run string) templ.SafeURL {
+func DiscardRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/discard", run))
 }
 
-func CancelRun(run string) templ.SafeURL {
+func CancelRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/cancel", run))
 }
 
-func ForceCancelRun(run string) templ.SafeURL {
+func ForceCancelRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/force-cancel", run))
 }
 
-func RetryRun(run string) templ.SafeURL {
+func RetryRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/retry", run))
 }
 
-func TailRun(run string) templ.SafeURL {
+func TailRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/tail", run))
 }
 
-func WidgetRun(run string) templ.SafeURL {
+func WidgetRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/widget", run))
 }

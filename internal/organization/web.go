@@ -75,7 +75,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created organization: "+org.Name.String())
-	http.Redirect(w, r, paths.Organization(org.Name.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Organization(org.Name), http.StatusFound)
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +163,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "updated organization")
-	http.Redirect(w, r, paths.EditOrganization(org.Name.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditOrganization(org.Name), http.StatusFound)
 }
 
 func (a *web) delete(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +204,7 @@ func (a *web) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.OrganizationToken(opts.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.OrganizationToken(opts.Organization), http.StatusFound)
 }
 
 func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
@@ -241,5 +241,5 @@ func (a *web) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "Deleted organization token")
-	http.Redirect(w, r, paths.OrganizationToken(params.Name.String()), http.StatusFound)
+	http.Redirect(w, r, paths.OrganizationToken(params.Name), http.StatusFound)
 }

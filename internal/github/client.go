@@ -50,7 +50,7 @@ type (
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-a-github-app
 	AppCredentials struct {
 		// Github app ID
-		ID int64
+		ID AppID
 		// Private key in PEM format
 		PrivateKey string
 	}
@@ -87,14 +87,14 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 	switch {
 	case cfg.AppCredentials != nil:
-		tripper, err = ghinstallation.NewAppsTransport(tripper, cfg.AppCredentials.ID, []byte(cfg.AppCredentials.PrivateKey))
+		tripper, err = ghinstallation.NewAppsTransport(tripper, int64(cfg.AppCredentials.ID), []byte(cfg.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
 	case cfg.InstallCredentials != nil:
 		iat = true
 		creds := cfg.InstallCredentials
-		installTransport, err := ghinstallation.New(tripper, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
+		installTransport, err := ghinstallation.New(tripper, int64(creds.AppCredentials.ID), creds.ID, []byte(creds.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}

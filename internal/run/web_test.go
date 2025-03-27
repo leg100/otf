@@ -69,17 +69,19 @@ func TestWeb_GetHandler(t *testing.T) {
 }
 
 func TestRuns_CancelHandler(t *testing.T) {
-	h := newTestWebHandlers(t, withRuns(&Run{ID: testutils.ParseID(t, "run-1")}))
+	run := &Run{ID: testutils.ParseID(t, "run-1")}
+	h := newTestWebHandlers(t, withRuns(run))
 
 	r := httptest.NewRequest("POST", "/?run_id=run-1", nil)
 	w := httptest.NewRecorder()
 	h.cancel(w, r)
-	testutils.AssertRedirect(t, w, paths.Run("run-1"))
+	testutils.AssertRedirect(t, w, paths.Run(run.ID))
 }
 
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
+	run := &Run{ID: testutils.ParseID(t, "run-1")}
 	h := newTestWebHandlers(t,
-		withRuns(&Run{ID: testutils.ParseID(t, "run-1")}),
+		withRuns(run),
 		withWorkspace(&workspace.Workspace{ID: testutils.ParseID(t, "ws-123"), Connection: &workspace.Connection{}}),
 	)
 
@@ -87,17 +89,18 @@ func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	h.createRun(w, r)
-	testutils.AssertRedirect(t, w, paths.Run("run-1"))
+	testutils.AssertRedirect(t, w, paths.Run(run.ID))
 }
 
 func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
+	run := &Run{ID: testutils.ParseID(t, "run-1")}
 	h := newTestWebHandlers(t,
-		withRuns(&Run{ID: testutils.ParseID(t, "run-1")}),
+		withRuns(run),
 	)
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=false"
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	h.createRun(w, r)
-	testutils.AssertRedirect(t, w, paths.Run("run-1"))
+	testutils.AssertRedirect(t, w, paths.Run(run.ID))
 }

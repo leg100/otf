@@ -8,7 +8,7 @@ import (
 
 type (
 	App struct {
-		ID            int64  `db:"github_app_id"` // github's app id
+		ID            AppID  `db:"github_app_id"` // github's app id
 		Slug          string // github's "slug" name
 		WebhookSecret string `db:"webhook_secret"`
 		PrivateKey    string `db:"private_key"`
@@ -29,7 +29,7 @@ type (
 
 func newApp(opts CreateAppOptions) *App {
 	return &App{
-		ID:            opts.AppID,
+		ID:            AppID(opts.AppID),
 		Slug:          opts.Slug,
 		WebhookSecret: opts.WebhookSecret,
 		PrivateKey:    opts.PrivateKey,
@@ -52,7 +52,7 @@ func (a *App) NewInstallURL(hostname string) string {
 // LogValue implements slog.LogValuer.
 func (a *App) LogValue() slog.Value {
 	return slog.GroupValue(
-		slog.Int64("id", a.ID),
+		slog.Any("id", a.ID),
 		slog.String("slug", a.Slug),
 	)
 }

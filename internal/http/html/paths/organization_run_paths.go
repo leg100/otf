@@ -4,6 +4,6 @@ package paths
 
 import "fmt"
 
-func OrganizationRuns(organization string) string {
+func OrganizationRuns(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/runs", organization)
 }

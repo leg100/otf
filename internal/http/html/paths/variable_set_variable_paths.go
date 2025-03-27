@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func VariableSetVariables(variableSet string) string {
+func VariableSetVariables(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables", variableSet)
 }
 
-func CreateVariableSetVariable(variableSet string) string {
+func CreateVariableSetVariable(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/create", variableSet)
 }
 
-func NewVariableSetVariable(variableSet string) string {
+func NewVariableSetVariable(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/new", variableSet)
 }
 
-func VariableSetVariable(variableSetVariable string) string {
+func VariableSetVariable(variableSetVariable fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s", variableSetVariable)
 }
 
-func EditVariableSetVariable(variableSetVariable string) string {
+func EditVariableSetVariable(variableSetVariable fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s/edit", variableSetVariable)
 }
 
-func UpdateVariableSetVariable(variableSetVariable string) string {
+func UpdateVariableSetVariable(variableSetVariable fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s/update", variableSetVariable)
 }
 
-func DeleteVariableSetVariable(variableSetVariable string) string {
+func DeleteVariableSetVariable(variableSetVariable fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s/delete", variableSetVariable)
 }
