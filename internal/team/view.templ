@@ -11,11 +11,11 @@ templ newTeamView(organization resource.OrganizationName) {
 		Title:        "new team",
 		Organization: &organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "teams", Link: paths.Teams(organization.String())},
+			{Name: "teams", Link: paths.Teams(organization)},
 			{Name: "new"},
 		},
 	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization.String()) } method="POST">
+		<form class="flex flex-col gap-2" action={ paths.CreateTeam(organization) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
 				<input class="input w-80" type="text" name="name" id="name" required/>
@@ -44,7 +44,7 @@ templ listTeams(props listTeamsProps) {
 	}) {
 		<div id="content-list">
 			for _, team := range props.teams {
-				<div x-data={ components.BlockLink(paths.Team(team.ID.String())) } class="widget" id={ "item-team-" + team.Name }>
+				<div x-data={ components.BlockLink(paths.Team(team.ID)) } class="widget" id={ "item-team-" + team.Name }>
 					<div>
 						<span>{ team.Name }</span>
 					</div>
@@ -62,7 +62,7 @@ templ listTeams(props listTeamsProps) {
 
 templ listTeamsActions(props listTeamsProps) {
 	if props.canCreateTeam {
-		<form action={ paths.NewTeam(props.organization.String()) } method="GET">
+		<form action={ paths.NewTeam(props.organization) } method="GET">
 			<button class="btn" id="new-team-button">
 				New Team
 			</button>

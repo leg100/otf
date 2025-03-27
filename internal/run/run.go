@@ -89,6 +89,7 @@ type (
 	}
 
 	StatusTimestamp struct {
+		RunID     resource.TfeID
 		Status    runstatus.Status `json:"status"`
 		Timestamp time.Time        `json:"timestamp"`
 	}
@@ -540,6 +541,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) (autoapp
 func (r *Run) updateStatus(status runstatus.Status, now *time.Time) *Run {
 	r.Status = status
 	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
+		RunID:     r.ID,
 		Status:    status,
 		Timestamp: internal.CurrentTimestamp(now),
 	})

@@ -10,6 +10,8 @@ import (
 // base58 alphabet
 const base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
+var _ ID = (*TfeID)(nil)
+
 // TfeID is an ID using the same format used for Terraform Enterprise resources,
 // with a prefix designating the type of resource, appended with a unique base58
 // encoded id.
@@ -17,8 +19,6 @@ type TfeID struct {
 	kind Kind
 	id   string
 }
-
-var _ ID = (*TfeID)(nil)
 
 // NewTfeID constructs a resource ID
 func NewTfeID(kind Kind) TfeID {

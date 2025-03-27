@@ -20,18 +20,18 @@ func NewOrganization() templ.SafeURL {
 	return templ.URL("/app/organizations/new")
 }
 
-func Organization(organization string) templ.SafeURL {
+func Organization(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s", organization))
 }
 
-func EditOrganization(organization string) templ.SafeURL {
+func EditOrganization(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/edit", organization))
 }
 
-func UpdateOrganization(organization string) templ.SafeURL {
+func UpdateOrganization(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/update", organization))
 }
 
-func DeleteOrganization(organization string) templ.SafeURL {
+func DeleteOrganization(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/delete", organization))
 }

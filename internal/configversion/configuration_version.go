@@ -25,15 +25,15 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                resource.TfeID
-		CreatedAt         time.Time
-		AutoQueueRuns     bool
+		ID                resource.TfeID `db:"configuration_version_id"`
+		CreatedAt         time.Time      `db:"created_at"`
+		AutoQueueRuns     bool           `db:"auto_queue_runs"`
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
-		StatusTimestamps  []ConfigurationVersionStatusTimestamp
-		WorkspaceID       resource.TfeID
-		IngressAttributes *IngressAttributes
+		StatusTimestamps  []StatusTimestamp  `db:"status_timestamps"`
+		WorkspaceID       resource.TfeID     `db:"workspace_id"`
+		IngressAttributes *IngressAttributes `db:"ingress_attributes"`
 	}
 
 	// CreateOptions represents the options for creating a
@@ -49,9 +49,10 @@ type (
 	// ConfigurationStatus represents a configuration version status.
 	ConfigurationStatus string
 
-	ConfigurationVersionStatusTimestamp struct {
-		Status    ConfigurationStatus
-		Timestamp time.Time
+	StatusTimestamp struct {
+		ConfigurationVersionID resource.TfeID `db:"-"`
+		Status                 ConfigurationStatus
+		Timestamp              time.Time
 	}
 
 	// ConfigUploader uploads a config
@@ -90,20 +91,21 @@ type (
 		Branch string
 		// CloneURL          string
 		// CommitMessage     string
-		CommitSHA string
-		CommitURL string
+		CommitSHA              string         `db:"commit_sha"`
+		Repo                   string         `db:"identifier"`
+		IsPullRequest          bool           `db:"is_pull_request"`
+		OnDefaultBranch        bool           `db:"on_default_branch"`
+		ConfigurationVersionID resource.TfeID `db:"configuration_version_id"`
+		CommitURL              string         `db:"commit_url"`
+		PullRequestNumber      int            `db:"pull_request_number"`
+		PullRequestURL         string         `db:"pull_request_url"`
+		PullRequestTitle       string         `db:"pull_request_title"`
 		// CompareURL        string
-		Repo              string
-		IsPullRequest     bool
-		OnDefaultBranch   bool
-		PullRequestNumber int
-		PullRequestURL    string
-		PullRequestTitle  string
 		// PullRequestBody   string
 		Tag             string
-		SenderUsername  string
-		SenderAvatarURL string
-		SenderHTMLURL   string
+		SenderUsername  string `db:"sender_username"`
+		SenderAvatarURL string `db:"sender_avatar_url"`
+		SenderHTMLURL   string `db:"sender_html_url"`
 	}
 )
 
@@ -142,13 +144,6 @@ func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (tim
 	return time.Time{}, internal.ErrStatusTimestampNotFound
 }
 
-func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
-	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: timestamp,
-	})
-}
-
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
 	// upload config and set status depending on success
@@ -163,8 +158,9 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 
 func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.Status = status
-	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: internal.CurrentTimestamp(nil),
+	cv.StatusTimestamps = append(cv.StatusTimestamps, StatusTimestamp{
+		ConfigurationVersionID: cv.ID,
+		Status:                 status,
+		Timestamp:              internal.CurrentTimestamp(nil),
 	})
 }

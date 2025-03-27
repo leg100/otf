@@ -69,7 +69,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	})
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "team already exists")
-		http.Redirect(w, r, paths.NewTeam(params.Organization.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewTeam(params.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -78,7 +78,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created team: "+team.Name)
-	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
 }
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
@@ -149,5 +149,5 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted team: "+team.Name)
-	http.Redirect(w, r, paths.Teams(team.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Teams(team.Organization), http.StatusFound)
 }

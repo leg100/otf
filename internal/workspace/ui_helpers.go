@@ -45,7 +45,7 @@ func (h *uiHelpers) lockButtonHelper(
 	if ws.Locked() {
 		btn.State = "locked"
 		btn.Text = "Unlock"
-		btn.Action = paths.UnlockWorkspace(ws.ID.String())
+		btn.Action = paths.UnlockWorkspace(ws.ID)
 		// A user needs at least the unlock permission
 		if !h.authorizer.CanAccess(ctx, authz.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
 			btn.Tooltip = "insufficient permissions"
@@ -74,7 +74,7 @@ func (h *uiHelpers) lockButtonHelper(
 		// User is going to need the force unlock permission
 		if h.authorizer.CanAccess(ctx, authz.ForceUnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
 			btn.Text = "Force unlock"
-			btn.Action = paths.ForceUnlockWorkspace(ws.ID.String())
+			btn.Action = paths.ForceUnlockWorkspace(ws.ID)
 			return btn, nil
 		}
 		// User cannot unlock
@@ -83,7 +83,7 @@ func (h *uiHelpers) lockButtonHelper(
 	} else {
 		btn.State = "unlocked"
 		btn.Text = "Lock"
-		btn.Action = paths.LockWorkspace(ws.ID.String())
+		btn.Action = paths.LockWorkspace(ws.ID)
 		// User needs at least the lock permission
 		if !h.authorizer.CanAccess(ctx, authz.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
 			btn.Disabled = true

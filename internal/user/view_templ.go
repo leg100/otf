@@ -347,7 +347,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var16 templ.SafeURL = paths.UpdateTeam(props.team.ID.String())
+				var templ_7745c5c3_Var16 templ.SafeURL = paths.UpdateTeam(props.team.ID)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var16)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -356,7 +356,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if props.team.OrganizationAccess().ManageWorkspaces || props.team.IsOwners() {
+				if props.team.ManageWorkspaces || props.team.IsOwners() {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -372,7 +372,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if props.team.OrganizationAccess().ManageVCS || props.team.IsOwners() {
+				if props.team.ManageVCS || props.team.IsOwners() {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -388,7 +388,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if props.team.OrganizationAccess().ManageModules || props.team.IsOwners() {
+				if props.team.ManageModules || props.team.IsOwners() {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -469,7 +469,7 @@ func getTeam(props getTeamProps) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var19 templ.SafeURL = paths.RemoveMemberTeam(props.team.ID.String())
+					var templ_7745c5c3_Var19 templ.SafeURL = paths.RemoveMemberTeam(props.team.ID)
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var19)))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -512,7 +512,7 @@ func getTeam(props getTeamProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var21 templ.SafeURL = paths.DeleteTeam(props.team.ID.String())
+				var templ_7745c5c3_Var21 templ.SafeURL = paths.DeleteTeam(props.team.ID)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var21)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -541,7 +541,7 @@ func getTeam(props getTeamProps) templ.Component {
 			Title:        props.team.ID.String(),
 			Organization: &props.team.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "teams", Link: paths.Teams(props.team.Organization.String())},
+				{Name: "teams", Link: paths.Teams(props.team.Organization)},
 				{Name: props.team.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)

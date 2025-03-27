@@ -24,6 +24,7 @@ type (
 	webHandlers struct {
 		logger               logr.Logger
 		runs                 webRunClient
+		logs                 webLogsClient
 		workspaces           webWorkspaceClient
 		authorizer           webAuthorizer
 		websocketListHandler *components.WebsocketListHandler[*Run, ListOptions]
@@ -39,8 +40,11 @@ type (
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
 
-		getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
+	}
+
+	webLogsClient interface {
+		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
 	}
 
 	webWorkspaceClient interface {
@@ -59,6 +63,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		logger:     opts.Logger,
 		runs:       service,
 		workspaces: opts.WorkspaceService,
+		logs:       opts.LogsService,
 		websocketListHandler: &components.WebsocketListHandler[*Run, ListOptions]{
 			Logger: opts.Logger,
 			Client: service,
@@ -106,11 +111,11 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
@@ -173,12 +178,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -228,7 +233,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(run.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +248,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +263,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
@@ -273,7 +278,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID.String())+"#apply", http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
 }
 
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +293,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
@@ -312,11 +317,11 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {

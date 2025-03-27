@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -52,4 +53,14 @@ func ToStringSlice[T ~string](from []T) (to []string) {
 		to[i] = string(f)
 	}
 	return
+}
+
+func ToStringer(s string) fmt.Stringer {
+	return stringer(s)
+}
+
+type stringer string
+
+func (s stringer) String() string {
+	return string(s)
 }

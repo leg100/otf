@@ -141,7 +141,7 @@ func TestIntegration_Organization(t *testing.T) {
 		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-sub)
 
 		_, err = daemon.Organizations.Get(ctx, org.Name)
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
@@ -150,6 +150,6 @@ func TestIntegration_Organization(t *testing.T) {
 		// delete using site admin otherwise a not authorized error is returned
 		// to normal users
 		err := svc.Organizations.Delete(adminCtx, resource.NewTestOrganizationName(t))
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 }

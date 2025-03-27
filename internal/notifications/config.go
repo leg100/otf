@@ -40,16 +40,16 @@ var (
 type (
 	// Config represents a Notification Configuration.
 	Config struct {
-		ID              resource.TfeID
-		CreatedAt       time.Time
-		UpdatedAt       time.Time
-		DestinationType Destination
+		ID              resource.TfeID `db:"notification_configuration_id"`
+		CreatedAt       time.Time      `db:"created_at"`
+		UpdatedAt       time.Time      `db:"updated_at"`
+		DestinationType Destination    `db:"destination_type"`
 		Enabled         bool
 		Name            string
-		Token           string
+		Token           string `db:"-"`
 		Triggers        []Trigger
 		URL             *string
-		WorkspaceID     resource.TfeID
+		WorkspaceID     resource.TfeID `db:"workspace_id"`
 	}
 
 	// Trigger is the event triggering a notification

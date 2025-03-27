@@ -75,7 +75,7 @@ type (
 		getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
 		updateCurrentVersion(context.Context, resource.TfeID, resource.TfeID) error
 		uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error
-		discardPending(ctx context.Context, workspaceID resource.TfeID) error
+		discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error
 	}
 )
 
@@ -91,7 +91,7 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 		// to a negative number to ensure tests below succeed.
 		current = &Version{Serial: -1}
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving current version: %w", err)
 	}
 	if current.Serial > *opts.Serial {
 		return nil, ErrSerialNotGreaterThanCurrent
@@ -122,12 +122,12 @@ func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVers
 	}
 	err := f.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := f.db.createVersion(ctx, &sv); err != nil {
-			return err
+			return fmt.Errorf("creating version in database: %w", err)
 		}
 		if opts.State != nil {
 			finalized, err := f.uploadStateAndOutputs(ctx, &sv, opts.State)
 			if err != nil {
-				return err
+				return fmt.Errorf("uploading state to database: %w", err)
 			}
 			sv = *finalized
 		}
@@ -166,13 +166,13 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 			return ErrUploadNonPending
 		}
 		if err := f.db.createOutputs(ctx, maps.Values(outputs)); err != nil {
-			return err
+			return fmt.Errorf("creating outputs: %w", err)
 		}
 		if err := f.db.uploadStateAndFinalize(ctx, sv.ID, state); err != nil {
-			return err
+			return fmt.Errorf("uploading state: %w", err)
 		}
-		if err := f.db.discardPending(ctx, sv.WorkspaceID); err != nil {
-			return err
+		if err := f.db.discardAnyPending(ctx, sv.WorkspaceID); err != nil {
+			return fmt.Errorf("discarding pending versions: %w", err)
 		}
 		if err := f.db.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
 			return fmt.Errorf("updating current version: %w", err)

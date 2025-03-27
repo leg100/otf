@@ -4,34 +4,34 @@ package paths
 
 import "fmt"
 
-func Runners(organization string) string {
+func Runners(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/runners", organization)
 }
 
-func CreateRunner(organization string) string {
+func CreateRunner(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/runners/create", organization)
 }
 
-func NewRunner(organization string) string {
+func NewRunner(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/runners/new", organization)
 }
 
-func Runner(runner string) string {
+func Runner(runner fmt.Stringer) string {
 	return fmt.Sprintf("/app/runners/%s", runner)
 }
 
-func EditRunner(runner string) string {
+func EditRunner(runner fmt.Stringer) string {
 	return fmt.Sprintf("/app/runners/%s/edit", runner)
 }
 
-func UpdateRunner(runner string) string {
+func UpdateRunner(runner fmt.Stringer) string {
 	return fmt.Sprintf("/app/runners/%s/update", runner)
 }
 
-func DeleteRunner(runner string) string {
+func DeleteRunner(runner fmt.Stringer) string {
 	return fmt.Sprintf("/app/runners/%s/delete", runner)
 }
 
-func WatchRunners(organization string) string {
+func WatchRunners(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/runners/watch", organization)
 }

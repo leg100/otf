@@ -457,7 +457,7 @@ func (r controller) FuncMapName(action action) string {
 // in a template.
 func (r controller) HelperParams(action action) string {
 	if params := r.params(action.collection); len(params) > 0 {
-		return fmt.Sprintf("%s string", strings.Join(params, ", "))
+		return fmt.Sprintf("%s fmt.Stringer", strings.Join(params, ", "))
 	}
 	return ""
 }

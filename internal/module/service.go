@@ -119,14 +119,14 @@ func (s *Service) publishModule(ctx context.Context, organization resource.Organ
 
 	// persist module to db and connect to repository
 	if err := s.db.createModule(ctx, mod); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating module in database: %w", err)
 	}
 
 	var (
 		client vcs.Client
 		tags   []string
 	)
-	setup := func() (err error) {
+	err = func() (err error) {
 		mod.Connection, err = s.connections.Connect(ctx, connections.ConnectOptions{
 			ResourceID:    mod.ID,
 			VCSProviderID: opts.VCSProviderID,
@@ -137,7 +137,7 @@ func (s *Service) publishModule(ctx context.Context, organization resource.Organ
 		}
 		client, err = s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
 		if err != nil {
-			return err
+			return fmt.Errorf("retreving vcs client config: %w", err)
 		}
 		tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
 			Repo: string(opts.Repo),
@@ -146,8 +146,8 @@ func (s *Service) publishModule(ctx context.Context, organization resource.Organ
 			return err
 		}
 		return nil
-	}
-	if err := setup(); err != nil {
+	}()
+	if err != nil {
 		return s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
 	}
 	if len(tags) == 0 {

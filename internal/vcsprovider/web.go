@@ -132,7 +132,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "created provider: "+provider.String())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
 func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +175,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "updated provider: "+provider.String())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
@@ -219,5 +219,5 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "deleted provider: "+provider.String())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }

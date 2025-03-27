@@ -82,9 +82,7 @@ func (a *Service) GetApp(ctx context.Context) (*App, error) {
 
 	app, err := a.db.get(ctx)
 	if err != nil {
-		// some callers call this endpoint just to check if app exists, so don't
-		// log an error if it doesn't exist.
-		return nil, err
+		return nil, fmt.Errorf("retrieving github app: %w", err)
 	}
 	a.V(9).Info("retrieved github app", "app", app, "subject", subject)
 
@@ -111,7 +109,7 @@ func (a *Service) ListInstallations(ctx context.Context) ([]*Installation, error
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil, nil
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving github app: %w", err)
 	}
 	client, err := a.newClient(app)
 	if err != nil {
@@ -119,7 +117,7 @@ func (a *Service) ListInstallations(ctx context.Context) ([]*Installation, error
 	}
 	from, err := client.ListInstallations(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing github app installs: %w", err)
 	}
 	to := make([]*Installation, len(from))
 	for i, f := range from {
