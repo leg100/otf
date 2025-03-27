@@ -2,10 +2,13 @@ package workspace
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
@@ -192,8 +195,7 @@ SELECT
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
-    rc.vcs_provider_id,
-    rc.repo_path
+	(rc.*)::"repo_connections" AS connection
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
@@ -228,10 +230,6 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	if opts.Organization != nil {
 		organization = opts.Organization.String()
 	}
-	tags := []string{}
-	if len(opts.Tags) > 0 {
-		tags = opts.Tags
-	}
 	// Status is optional.
 	var status []string
 	if len(opts.Status) > 0 {
@@ -239,66 +237,70 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	}
 
 	rows := db.Query(ctx, `
+WITH tags_grouped_by_workspace AS (
+	SELECT array_agg(t.name)::text[] AS tags, workspace_id
+	FROM tags t
+	JOIN workspace_tags wt USING (tag_id)
+	JOIN workspaces w USING (workspace_id)
+	GROUP BY wt.workspace_id
+)
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
-    (
-        SELECT array_agg(name)::text[]
-        FROM tags
-        JOIN workspace_tags wt USING (tag_id)
-        WHERE wt.workspace_id = w.workspace_id
-        GROUP BY wt.workspace_id
-    ) AS tags,
+	t.tags,
     r.status AS latest_run_status,
-    rc.vcs_provider_id,
-    rc.repo_path
+	(rc.*)::"repo_connections" AS connection
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON wt.workspace_id = w.workspace_id
-WHERE w.name                LIKE '%' || $1 || '%'
-AND   w.organization_name   LIKE ANY($2::text[])
-AND   (($3::text[] IS NULL) OR (r.status = ANY($3::text[])))
-GROUP BY w.workspace_id, r.status, rc.vcs_provider_id, rc.repo_path
-HAVING array_agg(t.name) @> $4::text[]
+LEFT JOIN tags_grouped_by_workspace t ON t.workspace_id = w.workspace_id
+WHERE w.name                LIKE '%' || @search || '%'
+AND   w.organization_name   LIKE ANY(@organization::text[])
+AND   ((@status::text[] IS NULL) OR (r.status = ANY(@status::text[])))
+AND   ((@tags::text[] IS NULL) OR (t.tags @> @tags::text[]))
 ORDER BY w.name ASC
-LIMIT $5::int
-OFFSET $6::int
-`,
-		opts.Search,
-		[]string{organization},
-		status,
-		tags,
-		sql.GetLimit(opts.PageOptions),
-		sql.GetOffset(opts.PageOptions),
-	)
+LIMIT @limit::int
+OFFSET @offset::int
+`, pgx.NamedArgs{
+		"search":       opts.Search,
+		"organization": []string{organization},
+		"status":       status,
+		"tags":         opts.Tags,
+		"limit":        sql.GetLimit(opts.PageOptions),
+		"offset":       sql.GetOffset(opts.PageOptions),
+	})
 	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing workspaces: %w", err)
 	}
 
 	count, err := db.Int(ctx, `
-WITH
-    workspaces AS (
-        SELECT w.workspace_id
-        FROM workspaces w
-        LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
-		LEFT JOIN runs r ON w.latest_run_id = r.run_id
-        WHERE w.name              LIKE '%' || $1 || '%'
-        AND   w.organization_name LIKE ANY($2::text[])
-		AND (($3::text[] IS NULL) OR (r.status = ANY($3::text[])))
-        GROUP BY w.workspace_id
-        HAVING array_agg(t.name) @> $4::text[]
-    )
+WITH tags_grouped_by_workspace AS (
+	SELECT array_agg(t.name)::text[] AS tags, workspace_id
+	FROM tags t
+	JOIN workspace_tags wt USING (tag_id)
+	JOIN workspaces w USING (workspace_id)
+	GROUP BY wt.workspace_id
+),
+workspaces AS (
+	SELECT w.workspace_id
+	FROM workspaces w
+	LEFT JOIN tags_grouped_by_workspace t ON t.workspace_id = w.workspace_id
+	LEFT JOIN runs r ON w.latest_run_id = r.run_id
+	WHERE w.name              LIKE '%' || @search || '%'
+	AND   w.organization_name LIKE ANY(@organization::text[])
+	AND ((@status::text[] IS NULL) OR (r.status = ANY(@status::text[])))
+	AND ((@tags::text[] IS NULL) OR (t.tags @> @tags::text[]))
+)
 SELECT count(*)
 FROM workspaces
-`,
-		opts.Search,
-		[]string{organization},
-		status,
-		tags,
-	)
+`, pgx.NamedArgs{
+		"search":       opts.Search,
+		"organization": []string{organization},
+		"status":       status,
+		"tags":         opts.Tags,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("counting workspaces: %w", err)
 	}
 	return resource.NewPage(items, opts.PageOptions, &count), nil
 }
@@ -314,8 +316,7 @@ SELECT
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
-    rc.vcs_provider_id,
-    rc.repo_path
+	(rc.*)::"repo_connections" AS connection
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
@@ -344,8 +345,7 @@ SELECT
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
-    rc.vcs_provider_id,
-    rc.repo_path
+	(rc.*)::"repo_connections" AS connection
 FROM workspaces w
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
@@ -400,8 +400,7 @@ SELECT
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
-    rc.vcs_provider_id,
-    rc.repo_path
+	(rc.*)::"repo_connections" AS connection
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
@@ -422,8 +421,7 @@ SELECT
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
-    rc.vcs_provider_id,
-    rc.repo_path
+	(rc.*)::"repo_connections" AS connection
 FROM workspaces w
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
@@ -532,75 +530,93 @@ WHERE w.workspace_id = $1
 }
 
 func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
-	var (
-		ws                    Workspace
-		repoPath              *string
-		conn                  Connection
-		tagsRegex             *string
-		lockRunID             *resource.TfeID
-		lockUserID            *resource.TfeID
-		latestRunID           *resource.TfeID
-		latestRunStatus       *runstatus.Status
-		currentStateVersionID *resource.TfeID
-	)
-	err := scanner.Scan(
-		&ws.ID,
-		&ws.CreatedAt,
-		&ws.UpdatedAt,
-		&ws.AllowDestroyPlan,
-		&ws.AutoApply,
-		&ws.CanQueueDestroyPlan,
-		&ws.Description,
-		&ws.Environment,
-		&ws.ExecutionMode,
-		&ws.GlobalRemoteState,
-		&ws.MigrationEnvironment,
-		&ws.Name,
-		&ws.QueueAllRuns,
-		&ws.SpeculativeEnabled,
-		&ws.SourceName,
-		&ws.SourceURL,
-		&ws.StructuredRunOutputEnabled,
-		&ws.TerraformVersion,
-		&ws.TriggerPrefixes,
-		&ws.WorkingDirectory,
-		&lockRunID,
-		&latestRunID,
-		&ws.Organization,
-		&conn.Branch,
-		&currentStateVersionID,
-		&ws.TriggerPatterns,
-		&tagsRegex,
-		&conn.AllowCLIApply,
-		&ws.AgentPoolID,
-		&lockUserID,
-		&ws.Tags,
-		&latestRunStatus,
-		&conn.VCSProviderID,
-		&repoPath,
-	)
-	if repoPath != nil {
+	type model struct {
+		ID                         resource.TfeID            `db:"workspace_id"`
+		CreatedAt                  time.Time                 `db:"created_at"`
+		UpdatedAt                  time.Time                 `db:"updated_at"`
+		AgentPoolID                *resource.TfeID           `db:"agent_pool_id"`
+		AllowDestroyPlan           bool                      `db:"allow_destroy_plan"`
+		AllowCLIApply              bool                      `db:"allow_cli_apply"`
+		AutoApply                  bool                      `db:"auto_apply"`
+		Branch                     string                    `db:"branch"`
+		CanQueueDestroyPlan        bool                      `db:"can_queue_destroy_plan"`
+		Description                string                    `db:"description"`
+		Environment                string                    `db:"environment"`
+		ExecutionMode              ExecutionMode             `db:"execution_mode"`
+		GlobalRemoteState          bool                      `db:"global_remote_state"`
+		MigrationEnvironment       string                    `db:"migration_environment"`
+		Name                       string                    `db:"name"`
+		QueueAllRuns               bool                      `db:"queue_all_runs"`
+		SpeculativeEnabled         bool                      `db:"speculative_enabled"`
+		StructuredRunOutputEnabled bool                      `db:"structured_run_output_enabled"`
+		SourceName                 string                    `db:"source_name"`
+		SourceURL                  string                    `db:"source_url"`
+		TerraformVersion           string                    `db:"terraform_version"`
+		WorkingDirectory           string                    `db:"working_directory"`
+		Organization               resource.OrganizationName `db:"organization_name"`
+		LatestRunStatus            *runstatus.Status         `db:"latest_run_status"`
+		LatestRunID                *resource.TfeID           `db:"latest_run_id"`
+		Tags                       []string                  `db:"tags"`
+		TriggerPatterns            []string                  `db:"trigger_patterns"`
+		TriggerPrefixes            []string                  `db:"trigger_prefixes"`
+		VCSTagsRegex               *string                   `db:"vcs_tags_regex"`
+		LockUserID                 *resource.TfeID           `db:"lock_user_id"`
+		LockRunID                  *resource.TfeID           `db:"lock_run_id"`
+		CurrentStateVersionID      *resource.TfeID           `db:"current_state_version_id"`
+		Connection                 *connections.Connection
+	}
+	m, err := pgx.RowToStructByName[model](scanner)
+	if err != nil {
+		return nil, err
+	}
+	ws := &Workspace{
+		ID:                         m.ID,
+		CreatedAt:                  m.CreatedAt,
+		UpdatedAt:                  m.UpdatedAt,
+		AgentPoolID:                m.AgentPoolID,
+		AllowDestroyPlan:           m.AllowDestroyPlan,
+		AutoApply:                  m.AutoApply,
+		CanQueueDestroyPlan:        m.CanQueueDestroyPlan,
+		Description:                m.Description,
+		Environment:                m.Environment,
+		ExecutionMode:              m.ExecutionMode,
+		GlobalRemoteState:          m.GlobalRemoteState,
+		MigrationEnvironment:       m.MigrationEnvironment,
+		Name:                       m.Name,
+		QueueAllRuns:               m.QueueAllRuns,
+		SpeculativeEnabled:         m.SpeculativeEnabled,
+		StructuredRunOutputEnabled: m.StructuredRunOutputEnabled,
+		SourceName:                 m.SourceName,
+		SourceURL:                  m.SourceURL,
+		TerraformVersion:           m.TerraformVersion,
+		WorkingDirectory:           m.WorkingDirectory,
+		Organization:               m.Organization,
+		Tags:                       m.Tags,
+		TriggerPatterns:            m.TriggerPatterns,
+		TriggerPrefixes:            m.TriggerPrefixes,
+	}
+	if m.Connection != nil {
 		ws.Connection = &Connection{
-			AllowCLIApply: conn.AllowCLIApply,
-			VCSProviderID: conn.VCSProviderID,
-			Repo:          *repoPath,
-			Branch:        conn.Branch,
+			AllowCLIApply: m.AllowCLIApply,
+			VCSProviderID: m.Connection.VCSProviderID,
+			Repo:          m.Connection.Repo,
+			Branch:        m.Branch,
 		}
-		if tagsRegex != nil {
-			ws.Connection.TagsRegex = *tagsRegex
+		if m.VCSTagsRegex != nil {
+			ws.Connection.TagsRegex = *m.VCSTagsRegex
 		}
 	}
-	if latestRunID != nil {
+	if m.LatestRunID != nil && m.LatestRunStatus != nil {
 		ws.LatestRun = &LatestRun{
-			ID:     *latestRunID,
-			Status: *latestRunStatus,
+			ID:     *m.LatestRunID,
+			Status: *m.LatestRunStatus,
 		}
 	}
 
-	if lockUserID != nil {
-		ws.Lock = lockUserID
-	} else if lockRunID != nil {
-		ws.Lock = lockRunID
+	if m.LockUserID != nil {
+		ws.Lock = m.LockUserID
+	} else if m.LockRunID != nil {
+		ws.Lock = m.LockRunID
 	}
-	return &ws, err
+	return ws, err
 }
