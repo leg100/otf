@@ -2,32 +2,36 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func AgentTokens(agentPool string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func AgentTokens(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens", agentPool)
 }
 
-func CreateAgentToken(agentPool string) string {
+func CreateAgentToken(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens/create", agentPool)
 }
 
-func NewAgentToken(agentPool string) string {
+func NewAgentToken(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s/agent-tokens/new", agentPool)
 }
 
-func AgentToken(agentToken string) string {
+func AgentToken(agentToken resource.ID) string {
 	return fmt.Sprintf("/app/agent-tokens/%s", agentToken)
 }
 
-func EditAgentToken(agentToken string) string {
+func EditAgentToken(agentToken resource.ID) string {
 	return fmt.Sprintf("/app/agent-tokens/%s/edit", agentToken)
 }
 
-func UpdateAgentToken(agentToken string) string {
+func UpdateAgentToken(agentToken resource.ID) string {
 	return fmt.Sprintf("/app/agent-tokens/%s/update", agentToken)
 }
 
-func DeleteAgentToken(agentToken string) string {
+func DeleteAgentToken(agentToken resource.ID) string {
 	return fmt.Sprintf("/app/agent-tokens/%s/delete", agentToken)
 }

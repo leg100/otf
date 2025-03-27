@@ -6,8 +6,9 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func OrganizationRuns(organization string) templ.SafeURL {
+func OrganizationRuns(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runs", organization))
 }

@@ -2,32 +2,36 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func AgentPools(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func AgentPools(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/agent-pools", organization)
 }
 
-func CreateAgentPool(organization string) string {
+func CreateAgentPool(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/agent-pools/create", organization)
 }
 
-func NewAgentPool(organization string) string {
+func NewAgentPool(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/agent-pools/new", organization)
 }
 
-func AgentPool(agentPool string) string {
+func AgentPool(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s", agentPool)
 }
 
-func EditAgentPool(agentPool string) string {
+func EditAgentPool(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s/edit", agentPool)
 }
 
-func UpdateAgentPool(agentPool string) string {
+func UpdateAgentPool(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s/update", agentPool)
 }
 
-func DeleteAgentPool(agentPool string) string {
+func DeleteAgentPool(agentPool resource.ID) string {
 	return fmt.Sprintf("/app/agent-pools/%s/delete", agentPool)
 }

@@ -2,8 +2,12 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func OrganizationRuns(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func OrganizationRuns(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/runs", organization)
 }

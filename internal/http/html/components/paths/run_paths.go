@@ -6,60 +6,61 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func Runs(workspace string) templ.SafeURL {
+func Runs(workspace resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs", workspace))
 }
 
-func CreateRun(workspace string) templ.SafeURL {
+func CreateRun(workspace resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs/create", workspace))
 }
 
-func NewRun(workspace string) templ.SafeURL {
+func NewRun(workspace resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs/new", workspace))
 }
 
-func Run(run string) templ.SafeURL {
+func Run(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s", run))
 }
 
-func EditRun(run string) templ.SafeURL {
+func EditRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/edit", run))
 }
 
-func UpdateRun(run string) templ.SafeURL {
+func UpdateRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/update", run))
 }
 
-func DeleteRun(run string) templ.SafeURL {
+func DeleteRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/delete", run))
 }
 
-func ApplyRun(run string) templ.SafeURL {
+func ApplyRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/apply", run))
 }
 
-func DiscardRun(run string) templ.SafeURL {
+func DiscardRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/discard", run))
 }
 
-func CancelRun(run string) templ.SafeURL {
+func CancelRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/cancel", run))
 }
 
-func ForceCancelRun(run string) templ.SafeURL {
+func ForceCancelRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/force-cancel", run))
 }
 
-func RetryRun(run string) templ.SafeURL {
+func RetryRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/retry", run))
 }
 
-func TailRun(run string) templ.SafeURL {
+func TailRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/tail", run))
 }
 
-func WidgetRun(run string) templ.SafeURL {
+func WidgetRun(run resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/widget", run))
 }

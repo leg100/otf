@@ -2,32 +2,36 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func Variables(workspace string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func Variables(workspace resource.ID) string {
 	return fmt.Sprintf("/app/workspaces/%s/variables", workspace)
 }
 
-func CreateVariable(workspace string) string {
+func CreateVariable(workspace resource.ID) string {
 	return fmt.Sprintf("/app/workspaces/%s/variables/create", workspace)
 }
 
-func NewVariable(workspace string) string {
+func NewVariable(workspace resource.ID) string {
 	return fmt.Sprintf("/app/workspaces/%s/variables/new", workspace)
 }
 
-func Variable(variable string) string {
+func Variable(variable resource.ID) string {
 	return fmt.Sprintf("/app/variables/%s", variable)
 }
 
-func EditVariable(variable string) string {
+func EditVariable(variable resource.ID) string {
 	return fmt.Sprintf("/app/variables/%s/edit", variable)
 }
 
-func UpdateVariable(variable string) string {
+func UpdateVariable(variable resource.ID) string {
 	return fmt.Sprintf("/app/variables/%s/update", variable)
 }
 
-func DeleteVariable(variable string) string {
+func DeleteVariable(variable resource.ID) string {
 	return fmt.Sprintf("/app/variables/%s/delete", variable)
 }

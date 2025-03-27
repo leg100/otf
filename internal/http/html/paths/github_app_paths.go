@@ -2,7 +2,11 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 func GithubApps() string {
 	return "/app/github-apps"
@@ -16,19 +20,19 @@ func NewGithubApp() string {
 	return "/app/github-apps/new"
 }
 
-func GithubApp(githubApp string) string {
+func GithubApp(githubApp resource.ID) string {
 	return fmt.Sprintf("/app/github-apps/%s", githubApp)
 }
 
-func EditGithubApp(githubApp string) string {
+func EditGithubApp(githubApp resource.ID) string {
 	return fmt.Sprintf("/app/github-apps/%s/edit", githubApp)
 }
 
-func UpdateGithubApp(githubApp string) string {
+func UpdateGithubApp(githubApp resource.ID) string {
 	return fmt.Sprintf("/app/github-apps/%s/update", githubApp)
 }
 
-func DeleteGithubApp(githubApp string) string {
+func DeleteGithubApp(githubApp resource.ID) string {
 	return fmt.Sprintf("/app/github-apps/%s/delete", githubApp)
 }
 
@@ -40,6 +44,6 @@ func CompleteGithubApp() string {
 	return "/app/github-apps/complete"
 }
 
-func DeleteInstallGithubApp(githubApp string) string {
+func DeleteInstallGithubApp(githubApp resource.ID) string {
 	return fmt.Sprintf("/app/github-apps/%s/delete-install", githubApp)
 }

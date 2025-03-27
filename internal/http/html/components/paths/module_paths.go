@@ -6,32 +6,33 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func Modules(organization string) templ.SafeURL {
+func Modules(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/modules", organization))
 }
 
-func CreateModule(organization string) templ.SafeURL {
+func CreateModule(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/modules/create", organization))
 }
 
-func NewModule(organization string) templ.SafeURL {
+func NewModule(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/modules/new", organization))
 }
 
-func Module(module string) templ.SafeURL {
+func Module(module resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/modules/%s", module))
 }
 
-func EditModule(module string) templ.SafeURL {
+func EditModule(module resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/modules/%s/edit", module))
 }
 
-func UpdateModule(module string) templ.SafeURL {
+func UpdateModule(module resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/modules/%s/update", module))
 }
 
-func DeleteModule(module string) templ.SafeURL {
+func DeleteModule(module resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/modules/%s/delete", module))
 }

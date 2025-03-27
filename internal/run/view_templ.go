@@ -59,8 +59,8 @@ func list(props listProps) templ.Component {
 		}
 		if props.ws != nil {
 			layoutProps.Breadcrumbs = []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.organization.String())},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+				{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			}
 			layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 		}
@@ -205,9 +205,9 @@ func (t table) Row(run *Run, opts ListOptions) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.Run(run.ID.String())))
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.Run(run.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 73, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 73, Col: 90}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -222,7 +222,7 @@ func (t table) Row(run *Run, opts ListOptions) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var9 templ.SafeURL = paths.Workspace(run.WorkspaceID.String())
+			var templ_7745c5c3_Var9 templ.SafeURL = paths.Workspace(run.WorkspaceID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var9)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -492,7 +492,7 @@ func (t table) Row(run *Run, opts ListOptions) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 templ.SafeURL = paths.ApplyRun(run.ID.String())
+			var templ_7745c5c3_Var23 templ.SafeURL = paths.ApplyRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var23)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -507,7 +507,7 @@ func (t table) Row(run *Run, opts ListOptions) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var24 templ.SafeURL = paths.CancelRun(run.ID.String())
+			var templ_7745c5c3_Var24 templ.SafeURL = paths.CancelRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var24)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -521,7 +521,7 @@ func (t table) Row(run *Run, opts ListOptions) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var25 templ.SafeURL = paths.ForceCancelRun(run.ID.String())
+			var templ_7745c5c3_Var25 templ.SafeURL = paths.ForceCancelRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var25)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -535,7 +535,7 @@ func (t table) Row(run *Run, opts ListOptions) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 templ.SafeURL = paths.DiscardRun(run.ID.String())
+			var templ_7745c5c3_Var26 templ.SafeURL = paths.DiscardRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var26)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -601,9 +601,9 @@ func get(props getProps) templ.Component {
 			PreContent:   getPreContent(),
 			PostContent:  getPostContent(props),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
-				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-				{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
+				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+				{Name: "runs", Link: paths.Runs(props.ws.ID)},
 				{Name: props.run.ID.String()},
 			},
 		}
@@ -653,9 +653,9 @@ func get(props getProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var30 string
-			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(string(paths.WatchWorkspace(props.ws.ID.String())) + "?run_id=" + props.run.ID.String())
+			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(string(paths.WatchWorkspace(props.ws.ID)) + "?run_id=" + props.run.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 217, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 217, Col: 113}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -829,7 +829,7 @@ func getPostContent(props getProps) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if !props.planLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -839,7 +839,7 @@ func getPostContent(props getProps) templ.Component {
 			}
 		}
 		if !props.applyLogs.IsEnd() {
-			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset()).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -948,9 +948,9 @@ func widget(run *Run) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var39 string
-		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.Run(run.ID.String())))
+		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.Run(run.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 288, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/run/view.templ`, Line: 288, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -1178,7 +1178,7 @@ func widget(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var51 templ.SafeURL = paths.ApplyRun(run.ID.String())
+			var templ_7745c5c3_Var51 templ.SafeURL = paths.ApplyRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var51)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1193,7 +1193,7 @@ func widget(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var52 templ.SafeURL = paths.CancelRun(run.ID.String())
+			var templ_7745c5c3_Var52 templ.SafeURL = paths.CancelRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var52)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1207,7 +1207,7 @@ func widget(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var53 templ.SafeURL = paths.ForceCancelRun(run.ID.String())
+			var templ_7745c5c3_Var53 templ.SafeURL = paths.ForceCancelRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var53)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1221,7 +1221,7 @@ func widget(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var54 templ.SafeURL = paths.DiscardRun(run.ID.String())
+			var templ_7745c5c3_Var54 templ.SafeURL = paths.DiscardRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var54)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1274,7 +1274,7 @@ func actions(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var56 templ.SafeURL = paths.ApplyRun(run.ID.String())
+			var templ_7745c5c3_Var56 templ.SafeURL = paths.ApplyRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var56)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1283,7 +1283,7 @@ func actions(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var57 templ.SafeURL = paths.DiscardRun(run.ID.String())
+			var templ_7745c5c3_Var57 templ.SafeURL = paths.DiscardRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var57)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1297,7 +1297,7 @@ func actions(run *Run) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var58 templ.SafeURL = paths.RetryRun(run.ID.String())
+			var templ_7745c5c3_Var58 templ.SafeURL = paths.RetryRun(run.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var58)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

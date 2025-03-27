@@ -2,7 +2,11 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 func Organizations() string {
 	return "/app/organizations"
@@ -16,18 +20,18 @@ func NewOrganization() string {
 	return "/app/organizations/new"
 }
 
-func Organization(organization string) string {
+func Organization(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s", organization)
 }
 
-func EditOrganization(organization string) string {
+func EditOrganization(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/edit", organization)
 }
 
-func UpdateOrganization(organization string) string {
+func UpdateOrganization(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/update", organization)
 }
 
-func DeleteOrganization(organization string) string {
+func DeleteOrganization(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/delete", organization)
 }

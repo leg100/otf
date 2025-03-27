@@ -2,36 +2,40 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func VCSProviders(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func VCSProviders(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/vcs-providers", organization)
 }
 
-func CreateVCSProvider(organization string) string {
+func CreateVCSProvider(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/vcs-providers/create", organization)
 }
 
-func NewVCSProvider(organization string) string {
+func NewVCSProvider(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new", organization)
 }
 
-func VCSProvider(vcsProvider string) string {
+func VCSProvider(vcsProvider resource.ID) string {
 	return fmt.Sprintf("/app/vcs-providers/%s", vcsProvider)
 }
 
-func EditVCSProvider(vcsProvider string) string {
+func EditVCSProvider(vcsProvider resource.ID) string {
 	return fmt.Sprintf("/app/vcs-providers/%s/edit", vcsProvider)
 }
 
-func UpdateVCSProvider(vcsProvider string) string {
+func UpdateVCSProvider(vcsProvider resource.ID) string {
 	return fmt.Sprintf("/app/vcs-providers/%s/update", vcsProvider)
 }
 
-func DeleteVCSProvider(vcsProvider string) string {
+func DeleteVCSProvider(vcsProvider resource.ID) string {
 	return fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider)
 }
 
-func NewGithubAppVCSProvider(organization string) string {
+func NewGithubAppVCSProvider(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization)
 }

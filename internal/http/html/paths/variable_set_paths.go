@@ -2,32 +2,36 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func VariableSets(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func VariableSets(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/variable-sets", organization)
 }
 
-func CreateVariableSet(organization string) string {
+func CreateVariableSet(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/variable-sets/create", organization)
 }
 
-func NewVariableSet(organization string) string {
+func NewVariableSet(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/variable-sets/new", organization)
 }
 
-func VariableSet(variableSet string) string {
+func VariableSet(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s", variableSet)
 }
 
-func EditVariableSet(variableSet string) string {
+func EditVariableSet(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s/edit", variableSet)
 }
 
-func UpdateVariableSet(variableSet string) string {
+func UpdateVariableSet(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s/update", variableSet)
 }
 
-func DeleteVariableSet(variableSet string) string {
+func DeleteVariableSet(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s/delete", variableSet)
 }

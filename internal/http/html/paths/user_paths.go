@@ -2,32 +2,36 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func Users(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func Users(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/users", organization)
 }
 
-func CreateUser(organization string) string {
+func CreateUser(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/users/create", organization)
 }
 
-func NewUser(organization string) string {
+func NewUser(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/users/new", organization)
 }
 
-func User(user string) string {
+func User(user resource.ID) string {
 	return fmt.Sprintf("/app/users/%s", user)
 }
 
-func EditUser(user string) string {
+func EditUser(user resource.ID) string {
 	return fmt.Sprintf("/app/users/%s/edit", user)
 }
 
-func UpdateUser(user string) string {
+func UpdateUser(user resource.ID) string {
 	return fmt.Sprintf("/app/users/%s/update", user)
 }
 
-func DeleteUser(user string) string {
+func DeleteUser(user resource.ID) string {
 	return fmt.Sprintf("/app/users/%s/delete", user)
 }

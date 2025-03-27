@@ -6,16 +6,17 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func OrganizationToken(organization string) templ.SafeURL {
+func OrganizationToken(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/tokens/show", organization))
 }
 
-func CreateOrganizationToken(organization string) templ.SafeURL {
+func CreateOrganizationToken(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/tokens/create", organization))
 }
 
-func DeleteOrganizationToken(organization string) templ.SafeURL {
+func DeleteOrganizationToken(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/tokens/delete", organization))
 }

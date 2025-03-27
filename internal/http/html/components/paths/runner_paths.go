@@ -6,36 +6,37 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func Runners(organization string) templ.SafeURL {
+func Runners(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runners", organization))
 }
 
-func CreateRunner(organization string) templ.SafeURL {
+func CreateRunner(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runners/create", organization))
 }
 
-func NewRunner(organization string) templ.SafeURL {
+func NewRunner(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runners/new", organization))
 }
 
-func Runner(runner string) templ.SafeURL {
+func Runner(runner resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runners/%s", runner))
 }
 
-func EditRunner(runner string) templ.SafeURL {
+func EditRunner(runner resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runners/%s/edit", runner))
 }
 
-func UpdateRunner(runner string) templ.SafeURL {
+func UpdateRunner(runner resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runners/%s/update", runner))
 }
 
-func DeleteRunner(runner string) templ.SafeURL {
+func DeleteRunner(runner resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runners/%s/delete", runner))
 }
 
-func WatchRunners(organization string) templ.SafeURL {
+func WatchRunners(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runners/watch", organization))
 }

@@ -2,16 +2,20 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func OrganizationToken(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func OrganizationToken(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/tokens/show", organization)
 }
 
-func CreateOrganizationToken(organization string) string {
+func CreateOrganizationToken(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/tokens/create", organization)
 }
 
-func DeleteOrganizationToken(organization string) string {
+func DeleteOrganizationToken(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/tokens/delete", organization)
 }

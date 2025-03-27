@@ -2,32 +2,36 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func VariableSetVariables(variableSet string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func VariableSetVariables(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables", variableSet)
 }
 
-func CreateVariableSetVariable(variableSet string) string {
+func CreateVariableSetVariable(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/create", variableSet)
 }
 
-func NewVariableSetVariable(variableSet string) string {
+func NewVariableSetVariable(variableSet resource.ID) string {
 	return fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/new", variableSet)
 }
 
-func VariableSetVariable(variableSetVariable string) string {
+func VariableSetVariable(variableSetVariable resource.ID) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s", variableSetVariable)
 }
 
-func EditVariableSetVariable(variableSetVariable string) string {
+func EditVariableSetVariable(variableSetVariable resource.ID) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s/edit", variableSetVariable)
 }
 
-func UpdateVariableSetVariable(variableSetVariable string) string {
+func UpdateVariableSetVariable(variableSetVariable resource.ID) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s/update", variableSetVariable)
 }
 
-func DeleteVariableSetVariable(variableSetVariable string) string {
+func DeleteVariableSetVariable(variableSetVariable resource.ID) string {
 	return fmt.Sprintf("/app/variable-set-variables/%s/delete", variableSetVariable)
 }

@@ -6,40 +6,41 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func Teams(organization string) templ.SafeURL {
+func Teams(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/teams", organization))
 }
 
-func CreateTeam(organization string) templ.SafeURL {
+func CreateTeam(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/teams/create", organization))
 }
 
-func NewTeam(organization string) templ.SafeURL {
+func NewTeam(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/teams/new", organization))
 }
 
-func Team(team string) templ.SafeURL {
+func Team(team resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/teams/%s", team))
 }
 
-func EditTeam(team string) templ.SafeURL {
+func EditTeam(team resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/teams/%s/edit", team))
 }
 
-func UpdateTeam(team string) templ.SafeURL {
+func UpdateTeam(team resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/teams/%s/update", team))
 }
 
-func DeleteTeam(team string) templ.SafeURL {
+func DeleteTeam(team resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/teams/%s/delete", team))
 }
 
-func AddMemberTeam(team string) templ.SafeURL {
+func AddMemberTeam(team resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/teams/%s/add-member", team))
 }
 
-func RemoveMemberTeam(team string) templ.SafeURL {
+func RemoveMemberTeam(team resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/teams/%s/remove-member", team))
 }

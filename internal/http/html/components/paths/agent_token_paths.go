@@ -6,32 +6,33 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func AgentTokens(agentPool string) templ.SafeURL {
+func AgentTokens(agentPool resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-pools/%s/agent-tokens", agentPool))
 }
 
-func CreateAgentToken(agentPool string) templ.SafeURL {
+func CreateAgentToken(agentPool resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-pools/%s/agent-tokens/create", agentPool))
 }
 
-func NewAgentToken(agentPool string) templ.SafeURL {
+func NewAgentToken(agentPool resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-pools/%s/agent-tokens/new", agentPool))
 }
 
-func AgentToken(agentToken string) templ.SafeURL {
+func AgentToken(agentToken resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-tokens/%s", agentToken))
 }
 
-func EditAgentToken(agentToken string) templ.SafeURL {
+func EditAgentToken(agentToken resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-tokens/%s/edit", agentToken))
 }
 
-func UpdateAgentToken(agentToken string) templ.SafeURL {
+func UpdateAgentToken(agentToken resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-tokens/%s/update", agentToken))
 }
 
-func DeleteAgentToken(agentToken string) templ.SafeURL {
+func DeleteAgentToken(agentToken resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/agent-tokens/%s/delete", agentToken))
 }

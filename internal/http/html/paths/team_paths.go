@@ -2,40 +2,44 @@
 
 package paths
 
-import "fmt"
+import (
+	"fmt"
 
-func Teams(organization string) string {
+	"github.com/leg100/otf/internal/resource"
+)
+
+func Teams(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/teams", organization)
 }
 
-func CreateTeam(organization string) string {
+func CreateTeam(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/teams/create", organization)
 }
 
-func NewTeam(organization string) string {
+func NewTeam(organization resource.ID) string {
 	return fmt.Sprintf("/app/organizations/%s/teams/new", organization)
 }
 
-func Team(team string) string {
+func Team(team resource.ID) string {
 	return fmt.Sprintf("/app/teams/%s", team)
 }
 
-func EditTeam(team string) string {
+func EditTeam(team resource.ID) string {
 	return fmt.Sprintf("/app/teams/%s/edit", team)
 }
 
-func UpdateTeam(team string) string {
+func UpdateTeam(team resource.ID) string {
 	return fmt.Sprintf("/app/teams/%s/update", team)
 }
 
-func DeleteTeam(team string) string {
+func DeleteTeam(team resource.ID) string {
 	return fmt.Sprintf("/app/teams/%s/delete", team)
 }
 
-func AddMemberTeam(team string) string {
+func AddMemberTeam(team resource.ID) string {
 	return fmt.Sprintf("/app/teams/%s/add-member", team)
 }
 
-func RemoveMemberTeam(team string) string {
+func RemoveMemberTeam(team resource.ID) string {
 	return fmt.Sprintf("/app/teams/%s/remove-member", team)
 }

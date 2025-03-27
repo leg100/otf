@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
 func GithubApps() templ.SafeURL {
@@ -20,19 +21,19 @@ func NewGithubApp() templ.SafeURL {
 	return templ.URL("/app/github-apps/new")
 }
 
-func GithubApp(githubApp string) templ.SafeURL {
+func GithubApp(githubApp resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s", githubApp))
 }
 
-func EditGithubApp(githubApp string) templ.SafeURL {
+func EditGithubApp(githubApp resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/edit", githubApp))
 }
 
-func UpdateGithubApp(githubApp string) templ.SafeURL {
+func UpdateGithubApp(githubApp resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/update", githubApp))
 }
 
-func DeleteGithubApp(githubApp string) templ.SafeURL {
+func DeleteGithubApp(githubApp resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/delete", githubApp))
 }
 
@@ -44,6 +45,6 @@ func CompleteGithubApp() templ.SafeURL {
 	return templ.URL("/app/github-apps/complete")
 }
 
-func DeleteInstallGithubApp(githubApp string) templ.SafeURL {
+func DeleteInstallGithubApp(githubApp resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/delete-install", githubApp))
 }

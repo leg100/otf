@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
 func Organizations() templ.SafeURL {
@@ -20,18 +21,18 @@ func NewOrganization() templ.SafeURL {
 	return templ.URL("/app/organizations/new")
 }
 
-func Organization(organization string) templ.SafeURL {
+func Organization(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s", organization))
 }
 
-func EditOrganization(organization string) templ.SafeURL {
+func EditOrganization(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/edit", organization))
 }
 
-func UpdateOrganization(organization string) templ.SafeURL {
+func UpdateOrganization(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/update", organization))
 }
 
-func DeleteOrganization(organization string) templ.SafeURL {
+func DeleteOrganization(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/delete", organization))
 }

@@ -6,36 +6,37 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func VCSProviders(organization string) templ.SafeURL {
+func VCSProviders(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/vcs-providers", organization))
 }
 
-func CreateVCSProvider(organization string) templ.SafeURL {
+func CreateVCSProvider(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/vcs-providers/create", organization))
 }
 
-func NewVCSProvider(organization string) templ.SafeURL {
+func NewVCSProvider(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/vcs-providers/new", organization))
 }
 
-func VCSProvider(vcsProvider string) templ.SafeURL {
+func VCSProvider(vcsProvider resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/vcs-providers/%s", vcsProvider))
 }
 
-func EditVCSProvider(vcsProvider string) templ.SafeURL {
+func EditVCSProvider(vcsProvider resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/vcs-providers/%s/edit", vcsProvider))
 }
 
-func UpdateVCSProvider(vcsProvider string) templ.SafeURL {
+func UpdateVCSProvider(vcsProvider resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/vcs-providers/%s/update", vcsProvider))
 }
 
-func DeleteVCSProvider(vcsProvider string) templ.SafeURL {
+func DeleteVCSProvider(vcsProvider resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider))
 }
 
-func NewGithubAppVCSProvider(organization string) templ.SafeURL {
+func NewGithubAppVCSProvider(organization resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization))
 }

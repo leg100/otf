@@ -330,7 +330,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var17 templ.SafeURL = paths.CreateAgentPool(props.organization.String())
+			var templ_7745c5c3_Var17 templ.SafeURL = paths.CreateAgentPool(props.organization)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var17)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -385,9 +385,9 @@ func agentPoolListItem(pool *Pool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.AgentPool(pool.ID.String())))
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.AgentPool(pool.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 110, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 110, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -400,7 +400,7 @@ func agentPoolListItem(pool *Pool) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(pool.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 110, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 110, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -583,7 +583,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var28 templ.SafeURL = paths.UpdateAgentPool(props.pool.ID.String())
+			var templ_7745c5c3_Var28 templ.SafeURL = paths.UpdateAgentPool(props.pool.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var28)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -669,7 +669,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var33 templ.SafeURL = paths.EditWorkspace(ws.ID.String())
+				var templ_7745c5c3_Var33 templ.SafeURL = paths.EditWorkspace(ws.ID)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var33)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -681,7 +681,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				var templ_7745c5c3_Var34 string
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(ws.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 218, Col: 121}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 218, Col: 112}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 				if templ_7745c5c3_Err != nil {
@@ -696,7 +696,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var35 templ.SafeURL = paths.CreateAgentToken(props.pool.ID.String())
+			var templ_7745c5c3_Var35 templ.SafeURL = paths.CreateAgentToken(props.pool.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var35)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -744,7 +744,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var38 templ.SafeURL = paths.DeleteAgentToken(token.ID.String())
+				var templ_7745c5c3_Var38 templ.SafeURL = paths.DeleteAgentToken(token.ID)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var38)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -791,7 +791,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						var templ_7745c5c3_Var39 templ.SafeURL = paths.EditWorkspace(ws.ID.String())
+						var templ_7745c5c3_Var39 templ.SafeURL = paths.EditWorkspace(ws.ID)
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var39)))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
@@ -803,7 +803,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 						var templ_7745c5c3_Var40 string
 						templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(ws.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 272, Col: 118}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 272, Col: 109}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 						if templ_7745c5c3_Err != nil {
@@ -823,7 +823,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var41 templ.SafeURL = paths.DeleteAgentPool(props.pool.ID.String())
+				var templ_7745c5c3_Var41 templ.SafeURL = paths.DeleteAgentPool(props.pool.ID)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var41)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -849,7 +849,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			Title:        props.pool.Name,
 			Organization: &props.pool.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization.String())},
+				{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
 				{Name: props.pool.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var27), templ_7745c5c3_Buffer)

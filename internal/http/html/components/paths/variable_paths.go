@@ -6,32 +6,33 @@ import (
 	"fmt"
 
 	"github.com/a-h/templ"
+	"github.com/leg100/otf/internal/resource"
 )
 
-func Variables(workspace string) templ.SafeURL {
+func Variables(workspace resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/variables", workspace))
 }
 
-func CreateVariable(workspace string) templ.SafeURL {
+func CreateVariable(workspace resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/variables/create", workspace))
 }
 
-func NewVariable(workspace string) templ.SafeURL {
+func NewVariable(workspace resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/variables/new", workspace))
 }
 
-func Variable(variable string) templ.SafeURL {
+func Variable(variable resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s", variable))
 }
 
-func EditVariable(variable string) templ.SafeURL {
+func EditVariable(variable resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s/edit", variable))
 }
 
-func UpdateVariable(variable string) templ.SafeURL {
+func UpdateVariable(variable resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s/update", variable))
 }
 
-func DeleteVariable(variable string) templ.SafeURL {
+func DeleteVariable(variable resource.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s/delete", variable))
 }
