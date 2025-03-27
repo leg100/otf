@@ -667,19 +667,6 @@ INSERT INTO phase_status_timestamps (
 	return err
 }
 
-type phaseStatusTimestampModel struct {
-	RunID      resource.TfeID
-	PhaseModel string
-	Status     PhaseStatus
-	Timestamp  time.Time
-}
-
-type runStatusTimestampModel struct {
-	RunID     resource.TfeID
-	Status    runstatus.Status
-	Timestamp time.Time
-}
-
 func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	var (
 		run                   Run
