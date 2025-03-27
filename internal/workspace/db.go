@@ -532,16 +532,58 @@ WHERE w.workspace_id = $1
 }
 
 func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
+	type model struct {
+		ID                         resource.TfeID            `db:"workspace_id"`
+		CreatedAt                  time.Time                 `db:"created_at"`
+		UpdatedAt                  time.Time                 `db:"updated_at"`
+		AgentPoolID                resource.TfeID               `db:"agent_pool_id"`
+		AllowDestroyPlan           bool                      `db:"allow_destroy_plan"`
+		AutoApply                  bool                      `db:"auto_apply"`
+		CanQueueDestroyPlan        bool                      `db:"can_queue_destroy_plan"`
+		Description                string                    `db:"description"`
+		Environment                string                    `db:"environment"`
+		ExecutionMode              ExecutionMode             `db:"execution_mode"`
+		GlobalRemoteState          bool                      `db:"global_remote_state"`
+		MigrationEnvironment       string                    `db:"migration_environment"`
+		Name                       string                    `db:"name"`
+		QueueAllRuns               bool                      `db:"queue_all_runs"`
+		SpeculativeEnabled         bool                      `db:"speculative_enabled"`
+		StructuredRunOutputEnabled bool                      `db:"structured_run_output_enabled"`
+		SourceName                 string                    `db:"source_name"`
+		SourceURL                  string                    `db:"source_url"`
+		TerraformVersion           string                    `db:"terraform_version"`
+		WorkingDirectory           string                    `db:"working_directory"`
+		Organization               resource.OrganizationName `db:"organization"`
+		LatestRun                  *LatestRun                `db:"latest_run"`
+		Tags                       []string                  `db:"tags"`
+		Lock                       resource.TfeID               `db:"lock"`
+
+		// VCS Connection; nil means the workspace is not connected.
+		Connection *Connection
+
+		// TriggerPatterns is mutually exclusive with Connection.TagsRegex.
+		//
+		// Note: TriggerPatterns ought to belong in Connection but it is included at
+		// the root of Workspace because the go-tfe integration tests set
+		// this field without setting the connection!
+		TriggerPatterns []string
+
+		// TriggerPrefixes exists only to pass the go-tfe integration tests and
+		// is not used when determining whether to trigger runs. Use
+		// TriggerPatterns instead.
+		TriggerPrefixes []string
+	}
+	}
 	var (
 		ws                    Workspace
 		repoPath              *string
 		conn                  Connection
 		tagsRegex             *string
-		lockRunID             resource.ID
-		lockUserID            resource.ID
-		latestRunID           resource.ID
+		lockRunID             resource.TfeID
+		lockUserID            resource.TfeID
+		latestRunID           resource.TfeID
 		latestRunStatus       *runstatus.Status
-		currentStateVersionID resource.ID
+		currentStateVersionID resource.TfeID
 	)
 	err := scanner.Scan(
 		&ws.ID,
