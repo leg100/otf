@@ -68,10 +68,10 @@ type (
 	// version. Either ID *or* WorkspaceID must be specfiied.
 	ConfigurationVersionGetOptions struct {
 		// ID of config version to retrieve
-		ID *resource.ID
+		ID resource.ID
 
 		// Get latest config version for this workspace ID
-		WorkspaceID *resource.ID
+		WorkspaceID resource.ID
 
 		// A list of relations to include
 		Include *string `schema:"include"`

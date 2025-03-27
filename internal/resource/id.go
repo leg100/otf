@@ -1,19 +1,12 @@
 package resource
 
 import (
-	"database/sql"
-	"database/sql/driver"
-	"encoding"
 	"fmt"
 	"regexp"
 )
 
 type ID interface {
 	fmt.Stringer
-	encoding.TextMarshaler
-	encoding.TextUnmarshaler
-	sql.Scanner
-	driver.Valuer
 }
 
 // ReStringID is a regular expression used to validate common string ID patterns.

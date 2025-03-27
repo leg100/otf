@@ -196,7 +196,7 @@ func TestScheduler_process(t *testing.T) {
 type fakeSchedulerRunClient struct {
 	schedulerRunClient
 
-	enqueuedRunID    *resource.ID
+	enqueuedRunID    resource.ID
 	enqueuePlanError error
 }
 

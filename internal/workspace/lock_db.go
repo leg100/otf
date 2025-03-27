@@ -20,8 +20,8 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglef
 		},
 		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
 			var (
-				runID  *resource.ID
-				userID *resource.ID
+				runID  resource.ID
+				userID resource.ID
 			)
 			if ws.Locked() {
 				switch ws.Lock.Kind() {

@@ -22,7 +22,7 @@ type (
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to
 	// be valid.
 	TagSpec struct {
-		ID   *resource.ID
+		ID   resource.ID
 		Name string
 	}
 

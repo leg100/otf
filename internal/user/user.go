@@ -53,9 +53,9 @@ type (
 	}
 
 	UserSpec struct {
-		UserID                *resource.ID
+		UserID                resource.ID
 		Username              *string
-		AuthenticationTokenID *resource.ID
+		AuthenticationTokenID resource.ID
 	}
 )
 

@@ -104,7 +104,7 @@ type (
 		// Specifies the configuration version to use for this run. If the
 		// configuration version ID is nil, the run will be created using the
 		// workspace's latest configuration version.
-		ConfigurationVersionID *resource.ID
+		ConfigurationVersionID resource.ID
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
@@ -125,7 +125,7 @@ type (
 	ListOptions struct {
 		resource.PageOptions
 		// Filter by workspace ID
-		WorkspaceID *resource.ID `schema:"workspace_id,omitempty"`
+		WorkspaceID resource.ID `schema:"workspace_id,omitempty"`
 		// Filter by organization name
 		Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
 		// Filter by workspace name
@@ -145,7 +145,7 @@ type (
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
 		Organization *resource.OrganizationName `schema:"organization_name,omitempty"` // filter by organization name
-		WorkspaceID  *resource.ID               `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
+		WorkspaceID  resource.ID                `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
 

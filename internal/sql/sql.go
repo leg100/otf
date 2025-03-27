@@ -122,7 +122,7 @@ func ID(s resource.ID) pgtype.Text {
 }
 
 // IDPtr converts a resource ID pointer into an ID suitable for postgres.
-func IDPtr(s *resource.ID) pgtype.Text {
+func IDPtr(s resource.ID) pgtype.Text {
 	if s != nil {
 		return pgtype.Text{String: s.String(), Valid: true}
 	}

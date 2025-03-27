@@ -537,11 +537,11 @@ func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
 		repoPath              *string
 		conn                  Connection
 		tagsRegex             *string
-		lockRunID             *resource.ID
-		lockUserID            *resource.ID
-		latestRunID           *resource.ID
+		lockRunID             resource.ID
+		lockUserID            resource.ID
+		latestRunID           resource.ID
 		latestRunStatus       *runstatus.Status
-		currentStateVersionID *resource.ID
+		currentStateVersionID resource.ID
 	)
 	err := scanner.Scan(
 		&ws.ID,

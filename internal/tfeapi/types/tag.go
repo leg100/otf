@@ -3,7 +3,12 @@
 
 package types
 
-import "github.com/leg100/otf/internal/resource"
+import (
+	"encoding"
+	"errors"
+
+	"github.com/leg100/otf/internal/resource"
+)
 
 type (
 	// OrganizationTag represents a Terraform Enterprise Organization tag
@@ -23,8 +28,8 @@ type (
 	// Tag is owned by an organization and applied to workspaces. Used for
 	// grouping and search. Only one of ID or name must be specified.
 	Tag struct {
-		ID   *resource.ID `jsonapi:"primary,tags"`
-		Name string       `jsonapi:"attribute" json:"name,omitempty"`
+		ID   resource.ID `jsonapi:"primary,tags"`
+		Name string      `jsonapi:"attribute" json:"name,omitempty"`
 	}
 )
 
@@ -35,6 +40,9 @@ func (t *Tag) UnmarshalID(id string) error {
 	if id == "" {
 		return nil
 	}
-	t.ID = new(resource.ID)
-	return t.ID.UnmarshalText([]byte(id))
+	unmarshalable, ok := t.ID.(encoding.TextUnmarshaler)
+	if !ok {
+		return errors.New("id is not unmarshalable")
+	}
+	return unmarshalable.UnmarshalText([]byte(id))
 }

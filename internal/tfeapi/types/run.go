@@ -161,7 +161,7 @@ type RunListOptions struct {
 
 	Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
 
-	WorkspaceID *resource.ID `schema:"workspace_id,omitempty"`
+	WorkspaceID resource.ID `schema:"workspace_id,omitempty"`
 
 	// Optional: Searches runs that matches the supplied VCS username.
 	User *string `schema:"search[user],omitempty"`

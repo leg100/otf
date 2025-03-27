@@ -416,8 +416,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID       *resource.ID `schema:"agent_pool_id"`
-		AutoApply         bool         `schema:"auto_apply"`
+		AgentPoolID       resource.ID `schema:"agent_pool_id"`
+		AutoApply         bool        `schema:"auto_apply"`
 		Name              string
 		Description       string
 		ExecutionMode     ExecutionMode `schema:"execution_mode"`
@@ -615,9 +615,9 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   resource.ID  `schema:"workspace_id,required"`
-		RepoPath      *string      `schema:"identifier,required"`
-		VCSProviderID *resource.ID `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.ID `schema:"workspace_id,required"`
+		RepoPath      *string     `schema:"identifier,required"`
+		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
