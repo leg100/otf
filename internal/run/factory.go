@@ -70,7 +70,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.ID, opts Crea
 	// not connected then the latest existing config is used.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
-		cv, err = f.configs.Get(ctx, *opts.ConfigurationVersionID)
+		cv, err = f.configs.Get(ctx, opts.ConfigurationVersionID)
 	} else if ws.Connection == nil {
 		cv, err = f.configs.GetLatest(ctx, workspaceID)
 	} else {

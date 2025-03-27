@@ -20,8 +20,8 @@ const (
 type (
 	// Phase is a section of work performed by a run.
 	Phase struct {
-		RunID  resource.ID `json:"run_id"`
-		Status PhaseStatus `json:"status"`
+		RunID  resource.TfeID `json:"run_id"`
+		Status PhaseStatus    `json:"status"`
 
 		// Timestamps of when a state transition occured. Ordered earliest
 		// first.
@@ -56,7 +56,7 @@ type (
 )
 
 // newPhase constructs a new phase. A new phase always starts in pending status.
-func newPhase(runID resource.ID, t internal.PhaseType) Phase {
+func newPhase(runID resource.TfeID, t internal.PhaseType) Phase {
 	p := Phase{RunID: runID, PhaseType: t}
 	p.UpdateStatus(PhasePending)
 	return p

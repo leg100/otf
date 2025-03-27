@@ -95,12 +95,12 @@ func NewService(opts Options) *Service {
 	// Register with auth middleware the user token kind and a means of
 	// retrieving user corresponding to token.
 	opts.TokensService.RegisterKind(resource.UserTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
-		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: &tokenID})
+		return svc.GetUser(ctx, UserSpec{AuthenticationTokenID: tokenID})
 	})
 	// Register with auth middleware the user session kind and a means of
 	// retrieving user corresponding to token.
 	opts.TokensService.RegisterKind(resource.UserKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
-		return svc.GetUser(ctx, UserSpec{UserID: &tokenID})
+		return svc.GetUser(ctx, UserSpec{UserID: tokenID})
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.

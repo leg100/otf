@@ -381,7 +381,7 @@ func (s *Service) listJobs(ctx context.Context) ([]*Job, error) {
 	return s.db.listJobs(ctx)
 }
 
-func (s *Service) allocateJob(ctx context.Context, jobID resource.ID, runnerID resource.TfeID) (*Job, error) {
+func (s *Service) allocateJob(ctx context.Context, jobID resource.ID, runnerID resource.ID) (*Job, error) {
 	allocated, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
 		return job.allocate(runnerID)
 	})
@@ -393,13 +393,13 @@ func (s *Service) allocateJob(ctx context.Context, jobID resource.ID, runnerID r
 	return allocated, nil
 }
 
-func (s *Service) reallocateJob(ctx context.Context, jobID resource.ID, runnerID resource.TfeID) (*Job, error) {
+func (s *Service) reallocateJob(ctx context.Context, jobID resource.ID, runnerID resource.ID) (*Job, error) {
 	var (
 		from        resource.ID // ID of runner that job *was* allocated to
 		reallocated *Job
 	)
 	reallocated, err := s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
-		from = *job.RunnerID
+		from = job.RunnerID
 		return job.reallocate(runnerID)
 	})
 	if err != nil {
@@ -421,7 +421,7 @@ func (s *Service) startJob(ctx context.Context, jobID resource.ID) ([]byte, erro
 
 	var token []byte
 	_, err = s.db.updateJob(ctx, jobID, func(ctx context.Context, job *Job) error {
-		if job.RunnerID == nil || *job.RunnerID != runner.ID {
+		if job.RunnerID == nil || job.RunnerID != runner.ID {
 			return internal.ErrAccessNotPermitted
 		}
 		if err := job.startJob(); err != nil {
@@ -601,7 +601,7 @@ func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 		// workspace is not using any pool
 		return nil
 	}
-	pool, err := s.GetAgentPool(ctx, *ws.AgentPoolID)
+	pool, err := s.GetAgentPool(ctx, ws.AgentPoolID)
 	if err != nil {
 		return err
 	}

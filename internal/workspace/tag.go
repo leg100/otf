@@ -43,7 +43,7 @@ func (specs TagSpecs) LogValue() slog.Value {
 	)
 	for _, s := range specs {
 		if s.ID != nil {
-			ids = append(ids, *s.ID)
+			ids = append(ids, s.ID)
 		}
 		if s.Name != "" {
 			names = append(names, s.Name)

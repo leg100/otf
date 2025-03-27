@@ -124,7 +124,7 @@ func (s *Service) Get(ctx context.Context, cvID resource.ID) (*ConfigurationVers
 		return nil, err
 	}
 
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
+	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: cvID})
 	if err != nil {
 		s.Error(err, "retrieving configuration version", "id", cvID, "subject", subject)
 		return nil, err
@@ -139,7 +139,7 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID resource.ID) (*Conf
 		return nil, err
 	}
 
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: workspaceID})
 	if err != nil {
 		s.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err

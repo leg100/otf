@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ParseID(t *testing.T, s string) resource.ID {
+func ParseID(t *testing.T, s string) resource.TfeID {
 	t.Helper()
 
 	id, err := resource.ParseTfeID(s)

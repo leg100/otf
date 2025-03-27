@@ -56,7 +56,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +99,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -143,7 +143,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 
 func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id, err := decode.ID("id", r)
+		id, err := decode.TfeID("id", r)
 		if err != nil {
 			tfeapi.Error(w, err)
 			return
@@ -173,7 +173,7 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 }
 
 func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

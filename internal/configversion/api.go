@@ -20,7 +20,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) download(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

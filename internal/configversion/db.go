@@ -235,7 +235,7 @@ JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.workspace_id = $1
 ORDER BY cv.created_at DESC
-`, *opts.WorkspaceID)
+`, opts.WorkspaceID)
 		return sql.CollectOneRow(row, db.scan)
 	} else {
 		return nil, fmt.Errorf("no configuration version spec provided")

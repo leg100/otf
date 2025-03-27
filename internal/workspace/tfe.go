@@ -132,7 +132,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -217,7 +217,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 //
 // TODO: support updating workspace's vcs repo.
 func (a *tfe) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -246,7 +246,7 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -280,7 +280,7 @@ func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -306,7 +306,7 @@ func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 }
 
 func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

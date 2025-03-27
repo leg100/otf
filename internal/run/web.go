@@ -140,7 +140,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if opts.ListOptions.WorkspaceID != nil {
-		ws, err := h.workspaces.Get(r.Context(), *opts.WorkspaceID)
+		ws, err := h.workspaces.Get(r.Context(), opts.WorkspaceID)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -159,7 +159,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -201,7 +201,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 // getWidget renders a run "widget", i.e. the container that
 // contains info about a run. Intended for use with an ajax request.
 func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -217,7 +217,7 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -237,7 +237,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -252,7 +252,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -267,7 +267,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -282,7 +282,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -297,7 +297,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -310,7 +310,7 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	run, err = h.runs.Create(r.Context(), run.WorkspaceID, CreateOptions{
-		ConfigurationVersionID: &run.ConfigurationVersionID,
+		ConfigurationVersionID: run.ConfigurationVersionID,
 		IsDestroy:              &run.IsDestroy,
 		PlanOnly:               &run.PlanOnly,
 		Source:                 SourceUI,
@@ -336,7 +336,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, err := h.runs.watchWithOptions(r.Context(), WatchOptions{
-		WorkspaceID: &params.WorkspaceID,
+		WorkspaceID: params.WorkspaceID,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -369,7 +369,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			if params.Latest && !event.Payload.Latest {
 				// skip: run is not the latest run for a workspace
 				continue
-			} else if params.RunID != nil && *params.RunID != event.Payload.ID {
+			} else if params.RunID != nil && params.RunID != event.Payload.ID {
 				// skip: event is for a run which does not match the
 				// filter
 				continue

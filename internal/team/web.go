@@ -131,7 +131,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := decode.ID("team_id", r)
+	teamID, err := decode.TfeID("team_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

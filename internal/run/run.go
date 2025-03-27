@@ -40,7 +40,7 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     resource.ID               `jsonapi:"primary,runs"`
+		ID                     resource.TfeID            `jsonapi:"primary,runs"`
 		CreatedAt              time.Time                 `jsonapi:"attribute" json:"created_at"`
 		IsDestroy              bool                      `jsonapi:"attribute" json:"is_destroy"`
 		CancelSignaledAt       *time.Time                `jsonapi:"attribute" json:"cancel_signaled_at"`

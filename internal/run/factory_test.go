@@ -192,7 +192,7 @@ func (f *fakeFactoryConfigurationVersionService) GetLatest(context.Context, reso
 }
 
 func (f *fakeFactoryConfigurationVersionService) Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error) {
-	return &configversion.ConfigurationVersion{ID: workspaceID}, nil
+	return &configversion.ConfigurationVersion{ID: workspaceID.(resource.TfeID)}, nil
 }
 
 func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, resource.ID, []byte) error {

@@ -110,7 +110,7 @@ func (a *tfe) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
-	teamID, err := decode.ID("team_id", r)
+	teamID, err := decode.TfeID("team_id", r)
 	if err != nil {
 		return err
 	}

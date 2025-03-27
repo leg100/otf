@@ -104,7 +104,7 @@ func (h *web) addHandlers(r *mux.Router) {
 }
 
 func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -148,7 +148,7 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -194,7 +194,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -244,7 +244,7 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -346,7 +346,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
+	setID, err := decode.TfeID("variable_set_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -431,7 +431,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
+	setID, err := decode.TfeID("variable_set_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -448,7 +448,7 @@ func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
+	setID, err := decode.TfeID("variable_set_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -492,7 +492,7 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -535,7 +535,7 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

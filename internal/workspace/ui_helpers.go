@@ -68,7 +68,7 @@ func (h *uiHelpers) lockButtonHelper(
 		// also show message as button tooltip
 		btn.Tooltip = btn.Message
 		// A user can unlock their own lock
-		if *ws.Lock == user.ID {
+		if ws.Lock == user.ID {
 			return btn, nil
 		}
 		// User is going to need the force unlock permission

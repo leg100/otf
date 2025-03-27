@@ -63,7 +63,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -157,7 +157,7 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -178,7 +178,7 @@ func (a *tfe) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getVersion(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.ID("id", r)
+	versionID, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -198,7 +198,7 @@ func (a *tfe) getVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteVersion(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.ID("id", r)
+	versionID, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -232,7 +232,7 @@ func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) uploadState(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.ID("id", r)
+	versionID, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -248,7 +248,7 @@ func (a *tfe) uploadState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.ID("id", r)
+	versionID, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -262,7 +262,7 @@ func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -313,7 +313,7 @@ func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
-	outputID, err := decode.ID("id", r)
+	outputID, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

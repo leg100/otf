@@ -127,7 +127,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 					return err
 				}
 			case t.ID != nil:
-				tag, err = s.db.findTagByID(ctx, ws.Organization, *t.ID)
+				tag, err = s.db.findTagByID(ctx, ws.Organization, t.ID)
 				if err != nil {
 					return err
 				}
@@ -149,7 +149,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 }
 
 func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -182,16 +182,16 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 				if errors.Is(err, internal.ErrResourceNotFound) {
 					idValue := resource.NewTfeID("tag")
 					id = &idValue
-					if err := s.db.addTag(ctx, ws.Organization, name, *id); err != nil {
+					if err := s.db.addTag(ctx, ws.Organization, name, id); err != nil {
 						return fmt.Errorf("adding tag: %s %w", name, err)
 					}
 				} else if err != nil {
 					return err
 				} else {
-					id = &existing.ID
+					id = existing.ID
 				}
 			case id != nil:
-				existing, err := s.db.findTagByID(ctx, ws.Organization, *t.ID)
+				existing, err := s.db.findTagByID(ctx, ws.Organization, t.ID)
 				if err != nil {
 					return err
 				}
@@ -200,7 +200,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 				return ErrInvalidTagSpec
 			}
 
-			if err := s.db.tagWorkspace(ctx, ws.ID, *id); err != nil {
+			if err := s.db.tagWorkspace(ctx, ws.ID, id); err != nil {
 				return err
 			}
 			added = append(added, name)

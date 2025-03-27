@@ -179,7 +179,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := decode.ID("team_id", r)
+	teamID, err := decode.TfeID("team_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -290,7 +290,7 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return

@@ -115,7 +115,7 @@ func NewService(opts Options) *Service {
 		"runs",
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Run, error) {
 			if action == sql.DeleteAction {
-				return &Run{ID: id}, nil
+				return &Run{ID: id.(resource.TfeID)}, nil
 			}
 			return db.GetRun(ctx, id)
 		},
@@ -239,7 +239,7 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run,
 			return err
 		}
 		if !run.PlanOnly {
-			_, err := s.workspaces.Lock(ctx, run.WorkspaceID, &run.ID)
+			_, err := s.workspaces.Lock(ctx, run.WorkspaceID, run.ID)
 			if err != nil {
 				return err
 			}
@@ -367,7 +367,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 		for event := range sub {
 			// apply workspace filter
 			if opts.WorkspaceID != nil {
-				if event.Payload.WorkspaceID != *opts.WorkspaceID {
+				if event.Payload.WorkspaceID != opts.WorkspaceID {
 					continue
 				}
 			}

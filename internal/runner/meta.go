@@ -13,7 +13,7 @@ import (
 
 // RunnerMeta is information about a runner.
 type RunnerMeta struct {
-	ID resource.ID `jsonapi:"primary,runners" db:"runner_id"`
+	ID resource.TfeID `jsonapi:"primary,runners" db:"runner_id"`
 	// Optional name
 	Name string `jsonapi:"attribute" json:"name"`
 	// Version of runner

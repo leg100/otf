@@ -18,9 +18,9 @@ type (
 	//
 	// https://github.com/jackc/pgx/issues/2180#issuecomment-2508089376
 	Team struct {
-		ID        resource.ID `jsonapi:"primary,teams" db:"team_id"`
-		Name      string      `jsonapi:"attribute" json:"name" db:"name"`
-		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at" db:"created_at"`
+		ID        resource.TfeID `jsonapi:"primary,teams" db:"team_id"`
+		Name      string         `jsonapi:"attribute" json:"name" db:"name"`
+		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
 
 		ManageWorkspaces bool `db:"permission_manage_workspaces"` // admin access on all workspaces
 		ManageVCS        bool `db:"permission_manage_vcs"`        // manage VCS providers
@@ -160,7 +160,7 @@ func (t *Team) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 	}
 	if req.ID != nil && req.ID.Kind() == resource.TeamKind {
 		// team can access self
-		return t.ID == *req.ID
+		return t.ID == req.ID
 	}
 	if req.WorkspacePolicy != nil {
 		// Team can only access workspace if a specific permission has been

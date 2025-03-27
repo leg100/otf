@@ -29,7 +29,7 @@ func TestScheduler_schedule(t *testing.T) {
 		err := s.schedule(ctx, wsID, run)
 		require.NoError(t, err)
 
-		assert.Equal(t, run.ID, *runClient.enqueuedRunID)
+		assert.Equal(t, run.ID, runClient.enqueuedRunID)
 		assert.Equal(t, 0, len(s.queues))
 	})
 
@@ -67,7 +67,7 @@ func TestScheduler_schedule(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, 1, len(s.queues))
-		assert.Equal(t, run1.ID, *s.queues[wsID].current)
+		assert.Equal(t, run1.ID, s.queues[wsID].current)
 		assert.Equal(t, []resource.ID{run2.ID, run3.ID}, s.queues[wsID].backlog)
 	})
 
@@ -97,7 +97,7 @@ func TestScheduler_schedule(t *testing.T) {
 			runs:       &fakeSchedulerRunClient{},
 			workspaces: workspaces,
 			queues: map[resource.ID]queue{
-				wsID: {current: &runID},
+				wsID: {current: runID},
 			},
 		}
 
@@ -133,7 +133,7 @@ func TestScheduler_process(t *testing.T) {
 			"make pending run current and request enqueue plan",
 			queue{},
 			&Run{ID: runID1, Status: runstatus.Pending},
-			queue{current: &runID1},
+			queue{current: runID1},
 			true,
 			false,
 		},
@@ -141,7 +141,7 @@ func TestScheduler_process(t *testing.T) {
 			"make plan_enqueued run current and do not request enqueue plan",
 			queue{},
 			&Run{ID: runID1, Status: runstatus.PlanQueued},
-			queue{current: &runID1},
+			queue{current: runID1},
 			false,
 			false,
 		},
@@ -149,13 +149,13 @@ func TestScheduler_process(t *testing.T) {
 			"move backlogged run into current and request enqueue plan",
 			queue{backlog: []resource.ID{runID1}},
 			nil,
-			queue{current: &runID1},
+			queue{current: runID1},
 			true,
 			false,
 		},
 		{
 			"remove finished run from current and unlock queue",
-			queue{current: &runID1},
+			queue{current: runID1},
 			&Run{ID: runID1, Status: runstatus.Applied},
 			queue{},
 			false,
@@ -171,9 +171,9 @@ func TestScheduler_process(t *testing.T) {
 		},
 		{
 			"remove finished run from current and make backlogged run current and request enqueue plan",
-			queue{current: &runID1, backlog: []resource.ID{runID2}},
+			queue{current: runID1, backlog: []resource.ID{runID2}},
 			&Run{ID: runID1, Status: runstatus.Applied},
-			queue{current: &runID2},
+			queue{current: runID2},
 			true,
 			false,
 		},
@@ -201,7 +201,7 @@ type fakeSchedulerRunClient struct {
 }
 
 func (f *fakeSchedulerRunClient) EnqueuePlan(ctx context.Context, runID resource.ID) (*Run, error) {
-	f.enqueuedRunID = &runID
+	f.enqueuedRunID = runID
 	return nil, f.enqueuePlanError
 }
 

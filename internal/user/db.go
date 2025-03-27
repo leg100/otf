@@ -133,7 +133,7 @@ SELECT
     ) AS teams
 FROM users u
 WHERE u.user_id = $1
-`, *spec.UserID)
+`, spec.UserID)
 	} else if spec.Username != nil {
 		rows = db.Query(ctx, `
 SELECT
@@ -162,7 +162,7 @@ SELECT
 FROM users u
 JOIN tokens t ON u.username = t.username
 WHERE t.token_id = $1
-`, *spec.AuthenticationTokenID)
+`, spec.AuthenticationTokenID)
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}
@@ -211,7 +211,7 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 DELETE
 FROM users
 WHERE user_id = $1
-`, *spec.UserID)
+`, spec.UserID)
 		return err
 	} else if spec.Username != nil {
 		_, err := db.Exec(ctx, `

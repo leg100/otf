@@ -592,7 +592,7 @@ func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
 	}
 	if latestRunID != nil {
 		ws.LatestRun = &LatestRun{
-			ID:     *latestRunID,
+			ID:     latestRunID,
 			Status: *latestRunStatus,
 		}
 	}

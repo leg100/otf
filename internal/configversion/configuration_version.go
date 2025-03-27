@@ -25,9 +25,9 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                resource.ID `db:"configuration_version_id"`
-		CreatedAt         time.Time   `db:"created_at"`
-		AutoQueueRuns     bool        `db:"auto_queue_runs"`
+		ID                resource.TfeID `db:"configuration_version_id"`
+		CreatedAt         time.Time      `db:"created_at"`
+		AutoQueueRuns     bool           `db:"auto_queue_runs"`
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
