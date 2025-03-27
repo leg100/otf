@@ -35,7 +35,7 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          resource.ID        `jsonapi:"primary,state-versions"`
+		ID          resource.TfeID     `jsonapi:"primary,state-versions"`
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
@@ -45,7 +45,7 @@ type (
 	}
 
 	Output struct {
-		ID             resource.ID
+		ID             resource.TfeID
 		Name           string
 		Type           string
 		Value          json.RawMessage
@@ -73,7 +73,7 @@ type (
 		createOutputs(context.Context, []*Output) error
 		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
-		updateCurrentVersion(context.Context, resource.ID, resource.TfeID) error
+		updateCurrentVersion(context.Context, resource.ID, resource.ID) error
 		uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error
 		discardAnyPending(ctx context.Context, workspaceID resource.ID) error
 	}

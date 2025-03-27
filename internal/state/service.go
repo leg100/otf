@@ -77,7 +77,7 @@ func NewService(opts Options) *Service {
 
 	// Resolve authorization requests for state version IDs to a workspace IDs
 	opts.Authorizer.RegisterWorkspaceResolver(resource.StateVersionKind,
-		func(ctx context.Context, svID resource.ID) (resource.TfeID, error) {
+		func(ctx context.Context, svID resource.ID) (resource.ID, error) {
 			sv, err := db.getVersion(ctx, svID)
 			if err != nil {
 				return nil, err

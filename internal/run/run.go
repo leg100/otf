@@ -57,8 +57,8 @@ type (
 		PlanOnly               bool                      `jsonapi:"attribute" json:"plan_only"`
 		Source                 Source                    `jsonapi:"attribute" json:"source"`
 		Status                 runstatus.Status          `jsonapi:"attribute" json:"status"`
-		WorkspaceID            resource.ID               `jsonapi:"attribute" json:"workspace_id"`
-		ConfigurationVersionID resource.ID               `jsonapi:"attribute" json:"configuration_version_id"`
+		WorkspaceID            resource.TfeID            `jsonapi:"attribute" json:"workspace_id"`
+		ConfigurationVersionID resource.TfeID            `jsonapi:"attribute" json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode   `jsonapi:"attribute" json:"execution_mode"`
 		Variables              []Variable                `jsonapi:"attribute" json:"variables"`
 		Plan                   Phase                     `jsonapi:"attribute" json:"plan"`

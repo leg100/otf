@@ -19,13 +19,13 @@ type (
 
 	// versionModel is the database model for a state version row.
 	versionModel struct {
-		StateVersionID      resource.ID   `db:"state_version_id"`
-		CreatedAt           time.Time     `db:"created_at"`
-		Serial              int64         `db:"serial"`
-		State               []byte        `db:"state"`
-		WorkspaceID         resource.ID   `db:"workspace_id"`
-		Status              Status        `db:"status"`
-		StateVersionOutputs []outputModel `db:"state_version_outputs"`
+		StateVersionID      resource.TfeID `db:"state_version_id"`
+		CreatedAt           time.Time      `db:"created_at"`
+		Serial              int64          `db:"serial"`
+		State               []byte         `db:"state"`
+		WorkspaceID         resource.TfeID `db:"workspace_id"`
+		Status              Status         `db:"status"`
+		StateVersionOutputs []outputModel  `db:"state_version_outputs"`
 	}
 )
 
