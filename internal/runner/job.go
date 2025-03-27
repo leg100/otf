@@ -41,14 +41,14 @@ type Job struct {
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
 	// the job is allocated to an agent runner belonging to the pool. If nil then
 	// the job is allocated to a server runner.
-	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
+	AgentPoolID resource.ID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
 	// Name of job's organization
 	Organization organization.Name `jsonapi:"attribute" json:"organization" db:"organization_name"`
 	// ID of job's workspace
 	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id" db:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
-	RunnerID *resource.ID `jsonapi:"attribute" json:"runner_id" db:"runner_id"`
+	RunnerID resource.ID `jsonapi:"attribute" json:"runner_id" db:"runner_id"`
 	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
 	Signaled *bool `jsonapi:"attribute" json:"signaled"`

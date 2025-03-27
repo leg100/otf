@@ -105,7 +105,7 @@ func Param(name string, r *http.Request) (string, error) {
 func ID(name string, r *http.Request) (resource.ID, error) {
 	s, err := Param(name, r)
 	if err != nil {
-		return resource.ID{}, err
+		return nil, err
 	}
 	return resource.ParseTfeID(s)
 }

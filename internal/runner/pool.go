@@ -63,7 +63,7 @@ type (
 		// Filter pools to those accessible to the named workspace. Optional.
 		AllowedWorkspaceName *string
 		// Filter pools to those accessible to the workspace with the given ID. Optional.
-		AllowedWorkspaceID *resource.ID
+		AllowedWorkspaceID resource.ID
 	}
 )
 

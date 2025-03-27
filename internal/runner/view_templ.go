@@ -450,7 +450,7 @@ func agentPoolListItem(pool *Pool) templ.Component {
 
 type agentPoolListAllowedProps struct {
 	pools         []*Pool
-	currentPoolID *resource.ID
+	currentPoolID resource.ID
 }
 
 func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {

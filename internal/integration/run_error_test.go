@@ -31,7 +31,7 @@ func TestRunError(t *testing.T) {
 	tests := []struct {
 		name   string
 		mode   workspace.ExecutionMode
-		poolID *resource.ID
+		poolID resource.ID
 	}{
 		{
 			"execute run via daemon", workspace.RemoteExecutionMode, nil,

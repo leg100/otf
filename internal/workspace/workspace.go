@@ -290,12 +290,12 @@ func (ws *Workspace) Enlock(id resource.ID) error {
 		return errors.New("workspace can only be locked by a user or a run")
 	}
 	if ws.Lock == nil {
-		ws.Lock = &id
+		ws.Lock = id
 		return nil
 	}
 	// a run can replace another run holding a lock
 	if ws.Lock.Kind() == resource.RunKind && id.Kind() == resource.RunKind {
-		ws.Lock = &id
+		ws.Lock = id
 		return nil
 	}
 	return ErrWorkspaceAlreadyLocked
@@ -313,7 +313,7 @@ func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 		return ErrWorkspaceAlreadyUnlocked
 	}
 	// user/run can unlock its own lock
-	if *ws.Lock == id {
+	if ws.Lock == id {
 		ws.Lock = nil
 		return nil
 	}
@@ -491,7 +491,7 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 	}
 	ws.Connection = &Connection{
 		Repo:          *opts.RepoPath,
-		VCSProviderID: *opts.VCSProviderID,
+		VCSProviderID: opts.VCSProviderID,
 	}
 	if opts.AllowCLIApply != nil {
 		ws.Connection.AllowCLIApply = *opts.AllowCLIApply

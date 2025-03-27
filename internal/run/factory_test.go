@@ -28,7 +28,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
+		got, err := f.NewRun(ctx, nil, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, runstatus.Pending, got.Status)
@@ -46,7 +46,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
+		got, err := f.NewRun(ctx, nil, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -60,7 +60,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{PlanOnly: internal.Bool(true)})
+		got, err := f.NewRun(ctx, nil, CreateOptions{PlanOnly: internal.Bool(true)})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -74,7 +74,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
+		got, err := f.NewRun(ctx, nil, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.AutoApply)
@@ -88,7 +88,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{
+		got, err := f.NewRun(ctx, nil, CreateOptions{
 			AutoApply: internal.Bool(true),
 		})
 		require.NoError(t, err)
@@ -104,7 +104,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
+		got, err := f.NewRun(ctx, nil, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.CostEstimationEnabled)
@@ -123,7 +123,7 @@ func TestFactory(t *testing.T) {
 			"",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
+		got, err := f.NewRun(ctx, nil, CreateOptions{})
 		require.NoError(t, err)
 
 		// fake config version service sets the config version ID to the
@@ -139,7 +139,7 @@ func TestFactory(t *testing.T) {
 			"1.2.3",
 		)
 
-		got, err := f.NewRun(ctx, resource.ID{}, CreateOptions{})
+		got, err := f.NewRun(ctx, nil, CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, "1.2.3", got.TerraformVersion)

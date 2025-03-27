@@ -46,7 +46,7 @@ type OrganizationResolver func(ctx context.Context, id resource.ID) (resource.Or
 
 // WorkspaceResolver takes the ID of a resource and returns the ID of the
 // workspace it belongs to.
-type WorkspaceResolver func(ctx context.Context, id resource.ID) (resource.TfeID, error)
+type WorkspaceResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
 
 // RegisterOrganizationResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the name of the
@@ -108,16 +108,16 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRe
 			// Check if resource kind is registered for its ID to be resolved to workspace
 			// ID.
 			if resolver, ok := a.workspaceResolvers[req.ID.Kind()]; ok {
-				workspaceID, err := resolver(ctx, *req.ID)
+				workspaceID, err := resolver(ctx, req.ID)
 				if err != nil {
 					return fmt.Errorf("resolving workspace ID: %w", err)
 				}
 				// Authorize workspace ID instead
-				req.ID = &workspaceID
+				req.ID = workspaceID
 			}
 			// If the resource kind is a workspace, then fetch its policy.
 			if req.ID.Kind() == resource.WorkspaceKind {
-				policy, err := a.GetWorkspacePolicy(ctx, *req.ID)
+				policy, err := a.GetWorkspacePolicy(ctx, req.ID)
 				if err != nil {
 					return fmt.Errorf("fetching workspace policy: %w", err)
 				}
@@ -132,7 +132,7 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, req *AccessRe
 				if !ok {
 					return errors.New("resource kind is missing organization resolver")
 				}
-				organization, err := resolver(ctx, *req.ID)
+				organization, err := resolver(ctx, req.ID)
 				if err != nil {
 					return fmt.Errorf("resolving organization: %w", err)
 				}
@@ -169,7 +169,7 @@ type AccessRequest struct {
 	Organization *resource.OrganizationName
 	// ID of resource to which access is being requested. If nil then the action
 	// is being requested on the organization.
-	ID *resource.ID
+	ID resource.ID
 	// WorkspacePolicy specifies workspace-specific permissions for the resource
 	// specified by ID. Only non-nil if ID refers to a workspace.
 	WorkspacePolicy *WorkspacePolicy

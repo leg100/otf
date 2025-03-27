@@ -66,10 +66,10 @@ func NewService(opts Options) *Service {
 	opts.Authorizer.RegisterWorkspaceResolver(resource.ConfigVersionKind,
 		func(ctx context.Context, cvID resource.ID) (resource.ID, error) {
 			sv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
-				ID: &cvID,
+				ID: cvID,
 			})
 			if err != nil {
-				return resource.ID{}, err
+				return nil, err
 			}
 			return sv.WorkspaceID, nil
 		},

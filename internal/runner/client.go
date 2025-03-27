@@ -27,7 +27,7 @@ type remoteClient struct {
 	*otfapi.Client
 
 	// agentID is the ID of the agent using the client
-	agentID *resource.ID
+	agentID resource.ID
 }
 
 // newRequest constructs a new API request

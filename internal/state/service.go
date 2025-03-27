@@ -80,7 +80,7 @@ func NewService(opts Options) *Service {
 		func(ctx context.Context, svID resource.ID) (resource.TfeID, error) {
 			sv, err := db.getVersion(ctx, svID)
 			if err != nil {
-				return resource.ID{}, err
+				return nil, err
 			}
 			return sv.WorkspaceID, nil
 		},

@@ -130,7 +130,7 @@ func NewService(opts Options) *Service {
 		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
 			run, err := db.GetRun(ctx, runID)
 			if err != nil {
-				return resource.ID{}, err
+				return nil, err
 			}
 			return run.WorkspaceID, nil
 		},

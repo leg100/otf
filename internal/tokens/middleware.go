@@ -177,7 +177,7 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 func (m *middleware) parseIDFromJWT(token []byte) (resource.ID, error) {
 	parsed, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, m.key))
 	if err != nil {
-		return resource.ID{}, err
+		return nil, err
 	}
 	return resource.ParseTfeID(parsed.Subject())
 }

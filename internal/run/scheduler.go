@@ -28,7 +28,7 @@ type (
 	}
 
 	queue struct {
-		current *resource.ID
+		current resource.ID
 		backlog []resource.ID
 	}
 

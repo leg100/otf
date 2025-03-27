@@ -69,7 +69,7 @@ func TestRunScheduler(t *testing.T) {
 	daemon.waitRunStatus(t, run3.ID, runstatus.PlannedAndFinished)
 }
 
-func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock *resource.ID) {
+func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock resource.ID) {
 	t.Helper()
 
 	timeout := time.After(5 * time.Second)
