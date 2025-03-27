@@ -7,6 +7,7 @@ import (
 
 type ID interface {
 	fmt.Stringer
+	Kind() Kind
 }
 
 // ReStringID is a regular expression used to validate common string ID patterns.
