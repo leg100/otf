@@ -1,9 +1,6 @@
 package resource
 
 import (
-	"database/sql"
-	"database/sql/driver"
-	"encoding"
 	"fmt"
 	"regexp"
 )
@@ -11,10 +8,6 @@ import (
 // ID uniquely identifies an OTF resource.
 type ID interface {
 	fmt.Stringer
-	encoding.TextMarshaler
-	encoding.TextUnmarshaler
-	sql.Scanner
-	driver.Valuer
 	Kind() Kind
 }
 

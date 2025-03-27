@@ -95,7 +95,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.CreateStateVersionAction, &authz.AccessRequest{ID: &opts.WorkspaceID})
+	subject, err := a.Authorize(ctx, authz.CreateStateVersionAction, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.TfeI
 }
 
 func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
-	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts res
 }
 
 func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*
 }
 
 func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, &authz.AccessRequest{ID: &versionID})
+	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, 
 }
 
 func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
-	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, &authz.AccessRequest{ID: &versionID})
+	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, versionID)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
 }
 
 func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, &authz.AccessRequest{ID: &versionID})
+	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte)
 }
 
 func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, error) {
-	subject, err := a.Authorize(ctx, authz.DownloadStateAction, &authz.AccessRequest{ID: &svID})
+	subject, err := a.Authorize(ctx, authz.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (a *Service) GetOutput(ctx context.Context, outputID resource.TfeID) (*Outp
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetStateVersionOutputAction, &authz.AccessRequest{ID: &out.StateVersionID})
+	subject, err := a.Authorize(ctx, authz.GetStateVersionOutputAction, out.StateVersionID)
 	if err != nil {
 		return nil, err
 	}

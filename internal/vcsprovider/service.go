@@ -149,7 +149,7 @@ func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOpti
 }
 
 func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, &organization)
+	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
 	}

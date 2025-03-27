@@ -168,7 +168,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
-	_, err := a.Authorize(ctx, authz.ListUsersAction, &organization)
+	_, err := a.Authorize(ctx, authz.ListUsersAction, organization)
 	if err != nil {
 		return nil, err
 	}

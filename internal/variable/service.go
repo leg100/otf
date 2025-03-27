@@ -90,7 +90,7 @@ func (s *Service) ListEffectiveVariables(ctx context.Context, runID resource.Tfe
 }
 
 func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error) {
-	subject, err := s.Authorize(ctx, authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.CreateWorkspaceVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resour
 			return err
 		}
 
-		subject, err = s.Authorize(ctx, authz.UpdateWorkspaceVariableAction, &authz.AccessRequest{ID: &before.WorkspaceID})
+		subject, err = s.Authorize(ctx, authz.UpdateWorkspaceVariableAction, before.WorkspaceID)
 		if err != nil {
 			return err
 		}
@@ -165,7 +165,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resour
 }
 
 func (s *Service) ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (s *Service) GetWorkspaceVariable(ctx context.Context, variableID resource.
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, &authz.AccessRequest{ID: &wv.WorkspaceID})
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceVariablesAction, wv.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 			return err
 		}
 
-		subject, err = s.Authorize(ctx, authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &wv.WorkspaceID})
+		subject, err = s.Authorize(ctx, authz.DeleteWorkspaceVariableAction, wv.WorkspaceID)
 		if err != nil {
 			return err
 		}
@@ -225,7 +225,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 }
 
 func (s *Service) createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {
-	subject, err := s.Authorize(ctx, authz.CreateVariableSetAction, &organization)
+	subject, err := s.Authorize(ctx, authz.CreateVariableSetAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.TfeID, o
 }
 
 func (s *Service) listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error) {
-	subject, err := s.Authorize(ctx, authz.ListVariableSetsAction, &organization)
+	subject, err := s.Authorize(ctx, authz.ListVariableSetsAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (s *Service) listVariableSets(ctx context.Context, organization organizatio
 }
 
 func (s *Service) listWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error) {
-	subject, err := s.Authorize(ctx, authz.ListVariableSetsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.ListVariableSetsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}

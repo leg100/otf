@@ -276,7 +276,7 @@ func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) 
 }
 
 func (s *Service) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
-	_, err := s.Authorize(ctx, authz.ListRunnersAction, &organization)
+	_, err := s.Authorize(ctx, authz.ListRunnersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -697,7 +697,7 @@ func (s *Service) GetAgentPool(ctx context.Context, poolID resource.TfeID) (*Poo
 }
 
 func (s *Service) listAgentPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
-	subject, err := s.Authorize(ctx, authz.ListAgentPoolsAction, &organization)
+	subject, err := s.Authorize(ctx, authz.ListAgentPoolsAction, organization)
 	if err != nil {
 		return nil, err
 	}
