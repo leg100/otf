@@ -3,6 +3,7 @@ package configversion
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
@@ -321,5 +322,33 @@ func (m IngressAttributesModel) ToIngressAttributes() *IngressAttributes {
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*ConfigurationVersion, error) {
-	return pgx.RowToAddrOfStructByName[ConfigurationVersion](row)
+	type model struct {
+		ID                resource.TfeID `db:"configuration_version_id"`
+		CreatedAt         time.Time      `db:"created_at"`
+		AutoQueueRuns     bool           `db:"auto_queue_runs"`
+		Source            Source
+		Speculative       bool
+		Status            ConfigurationStatus
+		StatusTimestamps  []StatusTimestamp       `db:"status_timestamps"`
+		WorkspaceID       resource.TfeID          `db:"workspace_id"`
+		IngressAttributes *IngressAttributesModel `db:"ingress_attributes"`
+	}
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	cv := &ConfigurationVersion{
+		ID:               m.ID,
+		CreatedAt:        m.CreatedAt,
+		AutoQueueRuns:    m.AutoQueueRuns,
+		Source:           m.Source,
+		Speculative:      m.Speculative,
+		Status:           m.Status,
+		StatusTimestamps: m.StatusTimestamps,
+		WorkspaceID:      m.WorkspaceID,
+	}
+	if m.IngressAttributes != nil {
+		cv.IngressAttributes = m.IngressAttributes.ToIngressAttributes()
+	}
+	return cv, nil
 }
