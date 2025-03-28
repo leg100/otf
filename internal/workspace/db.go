@@ -529,7 +529,7 @@ WHERE w.workspace_id = $1
 	return p, nil
 }
 
-func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
+func (db *pgdb) scan(row pgx.CollectableRow) (*Workspace, error) {
 	type model struct {
 		ID                         resource.TfeID            `db:"workspace_id"`
 		CreatedAt                  time.Time                 `db:"created_at"`
@@ -565,7 +565,7 @@ func (db *pgdb) scan(scanner pgx.CollectableRow) (*Workspace, error) {
 		CurrentStateVersionID      *resource.TfeID           `db:"current_state_version_id"`
 		Connection                 *connections.Connection
 	}
-	m, err := pgx.RowToStructByName[model](scanner)
+	m, err := pgx.RowToStructByName[model](row)
 	if err != nil {
 		return nil, err
 	}

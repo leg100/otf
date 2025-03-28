@@ -87,10 +87,7 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     resource.TfeID
-		Branch string
-		// CloneURL          string
-		// CommitMessage     string
+		Branch                 string
 		CommitSHA              string         `db:"commit_sha"`
 		Repo                   string         `db:"identifier"`
 		IsPullRequest          bool           `db:"is_pull_request"`
@@ -100,12 +97,10 @@ type (
 		PullRequestNumber      int            `db:"pull_request_number"`
 		PullRequestURL         string         `db:"pull_request_url"`
 		PullRequestTitle       string         `db:"pull_request_title"`
-		// CompareURL        string
-		// PullRequestBody   string
-		Tag             string
-		SenderUsername  string `db:"sender_username"`
-		SenderAvatarURL string `db:"sender_avatar_url"`
-		SenderHTMLURL   string `db:"sender_html_url"`
+		Tag                    string
+		SenderUsername         string `db:"sender_username"`
+		SenderAvatarURL        string `db:"sender_avatar_url"`
+		SenderHTMLURL          string `db:"sender_html_url"`
 	}
 )
 

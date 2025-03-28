@@ -284,6 +284,42 @@ INSERT INTO configuration_version_status_timestamps (
 	return err
 }
 
+type IngressAttributesModel struct {
+	Branch                 string
+	CommitSHA              string         `db:"commit_sha"`
+	Repo                   string         `db:"identifier"`
+	IsPullRequest          bool           `db:"is_pull_request"`
+	OnDefaultBranch        bool           `db:"on_default_branch"`
+	ConfigurationVersionID resource.TfeID `db:"configuration_version_id"`
+	CommitURL              string         `db:"commit_url"`
+	PullRequestNumber      int            `db:"pull_request_number"`
+	PullRequestURL         string         `db:"pull_request_url"`
+	PullRequestTitle       string         `db:"pull_request_title"`
+	Tag                    string         `db:"tag"`
+	SenderUsername         string         `db:"sender_username"`
+	SenderAvatarURL        string         `db:"sender_avatar_url"`
+	SenderHTMLURL          string         `db:"sender_html_url"`
+}
+
+func (m IngressAttributesModel) ToIngressAttributes() *IngressAttributes {
+	return &IngressAttributes{
+		Branch:                 m.Branch,
+		CommitSHA:              m.CommitSHA,
+		Repo:                   m.Repo,
+		IsPullRequest:          m.IsPullRequest,
+		OnDefaultBranch:        m.OnDefaultBranch,
+		ConfigurationVersionID: m.ConfigurationVersionID,
+		CommitURL:              m.CommitURL,
+		PullRequestNumber:      m.PullRequestNumber,
+		PullRequestURL:         m.PullRequestURL,
+		PullRequestTitle:       m.PullRequestTitle,
+		Tag:                    m.Tag,
+		SenderUsername:         m.SenderUsername,
+		SenderAvatarURL:        m.SenderAvatarURL,
+		SenderHTMLURL:          m.SenderHTMLURL,
+	}
+}
+
 func (db *pgdb) scan(row pgx.CollectableRow) (*ConfigurationVersion, error) {
 	return pgx.RowToAddrOfStructByName[ConfigurationVersion](row)
 }
