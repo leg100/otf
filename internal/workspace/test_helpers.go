@@ -44,11 +44,11 @@ func (f *FakeService) Delete(context.Context, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Lock(context.Context, resource.ID, *resource.TfeID) (*Workspace, error) {
+func (f *FakeService) Lock(context.Context, resource.ID, resource.ID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) Unlock(context.Context, resource.ID, *resource.TfeID, bool) (*Workspace, error) {
+func (f *FakeService) Unlock(context.Context, resource.ID, resource.ID, bool) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 

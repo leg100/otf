@@ -11,12 +11,6 @@ import (
 
 type (
 	// Team is a group of users sharing a level of authorization.
-	//
-	// NOTE: the ordering of fields must match the ordering of their respective
-	// columns of the `teams` table in postgres in order for pgx.RowToStruct...
-	// to scan teams into the user struct. See:
-	//
-	// https://github.com/jackc/pgx/issues/2180#issuecomment-2508089376
 	Team struct {
 		ID        resource.TfeID `jsonapi:"primary,teams" db:"team_id"`
 		Name      string         `jsonapi:"attribute" json:"name" db:"name"`

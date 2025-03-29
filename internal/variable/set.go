@@ -10,12 +10,12 @@ import (
 type (
 	// VariableSet is a set of variables
 	VariableSet struct {
-		ID           resource.ID `db:"variable_set_id"`
+		ID           resource.TfeID
 		Name         string
 		Description  string
 		Global       bool
-		Workspaces   []resource.ID             `db:"workspace_ids"`
-		Organization resource.OrganizationName `db:"organization_name"`
+		Workspaces   []resource.ID
+		Organization resource.OrganizationName
 		Variables    []*Variable
 	}
 

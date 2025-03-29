@@ -2,16 +2,21 @@ package runner
 
 import (
 	"context"
+	"net/netip"
+	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
-type db struct {
-	*sql.DB
-}
+type (
+	db struct {
+		*sql.DB
+	}
+)
 
 func (db *db) create(ctx context.Context, meta *RunnerMeta) error {
 	args := pgx.NamedArgs{
@@ -143,7 +148,7 @@ LEFT JOIN agent_pools ap USING (agent_pool_id)
 WHERE agent_pool_id IS NULL
 ORDER BY last_ping_at DESC
 `)
-	return sql.CollectRows(rows, pgx.RowToFunc[*RunnerMeta](scanRunner))
+	return sql.CollectRows(rows, scanRunner)
 }
 
 func (db *db) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
@@ -193,7 +198,37 @@ RETURNING runner_id, name, version, max_jobs, ip_address, last_ping_at, last_sta
 }
 
 func scanRunner(row pgx.CollectableRow) (*RunnerMeta, error) {
-	return pgx.RowToAddrOfStructByName[RunnerMeta](row)
+	type model struct {
+		ID           resource.TfeID `db:"runner_id"`
+		MaxJobs      int            `db:"max_jobs"`
+		CurrentJobs  int            `db:"current_jobs"`
+		LastPingAt   time.Time      `db:"last_ping_at"`
+		LastStatusAt time.Time      `db:"last_status_at"`
+		IPAddress    netip.Addr     `db:"ip_address"`
+		PoolModel    *poolModel     `db:"agent_pool"`
+		Name         string
+		Version      string
+		Status       RunnerStatus
+	}
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	meta := &RunnerMeta{
+		ID:           m.ID,
+		MaxJobs:      m.MaxJobs,
+		CurrentJobs:  m.CurrentJobs,
+		LastPingAt:   m.LastPingAt,
+		LastStatusAt: m.LastStatusAt,
+		IPAddress:    m.IPAddress,
+		Name:         m.Name,
+		Version:      m.Version,
+		Status:       m.Status,
+	}
+	if m.PoolModel != nil {
+		meta.AgentPool = m.PoolModel.toPool()
+	}
+	return meta, nil
 }
 
 // jobs
@@ -237,7 +272,7 @@ JOIN workspaces w USING (workspace_id)
 WHERE j.runner_id = $1
 AND   j.status = 'allocated'
 `, runnerID)
-	allocated, err := sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Job])
+	allocated, err := sql.CollectRows(rows, scanJob)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +296,7 @@ RETURNING
     r.workspace_id,
     w.organization_name
 `, runnerID)
-	signaled, err := sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Job])
+	signaled, err := sql.CollectRows(rows, scanJob)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +320,7 @@ JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 WHERE j.job_id = $1
 `, jobID)
-	return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Job])
+	return sql.CollectOneRow(rows, scanJob)
 }
 
 func (db *db) listJobs(ctx context.Context) ([]*Job, error) {
@@ -304,7 +339,7 @@ FROM jobs j
 JOIN runs r USING (run_id)
 JOIN workspaces w USING (workspace_id)
 `)
-	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Job])
+	return sql.CollectRows(rows, scanJob)
 }
 
 func (db *db) updateJob(ctx context.Context, jobID resource.ID, fn func(context.Context, *Job) error) (*Job, error) {
@@ -329,7 +364,7 @@ JOIN workspaces w USING (workspace_id)
 WHERE j.job_id = $1
 FOR UPDATE OF j
 `, jobID)
-			return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Job])
+			return sql.CollectOneRow(rows, scanJob)
 		},
 		fn,
 		func(ctx context.Context, conn sql.Connection, job *Job) error {
@@ -374,7 +409,7 @@ WHERE j.run_id = $1
 AND   j.status IN ('unallocated', 'allocated', 'running')
 FOR UPDATE OF j
 `, runID)
-			return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Job])
+			return sql.CollectOneRow(rows, scanJob)
 		},
 		fn,
 		func(ctx context.Context, conn sql.Connection, job *Job) error {
@@ -393,6 +428,36 @@ WHERE job_id = $4
 			return err
 		},
 	)
+}
+
+func scanJob(row pgx.CollectableRow) (*Job, error) {
+	type model struct {
+		ID           resource.TfeID `db:"job_id"`
+		RunID        resource.TfeID `db:"run_id"`
+		Phase        internal.PhaseType
+		Status       JobStatus
+		AgentPoolID  *resource.TfeID   `db:"agent_pool_id"`
+		Organization organization.Name `db:"organization_name"`
+		WorkspaceID  resource.TfeID    `db:"workspace_id"`
+		RunnerID     *resource.TfeID   `db:"runner_id"`
+		Signaled     *bool
+	}
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	meta := &Job{
+		ID:           m.ID,
+		RunID:        m.RunID,
+		Phase:        m.Phase,
+		Status:       m.Status,
+		AgentPoolID:  m.AgentPoolID,
+		Organization: m.Organization,
+		WorkspaceID:  m.WorkspaceID,
+		RunnerID:     m.RunnerID,
+		Signaled:     m.Signaled,
+	}
+	return meta, nil
 }
 
 // agent tokens
@@ -447,7 +512,24 @@ WHERE agent_token_id = $1
 }
 
 func scanAgentToken(row pgx.CollectableRow) (*agentToken, error) {
-	return pgx.RowToAddrOfStructByName[agentToken](row)
+	type model struct {
+		ID          resource.TfeID `db:"agent_token_id"`
+		AgentPoolID resource.TfeID `db:"agent_pool_id"`
+		CreatedAt   time.Time      `db:"created_at"`
+		Description string
+	}
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	token := &agentToken{
+		ID:          m.ID,
+		AgentPoolID: m.AgentPoolID,
+		CreatedAt:   m.CreatedAt,
+		Description: m.Description,
+	}
+	return token, nil
+
 }
 
 // agent pools
@@ -619,6 +701,39 @@ RETURNING agent_pool_id, name, created_at, organization_name, organization_scope
 	return err
 }
 
+type poolModel struct {
+	ID        resource.TfeID `db:"agent_pool_id"`
+	Name      string
+	CreatedAt time.Time `db:"created_at"`
+	// Pool belongs to an organization with this name.
+	Organization organization.Name `db:"organization_name"`
+	// Whether pool of agents is accessible to all workspaces in organization
+	// (true) or only those specified in AllowedWorkspaces (false).
+	OrganizationScoped bool `db:"organization_scoped"`
+	// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
+	// is true.
+	AllowedWorkspaces []resource.TfeID `db:"allowed_workspace_ids"`
+	// IDs of workspaces assigned to the pool. Note: this is a subset of
+	// AllowedWorkspaces.
+	AssignedWorkspaces []resource.TfeID `db:"workspace_ids"`
+}
+
+func (m poolModel) toPool() *Pool {
+	return &Pool{
+		ID:                 m.ID,
+		Name:               m.Name,
+		CreatedAt:          m.CreatedAt,
+		Organization:       m.Organization,
+		OrganizationScoped: m.OrganizationScoped,
+		AllowedWorkspaces:  m.AllowedWorkspaces,
+		AssignedWorkspaces: m.AssignedWorkspaces,
+	}
+}
+
 func scanAgentPool(row pgx.CollectableRow) (*Pool, error) {
-	return pgx.RowToAddrOfStructByName[Pool](row)
+	m, err := pgx.RowToAddrOfStructByName[poolModel](row)
+	if err != nil {
+		return nil, err
+	}
+	return m.toPool(), nil
 }

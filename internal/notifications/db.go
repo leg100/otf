@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal/resource"
@@ -63,7 +64,7 @@ FROM notification_configurations
 WHERE notification_configuration_id = $1
 FOR UPDATE
 `, id)
-			return sql.CollectOneRow(rows, db.scan)
+			return sql.CollectOneRow(rows, scanConfig)
 		},
 		updateFunc,
 		func(ctx context.Context, conn sql.Connection, nc *Config) error {
@@ -98,7 +99,7 @@ SELECT notification_configuration_id, created_at, updated_at, name, url, trigger
 FROM notification_configurations
 WHERE workspace_id = $1
 `, workspaceID)
-	return sql.CollectRows(rows, db.scan)
+	return sql.CollectRows(rows, scanConfig)
 }
 
 func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
@@ -106,7 +107,7 @@ func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
 SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
 FROM notification_configurations
 `)
-	return sql.CollectRows(rows, db.scan)
+	return sql.CollectRows(rows, scanConfig)
 }
 
 func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
@@ -115,7 +116,7 @@ SELECT notification_configuration_id, created_at, updated_at, name, url, trigger
 FROM notification_configurations
 WHERE notification_configuration_id = $1
 `, id)
-	return sql.CollectOneRow(rows, db.scan)
+	return sql.CollectOneRow(rows, scanConfig)
 }
 
 func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
@@ -127,6 +128,33 @@ RETURNING notification_configuration_id
 	return err
 }
 
-func (db *pgdb) scan(row pgx.CollectableRow) (*Config, error) {
-	return pgx.RowToAddrOfStructByName[Config](row)
+func scanConfig(row pgx.CollectableRow) (*Config, error) {
+	type model struct {
+		ID              resource.TfeID `db:"notification_configuration_id"`
+		CreatedAt       time.Time      `db:"created_at"`
+		UpdatedAt       time.Time      `db:"updated_at"`
+		DestinationType Destination    `db:"destination_type"`
+		Enabled         bool
+		Name            string
+		Token           string `db:"-"`
+		Triggers        []Trigger
+		URL             *string
+		WorkspaceID     resource.TfeID `db:"workspace_id"`
+	}
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	cfg := &Config{
+		ID:              m.ID,
+		CreatedAt:       m.CreatedAt,
+		UpdatedAt:       m.UpdatedAt,
+		DestinationType: m.DestinationType,
+		Enabled:         m.Enabled,
+		Name:            m.Name,
+		Triggers:        m.Triggers,
+		URL:             m.URL,
+		WorkspaceID:     m.WorkspaceID,
+	}
+	return cfg, nil
 }
