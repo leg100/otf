@@ -85,7 +85,10 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 				return fmt.Errorf("creating webhook: %w", err)
 			}
 		}
-		return s.db.createConnection(ctx, opts)
+		if err := s.db.createConnection(ctx, opts); err != nil {
+			return fmt.Errorf("creating connection: %w", err)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

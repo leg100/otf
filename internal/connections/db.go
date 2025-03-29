@@ -21,9 +21,9 @@ func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 
 	switch opts.ResourceID.Kind() {
 	case resource.WorkspaceKind:
-		args["workspace_id"] = &opts.ResourceID
+		args["workspace_id"] = opts.ResourceID
 	case resource.ModuleKind:
-		args["module_id"] = &opts.ResourceID
+		args["module_id"] = opts.ResourceID
 	default:
 		return fmt.Errorf("unsupported connection kind: %s", opts.ResourceID.Kind())
 	}

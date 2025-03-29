@@ -19,30 +19,8 @@ type db struct {
 // getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
+	// Credit to https://stackoverflow.com/a/62205017
 	rows := db.Query(ctx, `
-SELECT
-    w.repohook_id,
-    w.vcs_id,
-    w.vcs_provider_id,
-    w.secret,
-    w.repo_path,
-    v.vcs_kind
-FROM repohooks w
-JOIN vcs_providers v USING (vcs_provider_id)
-WHERE repo_path = $1
-AND   w.vcs_provider_id = $2
-`, hook.repoPath, hook.vcsProviderID)
-	result, err := sql.CollectRows(rows, db.scan)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		return result[0], nil
-	}
-
-	// not found; create instead
-
-	rows = db.Query(ctx, `
 WITH inserted AS (
     INSERT INTO repohooks (
         repohook_id,
@@ -51,30 +29,31 @@ WITH inserted AS (
         secret,
         repo_path
     ) VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        $5
+        @repohook_id,
+        @vcs_id,
+        @vcs_provider_id,
+        @secret,
+        @repo_path
     )
-    RETURNING repohook_id, vcs_id, secret, repo_path, vcs_provider_id
+	ON CONFLICT DO NOTHING
+	RETURNING *
 )
-SELECT
-    w.repohook_id,
-    w.vcs_id,
-    v.vcs_provider_id,
-    w.secret,
-    w.repo_path,
-    v.vcs_kind
-FROM inserted w
+SELECT i.*, v.vcs_kind
+FROM inserted i
 JOIN vcs_providers v USING (vcs_provider_id)
-`,
-		hook.id,
-		hook.cloudID,
-		hook.vcsProviderID,
-		hook.secret,
-		hook.repoPath,
-	)
+UNION
+SELECT h.*, v.vcs_kind
+FROM repohooks h
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE h.repo_path = @repo_path
+AND   h.vcs_provider_id = @vcs_provider_id
+`, pgx.NamedArgs{
+		"repohook_id":     hook.id,
+		"repo_path":       hook.repoPath,
+		"vcs_id":          hook.cloudID,
+		"secret":          hook.secret,
+		"vcs_provider_id": hook.vcsProviderID,
+	})
 	return sql.CollectOneRow(rows, db.scan)
 }
 
@@ -153,12 +132,12 @@ RETURNING repohook_id, vcs_id, secret, repo_path, vcs_provider_id
 }
 
 type hookModel struct {
-	RepohookID    uuid.UUID   `db:"repohook_id"`
-	VCSID         *string     `db:"vcs_id"`
-	VCSProviderID resource.ID `db:"vcs_provider_id"`
-	Secret        string      `db:"secret"`
-	RepoPath      string      `db:"repo_path"`
-	VCSKind       vcs.Kind    `db:"vcs_kind"`
+	RepohookID    uuid.UUID      `db:"repohook_id"`
+	VCSID         *string        `db:"vcs_id"`
+	VCSProviderID resource.TfeID `db:"vcs_provider_id"`
+	Secret        string         `db:"secret"`
+	RepoPath      string         `db:"repo_path"`
+	VCSKind       vcs.Kind       `db:"vcs_kind"`
 }
 
 // fromRow creates a hook from a database row
