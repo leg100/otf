@@ -3,6 +3,7 @@ package team
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
@@ -216,8 +217,45 @@ WHERE team_id = $1
 	return err
 }
 
+// Order of fields must match order of columns
+type Model struct {
+	ID                    resource.TfeID            `db:"team_id"`
+	Name                  string                    `db:"name"`
+	CreatedAt             time.Time                 `db:"created_at"`
+	ManageWorkspaces      bool                      `db:"permission_manage_workspaces"`
+	ManageVCS             bool                      `db:"permission_manage_vcs"`
+	ManageModules         bool                      `db:"permission_manage_modules"`
+	Organization          resource.OrganizationName `db:"organization_name"`
+	SSOTeamID             *string                   `db:"sso_team_id"`
+	Visibility            string
+	ManagePolicies        bool `db:"permission_manage_policies"`
+	ManagePolicyOverrides bool `db:"permission_manage_policy_overrides"`
+	ManageProviders       bool `db:"permission_manage_providers"`
+}
+
+func (m Model) ToTeam() *Team {
+	return &Team{
+		ID:                    m.ID,
+		Name:                  m.Name,
+		CreatedAt:             m.CreatedAt,
+		ManageWorkspaces:      m.ManageWorkspaces,
+		ManageModules:         m.ManageModules,
+		ManageVCS:             m.ManageVCS,
+		Organization:          m.Organization,
+		SSOTeamID:             m.SSOTeamID,
+		ManagePolicies:        m.ManagePolicies,
+		ManagePolicyOverrides: m.ManagePolicyOverrides,
+		ManageProviders:       m.ManageProviders,
+		Visibility:            m.Visibility,
+	}
+}
+
 func scan(row pgx.CollectableRow) (*Team, error) {
-	return pgx.RowToAddrOfStructByName[Team](row)
+	m, err := pgx.RowToAddrOfStructByName[Model](row)
+	if err != nil {
+		return nil, err
+	}
+	return m.ToTeam(), nil
 }
 
 func scanToken(row pgx.CollectableRow) (*Token, error) {
