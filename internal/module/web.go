@@ -93,8 +93,8 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID      resource.ID `schema:"module_id,required"`
-		Version *string     `schema:"version"`
+		ID      resource.TfeID `schema:"module_id,required"`
+		Version *string        `schema:"version"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -187,7 +187,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization  resource.OrganizationName `schema:"organization_name,required"`
-		VCSProviderID resource.ID               `schema:"vcs_provider_id,required"`
+		VCSProviderID resource.TfeID            `schema:"vcs_provider_id,required"`
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -234,7 +234,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization  resource.OrganizationName `schema:"organization_name,required"`
-		VCSProviderID resource.ID               `schema:"vcs_provider_id,required"`
+		VCSProviderID resource.TfeID            `schema:"vcs_provider_id,required"`
 		Repo          string                    `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -259,8 +259,8 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
-		Repo          Repo        `schema:"identifier,required"`
+		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
+		Repo          Repo           `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

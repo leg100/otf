@@ -17,7 +17,9 @@ import (
 )
 
 func TestListModules(t *testing.T) {
-	h := newTestWebHandlers(t, withMod(&Module{}))
+	h := newTestWebHandlers(t, withMod(&Module{
+		ID: resource.NewTfeID(resource.ModuleKind),
+	}))
 	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	q := "/?organization_name=acme-corp"
@@ -82,8 +84,8 @@ func TestGetModule(t *testing.T) {
 
 func TestNewModule_Connect(t *testing.T) {
 	h := newTestWebHandlers(t, withVCSProviders(
-		&vcsprovider.VCSProvider{},
-		&vcsprovider.VCSProvider{},
+		vcsprovider.NewTestVCSProvider(),
+		vcsprovider.NewTestVCSProvider(),
 	))
 
 	q := "/?organization_name=acme-corp"
@@ -97,7 +99,9 @@ func TestNewModule_Connect(t *testing.T) {
 
 func TestNewModule_Repo(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withVCSProviders(&vcsprovider.VCSProvider{}),
+		withVCSProviders(
+			vcsprovider.NewTestVCSProvider(),
+		),
 		withRepos(
 			vcs.NewTestModuleRepo("aws", "vpc"),
 			vcs.NewTestModuleRepo("aws", "s3"),
@@ -114,7 +118,9 @@ func TestNewModule_Repo(t *testing.T) {
 }
 
 func TestNewModule_Confirm(t *testing.T) {
-	h := newTestWebHandlers(t, withVCSProviders(&vcsprovider.VCSProvider{}))
+	h := newTestWebHandlers(t, withVCSProviders(
+		vcsprovider.NewTestVCSProvider(),
+	))
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123&identifier=leg100/terraform-otf-test"
 	r := httptest.NewRequest("GET", q, nil)
@@ -126,8 +132,8 @@ func TestNewModule_Confirm(t *testing.T) {
 }
 
 func TestWeb_Publish(t *testing.T) {
-	mod := Module{}
-	h := newTestWebHandlers(t, withMod(&mod))
+	mod := newModule(CreateOptions{})
+	h := newTestWebHandlers(t, withMod(mod))
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123&identifier=leg100/terraform-otf-test"
 	r := httptest.NewRequest("GET", q, nil)
@@ -141,8 +147,8 @@ func TestWeb_Publish(t *testing.T) {
 }
 
 func TestNewModule_Delete(t *testing.T) {
-	mod := Module{Organization: resource.NewTestOrganizationName(t)}
-	h := newTestWebHandlers(t, withMod(&mod))
+	mod := newModule(CreateOptions{Organization: resource.NewTestOrganizationName(t)})
+	h := newTestWebHandlers(t, withMod(mod))
 
 	q := "/?module_id=mod-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -155,7 +161,7 @@ func TestNewModule_Delete(t *testing.T) {
 	}
 }
 
-func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
+func newTestWebHandlers(_ *testing.T, opts ...testWebOption) *webHandlers {
 	var svc fakeService
 	for _, fn := range opts {
 		fn(&svc)
