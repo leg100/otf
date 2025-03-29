@@ -284,10 +284,14 @@ func scan(row pgx.CollectableRow) (*User, error) {
 		UpdatedAt: m.UpdatedAt,
 		SiteAdmin: m.SiteAdmin,
 		Username:  m.Username,
-		Teams:     make([]*team.Team, len(m.Teams)),
 	}
-	for i, model := range m.Teams {
-		user.Teams[i] = model.ToTeam()
+	// Only allocate if there are any teams; tests for equality otherwise fail
+	// comparing nil with an empty slice.
+	if len(m.Teams) > 0 {
+		user.Teams = make([]*team.Team, len(m.Teams))
+		for i, model := range m.Teams {
+			user.Teams[i] = model.ToTeam()
+		}
 	}
 	return user, nil
 }

@@ -284,9 +284,7 @@ func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 		Organization: m.Organization,
 		Workspaces:   make([]resource.TfeID, len(m.Workspaces)),
 	}
-	for i, wsID := range m.Workspaces {
-		vs.Workspaces[i] = wsID
-	}
+	copy(vs.Workspaces, m.Workspaces)
 	return vs, nil
 }
 

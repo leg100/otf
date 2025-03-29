@@ -256,7 +256,7 @@ LEFT JOIN tags_grouped_by_workspace t ON t.workspace_id = w.workspace_id
 WHERE w.name                LIKE '%' || @search || '%'
 AND   w.organization_name   LIKE ANY(@organization::text[])
 AND   ((@status::text[] IS NULL) OR (r.status = ANY(@status::text[])))
-AND   ((@tags::text[] IS NULL) OR (t.tags @> @tags::text[]))
+AND   ((@tags::text[] IS NULL) OR (cardinality(@tags::text[]) = 0) OR (t.tags @> @tags::text[]))
 ORDER BY w.name ASC
 LIMIT @limit::int
 OFFSET @offset::int
@@ -288,8 +288,8 @@ workspaces AS (
 	LEFT JOIN runs r ON w.latest_run_id = r.run_id
 	WHERE w.name              LIKE '%' || @search || '%'
 	AND   w.organization_name LIKE ANY(@organization::text[])
-	AND ((@status::text[] IS NULL) OR (r.status = ANY(@status::text[])))
-	AND ((@tags::text[] IS NULL) OR (t.tags @> @tags::text[]))
+	AND   ((@status::text[] IS NULL) OR (r.status = ANY(@status::text[])))
+	AND   ((@tags::text[] IS NULL) OR (cardinality(@tags::text[]) = 0) OR (t.tags @> @tags::text[]))
 )
 SELECT count(*)
 FROM workspaces
