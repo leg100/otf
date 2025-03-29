@@ -62,7 +62,7 @@ func TestIntegration_Agents(t *testing.T) {
 	// wait for job to be allocated to agent1
 	wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobAllocated &&
-			*event.Payload.RunnerID == agent1.ID
+			event.Payload.RunnerID == agent1.ID
 	})
 
 	// create a run on ws2
@@ -71,6 +71,6 @@ func TestIntegration_Agents(t *testing.T) {
 	// wait for job to be allocated to agent2
 	wait(t, jobsSub, func(event pubsub.Event[*runner.Job]) bool {
 		return event.Payload.Status == runner.JobAllocated &&
-			*event.Payload.RunnerID == agent2.ID
+			event.Payload.RunnerID == agent2.ID
 	})
 }

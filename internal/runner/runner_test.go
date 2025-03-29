@@ -48,7 +48,7 @@ type fakeRunnerClient struct {
 }
 
 func (f *fakeRunnerClient) register(ctx context.Context, opts registerOptions) (*RunnerMeta, error) {
-	return &RunnerMeta{ID: f.registeredID}, nil
+	return &RunnerMeta{ID: f.registeredID.(resource.TfeID)}, nil
 }
 
 func (f *fakeRunnerClient) getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {

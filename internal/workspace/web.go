@@ -582,8 +582,8 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   resource.ID `schema:"workspace_id,required"`
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.TfeID `schema:"workspace_id,required"`
+		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
 
 		// TODO: filters, public/private, etc
 	}
@@ -615,9 +615,9 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID   resource.ID `schema:"workspace_id,required"`
-		RepoPath      *string     `schema:"identifier,required"`
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
+		WorkspaceID   resource.TfeID `schema:"workspace_id,required"`
+		RepoPath      *string        `schema:"identifier,required"`
+		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -660,9 +660,9 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		TeamID      resource.ID `schema:"team_id,required"`
-		Role        string      `schema:"role,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		TeamID      resource.TfeID `schema:"team_id,required"`
+		Role        string         `schema:"role,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -685,8 +685,8 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		TeamID      resource.ID `schema:"team_id,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		TeamID      resource.TfeID `schema:"team_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

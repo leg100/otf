@@ -244,7 +244,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 		Name:         internal.String("dev"),
 		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
-			VCSProviderID: &provider.ID,
+			VCSProviderID: provider.ID,
 			RepoPath:      internal.String("leg100/otf-workspaces"),
 		},
 	})

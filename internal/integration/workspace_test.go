@@ -55,7 +55,7 @@ func TestWorkspace(t *testing.T) {
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      internal.String("test/dummy"),
-				VCSProviderID: &vcsprov.ID,
+				VCSProviderID: vcsprov.ID,
 			},
 		})
 		require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestWorkspace(t *testing.T) {
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      internal.String("test/dummy"),
-				VCSProviderID: &vcsprov.ID,
+				VCSProviderID: vcsprov.ID,
 			},
 		})
 		require.NoError(t, err)

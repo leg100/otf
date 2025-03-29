@@ -434,7 +434,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
-		AgentPoolID:          from.AgentPoolID,
+		AgentPoolID:          from.AgentPoolID.(*resource.TfeID),
 		AutoApply:            from.AutoApply,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,

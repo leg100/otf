@@ -250,8 +250,8 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		availableWorkspaces            = make([]poolWorkspace, 0, len(allWorkspaces)-len(allowedButUnassignedWorkspaces))
 	)
 	for _, ws := range allWorkspaces {
-		isAssigned := slices.Contains(pool.AssignedWorkspaces, ws.ID)
-		isAllowed := slices.Contains(pool.AllowedWorkspaces, ws.ID)
+		isAssigned := slices.Contains(pool.AssignedWorkspaces, resource.ID(ws.ID))
+		isAllowed := slices.Contains(pool.AllowedWorkspaces, resource.ID(ws.ID))
 		if isAssigned {
 			assignedWorkspaces = append(assignedWorkspaces, poolWorkspace{ID: ws.ID, Name: ws.Name})
 		} else {
@@ -319,7 +319,7 @@ func (h *webHandlers) listAllowedPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), ws.Organization, listPoolOptions{
-		AllowedWorkspaceID: &opts.WorkspaceID,
+		AllowedWorkspaceID: opts.WorkspaceID,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

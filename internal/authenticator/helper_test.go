@@ -27,7 +27,7 @@ type fakeUserService struct {
 }
 
 func (f *fakeUserService) GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error) {
-	return &user.User{ID: f.userID}, nil
+	return &user.User{ID: f.userID.(resource.TfeID)}, nil
 }
 
 func (f *fakeUserService) Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error) {

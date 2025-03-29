@@ -110,7 +110,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			}
 			ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 			if tt.lockedBy != nil {
-				ws.Lock = &tt.lockedBy.ID
+				ws.Lock = tt.lockedBy.ID
 			}
 			got, err := helpers.lockButtonHelper(context.Background(), ws, tt.currentUser)
 			require.NoError(t, err)

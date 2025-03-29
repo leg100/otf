@@ -460,7 +460,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org resource.
 			require.NoError(t, err)
 			poolID = &pool.ID
 		}
-		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, *poolID, runner.CreateAgentTokenOptions{
+		_, tokenBytes, err := s.Runners.CreateAgentToken(ctx, poolID, runner.CreateAgentTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

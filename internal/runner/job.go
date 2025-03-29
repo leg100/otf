@@ -31,7 +31,7 @@ const (
 // Job is the unit of work corresponding to a run phase. A job is allocated to
 // a runner, which then executes the work through to completion.
 type Job struct {
-	ID resource.ID `jsonapi:"primary,jobs" db:"job_id"`
+	ID resource.TfeID `jsonapi:"primary,jobs" db:"job_id"`
 	// ID of the run that this job is for.
 	RunID resource.ID `jsonapi:"attribute" json:"run_id" db:"run_id"`
 	// Phase of run that this job is for.
@@ -101,7 +101,7 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		return true
 	}
 	// Permissible workspace actions on same workspace.
-	if req.ID != nil && *req.ID == j.WorkspaceID {
+	if req.ID != nil && req.ID == j.WorkspaceID {
 		// Allow actions on same workspace as job depending on run phase
 		switch action {
 		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListWorkspaceVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:
@@ -141,7 +141,7 @@ func (j *Job) allocate(runnerID resource.ID) error {
 	if err := j.updateStatus(JobAllocated); err != nil {
 		return err
 	}
-	j.RunnerID = &runnerID
+	j.RunnerID = runnerID
 	return nil
 }
 
@@ -149,7 +149,7 @@ func (j *Job) reallocate(runnerID resource.ID) error {
 	if j.Status != JobAllocated {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}
-	j.RunnerID = &runnerID
+	j.RunnerID = runnerID
 	return nil
 }
 

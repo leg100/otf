@@ -211,11 +211,11 @@ func (a *tfe) toPool(from *Pool) *types.AgentPool {
 	}
 	to.Workspaces = make([]*types.Workspace, len(from.AssignedWorkspaces))
 	for i, workspaceID := range from.AssignedWorkspaces {
-		to.Workspaces[i] = &types.Workspace{ID: workspaceID}
+		to.Workspaces[i] = &types.Workspace{ID: workspaceID.(resource.TfeID)}
 	}
 	to.AllowedWorkspaces = make([]*types.Workspace, len(from.AllowedWorkspaces))
 	for i, workspaceID := range from.AllowedWorkspaces {
-		to.AllowedWorkspaces[i] = &types.Workspace{ID: workspaceID}
+		to.AllowedWorkspaces[i] = &types.Workspace{ID: workspaceID.(resource.TfeID)}
 	}
 	return to
 }

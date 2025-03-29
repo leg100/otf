@@ -93,7 +93,7 @@ func (a *allocator) Start(ctx context.Context) error {
 				// runner then decrement its current run tally.
 				if job, ok := a.jobs[event.Payload.ID]; ok {
 					if job.RunnerID != nil {
-						a.decrementCurrentJobs(*job.RunnerID)
+						a.decrementCurrentJobs(job.RunnerID)
 					}
 				}
 				delete(a.jobs, event.Payload.ID)
@@ -133,9 +133,9 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 	case JobAllocated:
 		// check runner the job is allocated to: if the runner is no longer in
 		// a fit state then try to allocate job to another runner
-		runner, ok := a.runners[*job.RunnerID]
+		runner, ok := a.runners[job.RunnerID]
 		if !ok {
-			return fmt.Errorf("runner %s not found in cache", *job.RunnerID)
+			return fmt.Errorf("runner %s not found in cache", job.RunnerID)
 		}
 		switch runner.Status {
 		case RunnerIdle, RunnerBusy:
@@ -152,7 +152,7 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 		// adjust current jobs of job's runner if allocated (an unallocated job
 		// could have been canceled).
 		if job.RunnerID != nil {
-			a.decrementCurrentJobs(*job.RunnerID)
+			a.decrementCurrentJobs(job.RunnerID)
 		}
 		return nil
 	case JobRunning:
@@ -183,7 +183,7 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 		}
 		// skip agent runners for agent jobs assigned to different agent
 		// pool
-		if runner.AgentPool != nil && job.AgentPoolID != nil && runner.AgentPool.ID != *job.AgentPoolID {
+		if runner.AgentPool != nil && job.AgentPoolID != nil && runner.AgentPool.ID != job.AgentPoolID {
 			continue
 		}
 		// skip runners with insufficient capacity
@@ -217,7 +217,7 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 		err        error
 	)
 	if reallocate {
-		from := *job.RunnerID
+		from := job.RunnerID
 		updatedJob, err = a.client.reallocateJob(ctx, job.ID, runner.ID)
 		if err != nil {
 			return err

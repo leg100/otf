@@ -77,7 +77,7 @@ func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Works
 		select {
 		case event := <-events:
 			if lock != nil {
-				if event.Payload.Lock != nil && *lock == *event.Payload.Lock {
+				if event.Payload.Lock != nil && lock == event.Payload.Lock {
 					return
 				}
 			} else {

@@ -83,7 +83,7 @@ func TestWebhook_Purger(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		event func(*testing.T, resource.OrganizationName, resource.ID, resource.TfeID)
+		event func(*testing.T, resource.OrganizationName, resource.ID, resource.ID)
 	}{
 		{
 			name: "delete organization",
@@ -117,7 +117,7 @@ func TestWebhook_Purger(t *testing.T) {
 				Name:         internal.String("workspace-1"),
 				Organization: &org.Name,
 				ConnectOptions: &workspace.ConnectOptions{
-					VCSProviderID: &provider.ID,
+					VCSProviderID: provider.ID,
 					RepoPath:      &repo,
 				},
 			})

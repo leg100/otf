@@ -354,9 +354,9 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
 			providers: []*vcsprovider.VCSProvider{
-				{},
-				{},
-				{},
+				{ID: resource.NewTfeID("vcs")},
+				{ID: resource.NewTfeID("vcs")},
+				{ID: resource.NewTfeID("vcs")},
 			},
 		},
 	}
@@ -375,7 +375,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
 			providers: []*vcsprovider.VCSProvider{
-				{},
+				{ID: resource.NewTfeID("vcs")},
 			},
 			repos: []string{
 				vcs.NewTestRepo(),

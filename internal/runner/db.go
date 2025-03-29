@@ -719,15 +719,22 @@ type poolModel struct {
 }
 
 func (m poolModel) toPool() *Pool {
-	return &Pool{
+	pool := &Pool{
 		ID:                 m.ID,
 		Name:               m.Name,
 		CreatedAt:          m.CreatedAt,
 		Organization:       m.Organization,
 		OrganizationScoped: m.OrganizationScoped,
-		AllowedWorkspaces:  m.AllowedWorkspaces,
-		AssignedWorkspaces: m.AssignedWorkspaces,
+		AllowedWorkspaces:  make([]resource.ID, len(m.AllowedWorkspaces)),
+		AssignedWorkspaces: make([]resource.ID, len(m.AssignedWorkspaces)),
 	}
+	for i, workspaceID := range m.AllowedWorkspaces {
+		pool.AllowedWorkspaces[i] = workspaceID
+	}
+	for i, workspaceID := range m.AssignedWorkspaces {
+		pool.AssignedWorkspaces[i] = workspaceID
+	}
+	return pool
 }
 
 func scanAgentPool(row pgx.CollectableRow) (*Pool, error) {

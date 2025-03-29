@@ -9,12 +9,12 @@ import (
 )
 
 type outputModel struct {
-	StateVersionOutputID resource.ID `db:"state_version_output_id"`
-	Name                 string      `db:"name"`
-	Sensitive            bool        `db:"sensitive"`
-	Type                 string      `db:"type"`
-	Value                []byte      `db:"value"`
-	StateVersionID       resource.ID `db:"state_version_id"`
+	StateVersionOutputID resource.TfeID `db:"state_version_output_id"`
+	Name                 string         `db:"name"`
+	Sensitive            bool           `db:"sensitive"`
+	Type                 string         `db:"type"`
+	Value                []byte         `db:"value"`
+	StateVersionID       resource.TfeID `db:"state_version_id"`
 }
 
 func (m outputModel) toOutput() *Output {

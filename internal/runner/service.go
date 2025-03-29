@@ -89,7 +89,7 @@ func NewService(opts ServiceOptions) *Service {
 		"agent_pools",
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Pool, error) {
 			if action == sql.DeleteAction {
-				return &Pool{ID: id}, nil
+				return &Pool{ID: id.(resource.TfeID)}, nil
 			}
 			return svc.db.getPool(ctx, id)
 		},
@@ -100,7 +100,7 @@ func NewService(opts ServiceOptions) *Service {
 		"runners",
 		func(ctx context.Context, id resource.ID, action sql.Action) (*RunnerMeta, error) {
 			if action == sql.DeleteAction {
-				return &RunnerMeta{ID: id}, nil
+				return &RunnerMeta{ID: id.(resource.TfeID)}, nil
 			}
 			return svc.db.get(ctx, id)
 		},
@@ -111,7 +111,7 @@ func NewService(opts ServiceOptions) *Service {
 		"jobs",
 		func(ctx context.Context, id resource.ID, action sql.Action) (*Job, error) {
 			if action == sql.DeleteAction {
-				return &Job{ID: id}, nil
+				return &Job{ID: id.(resource.TfeID)}, nil
 			}
 			return svc.db.getJob(ctx, id)
 		},
@@ -358,7 +358,7 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.ID) ([]*Job, er
 	// wait for a job matching criteria to arrive:
 	for event := range sub {
 		job := event.Payload
-		if job.RunnerID == nil || *job.RunnerID != runnerID {
+		if job.RunnerID == nil || job.RunnerID != runnerID {
 			continue
 		}
 		switch job.Status {
@@ -607,7 +607,7 @@ func (s *Service) checkWorkspacePoolAccess(ctx context.Context, ws *workspace.Wo
 	}
 	if pool.OrganizationScoped {
 		return nil
-	} else if slices.Contains(pool.AllowedWorkspaces, ws.ID) {
+	} else if slices.Contains(pool.AllowedWorkspaces, resource.ID(ws.ID)) {
 		// is explicitly granted
 		return nil
 	}
