@@ -53,7 +53,7 @@ INSERT INTO notification_configurations (
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.TfeID, updateFunc func(context.Context, *Config) error) (*Config, error) {
+func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(context.Context, *Config) error) (*Config, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -93,7 +93,7 @@ RETURNING notification_configuration_id
 	)
 }
 
-func (db *pgdb) list(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error) {
+func (db *pgdb) list(ctx context.Context, workspaceID resource.ID) ([]*Config, error) {
 	rows := db.Query(ctx, `
 SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
 FROM notification_configurations
@@ -110,7 +110,7 @@ FROM notification_configurations
 	return sql.CollectRows(rows, scanConfig)
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*Config, error) {
+func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
 	rows := db.Query(ctx, `
 SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
 FROM notification_configurations
@@ -119,7 +119,7 @@ WHERE notification_configuration_id = $1
 	return sql.CollectOneRow(rows, scanConfig)
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE FROM notification_configurations
 WHERE notification_configuration_id = $1

@@ -25,29 +25,29 @@ type (
 
 	// webVariablesClient provides web handlers with access to variables
 	webVariablesClient interface {
-		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
-		GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
-		ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
-		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error)
-		UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-		DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
+		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error)
+		GetWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
+		ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error)
+		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error)
+		UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+		DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
 
 		createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
-		updateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error)
-		getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
-		getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
+		updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error)
+		getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
+		getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error)
 		listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
-		deleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
-		createVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
-		updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
-		deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
+		deleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
+		createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error)
+		updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error)
+		deleteVariableSetVariable(ctx context.Context, variableID resource.ID) (*VariableSet, error)
 	}
 
 	// webWorkspaceClient provides web handlers with access to workspaces
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {
@@ -55,8 +55,8 @@ type (
 	}
 
 	workspaceInfo struct {
-		ID   resource.TfeID `json:"id"`
-		Name string         `json:"name"`
+		ID   resource.ID `json:"id"`
+		Name string      `json:"name"`
 	}
 
 	createVariableParams struct {
@@ -75,7 +75,7 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         bool
-		VariableID  resource.TfeID `schema:"variable_id,required"`
+		VariableID  resource.ID `schema:"variable_id,required"`
 	}
 )
 
@@ -104,7 +104,7 @@ func (h *web) addHandlers(r *mux.Router) {
 }
 
 func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -122,7 +122,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -148,7 +148,7 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -183,18 +183,18 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		ws: ws,
 		workspaceTableProps: workspaceTableProps{
 			variables:         variables,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: ws.ID}),
 		},
 		setTablesProps:     variableSetTables,
-		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: ws.ID}),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: ws.ID}),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: ws.ID}),
 	}
 	html.Render(listWorkspaceVariables(props), w, r)
 }
 
 func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -244,7 +244,7 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -324,7 +324,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]resource.TfeID, len(workspaces))
+	workspaceIDs := make([]resource.ID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -346,7 +346,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
+	setID, err := decode.TfeID("variable_set_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -393,7 +393,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		SetID          resource.TfeID `schema:"variable_set_id,required"`
+		SetID          resource.ID `schema:"variable_set_id,required"`
 		Name           *string
 		Description    *string
 		Global         *bool
@@ -409,7 +409,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]resource.TfeID, len(workspaces))
+	workspaceIDs := make([]resource.ID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -431,7 +431,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
+	setID, err := decode.TfeID("variable_set_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -448,7 +448,7 @@ func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	setID, err := decode.ID("variable_set_id", r)
+	setID, err := decode.TfeID("variable_set_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -466,7 +466,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		SetID resource.TfeID `schema:"variable_set_id,required"`
+		SetID resource.ID `schema:"variable_set_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -492,7 +492,7 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -535,7 +535,7 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.ID("variable_id", r)
+	variableID, err := decode.TfeID("variable_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

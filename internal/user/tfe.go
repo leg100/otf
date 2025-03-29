@@ -49,8 +49,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username string         `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -67,8 +67,8 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username string         `schema:"username,required"`
+		TeamID   resource.ID `schema:"team_id,required"`
+		Username string      `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -110,7 +110,7 @@ func (a *tfe) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error {
-	teamID, err := decode.ID("team_id", r)
+	teamID, err := decode.TfeID("team_id", r)
 	if err != nil {
 		return err
 	}

@@ -11,12 +11,12 @@ import (
 
 // TeamToken represents a Terraform Enterprise team token.
 type TeamToken struct {
-	ID          resource.TfeID `jsonapi:"primary,authentication-tokens"`
-	CreatedAt   time.Time      `jsonapi:"attribute" json:"created-at"`
-	Description string         `jsonapi:"attribute" json:"description"`
-	LastUsedAt  time.Time      `jsonapi:"attribute" json:"last-used-at"`
-	Token       string         `jsonapi:"attribute" json:"token"`
-	ExpiredAt   *time.Time     `jsonapi:"attribute" json:"expired-at"`
+	ID          resource.ID `jsonapi:"primary,authentication-tokens"`
+	CreatedAt   time.Time   `jsonapi:"attribute" json:"created-at"`
+	Description string      `jsonapi:"attribute" json:"description"`
+	LastUsedAt  time.Time   `jsonapi:"attribute" json:"last-used-at"`
+	Token       string      `jsonapi:"attribute" json:"token"`
+	ExpiredAt   *time.Time  `jsonapi:"attribute" json:"expired-at"`
 }
 
 // TeamTokenCreateOptions contains the options for creating a team token.

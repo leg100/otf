@@ -17,8 +17,8 @@ type (
 	// A client is maintained per unique url.
 	cache struct {
 		mu      sync.Mutex
-		clients map[string]*clientEntry    // keyed by url
-		configs map[resource.TfeID]*Config // keyed by config ID
+		clients map[string]*clientEntry // keyed by url
+		configs map[resource.ID]*Config // keyed by config ID
 
 		clientFactory // constructs new clients
 	}
@@ -40,7 +40,7 @@ func newCache(ctx context.Context, db cacheDB, f clientFactory) (*cache, error) 
 		return nil, err
 	}
 	cache := &cache{
-		configs:       make(map[resource.TfeID]*Config, len(configs)),
+		configs:       make(map[resource.ID]*Config, len(configs)),
 		clients:       make(map[string]*clientEntry),
 		clientFactory: f,
 	}
@@ -86,7 +86,7 @@ func (c *cache) add(cfg *Config) error {
 	return nil
 }
 
-func (c *cache) remove(id resource.TfeID) error {
+func (c *cache) remove(id resource.ID) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

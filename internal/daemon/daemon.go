@@ -474,7 +474,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Workspaces:      d.Workspaces,
 				Runs:            d.Runs,
 				Configs:         d.Configs,
-				Cache:           make(map[resource.TfeID]vcs.Status),
+				Cache:           make(map[resource.ID]vcs.Status),
 			},
 		},
 		{

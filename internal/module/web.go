@@ -40,11 +40,11 @@ type (
 
 	// webModulesClient provides web handlers with access to modules
 	webModulesClient interface {
-		GetModuleByID(ctx context.Context, id resource.TfeID) (*Module, error)
-		GetModuleInfo(ctx context.Context, versionID resource.TfeID) (*TerraformModule, error)
+		GetModuleByID(ctx context.Context, id resource.ID) (*Module, error)
+		GetModuleInfo(ctx context.Context, versionID resource.ID) (*TerraformModule, error)
 		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
-		DeleteModule(ctx context.Context, id resource.TfeID) (*Module, error)
+		DeleteModule(ctx context.Context, id resource.ID) (*Module, error)
 	}
 
 	webAuthorizer interface {
@@ -53,9 +53,9 @@ type (
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
-		Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error)
+		Get(context.Context, resource.ID) (*vcsprovider.VCSProvider, error)
 		List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error)
-		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
 	}
 
 	newModuleStep string
@@ -284,7 +284,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("module_id", r)
+	id, err := decode.TfeID("module_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

@@ -48,7 +48,7 @@ type (
 	}
 
 	EventHeader struct {
-		VCSProviderID resource.TfeID
+		VCSProviderID resource.ID
 	}
 
 	EventPayload struct {

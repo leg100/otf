@@ -24,7 +24,7 @@ type newViewProps struct {
 	organization  resource.OrganizationName
 	providers     []*vcsprovider.VCSProvider
 	repos         []string
-	vcsProviderID resource.TfeID
+	vcsProviderID resource.ID
 	repo          string
 	vcsProvider   *vcsprovider.VCSProvider
 	step          newModuleStep

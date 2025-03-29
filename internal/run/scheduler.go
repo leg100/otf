@@ -24,23 +24,23 @@ type (
 		runs       schedulerRunClient
 
 		// map workspace's ID to its runs
-		queues map[resource.TfeID]queue
+		queues map[resource.ID]queue
 	}
 
 	queue struct {
-		current *resource.TfeID
-		backlog []resource.TfeID
+		current resource.ID
+		backlog []resource.ID
 	}
 
 	schedulerWorkspaceClient interface {
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
-		Unlock(context.Context, resource.TfeID, *resource.TfeID, bool) (*workspace.Workspace, error)
+		Unlock(context.Context, resource.ID, resource.ID, bool) (*workspace.Workspace, error)
 	}
 
 	schedulerRunClient interface {
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
 		Watch(context.Context) (<-chan pubsub.Event[*Run], func())
-		EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error)
+		EnqueuePlan(ctx context.Context, runID resource.ID) (*Run, error)
 	}
 
 	SchedulerOptions struct {
@@ -85,7 +85,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	slices.Reverse(runs)
 
 	// Populate queues with existing runs and make scheduling decisions
-	s.queues = make(map[resource.TfeID]queue)
+	s.queues = make(map[resource.ID]queue)
 	for _, run := range runs {
 		if err := s.schedule(ctx, run.WorkspaceID, run); err != nil {
 			return err
@@ -128,7 +128,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 }
 
-func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, run *Run) error {
+func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *Run) error {
 	if run != nil && run.PlanOnly {
 		if run.Status == runstatus.Pending {
 			// Enqueue plan immediately for pending plan-only runs
@@ -142,13 +142,13 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 	q := s.queues[workspaceID]
 	q, enqueue, unlock := q.process(run)
 	if enqueue {
-		_, err := s.runs.EnqueuePlan(ctx, *q.current)
+		_, err := s.runs.EnqueuePlan(ctx, q.current)
 		if err != nil {
 			if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
-				s.V(0).Info("workspace locked by user; cannot schedule run", "run", *q.current)
+				s.V(0).Info("workspace locked by user; cannot schedule run", "run", q.current)
 				// Place current run back onto front of backlog and wait til
 				// user unlocks workspace
-				q.backlog = append([]resource.TfeID{*q.current}, q.backlog...)
+				q.backlog = append([]resource.ID{q.current}, q.backlog...)
 				q.current = nil
 			} else {
 				return err
@@ -156,7 +156,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 		}
 	}
 	if unlock {
-		_, err := s.workspaces.Unlock(ctx, workspaceID, &run.ID, false)
+		_, err := s.workspaces.Unlock(ctx, workspaceID, run.ID, false)
 		if errors.Is(err, internal.ErrResourceNotFound) {
 			// Workspace not found error can occur when a workspace is deleted
 			// very soon after a run has completed (a quite possible scenario
@@ -183,7 +183,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 // unlocked.
 func (q queue) process(run *Run) (qq queue, enqueuePlan bool, unlock bool) {
 	if run != nil {
-		if q.current != nil && *q.current == run.ID {
+		if q.current != nil && q.current == run.ID {
 			if run.Done() {
 				q.current = nil
 				// Workspace can be unlocked unless another run below is made
@@ -196,7 +196,7 @@ func (q queue) process(run *Run) (qq queue, enqueuePlan bool, unlock bool) {
 				// only been started up and the scheduler has not yet set the
 				// current run and there is an existing scheduled run that is
 				// not yet done.
-				q.current = &run.ID
+				q.current = run.ID
 				return q, false, false
 			}
 			var found bool
@@ -218,7 +218,7 @@ func (q queue) process(run *Run) (qq queue, enqueuePlan bool, unlock bool) {
 		}
 	}
 	if q.current == nil && len(q.backlog) > 0 {
-		q.current = &q.backlog[0]
+		q.current = q.backlog[0]
 		q.backlog = q.backlog[1:]
 		return q, true, false
 	}

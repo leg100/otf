@@ -46,7 +46,7 @@ INSERT INTO modules (
 	return err
 }
 
-func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.TfeID, status ModuleStatus) error {
+func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID resource.ID, status ModuleStatus) error {
 	_, err := db.Exec(ctx, `
 UPDATE modules
 SET status = $1
@@ -106,7 +106,7 @@ AND   m.provider = $3
 	return sql.CollectOneRow(rows, db.scanModule)
 }
 
-func (db *pgdb) getModuleByID(ctx context.Context, id resource.TfeID) (*Module, error) {
+func (db *pgdb) getModuleByID(ctx context.Context, id resource.ID) (*Module, error) {
 	rows := db.Query(ctx, `
 SELECT
     m.module_id,
@@ -130,7 +130,7 @@ WHERE m.module_id = $1
 	return sql.CollectOneRow(rows, db.scanModule)
 }
 
-func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) (*Module, error) {
+func (db *pgdb) getModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
 	rows := db.Query(ctx, `
 SELECT
     m.module_id,
@@ -155,7 +155,7 @@ AND   r.repo_path = $2
 	return sql.CollectOneRow(rows, db.scanModule)
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM modules
@@ -202,7 +202,7 @@ WHERE module_version_id = $3
 	return err
 }
 
-func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.TfeID) (*Module, error) {
+func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID resource.ID) (*Module, error) {
 	rows := db.Query(ctx, `
 SELECT
     m.module_id,
@@ -227,7 +227,7 @@ WHERE mv.module_version_id = $1
 	return sql.CollectOneRow(rows, db.scanModule)
 }
 
-func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID resource.TfeID) error {
+func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM module_versions
@@ -236,7 +236,7 @@ WHERE module_version_id = $1
 	return err
 }
 
-func (db *pgdb) saveTarball(ctx context.Context, versionID resource.TfeID, tarball []byte) error {
+func (db *pgdb) saveTarball(ctx context.Context, versionID resource.ID, tarball []byte) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO module_tarballs (
     tarball,
@@ -248,7 +248,7 @@ INSERT INTO module_tarballs (
 	return err
 }
 
-func (db *pgdb) getTarball(ctx context.Context, versionID resource.TfeID) ([]byte, error) {
+func (db *pgdb) getTarball(ctx context.Context, versionID resource.ID) ([]byte, error) {
 	rows := db.Query(ctx, `
 SELECT tarball
 FROM module_tarballs

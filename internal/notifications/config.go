@@ -40,16 +40,16 @@ var (
 type (
 	// Config represents a Notification Configuration.
 	Config struct {
-		ID              resource.TfeID `db:"notification_configuration_id"`
-		CreatedAt       time.Time      `db:"created_at"`
-		UpdatedAt       time.Time      `db:"updated_at"`
-		DestinationType Destination    `db:"destination_type"`
+		ID              resource.ID `db:"notification_configuration_id"`
+		CreatedAt       time.Time   `db:"created_at"`
+		UpdatedAt       time.Time   `db:"updated_at"`
+		DestinationType Destination `db:"destination_type"`
 		Enabled         bool
 		Name            string
 		Token           string `db:"-"`
 		Triggers        []Trigger
 		URL             *string
-		WorkspaceID     resource.TfeID `db:"workspace_id"`
+		WorkspaceID     resource.ID `db:"workspace_id"`
 	}
 
 	// Trigger is the event triggering a notification
@@ -98,7 +98,7 @@ type (
 	}
 )
 
-func NewConfig(workspaceID resource.TfeID, opts CreateConfigOptions) (*Config, error) {
+func NewConfig(workspaceID resource.ID, opts CreateConfigOptions) (*Config, error) {
 	if opts.DestinationType != DestinationGeneric &&
 		opts.DestinationType != DestinationEmail &&
 		opts.DestinationType != DestinationSlack &&

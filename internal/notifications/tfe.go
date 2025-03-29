@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -27,7 +28,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -62,7 +63,7 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -83,7 +84,7 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +100,7 @@ func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -131,7 +132,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) verifyNotification(w http.ResponseWriter, r *http.Request) {}
 
 func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -154,7 +155,7 @@ func (a *tfe) convert(from *Config) *types.NotificationConfiguration {
 		Enabled:         from.Enabled,
 		DestinationType: types.NotificationDestinationType(from.DestinationType),
 		Subscribable: &types.Workspace{
-			ID: from.WorkspaceID,
+			ID: from.WorkspaceID.(resource.TfeID),
 		},
 	}
 	if from.URL != nil {

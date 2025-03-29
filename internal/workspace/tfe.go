@@ -132,7 +132,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -217,7 +217,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 //
 // TODO: support updating workspace's vcs repo.
 func (a *tfe) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -246,7 +246,7 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -280,7 +280,7 @@ func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -306,7 +306,7 @@ func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 }
 
 func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -340,7 +340,7 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.TfeID) {
+func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.ID) {
 	params := types.WorkspaceUpdateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
@@ -434,7 +434,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
-		AgentPoolID:          from.AgentPoolID,
+		AgentPoolID:          from.AgentPoolID.(*resource.TfeID),
 		AutoApply:            from.AutoApply,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,

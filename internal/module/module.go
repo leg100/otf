@@ -31,9 +31,9 @@ var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
 	Module struct {
-		ID           resource.TfeID `db:"module_id"`
-		CreatedAt    time.Time      `db:"created_at"`
-		UpdatedAt    time.Time      `db:"updated_at"`
+		ID           resource.ID `db:"module_id"`
+		CreatedAt    time.Time   `db:"created_at"`
+		UpdatedAt    time.Time   `db:"updated_at"`
 		Name         string
 		Provider     string
 		Status       ModuleStatus
@@ -48,13 +48,13 @@ type (
 	//
 	// NOTE: field order must match postgres table column order.
 	ModuleVersion struct {
-		ID          resource.TfeID `db:"module_version_id"`
+		ID          resource.ID `db:"module_version_id"`
 		Version     string
 		CreatedAt   time.Time `db:"created_at"`
 		UpdatedAt   time.Time `db:"updated_at"`
 		Status      ModuleVersionStatus
-		StatusError *string        `db:"status_error"`
-		ModuleID    resource.TfeID `db:"module_id"`
+		StatusError *string     `db:"status_error"`
+		ModuleID    resource.ID `db:"module_id"`
 
 		// TODO: download counters
 	}
@@ -63,10 +63,10 @@ type (
 
 	PublishOptions struct {
 		Repo          Repo
-		VCSProviderID resource.TfeID
+		VCSProviderID resource.ID
 	}
 	PublishVersionOptions struct {
-		ModuleID resource.TfeID
+		ModuleID resource.ID
 		Version  string
 		Ref      string
 		Repo     Repo
@@ -78,11 +78,11 @@ type (
 		Organization resource.OrganizationName
 	}
 	CreateModuleVersionOptions struct {
-		ModuleID resource.TfeID
+		ModuleID resource.ID
 		Version  string
 	}
 	UpdateModuleVersionStatusOptions struct {
-		ID     resource.TfeID
+		ID     resource.ID
 		Status ModuleVersionStatus
 		Error  string
 	}

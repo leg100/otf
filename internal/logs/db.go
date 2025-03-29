@@ -39,7 +39,7 @@ INSERT INTO logs (
 	return err
 }
 
-func (db *pgdb) getChunk(ctx context.Context, chunkID resource.TfeID) (Chunk, error) {
+func (db *pgdb) getChunk(ctx context.Context, chunkID resource.ID) (Chunk, error) {
 	rows := db.Query(ctx, `
 SELECT
     chunk_id,
@@ -63,7 +63,7 @@ WHERE chunk_id = $1
 	})
 }
 
-func (db *pgdb) getAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+func (db *pgdb) getAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	rows := db.Query(ctx, `
 SELECT
     string_agg(chunk, '')

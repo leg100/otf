@@ -41,7 +41,7 @@ type (
 		State       []byte             `jsonapi:"attribute" json:"state"`
 		Status      Status             `jsonapi:"attribute" json:"status"`
 		Outputs     map[string]*Output `jsonapi:"attribute" json:"outputs"`
-		WorkspaceID resource.TfeID     `jsonapi:"attribute" json:"workspace-id"`
+		WorkspaceID resource.ID        `jsonapi:"attribute" json:"workspace-id"`
 	}
 
 	Output struct {
@@ -50,14 +50,14 @@ type (
 		Type           string
 		Value          json.RawMessage
 		Sensitive      bool
-		StateVersionID resource.TfeID
+		StateVersionID resource.ID
 	}
 
 	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {
-		State       []byte         // Terraform state file. Optional.
-		WorkspaceID resource.TfeID // ID of state version's workspace. Required.
-		Serial      *int64         // State serial number. Required.
+		State       []byte      // Terraform state file. Optional.
+		WorkspaceID resource.ID // ID of state version's workspace. Required.
+		Serial      *int64      // State serial number. Required.
 	}
 
 	// factory creates state versions - creation requires pre-requisite checking
@@ -71,11 +71,11 @@ type (
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
-		getVersion(ctx context.Context, svID resource.TfeID) (*Version, error)
-		getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
-		updateCurrentVersion(context.Context, resource.TfeID, resource.TfeID) error
-		uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error
-		discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error
+		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
+		getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
+		updateCurrentVersion(context.Context, resource.ID, resource.ID) error
+		uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error
+		discardAnyPending(ctx context.Context, workspaceID resource.ID) error
 	}
 )
 
@@ -185,7 +185,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 	return sv, err
 }
 
-func (f *factory) rollback(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (f *factory) rollback(ctx context.Context, svID resource.ID) (*Version, error) {
 	sv, err := f.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

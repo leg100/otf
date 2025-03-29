@@ -14,25 +14,25 @@ type cancelable interface {
 // terminator handles canceling jobs
 type terminator struct {
 	// mapping maps job to a cancelable operation executing the job.
-	mapping map[resource.TfeID]cancelable
+	mapping map[resource.ID]cancelable
 	mu      sync.RWMutex
 }
 
-func (t *terminator) checkIn(jobID resource.TfeID, job cancelable) {
+func (t *terminator) checkIn(jobID resource.ID, job cancelable) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	t.mapping[jobID] = job
 }
 
-func (t *terminator) checkOut(jobID resource.TfeID) {
+func (t *terminator) checkOut(jobID resource.ID) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	delete(t.mapping, jobID)
 }
 
-func (t *terminator) cancel(jobID resource.TfeID, force, sendSignal bool) {
+func (t *terminator) cancel(jobID resource.ID, force, sendSignal bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 

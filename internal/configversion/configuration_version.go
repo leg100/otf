@@ -32,7 +32,7 @@ type (
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []StatusTimestamp
-		WorkspaceID       resource.TfeID
+		WorkspaceID       resource.ID
 		IngressAttributes *IngressAttributes
 	}
 
@@ -50,7 +50,7 @@ type (
 	ConfigurationStatus string
 
 	StatusTimestamp struct {
-		ConfigurationVersionID resource.TfeID `db:"-"`
+		ConfigurationVersionID resource.ID `db:"-"`
 		Status                 ConfigurationStatus
 		Timestamp              time.Time
 	}
@@ -68,10 +68,10 @@ type (
 	// version. Either ID *or* WorkspaceID must be specfiied.
 	ConfigurationVersionGetOptions struct {
 		// ID of config version to retrieve
-		ID *resource.TfeID
+		ID resource.ID
 
 		// Get latest config version for this workspace ID
-		WorkspaceID *resource.TfeID
+		WorkspaceID resource.ID
 
 		// A list of relations to include
 		Include *string `schema:"include"`
@@ -105,7 +105,7 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),

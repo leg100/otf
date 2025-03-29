@@ -47,7 +47,7 @@ type (
 
 	WorkspaceVariable struct {
 		*Variable
-		WorkspaceID resource.TfeID
+		WorkspaceID resource.ID
 	}
 
 	CreateVariableOptions struct {

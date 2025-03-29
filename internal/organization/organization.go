@@ -16,7 +16,7 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        resource.TfeID            `jsonapi:"primary,organizations" db:"organization_id"`
+		ID        resource.ID               `jsonapi:"primary,organizations" db:"organization_id"`
 		CreatedAt time.Time                 `jsonapi:"attribute" json:"created-at" db:"created_at"`
 		UpdatedAt time.Time                 `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
 		Name      resource.OrganizationName `jsonapi:"attribute" json:"name" db:"name"`

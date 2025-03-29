@@ -64,12 +64,12 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
 	// Resolve authorization requests for config version IDs to a workspace IDs
 	opts.Authorizer.RegisterWorkspaceResolver(resource.ConfigVersionKind,
-		func(ctx context.Context, cvID resource.TfeID) (resource.TfeID, error) {
+		func(ctx context.Context, cvID resource.ID) (resource.ID, error) {
 			sv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
-				ID: &cvID,
+				ID: cvID,
 			})
 			if err != nil {
-				return resource.TfeID{}, err
+				return nil, err
 			}
 			return sv.WorkspaceID, nil
 		},
@@ -83,8 +83,8 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
+	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts C
 	return cv, nil
 }
 
-func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
-	subject, err := s.Authorize(ctx, authz.ListConfigurationVersionsAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+	subject, err := s.Authorize(ctx, authz.ListConfigurationVersionsAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -118,13 +118,13 @@ func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts Lis
 	return cvl, nil
 }
 
-func (s *Service) Get(ctx context.Context, cvID resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+func (s *Service) Get(ctx context.Context, cvID resource.ID) (*ConfigurationVersion, error) {
+	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, &authz.AccessRequest{ID: cvID})
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
+	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: cvID})
 	if err != nil {
 		s.Error(err, "retrieving configuration version", "id", cvID, "subject", subject)
 		return nil, err
@@ -133,13 +133,13 @@ func (s *Service) Get(ctx context.Context, cvID resource.TfeID) (*ConfigurationV
 	return cv, nil
 }
 
-func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error) {
+	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: workspaceID})
 	if err != nil {
 		s.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -148,8 +148,8 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*C
 	return cv, nil
 }
 
-func (s *Service) Delete(ctx context.Context, cvID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+func (s *Service) Delete(ctx context.Context, cvID resource.ID) error {
+	subject, err := s.Authorize(ctx, authz.DeleteConfigurationVersionAction, &authz.AccessRequest{ID: cvID})
 	if err != nil {
 		return err
 	}

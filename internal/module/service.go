@@ -255,7 +255,7 @@ func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module
 	return module, nil
 }
 
-func (s *Service) GetModuleByID(ctx context.Context, id resource.TfeID) (*Module, error) {
+func (s *Service) GetModuleByID(ctx context.Context, id resource.ID) (*Module, error) {
 	module, err := s.db.getModuleByID(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving module", "id", id)
@@ -271,11 +271,11 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.TfeID) (*Module
 	return module, nil
 }
 
-func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) (*Module, error) {
+func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
 	return s.db.getModuleByConnection(ctx, vcsProviderID, repoPath)
 }
 
-func (s *Service) DeleteModule(ctx context.Context, id resource.TfeID) (*Module, error) {
+func (s *Service) DeleteModule(ctx context.Context, id resource.ID) (*Module, error) {
 	module, err := s.db.getModuleByID(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving module", "id", id)
@@ -328,7 +328,7 @@ func (s *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 	return modver, nil
 }
 
-func (s *Service) GetModuleInfo(ctx context.Context, versionID resource.TfeID) (*TerraformModule, error) {
+func (s *Service) GetModuleInfo(ctx context.Context, versionID resource.ID) (*TerraformModule, error) {
 	tarball, err := s.db.getTarball(ctx, versionID)
 	if err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func (s *Service) updateModuleStatus(ctx context.Context, mod *Module, status Mo
 	return mod, nil
 }
 
-func (s *Service) uploadVersion(ctx context.Context, versionID resource.TfeID, tarball []byte) error {
+func (s *Service) uploadVersion(ctx context.Context, versionID resource.ID, tarball []byte) error {
 	module, err := s.db.getModuleByVersionID(ctx, versionID)
 	if err != nil {
 		return err
@@ -393,7 +393,7 @@ func (s *Service) uploadVersion(ctx context.Context, versionID resource.TfeID, t
 }
 
 // downloadVersion should be accessed via signed URL
-func (s *Service) downloadVersion(ctx context.Context, versionID resource.TfeID) ([]byte, error) {
+func (s *Service) downloadVersion(ctx context.Context, versionID resource.ID) ([]byte, error) {
 	tarball, err := s.db.getTarball(ctx, versionID)
 	if err != nil {
 		s.Error(err, "downloading module", "module_version_id", versionID)
@@ -404,7 +404,7 @@ func (s *Service) downloadVersion(ctx context.Context, versionID resource.TfeID)
 }
 
 //lint:ignore U1000 to be used later
-func (s *Service) deleteVersion(ctx context.Context, versionID resource.TfeID) (*Module, error) {
+func (s *Service) deleteVersion(ctx context.Context, versionID resource.ID) (*Module, error) {
 	module, err := s.db.getModuleByID(ctx, versionID)
 	if err != nil {
 		s.Error(err, "retrieving module", "id", versionID)

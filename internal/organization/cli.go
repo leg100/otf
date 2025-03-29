@@ -34,7 +34,7 @@ type (
 		GetOrganizationToken(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error)
 		DeleteToken(ctx context.Context, organization resource.OrganizationName) error
 		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
-		getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error)
+		getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error)
 	}
 )
 

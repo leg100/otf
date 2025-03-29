@@ -53,9 +53,9 @@ type (
 	}
 
 	UserSpec struct {
-		UserID                *resource.TfeID
+		UserID                resource.ID
 		Username              *string
-		AuthenticationTokenID *resource.TfeID
+		AuthenticationTokenID resource.ID
 	}
 )
 
@@ -81,7 +81,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
-func (u *User) IsTeamMember(teamID resource.TfeID) bool {
+func (u *User) IsTeamMember(teamID resource.ID) bool {
 	for _, t := range u.Teams {
 		if t.ID == teamID {
 			return true

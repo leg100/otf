@@ -32,7 +32,7 @@ func TestGithubPullRequest(t *testing.T) {
 		Organization:    &org.Name,
 		TriggerPatterns: []string{"/foo/**/*.tf"},
 		ConnectOptions: &workspace.ConnectOptions{
-			VCSProviderID: &provider.ID,
+			VCSProviderID: provider.ID,
 			RepoPath:      internal.String("leg100/otf-workspaces"),
 		},
 	})

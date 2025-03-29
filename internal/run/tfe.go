@@ -80,7 +80,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		TerraformVersion: params.TerraformVersion,
 	}
 	if params.ConfigurationVersion != nil {
-		opts.ConfigurationVersionID = &params.ConfigurationVersion.ID
+		opts.ConfigurationVersionID = params.ConfigurationVersion.ID
 	}
 	if tfeapi.IsTerraformCLI(r) {
 		opts.Source = SourceTerraform
@@ -105,7 +105,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -182,7 +182,7 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 }
 
 func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -197,7 +197,7 @@ func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -212,7 +212,7 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -231,7 +231,7 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("id", r)
+	id, err := decode.TfeID("id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -249,7 +249,7 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
 func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("plan_id", r)
+	id, err := decode.TfeID("plan_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -275,7 +275,7 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
 func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("plan_id", r)
+	id, err := decode.TfeID("plan_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -294,7 +294,7 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("apply_id", r)
+	id, err := decode.TfeID("apply_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -355,7 +355,7 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 
 // toRun converts a run into its equivalent json:api struct
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
-	accessRequest := &authz.AccessRequest{ID: &from.ID}
+	accessRequest := &authz.AccessRequest{ID: from.ID}
 	perms := &types.RunPermissions{
 		CanDiscard:      a.authorizer.CanAccess(ctx, authz.DiscardRunAction, accessRequest),
 		CanForceExecute: a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),

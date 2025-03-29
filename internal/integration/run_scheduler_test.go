@@ -69,7 +69,7 @@ func TestRunScheduler(t *testing.T) {
 	daemon.waitRunStatus(t, run3.ID, runstatus.PlannedAndFinished)
 }
 
-func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock *resource.TfeID) {
+func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock resource.ID) {
 	t.Helper()
 
 	timeout := time.After(5 * time.Second)
@@ -77,7 +77,7 @@ func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Works
 		select {
 		case event := <-events:
 			if lock != nil {
-				if event.Payload.Lock != nil && *lock == *event.Payload.Lock {
+				if event.Payload.Lock != nil && lock == event.Payload.Lock {
 					return
 				}
 			} else {

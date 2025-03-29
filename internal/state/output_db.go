@@ -28,7 +28,7 @@ func (m outputModel) toOutput() *Output {
 	}
 }
 
-func (db *pgdb) getOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
+func (db *pgdb) getOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
 	rows := db.Query(ctx, `
 SELECT state_version_output_id, name, sensitive, type, value, state_version_id
 FROM state_version_outputs

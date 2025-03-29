@@ -49,7 +49,7 @@ func TestRunService(t *testing.T) {
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      &repo,
-				VCSProviderID: &vcsProvider.ID,
+				VCSProviderID: vcsProvider.ID,
 			},
 		})
 		require.NoError(t, err)
@@ -96,7 +96,7 @@ func TestRunService(t *testing.T) {
 					assert.Nil(t, ws.LatestRun)
 				}
 				if tt.lock {
-					assert.Equal(t, run.ID, *ws.Lock)
+					assert.Equal(t, run.ID, ws.Lock)
 				} else {
 					assert.Nil(t, ws.Lock)
 				}

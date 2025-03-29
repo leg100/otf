@@ -100,9 +100,9 @@ func Param(name string, r *http.Request) (string, error) {
 	return "", &internal.ErrMissingParameter{Parameter: name}
 }
 
-// ID retrieves a single parameter by name from the request and parses into a
-// resource ID.
-func ID(name string, r *http.Request) (resource.TfeID, error) {
+// TfeID retrieves a single parameter by name from the request and parses into a
+// TFE-style ID.
+func TfeID(name string, r *http.Request) (resource.TfeID, error) {
 	s, err := Param(name, r)
 	if err != nil {
 		return resource.TfeID{}, err

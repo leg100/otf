@@ -450,7 +450,7 @@ func agentPoolListItem(pool *Pool) templ.Component {
 
 type agentPoolListAllowedProps struct {
 	pools         []*Pool
-	currentPoolID *resource.TfeID
+	currentPoolID resource.ID
 }
 
 func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
@@ -496,7 +496,7 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if props.currentPoolID != nil && *props.currentPoolID == pool.ID {
+			if props.currentPoolID != nil && props.currentPoolID == pool.ID {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -509,7 +509,7 @@ func agentPoolListAllowed(props agentPoolListAllowedProps) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(pool.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 129, Col: 125}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runner/view.templ`, Line: 129, Col: 124}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {

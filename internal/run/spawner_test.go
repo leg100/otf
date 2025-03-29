@@ -239,7 +239,7 @@ type fakeSpawnerRunClient struct {
 	spawned bool
 }
 
-func (f *fakeSpawnerRunClient) Create(context.Context, resource.TfeID, CreateOptions) (*Run, error) {
+func (f *fakeSpawnerRunClient) Create(context.Context, resource.ID, CreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }
@@ -249,7 +249,7 @@ type fakeSpawnerVCSProviderClient struct {
 	pullFiles []string
 }
 
-func (f *fakeSpawnerVCSProviderClient) GetVCSClient(context.Context, resource.TfeID) (vcs.Client, error) {
+func (f *fakeSpawnerVCSProviderClient) GetVCSClient(context.Context, resource.ID) (vcs.Client, error) {
 	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
 }
 

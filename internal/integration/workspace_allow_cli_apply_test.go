@@ -30,7 +30,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			RepoPath:      &repo,
-			VCSProviderID: &vcsProvider.ID,
+			VCSProviderID: vcsProvider.ID,
 		},
 	})
 	require.NoError(t, err)

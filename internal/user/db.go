@@ -99,7 +99,7 @@ GROUP BY u.user_id
 	return sql.CollectRows(rows, scan)
 }
 
-func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error) {
+func (db *pgdb) listTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error) {
 	rows := db.Query(ctx, `
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,
@@ -135,7 +135,7 @@ SELECT
     ) AS teams
 FROM users u
 WHERE u.user_id = $1
-`, *spec.UserID)
+`, spec.UserID)
 	} else if spec.Username != nil {
 		rows = db.Query(ctx, `
 SELECT
@@ -164,7 +164,7 @@ SELECT
 FROM users u
 JOIN tokens t ON u.username = t.username
 WHERE t.token_id = $1
-`, *spec.AuthenticationTokenID)
+`, spec.AuthenticationTokenID)
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}
@@ -175,7 +175,7 @@ WHERE t.token_id = $1
 	return user, nil
 }
 
-func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...string) error {
+func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.ID, usernames ...string) error {
 	_, err := db.Exec(ctx, `
 WITH
     users AS (
@@ -189,7 +189,7 @@ FROM users
 	return err
 }
 
-func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...string) error {
+func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.ID, usernames ...string) error {
 	_, err := db.Exec(ctx, `
 WITH
     users AS (
@@ -213,7 +213,7 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 DELETE
 FROM users
 WHERE user_id = $1
-`, *spec.UserID)
+`, spec.UserID)
 		return err
 	} else if spec.Username != nil {
 		_, err := db.Exec(ctx, `
@@ -331,7 +331,7 @@ WHERE username = $1
 	return sql.CollectRows(rows, scanToken)
 }
 
-func (db *pgdb) getUserToken(ctx context.Context, id resource.TfeID) (*UserToken, error) {
+func (db *pgdb) getUserToken(ctx context.Context, id resource.ID) (*UserToken, error) {
 	rows := db.Query(ctx, `
 SELECT token_id, created_at, description, username
 FROM tokens
@@ -340,7 +340,7 @@ WHERE token_id = $1
 	return sql.CollectOneRow(rows, scanToken)
 }
 
-func (db *pgdb) deleteUserToken(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) deleteUserToken(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM tokens

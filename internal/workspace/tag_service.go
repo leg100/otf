@@ -39,7 +39,7 @@ func (s *Service) ListTags(ctx context.Context, organization resource.Organizati
 	return list, nil
 }
 
-func (s *Service) DeleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.TfeID) error {
+func (s *Service) DeleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.ID) error {
 	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, &authz.AccessRequest{Organization: &organization})
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (s *Service) DeleteTags(ctx context.Context, organization resource.Organiza
 	return nil
 }
 
-func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, workspaceIDs []resource.TfeID) error {
+func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.ID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, works
 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		for _, wid := range workspaceIDs {
-			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, &authz.AccessRequest{ID: &wid})
+			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, &authz.AccessRequest{ID: wid})
 			if err != nil {
 				return err
 			}
@@ -79,8 +79,8 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, works
 	return nil
 }
 
-func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.AddTagsAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
+	subject, err := s.Authorize(ctx, authz.AddTagsAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return err
 	}
@@ -99,8 +99,8 @@ func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags 
 	return nil
 }
 
-func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
+	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, ta
 					return err
 				}
 			case t.ID != nil:
-				tag, err = s.db.findTagByID(ctx, ws.Organization, *t.ID)
+				tag, err = s.db.findTagByID(ctx, ws.Organization, t.ID)
 				if err != nil {
 					return err
 				}
@@ -148,8 +148,8 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, ta
 	return nil
 }
 
-func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -182,16 +182,16 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 				if errors.Is(err, internal.ErrResourceNotFound) {
 					idValue := resource.NewTfeID("tag")
 					id = &idValue
-					if err := s.db.addTag(ctx, ws.Organization, name, *id); err != nil {
+					if err := s.db.addTag(ctx, ws.Organization, name, id); err != nil {
 						return fmt.Errorf("adding tag: %s %w", name, err)
 					}
 				} else if err != nil {
 					return err
 				} else {
-					id = &existing.ID
+					id = existing.ID
 				}
 			case id != nil:
-				existing, err := s.db.findTagByID(ctx, ws.Organization, *t.ID)
+				existing, err := s.db.findTagByID(ctx, ws.Organization, t.ID)
 				if err != nil {
 					return err
 				}
@@ -200,7 +200,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 				return ErrInvalidTagSpec
 			}
 
-			if err := s.db.tagWorkspace(ctx, ws.ID, *id); err != nil {
+			if err := s.db.tagWorkspace(ctx, ws.ID, id); err != nil {
 				return err
 			}
 			added = append(added, name)

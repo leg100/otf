@@ -84,7 +84,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 		Organization:       pathParams.Organization,
 		OrganizationScoped: params.OrganizationScoped,
 	}
-	opts.AllowedWorkspaces = make([]resource.TfeID, len(params.AllowedWorkspaces))
+	opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
 	for i, aw := range params.AllowedWorkspaces {
 		opts.AllowedWorkspaces[i] = aw.ID
 	}
@@ -98,7 +98,7 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.ID("pool_id", r)
+	poolID, err := decode.TfeID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -115,7 +115,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		OrganizationScoped: params.OrganizationScoped,
 	}
 	if params.AllowedWorkspaces != nil {
-		opts.AllowedWorkspaces = make([]resource.TfeID, len(params.AllowedWorkspaces))
+		opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
 		for i, aw := range params.AllowedWorkspaces {
 			opts.AllowedWorkspaces[i] = aw.ID
 		}
@@ -130,7 +130,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.ID("pool_id", r)
+	poolID, err := decode.TfeID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -185,7 +185,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.ID("pool_id", r)
+	poolID, err := decode.TfeID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -211,18 +211,18 @@ func (a *tfe) toPool(from *Pool) *types.AgentPool {
 	}
 	to.Workspaces = make([]*types.Workspace, len(from.AssignedWorkspaces))
 	for i, workspaceID := range from.AssignedWorkspaces {
-		to.Workspaces[i] = &types.Workspace{ID: workspaceID}
+		to.Workspaces[i] = &types.Workspace{ID: workspaceID.(resource.TfeID)}
 	}
 	to.AllowedWorkspaces = make([]*types.Workspace, len(from.AllowedWorkspaces))
 	for i, workspaceID := range from.AllowedWorkspaces {
-		to.AllowedWorkspaces[i] = &types.Workspace{ID: workspaceID}
+		to.AllowedWorkspaces[i] = &types.Workspace{ID: workspaceID.(resource.TfeID)}
 	}
 	return to
 }
 
 // Agent token handlers
 func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.ID("pool_id", r)
+	poolID, err := decode.TfeID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -244,7 +244,7 @@ func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) getAgentToken(w http.ResponseWriter, r *http.Request) {
-	tokenID, err := decode.ID("token_id", r)
+	tokenID, err := decode.TfeID("token_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -260,7 +260,7 @@ func (a *tfe) getAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
-	poolID, err := decode.ID("pool_id", r)
+	poolID, err := decode.TfeID("pool_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -294,7 +294,7 @@ func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
-	tokenID, err := decode.ID("token_id", r)
+	tokenID, err := decode.TfeID("token_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

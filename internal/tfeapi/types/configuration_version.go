@@ -9,7 +9,7 @@ import (
 // ConfigurationVersion is an uploaded or ingressed Terraform configuration. A workspace
 // must have at least one configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ID               resource.TfeID      `jsonapi:"primary,configuration-versions"`
+	ID               resource.ID         `jsonapi:"primary,configuration-versions"`
 	AutoQueueRuns    bool                `jsonapi:"attribute" json:"auto-queue-runs"`
 	Error            string              `jsonapi:"attribute" json:"error"`
 	ErrorMessage     string              `jsonapi:"attribute" json:"error-message"`
@@ -55,22 +55,22 @@ type ConfigurationVersionCreateOptions struct {
 }
 
 type IngressAttributes struct {
-	ID                resource.TfeID `jsonapi:"primary,ingress-attributes"`
-	Branch            string         `jsonapi:"attribute" json:"branch"`
-	CloneURL          string         `jsonapi:"attribute" json:"clone-url"`
-	CommitMessage     string         `jsonapi:"attribute" json:"commit-message"`
-	CommitSHA         string         `jsonapi:"attribute" json:"commit-sha"`
-	CommitURL         string         `jsonapi:"attribute" json:"commit-url"`
-	CompareURL        string         `jsonapi:"attribute" json:"compare-url"`
-	Identifier        string         `jsonapi:"attribute" json:"identifier"`
-	IsPullRequest     bool           `jsonapi:"attribute" json:"is-pull-request"`
-	OnDefaultBranch   bool           `jsonapi:"attribute" json:"on-default-branch"`
-	PullRequestNumber int            `jsonapi:"attribute" json:"pull-request-number"`
-	PullRequestURL    string         `jsonapi:"attribute" json:"pull-request-url"`
-	PullRequestTitle  string         `jsonapi:"attribute" json:"pull-request-title"`
-	PullRequestBody   string         `jsonapi:"attribute" json:"pull-request-body"`
-	Tag               string         `jsonapi:"attribute" json:"tag"`
-	SenderUsername    string         `jsonapi:"attribute" json:"sender-username"`
-	SenderAvatarURL   string         `jsonapi:"attribute" json:"sender-avatar-url"`
-	SenderHTMLURL     string         `jsonapi:"attribute" json:"sender-html-url"`
+	ID                resource.ID `jsonapi:"primary,ingress-attributes"`
+	Branch            string      `jsonapi:"attribute" json:"branch"`
+	CloneURL          string      `jsonapi:"attribute" json:"clone-url"`
+	CommitMessage     string      `jsonapi:"attribute" json:"commit-message"`
+	CommitSHA         string      `jsonapi:"attribute" json:"commit-sha"`
+	CommitURL         string      `jsonapi:"attribute" json:"commit-url"`
+	CompareURL        string      `jsonapi:"attribute" json:"compare-url"`
+	Identifier        string      `jsonapi:"attribute" json:"identifier"`
+	IsPullRequest     bool        `jsonapi:"attribute" json:"is-pull-request"`
+	OnDefaultBranch   bool        `jsonapi:"attribute" json:"on-default-branch"`
+	PullRequestNumber int         `jsonapi:"attribute" json:"pull-request-number"`
+	PullRequestURL    string      `jsonapi:"attribute" json:"pull-request-url"`
+	PullRequestTitle  string      `jsonapi:"attribute" json:"pull-request-title"`
+	PullRequestBody   string      `jsonapi:"attribute" json:"pull-request-body"`
+	Tag               string      `jsonapi:"attribute" json:"tag"`
+	SenderUsername    string      `jsonapi:"attribute" json:"sender-username"`
+	SenderAvatarURL   string      `jsonapi:"attribute" json:"sender-avatar-url"`
+	SenderHTMLURL     string      `jsonapi:"attribute" json:"sender-html-url"`
 }

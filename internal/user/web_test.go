@@ -51,7 +51,9 @@ func TestWeb_UserTokens(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		h := &webHandlers{
 			users: &fakeService{
-				ut: &UserToken{},
+				ut: &UserToken{
+					ID: resource.NewTfeID(resource.UserTokenKind),
+				},
 			},
 		}
 		q := "/?"
@@ -154,7 +156,7 @@ func TestUserDiff(t *testing.T) {
 
 type fakeTokensService struct{}
 
-func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

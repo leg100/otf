@@ -11,10 +11,10 @@ import (
 
 // OrganizationToken represents a Terraform Enterprise organization token.
 type OrganizationToken struct {
-	ID        resource.TfeID `jsonapi:"primary,authentication-tokens"`
-	CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
-	Token     string         `jsonapi:"attribute" json:"token"`
-	ExpiredAt *time.Time     `jsonapi:"attribute" json:"expired-at"`
+	ID        resource.ID `jsonapi:"primary,authentication-tokens"`
+	CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
+	Token     string      `jsonapi:"attribute" json:"token"`
+	ExpiredAt *time.Time  `jsonapi:"attribute" json:"expired-at"`
 }
 
 // OrganizationTokenCreateOptions contains the options for creating an organization token.

@@ -17,17 +17,17 @@ func (f fakeTokenHandler) getUsername(ctx context.Context, token *oauth2.Token) 
 
 type fakeTokensService struct{}
 
-func (*fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
+func (*fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
 	w.Header().Set("user-id", userID.String())
 	return nil
 }
 
 type fakeUserService struct {
-	userID resource.TfeID
+	userID resource.ID
 }
 
 func (f *fakeUserService) GetUser(ctx context.Context, spec user.UserSpec) (*user.User, error) {
-	return &user.User{ID: f.userID}, nil
+	return &user.User{ID: f.userID.(resource.TfeID)}, nil
 }
 
 func (f *fakeUserService) Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error) {

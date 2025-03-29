@@ -16,7 +16,7 @@ type (
 	}
 
 	agentCLIService interface {
-		CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+		CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	}
 )
 

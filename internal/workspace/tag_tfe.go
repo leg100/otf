@@ -67,13 +67,13 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var params []struct {
-		ID resource.TfeID `jsonapi:"primary,tags"`
+		ID resource.ID `jsonapi:"primary,tags"`
 	}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	tagIDs := make([]resource.TfeID, len(params))
+	tagIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		tagIDs[i] = p.ID
 	}
@@ -87,7 +87,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
-	tagID, err := decode.ID("tag_id", r)
+	tagID, err := decode.TfeID("tag_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -97,7 +97,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]resource.TfeID, len(params))
+	workspaceIDs := make([]resource.ID, len(params))
 	for i, p := range params {
 		workspaceIDs[i] = p.ID
 	}
@@ -119,7 +119,7 @@ func (a *tfe) removeTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagOperation) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -153,7 +153,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 }
 
 func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.ID("workspace_id", r)
+	workspaceID, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

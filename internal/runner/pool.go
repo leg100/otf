@@ -31,10 +31,10 @@ type (
 		OrganizationScoped bool `db:"organization_scoped"`
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
-		AllowedWorkspaces []resource.TfeID `db:"allowed_workspace_ids"`
+		AllowedWorkspaces []resource.ID `db:"allowed_workspace_ids"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
-		AssignedWorkspaces []resource.TfeID `db:"workspace_ids"`
+		AssignedWorkspaces []resource.ID `db:"workspace_ids"`
 	}
 
 	CreateAgentPoolOptions struct {
@@ -44,17 +44,17 @@ type (
 		// defaults to true
 		OrganizationScoped *bool
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []resource.TfeID
+		AllowedWorkspaces []resource.ID
 	}
 
 	updatePoolOptions struct {
 		Name               *string
 		OrganizationScoped *bool `schema:"organization_scoped"`
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []resource.TfeID `schema:"allowed_workspaces"`
+		AllowedWorkspaces []resource.ID `schema:"allowed_workspaces"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AssignedWorkspaces.
-		AssignedWorkspaces []resource.TfeID `schema:"assigned_workspaces"`
+		AssignedWorkspaces []resource.ID `schema:"assigned_workspaces"`
 	}
 
 	listPoolOptions struct {
@@ -63,7 +63,7 @@ type (
 		// Filter pools to those accessible to the named workspace. Optional.
 		AllowedWorkspaceName *string
 		// Filter pools to those accessible to the workspace with the given ID. Optional.
-		AllowedWorkspaceID *resource.TfeID
+		AllowedWorkspaceID resource.ID
 	}
 )
 

@@ -111,7 +111,7 @@ INSERT INTO ingress_attributes (
 	})
 }
 
-func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.TfeID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
+func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.ID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
 	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		row := db.Query(ctx, `
 SELECT
@@ -147,7 +147,7 @@ FOR UPDATE OF cv
 	})
 }
 
-func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	rows := db.Query(ctx, `
 SELECT
     cv.configuration_version_id,
@@ -236,14 +236,14 @@ JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.workspace_id = $1
 ORDER BY cv.created_at DESC
-`, *opts.WorkspaceID)
+`, opts.WorkspaceID)
 		return sql.CollectOneRow(row, db.scan)
 	} else {
 		return nil, fmt.Errorf("no configuration version spec provided")
 	}
 }
 
-func (db *pgdb) GetConfig(ctx context.Context, id resource.TfeID) ([]byte, error) {
+func (db *pgdb) GetConfig(ctx context.Context, id resource.ID) ([]byte, error) {
 	row := db.Query(ctx, `
 SELECT config
 FROM configuration_versions
@@ -253,7 +253,7 @@ AND   status                   = 'uploaded'
 	return sql.CollectOneType[[]byte](row)
 }
 
-func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.TfeID) error {
+func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id resource.ID) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM configuration_versions

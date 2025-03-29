@@ -61,7 +61,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, chunkID resource.TfeID, action sql.Action) (Chunk, error) {
+		func(ctx context.Context, chunkID resource.ID, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
 				return Chunk{ID: chunkID}, nil
 			}
@@ -86,7 +86,7 @@ func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], fu
 	return s.broker.Subscribe(ctx)
 }
 
-func (s *Service) GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+func (s *Service) GetAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
 	logs, err := s.db.getAllLogs(ctx, runID, phase)
 	if err != nil {
 		s.Error(err, "reading all logs", "run_id", runID, "phase", phase)
@@ -111,7 +111,7 @@ func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, er
 
 // PutChunk writes a chunk of logs for a phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
-	_, err := s.Authorize(ctx, authz.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
+	_, err := s.Authorize(ctx, authz.PutChunkAction, &authz.AccessRequest{ID: opts.RunID})
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
-	subject, err := s.Authorize(ctx, authz.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
+	subject, err := s.Authorize(ctx, authz.TailLogsAction, &authz.AccessRequest{ID: opts.RunID})
 	if err != nil {
 		return nil, err
 	}

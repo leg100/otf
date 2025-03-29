@@ -31,7 +31,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -79,7 +79,7 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -101,7 +101,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -125,7 +125,7 @@ func (a *api) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.ID("workspace_id", r)
+	id, err := decode.TfeID("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

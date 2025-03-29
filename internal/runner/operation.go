@@ -102,7 +102,7 @@ type (
 	}
 
 	operationJobsClient interface {
-		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
+		finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
 	}
 
 	// downloader downloads terraform versions
@@ -111,28 +111,28 @@ type (
 	}
 
 	runClient interface {
-		Get(ctx context.Context, runID resource.TfeID) (*run.Run, error)
-		GetPlanFile(ctx context.Context, id resource.TfeID, format run.PlanFormat) ([]byte, error)
-		UploadPlanFile(ctx context.Context, id resource.TfeID, plan []byte, format run.PlanFormat) error
-		GetLockFile(ctx context.Context, id resource.TfeID) ([]byte, error)
-		UploadLockFile(ctx context.Context, id resource.TfeID, lockFile []byte) error
+		Get(ctx context.Context, runID resource.ID) (*run.Run, error)
+		GetPlanFile(ctx context.Context, id resource.ID, format run.PlanFormat) ([]byte, error)
+		UploadPlanFile(ctx context.Context, id resource.ID, plan []byte, format run.PlanFormat) error
+		GetLockFile(ctx context.Context, id resource.ID) ([]byte, error)
+		UploadLockFile(ctx context.Context, id resource.ID, lockFile []byte) error
 	}
 
 	workspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
 	}
 
 	variablesClient interface {
-		ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*variable.Variable, error)
+		ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*variable.Variable, error)
 	}
 
 	configClient interface {
-		DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
+		DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
 	}
 
 	stateClient interface {
 		Create(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
-		DownloadCurrent(ctx context.Context, workspaceID resource.TfeID) ([]byte, error)
+		DownloadCurrent(ctx context.Context, workspaceID resource.ID) ([]byte, error)
 	}
 
 	logsClient interface {

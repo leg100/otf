@@ -31,25 +31,25 @@ type (
 	}
 
 	webRunClient interface {
-		Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Get(ctx context.Context, id resource.TfeID) (*Run, error)
-		Delete(ctx context.Context, runID resource.TfeID) error
-		Cancel(ctx context.Context, runID resource.TfeID) error
-		ForceCancel(ctx context.Context, runID resource.TfeID) error
-		Apply(ctx context.Context, runID resource.TfeID) error
-		Discard(ctx context.Context, runID resource.TfeID) error
+		Get(ctx context.Context, id resource.ID) (*Run, error)
+		Delete(ctx context.Context, runID resource.ID) error
+		Cancel(ctx context.Context, runID resource.ID) error
+		ForceCancel(ctx context.Context, runID resource.ID) error
+		Apply(ctx context.Context, runID resource.ID) error
+		Discard(ctx context.Context, runID resource.ID) error
 
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
 
 	webLogsClient interface {
-		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		GetAllLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
 	}
 
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
+		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {
@@ -96,8 +96,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
-		Operation   Operation      `schema:"operation,required"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		Operation   Operation   `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -140,14 +140,14 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if opts.ListOptions.WorkspaceID != nil {
-		ws, err := h.workspaces.Get(r.Context(), *opts.WorkspaceID)
+		ws, err := h.workspaces.Get(r.Context(), opts.WorkspaceID)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		props.organization = ws.Organization
 		props.ws = ws
-		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: ws.ID})
 	} else if opts.ListOptions.Organization != nil {
 		props.organization = *opts.ListOptions.Organization
 	} else {
@@ -159,7 +159,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -201,7 +201,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 // getWidget renders a run "widget", i.e. the container that
 // contains info about a run. Intended for use with an ajax request.
 func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -217,7 +217,7 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -237,7 +237,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -252,7 +252,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -267,7 +267,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -282,7 +282,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -297,7 +297,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
-	runID, err := decode.ID("run_id", r)
+	runID, err := decode.TfeID("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -310,7 +310,7 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	run, err = h.runs.Create(r.Context(), run.WorkspaceID, CreateOptions{
-		ConfigurationVersionID: &run.ConfigurationVersionID,
+		ConfigurationVersionID: run.ConfigurationVersionID,
 		IsDestroy:              &run.IsDestroy,
 		PlanOnly:               &run.PlanOnly,
 		Source:                 SourceUI,
@@ -326,9 +326,9 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.TfeID  `schema:"workspace_id,required"`
-		Latest      bool            `schema:"latest"`
-		RunID       *resource.TfeID `schema:"run_id"`
+		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		Latest      bool        `schema:"latest"`
+		RunID       resource.ID `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -336,7 +336,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, err := h.runs.watchWithOptions(r.Context(), WatchOptions{
-		WorkspaceID: &params.WorkspaceID,
+		WorkspaceID: params.WorkspaceID,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -369,7 +369,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			if params.Latest && !event.Payload.Latest {
 				// skip: run is not the latest run for a workspace
 				continue
-			} else if params.RunID != nil && *params.RunID != event.Payload.ID {
+			} else if params.RunID != nil && params.RunID != event.Payload.ID {
 				// skip: event is for a run which does not match the
 				// filter
 				continue

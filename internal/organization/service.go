@@ -76,7 +76,7 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"organizations",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Organization, error) {
+		func(ctx context.Context, id resource.ID, action sql.Action) (*Organization, error) {
 			if action == sql.DeleteAction {
 				return &Organization{ID: id}, nil
 			}
@@ -88,7 +88,7 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
 	// Register with auth middleware the organization token and a means of
 	// retrieving organization corresponding to token.
-	opts.TokensService.RegisterKind(resource.OrganizationTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(resource.OrganizationTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
 		return svc.getOrganizationTokenByID(ctx, tokenID)
 	})
 	return &svc
@@ -297,7 +297,7 @@ func (s *Service) GetOrganizationToken(ctx context.Context, organization resourc
 	return ot, nil
 }
 
-func (s *Service) getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error) {
+func (s *Service) getOrganizationTokenByID(ctx context.Context, tokenID resource.ID) (*OrganizationToken, error) {
 	ot, err := s.db.getOrganizationTokenByID(ctx, tokenID)
 	if err != nil {
 		s.Error(err, "retrieving organization token", "token_id", tokenID)

@@ -31,7 +31,7 @@ const (
 // OAuthClient represents a connection between an organization and a VCS
 // provider.
 type OAuthClient struct {
-	ID                  resource.TfeID      `jsonapi:"primary,oauth-clients"`
+	ID                  resource.ID         `jsonapi:"primary,oauth-clients"`
 	APIURL              string              `jsonapi:"attribute" json:"api-url"`
 	CallbackURL         string              `jsonapi:"attribute" json:"callback-url"`
 	ConnectPath         string              `jsonapi:"attribute" json:"connect-path"`
