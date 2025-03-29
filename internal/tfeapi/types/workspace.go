@@ -15,9 +15,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID                         resource.ID           `jsonapi:"primary,workspaces"`
+	ID                         resource.TfeID        `jsonapi:"primary,workspaces"`
 	Actions                    *WorkspaceActions     `jsonapi:"attribute" json:"actions"`
-	AgentPoolID                resource.ID           `jsonapi:"attribute" json:"agent-pool-id"`
+	AgentPoolID                *resource.TfeID       `jsonapi:"attribute" json:"agent-pool-id"`
 	AllowDestroyPlan           bool                  `jsonapi:"attribute" json:"allow-destroy-plan"`
 	AutoApply                  bool                  `jsonapi:"attribute" json:"auto-apply"`
 	CanQueueDestroyPlan        bool                  `jsonapi:"attribute" json:"can-queue-destroy-plan"`

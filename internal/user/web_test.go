@@ -51,7 +51,9 @@ func TestWeb_UserTokens(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		h := &webHandlers{
 			users: &fakeService{
-				ut: &UserToken{},
+				ut: &UserToken{
+					ID: resource.NewTfeID(resource.UserTokenKind),
+				},
 			},
 		}
 		q := "/?"

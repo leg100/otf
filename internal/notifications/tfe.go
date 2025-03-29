@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -154,7 +155,7 @@ func (a *tfe) convert(from *Config) *types.NotificationConfiguration {
 		Enabled:         from.Enabled,
 		DestinationType: types.NotificationDestinationType(from.DestinationType),
 		Subscribable: &types.Workspace{
-			ID: from.WorkspaceID,
+			ID: from.WorkspaceID.(resource.TfeID),
 		},
 	}
 	if from.URL != nil {

@@ -433,7 +433,7 @@ func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.ID) 
 	return &types.WorkspaceVariable{
 		Variable: a.convertVariable(from, true),
 		Workspace: &types.Workspace{
-			ID: workspaceID,
+			ID: workspaceID.(resource.TfeID),
 		},
 	}
 }
@@ -460,7 +460,7 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	to.Workspaces = make([]*types.Workspace, len(from.Workspaces))
 	for i, workspaceID := range from.Workspaces {
 		to.Workspaces[i] = &types.Workspace{
-			ID: workspaceID,
+			ID: workspaceID.(resource.TfeID),
 		}
 	}
 	return to

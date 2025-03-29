@@ -177,7 +177,7 @@ WHERE vcs_provider_id = $1
 type (
 	// model represents a database row for a vcs provider
 	model struct {
-		VCSProviderID    resource.ID `db:"vcs_provider_id"`
+		VCSProviderID    resource.TfeID `db:"vcs_provider_id"`
 		Token            *string
 		CreatedAt        time.Time `db:"created_at"`
 		Name             string

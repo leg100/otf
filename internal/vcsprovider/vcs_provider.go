@@ -18,7 +18,7 @@ import (
 type (
 	// VCSProvider provides authenticated access to a VCS.
 	VCSProvider struct {
-		ID           resource.ID
+		ID           resource.TfeID
 		Name         string
 		CreatedAt    time.Time
 		Organization resource.OrganizationName // name of OTF organization
