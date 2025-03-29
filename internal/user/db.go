@@ -3,12 +3,14 @@ package user
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/team"
 )
 
 type pgdb struct {
@@ -264,7 +266,34 @@ RETURNING username
 }
 
 func scan(row pgx.CollectableRow) (*User, error) {
-	return pgx.RowToAddrOfStructByName[User](row)
+	type model struct {
+		ID        resource.TfeID `db:"user_id"`
+		CreatedAt time.Time      `db:"created_at"`
+		UpdatedAt time.Time      `db:"updated_at"`
+		SiteAdmin bool           `db:"site_admin"`
+		Username  string
+		Teams     []team.Model
+	}
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	user := &User{
+		ID:        m.ID,
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+		SiteAdmin: m.SiteAdmin,
+		Username:  m.Username,
+	}
+	// Only allocate if there are any teams; tests for equality otherwise fail
+	// comparing nil with an empty slice.
+	if len(m.Teams) > 0 {
+		user.Teams = make([]*team.Team, len(m.Teams))
+		for i, model := range m.Teams {
+			user.Teams[i] = model.ToTeam()
+		}
+	}
+	return user, nil
 }
 
 //

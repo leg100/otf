@@ -9,9 +9,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 // pgdb is a database of runs on postgres
@@ -668,52 +670,134 @@ INSERT INTO phase_status_timestamps (
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
-	var (
-		run                   Run
-		planStatusTimestamps  []PhaseStatusTimestamp
-		applyStatusTimestamps []PhaseStatusTimestamp
+	type (
+		statusTimestampModel struct {
+			RunID     resource.TfeID `db:"run_id"`
+			Status    runstatus.Status
+			Timestamp time.Time
+		}
+		phaseStatusTimestampModel struct {
+			RunID     resource.TfeID `db:"run_id"`
+			Phase     internal.PhaseType
+			Status    PhaseStatus
+			Timestamp time.Time
+		}
+		runVariableModel struct {
+			RunID resource.TfeID `db:"run_id"`
+			Key   string
+			Value string
+		}
+		model struct {
+			ID                     resource.TfeID                        `db:"run_id"`
+			CreatedAt              time.Time                             `db:"created_at"`
+			IsDestroy              bool                                  `db:"is_destroy"`
+			CancelSignaledAt       *time.Time                            `db:"cancel_signaled_at"`
+			Organization           resource.OrganizationName             `db:"organization_name"`
+			Refresh                bool                                  `db:"refresh"`
+			RefreshOnly            bool                                  `db:"refresh_only"`
+			ReplaceAddrs           []string                              `db:"replace_addrs"`
+			PositionInQueue        int                                   `db:"position_in_queue"`
+			TargetAddrs            []string                              `db:"target_addrs"`
+			TerraformVersion       string                                `db:"terraform_version"`
+			AllowEmptyApply        bool                                  `db:"allow_empty_apply"`
+			AutoApply              bool                                  `db:"auto_apply"`
+			PlanOnly               bool                                  `db:"plan_only"`
+			Source                 Source                                `db:"source"`
+			Status                 runstatus.Status                      `db:"status"`
+			PlanStatus             PhaseStatus                           `db:"plan_status"`
+			ApplyStatus            PhaseStatus                           `db:"apply_status"`
+			WorkspaceID            resource.TfeID                        `db:"workspace_id"`
+			ConfigurationVersionID resource.TfeID                        `db:"configuration_version_id"`
+			ExecutionMode          workspace.ExecutionMode               `db:"execution_mode"`
+			RunVariables           []runVariableModel                    `db:"run_variables"`
+			PlanResourceReport     *Report                               `db:"plan_resource_report"`
+			PlanOutputReport       *Report                               `db:"plan_output_report"`
+			ApplyResourceReport    *Report                               `db:"apply_resource_report"`
+			RunStatusTimestamps    []statusTimestampModel                `db:"run_status_timestamps"`
+			PlanStatusTimestamps   []phaseStatusTimestampModel           `db:"plan_status_timestamps"`
+			ApplyStatusTimestamps  []phaseStatusTimestampModel           `db:"apply_status_timestamps"`
+			Latest                 bool                                  `db:"latest"`
+			IngressAttributes      *configversion.IngressAttributesModel `db:"ingress_attributes"`
+			CreatedBy              *string                               `db:"created_by"`
+			CostEstimationEnabled  bool                                  `db:"cost_estimation_enabled"`
+		}
 	)
-	err := row.Scan(
-		&run.ID,
-		&run.CreatedAt,
-		&run.CancelSignaledAt,
-		&run.IsDestroy,
-		&run.PositionInQueue,
-		&run.Refresh,
-		&run.RefreshOnly,
-		&run.Source,
-		&run.Status,
-		&run.Plan.Status,
-		&run.Apply.Status,
-		&run.ReplaceAddrs,
-		&run.TargetAddrs,
-		&run.AutoApply,
-		&run.Plan.ResourceReport,
-		&run.Plan.OutputReport,
-		&run.Apply.ResourceReport,
-		&run.ConfigurationVersionID,
-		&run.WorkspaceID,
-		&run.PlanOnly,
-		&run.CreatedBy,
-		&run.TerraformVersion,
-		&run.AllowEmptyApply,
-		&run.ExecutionMode,
-		&run.Latest,
-		&run.Organization,
-		&run.CostEstimationEnabled,
-		&run.StatusTimestamps,
-		&planStatusTimestamps,
-		&applyStatusTimestamps,
-		&run.Variables,
-		&run.IngressAttributes,
-	)
-	run.Plan.RunID = run.ID
-	run.Plan.PhaseType = internal.PlanPhase
-	run.Plan.StatusTimestamps = planStatusTimestamps
-	run.Apply.RunID = run.ID
-	run.Apply.PhaseType = internal.ApplyPhase
-	run.Apply.StatusTimestamps = applyStatusTimestamps
-	// sort them according to timestamp (earliest first)
+	m, err := pgx.RowToStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	run := &Run{
+		ID:                     m.ID,
+		CreatedAt:              m.CreatedAt,
+		IsDestroy:              m.IsDestroy,
+		CancelSignaledAt:       m.CancelSignaledAt,
+		Organization:           m.Organization,
+		Refresh:                m.Refresh,
+		RefreshOnly:            m.RefreshOnly,
+		ReplaceAddrs:           m.ReplaceAddrs,
+		PositionInQueue:        m.PositionInQueue,
+		TargetAddrs:            m.TargetAddrs,
+		TerraformVersion:       m.TerraformVersion,
+		AllowEmptyApply:        m.AllowEmptyApply,
+		AutoApply:              m.AutoApply,
+		PlanOnly:               m.PlanOnly,
+		Source:                 m.Source,
+		Status:                 m.Status,
+		WorkspaceID:            m.WorkspaceID,
+		ConfigurationVersionID: m.ConfigurationVersionID,
+		ExecutionMode:          m.ExecutionMode,
+		Plan: Phase{
+			RunID:            m.ID,
+			PhaseType:        internal.PlanPhase,
+			Status:           m.PlanStatus,
+			StatusTimestamps: make([]PhaseStatusTimestamp, len(m.PlanStatusTimestamps)),
+			ResourceReport:   m.PlanResourceReport,
+			OutputReport:     m.PlanOutputReport,
+		},
+		Apply: Phase{
+			RunID:            m.ID,
+			PhaseType:        internal.ApplyPhase,
+			Status:           m.ApplyStatus,
+			StatusTimestamps: make([]PhaseStatusTimestamp, len(m.ApplyStatusTimestamps)),
+			ResourceReport:   m.ApplyResourceReport,
+		},
+		StatusTimestamps:      make([]StatusTimestamp, len(m.RunStatusTimestamps)),
+		Latest:                m.Latest,
+		CreatedBy:             m.CreatedBy,
+		CostEstimationEnabled: m.CostEstimationEnabled,
+	}
+	if m.IngressAttributes != nil {
+		run.IngressAttributes = m.IngressAttributes.ToIngressAttributes()
+	}
+	if len(m.RunVariables) > 0 {
+		run.Variables = make([]Variable, len(m.RunVariables))
+		for i, model := range m.RunVariables {
+			run.Variables[i] = Variable{Key: model.Key, Value: model.Value}
+		}
+	}
+	for i, model := range m.RunStatusTimestamps {
+		run.StatusTimestamps[i] = StatusTimestamp{
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
+	for i, model := range m.PlanStatusTimestamps {
+		run.Plan.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Phase:     internal.PlanPhase,
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
+	for i, model := range m.ApplyStatusTimestamps {
+		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Phase:     internal.ApplyPhase,
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
+	// sort timestamps (earliest first)
+	//
+	// TODO: use ORDER BY in database queries instead
 	sort.Slice(run.StatusTimestamps, func(i, j int) bool {
 		return run.StatusTimestamps[i].Timestamp.Before(run.StatusTimestamps[j].Timestamp)
 	})
@@ -723,5 +807,5 @@ func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
 	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
 		return run.Apply.StatusTimestamps[i].Timestamp.Before(run.Apply.StatusTimestamps[j].Timestamp)
 	})
-	return &run, err
+	return run, err
 }
