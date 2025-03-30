@@ -25,15 +25,15 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                resource.TfeID `db:"configuration_version_id"`
-		CreatedAt         time.Time      `db:"created_at"`
-		AutoQueueRuns     bool           `db:"auto_queue_runs"`
+		ID                resource.TfeID
+		CreatedAt         time.Time
+		AutoQueueRuns     bool
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
-		StatusTimestamps  []StatusTimestamp  `db:"status_timestamps"`
-		WorkspaceID       resource.TfeID     `db:"workspace_id"`
-		IngressAttributes *IngressAttributes `db:"ingress_attributes"`
+		StatusTimestamps  []StatusTimestamp
+		WorkspaceID       resource.TfeID
+		IngressAttributes *IngressAttributes
 	}
 
 	// CreateOptions represents the options for creating a
@@ -87,25 +87,20 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     resource.TfeID
-		Branch string
-		// CloneURL          string
-		// CommitMessage     string
-		CommitSHA              string         `db:"commit_sha"`
-		Repo                   string         `db:"identifier"`
-		IsPullRequest          bool           `db:"is_pull_request"`
-		OnDefaultBranch        bool           `db:"on_default_branch"`
-		ConfigurationVersionID resource.TfeID `db:"configuration_version_id"`
-		CommitURL              string         `db:"commit_url"`
-		PullRequestNumber      int            `db:"pull_request_number"`
-		PullRequestURL         string         `db:"pull_request_url"`
-		PullRequestTitle       string         `db:"pull_request_title"`
-		// CompareURL        string
-		// PullRequestBody   string
-		Tag             string
-		SenderUsername  string `db:"sender_username"`
-		SenderAvatarURL string `db:"sender_avatar_url"`
-		SenderHTMLURL   string `db:"sender_html_url"`
+		Branch                 string
+		CommitSHA              string
+		Repo                   string
+		IsPullRequest          bool
+		OnDefaultBranch        bool
+		ConfigurationVersionID resource.TfeID
+		CommitURL              string
+		PullRequestNumber      int
+		PullRequestURL         string
+		PullRequestTitle       string
+		Tag                    string
+		SenderUsername         string
+		SenderAvatarURL        string
+		SenderHTMLURL          string
 	}
 )
 

@@ -28,10 +28,10 @@ var (
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        resource.TfeID `jsonapi:"primary,users" db:"user_id"`
-		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
-		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
-		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin" db:"site_admin"`
+		ID        resource.TfeID `jsonapi:"primary,users" json:"user_id"`
+		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
+		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`
 
 		// username is globally unique
 		Username string `jsonapi:"attribute" json:"username"`
