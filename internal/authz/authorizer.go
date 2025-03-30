@@ -41,11 +41,11 @@ type WorkspacePolicyGetter interface {
 
 // OrganizationResolver takes the ID of a resource and returns the name of the
 // organization it belongs to.
-type OrganizationResolver func(ctx context.Context, id resource.ID) (resource.OrganizationName, error)
+type OrganizationResolver func(ctx context.Context, id resource.TfeID) (resource.ID, error)
 
 // WorkspaceResolver takes the ID of a resource and returns the ID of the
 // workspace it belongs to.
-type WorkspaceResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
+type WorkspaceResolver func(ctx context.Context, id resource.TfeID) (resource.TfeID, error)
 
 // RegisterOrganizationResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the name of the
@@ -166,7 +166,7 @@ func (a *Authorizer) generateAccessRequest(ctx context.Context, resourceID resou
 		if err != nil {
 			return AccessRequest{}, fmt.Errorf("resolving organization: %w", err)
 		}
-		ar.Organization = &organization
+		ar.Organization = organization
 	}
 	return ar, nil
 }

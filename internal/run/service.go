@@ -125,7 +125,7 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
 
-	// Resolve authorization requests for run IDs to a workspace IDs
+	// Resolve authorization requests for a run ID to a workspace ID
 	opts.Authorizer.RegisterWorkspaceResolver(resource.RunKind,
 		func(ctx context.Context, runID resource.TfeID) (resource.TfeID, error) {
 			run, err := db.GetRun(ctx, runID)
