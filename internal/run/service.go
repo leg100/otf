@@ -129,7 +129,7 @@ func NewService(opts Options) *Service {
 		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
 			run, err := db.GetRun(ctx, runID.(resource.TfeID))
 			if err != nil {
-				return resource.TfeID{}, err
+				return nil, err
 			}
 			return run.WorkspaceID, nil
 		},
@@ -346,7 +346,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, &authz.Request{ID: opts.WorkspaceID})
+		_, err = s.Authorize(ctx, authz.WatchAction, opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
 		_, err = s.Authorize(ctx, authz.WatchAction, opts.Organization)

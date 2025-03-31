@@ -18,7 +18,7 @@ import (
 type webHandlers struct {
 	teams      webClient
 	tokens     *tokens.Service
-	authorizer *authz.Authorizer
+	authorizer authz.Interface
 }
 
 type webClient interface {

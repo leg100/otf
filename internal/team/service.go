@@ -90,7 +90,7 @@ func NewService(opts Options) *Service {
 	opts.Authorizer.RegisterParentResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.ID, error) {
 		team, err := svc.db.getTeamByID(ctx, id.(resource.TfeID))
 		if err != nil {
-			return resource.OrganizationName{}, err
+			return nil, err
 		}
 		return team.Organization, nil
 	})

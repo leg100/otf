@@ -51,7 +51,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, authz.Request) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
 	workspaceInfo struct {
@@ -278,7 +278,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 	props := listVariableSetsProps{
 		organization:         pathParams.Organization,
 		sets:                 sets,
-		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.Request{Organization: &pathParams.Organization}),
+		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, pathParams.Organization),
 	}
 	html.Render(listVariableSets(props), w, r)
 }
@@ -385,7 +385,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		existingWorkspaces:  existingWorkspaces,
 		variableTable: setTableProps{
 			set:               set,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.Request{Organization: &set.Organization}),
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, set.Organization),
 		},
 	}
 	html.Render(editVariableSet(props), w, r)

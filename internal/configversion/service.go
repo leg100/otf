@@ -70,13 +70,13 @@ func NewService(opts Options) *Service {
 			if !ok {
 				return nil, errors.New("invalid id")
 			}
-			sv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
+			cv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
 				ID: &cvTfeID,
 			})
 			if err != nil {
-				return resource.TfeID{}, err
+				return nil, err
 			}
-			return sv.WorkspaceID, nil
+			return cv.WorkspaceID, nil
 		},
 	)
 

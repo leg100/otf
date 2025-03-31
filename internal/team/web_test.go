@@ -44,7 +44,10 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &webHandlers{teams: &fakeService{team: team}}
+		h := &webHandlers{
+			teams:      &fakeService{team: team},
+			authorizer: authz.NewAllowAllAuthorizer(),
+		}
 		// make request with user with full perms, to ensure parts of
 		// page that are hidden to unprivileged users are not hidden.
 		userCtx := authz.AddSubjectToContext(context.Background(), &authz.Superuser{})

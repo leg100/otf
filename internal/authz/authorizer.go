@@ -123,7 +123,6 @@ func (a *Authorizer) generateRequest(ctx context.Context, resourceID resource.ID
 	if resourceID == resource.SiteID {
 		return req, nil
 	}
-	var ar Request
 	// Retrieve resource lineage
 	for {
 		parent, ok := a.parentResolvers[resourceID.Kind()]
@@ -134,20 +133,20 @@ func (a *Authorizer) generateRequest(ctx context.Context, resourceID resource.ID
 		if err != nil {
 			return Request{}, fmt.Errorf("resolving ID: %w", err)
 		}
-		ar.lineage = append(ar.lineage, parentID)
+		req.lineage = append(req.lineage, parentID)
 		// now try looking up parent of parent
 		resourceID = parentID
 	}
 	// If the requested resource is a workspace or belongs to a workspace then
 	// fetch its workspace policy.
-	if ar.Workspace() != nil {
-		policy, err := a.GetWorkspacePolicy(ctx, ar.Workspace().(resource.TfeID))
+	if req.Workspace() != nil {
+		policy, err := a.GetWorkspacePolicy(ctx, req.Workspace().(resource.TfeID))
 		if err != nil {
 			return Request{}, fmt.Errorf("fetching workspace policy: %w", err)
 		}
-		ar.WorkspacePolicy = &policy
+		req.WorkspacePolicy = &policy
 	}
-	return ar, nil
+	return req, nil
 }
 
 // CanAccess is a helper to boil down an access request to a true/false

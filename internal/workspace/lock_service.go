@@ -53,7 +53,7 @@ func (s *Service) Unlock(ctx context.Context, workspaceID resource.TfeID, runID 
 		} else {
 			action = authz.UnlockWorkspaceAction
 		}
-		subject, err := s.Authorize(ctx, action, &authz.Request{ID: &workspaceID})
+		subject, err := s.Authorize(ctx, action, workspaceID)
 		if err != nil {
 			return nil, err
 		}
