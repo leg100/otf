@@ -192,6 +192,15 @@ type AccessRequest struct {
 	WorkspacePolicy *WorkspacePolicy
 }
 
+type Request struct {
+	// ID of resource to which access is being requested.
+	ID resource.ID
+	// Ancestors of above resource
+	Ancestors []resource.ID
+}
+
+func (r Request) 
+
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
 	Permissions []WorkspacePermission
