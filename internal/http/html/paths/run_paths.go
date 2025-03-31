@@ -4,58 +4,58 @@ package paths
 
 import "fmt"
 
-func Runs(workspace string) string {
+func Runs(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/runs", workspace)
 }
 
-func CreateRun(workspace string) string {
+func CreateRun(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/runs/create", workspace)
 }
 
-func NewRun(workspace string) string {
+func NewRun(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/runs/new", workspace)
 }
 
-func Run(run string) string {
+func Run(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s", run)
 }
 
-func EditRun(run string) string {
+func EditRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/edit", run)
 }
 
-func UpdateRun(run string) string {
+func UpdateRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/update", run)
 }
 
-func DeleteRun(run string) string {
+func DeleteRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/delete", run)
 }
 
-func ApplyRun(run string) string {
+func ApplyRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/apply", run)
 }
 
-func DiscardRun(run string) string {
+func DiscardRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/discard", run)
 }
 
-func CancelRun(run string) string {
+func CancelRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/cancel", run)
 }
 
-func ForceCancelRun(run string) string {
+func ForceCancelRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/force-cancel", run)
 }
 
-func RetryRun(run string) string {
+func RetryRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/retry", run)
 }
 
-func TailRun(run string) string {
+func TailRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/tail", run)
 }
 
-func WidgetRun(run string) string {
+func WidgetRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/widget", run)
 }

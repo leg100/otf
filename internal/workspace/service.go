@@ -170,7 +170,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 }
 
 func (s *Service) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func (s *Service) GetByName(ctx context.Context, organization resource.Organizat
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +240,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 }
 
 func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts U
 }
 
 func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Work
 }
 
 func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
-	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -331,7 +331,7 @@ func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resourc
 }
 
 func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
 		return err

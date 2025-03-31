@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
@@ -42,6 +41,7 @@ type (
 		tfeapi                 *tfe
 		api                    *api
 		web                    *webHandlers
+		logs                   *logs.Service
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -61,6 +61,7 @@ type (
 		ReleasesService      *releases.Service
 		VCSProviderService   *vcsprovider.Service
 		TokensService        *tokens.Service
+		LogsService          *logs.Service
 
 		logr.Logger
 		internal.Cache
@@ -79,6 +80,7 @@ func NewService(opts Options) *Service {
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
+		logs:       opts.LogsService,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -123,7 +125,7 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
 
-	// Resolve authorization requests for run IDs to a workspace IDs
+	// Resolve authorization requests for a run ID to a workspace ID
 	opts.Authorizer.RegisterWorkspaceResolver(resource.RunKind,
 		func(ctx context.Context, runID resource.TfeID) (resource.TfeID, error) {
 			run, err := db.GetRun(ctx, runID)
@@ -151,7 +153,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
-	subject, err := s.Authorize(ctx, authz.CreateRunAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +175,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts C
 
 // Get retrieves a run from the db.
 func (s *Service) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
-	subject, err := s.Authorize(ctx, authz.GetRunAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.GetRunAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +203,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID})
+		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
 		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
@@ -267,7 +269,7 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 }
 
 func (s *Service) Delete(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteRunAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.DeleteRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -384,7 +386,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 
 // Apply enqueues an apply for the run.
 func (s *Service) Apply(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.ApplyRunAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.ApplyRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -415,7 +417,7 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 
 // Discard discards the run.
 func (s *Service) Discard(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DiscardRunAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.DiscardRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -434,7 +436,7 @@ func (s *Service) Discard(ctx context.Context, runID resource.TfeID) error {
 }
 
 func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.CancelRunAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -470,7 +472,7 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 
 // ForceCancel forcefully cancels a run.
 func (s *Service) ForceCancel(ctx context.Context, runID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -504,7 +506,7 @@ func planFileCacheKey(f PlanFormat, id resource.TfeID) string {
 
 // GetPlanFile returns the plan file for the run.
 func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
-	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -528,7 +530,7 @@ func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format 
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
 func (s *Service) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
-	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, &authz.AccessRequest{ID: &runID})
+	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
 	}
@@ -576,7 +578,7 @@ func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (
 }
 
 func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (Report, error) {
-	logs, err := s.getLogs(ctx, runID, internal.ApplyPhase)
+	logs, err := s.logs.GetAllLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return Report{}, err
 	}
@@ -588,22 +590,6 @@ func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (
 		return Report{}, err
 	}
 	return report, nil
-}
-
-func (s *Service) getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
-	data, err := (&logs.Queries{}).FindLogs(ctx, s.db.Conn(ctx), logs.FindLogsParams{
-		RunID: runID,
-		Phase: sql.String(string(phase)),
-	})
-	if err != nil {
-		// Don't consider no rows an error because logs may not have been
-		// uploaded yet.
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, sql.Error(err)
-	}
-	return data, nil
 }
 
 func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {

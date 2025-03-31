@@ -84,7 +84,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts C
 }
 
 func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
-	subject, err := s.Authorize(ctx, authz.ListConfigurationVersionsAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts Lis
 }
 
 func (s *Service) Get(ctx context.Context, cvID resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *Service) Get(ctx context.Context, cvID resource.TfeID) (*ConfigurationV
 }
 
 func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*C
 }
 
 func (s *Service) Delete(ctx context.Context, cvID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+	subject, err := s.Authorize(ctx, authz.DeleteConfigurationVersionAction, cvID)
 	if err != nil {
 		return err
 	}

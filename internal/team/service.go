@@ -104,7 +104,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.CreateTeamAction, &organization)
+	subject, err := a.Authorize(ctx, authz.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 
 // List lists teams in the organization.
 func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
-	subject, err := a.Authorize(ctx, authz.ListTeamsAction, &organization)
+	subject, err := a.Authorize(ctx, authz.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (a *Service) List(ctx context.Context, organization resource.OrganizationNa
 }
 
 func (a *Service) Get(ctx context.Context, organization resource.OrganizationName, name string) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &organization)
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}

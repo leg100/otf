@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func AgentPools(organization string) string {
+func AgentPools(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/agent-pools", organization)
 }
 
-func CreateAgentPool(organization string) string {
+func CreateAgentPool(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/agent-pools/create", organization)
 }
 
-func NewAgentPool(organization string) string {
+func NewAgentPool(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/agent-pools/new", organization)
 }
 
-func AgentPool(agentPool string) string {
+func AgentPool(agentPool fmt.Stringer) string {
 	return fmt.Sprintf("/app/agent-pools/%s", agentPool)
 }
 
-func EditAgentPool(agentPool string) string {
+func EditAgentPool(agentPool fmt.Stringer) string {
 	return fmt.Sprintf("/app/agent-pools/%s/edit", agentPool)
 }
 
-func UpdateAgentPool(agentPool string) string {
+func UpdateAgentPool(agentPool fmt.Stringer) string {
 	return fmt.Sprintf("/app/agent-pools/%s/update", agentPool)
 }
 
-func DeleteAgentPool(agentPool string) string {
+func DeleteAgentPool(agentPool fmt.Stringer) string {
 	return fmt.Sprintf("/app/agent-pools/%s/delete", agentPool)
 }

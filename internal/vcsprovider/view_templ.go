@@ -78,7 +78,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 templ.SafeURL = paths.NewVCSProvider(props.organization.String())
+			var templ_7745c5c3_Var3 templ.SafeURL = paths.NewVCSProvider(props.organization)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -87,7 +87,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var4 templ.SafeURL = paths.NewVCSProvider(props.organization.String())
+			var templ_7745c5c3_Var4 templ.SafeURL = paths.NewVCSProvider(props.organization)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var4)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -101,7 +101,7 @@ func list(props listProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var5 templ.SafeURL = paths.NewGithubAppVCSProvider(props.organization.String())
+				var templ_7745c5c3_Var5 templ.SafeURL = paths.NewGithubAppVCSProvider(props.organization)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var5)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -171,9 +171,9 @@ func listItem(provider *VCSProvider) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.EditVCSProvider(provider.ID.String())))
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(paths.EditVCSProvider(provider.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 60, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 60, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -186,7 +186,7 @@ func listItem(provider *VCSProvider) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(provider.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 60, Col: 123}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 60, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -196,7 +196,7 @@ func listItem(provider *VCSProvider) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var10 templ.SafeURL = paths.EditVCSProvider(provider.ID.String())
+		var templ_7745c5c3_Var10 templ.SafeURL = paths.EditVCSProvider(provider.ID)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var10)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -208,7 +208,7 @@ func listItem(provider *VCSProvider) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(provider.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 63, Col: 107}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/vcsprovider/view.templ`, Line: 63, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -239,7 +239,7 @@ func listItem(provider *VCSProvider) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var13 templ.SafeURL = paths.DeleteVCSProvider(provider.ID.String())
+		var templ_7745c5c3_Var13 templ.SafeURL = paths.DeleteVCSProvider(provider.ID)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var13)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -309,7 +309,7 @@ func edit(provider *VCSProvider) templ.Component {
 			templ_7745c5c3_Err = form(formProps{
 				provider: provider,
 				edit:     true,
-				action:   paths.UpdateVCSProvider(provider.ID.String()),
+				action:   paths.UpdateVCSProvider(provider.ID),
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -318,7 +318,7 @@ func edit(provider *VCSProvider) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var17 templ.SafeURL = paths.DeleteVCSProvider(provider.ID.String())
+			var templ_7745c5c3_Var17 templ.SafeURL = paths.DeleteVCSProvider(provider.ID)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var17)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -333,7 +333,7 @@ func edit(provider *VCSProvider) templ.Component {
 			Title:        "edit vcs provider",
 			Organization: &provider.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization.String())},
+				{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
 				{Name: provider.String()},
 				{Name: "settings"},
 			},
@@ -425,7 +425,7 @@ func newPAT(props newPATProps) templ.Component {
 			}
 			templ_7745c5c3_Err = form(formProps{
 				provider: props.provider,
-				action:   paths.CreateVCSProvider(props.provider.Organization.String()),
+				action:   paths.CreateVCSProvider(props.provider.Organization),
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -492,7 +492,7 @@ func newGithubApp(props newGithubAppProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var25 templ.SafeURL = paths.CreateVCSProvider(props.organization.String())
+				var templ_7745c5c3_Var25 templ.SafeURL = paths.CreateVCSProvider(props.organization)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var25)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

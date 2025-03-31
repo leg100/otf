@@ -133,7 +133,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization
 	})
 	if err != nil {
 		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
 	return org, nil
@@ -251,7 +251,7 @@ func (s *Service) BeforeDeleteOrganization(hook func(context.Context, *Organizat
 }
 
 func (s *Service) GetEntitlements(ctx context.Context, organization resource.OrganizationName) (Entitlements, error) {
-	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, &organization)
+	_, err := s.Authorize(ctx, authz.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
@@ -318,7 +318,7 @@ func (s *Service) ListTokens(ctx context.Context, organization resource.Organiza
 }
 
 func (s *Service) DeleteToken(ctx context.Context, organization resource.OrganizationName) error {
-	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, &organization)
+	_, err := s.Authorize(ctx, authz.CreateOrganizationTokenAction, organization)
 	if err != nil {
 		return err
 	}

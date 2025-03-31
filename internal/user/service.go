@@ -168,7 +168,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
-	_, err := a.Authorize(ctx, authz.ListUsersAction, &organization)
+	_, err := a.Authorize(ctx, authz.ListUsersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (a *Service) Delete(ctx context.Context, username string) error {
 func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving team: %w", err)
 	}
 
 	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &team.Organization)
@@ -296,9 +296,9 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeI
 func (a *Service) SetSiteAdmins(ctx context.Context, usernames ...string) error {
 	for _, username := range usernames {
 		_, err := a.db.getUser(ctx, UserSpec{Username: &username})
-		if err == internal.ErrResourceNotFound {
+		if errors.Is(err, internal.ErrResourceNotFound) {
 			if _, err = a.Create(ctx, username); err != nil {
-				return err
+				return fmt.Errorf("creating site admin users: %w", err)
 			}
 		}
 	}

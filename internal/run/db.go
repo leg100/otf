@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
@@ -16,169 +16,77 @@ import (
 	"github.com/leg100/otf/internal/workspace"
 )
 
-var q = &Queries{}
-
-type (
-	// pgdb is a database of runs on postgres
-	pgdb struct {
-		*sql.DB // provides access to generated SQL queries
-	}
-
-	// pgresult is the result of a database query for a run.
-	pgresult struct {
-		RunID                  resource.TfeID
-		CreatedAt              pgtype.Timestamptz
-		CancelSignaledAt       pgtype.Timestamptz
-		IsDestroy              pgtype.Bool
-		PositionInQueue        pgtype.Int4
-		Refresh                pgtype.Bool
-		RefreshOnly            pgtype.Bool
-		Source                 pgtype.Text
-		Status                 pgtype.Text
-		PlanStatus             pgtype.Text
-		ApplyStatus            pgtype.Text
-		ReplaceAddrs           []pgtype.Text
-		TargetAddrs            []pgtype.Text
-		AutoApply              pgtype.Bool
-		PlanResourceReport     *Report
-		PlanOutputReport       *Report
-		ApplyResourceReport    *Report
-		ConfigurationVersionID resource.TfeID
-		WorkspaceID            resource.TfeID
-		PlanOnly               pgtype.Bool
-		CreatedBy              pgtype.Text
-		TerraformVersion       pgtype.Text
-		AllowEmptyApply        pgtype.Bool
-		ExecutionMode          pgtype.Text
-		Latest                 pgtype.Bool
-		OrganizationName       resource.OrganizationName
-		CostEstimationEnabled  pgtype.Bool
-		RunStatusTimestamps    []RunStatusTimestampModel
-		PlanStatusTimestamps   []PhaseStatusTimestampModel
-		ApplyStatusTimestamps  []PhaseStatusTimestampModel
-		RunVariables           []RunVariable
-		IngressAttributes      *IngressAttributeModel
-	}
-)
-
-func (result pgresult) toRun() *Run {
-	run := Run{
-		ID:                     result.RunID,
-		CreatedAt:              result.CreatedAt.Time.UTC(),
-		IsDestroy:              result.IsDestroy.Bool,
-		PositionInQueue:        int(result.PositionInQueue.Int32),
-		Refresh:                result.Refresh.Bool,
-		RefreshOnly:            result.RefreshOnly.Bool,
-		Source:                 Source(result.Source.String),
-		Status:                 runstatus.Status(result.Status.String),
-		ReplaceAddrs:           sql.FromStringArray(result.ReplaceAddrs),
-		TargetAddrs:            sql.FromStringArray(result.TargetAddrs),
-		AutoApply:              result.AutoApply.Bool,
-		PlanOnly:               result.PlanOnly.Bool,
-		AllowEmptyApply:        result.AllowEmptyApply.Bool,
-		TerraformVersion:       result.TerraformVersion.String,
-		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
-		Latest:                 result.Latest.Bool,
-		Organization:           result.OrganizationName,
-		WorkspaceID:            result.WorkspaceID,
-		ConfigurationVersionID: result.ConfigurationVersionID,
-		CostEstimationEnabled:  result.CostEstimationEnabled.Bool,
-		Plan: Phase{
-			RunID:          result.RunID,
-			PhaseType:      internal.PlanPhase,
-			Status:         PhaseStatus(result.PlanStatus.String),
-			ResourceReport: reportFromDB(result.PlanResourceReport),
-			OutputReport:   reportFromDB(result.PlanOutputReport),
-		},
-		Apply: Phase{
-			RunID:          result.RunID,
-			PhaseType:      internal.ApplyPhase,
-			Status:         PhaseStatus(result.ApplyStatus.String),
-			ResourceReport: reportFromDB(result.ApplyResourceReport),
-		},
-	}
-	// convert run timestamps from db result and sort them according to
-	// timestamp (earliest first)
-	run.StatusTimestamps = make([]StatusTimestamp, len(result.RunStatusTimestamps))
-	for i, rst := range result.RunStatusTimestamps {
-		run.StatusTimestamps[i] = StatusTimestamp{
-			Status:    runstatus.Status(rst.Status.String),
-			Timestamp: rst.Timestamp.Time.UTC(),
-		}
-	}
-	sort.Slice(run.StatusTimestamps, func(i, j int) bool {
-		return run.StatusTimestamps[i].Timestamp.Before(run.StatusTimestamps[j].Timestamp)
-	})
-	// convert plan timestamps from db result and sort them according to
-	// timestamp (earliest first)
-	run.Plan.StatusTimestamps = make([]PhaseStatusTimestamp, len(result.PlanStatusTimestamps))
-	for i, pst := range result.PlanStatusTimestamps {
-		run.Plan.StatusTimestamps[i] = PhaseStatusTimestamp{
-			Status:    PhaseStatus(pst.Status.String),
-			Timestamp: pst.Timestamp.Time.UTC(),
-		}
-	}
-	sort.Slice(run.Plan.StatusTimestamps, func(i, j int) bool {
-		return run.Plan.StatusTimestamps[i].Timestamp.Before(run.Plan.StatusTimestamps[j].Timestamp)
-	})
-	// convert apply timestamps from db result and sort them according to
-	// timestamp (earliest first)
-	run.Apply.StatusTimestamps = make([]PhaseStatusTimestamp, len(result.ApplyStatusTimestamps))
-	for i, ast := range result.ApplyStatusTimestamps {
-		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
-			Status:    PhaseStatus(ast.Status.String),
-			Timestamp: ast.Timestamp.Time.UTC(),
-		}
-	}
-	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
-		return run.Apply.StatusTimestamps[i].Timestamp.Before(run.Apply.StatusTimestamps[j].Timestamp)
-	})
-	if len(result.RunVariables) > 0 {
-		run.Variables = make([]Variable, len(result.RunVariables))
-		for i, v := range result.RunVariables {
-			run.Variables[i] = Variable{Key: v.Key.String, Value: v.Value.String}
-		}
-	}
-	if result.CreatedBy.Valid {
-		run.CreatedBy = &result.CreatedBy.String
-	}
-	if result.CancelSignaledAt.Valid {
-		run.CancelSignaledAt = internal.Time(result.CancelSignaledAt.Time.UTC())
-	}
-	if result.IngressAttributes != nil {
-		run.IngressAttributes = configversion.NewIngressFromRow((*configversion.IngressAttributeModel)(result.IngressAttributes))
-	}
-	return &run
+// pgdb is a database of runs on postgres
+type pgdb struct {
+	*sql.DB // provides access to generated SQL queries
 }
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
-		err := q.InsertRun(ctx, conn, InsertRunParams{
-			ID:                     run.ID,
-			CreatedAt:              sql.Timestamptz(run.CreatedAt),
-			IsDestroy:              sql.Bool(run.IsDestroy),
-			PositionInQueue:        sql.Int4(0),
-			Refresh:                sql.Bool(run.Refresh),
-			RefreshOnly:            sql.Bool(run.RefreshOnly),
-			Source:                 sql.String(string(run.Source)),
-			Status:                 sql.String(string(run.Status)),
-			ReplaceAddrs:           sql.StringArray(run.ReplaceAddrs),
-			TargetAddrs:            sql.StringArray(run.TargetAddrs),
-			AutoApply:              sql.Bool(run.AutoApply),
-			PlanOnly:               sql.Bool(run.PlanOnly),
-			AllowEmptyApply:        sql.Bool(run.AllowEmptyApply),
-			TerraformVersion:       sql.String(run.TerraformVersion),
-			ConfigurationVersionID: run.ConfigurationVersionID,
-			WorkspaceID:            run.WorkspaceID,
-			CreatedBy:              sql.StringPtr(run.CreatedBy),
-		})
+		_, err := db.Exec(ctx, `
+INSERT INTO runs (
+    run_id,
+    created_at,
+    is_destroy,
+    position_in_queue,
+    refresh,
+    refresh_only,
+    source,
+    status,
+    replace_addrs,
+    target_addrs,
+    auto_apply,
+    plan_only,
+    configuration_version_id,
+    workspace_id,
+    created_by,
+    terraform_version,
+    allow_empty_apply
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    $17
+)`,
+
+			run.ID,
+			run.CreatedAt,
+			run.IsDestroy,
+			0,
+			run.Refresh,
+			run.RefreshOnly,
+			run.Source,
+			run.Status,
+			run.ReplaceAddrs,
+			run.TargetAddrs,
+			run.AutoApply,
+			run.PlanOnly,
+			run.ConfigurationVersionID,
+			run.WorkspaceID,
+			run.CreatedBy,
+			run.TerraformVersion,
+			run.AllowEmptyApply,
+		)
 		for _, v := range run.Variables {
-			err = q.InsertRunVariable(ctx, conn, InsertRunVariableParams{
-				RunID: run.ID,
-				Key:   sql.String(v.Key),
-				Value: sql.String(v.Value),
-			})
+			_, err := db.Exec(ctx, `INSERT INTO run_variables ( run_id, key, value) VALUES ( $1, $2, $3)`,
+				run.ID,
+				v.Key,
+				v.Value,
+			)
 			if err != nil {
 				return fmt.Errorf("inserting run variable: %w", err)
 			}
@@ -186,17 +94,17 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
 		}
-		err = q.InsertPlan(ctx, conn, InsertPlanParams{
-			RunID:  run.ID,
-			Status: sql.String(string(run.Plan.Status)),
-		})
+		_, err = db.Exec(ctx, `INSERT INTO plans (run_id, status) VALUES ($1, $2)`,
+			run.ID,
+			run.Plan.Status,
+		)
 		if err != nil {
 			return fmt.Errorf("inserting plan: %w", err)
 		}
-		err = q.InsertApply(ctx, conn, InsertApplyParams{
-			RunID:  run.ID,
-			Status: sql.String(string(run.Apply.Status)),
-		})
+		_, err = db.Exec(ctx, `INSERT INTO applies (run_id, status) VALUES ($1, $2)`,
+			run.ID,
+			run.Apply.Status,
+		)
 		if err != nil {
 			return fmt.Errorf("inserting apply: %w", err)
 		}
@@ -215,20 +123,95 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
 func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(context.Context, *Run) error) (*Run, error) {
-	var runStatus runstatus.Status
-	var planStatus PhaseStatus
-	var applyStatus PhaseStatus
-	var cancelSignaledAt *time.Time
-
+	var (
+		runStatus        runstatus.Status
+		planStatus       PhaseStatus
+		applyStatus      PhaseStatus
+		cancelSignaledAt *time.Time
+	)
 	return sql.Updater(
 		ctx,
 		db.DB,
 		func(ctx context.Context, conn sql.Connection) (*Run, error) {
-			result, err := q.FindRunByIDForUpdate(ctx, conn, runID)
+			row := db.Query(ctx, `
+SELECT
+    runs.run_id,
+    runs.created_at,
+    runs.cancel_signaled_at,
+    runs.is_destroy,
+    runs.position_in_queue,
+    runs.refresh,
+    runs.refresh_only,
+    runs.source,
+    runs.status,
+    plans.status        AS plan_status,
+    applies.status      AS apply_status,
+    runs.replace_addrs,
+    runs.target_addrs,
+    runs.auto_apply,
+    plans.resource_report::"report" AS plan_resource_report,
+    plans.output_report::"report" AS plan_output_report,
+    applies.resource_report::"report" AS apply_resource_report,
+    runs.configuration_version_id,
+    runs.workspace_id,
+    runs.plan_only,
+    runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
+    workspaces.execution_mode AS execution_mode,
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest,
+    workspaces.organization_name,
+    organizations.cost_estimation_enabled,
+    rst.run_status_timestamps,
+    pst.plan_status_timestamps,
+    ast.apply_status_timestamps,
+    rv.run_variables,
+    ia::"ingress_attributes" AS ingress_attributes
+FROM runs
+JOIN plans USING (run_id)
+JOIN applies USING (run_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
+JOIN (configuration_versions cv LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(rv.*)::run_variables[] AS run_variables
+    FROM run_variables rv
+    GROUP BY run_id
+) AS rv ON rv.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(rst.*)::run_status_timestamps[] AS run_status_timestamps
+    FROM run_status_timestamps rst
+    GROUP BY run_id
+) AS rst ON rst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(pst.*)::phase_status_timestamps[] AS plan_status_timestamps
+    FROM phase_status_timestamps pst
+    WHERE pst.phase = 'plan'
+    GROUP BY run_id
+) AS pst ON pst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(ast.*)::phase_status_timestamps[] AS apply_status_timestamps
+    FROM phase_status_timestamps ast
+    WHERE ast.phase = 'apply'
+    GROUP BY run_id
+) AS ast ON ast.run_id = runs.run_id
+WHERE runs.run_id = $1
+FOR UPDATE OF runs, plans, applies
+`, runID)
+			run, err := sql.CollectOneRow(row, db.scan)
 			if err != nil {
 				return nil, err
 			}
-			run := pgresult(result).toRun()
 			// Make copies of run attributes before update
 			runStatus = run.Status
 			planStatus = run.Plan.Status
@@ -239,10 +222,15 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 		fn,
 		func(ctx context.Context, conn sql.Connection, run *Run) error {
 			if run.Status != runStatus {
-				_, err := q.UpdateRunStatus(ctx, conn, UpdateRunStatusParams{
-					Status: sql.String(string(run.Status)),
-					ID:     run.ID,
-				})
+				_, err := db.Exec(ctx, `
+UPDATE runs
+SET
+    status = $1
+WHERE run_id = $2
+`,
+					run.Status,
+					run.ID,
+				)
 				if err != nil {
 					return err
 				}
@@ -253,10 +241,14 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 			}
 
 			if run.Plan.Status != planStatus {
-				_, err := q.UpdatePlanStatusByID(ctx, conn, UpdatePlanStatusByIDParams{
-					Status: sql.String(string(run.Plan.Status)),
-					RunID:  run.ID,
-				})
+				_, err := db.Exec(ctx, `
+UPDATE plans
+SET status = $1
+WHERE run_id = $2
+`,
+					run.Plan.Status,
+					run.ID,
+				)
 				if err != nil {
 					return err
 				}
@@ -267,10 +259,14 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 			}
 
 			if run.Apply.Status != applyStatus {
-				_, err := q.UpdateApplyStatusByID(ctx, db.Conn(ctx), UpdateApplyStatusByIDParams{
-					Status: sql.String(string(run.Apply.Status)),
-					RunID:  run.ID,
-				})
+				_, err := db.Exec(ctx, `
+UPDATE applies
+SET status = $1
+WHERE run_id = $2
+`,
+					run.Apply.Status,
+					run.ID,
+				)
 				if err != nil {
 					return err
 				}
@@ -281,10 +277,15 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 			}
 
 			if run.CancelSignaledAt != cancelSignaledAt && run.CancelSignaledAt != nil {
-				_, err := q.UpdateCancelSignaledAt(ctx, db.Conn(ctx), UpdateCancelSignaledAtParams{
-					CancelSignaledAt: sql.Timestamptz(*run.CancelSignaledAt),
-					ID:               run.ID,
-				})
+				_, err := db.Exec(ctx, `
+UPDATE runs
+SET
+    cancel_signaled_at = $1
+WHERE run_id = $2
+`,
+					*run.CancelSignaledAt,
+					run.ID,
+				)
 				if err != nil {
 					return err
 				}
@@ -296,31 +297,46 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 }
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID resource.TfeID, resource, output Report) error {
-	_, err := q.UpdatePlannedChangesByID(ctx, db.Conn(ctx), UpdatePlannedChangesByIDParams{
-		RunID:                runID,
-		ResourceAdditions:    sql.Int4(resource.Additions),
-		ResourceChanges:      sql.Int4(resource.Changes),
-		ResourceDestructions: sql.Int4(resource.Destructions),
-		OutputAdditions:      sql.Int4(output.Additions),
-		OutputChanges:        sql.Int4(output.Changes),
-		OutputDestructions:   sql.Int4(output.Destructions),
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
+	_, err := db.Exec(ctx, `
+UPDATE plans
+SET resource_report = (
+        $1,
+        $2,
+        $3
+    ),
+    output_report = (
+        $4,
+        $5,
+        $6
+    )
+WHERE run_id = $7
+`,
+		resource.Additions,
+		resource.Changes,
+		resource.Destructions,
+		output.Additions,
+		output.Changes,
+		output.Destructions,
+		runID,
+	)
 	return err
 }
 
 func (db *pgdb) CreateApplyReport(ctx context.Context, runID resource.TfeID, report Report) error {
-	_, err := q.UpdateAppliedChangesByID(ctx, db.Conn(ctx), UpdateAppliedChangesByIDParams{
-		RunID:        runID,
-		Additions:    sql.Int4(report.Additions),
-		Changes:      sql.Int4(report.Changes),
-		Destructions: sql.Int4(report.Destructions),
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
+	_, err := db.Exec(ctx, `
+UPDATE applies
+SET resource_report = (
+    $1,
+    $2,
+    $3
+)
+WHERE run_id = $4
+`,
+		report.Additions,
+		report.Changes,
+		report.Destructions,
+		runID,
+	)
 	return err
 }
 
@@ -349,65 +365,225 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 	if opts.PlanOnly != nil {
 		planOnly = strconv.FormatBool(*opts.PlanOnly)
 	}
-	rows, err := q.FindRuns(ctx, db.Conn(ctx), FindRunsParams{
-		OrganizationNames: sql.StringArray([]string{organization}),
-		WorkspaceNames:    sql.StringArray([]string{workspaceName}),
-		WorkspaceIds:      sql.StringArray([]string{workspaceID}),
-		CommitSHA:         sql.StringPtr(opts.CommitSHA),
-		VCSUsername:       sql.StringPtr(opts.VCSUsername),
-		Sources:           sql.StringArray(sources),
-		Statuses:          sql.StringArray(statuses),
-		PlanOnly:          sql.StringArray([]string{planOnly}),
-		Limit:             sql.GetLimit(opts.PageOptions),
-		Offset:            sql.GetOffset(opts.PageOptions),
-	})
+	rows := db.Query(ctx, `
+SELECT
+    runs.run_id,
+    runs.created_at,
+    runs.cancel_signaled_at,
+    runs.is_destroy,
+    runs.position_in_queue,
+    runs.refresh,
+    runs.refresh_only,
+    runs.source,
+    runs.status,
+    plans.status      AS plan_status,
+    applies.status      AS apply_status,
+    runs.replace_addrs,
+    runs.target_addrs,
+    runs.auto_apply,
+    plans.resource_report::"report" AS plan_resource_report,
+    plans.output_report::"report" AS plan_output_report,
+    applies.resource_report::"report" AS apply_resource_report,
+    runs.configuration_version_id,
+    runs.workspace_id,
+    runs.plan_only,
+    runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
+    workspaces.execution_mode AS execution_mode,
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest,
+    workspaces.organization_name,
+    organizations.cost_estimation_enabled,
+    rst.run_status_timestamps,
+    pst.plan_status_timestamps,
+    ast.apply_status_timestamps,
+    rv.run_variables,
+    ia::"ingress_attributes" AS ingress_attributes
+FROM runs
+JOIN plans USING (run_id)
+JOIN applies USING (run_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
+JOIN (configuration_versions cv LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(rv.*)::run_variables[] AS run_variables
+    FROM run_variables rv
+    GROUP BY run_id
+) AS rv ON rv.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(rst.*)::run_status_timestamps[] AS run_status_timestamps
+    FROM run_status_timestamps rst
+    GROUP BY run_id
+) AS rst ON rst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(pst.*)::phase_status_timestamps[] AS plan_status_timestamps
+    FROM phase_status_timestamps pst
+    WHERE pst.phase = 'plan'
+    GROUP BY run_id
+) AS pst ON pst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(ast.*)::phase_status_timestamps[] AS apply_status_timestamps
+    FROM phase_status_timestamps ast
+    WHERE ast.phase = 'apply'
+    GROUP BY run_id
+) AS ast ON ast.run_id = runs.run_id
+WHERE
+    workspaces.organization_name LIKE ANY($1::text[])
+AND workspaces.workspace_id      LIKE ANY($2::text[])
+AND workspaces.name              LIKE ANY($3::text[])
+AND runs.source                  LIKE ANY($4::text[])
+AND runs.status                  LIKE ANY($5::text[])
+AND runs.plan_only::text         LIKE ANY($6::text[])
+AND (($7::text IS NULL) OR ia.commit_sha = $7)
+AND (($8::text IS NULL) OR ia.sender_username = $8)
+ORDER BY runs.created_at DESC
+LIMIT $9::int
+OFFSET $10::int
+`,
+		[]string{organization},
+		[]string{workspaceID},
+		[]string{workspaceName},
+		sources,
+		statuses,
+		[]string{planOnly},
+		opts.CommitSHA,
+		opts.VCSUsername,
+		sql.GetLimit(opts.PageOptions),
+		sql.GetOffset(opts.PageOptions),
+	)
+	items, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
 		return nil, fmt.Errorf("querying runs: %w", err)
 	}
-	count, err := q.CountRuns(ctx, db.Conn(ctx), CountRunsParams{
-		OrganizationNames: sql.StringArray([]string{organization}),
-		WorkspaceNames:    sql.StringArray([]string{workspaceName}),
-		WorkspaceIds:      sql.StringArray([]string{workspaceID}),
-		CommitSHA:         sql.StringPtr(opts.CommitSHA),
-		VCSUsername:       sql.StringPtr(opts.VCSUsername),
-		Sources:           sql.StringArray(sources),
-		Statuses:          sql.StringArray(statuses),
-		PlanOnly:          sql.StringArray([]string{planOnly}),
-	})
+	count, err := db.Int(ctx, `
+SELECT count(*)
+FROM runs
+JOIN workspaces USING(workspace_id)
+JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+WHERE
+    workspaces.organization_name LIKE ANY($1::text[])
+AND workspaces.workspace_id      LIKE ANY($2::text[])
+AND workspaces.name              LIKE ANY($3::text[])
+AND runs.source                  LIKE ANY($4::text[])
+AND runs.status                  LIKE ANY($5::text[])
+AND runs.plan_only::text         LIKE ANY($6::text[])
+AND (($7::text IS NULL) OR ia.commit_sha = $7)
+AND (($8::text IS NULL) OR ia.sender_username = $8)
+`,
+
+		[]string{organization},
+		[]string{workspaceID},
+		[]string{workspaceName},
+		sources,
+		statuses,
+		[]string{planOnly},
+		opts.CommitSHA,
+		opts.VCSUsername,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("counting runs: %w", err)
-	}
-
-	items := make([]*Run, len(rows))
-	for i, r := range rows {
-		items[i] = pgresult(r).toRun()
 	}
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
 // GetRun retrieves a run using the get options
 func (db *pgdb) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
-	result, err := q.FindRunByID(ctx, db.Conn(ctx), runID)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return pgresult(result).toRun(), nil
+	rows := db.Query(ctx, `
+SELECT
+    runs.run_id,
+    runs.created_at,
+    runs.cancel_signaled_at,
+    runs.is_destroy,
+    runs.position_in_queue,
+    runs.refresh,
+    runs.refresh_only,
+    runs.source,
+    runs.status,
+    plans.status      AS plan_status,
+    applies.status      AS apply_status,
+    runs.replace_addrs,
+    runs.target_addrs,
+    runs.auto_apply,
+    plans.resource_report::"report" AS plan_resource_report,
+    plans.output_report::"report" AS plan_output_report,
+    applies.resource_report::"report" AS apply_resource_report,
+    runs.configuration_version_id,
+    runs.workspace_id,
+    runs.plan_only,
+    runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
+    workspaces.execution_mode AS execution_mode,
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest,
+    workspaces.organization_name,
+    organizations.cost_estimation_enabled,
+    rst.run_status_timestamps,
+    pst.plan_status_timestamps,
+    ast.apply_status_timestamps,
+    rv.run_variables,
+    ia::"ingress_attributes" AS ingress_attributes
+FROM runs
+JOIN plans USING (run_id)
+JOIN applies USING (run_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
+JOIN (configuration_versions cv LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(rv.*)::run_variables[] AS run_variables
+    FROM run_variables rv
+    GROUP BY run_id
+) AS rv ON rv.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(rst.*)::run_status_timestamps[] AS run_status_timestamps
+    FROM run_status_timestamps rst
+    GROUP BY run_id
+) AS rst ON rst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(pst.*)::phase_status_timestamps[] AS plan_status_timestamps
+    FROM phase_status_timestamps pst
+    WHERE pst.phase = 'plan'
+    GROUP BY run_id
+) AS pst ON pst.run_id = runs.run_id
+LEFT JOIN (
+    SELECT
+        run_id,
+        array_agg(ast.*)::phase_status_timestamps[] AS apply_status_timestamps
+    FROM phase_status_timestamps ast
+    WHERE ast.phase = 'apply'
+    GROUP BY run_id
+) AS ast ON ast.run_id = runs.run_id
+WHERE runs.run_id = $1
+`,
+		runID)
+	return sql.CollectOneRow(rows, db.scan)
 }
 
 // SetPlanFile writes a plan file to the db
 func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.TfeID, file []byte, format PlanFormat) error {
 	switch format {
 	case PlanFormatBinary:
-		_, err := q.UpdatePlanBinByID(ctx, db.Conn(ctx), UpdatePlanBinByIDParams{
-			PlanBin: file,
-			RunID:   runID,
-		})
+		_, err := db.Exec(ctx, `UPDATE plans SET plan_bin = $1 WHERE run_id = $2`, file, runID)
 		return err
 	case PlanFormatJSON:
-		_, err := q.UpdatePlanJSONByID(ctx, db.Conn(ctx), UpdatePlanJSONByIDParams{
-			PlanJSON: file,
-			RunID:    runID,
-		})
+		_, err := db.Exec(ctx, `UPDATE plans SET plan_json = $1 WHERE run_id = $2`, file, runID)
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))
@@ -416,33 +592,33 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID resource.TfeID, file []by
 
 // GetPlanFile retrieves a plan file for the run
 func (db *pgdb) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
+	var row pgx.Rows
 	switch format {
 	case PlanFormatBinary:
-		return q.GetPlanBinByID(ctx, db.Conn(ctx), runID)
+		row = db.Query(ctx, `SELECT plan_bin FROM plans WHERE run_id = $1`, runID)
 	case PlanFormatJSON:
-		return q.GetPlanJSONByID(ctx, db.Conn(ctx), runID)
+		row = db.Query(ctx, `SELECT plan_json FROM plans WHERE run_id = $1`, runID)
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
+	return sql.CollectOneType[[]byte](row)
 }
 
 // GetLockFile retrieves the lock file for the run
 func (db *pgdb) GetLockFile(ctx context.Context, runID resource.TfeID) ([]byte, error) {
-	return q.GetLockFileByID(ctx, db.Conn(ctx), runID)
+	row := db.Query(ctx, `SELECT lock_file FROM runs WHERE run_id = $1`, runID)
+	return sql.CollectOneType[[]byte](row)
 }
 
 // SetLockFile sets the lock file for the run
 func (db *pgdb) SetLockFile(ctx context.Context, runID resource.TfeID, lockFile []byte) error {
-	_, err := q.PutLockFile(ctx, db.Conn(ctx), PutLockFileParams{
-		LockFile: lockFile,
-		RunID:    runID,
-	})
+	_, err := db.Exec(ctx, `UPDATE runs SET lock_file = $1 WHERE run_id = $2`, lockFile, runID)
 	return err
 }
 
 // DeleteRun deletes a run from the DB
 func (db *pgdb) DeleteRun(ctx context.Context, id resource.TfeID) error {
-	_, err := q.DeleteRunByID(ctx, db.Conn(ctx), id)
+	_, err := db.Exec(ctx, `DELETE FROM runs WHERE run_id = $1`, id)
 	return err
 }
 
@@ -451,11 +627,20 @@ func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
 	if err != nil {
 		return err
 	}
-	err = q.InsertRunStatusTimestamp(ctx, db.Conn(ctx), InsertRunStatusTimestampParams{
-		ID:        run.ID,
-		Status:    sql.String(string(run.Status)),
-		Timestamp: sql.Timestamptz(ts),
-	})
+	_, err = db.Exec(ctx, `
+INSERT INTO run_status_timestamps (
+    run_id,
+    status,
+    timestamp
+) VALUES (
+    $1,
+    $2,
+    $3
+)`,
+		run.ID,
+		run.Status,
+		ts,
+	)
 	return err
 }
 
@@ -464,11 +649,163 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	if err != nil {
 		return err
 	}
-	err = q.InsertPhaseStatusTimestamp(ctx, db.Conn(ctx), InsertPhaseStatusTimestampParams{
-		RunID:      phase.RunID,
-		PhaseModel: sql.String(string(phase.PhaseType)),
-		Status:     sql.String(string(phase.Status)),
-		Timestamp:  sql.Timestamptz(ts),
-	})
+	_, err = db.Exec(ctx, `
+INSERT INTO phase_status_timestamps (
+    run_id,
+    phase,
+    status,
+    timestamp
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4
+)`,
+		phase.RunID,
+		phase.PhaseType,
+		phase.Status,
+		ts,
+	)
 	return err
+}
+
+func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
+	type (
+		statusTimestampModel struct {
+			RunID     resource.TfeID `db:"run_id"`
+			Status    runstatus.Status
+			Timestamp time.Time
+		}
+		phaseStatusTimestampModel struct {
+			RunID     resource.TfeID `db:"run_id"`
+			Phase     internal.PhaseType
+			Status    PhaseStatus
+			Timestamp time.Time
+		}
+		runVariableModel struct {
+			RunID resource.TfeID `db:"run_id"`
+			Key   string
+			Value string
+		}
+		model struct {
+			ID                     resource.TfeID                        `db:"run_id"`
+			CreatedAt              time.Time                             `db:"created_at"`
+			IsDestroy              bool                                  `db:"is_destroy"`
+			CancelSignaledAt       *time.Time                            `db:"cancel_signaled_at"`
+			Organization           resource.OrganizationName             `db:"organization_name"`
+			Refresh                bool                                  `db:"refresh"`
+			RefreshOnly            bool                                  `db:"refresh_only"`
+			ReplaceAddrs           []string                              `db:"replace_addrs"`
+			PositionInQueue        int                                   `db:"position_in_queue"`
+			TargetAddrs            []string                              `db:"target_addrs"`
+			TerraformVersion       string                                `db:"terraform_version"`
+			AllowEmptyApply        bool                                  `db:"allow_empty_apply"`
+			AutoApply              bool                                  `db:"auto_apply"`
+			PlanOnly               bool                                  `db:"plan_only"`
+			Source                 Source                                `db:"source"`
+			Status                 runstatus.Status                      `db:"status"`
+			PlanStatus             PhaseStatus                           `db:"plan_status"`
+			ApplyStatus            PhaseStatus                           `db:"apply_status"`
+			WorkspaceID            resource.TfeID                        `db:"workspace_id"`
+			ConfigurationVersionID resource.TfeID                        `db:"configuration_version_id"`
+			ExecutionMode          workspace.ExecutionMode               `db:"execution_mode"`
+			RunVariables           []runVariableModel                    `db:"run_variables"`
+			PlanResourceReport     *Report                               `db:"plan_resource_report"`
+			PlanOutputReport       *Report                               `db:"plan_output_report"`
+			ApplyResourceReport    *Report                               `db:"apply_resource_report"`
+			RunStatusTimestamps    []statusTimestampModel                `db:"run_status_timestamps"`
+			PlanStatusTimestamps   []phaseStatusTimestampModel           `db:"plan_status_timestamps"`
+			ApplyStatusTimestamps  []phaseStatusTimestampModel           `db:"apply_status_timestamps"`
+			Latest                 bool                                  `db:"latest"`
+			IngressAttributes      *configversion.IngressAttributesModel `db:"ingress_attributes"`
+			CreatedBy              *string                               `db:"created_by"`
+			CostEstimationEnabled  bool                                  `db:"cost_estimation_enabled"`
+		}
+	)
+	m, err := pgx.RowToStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	run := &Run{
+		ID:                     m.ID,
+		CreatedAt:              m.CreatedAt,
+		IsDestroy:              m.IsDestroy,
+		CancelSignaledAt:       m.CancelSignaledAt,
+		Organization:           m.Organization,
+		Refresh:                m.Refresh,
+		RefreshOnly:            m.RefreshOnly,
+		ReplaceAddrs:           m.ReplaceAddrs,
+		PositionInQueue:        m.PositionInQueue,
+		TargetAddrs:            m.TargetAddrs,
+		TerraformVersion:       m.TerraformVersion,
+		AllowEmptyApply:        m.AllowEmptyApply,
+		AutoApply:              m.AutoApply,
+		PlanOnly:               m.PlanOnly,
+		Source:                 m.Source,
+		Status:                 m.Status,
+		WorkspaceID:            m.WorkspaceID,
+		ConfigurationVersionID: m.ConfigurationVersionID,
+		ExecutionMode:          m.ExecutionMode,
+		Plan: Phase{
+			RunID:            m.ID,
+			PhaseType:        internal.PlanPhase,
+			Status:           m.PlanStatus,
+			StatusTimestamps: make([]PhaseStatusTimestamp, len(m.PlanStatusTimestamps)),
+			ResourceReport:   m.PlanResourceReport,
+			OutputReport:     m.PlanOutputReport,
+		},
+		Apply: Phase{
+			RunID:            m.ID,
+			PhaseType:        internal.ApplyPhase,
+			Status:           m.ApplyStatus,
+			StatusTimestamps: make([]PhaseStatusTimestamp, len(m.ApplyStatusTimestamps)),
+			ResourceReport:   m.ApplyResourceReport,
+		},
+		StatusTimestamps:      make([]StatusTimestamp, len(m.RunStatusTimestamps)),
+		Latest:                m.Latest,
+		CreatedBy:             m.CreatedBy,
+		CostEstimationEnabled: m.CostEstimationEnabled,
+	}
+	if m.IngressAttributes != nil {
+		run.IngressAttributes = m.IngressAttributes.ToIngressAttributes()
+	}
+	if len(m.RunVariables) > 0 {
+		run.Variables = make([]Variable, len(m.RunVariables))
+		for i, model := range m.RunVariables {
+			run.Variables[i] = Variable{Key: model.Key, Value: model.Value}
+		}
+	}
+	for i, model := range m.RunStatusTimestamps {
+		run.StatusTimestamps[i] = StatusTimestamp{
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
+	for i, model := range m.PlanStatusTimestamps {
+		run.Plan.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Phase:     internal.PlanPhase,
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
+	for i, model := range m.ApplyStatusTimestamps {
+		run.Apply.StatusTimestamps[i] = PhaseStatusTimestamp{
+			Phase:     internal.ApplyPhase,
+			Status:    model.Status,
+			Timestamp: model.Timestamp,
+		}
+	}
+	// sort timestamps (earliest first)
+	//
+	// TODO: use ORDER BY in database queries instead
+	sort.Slice(run.StatusTimestamps, func(i, j int) bool {
+		return run.StatusTimestamps[i].Timestamp.Before(run.StatusTimestamps[j].Timestamp)
+	})
+	sort.Slice(run.Plan.StatusTimestamps, func(i, j int) bool {
+		return run.Plan.StatusTimestamps[i].Timestamp.Before(run.Plan.StatusTimestamps[j].Timestamp)
+	})
+	sort.Slice(run.Apply.StatusTimestamps, func(i, j int) bool {
+		return run.Apply.StatusTimestamps[i].Timestamp.Before(run.Apply.StatusTimestamps[j].Timestamp)
+	})
+	return run, err
 }

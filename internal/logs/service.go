@@ -20,6 +20,7 @@ type (
 		api    *api
 		web    *webHandlers
 		broker pubsub.SubscriptionService[Chunk]
+		db     *pgdb
 
 		chunkproxy
 	}
@@ -46,6 +47,7 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:    opts.Logger,
 		Interface: opts.Authorizer,
+		db:        db,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,
@@ -61,7 +63,7 @@ func NewService(opts Options) *Service {
 		"logs",
 		func(ctx context.Context, chunkID resource.TfeID, action sql.Action) (Chunk, error) {
 			if action == sql.DeleteAction {
-				return Chunk{TfeID: chunkID}, nil
+				return Chunk{ID: chunkID}, nil
 			}
 			return db.getChunk(ctx, chunkID)
 		},
@@ -84,6 +86,16 @@ func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], fu
 	return s.broker.Subscribe(ctx)
 }
 
+func (s *Service) GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+	logs, err := s.db.getAllLogs(ctx, runID, phase)
+	if err != nil {
+		s.Error(err, "reading all logs", "run_id", runID, "phase", phase)
+		return nil, err
+	}
+	s.V(9).Info("read all logs", "run_id", runID, "phase", phase)
+	return logs, nil
+}
+
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
@@ -99,7 +111,7 @@ func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, er
 
 // PutChunk writes a chunk of logs for a phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
-	_, err := s.Authorize(ctx, authz.PutChunkAction, &authz.AccessRequest{ID: &opts.RunID})
+	_, err := s.Authorize(ctx, authz.PutChunkAction, opts.RunID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +122,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		return err
 	}
 	if err := s.put(ctx, chunk); err != nil {
-		s.Error(err, "writing logs", "chunk_id", chunk.TfeID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+		s.Error(err, "writing logs", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
 	s.V(3).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
@@ -121,7 +133,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
-	subject, err := s.Authorize(ctx, authz.TailLogsAction, &authz.AccessRequest{ID: &opts.RunID})
+	subject, err := s.Authorize(ctx, authz.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err
 	}

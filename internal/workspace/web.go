@@ -214,7 +214,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "workspace already exists: "+*params.Name)
-		http.Redirect(w, r, paths.NewWorkspace(params.Organization.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewWorkspace(params.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -222,7 +222,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "created workspace: "+ws.Name)
-	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -278,18 +278,18 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		ws:                 ws,
 		button:             lockButton,
 		vcsProvider:        provider,
-		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		canRemoveTags:      h.authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		canCreateRun:       h.authorizer.CanAccess(r.Context(), authz.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		canLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
+		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),
+		canRemoveTags:      h.authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, ws.ID),
+		canCreateRun:       h.authorizer.CanAccess(r.Context(), authz.CreateRunAction, ws.ID),
+		canLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, ws.ID),
+		canUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, ws.ID),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 		tagsDropdown: components.SearchDropdownProps{
 			Name:        "tag_name",
 			Available:   internal.Diff(getTagNames(), ws.Tags),
 			Existing:    ws.Tags,
-			Action:      templ.SafeURL(paths.CreateTagWorkspace(ws.ID.String())),
+			Action:      templ.SafeURL(paths.CreateTagWorkspace(ws.ID)),
 			Placeholder: "Add tags",
 			Width:       components.NarrowDropDown,
 		},
@@ -313,7 +313,7 @@ func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -383,7 +383,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	poolsURL := paths.PoolsWorkspace(workspaceID.String())
+	poolsURL := paths.PoolsWorkspace(workspaceID)
 	if workspace.AgentPoolID != nil {
 		poolsURL += "?agent_pool_id=" + workspace.AgentPoolID.String()
 	}
@@ -407,8 +407,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		vcsTriggerAlways:   VCSTriggerAlways,
 		vcsTriggerPatterns: VCSTriggerPatterns,
 		vcsTriggerTags:     VCSTriggerTags,
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
-		canDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, workspace.ID),
+		canDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, workspace.ID),
 		poolsURL:           poolsURL,
 	}
 	html.Render(edit(props), w, r)
@@ -493,7 +493,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, paths.EditWorkspace(ws.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
 }
 
 func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -509,7 +509,7 @@ func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "deleted workspace: "+ws.Name)
-	http.Redirect(w, r, paths.Workspaces(ws.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspaces(ws.Organization), http.StatusFound)
 }
 
 func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -524,7 +524,7 @@ func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -540,7 +540,7 @@ func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -556,7 +556,7 @@ func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -636,7 +636,7 @@ func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
@@ -655,7 +655,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "disconnected workspace from repo")
-	http.Redirect(w, r, paths.Workspace(workspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -680,7 +680,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	html.FlashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -699,7 +699,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 	html.FlashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
 // filterUnassigned removes from the list of teams those that are part of the

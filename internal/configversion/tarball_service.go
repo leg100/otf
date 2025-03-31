@@ -33,7 +33,7 @@ func (s *Service) UploadConfig(ctx context.Context, cvID resource.TfeID, config 
 
 // DownloadConfig retrieves a tarball from the db
 func (s *Service) DownloadConfig(ctx context.Context, cvID resource.TfeID) ([]byte, error) {
-	subject, err := s.Authorize(ctx, authz.DownloadConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+	subject, err := s.Authorize(ctx, authz.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}

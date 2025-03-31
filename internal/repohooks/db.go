@@ -2,134 +2,179 @@ package repohooks
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
 )
 
-var q = &Queries{}
-
-type (
-	db struct {
-		*sql.DB
-		*internal.HostnameService
-	}
-
-	hookRow struct {
-		RepohookID    pgtype.UUID    `json:"repohook_id"`
-		VCSID         pgtype.Text    `json:"vcs_id"`
-		VCSProviderID resource.TfeID `json:"vcs_provider_id"`
-		Secret        pgtype.Text    `json:"secret"`
-		RepoPath      pgtype.Text    `json:"repo_path"`
-		VCSKind       pgtype.Text    `json:"vcs_kind"`
-	}
-)
+type db struct {
+	*sql.DB
+	*internal.HostnameService
+}
 
 // getOrCreateHook gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
-	result, err := q.FindRepohookByRepoAndProvider(ctx, db.Conn(ctx), FindRepohookByRepoAndProviderParams{
-		RepoPath:      sql.String(hook.repoPath),
-		VCSProviderID: hook.vcsProviderID,
-	})
+	rows := db.Query(ctx, `
+SELECT
+    w.repohook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.repo_path,
+    v.vcs_kind
+FROM repohooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE repo_path = $1
+AND   w.vcs_provider_id = $2
+`, hook.repoPath, hook.vcsProviderID)
+	result, err := sql.CollectRows(rows, db.scan)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
 	if len(result) > 0 {
-		return db.fromRow(hookRow(result[0]))
+		return result[0], nil
 	}
 
 	// not found; create instead
 
-	insertResult, err := q.InsertRepohook(ctx, db.Conn(ctx), InsertRepohookParams{
-		RepohookID:    sql.UUID(hook.id),
-		Secret:        sql.String(hook.secret),
-		RepoPath:      sql.String(hook.repoPath),
-		VCSID:         sql.StringPtr(hook.cloudID),
-		VCSProviderID: hook.vcsProviderID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("inserting webhook into db: %w", sql.Error(err))
-	}
-	return db.fromRow(hookRow(insertResult))
+	rows = db.Query(ctx, `
+WITH inserted AS (
+    INSERT INTO repohooks (
+        repohook_id,
+        vcs_id,
+        vcs_provider_id,
+        secret,
+        repo_path
+    ) VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5
+    )
+    RETURNING repohook_id, vcs_id, secret, repo_path, vcs_provider_id
+)
+SELECT
+    w.repohook_id,
+    w.vcs_id,
+    v.vcs_provider_id,
+    w.secret,
+    w.repo_path,
+    v.vcs_kind
+FROM inserted w
+JOIN vcs_providers v USING (vcs_provider_id)
+`,
+		hook.id,
+		hook.cloudID,
+		hook.vcsProviderID,
+		hook.secret,
+		hook.repoPath,
+	)
+	return sql.CollectOneRow(rows, db.scan)
 }
 
 func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
-	result, err := q.FindRepohookByID(ctx, db.Conn(ctx), sql.UUID(id))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return db.fromRow(hookRow(result))
+	rows := db.Query(ctx, `
+SELECT
+    w.repohook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.repo_path,
+    v.vcs_kind
+FROM repohooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE w.repohook_id = $1
+`, id)
+	return sql.CollectOneRow(rows, db.scan)
 }
 
 func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
-	result, err := q.FindRepohooks(ctx, db.Conn(ctx))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	hooks := make([]*hook, len(result))
-	for i, row := range result {
-		hook, err := db.fromRow(hookRow(row))
-		if err != nil {
-			return nil, sql.Error(err)
-		}
-		hooks[i] = hook
-	}
-	return hooks, nil
+	rows := db.Query(ctx, `
+SELECT
+    w.repohook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.repo_path,
+    v.vcs_kind
+FROM repohooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+`)
+	return sql.CollectRows(rows, db.scan)
 }
 
 func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
-	result, err := q.FindUnreferencedRepohooks(ctx, db.Conn(ctx))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	hooks := make([]*hook, len(result))
-	for i, row := range result {
-		hook, err := db.fromRow(hookRow(row))
-		if err != nil {
-			return nil, sql.Error(err)
-		}
-		hooks[i] = hook
-	}
-	return hooks, nil
+	rows := db.Query(ctx, `
+SELECT
+    w.repohook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.repo_path,
+    v.vcs_kind
+FROM repohooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE NOT EXISTS (
+    SELECT FROM repo_connections rc
+    WHERE rc.vcs_provider_id = w.vcs_provider_id
+    AND   rc.repo_path = w.repo_path
+)`)
+	return sql.CollectRows(rows, db.scan)
 }
 
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
-	_, err := q.UpdateRepohookVCSID(ctx, db.Conn(ctx), UpdateRepohookVCSIDParams{
-		VCSID:      sql.String(cloudID),
-		RepohookID: sql.UUID(id),
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
+	_, err := db.Exec(ctx, `
+UPDATE repohooks
+SET vcs_id = $1
+WHERE repohook_id = $2
+RETURNING repohook_id, vcs_id, secret, repo_path, vcs_provider_id
+`, cloudID, id)
+	return err
 }
 
 func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
-	_, err := q.DeleteRepohookByID(ctx, db.Conn(ctx), sql.UUID(id))
+	_, err := db.Exec(ctx,
+		`
+DELETE
+FROM repohooks
+WHERE repohook_id = $1
+RETURNING repohook_id, vcs_id, secret, repo_path, vcs_provider_id
+`, id)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
 
+type hookModel struct {
+	RepohookID    uuid.UUID      `db:"repohook_id"`
+	VCSID         *string        `db:"vcs_id"`
+	VCSProviderID resource.TfeID `db:"vcs_provider_id"`
+	Secret        string         `db:"secret"`
+	RepoPath      string         `db:"repo_path"`
+	VCSKind       vcs.Kind       `db:"vcs_kind"`
+}
+
 // fromRow creates a hook from a database row
-func (db *db) fromRow(row hookRow) (*hook, error) {
-	opts := newRepohookOptions{
-		id:              internal.UUID(row.RepohookID.Bytes),
-		vcsProviderID:   row.VCSProviderID,
-		secret:          internal.String(row.Secret.String),
-		repoPath:        row.RepoPath.String,
-		cloud:           vcs.Kind(row.VCSKind.String),
-		HostnameService: db.HostnameService,
+func (db *db) scan(row pgx.CollectableRow) (*hook, error) {
+	model, err := pgx.RowToStructByName[hookModel](row)
+	if err != nil {
+		return nil, err
 	}
-	if row.VCSID.Valid {
-		opts.cloudID = internal.String(row.VCSID.String)
+	opts := newRepohookOptions{
+		id:              &model.RepohookID,
+		vcsProviderID:   model.VCSProviderID,
+		secret:          &model.Secret,
+		repoPath:        model.RepoPath,
+		cloud:           model.VCSKind,
+		HostnameService: db.HostnameService,
+		cloudID:         model.VCSID,
 	}
 	return newRepohook(opts)
 }

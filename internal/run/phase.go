@@ -48,6 +48,7 @@ type (
 	}
 
 	PhaseStatusTimestamp struct {
+		Phase     internal.PhaseType
 		Status    PhaseStatus `json:"status"`
 		Timestamp time.Time   `json:"timestamp"`
 	}
@@ -81,6 +82,7 @@ func (p *Phase) StatusTimestamp(status PhaseStatus) (time.Time, error) {
 func (p *Phase) UpdateStatus(status PhaseStatus) {
 	p.Status = status
 	p.StatusTimestamps = append(p.StatusTimestamps, PhaseStatusTimestamp{
+		Phase:     p.PhaseType,
 		Status:    status,
 		Timestamp: internal.CurrentTimestamp(nil),
 	})

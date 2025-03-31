@@ -25,7 +25,7 @@ var ThemeMappings = map[Status]string{
 
 templ Badge(runID resource.TfeID, status Status) {
 	<span id={ runID.String() + "-status" } class={ "run-status text-md badge", "badge-" + status.String() }>
-		<a href={ paths.Run(runID.String()) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>
+		<a href={ paths.Run(runID) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>
 	</span>
 }
 

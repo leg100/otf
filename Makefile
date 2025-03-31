@@ -80,7 +80,7 @@ postgres:
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
-	go list ./... | grep -v github.com/leg100/otf/internal/sql/sqlc | xargs staticcheck
+	staticcheck ./...
 
 # Run go fmt against code
 .PHONY: fmt
@@ -117,16 +117,6 @@ load-agent: image-agent
 install-pre-commit:
 	pip install pre-commit==3.2.2
 	pre-commit install
-
-# Install sql code generator
-.PHONY: install-sqlc
-install-sqlc:
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-# Generate sql code and register table types with pgx
-.PHONY: sql
-sql:
-	sqlc generate && go generate ./internal/sql
 
 # Install DB migration tool
 .PHONY: install-migrator

@@ -134,7 +134,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// list of workspaces should be persisted, and include ws1
-		err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='existing-workspaces']//span[text()='%s']`, ws1.Name))).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='existing-workspaces']//span`)).ToHaveText(ws1.Name)
 		require.NoError(t, err)
 
 		// add a variable

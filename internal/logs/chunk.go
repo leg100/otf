@@ -17,7 +17,7 @@ const (
 type (
 	// Chunk is a section of logs for a phase.
 	Chunk struct {
-		resource.TfeID `json:"id"` // Uniquely identifies the chunk.
+		ID resource.TfeID `json:"id"` // Uniquely identifies the chunk.
 
 		RunID  resource.TfeID     `json:"run_id"` // ID of run that generated the chunk
 		Phase  internal.PhaseType `json:"phase"`  // Phase that generated the chunk
@@ -49,7 +49,7 @@ func newChunk(opts PutChunkOptions) (Chunk, error) {
 		return Chunk{}, fmt.Errorf("cowardly refusing to create empty log chunk")
 	}
 	chunk := Chunk{
-		TfeID:  resource.NewTfeID(resource.ChunkKind),
+		ID:     resource.NewTfeID(resource.ChunkKind),
 		RunID:  opts.RunID,
 		Phase:  opts.Phase,
 		Offset: opts.Offset,

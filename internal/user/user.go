@@ -28,7 +28,7 @@ var (
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        resource.TfeID `jsonapi:"primary,users"`
+		ID        resource.TfeID `jsonapi:"primary,users" json:"user_id"`
 		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
 		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
 		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`

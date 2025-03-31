@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func VariableSets(organization string) string {
+func VariableSets(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/variable-sets", organization)
 }
 
-func CreateVariableSet(organization string) string {
+func CreateVariableSet(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/variable-sets/create", organization)
 }
 
-func NewVariableSet(organization string) string {
+func NewVariableSet(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/variable-sets/new", organization)
 }
 
-func VariableSet(variableSet string) string {
+func VariableSet(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s", variableSet)
 }
 
-func EditVariableSet(variableSet string) string {
+func EditVariableSet(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s/edit", variableSet)
 }
 
-func UpdateVariableSet(variableSet string) string {
+func UpdateVariableSet(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s/update", variableSet)
 }
 
-func DeleteVariableSet(variableSet string) string {
+func DeleteVariableSet(variableSet fmt.Stringer) string {
 	return fmt.Sprintf("/app/variable-sets/%s/delete", variableSet)
 }

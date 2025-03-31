@@ -280,7 +280,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "published module: "+module.Name)
-	http.Redirect(w, r, paths.Module(module.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Module(module.ID), http.StatusFound)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
@@ -297,5 +297,5 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted module: "+deleted.Name)
-	http.Redirect(w, r, paths.Modules(deleted.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Modules(deleted.Organization), http.StatusFound)
 }

@@ -39,7 +39,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 		h.updateTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Team(team.ID.String()))
+		testutils.AssertRedirect(t, w, paths.Team(team.ID))
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -64,6 +64,6 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()
 		h.deleteTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Teams(team.Organization.String()))
+		testutils.AssertRedirect(t, w, paths.Teams(team.Organization))
 	})
 }

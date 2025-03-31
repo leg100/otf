@@ -139,12 +139,12 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.NewVariable(params.WorkspaceID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewVariable(params.WorkspaceID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
@@ -183,12 +183,12 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		ws: ws,
 		workspaceTableProps: workspaceTableProps{
 			variables:         variables,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
 		},
 		setTablesProps:     variableSetTables,
-		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, ws.ID),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 	}
 	html.Render(listWorkspaceVariables(props), w, r)
 }
@@ -235,12 +235,12 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.EditVariable(params.VariableID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.EditVariable(params.VariableID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "updated variable: "+wv.Key)
-	http.Redirect(w, r, paths.Variables(wv.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +257,7 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted variable: "+wv.Key)
-	http.Redirect(w, r, paths.Variables(wv.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
@@ -337,12 +337,12 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.NewVariableSet(params.Organization.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewVariableSet(params.Organization), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "added variable set: "+set.Name)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -422,12 +422,12 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.EditVariableSet(params.SetID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "updated variable set: "+set.Name)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -444,7 +444,7 @@ func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted variable set: "+set.Name)
-	http.Redirect(w, r, paths.VariableSets(set.Organization.String()), http.StatusFound)
+	http.Redirect(w, r, paths.VariableSets(set.Organization), http.StatusFound)
 }
 
 func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -483,12 +483,12 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.NewVariableSetVariable(params.SetID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewVariableSetVariable(params.SetID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, paths.EditVariableSet(params.SetID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
 }
 
 func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -525,13 +525,13 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.EditVariableSetVariable(params.VariableID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.EditVariableSetVariable(params.VariableID), http.StatusFound)
 		return
 	}
 	v := set.getVariable(params.VariableID)
 
 	html.FlashSuccess(w, "updated variable: "+v.Key)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -549,7 +549,7 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	v := set.getVariable(variableID)
 
 	html.FlashSuccess(w, "deleted variable: "+v.Key)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) getAvailableWorkspaces(ctx context.Context, org resource.OrganizationName) ([]workspaceInfo, error) {

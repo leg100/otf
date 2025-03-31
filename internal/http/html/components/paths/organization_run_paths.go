@@ -8,6 +8,6 @@ import (
 	"github.com/a-h/templ"
 )
 
-func OrganizationRuns(organization string) templ.SafeURL {
+func OrganizationRuns(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/runs", organization))
 }

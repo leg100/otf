@@ -31,7 +31,7 @@ type (
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
-		StatusTimestamps  []ConfigurationVersionStatusTimestamp
+		StatusTimestamps  []StatusTimestamp
 		WorkspaceID       resource.TfeID
 		IngressAttributes *IngressAttributes
 	}
@@ -49,9 +49,10 @@ type (
 	// ConfigurationStatus represents a configuration version status.
 	ConfigurationStatus string
 
-	ConfigurationVersionStatusTimestamp struct {
-		Status    ConfigurationStatus
-		Timestamp time.Time
+	StatusTimestamp struct {
+		ConfigurationVersionID resource.TfeID `db:"-"`
+		Status                 ConfigurationStatus
+		Timestamp              time.Time
 	}
 
 	// ConfigUploader uploads a config
@@ -86,24 +87,20 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     resource.TfeID
-		Branch string
-		// CloneURL          string
-		// CommitMessage     string
-		CommitSHA string
-		CommitURL string
-		// CompareURL        string
-		Repo              string
-		IsPullRequest     bool
-		OnDefaultBranch   bool
-		PullRequestNumber int
-		PullRequestURL    string
-		PullRequestTitle  string
-		// PullRequestBody   string
-		Tag             string
-		SenderUsername  string
-		SenderAvatarURL string
-		SenderHTMLURL   string
+		Branch                 string
+		CommitSHA              string
+		Repo                   string
+		IsPullRequest          bool
+		OnDefaultBranch        bool
+		ConfigurationVersionID resource.TfeID
+		CommitURL              string
+		PullRequestNumber      int
+		PullRequestURL         string
+		PullRequestTitle       string
+		Tag                    string
+		SenderUsername         string
+		SenderAvatarURL        string
+		SenderHTMLURL          string
 	}
 )
 
@@ -142,13 +139,6 @@ func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (tim
 	return time.Time{}, internal.ErrStatusTimestampNotFound
 }
 
-func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
-	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: timestamp,
-	})
-}
-
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
 	// upload config and set status depending on success
@@ -163,8 +153,9 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 
 func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.Status = status
-	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: internal.CurrentTimestamp(nil),
+	cv.StatusTimestamps = append(cv.StatusTimestamps, StatusTimestamp{
+		ConfigurationVersionID: cv.ID,
+		Status:                 status,
+		Timestamp:              internal.CurrentTimestamp(nil),
 	})
 }

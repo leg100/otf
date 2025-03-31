@@ -20,11 +20,11 @@ templ new(organization resource.OrganizationName) {
 		Title:        "new workspace",
 		Organization: &organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(organization.String())},
+			{Name: "workspaces", Link: paths.Workspaces(organization)},
 			{Name: "new"},
 		},
 	}) {
-		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization.String()) } method="POST">
+		<form class="flex flex-col gap-2" action={ paths.CreateWorkspace(organization) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
 				<input class="input w-80" type="text" name="name" id="name" required/>
@@ -54,13 +54,13 @@ templ list(props listProps) {
 		Organization:   &props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.organization.String())},
+			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
 		<form
-			action={ paths.Workspaces(props.organization.String()) }
+			action={ paths.Workspaces(props.organization) }
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
 		>
@@ -108,9 +108,9 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(ws *Workspace, opts ListOptions) {
-	<tr id={ "item-workspace-" + ws.Name } x-data={ components.BlockLink(paths.Workspace(ws.ID.String())) }>
+	<tr id={ "item-workspace-" + ws.Name } x-data={ components.BlockLink(paths.Workspace(ws.ID)) }>
 		<td>
-			<a class="link" href={ paths.Workspace(ws.ID.String()) }>{ ws.Name }</a>
+			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
 		</td>
 		<td>
 			if ws.LatestRun != nil {
@@ -146,7 +146,7 @@ templ tag(name string) {
 
 templ listActions(organization resource.OrganizationName, canCreate bool) {
 	if canCreate {
-		<form action={ paths.NewWorkspace(organization.String()) } method="GET">
+		<form action={ paths.NewWorkspace(organization) } method="GET">
 			<button class="btn" id="new-workspace-button">New Workspace</button>
 		</form>
 	}
@@ -174,7 +174,7 @@ templ get(props getProps) {
 		Organization: &props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name},
 		},
 	}
@@ -190,25 +190,25 @@ templ get(props getProps) {
 					<div
 						id="latest-run"
 						hx-ext="sse"
-						sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) + "?latest=true" }
+						sse-connect={ string(paths.WatchWorkspace(props.ws.ID)) + "?latest=true" }
 						sse-swap="latest-run"
 					>
 						if props.ws.LatestRun != nil {
-							<div hx-get={ string(paths.WidgetRun(props.ws.LatestRun.ID.String())) } hx-trigger="load" hx-swap="outerHTML"></div>
+							<div hx-get={ string(paths.WidgetRun(props.ws.LatestRun.ID)) } hx-trigger="load" hx-swap="outerHTML"></div>
 						} else {
 							There are no runs for this workspace.
 						}
 					</div>
 				</div>
 				<div>
-					<div hx-get={ string(paths.StateWorkspace(props.ws.ID.String())) } hx-trigger="load" hx-swap="innerHTML"></div>
+					<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
 				</div>
 			</div>
 			<div class="flex gap-4 flex-col basis-1/5">
 				if props.canCreateRun {
 					<div>
 						<h3 class="font-semibold mb-2">Actions</h3>
-						<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID.String()) } method="POST">
+						<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
 							<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
 								<option disabled selected>-- start run --</option>
 								<option value="plan-only">plan only</option>
@@ -219,7 +219,7 @@ templ get(props getProps) {
 						</form>
 					</div>
 				}
-				<div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href={ paths.EditWorkspace(props.ws.ID.String()) + "#terraform-version" }>{ props.ws.TerraformVersion }</a></div>
+				<div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version" }>{ props.ws.TerraformVersion }</a></div>
 				<div>
 					<h3 class="font-semibold mb-2">Locking</h3>
 					<div class={ "flex", "flex-col", "gap-2", "p-2", map[string]bool{"bg-green-200": props.button.State == "unlocked", "bg-orange-200": props.button.State == "locked"} }>
@@ -237,7 +237,7 @@ templ get(props getProps) {
 					<h3 class="font-semibold mb-1">Tags</h3>
 					<div id="tags" class="tag-container">
 						for _, tag := range props.ws.Tags {
-							<form action={ paths.DeleteTagWorkspace(props.ws.ID.String()) } method="POST">
+							<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
 								<input type="hidden" name="tag_name" id="remove-tag-name" value={ tag } required/>
 								<div class="flex gap-1 items-center tag">
 									<span>{ tag }</span>
@@ -288,8 +288,8 @@ templ edit(props editProps) {
 		Organization: &props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization.String())},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			{Name: "settings"},
 		},
 	}
@@ -297,13 +297,13 @@ templ edit(props editProps) {
 	@components.Layout(layoutProps) {
 		<div class="mt-3">
 			if props.ws.Connection != nil {
-				<form action={ paths.DisconnectWorkspace(props.ws.ID.String()) } method="POST">
+				<form action={ paths.DisconnectWorkspace(props.ws.ID) } method="POST">
 					<button class="btn" id="disconnect-workspace-repo-button">
 						Disconnect from { props.ws.Connection.Repo } ({ props.vcsProvider.String() })
 					</button>
 				</form>
 			} else {
-				<form action={ paths.SetupConnectionProviderWorkspace(props.ws.ID.String()) } method="GET">
+				<form action={ paths.SetupConnectionProviderWorkspace(props.ws.ID) } method="GET">
 					<button class="btn" id="list-workspace-vcs-providers-button">
 						Connect to VCS
 					</button>
@@ -311,7 +311,7 @@ templ edit(props editProps) {
 			}
 		</div>
 		<hr class="my-4"/>
-		<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID.String()) } method="POST">
+		<form class="flex flex-col gap-5" action={ paths.UpdateWorkspace(props.ws.ID) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
 				<input class="input w-80" type="text" name="name" id="name" value={ props.ws.Name } required/>
@@ -343,7 +343,7 @@ templ edit(props editProps) {
 							<label class="text-md" for="agent-pool-id">Agent pool</label>
 							<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
 						</div>
-						<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization.String()) }>here</a>.</span>
+						<span class="description">Select an agent pool. If no pools are listed then you either need to create a pool or you need to configure at least one pool to grant access to your workspace. Manage agent pools <a id="agent-pools-link" class="underline" href={ paths.AgentPools(props.ws.Organization) }>here</a>.</span>
 					</div>
 				</div>
 			</fieldset>
@@ -394,7 +394,7 @@ templ edit(props editProps) {
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg">Advanced</h3>
 		<div class="flex flex-col gap-4 mt-2 mb-6">
-			<form action={ paths.StartRunWorkspace(props.ws.ID.String()) } method="POST">
+			<form action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
 				<button id="queue-destroy-plan-button" class="btn btn-error btn-outline" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
 					Queue destroy plan
 				</button>
@@ -402,7 +402,7 @@ templ edit(props editProps) {
 				<input name="operation" value="destroy-all" type="hidden"/>
 			</form>
 			if props.canDeleteWorkspace {
-				<form action={ paths.DeleteWorkspace(props.ws.ID.String()) } method="POST">
+				<form action={ paths.DeleteWorkspace(props.ws.ID) } method="POST">
 					<button id="delete-workspace-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 						Delete workspace
 					</button>
@@ -512,8 +512,8 @@ templ editPermissions(props editProps) {
 						continue
 					}
 					<tr id={ "permissions-" + perm.team.Name }>
-						<form class="" id="update-permissions" action={ paths.SetPermissionWorkspace(props.ws.ID.String()) } method="POST"></form>
-						<td class=""><a href={ paths.Team(perm.team.ID.String()) }>{ perm.team.Name }</a></td>
+						<form class="" id="update-permissions" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
+						<td class=""><a href={ paths.Team(perm.team.ID) }>{ perm.team.Name }</a></td>
 						<td class="">
 							<input name="team_id" value={ perm.team.ID.String() } type="hidden" form="update-permissions"/>
 							<select class="select" name="role" id="role-select" form="update-permissions">
@@ -524,7 +524,7 @@ templ editPermissions(props editProps) {
 						</td>
 						<td class="flex items-center gap-2">
 							<button class="btn" form="update-permissions">Update</button>
-							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID.String()) } method="POST">
+							<form class="" action={ paths.UnsetPermissionWorkspace(props.ws.ID) } method="POST">
 								<input name="team_id" value={ perm.team.ID.String() } type="hidden"/>
 								@components.DeleteButton()
 							</form>
@@ -532,7 +532,7 @@ templ editPermissions(props editProps) {
 					</tr>
 				}
 				<tr class="">
-					<form id="permissions-add-form" action={ paths.SetPermissionWorkspace(props.ws.ID.String()) } method="POST"></form>
+					<form id="permissions-add-form" action={ paths.SetPermissionWorkspace(props.ws.ID) } method="POST"></form>
 					<td>
 						<select class="select" form="permissions-add-form" name="team_id" id="permissions-add-select-team">
 							<option disabled selected>--team--</option>
@@ -566,17 +566,17 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 		Title:        "list vcs providers | " + ws.ID.String(),
 		Organization: &ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
-			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 			{Name: "vcs providers"},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization.String()) }>VCS provider</a> to connect this workspace to a repository.</div>
+		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
 		<div id="content-list">
 			for _, provider := range providers {
-				{{ path := fmt.Sprintf("%s?vcs_provider_id=%s", paths.SetupConnectionRepoWorkspace(ws.ID.String()), provider.ID.String()) }}
+				{{ path := fmt.Sprintf("%s?vcs_provider_id=%s", paths.SetupConnectionRepoWorkspace(ws.ID), provider.ID) }}
 				<div class="widget" x-data={ components.BlockLink(templ.SafeURL(path)) } id={ provider.ID.String() }>
 					<div>
 						<span class="font-semibold">{ provider.String() }</span>
@@ -588,7 +588,7 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 				</div>
 			}
 			if len(providers) == 0 {
-				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization.String()) }>here</a>.
+				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
 			}
 		</div>
 	}
@@ -600,8 +600,8 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 		Title:        "list vcs repos | " + ws.ID.String(),
 		Organization: &ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization.String())},
-			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 			{Name: "vcs repositories"},
 		},
 	}
@@ -610,7 +610,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 		<div>
 			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
 		</div>
-		<form action={ paths.ConnectWorkspace(ws.ID.String()) } method="POST">
+		<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
 			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
 			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
 			<button class="btn">connect</button>
@@ -620,7 +620,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 				<div class="widget">
 					<div>
 						<span>{ repo }</span>
-						<form action={ paths.ConnectWorkspace(ws.ID.String()) } method="POST">
+						<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
 							<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
 							<input type="hidden" name="identifier" id="identifier" value={ repo }/>
 							<button class="btn">connect</button>
@@ -638,11 +638,11 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
 	{{
 	var links = map[string]templ.SafeURL{
-		"runs":      paths.Runs(workspaceID.String()),
-		"variables": paths.Variables(workspaceID.String()),
+		"runs":      paths.Runs(workspaceID),
+		"variables": paths.Variables(workspaceID),
 	}
 	if canUpdate {
-		links["settings"] = paths.EditWorkspace(workspaceID.String())
+		links["settings"] = paths.EditWorkspace(workspaceID)
 	}
 	}}
 	for text, link := range links {

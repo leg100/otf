@@ -31,4 +31,6 @@ var tableTypes = []string{
 	"variables[]",
 	"module_versions",
 	"module_versions[]",
+	"repo_connections",
+	"repo_connections[]",
 }

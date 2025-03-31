@@ -20,19 +20,19 @@ func NewGithubApp() templ.SafeURL {
 	return templ.URL("/app/github-apps/new")
 }
 
-func GithubApp(githubApp string) templ.SafeURL {
+func GithubApp(githubApp fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s", githubApp))
 }
 
-func EditGithubApp(githubApp string) templ.SafeURL {
+func EditGithubApp(githubApp fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/edit", githubApp))
 }
 
-func UpdateGithubApp(githubApp string) templ.SafeURL {
+func UpdateGithubApp(githubApp fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/update", githubApp))
 }
 
-func DeleteGithubApp(githubApp string) templ.SafeURL {
+func DeleteGithubApp(githubApp fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/delete", githubApp))
 }
 
@@ -44,6 +44,6 @@ func CompleteGithubApp() templ.SafeURL {
 	return templ.URL("/app/github-apps/complete")
 }
 
-func DeleteInstallGithubApp(githubApp string) templ.SafeURL {
+func DeleteInstallGithubApp(githubApp fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/github-apps/%s/delete-install", githubApp))
 }

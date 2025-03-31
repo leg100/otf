@@ -37,16 +37,16 @@ templ list(props listProps) {
 			}
 		</div>
 		<div class="flex flex-col gap-4 mt-4">
-			<form action={ paths.NewVCSProvider(props.organization.String()) } method="GET">
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
 				<button class="btn">New Github VCS Provider (Personal Token)</button>
 				<input type="hidden" name="kind" id="kind" value="github"/>
 			</form>
-			<form action={ paths.NewVCSProvider(props.organization.String()) } method="GET">
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
 				<button class="btn">New Gitlab VCS Provider (Personal Token)</button>
 				<input type="hidden" name="kind" id="kind" value="gitlab"/>
 			</form>
 			if props.app != nil {
-				<form action={ paths.NewGithubAppVCSProvider(props.organization.String()) } method="GET">
+				<form action={ paths.NewGithubAppVCSProvider(props.organization) } method="GET">
 					<button class="btn">New Github VCS Provider (App)</button>
 				</form>
 			} else {
@@ -57,16 +57,16 @@ templ list(props listProps) {
 }
 
 templ listItem(provider *VCSProvider) {
-	<div x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID.String())) } class="widget" id={ provider.ID.String() }>
+	<div x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID)) } class="widget" id={ provider.ID.String() }>
 		<div>
 			<span>
-				<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID.String()) }>{ provider.String() }</a>
+				<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID) }>{ provider.String() }</a>
 			</span>
 			<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
 		</div>
 		<div>
 			@components.Identifier(provider.ID)
-			<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
+			<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
 				@components.DeleteButton()
 				<input type="hidden" name="id" value={ provider.ID.String() }/>
 			</form>
@@ -79,7 +79,7 @@ templ edit(provider *VCSProvider) {
 		Title:        "edit vcs provider",
 		Organization: &provider.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization.String())},
+			{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
 			{Name: provider.String()},
 			{Name: "settings"},
 		},
@@ -87,11 +87,11 @@ templ edit(provider *VCSProvider) {
 		@form(formProps{
 			provider: provider,
 			edit:     true,
-			action:   paths.UpdateVCSProvider(provider.ID.String()),
+			action:   paths.UpdateVCSProvider(provider.ID),
 		})
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-		<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
+		<form action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
 			<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
 				Delete VCS provider
 			</button>
@@ -118,7 +118,7 @@ templ newPAT(props newPATProps) {
 		</div>
 		@form(formProps{
 			provider: props.provider,
-			action:   paths.CreateVCSProvider(props.provider.Organization.String()),
+			action:   paths.CreateVCSProvider(props.provider.Organization),
 		})
 	}
 }
@@ -141,7 +141,7 @@ templ newGithubApp(props newGithubAppProps) {
 	}) {
 		if len(props.installations) > 0 {
 			Create a VCS provider that leverages the permissions of a GitHub app installation.
-			<form class="flex flex-col gap-4" action={ paths.CreateVCSProvider(props.organization.String()) } method="POST">
+			<form class="flex flex-col gap-4" action={ paths.CreateVCSProvider(props.organization) } method="POST">
 				<div class="field">
 					<label for="name">Name</label>
 					<input class="input w-64" type="text" name="name" id="name" placeholder="github"/>
