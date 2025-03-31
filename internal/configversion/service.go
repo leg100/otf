@@ -2,6 +2,7 @@ package configversion
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -63,10 +64,14 @@ func NewService(opts Options) *Service {
 	// in the response
 	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
 	// Resolve authorization requests for config version IDs to a workspace IDs
-	opts.Authorizer.RegisterWorkspaceResolver(resource.ConfigVersionKind,
-		func(ctx context.Context, cvID resource.TfeID) (resource.TfeID, error) {
+	opts.Authorizer.RegisterParentResolver(resource.ConfigVersionKind,
+		func(ctx context.Context, cvID resource.ID) (resource.ID, error) {
+			cvTfeID, ok := cvID.(resource.TfeID)
+			if !ok {
+				return nil, errors.New("invalid id")
+			}
 			sv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
-				ID: &cvID,
+				ID: &cvTfeID,
 			})
 			if err != nil {
 				return resource.TfeID{}, err

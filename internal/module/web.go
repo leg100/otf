@@ -48,7 +48,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
@@ -86,7 +86,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	props := listProps{
 		organization:     opts.Organization,
 		modules:          modules,
-		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: &opts.Organization}),
+		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, opts.Organization),
 	}
 	html.Render(list(props), w, r)
 }

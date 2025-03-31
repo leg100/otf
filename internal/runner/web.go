@@ -48,7 +48,7 @@ type webClient interface {
 }
 
 type webAuthorizer interface {
-	CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+	CanAccess(context.Context, authz.Action, authz.Request) bool
 }
 
 type (
@@ -282,7 +282,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		availableWorkspaces:            availableWorkspaces,
 		tokens:                         tokens,
 		agents:                         agents,
-		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: &pool.Organization}),
+		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.Request{Organization: &pool.Organization}),
 	}
 	html.Render(getAgentPool(props), w, r)
 }

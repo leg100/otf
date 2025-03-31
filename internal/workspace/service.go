@@ -84,14 +84,16 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
-	// Instruct the authorizer to resolve workspace IDs to organization names.
-	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.TfeID) (resource.OrganizationName, error) {
-		ws, err := svc.db.get(ctx, id)
-		if err != nil {
-			return resource.OrganizationName{}, err
-		}
-		return ws.Organization, nil
-	})
+	(&resource.Ancestry{}).RegisterParentResolver(resource.RunKind,
+		func(ctx context.Context, workspaceID resource.ID) (resource.ID, error) {
+			run, err := svc.Get(ctx, workspaceID.(resource.TfeID))
+			if err != nil {
+				return resource.TfeID{}, err
+			}
+			return run.Organization, nil
+		},
+	)
+
 	// Provide the authorizer with the ability to retrieve workspace policies.
 	opts.Authorizer.WorkspacePolicyGetter = &svc
 	return &svc

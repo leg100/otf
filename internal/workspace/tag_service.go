@@ -149,7 +149,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, ta
 }
 
 func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.Request{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

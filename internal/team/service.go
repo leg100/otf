@@ -54,8 +54,9 @@ func NewService(opts Options) *Service {
 		},
 	}
 	svc.web = &webHandlers{
-		tokens: opts.TokensService,
-		teams:  &svc,
+		authorizer: opts.Authorizer,
+		tokens:     opts.TokensService,
+		teams:      &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
@@ -86,8 +87,8 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
-	opts.Authorizer.RegisterOrganizationResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.OrganizationName, error) {
-		team, err := svc.db.getTeamByID(ctx, id)
+	opts.Authorizer.RegisterParentResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.ID, error) {
+		team, err := svc.db.getTeamByID(ctx, id.(resource.TfeID))
 		if err != nil {
 			return resource.OrganizationName{}, err
 		}
@@ -138,7 +139,7 @@ func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) Update(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)

@@ -170,6 +170,6 @@ func (f *fakeWebService) Delete(context.Context, resource.OrganizationName) erro
 	return nil
 }
 
-func (s *unprivilegedSubject) CanAccess(authz.Action, authz.AccessRequest) bool {
+func (s *unprivilegedSubject) CanAccess(authz.Action, authz.Request) bool {
 	return false
 }

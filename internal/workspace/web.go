@@ -66,7 +66,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
 	// webClient provides web handlers with access to the workspace service
@@ -179,7 +179,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		canCreate: h.authorizer.CanAccess(
 			r.Context(),
 			authz.CreateWorkspaceAction,
-			&authz.AccessRequest{Organization: params.Organization},
+			params.Organization,
 		),
 		pageOptions: params.PageOptions,
 	}

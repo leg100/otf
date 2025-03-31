@@ -90,13 +90,13 @@ func TestWeb_TeamGetHandler(t *testing.T) {
 	owners := &team.Team{Name: "owners", Organization: org1}
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	h := &webHandlers{
-		teams: &fakeTeamService{team: owners},
-		users: &fakeService{user: owner},
+		authorizer: authz.NewAllowAllAuthorizer(),
+		teams:      &fakeTeamService{team: owners},
+		users:      &fakeService{user: owner},
 	}
 
 	q := "/?team_id=team-123"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), owner))
 	w := httptest.NewRecorder()
 	h.getTeam(w, r)
 	if !assert.Equal(t, 200, w.Code) {

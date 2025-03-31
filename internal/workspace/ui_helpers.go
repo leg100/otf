@@ -21,7 +21,7 @@ type uiHelpersService interface {
 }
 
 type uiHelpersAuthorizer interface {
-	CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+	CanAccess(context.Context, authz.Action, resource.ID) bool
 }
 
 type LockButton struct {

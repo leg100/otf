@@ -55,10 +55,11 @@ func NewService(opts Options) *Service {
 		teams: opts.TeamService,
 	}
 	svc.web = &webHandlers{
-		teams:     opts.TeamService,
-		tokens:    opts.TokensService,
-		siteToken: opts.SiteToken,
-		users:     &svc,
+		authorizer: opts.Authorizer,
+		teams:      opts.TeamService,
+		tokens:     opts.TokensService,
+		siteToken:  opts.SiteToken,
+		users:      &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,

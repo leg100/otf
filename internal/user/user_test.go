@@ -14,7 +14,7 @@ func TestSiteAdminCanAccessOrganization(t *testing.T) {
 	u := User{
 		ID: SiteAdminID,
 	}
-	assert.True(t, u.CanAccess(authz.ListRunsAction, &authz.AccessRequest{Organization: &org}))
+	assert.True(t, u.CanAccess(authz.ListRunsAction, authz.Request{ID: org}))
 }
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
@@ -27,7 +27,7 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, u.CanAccess(authz.ListRunsAction, &authz.AccessRequest{Organization: &org}))
+	assert.True(t, u.CanAccess(authz.ListRunsAction, authz.Request{ID: org}))
 }
 
 func TestUser_Organizations(t *testing.T) {

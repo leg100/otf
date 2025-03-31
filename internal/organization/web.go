@@ -99,7 +99,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	canCreate := !a.RestrictCreation || subject.CanAccess(authz.CreateOrganizationAction, authz.AccessRequest{ID: resource.SiteID})
+	canCreate := !a.RestrictCreation || subject.CanAccess(authz.CreateOrganizationAction, authz.Request{ID: resource.SiteID})
 
 	props := listProps{
 		Page:      organizations,

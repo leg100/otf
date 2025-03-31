@@ -20,10 +20,11 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	users     usersClient
-	teams     teamsClient
-	tokens    tokensClient
-	siteToken string
+	users      usersClient
+	teams      teamsClient
+	tokens     tokensClient
+	authorizer authz.Interface
+	siteToken  string
 }
 
 type usersClient interface {
@@ -205,15 +206,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	user, err := UserFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// get usernames of non-members
 	var nonMemberUsernames []string
-	if user.CanAccess(authz.ListUsersAction, nil) {
+	if h.authorizer.CanAccess(r.Context(), authz.ListUsersAction, resource.SiteID) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -229,12 +223,10 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	props := getTeamProps{
 		team:            team,
 		members:         members,
-		canUpdateTeam:   user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: &team.Organization}),
-		canDeleteTeam:   user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: &team.Organization}),
-		canAddMember:    user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization}),
-		canRemoveMember: user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization}),
-		canDelete:       user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: &team.Organization}),
-		isOwner:         user.IsOwner(team.Organization),
+		canUpdateTeam:   h.authorizer.CanAccess(r.Context(), authz.UpdateTeamAction, team.Organization),
+		canDeleteTeam:   h.authorizer.CanAccess(r.Context(), authz.DeleteTeamAction, team.Organization),
+		canAddMember:    h.authorizer.CanAccess(r.Context(), authz.AddTeamMembershipAction, team.Organization),
+		canRemoveMember: h.authorizer.CanAccess(r.Context(), authz.RemoveTeamMembershipAction, team.Organization),
 		dropdown: components.SearchDropdownProps{
 			Name:        "username",
 			Available:   nonMemberUsernames,

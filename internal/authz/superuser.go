@@ -5,5 +5,5 @@ type Superuser struct {
 	Username string
 }
 
-func (*Superuser) CanAccess(Action, AccessRequest) bool { return true }
-func (s *Superuser) String() string                     { return s.Username }
+func (*Superuser) CanAccess(Action, Request) bool { return true }
+func (s *Superuser) String() string               { return s.Username }

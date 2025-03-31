@@ -46,6 +46,7 @@ func NewService(opts Options) *Service {
 		db:             &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{
+		authorizer:      opts.Authorizer,
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
 		GithubSkipTLS:   opts.SkipTLSVerification,

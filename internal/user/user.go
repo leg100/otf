@@ -122,7 +122,7 @@ func (u *User) IsSiteAdmin() bool {
 	return u.SiteAdmin || u.ID == SiteAdminID
 }
 
-func (u *User) CanAccess(action authz.Action, req authz.AccessRequest) bool {
+func (u *User) CanAccess(action authz.Action, req authz.Request) bool {
 	// Site admin can do whatever it wants
 	if u.IsSiteAdmin() {
 		return true

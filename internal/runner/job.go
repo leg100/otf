@@ -86,12 +86,12 @@ func (j *Job) LogValue() slog.Value {
 
 func (j *Job) String() string { return j.ID.String() }
 
-func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
-	if req == nil {
+func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
+	if req.Kind() == resource.SiteKind {
 		// Job cannot carry out site-wide actions
 		return false
 	}
-	if req.Organization != nil && *req.Organization != j.Organization {
+	if req.Organization() != nil && req.Organization().String() != j.Organization.String() {
 		// Job cannot carry out actions on other organizations
 		return false
 	}
@@ -101,7 +101,7 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		return true
 	}
 	// Permissible workspace actions on same workspace.
-	if req.ID != nil && *req.ID == j.WorkspaceID {
+	if req.Workspace() == j.WorkspaceID {
 		// Allow actions on same workspace as job depending on run phase
 		switch action {
 		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListWorkspaceVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:

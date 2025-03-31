@@ -76,11 +76,11 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeWorkspaceCurrentOutputs)
 
 	// Resolve authorization requests for state version IDs to a workspace IDs
-	opts.Authorizer.RegisterWorkspaceResolver(resource.StateVersionKind,
-		func(ctx context.Context, svID resource.TfeID) (resource.TfeID, error) {
-			sv, err := db.getVersion(ctx, svID)
+	opts.Authorizer.RegisterParentResolver(resource.StateVersionKind,
+		func(ctx context.Context, svID resource.ID) (resource.ID, error) {
+			sv, err := db.getVersion(ctx, svID.(resource.TfeID))
 			if err != nil {
-				return resource.TfeID{}, err
+				return nil, err
 			}
 			return sv.WorkspaceID, nil
 		},

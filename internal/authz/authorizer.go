@@ -16,8 +16,7 @@ type Authorizer struct {
 	logr.Logger
 	WorkspacePolicyGetter
 
-	organizationResolvers map[resource.Kind]OrganizationResolver
-	workspaceResolvers    map[resource.Kind]WorkspaceResolver
+	parentResolvers map[resource.Kind]ParentResolver
 }
 
 // Interface provides an interface for services to use to permit swapping out
@@ -29,23 +28,20 @@ type Interface interface {
 
 func NewAuthorizer(logger logr.Logger) *Authorizer {
 	return &Authorizer{
-		Logger:                logger,
-		organizationResolvers: make(map[resource.Kind]OrganizationResolver),
-		workspaceResolvers:    make(map[resource.Kind]WorkspaceResolver),
+		Logger:          logger,
+		parentResolvers: make(map[resource.Kind]ParentResolver),
 	}
 }
 
 type WorkspacePolicyGetter interface {
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (WorkspacePolicy, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (WorkspacePolicy, error)
 }
 
-// OrganizationResolver takes the ID of a resource and returns the name of the
-// organization it belongs to.
-type OrganizationResolver func(ctx context.Context, id resource.TfeID) (resource.ID, error)
+type ParentResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
 
-// WorkspaceResolver takes the ID of a resource and returns the ID of the
-// workspace it belongs to.
-type WorkspaceResolver func(ctx context.Context, id resource.TfeID) (resource.TfeID, error)
+func (a *Authorizer) RegisterParentResolver(kind resource.Kind, resolver ParentResolver) {
+	a.parentResolvers[kind] = resolver
+}
 
 // RegisterOrganizationResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the name of the
@@ -53,9 +49,6 @@ type WorkspaceResolver func(ctx context.Context, id resource.TfeID) (resource.Tf
 //
 // This is necessary because authorization is determined not only on resource ID
 // but on the name of the organization the resource belongs to.
-func (a *Authorizer) RegisterOrganizationResolver(kind resource.Kind, resolver OrganizationResolver) {
-	a.organizationResolvers[kind] = resolver
-}
 
 // RegisterWorkspaceResolver registers with the authorizer the ability to
 // resolve access requests for a specific resource kind to the workspace ID the
@@ -63,9 +56,6 @@ func (a *Authorizer) RegisterOrganizationResolver(kind resource.Kind, resolver O
 //
 // This is necessary because authorization is often determined based on
 // workspace ID, and not the ID of a run, state version, etc.
-func (a *Authorizer) RegisterWorkspaceResolver(kind resource.Kind, resolver WorkspaceResolver) {
-	a.workspaceResolvers[kind] = resolver
-}
 
 // Options for configuring the individual calls of CanAccess.
 
@@ -105,7 +95,7 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, resourceID re
 		return subj, nil
 	}
 
-	ar, err := a.generateAccessRequest(ctx, resourceID)
+	ar, err := a.generateRequest(ctx, resourceID)
 	if err == nil {
 		// Subject determines whether it is allowed to access resource.
 		if !subj.CanAccess(action, ar) {
@@ -128,45 +118,34 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, resourceID re
 	return subj, nil
 }
 
-func (a *Authorizer) generateAccessRequest(ctx context.Context, resourceID resource.ID) (AccessRequest, error) {
+func (a *Authorizer) generateRequest(ctx context.Context, resourceID resource.ID) (Request, error) {
+	req := Request{ID: resourceID}
 	if resourceID == resource.SiteID {
-		return AccessRequest{ID: resourceID}, nil
+		return req, nil
 	}
-	var ar AccessRequest
-	// Check if resource kind is registered for its ID to be resolved to workspace
-	// ID.
-	if resolver, ok := a.workspaceResolvers[resourceID.Kind()]; ok {
-		workspaceID, err := resolver(ctx, resourceID)
-		if err != nil {
-			return AccessRequest{}, fmt.Errorf("resolving workspace ID: %w", err)
+	var ar Request
+	// Retrieve resource lineage
+	for {
+		parent, ok := a.parentResolvers[resourceID.Kind()]
+		if !ok {
+			break
 		}
-		// Authorize workspace ID instead
-		resourceID = workspaceID
-	}
-	// If the resource kind is a workspace, then fetch its policy.
-	if resourceID.Kind() == resource.WorkspaceKind {
-		policy, err := a.GetWorkspacePolicy(ctx, resourceID)
+		parentID, err := parent(ctx, resourceID)
 		if err != nil {
-			return AccessRequest{}, fmt.Errorf("fetching workspace policy: %w", err)
+			return Request{}, fmt.Errorf("resolving ID: %w", err)
+		}
+		ar.lineage = append(ar.lineage, parentID)
+		// now try looking up parent of parent
+		resourceID = parentID
+	}
+	// If the requested resource is a workspace or belongs to a workspace then
+	// fetch its workspace policy.
+	if ar.Workspace() != nil {
+		policy, err := a.GetWorkspacePolicy(ctx, ar.Workspace().(resource.TfeID))
+		if err != nil {
+			return Request{}, fmt.Errorf("fetching workspace policy: %w", err)
 		}
 		ar.WorkspacePolicy = &policy
-	}
-	// Resolve the organization. Apart from an organization or the "site"
-	// resource, every resource belongs to an organization, so there should be a
-	// resolver for each resource kind to resolve the resource ID to the
-	// organization it belongs to.
-	if resourceID.Kind() == resource.OrganizationKind {
-		ar.Organization = resourceID
-	} else {
-		resolver, ok := a.organizationResolvers[resourceID.Kind()]
-		if !ok {
-			return AccessRequest{}, errors.New("resource kind is missing organization resolver")
-		}
-		organization, err := resolver(ctx, resourceID)
-		if err != nil {
-			return AccessRequest{}, fmt.Errorf("resolving organization: %w", err)
-		}
-		ar.Organization = organization
 	}
 	return ar, nil
 }
@@ -178,28 +157,40 @@ func (a *Authorizer) CanAccess(ctx context.Context, action Action, id resource.I
 	return err == nil
 }
 
-// AccessRequest is a request for access to a resource.
-type AccessRequest struct {
+type Request struct {
 	// ID of resource to which access is being requested.
-	ID resource.ID
-	// Organization is the ID of the organization the resource belongs to, or is
-	// the same as the ID above if access is being requested to an organization.
-	// If access is being requested to the "site", then this is nil.
-	Organization resource.ID
+	resource.ID
 	// WorkspacePolicy specifies workspace-specific permissions for the resource
 	// specified by ID above. This is nil if the resource is not a workspace or
 	// does not belong to a workspace.
 	WorkspacePolicy *WorkspacePolicy
+	// lineage are the parents of the resource.
+	lineage []resource.ID
 }
 
-type Request struct {
-	// ID of resource to which access is being requested.
-	ID resource.ID
-	// Ancestors of above resource
-	Ancestors []resource.ID
+func (r Request) Organization() resource.ID {
+	if r.Kind() == resource.OrganizationKind {
+		return r.ID
+	}
+	for _, id := range r.lineage {
+		if id.Kind() == resource.OrganizationKind {
+			return id
+		}
+	}
+	return nil
 }
 
-func (r Request) 
+func (r Request) Workspace() resource.ID {
+	if r.Kind() == resource.WorkspaceKind {
+		return r.ID
+	}
+	for _, id := range r.lineage {
+		if id.Kind() == resource.WorkspaceKind {
+			return id
+		}
+	}
+	return nil
+}
 
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {

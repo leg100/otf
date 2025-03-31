@@ -125,10 +125,9 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
 
-	// Resolve authorization requests for a run ID to a workspace ID
-	opts.Authorizer.RegisterWorkspaceResolver(resource.RunKind,
-		func(ctx context.Context, runID resource.TfeID) (resource.TfeID, error) {
-			run, err := db.GetRun(ctx, runID)
+	opts.Authorizer.RegisterParentResolver(resource.RunKind,
+		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
+			run, err := db.GetRun(ctx, runID.(resource.TfeID))
 			if err != nil {
 				return resource.TfeID{}, err
 			}
@@ -206,7 +205,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
+		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
 		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, opts.Organization)
@@ -347,7 +346,7 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, &authz.AccessRequest{ID: opts.WorkspaceID})
+		_, err = s.Authorize(ctx, authz.WatchAction, &authz.Request{ID: opts.WorkspaceID})
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
 		_, err = s.Authorize(ctx, authz.WatchAction, opts.Organization)

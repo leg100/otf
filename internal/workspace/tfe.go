@@ -414,7 +414,7 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error) {
 	ctx := r.Context()
-	accessRequest := &authz.AccessRequest{ID: &from.ID}
+	accessRequest := &authz.Request{ID: &from.ID}
 	perms := &types.WorkspacePermissions{
 		CanLock:           a.CanAccess(ctx, authz.LockWorkspaceAction, accessRequest),
 		CanUnlock:         a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
