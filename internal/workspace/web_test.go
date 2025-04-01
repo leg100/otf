@@ -109,7 +109,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		name   string
 		ws     *Workspace
 		teams  []*team.Team
-		policy authz.WorkspacePolicy
+		policy *Policy
 		user   user.User
 		want   func(t *testing.T, doc *html.Node)
 	}{
@@ -133,8 +133,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			name: "with policy",
 			ws:   &Workspace{ID: testutils.ParseID(t, "ws-123")},
 			user: user.SiteAdmin,
-			policy: authz.WorkspacePolicy{
-				Permissions: []authz.WorkspacePermission{
+			policy: &Policy{
+				permissions: []Permission{
 					{TeamID: testutils.ParseID(t, "team-1"), Role: authz.WorkspaceAdminRole},
 					{TeamID: testutils.ParseID(t, "team-4"), Role: authz.WorkspacePlanRole},
 				},
@@ -444,7 +444,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestFilterUnassigned(t *testing.T) {
-	policy := authz.WorkspacePolicy{Permissions: []authz.WorkspacePermission{
+	policy := &Policy{permissions: []Permission{
 		{TeamID: testutils.ParseID(t, "team-bosses"), Role: authz.WorkspaceAdminRole},
 		{TeamID: testutils.ParseID(t, "team-workers"), Role: authz.WorkspacePlanRole},
 	}}

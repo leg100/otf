@@ -33,29 +33,22 @@ func NewAuthorizer(logger logr.Logger) *Authorizer {
 	}
 }
 
-type WorkspacePolicyGetter interface {
-	GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (WorkspacePolicy, error)
-}
-
 type ParentResolver func(ctx context.Context, id resource.ID) (resource.ID, error)
 
+// RegisterParentResolver registers with the authorizer a means of resolving the
+// parent of a resource.
 func (a *Authorizer) RegisterParentResolver(kind resource.Kind, resolver ParentResolver) {
 	a.parentResolvers[kind] = resolver
 }
 
-// RegisterOrganizationResolver registers with the authorizer the ability to
-// resolve access requests for a specific resource kind to the name of the
-// organization the resource belongs to.
-//
-// This is necessary because authorization is determined not only on resource ID
-// but on the name of the organization the resource belongs to.
+// WorkspacePolicyGetter retrieves a workspace's policy.
+type WorkspacePolicyGetter func(ctx context.Context, workspaceID resource.ID) (WorkspacePolicy, error)
 
-// RegisterWorkspaceResolver registers with the authorizer the ability to
-// resolve access requests for a specific resource kind to the workspace ID the
-// resource belongs to.
-//
-// This is necessary because authorization is often determined based on
-// workspace ID, and not the ID of a run, state version, etc.
+// WorkspacePolicy checks whether a subject is permitted to carry out an action
+// on a workspace.
+type WorkspacePolicy interface {
+	Check(subject resource.ID, action Action) bool
+}
 
 // Options for configuring the individual calls of CanAccess.
 
@@ -140,11 +133,11 @@ func (a *Authorizer) generateRequest(ctx context.Context, resourceID resource.ID
 	// If the requested resource is a workspace or belongs to a workspace then
 	// fetch its workspace policy.
 	if req.Workspace() != nil {
-		policy, err := a.GetWorkspacePolicy(ctx, req.Workspace().(resource.TfeID))
+		checker, err := a.WorkspacePolicyGetter(ctx, req.Workspace())
 		if err != nil {
 			return Request{}, fmt.Errorf("fetching workspace policy: %w", err)
 		}
-		req.WorkspacePolicy = &policy
+		req.WorkspacePolicy = checker
 	}
 	return req, nil
 }
@@ -159,10 +152,10 @@ func (a *Authorizer) CanAccess(ctx context.Context, action Action, id resource.I
 type Request struct {
 	// ID of resource to which access is being requested.
 	resource.ID
-	// WorkspacePolicy specifies workspace-specific permissions for the resource
-	// specified by ID above. This is nil if the resource is not a workspace or
-	// does not belong to a workspace.
-	WorkspacePolicy *WorkspacePolicy
+	// WorkspacePolicy provides a means of checking workspace-specific
+	// permissions for the resource specified by the ID above. If this is nil
+	// then the resource is not a workspace or does not belong to a workspace.
+	WorkspacePolicy WorkspacePolicy
 	// lineage are the parents of the resource.
 	lineage []resource.ID
 }
@@ -189,32 +182,6 @@ func (r Request) Workspace() resource.ID {
 		}
 	}
 	return nil
-}
-
-func (r Request) CheckWorkspacePolicy(target resource.ID) bool {
-	if r.Kind() == resource.OrganizationKind {
-		return r.ID
-	}
-	for _, id := range r.lineage {
-		if id.Kind() == resource.OrganizationKind {
-			return id
-		}
-	}
-	return nil
-}
-
-// WorkspacePolicy binds workspace permissions to a workspace
-type WorkspacePolicy struct {
-	Permissions []WorkspacePermission
-	// Whether workspace permits its state to be consumed by all workspaces in
-	// the organization.
-	GlobalRemoteState bool
-}
-
-// WorkspacePermission binds a role to a team.
-type WorkspacePermission struct {
-	TeamID resource.TfeID
-	Role   Role
 }
 
 //func (r AccessRequest) LogValue() slog.Value {

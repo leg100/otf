@@ -47,7 +47,6 @@ type (
 	webWorkspaceClient interface {
 		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {

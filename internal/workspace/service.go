@@ -100,7 +100,9 @@ func NewService(opts Options) *Service {
 	)
 
 	// Provide the authorizer with the ability to retrieve workspace policies.
-	opts.Authorizer.WorkspacePolicyGetter = &svc
+	opts.Authorizer.WorkspacePolicyGetter = func(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+		return db.GetWorkspacePolicy(ctx, workspaceID)
+	}
 	return &svc
 }
 
@@ -353,18 +355,8 @@ func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resou
 //
 // NOTE: there is no auth because it is used in the process of making an auth
 // decision.
-func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (*Policy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
-}
-
-func (s *Service) CheckPolicy(ctx context.Context, workspaceID, teamID resource.ID) (authz.WorkspacePolicy, error) {
-	policy, err := s.db.GetWorkspacePolicy(ctx, workspaceID)
-	if err != nil {
-		return authz.WorkspacePolicy{}, err
-	}
-	for _, perm := range policy.Permissions {
-		perm.TeamID
-	}
 }
 
 // connect connects the workspace to a repo.

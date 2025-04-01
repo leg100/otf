@@ -120,19 +120,11 @@ func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
 		}
 		return false
 	}
-	// If workspace policy is non-nil then that means the job is trying to
-	// access *another* workspace. Check the policy to determine if it is
-	// allowed to do so.
+	// Check workspace policy if there is one - if the job is attempting to
+	// access the state of another workspace then the policy determines whether
+	// it's allowed to do so.
 	if req.WorkspacePolicy != nil {
-		switch action {
-		case authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.DownloadStateAction:
-			if req.WorkspacePolicy.GlobalRemoteState {
-				// Job is allowed to retrieve the state of this workspace
-				// because the workspace has allowed global remote state
-				// sharing.
-				return true
-			}
-		}
+		return req.WorkspacePolicy.Check(j.ID, action)
 	}
 	return false
 }

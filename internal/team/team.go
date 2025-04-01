@@ -157,13 +157,7 @@ func (t *Team) CanAccess(action authz.Action, req authz.Request) bool {
 		return t.ID == req.ID
 	}
 	if req.WorkspacePolicy != nil {
-		// Team can only access workspace if a specific permission has been
-		// assigned to the team.
-		for _, perm := range req.WorkspacePolicy.Permissions {
-			if t.ID == perm.TeamID {
-				return perm.Role.IsAllowed(action)
-			}
-		}
+		return req.WorkspacePolicy.Check(t.ID, action)
 	}
 	return false
 }
