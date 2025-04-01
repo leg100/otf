@@ -86,11 +86,11 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
 	opts.Authorizer.RegisterParentResolver(resource.WorkspaceKind,
 		func(ctx context.Context, workspaceID resource.ID) (resource.ID, error) {
-			run, err := svc.Get(ctx, workspaceID.(resource.TfeID))
+			ws, err := svc.Get(ctx, workspaceID.(resource.TfeID))
 			if err != nil {
 				return nil, err
 			}
-			return run.Organization, nil
+			return ws.Organization, nil
 		},
 	)
 
