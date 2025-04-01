@@ -75,10 +75,12 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeWorkspaceCurrentOutputs)
 
-	// Resolve authorization requests for state version IDs to a workspace IDs
+	// Provide a means of looking up a state versions's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.StateVersionKind,
 		func(ctx context.Context, svID resource.ID) (resource.ID, error) {
-			sv, err := db.getVersion(ctx, svID.(resource.TfeID))
+			// NOTE: we look up directly in the database rather than via
+			// service call to avoid a recursion loop.
+			sv, err := db.getVersion(ctx, svID)
 			if err != nil {
 				return nil, err
 			}

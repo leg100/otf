@@ -388,7 +388,7 @@ AND   u.username          = $2
 	return resource.NewPage(items, opts, &count), nil
 }
 
-func (db *pgdb) get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	row := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -486,7 +486,7 @@ AND team_id = $2
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
 
 	row := db.QueryRow(ctx, `
 SELECT

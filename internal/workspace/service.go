@@ -84,9 +84,14 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
+
+	// Provide a way for other components to find the parent resource of a
+	// workspace given its ID.
 	opts.Authorizer.RegisterParentResolver(resource.WorkspaceKind,
 		func(ctx context.Context, workspaceID resource.ID) (resource.ID, error) {
-			ws, err := svc.Get(ctx, workspaceID.(resource.TfeID))
+			// NOTE: we look up the workspace directly in the database rather
+			// than via  service call to avoid a recursion loop.
+			ws, err := db.get(ctx, workspaceID)
 			if err != nil {
 				return nil, err
 			}
@@ -350,6 +355,16 @@ func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resou
 // decision.
 func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
+}
+
+func (s *Service) CheckPolicy(ctx context.Context, workspaceID, teamID resource.ID) (authz.WorkspacePolicy, error) {
+	policy, err := s.db.GetWorkspacePolicy(ctx, workspaceID)
+	if err != nil {
+		return authz.WorkspacePolicy{}, err
+	}
+	for _, perm := range policy.Permissions {
+		perm.TeamID
+	}
 }
 
 // connect connects the workspace to a repo.

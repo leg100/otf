@@ -160,7 +160,7 @@ func (db *pgdb) scanVersion(row pgx.CollectableRow) (*Version, error) {
 
 }
 
-func (db *pgdb) getVersion(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (db *pgdb) getVersion(ctx context.Context, svID resource.ID) (*Version, error) {
 	rows := db.Query(ctx, `
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,

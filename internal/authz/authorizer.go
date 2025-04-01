@@ -191,6 +191,18 @@ func (r Request) Workspace() resource.ID {
 	return nil
 }
 
+func (r Request) CheckWorkspacePolicy(target resource.ID) bool {
+	if r.Kind() == resource.OrganizationKind {
+		return r.ID
+	}
+	for _, id := range r.lineage {
+		if id.Kind() == resource.OrganizationKind {
+			return id
+		}
+	}
+	return nil
+}
+
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
 	Permissions []WorkspacePermission

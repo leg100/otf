@@ -190,9 +190,8 @@ WHERE configuration_versions.workspace_id = $1
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
-	if opts.ID != nil {
-		row := db.Query(ctx, `
+func (db *pgdb) get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error) {
+	row := db.Query(ctx, `
 SELECT
     cv.configuration_version_id,
     cv.created_at,
@@ -212,10 +211,12 @@ FROM configuration_versions cv
 JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.configuration_version_id = $1
-`, opts.ID)
-		return sql.CollectOneRow(row, db.scan)
-	} else if opts.WorkspaceID != nil {
-		row := db.Query(ctx, `
+`, id)
+	return sql.CollectOneRow(row, db.scan)
+}
+
+func (db *pgdb) getLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error) {
+	row := db.Query(ctx, `
 SELECT
     cv.configuration_version_id,
     cv.created_at,
@@ -236,11 +237,8 @@ JOIN workspaces USING (workspace_id)
 LEFT JOIN ingress_attributes ia USING(configuration_version_id)
 WHERE cv.workspace_id = $1
 ORDER BY cv.created_at DESC
-`, *opts.WorkspaceID)
-		return sql.CollectOneRow(row, db.scan)
-	} else {
-		return nil, fmt.Errorf("no configuration version spec provided")
-	}
+`, workspaceID)
+	return sql.CollectOneRow(row, db.scan)
 }
 
 func (db *pgdb) GetConfig(ctx context.Context, id resource.TfeID) ([]byte, error) {

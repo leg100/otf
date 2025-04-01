@@ -496,8 +496,8 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-// GetRun retrieves a run using the get options
-func (db *pgdb) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
+// get retrieves a run using the get options
+func (db *pgdb) get(ctx context.Context, runID resource.ID) (*Run, error) {
 	rows := db.Query(ctx, `
 SELECT
     runs.run_id,

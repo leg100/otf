@@ -2,7 +2,6 @@ package configversion
 
 import (
 	"context"
-	"errors"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -63,16 +62,13 @@ func NewService(opts Options) *Service {
 	// Fetch ingress attributes when API requests ingress attributes be included
 	// in the response
 	opts.Responder.Register(tfeapi.IncludeIngress, svc.tfeapi.includeIngressAttributes)
-	// Resolve authorization requests for config version IDs to a workspace IDs
+
+	// Provide a means of looking up a config version's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.ConfigVersionKind,
 		func(ctx context.Context, cvID resource.ID) (resource.ID, error) {
-			cvTfeID, ok := cvID.(resource.TfeID)
-			if !ok {
-				return nil, errors.New("invalid id")
-			}
-			cv, err := svc.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{
-				ID: &cvTfeID,
-			})
+			// NOTE: we look up directly in the database rather than via
+			// service call to avoid a recursion loop.
+			cv, err := svc.db.get(ctx, cvID)
 			if err != nil {
 				return nil, err
 			}
@@ -123,18 +119,18 @@ func (s *Service) List(ctx context.Context, workspaceID resource.TfeID, opts Lis
 	return cvl, nil
 }
 
-func (s *Service) Get(ctx context.Context, cvID resource.TfeID) (*ConfigurationVersion, error) {
-	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, cvID)
+func (s *Service) Get(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error) {
+	subject, err := s.Authorize(ctx, authz.GetConfigurationVersionAction, id)
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
+	cv, err := s.db.get(ctx, id)
 	if err != nil {
-		s.Error(err, "retrieving configuration version", "id", cvID, "subject", subject)
+		s.Error(err, "retrieving configuration version", "id", id, "subject", subject)
 		return nil, err
 	}
-	s.V(9).Info("retrieved configuration version", "id", cvID, "subject", subject)
+	s.V(9).Info("retrieved configuration version", "id", id, "subject", subject)
 	return cv, nil
 }
 
@@ -144,7 +140,7 @@ func (s *Service) GetLatest(ctx context.Context, workspaceID resource.TfeID) (*C
 		return nil, err
 	}
 
-	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+	cv, err := s.db.getLatest(ctx, workspaceID)
 	if err != nil {
 		s.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err

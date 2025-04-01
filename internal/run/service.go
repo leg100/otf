@@ -117,7 +117,7 @@ func NewService(opts Options) *Service {
 			if action == sql.DeleteAction {
 				return &Run{ID: id}, nil
 			}
-			return db.GetRun(ctx, id)
+			return db.get(ctx, id)
 		},
 	)
 
@@ -125,9 +125,12 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
 
+	// Provide a means of looking up a run's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.RunKind,
 		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
-			run, err := db.GetRun(ctx, runID.(resource.TfeID))
+			// NOTE: we look up directly in the database rather than via
+			// service call to avoid a recursion loop.
+			run, err := db.get(ctx, runID)
 			if err != nil {
 				return nil, err
 			}
@@ -179,7 +182,7 @@ func (s *Service) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
 		return nil, err
 	}
 
-	run, err := s.db.GetRun(ctx, runID)
+	run, err := s.db.get(ctx, runID)
 	if err != nil {
 		s.Error(err, "retrieving run", "id", runID, "subject", subject)
 		return nil, err
@@ -205,10 +208,10 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, opts.WorkspaceID)
+		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, opts.Organization)
+		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
 		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, resource.SiteID)

@@ -87,8 +87,12 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
+
+	// Provide a means of looking up a team's parent organization.
 	opts.Authorizer.RegisterParentResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.ID, error) {
-		team, err := svc.db.getTeamByID(ctx, id.(resource.TfeID))
+		// NOTE: we look up directly in the database rather than via
+		// service call to avoid a recursion loop.
+		team, err := svc.db.getTeamByID(ctx, id)
 		if err != nil {
 			return nil, err
 		}
