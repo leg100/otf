@@ -58,7 +58,7 @@ func (h *uiHelpers) lockButtonHelper(
 		if ws.Lock.Kind() == resource.UserKind {
 			lockUser, err := h.service.GetUser(ctx, userpkg.UserSpec{UserID: ws.Lock})
 			if err != nil {
-				return LockButton{}, nil
+				return LockButton{}, err
 			}
 			lockedBy = lockUser.Username
 		} else {
