@@ -24,7 +24,7 @@ type webHandlers struct {
 	svc        webClient
 	workspaces *workspacepkg.Service
 	logger     logr.Logger
-	authorizer webAuthorizer
+	authorizer authz.Interface
 }
 
 // webClient gives web handlers access to the agents service endpoints
@@ -45,10 +45,6 @@ type webClient interface {
 	GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error)
 	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*agentToken, error)
 	DeleteAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error)
-}
-
-type webAuthorizer interface {
-	CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
 }
 
 type (
@@ -282,7 +278,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		availableWorkspaces:            availableWorkspaces,
 		tokens:                         tokens,
 		agents:                         agents,
-		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, &authz.AccessRequest{Organization: &pool.Organization}),
+		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, pool.Organization),
 	}
 	html.Render(getAgentPool(props), w, r)
 }

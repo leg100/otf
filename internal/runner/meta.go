@@ -126,8 +126,8 @@ func (m *RunnerMeta) LogValue() slog.Value {
 
 func (m *RunnerMeta) String() string { return m.ID.String() }
 
-func (m *RunnerMeta) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
-	if req == nil {
+func (m *RunnerMeta) CanAccess(action authz.Action, req authz.Request) bool {
+	if req.ID == resource.SiteID {
 		// Don't permit runners to carry out site-level actions
 		return false
 	}
@@ -136,7 +136,7 @@ func (m *RunnerMeta) CanAccess(action authz.Action, req *authz.AccessRequest) bo
 	if m.IsAgent() {
 		// Agents can only carry out actions on the organization their pool
 		// belongs to.
-		return req.Organization != nil && m.AgentPool.Organization == *req.Organization
+		return req.Organization() != nil && m.AgentPool.Organization == req.Organization()
 	} else {
 		// Server runners can carry out actions on all organizations.
 		return true

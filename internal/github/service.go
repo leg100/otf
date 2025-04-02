@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -45,6 +46,7 @@ func NewService(opts Options) *Service {
 		db:             &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{
+		authorizer:      opts.Authorizer,
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
 		GithubSkipTLS:   opts.SkipTLSVerification,
@@ -58,7 +60,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
-	subject, err := a.Authorize(ctx, authz.CreateGithubAppAction, nil)
+	subject, err := a.Authorize(ctx, authz.CreateGithubAppAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func (a *Service) CreateApp(ctx context.Context, opts CreateAppOptions) (*App, e
 }
 
 func (a *Service) GetApp(ctx context.Context) (*App, error) {
-	subject, err := a.Authorize(ctx, authz.GetGithubAppAction, nil)
+	subject, err := a.Authorize(ctx, authz.GetGithubAppAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +91,7 @@ func (a *Service) GetApp(ctx context.Context) (*App, error) {
 }
 
 func (a *Service) DeleteApp(ctx context.Context) error {
-	subject, err := a.Authorize(ctx, authz.DeleteGithubAppAction, nil)
+	subject, err := a.Authorize(ctx, authz.DeleteGithubAppAction, resource.SiteID)
 	if err != nil {
 		return err
 	}

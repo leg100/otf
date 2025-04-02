@@ -121,7 +121,7 @@ ORDER BY created_at DESC
 LIMIT $2::int
 OFFSET $3::int
 `, workspaceID, sql.GetLimit(opts), sql.GetOffset(opts))
-	items, err := sql.CollectRows(rows, db.scanVersion)
+	items, err := sql.CollectRows(rows, scanVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ AND status = 'finalized'
 	return resource.NewPage(items, opts, &count), nil
 }
 
-func (db *pgdb) scanVersion(row pgx.CollectableRow) (*Version, error) {
+func scanVersion(row pgx.CollectableRow) (*Version, error) {
 	model, err := pgx.RowToStructByName[versionModel](row)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (db *pgdb) scanVersion(row pgx.CollectableRow) (*Version, error) {
 
 }
 
-func (db *pgdb) getVersion(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (db *pgdb) getVersion(ctx context.Context, svID resource.ID) (*Version, error) {
 	rows := db.Query(ctx, `
 SELECT
     sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
@@ -173,7 +173,7 @@ SELECT
 FROM state_versions sv
 WHERE sv.state_version_id = $1
 `, svID)
-	return sql.CollectOneRow(rows, db.scanVersion)
+	return sql.CollectOneRow(rows, scanVersion)
 }
 
 func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.TfeID) (*Version, error) {
@@ -190,7 +190,7 @@ FROM state_versions sv
 WHERE sv.state_version_id = $1
 FOR UPDATE OF sv
 `, svID)
-	return sql.CollectOneRow(rows, db.scanVersion)
+	return sql.CollectOneRow(rows, scanVersion)
 }
 
 func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
@@ -207,7 +207,7 @@ FROM state_versions sv
 JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
 WHERE w.workspace_id = $1
 `, workspaceID)
-	return sql.CollectOneRow(rows, db.scanVersion)
+	return sql.CollectOneRow(rows, scanVersion)
 }
 
 func (db *pgdb) getState(ctx context.Context, id resource.TfeID) ([]byte, error) {

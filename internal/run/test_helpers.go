@@ -65,10 +65,6 @@ func (f *fakeWebServices) Create(ctx context.Context, workspaceID resource.TfeID
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) GetPolicy(context.Context, string) (authz.WorkspacePolicy, error) {
-	return authz.WorkspacePolicy{}, nil
-}
-
 func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }

@@ -355,7 +355,7 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 
 // toRun converts a run into its equivalent json:api struct
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
-	accessRequest := &authz.AccessRequest{ID: &from.ID}
+	accessRequest := &authz.Request{ID: &from.ID}
 	perms := &types.RunPermissions{
 		CanDiscard:      a.authorizer.CanAccess(ctx, authz.DiscardRunAction, accessRequest),
 		CanForceExecute: a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),

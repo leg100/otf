@@ -16,8 +16,9 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	teams  webClient
-	tokens *tokens.Service
+	teams      webClient
+	tokens     *tokens.Service
+	authorizer authz.Interface
 }
 
 type webClient interface {
@@ -116,16 +117,10 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subject, err := authz.SubjectFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	props := listTeamsProps{
 		organization:  params.Name,
 		teams:         teams,
-		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: &params.Name}),
+		canCreateTeam: h.authorizer.CanAccess(r.Context(), authz.CreateTeamAction, params.Name),
 	}
 	html.Render(listTeams(props), w, r)
 }

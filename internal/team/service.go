@@ -54,8 +54,9 @@ func NewService(opts Options) *Service {
 		},
 	}
 	svc.web = &webHandlers{
-		tokens: opts.TokensService,
-		teams:  &svc,
+		authorizer: opts.Authorizer,
+		tokens:     opts.TokensService,
+		teams:      &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
@@ -86,10 +87,14 @@ func NewService(opts Options) *Service {
 	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
-	opts.Authorizer.RegisterOrganizationResolver(resource.TeamKind, func(ctx context.Context, id resource.TfeID) (resource.OrganizationName, error) {
+
+	// Provide a means of looking up a team's parent organization.
+	opts.Authorizer.RegisterParentResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.ID, error) {
+		// NOTE: we look up directly in the database rather than via
+		// service call to avoid a recursion loop.
 		team, err := svc.db.getTeamByID(ctx, id)
 		if err != nil {
-			return resource.OrganizationName{}, err
+			return nil, err
 		}
 		return team.Organization, nil
 	})
@@ -104,7 +109,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.CreateTeamAction, &authz.AccessRequest{Organization: &organization})
+	subject, err := a.Authorize(ctx, authz.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +149,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.TfeID, opts Update
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +169,7 @@ func (a *Service) Update(ctx context.Context, teamID resource.TfeID, opts Update
 
 // List lists teams in the organization.
 func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
-	subject, err := a.Authorize(ctx, authz.ListTeamsAction, &authz.AccessRequest{Organization: &organization})
+	subject, err := a.Authorize(ctx, authz.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +185,7 @@ func (a *Service) List(ctx context.Context, organization resource.OrganizationNa
 }
 
 func (a *Service) Get(ctx context.Context, organization resource.OrganizationName, name string) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: &organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +208,7 @@ func (a *Service) GetByID(ctx context.Context, teamID resource.TfeID) (*Team, er
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +225,7 @@ func (a *Service) Delete(ctx context.Context, teamID resource.TfeID) error {
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &team.Organization)
 	if err != nil {
 		return err
 	}
@@ -247,7 +252,7 @@ func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.TfeID) 
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}

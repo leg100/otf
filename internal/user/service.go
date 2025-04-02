@@ -55,10 +55,11 @@ func NewService(opts Options) *Service {
 		teams: opts.TeamService,
 	}
 	svc.web = &webHandlers{
-		teams:     opts.TeamService,
-		tokens:    opts.TokensService,
-		siteToken: opts.SiteToken,
-		users:     &svc,
+		authorizer: opts.Authorizer,
+		teams:      opts.TeamService,
+		tokens:     opts.TokensService,
+		siteToken:  opts.SiteToken,
+		users:      &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
@@ -122,7 +123,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	subject, err := a.Authorize(ctx, authz.CreateUserAction, nil)
+	subject, err := a.Authorize(ctx, authz.CreateUserAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 }
 
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	subject, err := a.Authorize(ctx, authz.GetUserAction, nil)
+	subject, err := a.Authorize(ctx, authz.GetUserAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +159,7 @@ func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 // List lists all users.
 func (a *Service) List(ctx context.Context) ([]*User, error) {
-	_, err := a.Authorize(ctx, authz.ListUsersAction, nil)
+	_, err := a.Authorize(ctx, authz.ListUsersAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func (a *Service) List(ctx context.Context) ([]*User, error) {
 
 // ListOrganizationUsers lists an organization's users
 func (a *Service) ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
-	_, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: &organization})
+	_, err := a.Authorize(ctx, authz.ListUsersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.ListUsersAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.ListUsersAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +203,7 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*
 }
 
 func (a *Service) Delete(ctx context.Context, username string) error {
-	subject, err := a.Authorize(ctx, authz.DeleteUserAction, nil)
+	subject, err := a.Authorize(ctx, authz.DeleteUserAction, resource.SiteID)
 	if err != nil {
 		return err
 	}
@@ -226,7 +227,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, 
 		return fmt.Errorf("retrieving team: %w", err)
 	}
 
-	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.AddTeamMembershipAction, &team.Organization)
 	if err != nil {
 		return err
 	}
@@ -265,7 +266,7 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeI
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: &team.Organization})
+	subject, err := a.Authorize(ctx, authz.RemoveTeamMembershipAction, &team.Organization)
 	if err != nil {
 		return err
 	}

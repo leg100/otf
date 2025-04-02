@@ -66,7 +66,7 @@ type (
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
 	// webClient provides web handlers with access to the workspace service
@@ -84,7 +84,7 @@ type (
 		RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
 		ListTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
 		SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
 	}
@@ -179,7 +179,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		canCreate: h.authorizer.CanAccess(
 			r.Context(),
 			authz.CreateWorkspaceAction,
-			&authz.AccessRequest{Organization: params.Organization},
+			params.Organization,
 		),
 		pageOptions: params.PageOptions,
 	}
@@ -278,13 +278,13 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		ws:                 ws,
 		button:             lockButton,
 		vcsProvider:        provider,
-		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		canRemoveTags:      h.authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, &authz.AccessRequest{ID: &ws.ID}),
-		canCreateRun:       h.authorizer.CanAccess(r.Context(), authz.CreateRunAction, &authz.AccessRequest{ID: &ws.ID}),
-		canLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
+		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),
+		canRemoveTags:      h.authorizer.CanAccess(r.Context(), authz.RemoveTagsAction, ws.ID),
+		canCreateRun:       h.authorizer.CanAccess(r.Context(), authz.CreateRunAction, ws.ID),
+		canLockWorkspace:   h.authorizer.CanAccess(r.Context(), authz.LockWorkspaceAction, ws.ID),
+		canUnlockWorkspace: h.authorizer.CanAccess(r.Context(), authz.UnlockWorkspaceAction, ws.ID),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 		tagsDropdown: components.SearchDropdownProps{
 			Name:        "tag_name",
 			Available:   internal.Diff(getTagNames(), ws.Tags),
@@ -407,8 +407,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		vcsTriggerAlways:   VCSTriggerAlways,
 		vcsTriggerPatterns: VCSTriggerPatterns,
 		vcsTriggerTags:     VCSTriggerTags,
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
-		canDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID}),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, workspace.ID),
+		canDeleteWorkspace: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceAction, workspace.ID),
 		poolsURL:           poolsURL,
 	}
 	html.Render(edit(props), w, r)
@@ -707,7 +707,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 //
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
-func filterUnassigned(policy authz.WorkspacePolicy, teams []*team.Team) (unassigned []*team.Team) {
+func filterUnassigned(policy Policy, teams []*team.Team) (unassigned []*team.Team) {
 	assigned := make(map[resource.TfeID]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.TeamID] = struct{}{}

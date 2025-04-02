@@ -203,7 +203,7 @@ WHERE w.workspace_id = $1
 FOR UPDATE OF w
 `,
 		workspaceID)
-	return sql.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, scan)
 }
 
 // setLatestRun sets the ID of the current run for the specified workspace.
@@ -268,7 +268,7 @@ OFFSET @offset::int
 		"limit":        sql.GetLimit(opts.PageOptions),
 		"offset":       sql.GetOffset(opts.PageOptions),
 	})
-	items, err := sql.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, scan)
 	if err != nil {
 		return nil, fmt.Errorf("listing workspaces: %w", err)
 	}
@@ -327,7 +327,7 @@ AND   rc.repo_path = $2
 		vcsProviderID,
 		repoPath,
 	)
-	items, err := sql.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, scan)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ OFFSET $4::int
 		sql.GetLimit(opts),
 		sql.GetOffset(opts),
 	)
-	items, err := sql.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, scan)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +388,7 @@ AND   u.username          = $2
 	return resource.NewPage(items, opts, &count), nil
 }
 
-func (db *pgdb) get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+func (db *pgdb) get(ctx context.Context, workspaceID resource.ID) (*Workspace, error) {
 	row := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -407,7 +407,7 @@ LEFT JOIN repo_connections rc ON w.workspace_id = rc.workspace_id
 WHERE w.workspace_id = $1
 `,
 		workspaceID)
-	return sql.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, scan)
 }
 
 func (db *pgdb) getByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
@@ -432,7 +432,7 @@ AND   w.organization_name = $2
 		workspace,
 		organization,
 	)
-	return sql.CollectOneRow(row, db.scan)
+	return sql.CollectOneRow(row, scan)
 }
 
 func (db *pgdb) delete(ctx context.Context, workspaceID resource.TfeID) error {
@@ -486,8 +486,7 @@ AND team_id = $2
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
-
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (Policy, error) {
 	row := db.QueryRow(ctx, `
 SELECT
     w.global_remote_state,
@@ -510,26 +509,26 @@ WHERE w.workspace_id = $1
 		perms             []workspacePermissionModel
 	)
 	if err := row.Scan(&globalRemoteState, &perms); err != nil {
-		return authz.WorkspacePolicy{}, err
+		return Policy{}, err
 	}
-	p := authz.WorkspacePolicy{
-		GlobalRemoteState: globalRemoteState,
-		Permissions:       make([]authz.WorkspacePermission, len(perms)),
+	policy := Policy{
+		globalRemoteState: globalRemoteState,
+		Permissions:       make([]Permission, len(perms)),
 	}
 	for i, perm := range perms {
 		role, err := authz.WorkspaceRoleFromString(perm.Role)
 		if err != nil {
-			return authz.WorkspacePolicy{}, err
+			return Policy{}, err
 		}
-		p.Permissions[i] = authz.WorkspacePermission{
+		policy.Permissions[i] = Permission{
 			TeamID: perm.TeamID,
 			Role:   role,
 		}
 	}
-	return p, nil
+	return policy, nil
 }
 
-func (db *pgdb) scan(row pgx.CollectableRow) (*Workspace, error) {
+func scan(row pgx.CollectableRow) (*Workspace, error) {
 	type model struct {
 		ID                         resource.TfeID            `db:"workspace_id"`
 		CreatedAt                  time.Time                 `db:"created_at"`

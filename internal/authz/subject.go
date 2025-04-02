@@ -16,7 +16,7 @@ const (
 
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
-	CanAccess(action Action, req *AccessRequest) bool
+	CanAccess(action Action, req Request) bool
 	String() string
 }
 

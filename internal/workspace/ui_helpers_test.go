@@ -131,6 +131,6 @@ type fakeLockButtonAuthorizer struct {
 	perms []authz.Action
 }
 
-func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action authz.Action, _ *authz.AccessRequest) bool {
+func (f *fakeLockButtonAuthorizer) CanAccess(ctx context.Context, action authz.Action, _ resource.ID) bool {
 	return slices.Contains(f.perms, action)
 }

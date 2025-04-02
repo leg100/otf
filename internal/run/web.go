@@ -49,11 +49,10 @@ type (
 
 	webWorkspaceClient interface {
 		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 )
 
@@ -147,7 +146,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		}
 		props.organization = ws.Organization
 		props.ws = ws
-		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID)
 	} else if opts.ListOptions.Organization != nil {
 		props.organization = *opts.ListOptions.Organization
 	} else {

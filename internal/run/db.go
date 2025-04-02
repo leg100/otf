@@ -208,7 +208,7 @@ LEFT JOIN (
 WHERE runs.run_id = $1
 FOR UPDATE OF runs, plans, applies
 `, runID)
-			run, err := sql.CollectOneRow(row, db.scan)
+			run, err := sql.CollectOneRow(row, scan)
 			if err != nil {
 				return nil, err
 			}
@@ -461,7 +461,7 @@ OFFSET $10::int
 		sql.GetLimit(opts.PageOptions),
 		sql.GetOffset(opts.PageOptions),
 	)
-	items, err := sql.CollectRows(rows, db.scan)
+	items, err := sql.CollectRows(rows, scan)
 	if err != nil {
 		return nil, fmt.Errorf("querying runs: %w", err)
 	}
@@ -496,8 +496,8 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
 }
 
-// GetRun retrieves a run using the get options
-func (db *pgdb) GetRun(ctx context.Context, runID resource.TfeID) (*Run, error) {
+// get retrieves a run using the get options
+func (db *pgdb) get(ctx context.Context, runID resource.ID) (*Run, error) {
 	rows := db.Query(ctx, `
 SELECT
     runs.run_id,
@@ -573,7 +573,7 @@ LEFT JOIN (
 WHERE runs.run_id = $1
 `,
 		runID)
-	return sql.CollectOneRow(rows, db.scan)
+	return sql.CollectOneRow(rows, scan)
 }
 
 // SetPlanFile writes a plan file to the db
@@ -669,7 +669,7 @@ INSERT INTO phase_status_timestamps (
 	return err
 }
 
-func (db *pgdb) scan(row pgx.CollectableRow) (*Run, error) {
+func scan(row pgx.CollectableRow) (*Run, error) {
 	type (
 		statusTimestampModel struct {
 			RunID     resource.TfeID `db:"run_id"`

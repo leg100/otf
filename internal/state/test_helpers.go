@@ -25,7 +25,7 @@ func (f *fakeDB) createOutputs(context.Context, []*Output) error {
 	return nil
 }
 
-func (f *fakeDB) getVersion(ctx context.Context, svID resource.TfeID) (*Version, error) {
+func (f *fakeDB) getVersion(ctx context.Context, svID resource.ID) (*Version, error) {
 	if f.version == nil {
 		return nil, internal.ErrResourceNotFound
 	}

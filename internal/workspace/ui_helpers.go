@@ -21,7 +21,7 @@ type uiHelpersService interface {
 }
 
 type uiHelpersAuthorizer interface {
-	CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+	CanAccess(context.Context, authz.Action, resource.ID) bool
 }
 
 type LockButton struct {
@@ -47,7 +47,7 @@ func (h *uiHelpers) lockButtonHelper(
 		btn.Text = "Unlock"
 		btn.Action = paths.UnlockWorkspace(ws.ID)
 		// A user needs at least the unlock permission
-		if !h.authorizer.CanAccess(ctx, authz.UnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
+		if !h.authorizer.CanAccess(ctx, authz.UnlockWorkspaceAction, ws.ID) {
 			btn.Tooltip = "insufficient permissions"
 			btn.Disabled = true
 			return btn, nil
@@ -58,7 +58,7 @@ func (h *uiHelpers) lockButtonHelper(
 		if ws.Lock.Kind() == resource.UserKind {
 			lockUser, err := h.service.GetUser(ctx, userpkg.UserSpec{UserID: ws.Lock})
 			if err != nil {
-				return LockButton{}, nil
+				return LockButton{}, err
 			}
 			lockedBy = lockUser.Username
 		} else {
@@ -72,7 +72,7 @@ func (h *uiHelpers) lockButtonHelper(
 			return btn, nil
 		}
 		// User is going to need the force unlock permission
-		if h.authorizer.CanAccess(ctx, authz.ForceUnlockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
+		if h.authorizer.CanAccess(ctx, authz.ForceUnlockWorkspaceAction, ws.ID) {
 			btn.Text = "Force unlock"
 			btn.Action = paths.ForceUnlockWorkspace(ws.ID)
 			return btn, nil
@@ -85,7 +85,7 @@ func (h *uiHelpers) lockButtonHelper(
 		btn.Text = "Lock"
 		btn.Action = paths.LockWorkspace(ws.ID)
 		// User needs at least the lock permission
-		if !h.authorizer.CanAccess(ctx, authz.LockWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}) {
+		if !h.authorizer.CanAccess(ctx, authz.LockWorkspaceAction, ws.ID) {
 			btn.Disabled = true
 			btn.Tooltip = "insufficient permissions"
 		}

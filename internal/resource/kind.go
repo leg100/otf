@@ -7,6 +7,7 @@ func (k Kind) String() string {
 }
 
 const (
+	SiteKind                      Kind = "site"
 	OrganizationKind              Kind = "org"
 	WorkspaceKind                 Kind = "ws"
 	RunKind                       Kind = "run"

@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const (
@@ -26,7 +26,8 @@ const (
 type webHandlers struct {
 	*internal.HostnameService
 
-	svc webClient
+	svc        webClient
+	authorizer *authz.Authorizer
 
 	GithubHostname string
 	// toggle skipping TLS on connections to github (for testing purposes)
@@ -117,18 +118,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := user.UserFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	props := getAppsProps{
 		app:            app,
 		installations:  installs,
 		githubHostname: h.GithubHostname,
-		canCreateApp:   user.CanAccess(authz.CreateGithubAppAction, nil),
-		canDeleteApp:   user.CanAccess(authz.DeleteGithubAppAction, nil),
+		canCreateApp:   h.authorizer.CanAccess(r.Context(), authz.CreateGithubAppAction, resource.SiteID),
+		canDeleteApp:   h.authorizer.CanAccess(r.Context(), authz.DeleteGithubAppAction, resource.SiteID),
 	}
 	html.Render(getApps(props), w, r)
 }

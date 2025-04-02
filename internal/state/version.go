@@ -71,7 +71,7 @@ type (
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
-		getVersion(ctx context.Context, svID resource.TfeID) (*Version, error)
+		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
 		updateCurrentVersion(context.Context, resource.TfeID, resource.TfeID) error
 		uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error

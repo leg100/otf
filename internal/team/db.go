@@ -66,7 +66,7 @@ INSERT INTO teams (
 	return err
 }
 
-func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.TfeID, fn func(context.Context, *Team) error) (*Team, error) {
+func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(context.Context, *Team) error) (*Team, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -124,7 +124,7 @@ AND   organization_name = $2
 	return sql.CollectOneRow(rows, scan)
 }
 
-func (db *pgdb) getTeamByID(ctx context.Context, id resource.TfeID) (*Team, error) {
+func (db *pgdb) getTeamByID(ctx context.Context, id resource.ID) (*Team, error) {
 	rows := db.Query(ctx, `
 SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams

@@ -84,16 +84,25 @@ func NewService(opts Options) *Service {
 	// response
 	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.include)
 	opts.Responder.Register(tfeapi.IncludeWorkspaces, svc.tfeapi.includeMany)
-	// Instruct the authorizer to resolve workspace IDs to organization names.
-	opts.Authorizer.RegisterOrganizationResolver(resource.WorkspaceKind, func(ctx context.Context, id resource.TfeID) (resource.OrganizationName, error) {
-		ws, err := svc.db.get(ctx, id)
-		if err != nil {
-			return resource.OrganizationName{}, err
-		}
-		return ws.Organization, nil
-	})
+
+	// Provide a way for other components to find the parent resource of a
+	// workspace given its ID.
+	opts.Authorizer.RegisterParentResolver(resource.WorkspaceKind,
+		func(ctx context.Context, workspaceID resource.ID) (resource.ID, error) {
+			// NOTE: we look up the workspace directly in the database rather
+			// than via  service call to avoid a recursion loop.
+			ws, err := db.get(ctx, workspaceID)
+			if err != nil {
+				return nil, err
+			}
+			return ws.Organization, nil
+		},
+	)
+
 	// Provide the authorizer with the ability to retrieve workspace policies.
-	opts.Authorizer.WorkspacePolicyGetter = &svc
+	opts.Authorizer.WorkspacePolicyGetter = func(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error) {
+		return db.GetWorkspacePolicy(ctx, workspaceID)
+	}
 	return &svc
 }
 
@@ -116,7 +125,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &authz.AccessRequest{Organization: &ws.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateWorkspaceAction, &ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +179,7 @@ func (s *Service) AfterCreateWorkspace(hook func(context.Context, *Workspace) er
 }
 
 func (s *Service) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +202,7 @@ func (s *Service) GetByName(ctx context.Context, organization resource.Organizat
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+	subject, err := s.Authorize(ctx, authz.GetWorkspaceAction, ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,13 +215,13 @@ func (s *Service) GetByName(ctx context.Context, organization resource.Organizat
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, nil)
+		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, resource.SiteID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, &authz.AccessRequest{Organization: opts.Organization})
+		_, err := s.Authorize(ctx, authz.ListWorkspacesAction, opts.Organization)
 		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
@@ -240,7 +249,7 @@ func (s *Service) BeforeUpdateWorkspace(hook func(context.Context, *Workspace) e
 }
 
 func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +294,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts U
 }
 
 func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
-	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +322,7 @@ func (s *Service) Delete(ctx context.Context, workspaceID resource.TfeID) (*Work
 }
 
 func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error {
-	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -331,7 +340,7 @@ func (s *Service) SetPermission(ctx context.Context, workspaceID, teamID resourc
 }
 
 func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error {
-	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, &authz.AccessRequest{ID: &workspaceID})
+	subject, err := s.Authorize(ctx, authz.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team_id", teamID, "subject", subject, "workspace", workspaceID)
 		return err
@@ -346,7 +355,7 @@ func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resou
 //
 // NOTE: there is no auth because it is used in the process of making an auth
 // decision.
-func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (authz.WorkspacePolicy, error) {
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 

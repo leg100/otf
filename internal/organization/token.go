@@ -55,12 +55,12 @@ func (u *OrganizationToken) String() string {
 	return u.ID.String()
 }
 
-func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
-	if req == nil {
+func (u *OrganizationToken) CanAccess(action authz.Action, req authz.Request) bool {
+	if req.ID == resource.SiteID {
 		// Organization token cannot take action on site-level resources
 		return false
 	}
-	if req.Organization != nil && *req.Organization != u.Organization {
+	if req.Organization() != nil && req.Organization().String() != u.Organization.String() {
 		// Organization token cannot take action on other organizations
 		return false
 	}

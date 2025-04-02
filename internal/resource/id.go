@@ -1,19 +1,14 @@
 package resource
 
 import (
-	"database/sql"
-	"database/sql/driver"
-	"encoding"
 	"fmt"
 	"regexp"
 )
 
+// ID uniquely identifies an OTF resource.
 type ID interface {
 	fmt.Stringer
-	encoding.TextMarshaler
-	encoding.TextUnmarshaler
-	sql.Scanner
-	driver.Valuer
+	Kind() Kind
 }
 
 // ReStringID is a regular expression used to validate common string ID patterns.
