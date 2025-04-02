@@ -355,7 +355,7 @@ func (s *Service) UnsetPermission(ctx context.Context, workspaceID, teamID resou
 //
 // NOTE: there is no auth because it is used in the process of making an auth
 // decision.
-func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (*Policy, error) {
+func (s *Service) GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 

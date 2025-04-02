@@ -178,7 +178,7 @@ func (s *Service) Update(ctx context.Context, name resource.OrganizationName, op
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	orgs, subject, err := func() (*resource.Page[*Organization], authz.Subject, error) {
 		var names []resource.OrganizationName
-		subject, err := s.Authorize(ctx, authz.ListOrganizationsAction, nil, authz.WithoutErrorLogging())
+		subject, err := s.Authorize(ctx, authz.ListOrganizationsAction, resource.SiteID, authz.WithoutErrorLogging())
 		if errors.Is(err, internal.ErrAccessNotPermitted) {
 			// List subject's organization memberships instead.
 			type memberships interface {

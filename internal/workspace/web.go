@@ -84,7 +84,7 @@ type (
 		RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
 		ListTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (*Policy, error)
+		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
 		SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, teamID resource.TfeID) error
 	}
@@ -344,8 +344,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	// want current policy permissions to include not only team ID but team name
 	// too for user's benefit
-	perms := make([]perm, len(policy.permissions))
-	for i, pp := range policy.permissions {
+	perms := make([]perm, len(policy.Permissions))
+	for i, pp := range policy.Permissions {
 		// get team name corresponding to team ID
 		for _, t := range teams {
 			if t.ID == pp.TeamID {
@@ -707,9 +707,9 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 //
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
-func filterUnassigned(policy *Policy, teams []*team.Team) (unassigned []*team.Team) {
+func filterUnassigned(policy Policy, teams []*team.Team) (unassigned []*team.Team) {
 	assigned := make(map[resource.TfeID]struct{}, len(teams))
-	for _, p := range policy.permissions {
+	for _, p := range policy.Permissions {
 		assigned[p.TeamID] = struct{}{}
 	}
 	for _, t := range teams {

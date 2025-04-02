@@ -12,7 +12,7 @@ import (
 
 type FakeService struct {
 	Workspaces []*Workspace
-	Policy     *Policy
+	Policy     Policy
 }
 
 func (f *FakeService) ListConnectedWorkspaces(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) ([]*Workspace, error) {
@@ -56,7 +56,7 @@ func (f *FakeService) ListTags(context.Context, resource.OrganizationName, ListT
 	return nil, nil
 }
 
-func (f *FakeService) GetWorkspacePolicy(context.Context, resource.TfeID) (*Policy, error) {
+func (f *FakeService) GetWorkspacePolicy(context.Context, resource.TfeID) (Policy, error) {
 	return f.Policy, nil
 }
 

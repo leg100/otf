@@ -106,7 +106,10 @@ func (a *Authorizer) Authorize(ctx context.Context, action Action, resourceID re
 				"subject", subj,
 			)
 		}
-		return nil, err
+		// TODO: even in the event of error we return the subject, because some
+		// callers rely upon this. This should be changed because it goes
+		// against idiomatic go.
+		return subj, err
 	}
 	return subj, nil
 }
@@ -148,53 +151,3 @@ func (a *Authorizer) CanAccess(ctx context.Context, action Action, id resource.I
 	_, err := a.Authorize(ctx, action, id, WithoutErrorLogging())
 	return err == nil
 }
-
-type Request struct {
-	// ID of resource to which access is being requested.
-	resource.ID
-	// WorkspacePolicy provides a means of checking workspace-specific
-	// permissions for the resource specified by the ID above. If this is nil
-	// then the resource is not a workspace or does not belong to a workspace.
-	WorkspacePolicy WorkspacePolicy
-	// lineage are the parents of the resource.
-	lineage []resource.ID
-}
-
-func (r Request) Organization() resource.ID {
-	if r.Kind() == resource.OrganizationKind {
-		return r.ID
-	}
-	for _, id := range r.lineage {
-		if id.Kind() == resource.OrganizationKind {
-			return id
-		}
-	}
-	return nil
-}
-
-func (r Request) Workspace() resource.ID {
-	if r.Kind() == resource.WorkspaceKind {
-		return r.ID
-	}
-	for _, id := range r.lineage {
-		if id.Kind() == resource.WorkspaceKind {
-			return id
-		}
-	}
-	return nil
-}
-
-//func (r AccessRequest) LogValue() slog.Value {
-//	if r == nil {
-//		return slog.StringValue("site")
-//	} else {
-//		var attrs []slog.Attr
-//		if r.Organization != nil {
-//			attrs = append(attrs, slog.Any("organization", *r.Organization))
-//		}
-//		if r.ID != nil {
-//			attrs = append(attrs, slog.String("resource_id", r.ID.String()))
-//		}
-//		return slog.GroupValue(attrs...)
-//	}
-//}

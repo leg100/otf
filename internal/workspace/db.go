@@ -486,7 +486,7 @@ AND team_id = $2
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (*Policy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (Policy, error) {
 	row := db.QueryRow(ctx, `
 SELECT
     w.global_remote_state,
@@ -509,23 +509,23 @@ WHERE w.workspace_id = $1
 		perms             []workspacePermissionModel
 	)
 	if err := row.Scan(&globalRemoteState, &perms); err != nil {
-		return nil, err
+		return Policy{}, err
 	}
 	policy := Policy{
 		globalRemoteState: globalRemoteState,
-		permissions:       make([]Permission, len(perms)),
+		Permissions:       make([]Permission, len(perms)),
 	}
 	for i, perm := range perms {
 		role, err := authz.WorkspaceRoleFromString(perm.Role)
 		if err != nil {
-			return nil, err
+			return Policy{}, err
 		}
-		policy.permissions[i] = Permission{
+		policy.Permissions[i] = Permission{
 			TeamID: perm.TeamID,
 			Role:   role,
 		}
 	}
-	return &policy, nil
+	return policy, nil
 }
 
 func (db *pgdb) scan(row pgx.CollectableRow) (*Workspace, error) {
