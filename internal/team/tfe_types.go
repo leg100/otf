@@ -1,10 +1,10 @@
-package types
+package team
 
 import "github.com/leg100/otf/internal/resource"
 
 type (
-	// Team represents an otf team.
-	Team struct {
+	// TFETeam represents an otf team.
+	TFETeam struct {
 		ID                 resource.TfeID      `jsonapi:"primary,teams"`
 		Name               string              `jsonapi:"attribute" json:"name"`
 		OrganizationAccess *OrganizationAccess `jsonapi:"attribute" json:"organization-access"`
@@ -14,7 +14,7 @@ type (
 		SSOTeamID          *string             `jsonapi:"attribute" json:"sso-team-id"`
 
 		// Relations
-		Users []*User `jsonapi:"relationship" json:"users"`
+		Users []*user.TFEUser `jsonapi:"relationship" json:"users"`
 	}
 
 	// OrganizationAccess represents the team's permissions on its organization
@@ -81,7 +81,7 @@ type (
 	}
 
 	// OrganizationAccessOptions represents the organization access options of a team.
-	OrganizationAccessOptions struct {
+	TFEOrganizationAccessOptions struct {
 		ManagePolicies        *bool `json:"manage-policies,omitempty"`
 		ManagePolicyOverrides *bool `json:"manage-policy-overrides,omitempty"`
 		ManageWorkspaces      *bool `json:"manage-workspaces,omitempty"`

@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type tfe struct {
@@ -38,7 +37,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
-	var opts types.OrganizationCreateOptions
+	var opts TFEOrganizationCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -93,7 +92,7 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	items := make([]*types.Organization, len(page.Items))
+	items := make([]*TFEOrganization, len(page.Items))
 	for i, from := range page.Items {
 		items[i] = a.toOrganization(from)
 	}
@@ -108,7 +107,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.OrganizationUpdateOptions
+	var opts TFEOrganizationUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -163,7 +162,7 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, (*types.Entitlements)(&entitlements), http.StatusOK)
+	a.Respond(w, r, (*TFEEntitlements)(&entitlements), http.StatusOK)
 }
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +173,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.OrganizationTokenCreateOptions
+	var opts TFEOrganizationTokenCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -189,7 +188,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to := &types.OrganizationToken{
+	to := &TFEOrganizationToken{
 		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		Token:     string(token),
@@ -217,7 +216,7 @@ func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to := &types.OrganizationToken{
+	to := &TFEOrganizationToken{
 		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		ExpiredAt: ot.Expiry,
@@ -255,7 +254,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !field.IsValid() {
 		return nil, nil
 	}
-	tfeOrganization, ok := field.Interface().(*types.Organization)
+	tfeOrganization, ok := field.Interface().(*TFEOrganization)
 	if !ok {
 		return nil, nil
 	}
@@ -266,12 +265,12 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	return []any{a.toOrganization(org)}, nil
 }
 
-func (a *tfe) toOrganization(from *Organization) *types.Organization {
-	to := &types.Organization{
+func (a *tfe) toOrganization(from *Organization) *TFEOrganization {
+	to := &TFEOrganization{
 		Name:                       from.Name,
 		CreatedAt:                  from.CreatedAt,
 		ExternalID:                 from.ID,
-		Permissions:                &types.DefaultOrganizationPermissions,
+		Permissions:                &DefaultOrganizationPermissions,
 		SessionRemember:            from.SessionRemember,
 		SessionTimeout:             from.SessionTimeout,
 		AllowForceDeleteWorkspaces: from.AllowForceDeleteWorkspaces,
@@ -283,7 +282,7 @@ func (a *tfe) toOrganization(from *Organization) *types.Organization {
 		to.Email = *from.Email
 	}
 	if from.CollaboratorAuthPolicy != nil {
-		to.CollaboratorAuthPolicy = types.AuthPolicyType(*from.CollaboratorAuthPolicy)
+		to.CollaboratorAuthPolicy = TFEAuthPolicyType(*from.CollaboratorAuthPolicy)
 	}
 	return to
 }

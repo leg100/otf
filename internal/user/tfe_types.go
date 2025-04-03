@@ -1,10 +1,10 @@
-package types
+package user
 
 import "github.com/leg100/otf/internal/resource"
 
 type (
-	// User represents an OTF user.
-	User struct {
+	// TFEUser represents an OTF user.
+	TFEUser struct {
 		ID               resource.TfeID `jsonapi:"primary,users"`
 		AvatarURL        string         `jsonapi:"attribute" json:"avatar-url"`
 		Email            string         `jsonapi:"attribute" json:"email"`
@@ -26,7 +26,7 @@ type (
 
 	// CreateUserOptions represents the options for creating a
 	// user.
-	CreateUserOptions struct {
+	TFECreateUserOptions struct {
 		// Type is a public field utilized by JSON:API to
 		// set the resource type via the field tag.
 		// It is not a user-defined value and does not need to be set.

@@ -1,16 +1,18 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package types
+package run
 
 import (
 	"time"
 
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/workspace"
 )
 
-// Run is a terraform run.
-type Run struct {
+// TFERun is a terraform run.
+type TFERun struct {
 	ID                     resource.TfeID       `jsonapi:"primary,runs"`
 	Actions                *RunActions          `jsonapi:"attribute" json:"actions"`
 	AllowEmptyApply        bool                 `jsonapi:"attribute" json:"allow-empty-apply"`
@@ -35,12 +37,12 @@ type Run struct {
 	Variables              []RunVariable        `jsonapi:"attribute" json:"variables"`
 
 	// Relations
-	Apply                *Apply                `jsonapi:"relationship" json:"apply"`
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
-	CostEstimate         *CostEstimate         `jsonapi:"relationship" json:"cost-estimate"`
-	CreatedBy            *User                 `jsonapi:"relationship" json:"created-by"`
-	Plan                 *Plan                 `jsonapi:"relationship" json:"plan"`
-	Workspace            *Workspace            `jsonapi:"relationship" json:"workspace"`
+	Apply                *Apply                                 `jsonapi:"relationship" json:"apply"`
+	ConfigurationVersion *configversion.TFEConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	CostEstimate         *configversion.TFECostEstimate         `jsonapi:"relationship" json:"cost-estimate"`
+	CreatedBy            *configversion.TFEUser                 `jsonapi:"relationship" json:"created-by"`
+	Plan                 *Plan                                  `jsonapi:"relationship" json:"plan"`
+	Workspace            *workspace.TFEWorkspace                `jsonapi:"relationship" json:"workspace"`
 }
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
@@ -66,7 +68,7 @@ type RunStatusTimestamps struct {
 
 // RunList represents a list of runs.
 type RunList struct {
-	*Pagination
+	*types.Pagination
 	Items []*Run
 }
 

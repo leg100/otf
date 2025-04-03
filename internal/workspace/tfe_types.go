@@ -1,11 +1,14 @@
-package types
+package workspace
 
 import (
 	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 var (
@@ -13,8 +16,8 @@ var (
 	localExecutionMode  = "local"
 )
 
-// Workspace represents a Terraform Enterprise workspace.
-type Workspace struct {
+// TFEWorkspace represents a Terraform Enterprise workspace.
+type TFEWorkspace struct {
 	ID                         resource.TfeID        `jsonapi:"primary,workspaces"`
 	Actions                    *WorkspaceActions     `jsonapi:"attribute" json:"actions"`
 	AgentPoolID                *resource.TfeID       `jsonapi:"attribute" json:"agent-pool-id"`
@@ -52,9 +55,9 @@ type Workspace struct {
 	TagNames                   []string              `jsonapi:"attribute" json:"tag-names"`
 
 	// Relations
-	CurrentRun   *Run               `jsonapi:"relationship" json:"current-run"`
-	Organization *Organization      `jsonapi:"relationship" json:"organization"`
-	Outputs      []*WorkspaceOutput `jsonapi:"relationship" json:"outputs"`
+	CurrentRun   *run.TFERun                   `jsonapi:"relationship" json:"current-run"`
+	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
+	Outputs      []*WorkspaceOutput            `jsonapi:"relationship" json:"outputs"`
 }
 
 type WorkspaceOutput struct {
@@ -67,7 +70,7 @@ type WorkspaceOutput struct {
 
 // WorkspaceList represents a list of workspaces.
 type WorkspaceList struct {
-	*Pagination
+	*types.Pagination
 	Items []*Workspace
 }
 

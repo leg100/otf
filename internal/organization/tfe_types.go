@@ -1,7 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
-package types
+package organization
 
 import (
 	"time"
@@ -9,30 +6,30 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
-var DefaultOrganizationPermissions = OrganizationPermissions{
+var DefaultOrganizationPermissions = TFEOrganizationPermissions{
 	CanCreateWorkspace: true,
 	CanUpdate:          true,
 	CanDestroy:         true,
 }
 
-// Organization represents a Terraform Enterprise organization.
-type Organization struct {
-	Name                                              resource.OrganizationName `jsonapi:"primary,organizations"`
-	AssessmentsEnforced                               bool                      `jsonapi:"attribute" json:"assessments-enforced"`
-	CollaboratorAuthPolicy                            AuthPolicyType            `jsonapi:"attribute" json:"collaborator-auth-policy"`
-	CostEstimationEnabled                             bool                      `jsonapi:"attribute" json:"cost-estimation-enabled"`
-	CreatedAt                                         time.Time                 `jsonapi:"attribute" json:"created-at"`
-	Email                                             string                    `jsonapi:"attribute" json:"email"`
-	ExternalID                                        resource.TfeID            `jsonapi:"attribute" json:"external-id"`
-	OwnersTeamSAMLRoleID                              resource.TfeID            `jsonapi:"attribute" json:"owners-team-saml-role-id"`
-	Permissions                                       *OrganizationPermissions  `jsonapi:"attribute" json:"permissions"`
-	SAMLEnabled                                       bool                      `jsonapi:"attribute" json:"saml-enabled"`
-	SessionRemember                                   *int                      `jsonapi:"attribute" json:"session-remember"`
-	SessionTimeout                                    *int                      `jsonapi:"attribute" json:"session-timeout"`
-	TrialExpiresAt                                    time.Time                 `jsonapi:"attribute" json:"trial-expires-at"`
-	TwoFactorConformant                               bool                      `jsonapi:"attribute" json:"two-factor-conformant"`
-	SendPassingStatusesForUntriggeredSpeculativePlans bool                      `jsonapi:"attribute" json:"send-passing-statuses-for-untriggered-speculative-plans"`
-	RemainingTestableCount                            int                       `jsonapi:"attribute" json:"remaining-testable-count"`
+// TFEOrganization represents a Terraform Enterprise organization.
+type TFEOrganization struct {
+	Name                                              resource.OrganizationName   `jsonapi:"primary,organizations"`
+	AssessmentsEnforced                               bool                        `jsonapi:"attribute" json:"assessments-enforced"`
+	CollaboratorAuthPolicy                            TFEAuthPolicyType           `jsonapi:"attribute" json:"collaborator-auth-policy"`
+	CostEstimationEnabled                             bool                        `jsonapi:"attribute" json:"cost-estimation-enabled"`
+	CreatedAt                                         time.Time                   `jsonapi:"attribute" json:"created-at"`
+	Email                                             string                      `jsonapi:"attribute" json:"email"`
+	ExternalID                                        resource.TfeID              `jsonapi:"attribute" json:"external-id"`
+	OwnersTeamSAMLRoleID                              resource.TfeID              `jsonapi:"attribute" json:"owners-team-saml-role-id"`
+	Permissions                                       *TFEOrganizationPermissions `jsonapi:"attribute" json:"permissions"`
+	SAMLEnabled                                       bool                        `jsonapi:"attribute" json:"saml-enabled"`
+	SessionRemember                                   *int                        `jsonapi:"attribute" json:"session-remember"`
+	SessionTimeout                                    *int                        `jsonapi:"attribute" json:"session-timeout"`
+	TrialExpiresAt                                    time.Time                   `jsonapi:"attribute" json:"trial-expires-at"`
+	TwoFactorConformant                               bool                        `jsonapi:"attribute" json:"two-factor-conformant"`
+	SendPassingStatusesForUntriggeredSpeculativePlans bool                        `jsonapi:"attribute" json:"send-passing-statuses-for-untriggered-speculative-plans"`
+	RemainingTestableCount                            int                         `jsonapi:"attribute" json:"remaining-testable-count"`
 
 	// Note: This will be false for TFE versions older than v202211, where the setting was introduced.
 	// On those TFE versions, safe delete does not exist, so ALL deletes will be force deletes.
@@ -42,8 +39,8 @@ type Organization struct {
 	// DefaultProject *Project `jsonapi:"relation,default-project"`
 }
 
-// OrganizationPermissions represents the organization permissions.
-type OrganizationPermissions struct {
+// TFEOrganizationPermissions represents the organization permissions.
+type TFEOrganizationPermissions struct {
 	CanCreateTeam               bool `json:"can-create-team"`
 	CanCreateWorkspace          bool `json:"can-create-workspace"`
 	CanCreateWorkspaceMigration bool `json:"can-create-workspace-migration"`
@@ -55,8 +52,8 @@ type OrganizationPermissions struct {
 	CanUpdateSentinel           bool `json:"can-update-sentinel"`
 }
 
-// OrganizationCreateOptions represents the options for creating an organization.
-type OrganizationCreateOptions struct {
+// TFEOrganizationCreateOptions represents the options for creating an organization.
+type TFEOrganizationCreateOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -79,7 +76,7 @@ type OrganizationCreateOptions struct {
 	SessionTimeout *int `jsonapi:"attribute" json:"session-timeout,omitempty"`
 
 	// Optional: Authentication policy.
-	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attribute" json:"collaborator-auth-policy,omitempty"`
+	CollaboratorAuthPolicy *TFEAuthPolicyType `jsonapi:"attribute" json:"collaborator-auth-policy,omitempty"`
 
 	// Optional: Enable Cost Estimation
 	CostEstimationEnabled *bool `jsonapi:"attribute" json:"cost-estimation-enabled,omitempty"`
@@ -94,8 +91,8 @@ type OrganizationCreateOptions struct {
 	AllowForceDeleteWorkspaces *bool `jsonapi:"attribute" json:"allow-force-delete-workspaces,omitempty"`
 }
 
-// OrganizationUpdateOptions represents the options for updating an organization.
-type OrganizationUpdateOptions struct {
+// TFEOrganizationUpdateOptions represents the options for updating an organization.
+type TFEOrganizationUpdateOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -118,7 +115,7 @@ type OrganizationUpdateOptions struct {
 	SessionTimeout *int `jsonapi:"attribute" json:"session-timeout,omitempty"`
 
 	// Authentication policy.
-	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attribute" json:"collaborator-auth-policy,omitempty"`
+	CollaboratorAuthPolicy *TFEAuthPolicyType `jsonapi:"attribute" json:"collaborator-auth-policy,omitempty"`
 
 	// Enable Cost Estimation
 	CostEstimationEnabled *bool `jsonapi:"attribute" json:"cost-estimation-enabled,omitempty"`
@@ -136,7 +133,7 @@ type OrganizationUpdateOptions struct {
 // Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
 // OTF is free and therefore the user is entitled to all currently supported
 // services.  Entitlements represents the entitlements of an organization.
-type Entitlements struct {
+type TFEEntitlements struct {
 	ID                    resource.TfeID `jsonapi:"primary,entitlement-sets"`
 	Agents                bool           `jsonapi:"attribute" json:"agents"`
 	AuditLogging          bool           `jsonapi:"attribute" json:"audit-logging"`
@@ -150,11 +147,26 @@ type Entitlements struct {
 	VCSIntegrations       bool           `jsonapi:"attribute" json:"vcs-integrations"`
 }
 
-// AuthPolicyType represents an authentication policy type.
-type AuthPolicyType string
+// TFEAuthPolicyType represents an authentication policy type.
+type TFEAuthPolicyType string
 
 // List of available authentication policies.
 const (
-	AuthPolicyPassword  AuthPolicyType = "password"
-	AuthPolicyTwoFactor AuthPolicyType = "two_factor_mandatory"
+	AuthPolicyPassword  TFEAuthPolicyType = "password"
+	AuthPolicyTwoFactor TFEAuthPolicyType = "two_factor_mandatory"
 )
+
+// TFEOrganizationToken represents a Terraform Enterprise organization token.
+type TFEOrganizationToken struct {
+	ID        resource.TfeID `jsonapi:"primary,authentication-tokens"`
+	CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
+	Token     string         `jsonapi:"attribute" json:"token"`
+	ExpiredAt *time.Time     `jsonapi:"attribute" json:"expired-at"`
+}
+
+// TFEOrganizationTokenCreateOptions contains the options for creating an organization token.
+type TFEOrganizationTokenCreateOptions struct {
+	// Optional: The token's expiration date.
+	// This feature is available in TFE release v202305-1 and later
+	ExpiredAt *time.Time `jsonapi:"attribute" json:"expired-at,omitempty"`
+}
