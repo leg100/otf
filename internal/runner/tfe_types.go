@@ -1,9 +1,14 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package types
+package runner
 
-import "github.com/leg100/otf/internal/resource"
+import (
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/workspace"
+)
 
 // AgentPool represents a Terraform Cloud agent pool.
 type AgentPool struct {
@@ -13,9 +18,9 @@ type AgentPool struct {
 	OrganizationScoped bool           `jsonapi:"attribute" json:"organization-scoped"`
 
 	// Relations
-	Organization      *Organization `jsonapi:"relationship" json:"organization"`
-	Workspaces        []*Workspace  `jsonapi:"relationship" json:"workspaces"`
-	AllowedWorkspaces []*Workspace  `jsonapi:"relationship" json:"allowed-workspaces"`
+	Organization      *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
+	Workspaces        []*workspace.TFEWorkspace     `jsonapi:"relationship" json:"workspaces"`
+	AllowedWorkspaces []*workspace.TFEWorkspace     `jsonapi:"relationship" json:"allowed-workspaces"`
 }
 
 // AgentPoolCreateOptions represents the options for creating an agent pool.
@@ -33,7 +38,7 @@ type AgentPoolCreateOptions struct {
 	OrganizationScoped *bool `jsonapi:"attribute" json:"organization-scoped,omitempty"`
 
 	// List of workspaces that are associated with an agent pool.
-	AllowedWorkspaces []*Workspace `jsonapi:"relationship" json:"allowed-workspaces,omitempty"`
+	AllowedWorkspaces []*workspace.TFEWorkspace `jsonapi:"relationship" json:"allowed-workspaces,omitempty"`
 }
 
 // AgentPoolUpdateOptions represents the options for updating an agent pool.
@@ -51,12 +56,12 @@ type AgentPoolUpdateOptions struct {
 	OrganizationScoped *bool `jsonapi:"attribute" json:"organization-scoped,omitempty"`
 
 	// A new list of workspaces that are associated with an agent pool.
-	AllowedWorkspaces []*Workspace `jsonapi:"relationship" json:"allowed-workspaces,omitempty"`
+	AllowedWorkspaces []*workspace.TFEWorkspace `jsonapi:"relationship" json:"allowed-workspaces,omitempty"`
 }
 
 // AgentPoolListOptions represents the options for listing agent pools.
 type AgentPoolListOptions struct {
-	ListOptions
+	types.ListOptions
 	// Optional: A list of relations to include. See available resources
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/agents#available-related-resources
 	// Include []AgentPoolIncludeOpt `url:"include,omitempty"`

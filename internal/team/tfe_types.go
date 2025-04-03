@@ -1,24 +1,26 @@
 package team
 
-import "github.com/leg100/otf/internal/resource"
+import (
+	"github.com/leg100/otf/internal/resource"
+)
 
 type (
 	// TFETeam represents an otf team.
 	TFETeam struct {
-		ID                 resource.TfeID      `jsonapi:"primary,teams"`
-		Name               string              `jsonapi:"attribute" json:"name"`
-		OrganizationAccess *OrganizationAccess `jsonapi:"attribute" json:"organization-access"`
-		Visibility         string              `jsonapi:"attribute" json:"visibility"`
-		Permissions        *TeamPermissions    `jsonapi:"attribute" json:"permissions"`
-		UserCount          int                 `jsonapi:"attribute" json:"users-count"`
-		SSOTeamID          *string             `jsonapi:"attribute" json:"sso-team-id"`
+		ID                 resource.TfeID         `jsonapi:"primary,teams"`
+		Name               string                 `jsonapi:"attribute" json:"name"`
+		OrganizationAccess *TFEOrganizationAccess `jsonapi:"attribute" json:"organization-access"`
+		Visibility         string                 `jsonapi:"attribute" json:"visibility"`
+		Permissions        *TFETeamPermissions    `jsonapi:"attribute" json:"permissions"`
+		UserCount          int                    `jsonapi:"attribute" json:"users-count"`
+		SSOTeamID          *string                `jsonapi:"attribute" json:"sso-team-id"`
 
 		// Relations
-		Users []*user.TFEUser `jsonapi:"relationship" json:"users"`
+		Users []*TFEUser `jsonapi:"relationship" json:"users"`
 	}
 
-	// OrganizationAccess represents the team's permissions on its organization
-	OrganizationAccess struct {
+	// TFEOrganizationAccess represents the team's permissions on its organization
+	TFEOrganizationAccess struct {
 		ManagePolicies        bool `jsonapi:"attribute" json:"manage-policies"`
 		ManagePolicyOverrides bool `jsonapi:"attribute" json:"manage-policy-overrides"`
 		ManageWorkspaces      bool `jsonapi:"attribute" json:"manage-workspaces"`
@@ -32,14 +34,14 @@ type (
 		ManageMembership      bool `jsonapi:"attribute" json:"manage-membership"`
 	}
 
-	// TeamPermissions represents the current user's permissions on the team.
-	TeamPermissions struct {
+	// TFETeamPermissions represents the current user's permissions on the team.
+	TFETeamPermissions struct {
 		CanDestroy          bool `jsonapi:"attribute" json:"can-destroy"`
 		CanUpdateMembership bool `jsonapi:"attribute" json:"can-update-membership"`
 	}
 
-	// TeamCreateOptions represents the options for creating a team.
-	TeamCreateOptions struct {
+	// TFETeamCreateOptions represents the options for creating a team.
+	TFETeamCreateOptions struct {
 		// Type is a public field utilized by JSON:API to
 		// set the resource type via the field tag.
 		// It is not a user-defined value and does not need to be set.
@@ -53,14 +55,14 @@ type (
 		SSOTeamID *string `jsonapi:"attribute" json:"sso-team-id,omitempty"`
 
 		// The team's organization access
-		OrganizationAccess *OrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
+		OrganizationAccess *TFEOrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
 
 		// The team's visibility ("secret", "organization")
 		Visibility *string `jsonapi:"attribute" json:"visibility,omitempty"`
 	}
 
-	// TeamUpdateOptions represents the options for updating a team.
-	TeamUpdateOptions struct {
+	// TFETeamUpdateOptions represents the options for updating a team.
+	TFETeamUpdateOptions struct {
 		// Type is a public field utilized by JSON:API to
 		// set the resource type via the field tag.
 		// It is not a user-defined value and does not need to be set.
@@ -74,7 +76,7 @@ type (
 		SSOTeamID *string `jsonapi:"attribute" json:"sso-team-id,omitempty"`
 
 		// Optional: The team's organization access
-		OrganizationAccess *OrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
+		OrganizationAccess *TFEOrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
 
 		// Optional: The team's visibility ("secret", "organization")
 		Visibility *string `jsonapi:"attribute" json:"visibility,omitempty"`
@@ -93,5 +95,9 @@ type (
 		ReadWorkspaces        *bool `json:"read-workspaces,omitempty"`
 		ReadProjects          *bool `json:"read-projects,omitempty"`
 		ManageMembership      *bool `json:"manage-membership,omitempty"`
+	}
+
+	TFEUser struct {
+		ID resource.TfeID `jsonapi:"primary,users"`
 	}
 )

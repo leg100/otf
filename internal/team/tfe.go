@@ -40,7 +40,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.TeamCreateOptions
+	var params TFETeamCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -78,7 +78,7 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var params types.TeamUpdateOptions
+	var params TFETeamUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -125,7 +125,7 @@ func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	items := make([]*types.Team, len(teams))
+	items := make([]*TFETeam, len(teams))
 	for i, from := range teams {
 		items[i] = a.convertTeam(from)
 	}
@@ -180,13 +180,13 @@ func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertTeam(from *Team) *types.Team {
-	return &types.Team{
+func (a *tfe) convertTeam(from *Team) *TFETeam {
+	return &TFETeam{
 		ID:         from.ID,
 		Name:       from.Name,
 		SSOTeamID:  from.SSOTeamID,
 		Visibility: from.Visibility,
-		OrganizationAccess: &types.OrganizationAccess{
+		OrganizationAccess: &TFEOrganizationAccess{
 			ManageWorkspaces:      from.ManageWorkspaces,
 			ManageVCSSettings:     from.ManageVCS,
 			ManageModules:         from.ManageModules,
@@ -195,7 +195,7 @@ func (a *tfe) convertTeam(from *Team) *types.Team {
 			ManagePolicyOverrides: from.ManagePolicyOverrides,
 		},
 		// Hardcode these values until proper support is added
-		Permissions: &types.TeamPermissions{
+		Permissions: &TFETeamPermissions{
 			CanDestroy:          true,
 			CanUpdateMembership: true,
 		},

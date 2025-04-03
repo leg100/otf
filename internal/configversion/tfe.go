@@ -61,7 +61,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		tfeapi.Error(w, err)
 		return
 	}
-	params := types.ConfigurationVersionCreateOptions{}
+	params := TFEConfigurationVersionCreateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -134,7 +134,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// convert items
-	items := make([]*types.ConfigurationVersion, len(page.Items))
+	items := make([]*TFEConfigurationVersion, len(page.Items))
 	for i, from := range page.Items {
 		items[i] = a.convert(from, "")
 	}
@@ -212,7 +212,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 }
 
 func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error) {
-	tfeCV, ok := v.(*types.ConfigurationVersion)
+	tfeCV, ok := v.(*TFEConfigurationVersion)
 	if !ok {
 		return nil, nil
 	}
@@ -225,25 +225,25 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 	if err != nil {
 		return nil, err
 	}
-	return []any{&types.IngressAttributes{
+	return []any{&TFEIngressAttributes{
 		ID:        resource.ConvertTfeID(cv.ID, resource.IngressAttributesKind),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
 	}}, nil
 }
 
-func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *types.ConfigurationVersion {
-	to := &types.ConfigurationVersion{
+func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *TFEConfigurationVersion {
+	to := &TFEConfigurationVersion{
 		ID:               from.ID,
 		AutoQueueRuns:    from.AutoQueueRuns,
 		Speculative:      from.Speculative,
 		Source:           string(from.Source),
 		Status:           string(from.Status),
-		StatusTimestamps: &types.CVStatusTimestamps{},
+		StatusTimestamps: &TFECVStatusTimestamps{},
 		UploadURL:        uploadURL,
 	}
 	if from.IngressAttributes != nil {
-		to.IngressAttributes = &types.IngressAttributes{
+		to.IngressAttributes = &TFEIngressAttributes{
 			ID: resource.ConvertTfeID(from.ID, "ia"),
 		}
 	}

@@ -6,8 +6,11 @@ package run
 import (
 	"time"
 
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 // TFERun is a terraform run.
@@ -39,7 +42,7 @@ type TFERun struct {
 	Apply                *Apply                                 `jsonapi:"relationship" json:"apply"`
 	ConfigurationVersion *configversion.TFEConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
 	CostEstimate         *configversion.TFECostEstimate         `jsonapi:"relationship" json:"cost-estimate"`
-	CreatedBy            *configversion.TFEUser                 `jsonapi:"relationship" json:"created-by"`
+	CreatedBy            *user.TFEUser                          `jsonapi:"relationship" json:"created-by"`
 	Plan                 *Plan                                  `jsonapi:"relationship" json:"plan"`
 	Workspace            *RunWorkspace                          `jsonapi:"relationship" json:"workspace"`
 }
@@ -128,10 +131,10 @@ type RunCreateOptions struct {
 	// Specifies the configuration version to use for this run. If the
 	// configuration version object is omitted, the run will be created using the
 	// workspace's latest configuration version.
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	ConfigurationVersion *configversion.TFEConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
 
 	// Specifies the workspace where the run will be executed.
-	Workspace *Workspace `jsonapi:"relationship" json:"workspace"`
+	Workspace *workspace.TFEWorkspace `jsonapi:"relationship" json:"workspace"`
 
 	// If non-empty, requests that Terraform should create a plan including
 	// actions only for the given objects (specified using resource address
@@ -260,3 +263,22 @@ const (
 	// **Note: This operation type is still in BETA and subject to change.**
 	RunOperationSavePlan RunOperation = "save_plan"
 )
+
+// RunEventList represents a list of run events.
+type RunEventList struct {
+	// Pagination is not supported by the API
+	*types.Pagination
+	Items []*RunEvent
+}
+
+// RunEvent represents a Terraform Enterprise run event.
+type RunEvent struct {
+	ID          resource.TfeID `jsonapi:"primary,run-events"`
+	Action      string         `jsonapi:"attr,action"`
+	CreatedAt   time.Time      `jsonapi:"attr,created-at,iso8601"`
+	Description string         `jsonapi:"attr,description"`
+
+	// Relations - Note that `target` is not supported yet
+	Actor *user.TFEUser `jsonapi:"relation,actor"`
+	// Comment *Comment `jsonapi:"relation,comment"`
+}
