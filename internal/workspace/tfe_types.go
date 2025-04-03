@@ -5,9 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
@@ -55,9 +53,13 @@ type TFEWorkspace struct {
 	TagNames                   []string              `jsonapi:"attribute" json:"tag-names"`
 
 	// Relations
-	CurrentRun   *run.TFERun                   `jsonapi:"relationship" json:"current-run"`
-	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
-	Outputs      []*WorkspaceOutput            `jsonapi:"relationship" json:"outputs"`
+	CurrentRun   *WorkspaceRun      `jsonapi:"relationship" json:"current-run"`
+	Organization *Organization      `jsonapi:"relationship" json:"organization"`
+	Outputs      []*WorkspaceOutput `jsonapi:"relationship" json:"outputs"`
+}
+
+type WorkspaceRun struct {
+	ID resource.TfeID `jsonapi:"primary,runs"`
 }
 
 type WorkspaceOutput struct {

@@ -413,6 +413,11 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 }
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error) {
+	return ToTFE(a.Authorizer, from, r)
+}
+
+// ToTFE converts an OTF workspace to a TFE workspace.
+func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*types.Workspace, error) {
 	ctx := r.Context()
 	accessRequest := &authz.Request{ID: &from.ID}
 	perms := &types.WorkspacePermissions{
@@ -465,7 +470,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		to.FileTriggersEnabled = true
 	}
 	if from.LatestRun != nil {
-		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
+		to.CurrentRun = &types.WorkspaceRun{ID: from.LatestRun.ID}
 	}
 
 	// Add VCS repo to json:api struct if connected. NOTE: the terraform CLI

@@ -353,6 +353,22 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 	return []any{run.CreatedBy}, nil
 }
 
+func (a *tfe) includeWorkspace(ctx context.Context, v any) ([]any, error) {
+	run, ok := v.(*types.Run)
+	if !ok {
+		return nil, nil
+	}
+	ws, err := a.workspaces.Get(ctx, run.Workspace.ID)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving workspace: %w", err)
+	}
+	include, err := workspace.ToTFE(a.authorizer, ws, (&http.Request{}).WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return []any{include}, nil
+}
+
 // toRun converts a run into its equivalent json:api struct
 func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	accessRequest := &authz.Request{ID: &from.ID}
@@ -431,7 +447,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		ConfigurationVersion: &types.ConfigurationVersion{
 			ID: from.ConfigurationVersionID,
 		},
-		Workspace: &types.Workspace{ID: from.WorkspaceID},
+		Workspace: &types.RunWorkspace{ID: from.WorkspaceID},
 	}
 	to.Variables = make([]types.RunVariable, len(from.Variables))
 	for i, from := range from.Variables {

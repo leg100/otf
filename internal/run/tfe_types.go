@@ -8,7 +8,6 @@ import (
 
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi/types"
-	"github.com/leg100/otf/internal/workspace"
 )
 
 // TFERun is a terraform run.
@@ -42,7 +41,11 @@ type TFERun struct {
 	CostEstimate         *configversion.TFECostEstimate         `jsonapi:"relationship" json:"cost-estimate"`
 	CreatedBy            *configversion.TFEUser                 `jsonapi:"relationship" json:"created-by"`
 	Plan                 *Plan                                  `jsonapi:"relationship" json:"plan"`
-	Workspace            *workspace.TFEWorkspace                `jsonapi:"relationship" json:"workspace"`
+	Workspace            *RunWorkspace                          `jsonapi:"relationship" json:"workspace"`
+}
+
+type RunWorkspace struct {
+	ID resource.TfeID `jsonapi:"primary,workspaces"`
 }
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
