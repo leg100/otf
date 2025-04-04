@@ -679,7 +679,7 @@ func get(props getProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</a></div><div><h3 class=\"font-semibold mb-2\">Locking</h3>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</a></div><div id=\"locking\"><h3 class=\"font-semibold mb-2\">Locking</h3>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -701,14 +701,14 @@ func get(props getProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><span id=\"lock-state\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Title(props.button.State))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 227, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 227, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -728,7 +728,7 @@ func get(props getProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\" method=\"POST\"><button class=\"btn\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\" method=\"POST\"><button id=\"lock-button\" class=\"btn\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -745,7 +745,7 @@ func get(props getProps) templ.Component {
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(props.button.Text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 229, Col: 133}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 230, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
@@ -763,7 +763,7 @@ func get(props getProps) templ.Component {
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(props.button.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 231, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 233, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -781,7 +781,7 @@ func get(props getProps) templ.Component {
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Connection.Repo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 235, Col: 75}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 237, Col: 75}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 				if templ_7745c5c3_Err != nil {
@@ -794,7 +794,7 @@ func get(props getProps) templ.Component {
 				var templ_7745c5c3_Var39 string
 				templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsProvider.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 235, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 237, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 				if templ_7745c5c3_Err != nil {
@@ -826,7 +826,7 @@ func get(props getProps) templ.Component {
 				var templ_7745c5c3_Var41 string
 				templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 242, Col: 77}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 244, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 				if templ_7745c5c3_Err != nil {
@@ -839,7 +839,7 @@ func get(props getProps) templ.Component {
 				var templ_7745c5c3_Var42 string
 				templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 244, Col: 20}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 246, Col: 20}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 				if templ_7745c5c3_Err != nil {
@@ -857,7 +857,7 @@ func get(props getProps) templ.Component {
 					var templ_7745c5c3_Var43 string
 					templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs("button-remove-tag-" + tag)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 246, Col: 160}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 248, Col: 160}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 					if templ_7745c5c3_Err != nil {
@@ -986,7 +986,7 @@ func edit(props editProps) templ.Component {
 				var templ_7745c5c3_Var47 string
 				templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Connection.Repo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 303, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 305, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 				if templ_7745c5c3_Err != nil {
@@ -999,7 +999,7 @@ func edit(props editProps) templ.Component {
 				var templ_7745c5c3_Var48 string
 				templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsProvider.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 303, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 305, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 				if templ_7745c5c3_Err != nil {
@@ -1040,7 +1040,7 @@ func edit(props editProps) templ.Component {
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 318, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 320, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {
@@ -1053,7 +1053,7 @@ func edit(props editProps) templ.Component {
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 322, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 324, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 			if templ_7745c5c3_Err != nil {
@@ -1096,7 +1096,7 @@ func edit(props editProps) templ.Component {
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(props.poolsURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 345, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 347, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1138,7 +1138,7 @@ func edit(props editProps) templ.Component {
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.TerraformVersion)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 366, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 368, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
@@ -1151,7 +1151,7 @@ func edit(props editProps) templ.Component {
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.WorkingDirectory)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 373, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 375, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 			if templ_7745c5c3_Err != nil {
@@ -1201,7 +1201,7 @@ func edit(props editProps) templ.Component {
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(boolString(props.ws.Connection != nil))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 402, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 404, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1268,7 +1268,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTriggerAlways)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 420, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 422, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 		if templ_7745c5c3_Err != nil {
@@ -1291,7 +1291,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTriggerPatterns)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 425, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 427, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 		if templ_7745c5c3_Err != nil {
@@ -1314,7 +1314,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 428, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 430, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
@@ -1327,7 +1327,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs("workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 429, Col: 161}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 431, Col: 161}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
@@ -1340,7 +1340,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTriggerTags)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 447, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 449, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 		if templ_7745c5c3_Err != nil {
@@ -1363,7 +1363,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var66 string
 		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs("{regex: " + toJSON(props.ws.Connection.TagsRegex) + "}")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 451, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 453, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 		if templ_7745c5c3_Err != nil {
@@ -1376,7 +1376,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTagRegexDefault)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 453, Col: 100}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 455, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 		if templ_7745c5c3_Err != nil {
@@ -1399,7 +1399,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var68 string
 		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTagRegexPrefix)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 458, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 460, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 		if templ_7745c5c3_Err != nil {
@@ -1422,7 +1422,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var69 string
 		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTagRegexSuffix)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 463, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 465, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 		if templ_7745c5c3_Err != nil {
@@ -1450,7 +1450,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var70 string
 		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(props.vcsTagRegexCustom)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 469, Col: 111}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 471, Col: 111}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 		if templ_7745c5c3_Err != nil {
@@ -1473,7 +1473,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var71 string
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Connection.TagsRegex)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 471, Col: 149}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 473, Col: 149}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 		if templ_7745c5c3_Err != nil {
@@ -1486,7 +1486,7 @@ func editConnection(props editProps) templ.Component {
 		var templ_7745c5c3_Var72 string
 		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(props.ws.Connection.Branch)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 478, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 480, Col: 109}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 		if templ_7745c5c3_Err != nil {
@@ -1559,7 +1559,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var74 string
 			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs("permissions-" + perm.team.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 515, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 517, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 			if templ_7745c5c3_Err != nil {
@@ -1590,7 +1590,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var77 string
 			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(perm.team.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 517, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 519, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 			if templ_7745c5c3_Err != nil {
@@ -1603,7 +1603,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(perm.team.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 519, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 521, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 			if templ_7745c5c3_Err != nil {
@@ -1621,7 +1621,7 @@ func editPermissions(props editProps) templ.Component {
 				var templ_7745c5c3_Var79 string
 				templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(role.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 522, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 524, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 				if templ_7745c5c3_Err != nil {
@@ -1644,7 +1644,7 @@ func editPermissions(props editProps) templ.Component {
 				var templ_7745c5c3_Var80 string
 				templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(role.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 522, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 524, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
 				if templ_7745c5c3_Err != nil {
@@ -1671,7 +1671,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var82 string
 			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(perm.team.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 529, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 531, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
@@ -1711,7 +1711,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var84 string
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(perm.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 541, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 543, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 			if templ_7745c5c3_Err != nil {
@@ -1724,7 +1724,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 541, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 543, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 			if templ_7745c5c3_Err != nil {
@@ -1747,7 +1747,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var86 string
 			templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(role.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 549, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 551, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 			if templ_7745c5c3_Err != nil {
@@ -1760,7 +1760,7 @@ func editPermissions(props editProps) templ.Component {
 			var templ_7745c5c3_Var87 string
 			templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(role.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 549, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 551, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 			if templ_7745c5c3_Err != nil {
@@ -1844,7 +1844,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var91 string
 				templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(components.BlockLink(templ.SafeURL(path)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 581, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 583, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 				if templ_7745c5c3_Err != nil {
@@ -1857,7 +1857,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var92 string
 				templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(provider.ID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 581, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 583, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 				if templ_7745c5c3_Err != nil {
@@ -1870,7 +1870,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var93 string
 				templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinStringErrs(provider.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 583, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 585, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
 				if templ_7745c5c3_Err != nil {
@@ -1883,7 +1883,7 @@ func listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) templ
 				var templ_7745c5c3_Var94 string
 				templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), provider.CreatedAt))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 584, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 586, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
 				if templ_7745c5c3_Err != nil {
@@ -1990,7 +1990,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) t
 			var templ_7745c5c3_Var99 string
 			templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 615, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 617, Col: 98}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 			if templ_7745c5c3_Err != nil {
@@ -2008,7 +2008,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) t
 				var templ_7745c5c3_Var100 string
 				templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(repo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 623, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 625, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 				if templ_7745c5c3_Err != nil {
@@ -2030,7 +2030,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) t
 				var templ_7745c5c3_Var102 string
 				templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(vcsProviderID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 625, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 627, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 				if templ_7745c5c3_Err != nil {
@@ -2043,7 +2043,7 @@ func listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) t
 				var templ_7745c5c3_Var103 string
 				templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(repo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 626, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 628, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
 				if templ_7745c5c3_Err != nil {
@@ -2142,7 +2142,7 @@ func WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) templ.Comp
 			var templ_7745c5c3_Var108 string
 			templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 651, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/workspace/view.templ`, Line: 653, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
 			if templ_7745c5c3_Err != nil {

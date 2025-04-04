@@ -221,12 +221,14 @@ templ get(props getProps) {
 					</div>
 				}
 				<div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version" }>{ props.ws.TerraformVersion }</a></div>
-				<div>
+				<div id="locking">
 					<h3 class="font-semibold mb-2">Locking</h3>
 					<div class={ "flex", "flex-col", "gap-2", "p-2", map[string]bool{"bg-green-200": props.button.State == "unlocked", "bg-orange-200": props.button.State == "locked"} }>
-						<span>{ internal.Title(props.button.State) }</span>
+						<span id="lock-state">{ internal.Title(props.button.State) }</span>
 						if props.canLockWorkspace || props.canUnlockWorkspace {
-							<form action={ props.button.Action } method="POST"><button class="btn" disabled?={ props.button.Disabled }>{ props.button.Text }</button></form>
+							<form action={ props.button.Action } method="POST">
+								<button id="lock-button" class="btn" disabled?={ props.button.Disabled }>{ props.button.Text }</button>
+							</form>
 						}
 						<span class="text-sm">{ props.button.Message }</span>
 					</div>
