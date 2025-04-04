@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -54,7 +55,7 @@ type (
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
 		Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error)
-		List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error)
+		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
 		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 
@@ -163,7 +164,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -186,8 +187,8 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  resource.OrganizationName `schema:"organization_name,required"`
-		VCSProviderID resource.TfeID            `schema:"vcs_provider_id,required"`
+		Organization  organization.Name `schema:"organization_name,required"`
+		VCSProviderID resource.TfeID    `schema:"vcs_provider_id,required"`
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -233,9 +234,9 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  resource.OrganizationName `schema:"organization_name,required"`
-		VCSProviderID resource.TfeID            `schema:"vcs_provider_id,required"`
-		Repo          string                    `schema:"identifier,required"`
+		Organization  organization.Name `schema:"organization_name,required"`
+		VCSProviderID resource.TfeID    `schema:"vcs_provider_id,required"`
+		Repo          string            `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

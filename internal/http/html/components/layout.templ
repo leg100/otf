@@ -13,7 +13,7 @@ type Breadcrumb struct {
 
 type LayoutProps struct {
 	Title          string
-	Organization   *resource.OrganizationName
+	Organization   resource.ID
 	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
 	ContentLinks   templ.Component
@@ -66,7 +66,7 @@ templ Layout(props LayoutProps) {
 
 type BareLayoutProps struct {
 	Title        string
-	Organization *resource.OrganizationName
+	Organization resource.ID
 	PreContent   templ.Component
 	PostContent  templ.Component
 }
@@ -103,7 +103,7 @@ templ BareLayout(props BareLayoutProps) {
 	</html>
 }
 
-templ navbar(organization *resource.OrganizationName) {
+templ navbar(organization resource.ID) {
 	<header class="bg-gray-200">
 		<nav class="max-w-4xl flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
 			if Authenticated(ctx) {

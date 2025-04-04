@@ -7,7 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -61,7 +61,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: resource.NewTestOrganizationName(t)}
+		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: organization.NewTestName(t)}
 		h := &webHandlers{teams: &fakeService{team: team}}
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("POST", q, nil)

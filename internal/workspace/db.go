@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
@@ -334,7 +335,7 @@ AND   rc.repo_path = $2
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization resource.OrganizationName, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization organization.Name, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
 	rows := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -410,7 +411,7 @@ WHERE w.workspace_id = $1
 	return sql.CollectOneRow(row, scan)
 }
 
-func (db *pgdb) getByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
+func (db *pgdb) getByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
 	row := db.Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.terraform_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_user_id,
@@ -530,38 +531,38 @@ WHERE w.workspace_id = $1
 
 func scan(row pgx.CollectableRow) (*Workspace, error) {
 	type model struct {
-		ID                         resource.TfeID            `db:"workspace_id"`
-		CreatedAt                  time.Time                 `db:"created_at"`
-		UpdatedAt                  time.Time                 `db:"updated_at"`
-		AgentPoolID                *resource.TfeID           `db:"agent_pool_id"`
-		AllowDestroyPlan           bool                      `db:"allow_destroy_plan"`
-		AllowCLIApply              bool                      `db:"allow_cli_apply"`
-		AutoApply                  bool                      `db:"auto_apply"`
-		Branch                     string                    `db:"branch"`
-		CanQueueDestroyPlan        bool                      `db:"can_queue_destroy_plan"`
-		Description                string                    `db:"description"`
-		Environment                string                    `db:"environment"`
-		ExecutionMode              ExecutionMode             `db:"execution_mode"`
-		GlobalRemoteState          bool                      `db:"global_remote_state"`
-		MigrationEnvironment       string                    `db:"migration_environment"`
-		Name                       string                    `db:"name"`
-		QueueAllRuns               bool                      `db:"queue_all_runs"`
-		SpeculativeEnabled         bool                      `db:"speculative_enabled"`
-		StructuredRunOutputEnabled bool                      `db:"structured_run_output_enabled"`
-		SourceName                 string                    `db:"source_name"`
-		SourceURL                  string                    `db:"source_url"`
-		TerraformVersion           string                    `db:"terraform_version"`
-		WorkingDirectory           string                    `db:"working_directory"`
-		Organization               resource.OrganizationName `db:"organization_name"`
-		LatestRunStatus            *runstatus.Status         `db:"latest_run_status"`
-		LatestRunID                *resource.TfeID           `db:"latest_run_id"`
-		Tags                       []string                  `db:"tags"`
-		TriggerPatterns            []string                  `db:"trigger_patterns"`
-		TriggerPrefixes            []string                  `db:"trigger_prefixes"`
-		VCSTagsRegex               *string                   `db:"vcs_tags_regex"`
-		LockUserID                 *resource.TfeID           `db:"lock_user_id"`
-		LockRunID                  *resource.TfeID           `db:"lock_run_id"`
-		CurrentStateVersionID      *resource.TfeID           `db:"current_state_version_id"`
+		ID                         resource.TfeID    `db:"workspace_id"`
+		CreatedAt                  time.Time         `db:"created_at"`
+		UpdatedAt                  time.Time         `db:"updated_at"`
+		AgentPoolID                *resource.TfeID   `db:"agent_pool_id"`
+		AllowDestroyPlan           bool              `db:"allow_destroy_plan"`
+		AllowCLIApply              bool              `db:"allow_cli_apply"`
+		AutoApply                  bool              `db:"auto_apply"`
+		Branch                     string            `db:"branch"`
+		CanQueueDestroyPlan        bool              `db:"can_queue_destroy_plan"`
+		Description                string            `db:"description"`
+		Environment                string            `db:"environment"`
+		ExecutionMode              ExecutionMode     `db:"execution_mode"`
+		GlobalRemoteState          bool              `db:"global_remote_state"`
+		MigrationEnvironment       string            `db:"migration_environment"`
+		Name                       string            `db:"name"`
+		QueueAllRuns               bool              `db:"queue_all_runs"`
+		SpeculativeEnabled         bool              `db:"speculative_enabled"`
+		StructuredRunOutputEnabled bool              `db:"structured_run_output_enabled"`
+		SourceName                 string            `db:"source_name"`
+		SourceURL                  string            `db:"source_url"`
+		TerraformVersion           string            `db:"terraform_version"`
+		WorkingDirectory           string            `db:"working_directory"`
+		Organization               organization.Name `db:"organization_name"`
+		LatestRunStatus            *runstatus.Status `db:"latest_run_status"`
+		LatestRunID                *resource.TfeID   `db:"latest_run_id"`
+		Tags                       []string          `db:"tags"`
+		TriggerPatterns            []string          `db:"trigger_patterns"`
+		TriggerPrefixes            []string          `db:"trigger_prefixes"`
+		VCSTagsRegex               *string           `db:"vcs_tags_regex"`
+		LockUserID                 *resource.TfeID   `db:"lock_user_id"`
+		LockRunID                  *resource.TfeID   `db:"lock_run_id"`
+		CurrentStateVersionID      *resource.TfeID   `db:"current_state_version_id"`
 		Connection                 *connections.Connection
 	}
 	m, err := pgx.RowToStructByName[model](row)

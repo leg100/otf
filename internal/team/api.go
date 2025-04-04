@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
@@ -29,7 +29,7 @@ func (a *api) addHandlers(r *mux.Router) {
 
 func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -52,8 +52,8 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) getTeamByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization resource.OrganizationName `schema:"organization_name,required"`
-		Team         string                    `schema:"team_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
+		Team         string            `schema:"team_name,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)

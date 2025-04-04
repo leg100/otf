@@ -41,7 +41,7 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return err
 }
 
-func (db *pgdb) update(ctx context.Context, name resource.OrganizationName, fn func(context.Context, *Organization) error) (*Organization, error) {
+func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, *Organization) error) (*Organization, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
@@ -86,7 +86,7 @@ WHERE name = $9`,
 // dbListOptions represents the options for listing organizations via the
 // database.
 type dbListOptions struct {
-	names []resource.OrganizationName // filter organizations by name if non-nil
+	names []Name // filter organizations by name if non-nil
 	resource.PageOptions
 }
 
@@ -130,7 +130,7 @@ WHERE name LIKE ANY($1::text[])
 	return resource.NewPage(items, opts.PageOptions, &count), nil
 }
 
-func (db *pgdb) get(ctx context.Context, name resource.OrganizationName) (*Organization, error) {
+func (db *pgdb) get(ctx context.Context, name Name) (*Organization, error) {
 	row := db.Query(ctx, ` SELECT * FROM organizations WHERE name = $1 `, name)
 	return sql.CollectOneRow(row, db.scan)
 }
@@ -140,7 +140,7 @@ func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, 
 	return sql.CollectOneRow(row, db.scan)
 }
 
-func (db *pgdb) delete(ctx context.Context, name resource.OrganizationName) error {
+func (db *pgdb) delete(ctx context.Context, name Name) error {
 	_, err := db.Exec(ctx, ` DELETE FROM organizations WHERE name = $1 `, name)
 	return err
 }
@@ -173,12 +173,12 @@ INSERT INTO organization_tokens (
 	return err
 }
 
-func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error) {
+func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization Name) (*OrganizationToken, error) {
 	row := db.Query(ctx, ` SELECT * FROM organization_tokens WHERE organization_name = $1 `, organization)
 	return sql.CollectOneRow(row, db.scanToken)
 }
 
-func (db *pgdb) listOrganizationTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error) {
+func (db *pgdb) listOrganizationTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error) {
 	rows := db.Query(ctx, `
 SELECT organization_token_id, created_at, organization_name, expiry
 FROM organization_tokens
@@ -199,7 +199,7 @@ WHERE organization_token_id = $1
 	return sql.CollectOneRow(row, db.scanToken)
 }
 
-func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization resource.OrganizationName) error {
+func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization Name) error {
 	_, err := db.Exec(ctx, `
 DELETE
 FROM organization_tokens

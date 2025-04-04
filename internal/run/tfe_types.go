@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/user"
@@ -168,7 +169,7 @@ type TFERunCreateOptions struct {
 type TFERunListOptions struct {
 	types.ListOptions
 
-	Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
+	Organization *organization.Name `schema:"organization_name,omitempty"`
 
 	WorkspaceID *resource.TfeID `schema:"workspace_id,omitempty"`
 

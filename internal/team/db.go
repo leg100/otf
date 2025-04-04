@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -114,7 +115,7 @@ RETURNING team_id
 	)
 }
 
-func (db *pgdb) getTeam(ctx context.Context, name string, organization resource.OrganizationName) (*Team, error) {
+func (db *pgdb) getTeam(ctx context.Context, name string, organization organization.Name) (*Team, error) {
 	rows := db.Query(ctx, `
 SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams
@@ -143,7 +144,7 @@ WHERE tt.team_token_id = $1
 	return sql.CollectOneRow(rows, scan)
 }
 
-func (db *pgdb) listTeams(ctx context.Context, organization resource.OrganizationName) ([]*Team, error) {
+func (db *pgdb) listTeams(ctx context.Context, organization organization.Name) ([]*Team, error) {
 	rows := db.Query(ctx, `
 SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams
@@ -219,14 +220,14 @@ WHERE team_id = $1
 
 // Order of fields must match order of columns
 type Model struct {
-	ID                    resource.TfeID            `db:"team_id"`
-	Name                  string                    `db:"name"`
-	CreatedAt             time.Time                 `db:"created_at"`
-	ManageWorkspaces      bool                      `db:"permission_manage_workspaces"`
-	ManageVCS             bool                      `db:"permission_manage_vcs"`
-	ManageModules         bool                      `db:"permission_manage_modules"`
-	Organization          resource.OrganizationName `db:"organization_name"`
-	SSOTeamID             *string                   `db:"sso_team_id"`
+	ID                    resource.TfeID    `db:"team_id"`
+	Name                  string            `db:"name"`
+	CreatedAt             time.Time         `db:"created_at"`
+	ManageWorkspaces      bool              `db:"permission_manage_workspaces"`
+	ManageVCS             bool              `db:"permission_manage_vcs"`
+	ManageModules         bool              `db:"permission_manage_modules"`
+	Organization          organization.Name `db:"organization_name"`
+	SSOTeamID             *string           `db:"sso_team_id"`
 	Visibility            string
 	ManagePolicies        bool `db:"permission_manage_policies"`
 	ManagePolicyOverrides bool `db:"permission_manage_policy_overrides"`

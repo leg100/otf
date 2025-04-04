@@ -26,7 +26,7 @@ func (f *fakeService) updateAgentPool(ctx context.Context, poolID resource.TfeID
 	return nil, nil
 }
 
-func (f *fakeService) listAgentPoolsByOrganization(context.Context, resource.OrganizationName, listPoolOptions) ([]*Pool, error) {
+func (f *fakeService) listAgentPoolsByOrganization(context.Context, organization.Name, listPoolOptions) ([]*Pool, error) {
 	return []*Pool{f.pool}, nil
 }
 

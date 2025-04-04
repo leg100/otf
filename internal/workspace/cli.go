@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 
 	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/cobra"
@@ -17,7 +18,7 @@ type CLI struct {
 
 type cliClient interface {
 	List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-	GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error)
+	GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error)
 	Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
 	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
 	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
@@ -47,7 +48,7 @@ func NewCommand(apiClient *otfapi.Client) *cobra.Command {
 }
 
 func (a *CLI) workspaceListCommand() *cobra.Command {
-	var organization resource.OrganizationName
+	var organization organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "list",
@@ -79,7 +80,7 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 }
 
 func (a *CLI) workspaceShowCommand() *cobra.Command {
-	var organization resource.OrganizationName
+	var organization organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "show [name]",
@@ -113,7 +114,7 @@ func (a *CLI) workspaceShowCommand() *cobra.Command {
 
 func (a *CLI) workspaceEditCommand() *cobra.Command {
 	var (
-		organization resource.OrganizationName
+		organization organization.Name
 		opts         UpdateOptions
 		mode         string
 		poolID       string
@@ -160,7 +161,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 }
 
 func (a *CLI) workspaceLockCommand() *cobra.Command {
-	var organization resource.OrganizationName
+	var organization organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "lock [name]",
@@ -193,7 +194,7 @@ func (a *CLI) workspaceLockCommand() *cobra.Command {
 
 func (a *CLI) workspaceUnlockCommand() *cobra.Command {
 	var (
-		organization resource.OrganizationName
+		organization organization.Name
 		force        bool
 	)
 

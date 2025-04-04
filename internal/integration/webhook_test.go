@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -83,25 +84,25 @@ func TestWebhook_Purger(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		event func(*testing.T, resource.OrganizationName, resource.TfeID, resource.TfeID)
+		event func(*testing.T, organization.Name, resource.TfeID, resource.TfeID)
 	}{
 		{
 			name: "delete organization",
-			event: func(t *testing.T, org resource.OrganizationName, _, vcsProviderID resource.TfeID) {
+			event: func(t *testing.T, org organization.Name, _, vcsProviderID resource.TfeID) {
 				err := daemon.Organizations.Delete(ctx, org)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete vcs provider",
-			event: func(t *testing.T, _ resource.OrganizationName, _, vcsProviderID resource.TfeID) {
+			event: func(t *testing.T, _ organization.Name, _, vcsProviderID resource.TfeID) {
 				_, err := daemon.VCSProviders.Delete(ctx, vcsProviderID)
 				require.NoError(t, err)
 			},
 		},
 		{
 			name: "delete workspace",
-			event: func(t *testing.T, _ resource.OrganizationName, workspaceID, _ resource.TfeID) {
+			event: func(t *testing.T, _ organization.Name, workspaceID, _ resource.TfeID) {
 				_, err := daemon.Workspaces.Delete(ctx, workspaceID)
 				require.NoError(t, err)
 			},

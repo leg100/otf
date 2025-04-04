@@ -15,7 +15,7 @@ type (
 		ID        resource.TfeID `db:"organization_token_id"`
 		CreatedAt time.Time      `db:"created_at"`
 		// Token belongs to an organization
-		Organization resource.OrganizationName `db:"organization_name"`
+		Organization Name `db:"organization_name"`
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -23,7 +23,7 @@ type (
 	// CreateOrganizationTokenOptions are options for creating an organization token via the service
 	// endpoint
 	CreateOrganizationTokenOptions struct {
-		Organization resource.OrganizationName `schema:"organization_name,required"`
+		Organization Name `schema:"organization_name,required"`
 		Expiry       *time.Time
 	}
 

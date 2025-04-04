@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -22,10 +23,10 @@ type webHandlers struct {
 }
 
 type webClient interface {
-	Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error)
-	Get(ctx context.Context, organization resource.OrganizationName, team string) (*Team, error)
+	Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+	Get(ctx context.Context, organization organization.Name, team string) (*Team, error)
 	GetByID(ctx context.Context, teamID resource.TfeID) (*Team, error)
-	List(ctx context.Context, organization resource.OrganizationName) ([]*Team, error)
+	List(ctx context.Context, organization organization.Name) ([]*Team, error)
 	Update(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error)
 	Delete(ctx context.Context, teamID resource.TfeID) error
 }
@@ -45,7 +46,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization *resource.OrganizationName `schema:"organization_name,required"`
+		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -58,7 +59,7 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         *string
-		Organization *resource.OrganizationName `schema:"organization_name,required"`
+		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -104,7 +105,7 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

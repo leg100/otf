@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -148,7 +149,7 @@ func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOpti
 	return after, nil
 }
 
-func (a *Service) List(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error) {
+func (a *Service) List(ctx context.Context, organization organization.Name) ([]*VCSProvider, error) {
 	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err

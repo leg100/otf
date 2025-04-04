@@ -16,10 +16,10 @@ const (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID        resource.TfeID            `jsonapi:"primary,organizations" db:"organization_id"`
-		CreatedAt time.Time                 `jsonapi:"attribute" json:"created-at" db:"created_at"`
-		UpdatedAt time.Time                 `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
-		Name      resource.OrganizationName `jsonapi:"attribute" json:"name" db:"name"`
+		ID        resource.TfeID `jsonapi:"primary,organizations" db:"organization_id"`
+		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at" db:"created_at"`
+		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at" db:"updated_at"`
+		Name      Name           `jsonapi:"attribute" json:"name" db:"name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
@@ -65,7 +65,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 	if opts.Name == nil {
 		return nil, internal.ErrRequiredName
 	}
-	name, err := resource.NewOrganizationName(*opts.Name)
+	name, err := NewName(*opts.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 
 func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.Name != nil {
-		name, err := resource.NewOrganizationName(*opts.Name)
+		name, err := NewName(*opts.Name)
 		if err != nil {
 			return err
 		}

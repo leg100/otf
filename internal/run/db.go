@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
@@ -692,7 +693,7 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 			CreatedAt              time.Time                             `db:"created_at"`
 			IsDestroy              bool                                  `db:"is_destroy"`
 			CancelSignaledAt       *time.Time                            `db:"cancel_signaled_at"`
-			Organization           resource.OrganizationName             `db:"organization_name"`
+			Organization           organization.Name                     `db:"organization_name"`
 			Refresh                bool                                  `db:"refresh"`
 			RefreshOnly            bool                                  `db:"refresh_only"`
 			ReplaceAddrs           []string                              `db:"replace_addrs"`

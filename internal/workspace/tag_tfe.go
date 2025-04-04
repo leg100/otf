@@ -32,7 +32,7 @@ func (a *tfe) addTagHandlers(r *mux.Router) {
 
 func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
@@ -60,7 +60,7 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)

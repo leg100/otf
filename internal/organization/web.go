@@ -24,14 +24,14 @@ type (
 	// webService provides the web app with access to organizations
 	webService interface {
 		Create(ctx context.Context, opts CreateOptions) (*Organization, error)
-		Update(ctx context.Context, name resource.OrganizationName, opts UpdateOptions) (*Organization, error)
-		Get(ctx context.Context, name resource.OrganizationName) (*Organization, error)
+		Update(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error)
+		Get(ctx context.Context, name Name) (*Organization, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
-		Delete(ctx context.Context, name resource.OrganizationName) error
+		Delete(ctx context.Context, name Name) error
 
 		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
-		ListTokens(ctx context.Context, organization resource.OrganizationName) ([]*OrganizationToken, error)
-		DeleteToken(ctx context.Context, organization resource.OrganizationName) error
+		ListTokens(ctx context.Context, organization Name) ([]*OrganizationToken, error)
+		DeleteToken(ctx context.Context, organization Name) error
 	}
 )
 
@@ -110,7 +110,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) get(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -128,7 +128,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -146,8 +146,8 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name        resource.OrganizationName `schema:"name,required"`
-		UpdatedName string                    `schema:"new_name,required"`
+		Name        Name   `schema:"name,required"`
+		UpdatedName string `schema:"new_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -168,7 +168,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -209,7 +209,7 @@ func (a *web) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -230,7 +230,7 @@ func (a *web) organizationToken(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

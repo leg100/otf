@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/team"
 	"time"
 )
@@ -177,7 +177,7 @@ func profileLinks() templ.Component {
 }
 
 type userListProps struct {
-	organization resource.OrganizationName
+	organization organization.Name
 	users        []*User
 }
 
@@ -222,7 +222,7 @@ func userList(props userListProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "users",
-			Organization: &props.organization,
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "users"},
 			},
@@ -537,7 +537,7 @@ func getTeam(props getTeamProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        props.team.ID.String(),
-			Organization: &props.team.Organization,
+			Organization: props.team.Organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "teams", Link: paths.Teams(props.team.Organization)},
 				{Name: props.team.Name},

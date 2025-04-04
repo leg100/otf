@@ -40,29 +40,29 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     resource.TfeID            `jsonapi:"primary,runs"`
-		CreatedAt              time.Time                 `jsonapi:"attribute" json:"created_at"`
-		IsDestroy              bool                      `jsonapi:"attribute" json:"is_destroy"`
-		CancelSignaledAt       *time.Time                `jsonapi:"attribute" json:"cancel_signaled_at"`
-		Message                string                    `jsonapi:"attribute" json:"message"`
-		Organization           resource.OrganizationName `jsonapi:"attribute" json:"organization"`
-		Refresh                bool                      `jsonapi:"attribute" json:"refresh"`
-		RefreshOnly            bool                      `jsonapi:"attribute" json:"refresh_only"`
-		ReplaceAddrs           []string                  `jsonapi:"attribute" json:"replace_addrs"`
-		PositionInQueue        int                       `jsonapi:"attribute" json:"position_in_queue"`
-		TargetAddrs            []string                  `jsonapi:"attribute" json:"target_addrs"`
-		TerraformVersion       string                    `jsonapi:"attribute" json:"terraform_version"`
-		AllowEmptyApply        bool                      `jsonapi:"attribute" json:"allow_empty_apply"`
-		AutoApply              bool                      `jsonapi:"attribute" json:"auto_apply"`
-		PlanOnly               bool                      `jsonapi:"attribute" json:"plan_only"`
-		Source                 Source                    `jsonapi:"attribute" json:"source"`
-		Status                 runstatus.Status          `jsonapi:"attribute" json:"status"`
-		WorkspaceID            resource.TfeID            `jsonapi:"attribute" json:"workspace_id"`
-		ConfigurationVersionID resource.TfeID            `jsonapi:"attribute" json:"configuration_version_id"`
-		ExecutionMode          workspace.ExecutionMode   `jsonapi:"attribute" json:"execution_mode"`
-		Variables              []Variable                `jsonapi:"attribute" json:"variables"`
-		Plan                   Phase                     `jsonapi:"attribute" json:"plan"`
-		Apply                  Phase                     `jsonapi:"attribute" json:"apply"`
+		ID                     resource.TfeID          `jsonapi:"primary,runs"`
+		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
+		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
+		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
+		Message                string                  `jsonapi:"attribute" json:"message"`
+		Organization           organization.Name       `jsonapi:"attribute" json:"organization"`
+		Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
+		RefreshOnly            bool                    `jsonapi:"attribute" json:"refresh_only"`
+		ReplaceAddrs           []string                `jsonapi:"attribute" json:"replace_addrs"`
+		PositionInQueue        int                     `jsonapi:"attribute" json:"position_in_queue"`
+		TargetAddrs            []string                `jsonapi:"attribute" json:"target_addrs"`
+		TerraformVersion       string                  `jsonapi:"attribute" json:"terraform_version"`
+		AllowEmptyApply        bool                    `jsonapi:"attribute" json:"allow_empty_apply"`
+		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
+		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
+		Source                 Source                  `jsonapi:"attribute" json:"source"`
+		Status                 runstatus.Status        `jsonapi:"attribute" json:"status"`
+		WorkspaceID            resource.TfeID          `jsonapi:"attribute" json:"workspace_id"`
+		ConfigurationVersionID resource.TfeID          `jsonapi:"attribute" json:"configuration_version_id"`
+		ExecutionMode          workspace.ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
+		Variables              []Variable              `jsonapi:"attribute" json:"variables"`
+		Plan                   Phase                   `jsonapi:"attribute" json:"plan"`
+		Apply                  Phase                   `jsonapi:"attribute" json:"apply"`
 
 		// Timestamps of when a state transition occured. Ordered earliest
 		// first.
@@ -126,7 +126,7 @@ type (
 		// Filter by workspace ID
 		WorkspaceID *resource.TfeID `schema:"workspace_id,omitempty"`
 		// Filter by organization name
-		Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
+		Organization *organization.Name `schema:"organization_name,omitempty"`
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
 		// Filter by run statuses (with an implicit OR condition)
@@ -143,8 +143,8 @@ type (
 
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
-		Organization *resource.OrganizationName `schema:"organization_name,omitempty"` // filter by organization name
-		WorkspaceID  *resource.TfeID            `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
+		Organization *organization.Name `schema:"organization_name,omitempty"` // filter by organization name
+		WorkspaceID  *resource.TfeID    `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
 

@@ -11,6 +11,7 @@ import (
 	"github.com/antchfx/htmlquery"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
@@ -205,7 +206,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 }
 
 func TestUpdateWorkspaceHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -286,7 +287,7 @@ func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 }
 
 func TestDeleteWorkspace(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -304,7 +305,7 @@ func TestDeleteWorkspace(t *testing.T) {
 }
 
 func TestLockWorkspace(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -326,7 +327,7 @@ func TestLockWorkspace(t *testing.T) {
 }
 
 func TestUnlockWorkspace(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -348,7 +349,7 @@ func TestUnlockWorkspace(t *testing.T) {
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -369,7 +370,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -395,7 +396,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
@@ -422,7 +423,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
@@ -55,7 +56,7 @@ type fakeTeamService struct {
 	team *team.Team
 }
 
-func (f *fakeTeamService) Get(context.Context, resource.OrganizationName, string) (*team.Team, error) {
+func (f *fakeTeamService) Get(context.Context, organization.Name, string) (*team.Team, error) {
 	return f.team, nil
 }
 

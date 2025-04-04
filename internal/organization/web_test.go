@@ -166,7 +166,7 @@ func (f *fakeWebService) List(ctx context.Context, opts ListOptions) (*resource.
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebService) Delete(context.Context, resource.OrganizationName) error {
+func (f *fakeWebService) Delete(context.Context, Name) error {
 	return nil
 }
 

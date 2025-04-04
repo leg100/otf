@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -30,7 +31,7 @@ type webHandlers struct {
 type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
-	ListOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error)
+	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error)
 	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
 	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
@@ -87,7 +88,7 @@ func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name organization.Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

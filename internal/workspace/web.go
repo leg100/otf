@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/user"
@@ -55,12 +56,12 @@ type (
 	}
 
 	webTeamClient interface {
-		List(context.Context, resource.OrganizationName) ([]*team.Team, error)
+		List(context.Context, organization.Name) ([]*team.Team, error)
 	}
 
 	webVCSProvidersClient interface {
 		Get(ctx context.Context, providerID resource.TfeID) (*vcsprovider.VCSProvider, error)
-		List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error)
+		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
 
 		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
@@ -73,7 +74,7 @@ type (
 	webClient interface {
 		Create(ctx context.Context, opts CreateOptions) (*Workspace, error)
 		Get(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
-		GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error)
+		GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
 		Delete(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error)
@@ -82,7 +83,7 @@ type (
 
 		AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
 		RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error
-		ListTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error)
+		ListTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
 		GetWorkspacePolicy(ctx context.Context, workspaceID resource.TfeID) (Policy, error)
 		SetPermission(ctx context.Context, workspaceID, teamID resource.TfeID, role authz.Role) error
@@ -189,7 +190,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -200,8 +201,8 @@ func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         *string                    `schema:"name,required"`
-		Organization *resource.OrganizationName `schema:"organization_name,required"`
+		Name         *string            `schema:"name,required"`
+		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -299,8 +300,8 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         string                    `schema:"workspace_name,required"`
-		Organization resource.OrganizationName `schema:"organization_name,required"`
+		Name         string            `schema:"workspace_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

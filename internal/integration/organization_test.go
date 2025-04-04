@@ -56,7 +56,7 @@ func TestIntegration_Organization(t *testing.T) {
 		org := daemon.createOrganization(t, ctx)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
-		want := resource.NewTestOrganizationName(t)
+		want := organization.NewTestName(t)
 		updated, err := daemon.Organizations.Update(ctx, org.Name, organization.UpdateOptions{
 			Name: internal.String(want.String()),
 		})
@@ -149,7 +149,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 		// delete using site admin otherwise a not authorized error is returned
 		// to normal users
-		err := svc.Organizations.Delete(adminCtx, resource.NewTestOrganizationName(t))
+		err := svc.Organizations.Delete(adminCtx, organization.NewTestName(t))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 }

@@ -19,7 +19,7 @@ type listRunnersProps struct {
 templ listRunners(props listRunnersProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "runners",
-		Organization: &props.organization,
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "runners"},
 		},
@@ -78,7 +78,7 @@ type listAgentPoolProps struct {
 templ listAgentPools(props listAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "agent pools",
-		Organization: &props.organization,
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools"},
 		},
@@ -144,7 +144,7 @@ type getAgentPoolProps struct {
 templ getAgentPool(props getAgentPoolProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        props.pool.Name,
-		Organization: &props.pool.Organization,
+		Organization: props.pool.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
 			{Name: props.pool.Name},

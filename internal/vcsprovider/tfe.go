@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -36,7 +35,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
@@ -114,7 +113,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)

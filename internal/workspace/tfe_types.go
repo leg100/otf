@@ -182,7 +182,7 @@ type TFEWorkspaceCreateOptions struct {
 	Operations *bool `jsonapi:"attribute" json:"operations,omitempty"`
 
 	// Organization the workspace belongs to. Required.
-	Organization *resource.OrganizationName `schema:"organization_name"`
+	Organization *organization.Name `schema:"organization_name"`
 
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.

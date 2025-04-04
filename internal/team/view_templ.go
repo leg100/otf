@@ -11,10 +11,10 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 )
 
-func newTeamView(organization resource.OrganizationName) templ.Component {
+func newTeamView(organization organization.Name) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -64,7 +64,7 @@ func newTeamView(organization resource.OrganizationName) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new team",
-			Organization: &organization,
+			Organization: organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "teams", Link: paths.Teams(organization)},
 				{Name: "new"},
@@ -78,7 +78,7 @@ func newTeamView(organization resource.OrganizationName) templ.Component {
 }
 
 type listTeamsProps struct {
-	organization  resource.OrganizationName
+	organization  organization.Name
 	teams         []*Team
 	canCreateTeam bool
 }
@@ -187,7 +187,7 @@ func listTeams(props listTeamsProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "teams",
-			Organization: &props.organization,
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "teams"},
 			},

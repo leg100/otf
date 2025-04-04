@@ -263,9 +263,9 @@ RETURNING variable_set_id, global, name, description, organization_name
 
 func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 	type model struct {
-		ID           resource.TfeID            `db:"variable_set_id"`
-		Workspaces   []resource.TfeID          `db:"workspace_ids"`
-		Organization resource.OrganizationName `db:"organization_name"`
+		ID           resource.TfeID    `db:"variable_set_id"`
+		Workspaces   []resource.TfeID  `db:"workspace_ids"`
+		Organization organization.Name `db:"organization_name"`
 		Name         string
 		Description  string
 		Global       bool

@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
@@ -105,7 +106,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 	return module, nil
 }
 
-func (s *Service) publishModule(ctx context.Context, organization resource.OrganizationName, opts PublishOptions) (*Module, error) {
+func (s *Service) publishModule(ctx context.Context, organization organization.Name, opts PublishOptions) (*Module, error) {
 	name, provider, err := opts.Repo.Split()
 	if err != nil {
 		return nil, err

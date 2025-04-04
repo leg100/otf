@@ -308,7 +308,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 	return team
 }
 
-func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org resource.OrganizationName, name string) *team.Team {
+func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org organization.Name, name string) *team.Team {
 	t.Helper()
 
 	team, err := s.Teams.Get(ctx, org, name)
@@ -439,7 +439,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org resource.OrganizationName, poolID *resource.TfeID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default

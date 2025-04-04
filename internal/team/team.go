@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -20,7 +21,7 @@ type (
 		ManageVCS        bool `db:"permission_manage_vcs"`        // manage VCS providers
 		ManageModules    bool `db:"permission_manage_modules"`    // manage module registry
 
-		Organization resource.OrganizationName `jsonapi:"attribute" json:"organization" db:"organization_name"`
+		Organization organization.Name `jsonapi:"attribute" json:"organization" db:"organization_name"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
@@ -72,7 +73,7 @@ type (
 	}
 )
 
-func newTeam(organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error) {
+func newTeam(organization organization.Name, opts CreateTeamOptions) (*Team, error) {
 	// required parameters
 	if opts.Name == nil {
 		return nil, &internal.ErrMissingParameter{Parameter: "name"}
@@ -117,7 +118,7 @@ func (t *Team) IsOwners() bool {
 	return t.Name == "owners"
 }
 
-func (t *Team) IsOwner(organization resource.OrganizationName) bool {
+func (t *Team) IsOwner(organization resource.ID) bool {
 	return t.Organization == organization && t.IsOwners()
 }
 

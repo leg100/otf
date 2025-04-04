@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/team"
@@ -79,7 +80,7 @@ FROM users u
 	return sql.CollectRows(rows, scan)
 }
 
-func (db *pgdb) listOrganizationUsers(ctx context.Context, organization resource.OrganizationName) ([]*User, error) {
+func (db *pgdb) listOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error) {
 	rows := db.Query(ctx, `
 SELECT
     u.user_id, u.username, u.created_at, u.updated_at, u.site_admin,

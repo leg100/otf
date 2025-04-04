@@ -5,11 +5,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
-func (db *pgdb) listTags(ctx context.Context, organization resource.OrganizationName, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+func (db *pgdb) listTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	rows := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
@@ -30,7 +31,7 @@ WHERE t.organization_name = $1
 	return resource.NewPage(items, opts.PageOptions, nil), nil
 }
 
-func (db *pgdb) deleteTags(ctx context.Context, organization resource.OrganizationName, tagIDs []resource.TfeID) error {
+func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error {
 	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, tid := range tagIDs {
 			_, err := conn.Exec(ctx, `
@@ -48,7 +49,7 @@ AND   organization_name = $2
 	return err
 }
 
-func (db *pgdb) addTag(ctx context.Context, organization resource.OrganizationName, name string, tagID resource.TfeID) error {
+func (db *pgdb) addTag(ctx context.Context, organization organization.Name, name string, tagID resource.TfeID) error {
 	_, err := db.Exec(ctx, `
 INSERT INTO tags (
     tag_id,
@@ -66,7 +67,7 @@ INSERT INTO tags (
 	return nil
 }
 
-func (db *pgdb) findTagByName(ctx context.Context, organization resource.OrganizationName, name string) (*Tag, error) {
+func (db *pgdb) findTagByName(ctx context.Context, organization organization.Name, name string) (*Tag, error) {
 	row := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,
@@ -86,7 +87,7 @@ AND   t.organization_name = $2
 	return tag, nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization resource.OrganizationName, id resource.TfeID) (*Tag, error) {
+func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.TfeID) (*Tag, error) {
 	row := db.Query(ctx, `
 SELECT
     t.tag_id, t.name, t.organization_name,

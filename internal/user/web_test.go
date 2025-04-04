@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
@@ -86,7 +87,7 @@ func TestWeb_UserTokens(t *testing.T) {
 // permissions only if the authenticated user is an owner, so the test sets that
 // up first.
 func TestWeb_TeamGetHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	owners := &team.Team{Name: "owners", Organization: org1}
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	h := &webHandlers{

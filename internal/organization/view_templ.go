@@ -284,7 +284,7 @@ func get(organization *Organization) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:        organization.Name.String(),
-			Organization: &organization.Name,
+			Organization: organization.Name,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "main menu"},
 			},
@@ -523,7 +523,7 @@ func edit(organization *Organization) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        organization.Name.String(),
-			Organization: &organization.Name,
+			Organization: organization.Name,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "settings"},
 			},
@@ -535,7 +535,7 @@ func edit(organization *Organization) templ.Component {
 	})
 }
 
-func getToken(organization resource.OrganizationName, token *OrganizationToken) templ.Component {
+func getToken(organization Name, token *OrganizationToken) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -643,7 +643,7 @@ func getToken(organization resource.OrganizationName, token *OrganizationToken) 
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        organization.String(),
-			Organization: &organization,
+			Organization: organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "organization token"},
 			},

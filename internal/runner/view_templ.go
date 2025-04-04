@@ -71,7 +71,7 @@ func listRunners(props listRunnersProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "runners",
-			Organization: &props.organization,
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "runners"},
 			},
@@ -347,7 +347,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "agent pools",
-			Organization: &props.organization,
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "agent pools"},
 			},
@@ -847,7 +847,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        props.pool.Name,
-			Organization: &props.pool.Organization,
+			Organization: props.pool.Organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
 				{Name: props.pool.Name},

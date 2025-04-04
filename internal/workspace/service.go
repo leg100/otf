@@ -195,7 +195,7 @@ func (s *Service) Get(ctx context.Context, workspaceID resource.TfeID) (*Workspa
 	return ws, nil
 }
 
-func (s *Service) GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
+func (s *Service) GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
 	ws, err := s.db.getByName(ctx, organization, workspace)
 	if err != nil {
 		s.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 )
@@ -26,7 +27,7 @@ type (
 		RunCreatedBy                string
 		WorkspaceID                 resource.TfeID
 		WorkspaceName               string
-		OrganizationName            resource.OrganizationName
+		OrganizationName            organization.Name
 		Notifications               []genericNotificationPayload
 	}
 

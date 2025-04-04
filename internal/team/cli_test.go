@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +12,7 @@ import (
 func Test_teamNewCommand(t *testing.T) {
 	cli := &teamCLI{
 		client: &fakeService{
-			team: &Team{Name: "owners", Organization: resource.NewTestOrganizationName(t)},
+			team: &Team{Name: "owners", Organization: organization.NewTestName(t)},
 		},
 	}
 	cmd := cli.teamNewCommand()
@@ -28,7 +28,7 @@ func Test_teamNewCommand(t *testing.T) {
 func TestTeam_DeleteCommand(t *testing.T) {
 	cli := &teamCLI{
 		client: &fakeService{
-			team: &Team{Name: "owners", Organization: resource.NewTestOrganizationName(t)},
+			team: &Team{Name: "owners", Organization: organization.NewTestName(t)},
 		},
 	}
 	cmd := cli.teamDeleteCommand()

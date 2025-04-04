@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebHandlers_createAgentPool(t *testing.T) {
-	organization := resource.NewTestOrganizationName(t)
+	organization := organization.NewTestName(t)
 	id := testutils.ParseID(t, "pool-123")
 	svc := &fakeService{
 		pool: &Pool{ID: id},

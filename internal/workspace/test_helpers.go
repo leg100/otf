@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -36,7 +37,7 @@ func (f *FakeService) Get(context.Context, resource.TfeID) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) GetByName(context.Context, resource.OrganizationName, string) (*Workspace, error) {
+func (f *FakeService) GetByName(context.Context, organization.Name, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
 }
 
@@ -52,7 +53,7 @@ func (f *FakeService) Unlock(context.Context, resource.TfeID, *resource.TfeID, b
 	return f.Workspaces[0], nil
 }
 
-func (f *FakeService) ListTags(context.Context, resource.OrganizationName, ListTagsOptions) (*resource.Page[*Tag], error) {
+func (f *FakeService) ListTags(context.Context, organization.Name, ListTagsOptions) (*resource.Page[*Tag], error) {
 	return nil, nil
 }
 
@@ -85,7 +86,7 @@ func (f *fakeVCSProviderService) Get(ctx context.Context, providerID resource.Tf
 	return f.providers[0], nil
 }
 
-func (f *fakeVCSProviderService) List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeVCSProviderService) List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error) {
 	return f.providers, nil
 }
 
@@ -107,6 +108,6 @@ type fakeTeamService struct {
 	teams []*team.Team
 }
 
-func (f *fakeTeamService) List(context.Context, resource.OrganizationName) ([]*team.Team, error) {
+func (f *fakeTeamService) List(context.Context, organization.Name) ([]*team.Team, error) {
 	return f.teams, nil
 }

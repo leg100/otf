@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcs"
@@ -139,7 +140,7 @@ LEFT JOIN (github_app_installs gi JOIN github_apps ga USING (github_app_id)) USI
 	return sql.CollectRows(rows, db.scan)
 }
 
-func (db *pgdb) listByOrganization(ctx context.Context, organization resource.OrganizationName) ([]*VCSProvider, error) {
+func (db *pgdb) listByOrganization(ctx context.Context, organization organization.Name) ([]*VCSProvider, error) {
 	rows := db.Query(ctx, `
 SELECT
     v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
@@ -181,11 +182,11 @@ type (
 		Token            *string
 		CreatedAt        time.Time `db:"created_at"`
 		Name             string
-		VCSKind          vcs.Kind                  `db:"vcs_kind"`
-		OrganizationName resource.OrganizationName `db:"organization_name"`
-		GithubAppID      *int                      `db:"github_app_id"`
-		GithubApp        *githubAppModel           `db:"github_app"`
-		GithubAppInstall *githubAppInstallModel    `db:"github_app_install"`
+		VCSKind          vcs.Kind               `db:"vcs_kind"`
+		OrganizationName organization.Name      `db:"organization_name"`
+		GithubAppID      *int                   `db:"github_app_id"`
+		GithubApp        *githubAppModel        `db:"github_app"`
+		GithubAppInstall *githubAppInstallModel `db:"github_app_install"`
 	}
 
 	githubAppModel struct {

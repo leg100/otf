@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
@@ -15,10 +16,10 @@ import (
 	"time"
 )
 
-templ new(organization resource.OrganizationName) {
+templ new(organization organization.Name) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new workspace",
-		Organization: &organization,
+		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(organization)},
 			{Name: "new"},
@@ -37,7 +38,7 @@ templ new(organization resource.OrganizationName) {
 }
 
 type listProps struct {
-	organization        resource.OrganizationName
+	organization        organization.Name
 	search              string
 	status              []runstatus.Status
 	tags                map[string]bool
@@ -144,7 +145,7 @@ templ tag(name string) {
 	</span>
 }
 
-templ listActions(organization resource.OrganizationName, canCreate bool) {
+templ listActions(organization organization.Name, canCreate bool) {
 	if canCreate {
 		<form action={ paths.NewWorkspace(organization) } method="GET">
 			<button class="btn" id="new-workspace-button">New Workspace</button>
@@ -171,7 +172,7 @@ templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
-		Organization: &props.ws.Organization,
+		Organization: props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
@@ -285,7 +286,7 @@ templ edit(props editProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "edit | " + props.ws.ID.String(),
-		Organization: &props.ws.Organization,
+		Organization: props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
@@ -564,7 +565,7 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs providers | " + ws.ID.String(),
-		Organization: &ws.Organization,
+		Organization: ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
@@ -598,7 +599,7 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "list vcs repos | " + ws.ID.String(),
-		Organization: &ws.Organization,
+		Organization: ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID)},

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -186,7 +187,7 @@ func TestWorkspace(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		nonExistentOrganization := resource.NewTestOrganizationName(t)
+		nonExistentOrganization := organization.NewTestName(t)
 
 		tests := []struct {
 			name string
@@ -341,7 +342,7 @@ func TestWorkspace(t *testing.T) {
 		user1 := svc.createUser(t, user.WithTeams(team1, team2))
 		user2 := svc.createUser(t)
 
-		nonExistentOrganization := resource.NewTestOrganizationName(t)
+		nonExistentOrganization := organization.NewTestName(t)
 
 		tests := []struct {
 			name string

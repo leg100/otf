@@ -30,13 +30,13 @@ func Authenticated(ctx context.Context) bool {
 	return true
 }
 
-func IsOwner(ctx context.Context, organization resource.OrganizationName) bool {
+func IsOwner(ctx context.Context, organization resource.ID) bool {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return false
 	}
 	if user, ok := subject.(interface {
-		IsOwner(resource.OrganizationName) bool
+		IsOwner(resource.ID) bool
 	}); ok {
 		return user.IsOwner(organization)
 	}

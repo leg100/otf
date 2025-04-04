@@ -14,7 +14,7 @@ var DefaultOrganizationPermissions = TFEOrganizationPermissions{
 
 // TFEOrganization represents a Terraform Enterprise organization.
 type TFEOrganization struct {
-	Name                                              resource.OrganizationName   `jsonapi:"primary,organizations"`
+	Name                                              Name                        `jsonapi:"primary,organizations"`
 	AssessmentsEnforced                               bool                        `jsonapi:"attribute" json:"assessments-enforced"`
 	CollaboratorAuthPolicy                            TFEAuthPolicyType           `jsonapi:"attribute" json:"collaborator-auth-policy"`
 	CostEstimationEnabled                             bool                        `jsonapi:"attribute" json:"cost-estimation-enabled"`

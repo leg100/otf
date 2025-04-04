@@ -10,6 +10,7 @@ import (
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func TestVCSProvider_newGithubApp(t *testing.T) {
 }
 
 func TestCreateVCSProviderHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	svc := &webHandlers{
 		githubApps: &fakeGithubAppService{},
 		client:     &fakeService{provider: &VCSProvider{Organization: org1}},
@@ -68,7 +69,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 }
 
 func TestListVCSProvidersHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	svc := &webHandlers{
 		githubApps: &fakeGithubAppService{},
 		client:     &fakeService{provider: &VCSProvider{Organization: org1}},
@@ -82,7 +83,7 @@ func TestListVCSProvidersHandler(t *testing.T) {
 }
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	svc := &webHandlers{
 		client: &fakeService{provider: &VCSProvider{Organization: org1}},
 	}
@@ -107,7 +108,7 @@ func (f *fakeService) Create(ctx context.Context, opts CreateOptions) (*VCSProvi
 	return f.provider, nil
 }
 
-func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*VCSProvider, error) {
+func (f *fakeService) List(context.Context, organization.Name) ([]*VCSProvider, error) {
 	return []*VCSProvider{f.provider}, nil
 }
 

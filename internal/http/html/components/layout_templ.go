@@ -21,7 +21,7 @@ type Breadcrumb struct {
 
 type LayoutProps struct {
 	Title          string
-	Organization   *resource.OrganizationName
+	Organization   resource.ID
 	Breadcrumbs    []Breadcrumb
 	ContentActions templ.Component
 	ContentLinks   templ.Component
@@ -176,7 +176,7 @@ func Layout(props LayoutProps) templ.Component {
 
 type BareLayoutProps struct {
 	Title        string
-	Organization *resource.OrganizationName
+	Organization resource.ID
 	PreContent   templ.Component
 	PostContent  templ.Component
 }
@@ -358,7 +358,7 @@ func BareLayout(props BareLayoutProps) templ.Component {
 	})
 }
 
-func navbar(organization *resource.OrganizationName) templ.Component {
+func navbar(organization resource.ID) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

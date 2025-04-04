@@ -3,6 +3,7 @@ package team
 import (
 	"context"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -10,7 +11,7 @@ type fakeService struct {
 	team *Team
 }
 
-func (f *fakeService) Create(context.Context, resource.OrganizationName, CreateTeamOptions) (*Team, error) {
+func (f *fakeService) Create(context.Context, organization.Name, CreateTeamOptions) (*Team, error) {
 	return f.team, nil
 }
 
@@ -18,7 +19,7 @@ func (f *fakeService) Update(context.Context, resource.TfeID, UpdateTeamOptions)
 	return f.team, nil
 }
 
-func (f *fakeService) Get(context.Context, resource.OrganizationName, string) (*Team, error) {
+func (f *fakeService) Get(context.Context, organization.Name, string) (*Team, error) {
 	return f.team, nil
 }
 
@@ -26,7 +27,7 @@ func (f *fakeService) GetByID(context.Context, resource.TfeID) (*Team, error) {
 	return f.team, nil
 }
 
-func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*Team, error) {
+func (f *fakeService) List(context.Context, organization.Name) ([]*Team, error) {
 	return []*Team{f.team}, nil
 }
 

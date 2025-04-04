@@ -36,20 +36,20 @@ func workspaceRunsURL(hostname string, workspaceID resource.TfeID) string {
 	return fmt.Sprintf("https://%s/app/workspaces/%s/runs", hostname, workspaceID)
 }
 
-func workspaceURL(hostname string, org resource.OrganizationName, name string) string {
+func workspaceURL(hostname string, org organization.Name, name string) string {
 	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces/" + name
 }
 
-func workspacesURL(hostname string, org resource.OrganizationName) string {
+func workspacesURL(hostname string, org organization.Name) string {
 	return "https://" + hostname + "/app/organizations/" + org.String() + "/workspaces"
 }
 
-func organizationURL(hostname string, org resource.OrganizationName) string {
+func organizationURL(hostname string, org organization.Name) string {
 	return "https://" + hostname + "/app/organizations/" + org.String()
 }
 
 // newRootModule creates a terraform root module, returning its directory path
-func newRootModule(t *testing.T, hostname string, organization resource.OrganizationName, workspace string, additionalConfig ...string) string {
+func newRootModule(t *testing.T, hostname string, organization organization.Name, workspace string, additionalConfig ...string) string {
 	t.Helper()
 
 	config := fmt.Sprintf(`

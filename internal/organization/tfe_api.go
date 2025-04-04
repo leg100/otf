@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 )
 
@@ -62,7 +61,7 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -101,7 +100,7 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -132,7 +131,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -149,7 +148,7 @@ func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -167,7 +166,7 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -199,7 +198,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -226,7 +225,7 @@ func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"organization_name"`
+		Name Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)

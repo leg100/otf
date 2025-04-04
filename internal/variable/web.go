@@ -261,7 +261,7 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -284,7 +284,7 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 
 func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -310,8 +310,8 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		Name           *string `schema:"name,required"`
 		Description    string
 		Global         bool
-		Organization   resource.OrganizationName `schema:"organization_name,required"`
-		WorkspacesJSON string                    `schema:"workspaces"`
+		Organization   organization.Name `schema:"organization_name,required"`
+		WorkspacesJSON string            `schema:"workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -551,7 +551,7 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
-func (h *web) getAvailableWorkspaces(ctx context.Context, org resource.OrganizationName) ([]workspaceInfo, error) {
+func (h *web) getAvailableWorkspaces(ctx context.Context, org organization.Name) ([]workspaceInfo, error) {
 	// retrieve names of all workspaces in org to show in dropdown widget
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
 		return h.workspaces.List(ctx, workspace.ListOptions{

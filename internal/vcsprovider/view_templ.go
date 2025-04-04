@@ -13,14 +13,14 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"
 	"time"
 )
 
 type listProps struct {
-	organization resource.OrganizationName
+	organization organization.Name
 	providers    []*VCSProvider
 	app          *github.App
 }
@@ -133,7 +133,7 @@ func list(props listProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "vcs providers",
-			Organization: &props.organization,
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "vcs providers"},
 			},
@@ -331,7 +331,7 @@ func edit(provider *VCSProvider) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "edit vcs provider",
-			Organization: &provider.Organization,
+			Organization: provider.Organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
 				{Name: provider.String()},
@@ -434,7 +434,7 @@ func newPAT(props newPATProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new vcs provider",
-			Organization: &props.provider.Organization,
+			Organization: props.provider.Organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "New " + internal.Title(string(props.provider.Kind)) + " VCS Provider"},
 			},
@@ -447,7 +447,7 @@ func newPAT(props newPATProps) templ.Component {
 }
 
 type newGithubAppProps struct {
-	organization   resource.OrganizationName
+	organization   organization.Name
 	app            *github.App
 	installations  []*github.Installation
 	kind           vcs.Kind
@@ -556,7 +556,7 @@ func newGithubApp(props newGithubAppProps) templ.Component {
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
 			Title:        "new vcs provider",
-			Organization: &props.organization,
+			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "New Github App VCS Provider"},
 			},

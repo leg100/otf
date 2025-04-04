@@ -3,13 +3,13 @@ package team
 import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 )
 
-templ newTeamView(organization resource.OrganizationName) {
+templ newTeamView(organization organization.Name) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new team",
-		Organization: &organization,
+		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "teams", Link: paths.Teams(organization)},
 			{Name: "new"},
@@ -28,7 +28,7 @@ templ newTeamView(organization resource.OrganizationName) {
 }
 
 type listTeamsProps struct {
-	organization  resource.OrganizationName
+	organization  organization.Name
 	teams         []*Team
 	canCreateTeam bool
 }
@@ -36,7 +36,7 @@ type listTeamsProps struct {
 templ listTeams(props listTeamsProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "teams",
-		Organization: &props.organization,
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "teams"},
 		},

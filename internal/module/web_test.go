@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -141,7 +142,7 @@ func TestWeb_Publish(t *testing.T) {
 }
 
 func TestNewModule_Delete(t *testing.T) {
-	mod := Module{Organization: resource.NewTestOrganizationName(t)}
+	mod := Module{Organization: organization.NewTestName(t)}
 	h := newTestWebHandlers(t, withMod(&mod))
 
 	q := "/?module_id=mod-123"
@@ -155,7 +156,7 @@ func TestNewModule_Delete(t *testing.T) {
 	}
 }
 
-func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
+func newTestWebHandlers(_ *testing.T, opts ...testWebOption) *webHandlers {
 	var svc fakeService
 	for _, fn := range opts {
 		fn(&svc)

@@ -92,7 +92,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -188,7 +188,7 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

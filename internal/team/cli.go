@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 
 	"github.com/spf13/cobra"
@@ -16,8 +17,8 @@ type teamCLI struct {
 }
 
 type cliClient interface {
-	Create(ctx context.Context, organization resource.OrganizationName, opts CreateTeamOptions) (*Team, error)
-	Get(ctx context.Context, organization resource.OrganizationName, team string) (*Team, error)
+	Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+	Get(ctx context.Context, organization organization.Name, team string) (*Team, error)
 	Delete(ctx context.Context, teamID resource.TfeID) error
 }
 
@@ -41,7 +42,7 @@ func NewTeamCommand(apiClient *otfapi.Client) *cobra.Command {
 }
 
 func (a *teamCLI) teamNewCommand() *cobra.Command {
-	var organization string
+	var org string
 
 	cmd := &cobra.Command{
 		Use:           "new [name]",
@@ -50,7 +51,7 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			orgname, err := resource.NewOrganizationName(organization)
+			orgname, err := organization.NewName(org)
 			if err != nil {
 				return err
 			}
@@ -65,14 +66,14 @@ func (a *teamCLI) teamNewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "OTF organization in which to perform action")
+	cmd.Flags().StringVar(&org, "organization", "", "OTF organization in which to perform action")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }
 
 func (a *teamCLI) teamDeleteCommand() *cobra.Command {
-	var organization string
+	var org string
 
 	cmd := &cobra.Command{
 		Use:           "delete [name]",
@@ -81,7 +82,7 @@ func (a *teamCLI) teamDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			orgname, err := resource.NewOrganizationName(organization)
+			orgname, err := organization.NewName(org)
 			if err != nil {
 				return err
 			}
@@ -97,7 +98,7 @@ func (a *teamCLI) teamDeleteCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "OTF organization in which to perform action")
+	cmd.Flags().StringVar(&org, "organization", "", "OTF organization in which to perform action")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

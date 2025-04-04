@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -15,7 +16,7 @@ type (
 		Description  string
 		Global       bool
 		Workspaces   []resource.TfeID
-		Organization resource.OrganizationName
+		Organization organization.Name
 		Variables    []*Variable
 	}
 
@@ -34,7 +35,7 @@ type (
 	}
 )
 
-func newSet(organization resource.OrganizationName, opts CreateVariableSetOptions) (*VariableSet, error) {
+func newSet(organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {
 	return &VariableSet{
 		ID:           resource.NewTfeID(resource.VariableSetKind),
 		Name:         opts.Name,

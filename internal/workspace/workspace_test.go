@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestNewWorkspace(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	agentPoolID := testutils.ParseID(t, "apool-123")
 	vcsProviderID := testutils.ParseID(t, "vcs-123")
 
@@ -179,7 +180,7 @@ func TestNewWorkspace(t *testing.T) {
 }
 
 func TestWorkspace_UpdateError(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	agentPoolID := testutils.ParseID(t, "apool-123")
 	vcsProviderID := testutils.ParseID(t, "vcs-123")
 
@@ -323,7 +324,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 }
 
 func TestWorkspace_Update(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	tests := []struct {
 		name string
 		ws   *Workspace
@@ -379,7 +380,7 @@ func TestWorkspace_Update(t *testing.T) {
 }
 
 func TestWorkspace_UpdateConnection(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
 	vcsProviderID := testutils.ParseID(t, "vcs-123")
 
 	tests := []struct {

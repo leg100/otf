@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
@@ -14,7 +15,7 @@ import (
 )
 
 // createWorkspace creates a workspace via the UI
-func createWorkspace(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name string) {
+func createWorkspace(t *testing.T, page playwright.Page, hostname string, org organization.Name, name string) {
 	t.Helper()
 
 	_, err := page.Goto(organizationURL(hostname, org))
@@ -69,7 +70,7 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, workspaceName string, teamID resource.TfeID, role string) {
+func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org organization.Name, workspaceName string, teamID resource.TfeID, role string) {
 	t.Helper()
 
 	// go to workspace
@@ -113,7 +114,7 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string,
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, page playwright.Page, hostname string, organization resource.OrganizationName, workspaceName string, op run.Operation, apply bool) {
+func startRunTasks(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, op run.Operation, apply bool) {
 	t.Helper()
 
 	// go to workspace page
@@ -134,7 +135,7 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname string, organiza
 	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
 }
 
-func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, organization resource.OrganizationName, workspaceName string, apply bool) {
+func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, apply bool) {
 	t.Helper()
 
 	// confirm plan begins and ends
@@ -210,7 +211,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, 
 	require.NoError(t, err)
 }
 
-func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name, provider string) {
+func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org organization.Name, name, provider string) {
 	t.Helper()
 
 	// go to workspace
@@ -242,7 +243,7 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, 
 	require.NoError(t, err)
 }
 
-func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org resource.OrganizationName, name string) {
+func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org organization.Name, name string) {
 	t.Helper()
 
 	// go to workspace

@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSiteAdminCanAccessOrganization(t *testing.T) {
-	org := resource.NewTestOrganizationName(t)
+	org := organization.NewTestName(t)
 	u := User{
 		ID: SiteAdminID,
 	}
@@ -18,7 +18,7 @@ func TestSiteAdminCanAccessOrganization(t *testing.T) {
 }
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
-	org := resource.NewTestOrganizationName(t)
+	org := organization.NewTestName(t)
 	u := User{
 		Teams: []*team.Team{
 			{
@@ -31,9 +31,9 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 }
 
 func TestUser_Organizations(t *testing.T) {
-	org1 := resource.NewTestOrganizationName(t)
-	org2 := resource.NewTestOrganizationName(t)
-	org3 := resource.NewTestOrganizationName(t)
+	org1 := organization.NewTestName(t)
+	org2 := organization.NewTestName(t)
+	org3 := organization.NewTestName(t)
 
 	u := User{
 		Teams: []*team.Team{

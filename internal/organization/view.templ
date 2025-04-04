@@ -80,7 +80,7 @@ templ get(organization *Organization) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        organization.Name.String(),
-		Organization: &organization.Name,
+		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "main menu"},
 		},
@@ -133,7 +133,7 @@ templ get(organization *Organization) {
 templ edit(organization *Organization) {
 	@components.Layout(components.LayoutProps{
 		Title:        organization.Name.String(),
-		Organization: &organization.Name,
+		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "settings"},
 		},
@@ -158,10 +158,10 @@ templ edit(organization *Organization) {
 	}
 }
 
-templ getToken(organization resource.OrganizationName, token *OrganizationToken) {
+templ getToken(organization Name, token *OrganizationToken) {
 	@components.Layout(components.LayoutProps{
 		Title:        organization.String(),
-		Organization: &organization,
+		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "organization token"},
 		},

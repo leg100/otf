@@ -19,11 +19,11 @@ type (
 	// cliService provides the cli with access to organizations
 	cliService interface {
 		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
-		Update(ctx context.Context, name resource.OrganizationName, opts UpdateOptions) (*Organization, error)
-		Get(ctx context.Context, name resource.OrganizationName) (*Organization, error)
+		Update(ctx context.Context, name Name, opts UpdateOptions) (*Organization, error)
+		Get(ctx context.Context, name Name) (*Organization, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
-		DeleteOrganization(ctx context.Context, name resource.OrganizationName) error
-		GetEntitlements(ctx context.Context, organization resource.OrganizationName) (Entitlements, error)
+		DeleteOrganization(ctx context.Context, name Name) error
+		GetEntitlements(ctx context.Context, organization Name) (Entitlements, error)
 		AfterCreateOrganization(hook func(context.Context, *Organization) error)
 		BeforeDeleteOrganization(hook func(context.Context, *Organization) error)
 
@@ -31,8 +31,8 @@ type (
 		CreateToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error)
 		// GetOrganizationToken gets the organization token. If a token does not
 		// exist, then nil is returned without an error.
-		GetOrganizationToken(ctx context.Context, organization resource.OrganizationName) (*OrganizationToken, error)
-		DeleteToken(ctx context.Context, organization resource.OrganizationName) error
+		GetOrganizationToken(ctx context.Context, organization Name) (*OrganizationToken, error)
+		DeleteToken(ctx context.Context, organization Name) error
 		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error)
 	}
@@ -87,7 +87,7 @@ func (a *CLI) deleteOrganizationCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name, err := resource.NewOrganizationName(args[0])
+			name, err := NewName(args[0])
 			if err != nil {
 				return err
 			}

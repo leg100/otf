@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
@@ -15,7 +16,7 @@ import (
 )
 
 type listProps struct {
-	organization        resource.OrganizationName
+	organization        organization.Name
 	ws                  *workspace.Workspace
 	status              []runstatus.Status
 	statusFilterVisible bool
@@ -27,7 +28,7 @@ templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        "runs",
-		Organization: &props.organization,
+		Organization: props.organization,
 	}
 	if props.ws != nil {
 		layoutProps.Breadcrumbs = []components.Breadcrumb{
@@ -191,7 +192,7 @@ templ get(props getProps) {
 	{{
 	layoutProps := components.LayoutProps{
 		Title:        props.run.ID.String(),
-		Organization: &props.ws.Organization,
+		Organization: props.ws.Organization,
 		PreContent:   getPreContent(),
 		PostContent:  getPostContent(props),
 		Breadcrumbs: []components.Breadcrumb{

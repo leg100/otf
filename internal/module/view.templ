@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"html/template"
@@ -13,7 +14,7 @@ import (
 )
 
 type newViewProps struct {
-	organization  resource.OrganizationName
+	organization  organization.Name
 	providers     []*vcsprovider.VCSProvider
 	repos         []string
 	vcsProviderID resource.TfeID
@@ -25,7 +26,7 @@ type newViewProps struct {
 templ newView(props newViewProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new module",
-		Organization: &props.organization,
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules", Link: paths.Modules(props.organization)},
 			{Name: "new"},
@@ -152,7 +153,7 @@ templ newConfirm(props newViewProps) {
 }
 
 type listProps struct {
-	organization     resource.OrganizationName
+	organization     organization.Name
 	modules          []*Module
 	canPublishModule bool
 }
@@ -207,7 +208,7 @@ type getProps struct {
 templ get(props getProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "modules",
-		Organization: &props.module.Organization,
+		Organization: props.module.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules", Link: paths.Modules(props.module.Organization)},
 			{Name: props.module.Name},

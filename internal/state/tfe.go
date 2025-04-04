@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -129,8 +130,8 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		types.ListOptions
-		Organization resource.OrganizationName `schema:"filter[organization][name],required"`
-		Workspace    string                    `schema:"filter[workspace][name],required"`
+		Organization organization.Name `schema:"filter[organization][name],required"`
+		Workspace    string            `schema:"filter[workspace][name],required"`
 	}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		tfeapi.Error(w, err)

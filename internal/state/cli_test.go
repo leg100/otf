@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
@@ -156,6 +157,6 @@ func (f *fakeCLIService) Download(ctx context.Context, svID resource.TfeID) ([]b
 	return f.state, nil
 }
 
-func (f *fakeCLIService) GetByName(context.Context, resource.OrganizationName, string) (*workspace.Workspace, error) {
+func (f *fakeCLIService) GetByName(context.Context, organization.Name, string) (*workspace.Workspace, error) {
 	return f.workspace, nil
 }

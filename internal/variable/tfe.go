@@ -150,7 +150,7 @@ func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
@@ -198,7 +198,7 @@ func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)

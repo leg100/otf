@@ -11,6 +11,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -31,30 +32,30 @@ var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         resource.TfeID            `jsonapi:"primary,workspaces"`
-		CreatedAt                  time.Time                 `jsonapi:"attribute" json:"created_at"`
-		UpdatedAt                  time.Time                 `jsonapi:"attribute" json:"updated_at"`
-		AgentPoolID                *resource.TfeID           `jsonapi:"attribute" json:"agent-pool-id"`
-		AllowDestroyPlan           bool                      `jsonapi:"attribute" json:"allow_destroy_plan"`
-		AutoApply                  bool                      `jsonapi:"attribute" json:"auto_apply"`
-		CanQueueDestroyPlan        bool                      `jsonapi:"attribute" json:"can_queue_destroy_plan"`
-		Description                string                    `jsonapi:"attribute" json:"description"`
-		Environment                string                    `jsonapi:"attribute" json:"environment"`
-		ExecutionMode              ExecutionMode             `jsonapi:"attribute" json:"execution_mode"`
-		GlobalRemoteState          bool                      `jsonapi:"attribute" json:"global_remote_state"`
-		MigrationEnvironment       string                    `jsonapi:"attribute" json:"migration_environment"`
-		Name                       string                    `jsonapi:"attribute" json:"name"`
-		QueueAllRuns               bool                      `jsonapi:"attribute" json:"queue_all_runs"`
-		SpeculativeEnabled         bool                      `jsonapi:"attribute" json:"speculative_enabled"`
-		StructuredRunOutputEnabled bool                      `jsonapi:"attribute" json:"structured_run_output_enabled"`
-		SourceName                 string                    `jsonapi:"attribute" json:"source_name"`
-		SourceURL                  string                    `jsonapi:"attribute" json:"source_url"`
-		TerraformVersion           string                    `jsonapi:"attribute" json:"terraform_version"`
-		WorkingDirectory           string                    `jsonapi:"attribute" json:"working_directory"`
-		Organization               resource.OrganizationName `jsonapi:"attribute" json:"organization"`
-		LatestRun                  *LatestRun                `jsonapi:"attribute" json:"latest_run"`
-		Tags                       []string                  `jsonapi:"attribute" json:"tags"`
-		Lock                       *resource.TfeID           `jsonapi:"attribute" json:"lock"`
+		ID                         resource.TfeID    `jsonapi:"primary,workspaces"`
+		CreatedAt                  time.Time         `jsonapi:"attribute" json:"created_at"`
+		UpdatedAt                  time.Time         `jsonapi:"attribute" json:"updated_at"`
+		AgentPoolID                *resource.TfeID   `jsonapi:"attribute" json:"agent-pool-id"`
+		AllowDestroyPlan           bool              `jsonapi:"attribute" json:"allow_destroy_plan"`
+		AutoApply                  bool              `jsonapi:"attribute" json:"auto_apply"`
+		CanQueueDestroyPlan        bool              `jsonapi:"attribute" json:"can_queue_destroy_plan"`
+		Description                string            `jsonapi:"attribute" json:"description"`
+		Environment                string            `jsonapi:"attribute" json:"environment"`
+		ExecutionMode              ExecutionMode     `jsonapi:"attribute" json:"execution_mode"`
+		GlobalRemoteState          bool              `jsonapi:"attribute" json:"global_remote_state"`
+		MigrationEnvironment       string            `jsonapi:"attribute" json:"migration_environment"`
+		Name                       string            `jsonapi:"attribute" json:"name"`
+		QueueAllRuns               bool              `jsonapi:"attribute" json:"queue_all_runs"`
+		SpeculativeEnabled         bool              `jsonapi:"attribute" json:"speculative_enabled"`
+		StructuredRunOutputEnabled bool              `jsonapi:"attribute" json:"structured_run_output_enabled"`
+		SourceName                 string            `jsonapi:"attribute" json:"source_name"`
+		SourceURL                  string            `jsonapi:"attribute" json:"source_url"`
+		TerraformVersion           string            `jsonapi:"attribute" json:"terraform_version"`
+		WorkingDirectory           string            `jsonapi:"attribute" json:"working_directory"`
+		Organization               organization.Name `jsonapi:"attribute" json:"organization"`
+		LatestRun                  *LatestRun        `jsonapi:"attribute" json:"latest_run"`
+		Tags                       []string          `jsonapi:"attribute" json:"tags"`
+		Lock                       *resource.TfeID   `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -120,7 +121,7 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
-		Organization               *resource.OrganizationName
+		Organization               *organization.Name
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -163,10 +164,10 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		Search       string                     `schema:"search[name]"`
-		Tags         []string                   `schema:"search[tags]"`
-		Status       []runstatus.Status         `schema:"search[status]"`
-		Organization *resource.OrganizationName `schema:"organization_name"`
+		Search       string             `schema:"search[name]"`
+		Tags         []string           `schema:"search[tags]"`
+		Status       []runstatus.Status `schema:"search[status]"`
+		Organization *organization.Name `schema:"organization_name"`
 
 		resource.PageOptions
 	}

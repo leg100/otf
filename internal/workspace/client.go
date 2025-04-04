@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -13,7 +14,7 @@ type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*Workspace, error) {
+func (c *Client) GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {

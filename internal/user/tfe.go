@@ -142,7 +142,7 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 
 func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
 	var pathParams struct {
-		Organization resource.OrganizationName `schema:"organization_name"`
+		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
@@ -28,7 +29,7 @@ type cliStateService interface {
 }
 
 type cliWorkspaceService interface {
-	GetByName(ctx context.Context, organization resource.OrganizationName, workspace string) (*workspace.Workspace, error)
+	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
@@ -56,7 +57,7 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 
 func (a *CLI) stateListCommand() *cobra.Command {
 	var opts struct {
-		Organization resource.OrganizationName
+		Organization organization.Name
 		Workspace    string
 	}
 	cmd := &cobra.Command{

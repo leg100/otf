@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
@@ -94,9 +95,9 @@ func (u *User) IsTeamMember(teamID resource.TfeID) bool {
 // their membership of teams).
 //
 // NOTE: always returns a non-nil slice
-func (u *User) Organizations() []resource.OrganizationName {
+func (u *User) Organizations() []organization.Name {
 	// De-dup organizations using map
-	seen := make(map[resource.OrganizationName]bool)
+	seen := make(map[organization.Name]bool)
 	for _, t := range u.Teams {
 		if _, ok := seen[t.Organization]; ok {
 			continue
@@ -105,7 +106,7 @@ func (u *User) Organizations() []resource.OrganizationName {
 	}
 
 	// Turn map into slice
-	organizations := make([]resource.OrganizationName, len(seen))
+	organizations := make([]organization.Name, len(seen))
 	var i int
 	for org := range seen {
 		organizations[i] = org
@@ -156,7 +157,7 @@ func (u *User) CanAccess(action authz.Action, req authz.Request) bool {
 }
 
 // IsOwner determines if user is an owner of an organization
-func (u *User) IsOwner(organization resource.OrganizationName) bool {
+func (u *User) IsOwner(organization resource.ID) bool {
 	for _, team := range u.Teams {
 		if team.IsOwner(organization) {
 			return true

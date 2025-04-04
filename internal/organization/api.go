@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/resource"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
@@ -40,7 +39,7 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name resource.OrganizationName `schema:"name"`
+		Name Name `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)

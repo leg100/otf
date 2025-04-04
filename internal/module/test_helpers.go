@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -40,7 +41,7 @@ func (f *fakeService) Get(context.Context, resource.TfeID) (*vcsprovider.VCSProv
 	return f.vcsprovs[0], nil
 }
 
-func (f *fakeService) List(context.Context, resource.OrganizationName) ([]*vcsprovider.VCSProvider, error) {
+func (f *fakeService) List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs, nil
 }
 
