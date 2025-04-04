@@ -11,9 +11,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type (
@@ -52,7 +52,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var params types.WorkspaceCreateOptions
+	var params TFEWorkspaceCreateOptions
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -182,7 +182,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.WorkspaceListOptions
+	var params TFEWorkspaceListOptions
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -200,7 +200,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	items := make([]*types.Workspace, len(page.Items))
+	items := make([]*TFEWorkspace, len(page.Items))
 	for i, from := range page.Items {
 		to, err := a.convert(from, r)
 		if err != nil {
@@ -341,7 +341,7 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID resource.TfeID) {
-	params := types.WorkspaceUpdateOptions{}
+	params := TFEWorkspaceUpdateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -412,10 +412,15 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	a.Respond(w, r, converted, http.StatusOK)
 }
 
-func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error) {
+func (a *tfe) convert(from *Workspace, r *http.Request) (*TFEWorkspace, error) {
+	return ToTFE(a.Authorizer, from, r)
+}
+
+// ToTFE converts an OTF workspace to a TFE workspace.
+func ToTFE(a *authz.Authorizer, from *Workspace, r *http.Request) (*TFEWorkspace, error) {
 	ctx := r.Context()
 	accessRequest := &authz.Request{ID: &from.ID}
-	perms := &types.WorkspacePermissions{
+	perms := &TFEWorkspacePermissions{
 		CanLock:           a.CanAccess(ctx, authz.LockWorkspaceAction, accessRequest),
 		CanUnlock:         a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
 		CanForceUnlock:    a.CanAccess(ctx, authz.UnlockWorkspaceAction, accessRequest),
@@ -428,9 +433,9 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		CanUpdateVariable: a.CanAccess(ctx, authz.UpdateWorkspaceAction, accessRequest),
 	}
 
-	to := &types.Workspace{
+	to := &TFEWorkspace{
 		ID: from.ID,
-		Actions: &types.WorkspaceActions{
+		Actions: &TFEWorkspaceActions{
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
@@ -459,13 +464,13 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		WorkingDirectory:           from.WorkingDirectory,
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
-		Organization:               &types.Organization{Name: from.Organization},
+		Organization:               &organization.TFEOrganization{Name: from.Organization},
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true
 	}
 	if from.LatestRun != nil {
-		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
+		to.CurrentRun = &TFERun{ID: from.LatestRun.ID}
 	}
 
 	// Add VCS repo to json:api struct if connected. NOTE: the terraform CLI
@@ -481,7 +486,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 	// connection.
 	if from.Connection != nil {
 		if !from.Connection.AllowCLIApply || !tfeapi.IsTerraformCLI(r) {
-			to.VCSRepo = &types.VCSRepo{
+			to.VCSRepo = &TFEVCSRepo{
 				OAuthTokenID: from.Connection.VCSProviderID,
 				Branch:       from.Connection.Branch,
 				Identifier:   from.Connection.Repo,
@@ -503,13 +508,13 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !field.IsValid() {
 		return nil, nil
 	}
-	onlyID, ok := field.Interface().(*types.Workspace)
+	onlyID, ok := field.Interface().(*TFEWorkspace)
 	if !ok {
 		return nil, nil
 	}
-	// onlyID only contains the ID field, e.g. types.Workspace{ID:
-	// "ws-123"}; so now retrieve the fully populated workspace, convert to a
-	// tfe workspace and return.
+	// onlyID only contains the ID field, e.g. TFEWorkspace{ID: "ws-123"}; so
+	// now retrieve the fully populated workspace, convert to a tfe workspace
+	// and return.
 	ws, err := a.Get(ctx, onlyID.ID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving workspace: %w", err)
@@ -532,13 +537,12 @@ func (a *tfe) includeMany(ctx context.Context, v any) ([]any, error) {
 	if !field.IsValid() {
 		return nil, nil
 	}
-	onlyIDs, ok := field.Interface().([]*types.Workspace)
+	onlyIDs, ok := field.Interface().([]*TFEWorkspace)
 	if !ok {
 		return nil, nil
 	}
-	// onlyIDs only contains the ID field, e.g. []*types.Workspace{{ID:
-	// "ws-123"}}; so now retrieve the fully populated workspaces, convert and
-	// return them.
+	// onlyIDs only contains the ID field, e.g. []*TFEWorkspace{{ID: "ws-123"}};
+	// so now retrieve the fully populated workspaces, convert and return them.
 	include := make([]any, len(onlyIDs))
 	for i, onlyID := range onlyIDs {
 		ws, err := a.Get(ctx, onlyID.ID)

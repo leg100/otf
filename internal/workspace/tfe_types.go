@@ -1,11 +1,13 @@
-package types
+package workspace
 
 import (
 	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 var (
@@ -13,51 +15,55 @@ var (
 	localExecutionMode  = "local"
 )
 
-// Workspace represents a Terraform Enterprise workspace.
-type Workspace struct {
-	ID                         resource.TfeID        `jsonapi:"primary,workspaces"`
-	Actions                    *WorkspaceActions     `jsonapi:"attribute" json:"actions"`
-	AgentPoolID                *resource.TfeID       `jsonapi:"attribute" json:"agent-pool-id"`
-	AllowDestroyPlan           bool                  `jsonapi:"attribute" json:"allow-destroy-plan"`
-	AutoApply                  bool                  `jsonapi:"attribute" json:"auto-apply"`
-	CanQueueDestroyPlan        bool                  `jsonapi:"attribute" json:"can-queue-destroy-plan"`
-	CreatedAt                  time.Time             `jsonapi:"attribute" json:"created-at"`
-	Description                string                `jsonapi:"attribute" json:"description"`
-	Environment                string                `jsonapi:"attribute" json:"environment"`
-	ExecutionMode              string                `jsonapi:"attribute" json:"execution-mode"`
-	FileTriggersEnabled        bool                  `jsonapi:"attribute" json:"file-triggers-enabled"`
-	GlobalRemoteState          bool                  `jsonapi:"attribute" json:"global-remote-state"`
-	Locked                     bool                  `jsonapi:"attribute" json:"locked"`
-	MigrationEnvironment       string                `jsonapi:"attribute" json:"migration-environment"`
-	Name                       string                `jsonapi:"attribute" json:"name"`
-	Operations                 bool                  `jsonapi:"attribute" json:"operations"`
-	Permissions                *WorkspacePermissions `jsonapi:"attribute" json:"permissions"`
-	QueueAllRuns               bool                  `jsonapi:"attribute" json:"queue-all-runs"`
-	SpeculativeEnabled         bool                  `jsonapi:"attribute" json:"speculative-enabled"`
-	SourceName                 string                `jsonapi:"attribute" json:"source-name"`
-	SourceURL                  string                `jsonapi:"attribute" json:"source-url"`
-	StructuredRunOutputEnabled bool                  `jsonapi:"attribute" json:"structured-run-output-enabled"`
-	TerraformVersion           string                `jsonapi:"attribute" json:"terraform-version"`
-	TriggerPrefixes            []string              `jsonapi:"attribute" json:"trigger-prefixes"`
-	TriggerPatterns            []string              `jsonapi:"attribute" json:"trigger-patterns"`
-	VCSRepo                    *VCSRepo              `jsonapi:"attribute" json:"vcs-repo"`
-	WorkingDirectory           string                `jsonapi:"attribute" json:"working-directory"`
-	UpdatedAt                  time.Time             `jsonapi:"attribute" json:"updated-at"`
-	ResourceCount              int                   `jsonapi:"attribute" json:"resource-count"`
-	ApplyDurationAverage       time.Duration         `jsonapi:"attribute" json:"apply-duration-average"`
-	PlanDurationAverage        time.Duration         `jsonapi:"attribute" json:"plan-duration-average"`
-	PolicyCheckFailures        int                   `jsonapi:"attribute" json:"policy-check-failures"`
-	RunFailures                int                   `jsonapi:"attribute" json:"run-failures"`
-	RunsCount                  int                   `jsonapi:"attribute" json:"workspace-kpis-runs-count"`
-	TagNames                   []string              `jsonapi:"attribute" json:"tag-names"`
+// TFEWorkspace represents a Terraform Enterprise workspace.
+type TFEWorkspace struct {
+	ID                         resource.TfeID           `jsonapi:"primary,workspaces"`
+	Actions                    *TFEWorkspaceActions     `jsonapi:"attribute" json:"actions"`
+	AgentPoolID                *resource.TfeID          `jsonapi:"attribute" json:"agent-pool-id"`
+	AllowDestroyPlan           bool                     `jsonapi:"attribute" json:"allow-destroy-plan"`
+	AutoApply                  bool                     `jsonapi:"attribute" json:"auto-apply"`
+	CanQueueDestroyPlan        bool                     `jsonapi:"attribute" json:"can-queue-destroy-plan"`
+	CreatedAt                  time.Time                `jsonapi:"attribute" json:"created-at"`
+	Description                string                   `jsonapi:"attribute" json:"description"`
+	Environment                string                   `jsonapi:"attribute" json:"environment"`
+	ExecutionMode              string                   `jsonapi:"attribute" json:"execution-mode"`
+	FileTriggersEnabled        bool                     `jsonapi:"attribute" json:"file-triggers-enabled"`
+	GlobalRemoteState          bool                     `jsonapi:"attribute" json:"global-remote-state"`
+	Locked                     bool                     `jsonapi:"attribute" json:"locked"`
+	MigrationEnvironment       string                   `jsonapi:"attribute" json:"migration-environment"`
+	Name                       string                   `jsonapi:"attribute" json:"name"`
+	Operations                 bool                     `jsonapi:"attribute" json:"operations"`
+	Permissions                *TFEWorkspacePermissions `jsonapi:"attribute" json:"permissions"`
+	QueueAllRuns               bool                     `jsonapi:"attribute" json:"queue-all-runs"`
+	SpeculativeEnabled         bool                     `jsonapi:"attribute" json:"speculative-enabled"`
+	SourceName                 string                   `jsonapi:"attribute" json:"source-name"`
+	SourceURL                  string                   `jsonapi:"attribute" json:"source-url"`
+	StructuredRunOutputEnabled bool                     `jsonapi:"attribute" json:"structured-run-output-enabled"`
+	TerraformVersion           string                   `jsonapi:"attribute" json:"terraform-version"`
+	TriggerPrefixes            []string                 `jsonapi:"attribute" json:"trigger-prefixes"`
+	TriggerPatterns            []string                 `jsonapi:"attribute" json:"trigger-patterns"`
+	VCSRepo                    *TFEVCSRepo              `jsonapi:"attribute" json:"vcs-repo"`
+	WorkingDirectory           string                   `jsonapi:"attribute" json:"working-directory"`
+	UpdatedAt                  time.Time                `jsonapi:"attribute" json:"updated-at"`
+	ResourceCount              int                      `jsonapi:"attribute" json:"resource-count"`
+	ApplyDurationAverage       time.Duration            `jsonapi:"attribute" json:"apply-duration-average"`
+	PlanDurationAverage        time.Duration            `jsonapi:"attribute" json:"plan-duration-average"`
+	PolicyCheckFailures        int                      `jsonapi:"attribute" json:"policy-check-failures"`
+	RunFailures                int                      `jsonapi:"attribute" json:"run-failures"`
+	RunsCount                  int                      `jsonapi:"attribute" json:"workspace-kpis-runs-count"`
+	TagNames                   []string                 `jsonapi:"attribute" json:"tag-names"`
 
 	// Relations
-	CurrentRun   *Run               `jsonapi:"relationship" json:"current-run"`
-	Organization *Organization      `jsonapi:"relationship" json:"organization"`
-	Outputs      []*WorkspaceOutput `jsonapi:"relationship" json:"outputs"`
+	CurrentRun   *TFERun                       `jsonapi:"relationship" json:"current-run"`
+	Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
+	Outputs      []*TFEWorkspaceOutput         `jsonapi:"relationship" json:"outputs"`
 }
 
-type WorkspaceOutput struct {
+type TFERun struct {
+	ID resource.TfeID `jsonapi:"primary,runs"`
+}
+
+type TFEWorkspaceOutput struct {
 	ID        resource.TfeID `jsonapi:"primary,workspace-outputs"`
 	Name      string         `jsonapi:"attribute" json:"name"`
 	Sensitive bool           `jsonapi:"attribute" json:"sensitive"`
@@ -65,14 +71,14 @@ type WorkspaceOutput struct {
 	Value     any            `jsonapi:"attribute" json:"value"`
 }
 
-// WorkspaceList represents a list of workspaces.
-type WorkspaceList struct {
-	*Pagination
+// TFEWorkspaceList represents a list of workspaces.
+type TFEWorkspaceList struct {
+	*types.Pagination
 	Items []*Workspace
 }
 
-// VCSRepo contains the configuration of a VCS integration.
-type VCSRepo struct {
+// TFEVCSRepo contains the configuration of a VCS integration.
+type TFEVCSRepo struct {
 	Branch            string         `json:"branch"`
 	DisplayIdentifier string         `json:"display-identifier"`
 	Identifier        string         `json:"identifier"`
@@ -83,13 +89,13 @@ type VCSRepo struct {
 	ServiceProvider   string         `json:"service-provider"`
 }
 
-// WorkspaceActions represents the workspace actions.
-type WorkspaceActions struct {
+// TFEWorkspaceActions represents the workspace actions.
+type TFEWorkspaceActions struct {
 	IsDestroyable bool `json:"is-destroyable"`
 }
 
-// WorkspacePermissions represents the workspace permissions.
-type WorkspacePermissions struct {
+// TFEWorkspacePermissions represents the workspace permissions.
+type TFEWorkspacePermissions struct {
 	CanDestroy        bool `json:"can-destroy"`
 	CanForceUnlock    bool `json:"can-force-unlock"`
 	CanLock           bool `json:"can-lock"`
@@ -102,9 +108,9 @@ type WorkspacePermissions struct {
 	CanUpdateVariable bool `json:"can-update-variable"`
 }
 
-// WorkspaceListOptions represents the options for listing workspaces.
-type WorkspaceListOptions struct {
-	ListOptions
+// TFEWorkspaceListOptions represents the options for listing workspaces.
+type TFEWorkspaceListOptions struct {
+	types.ListOptions
 
 	// Optional: A search string (partial workspace name) used to filter the results.
 	Search string `schema:"search[name],omitempty"`
@@ -125,8 +131,8 @@ type WorkspaceListOptions struct {
 	// Include []WSIncludeOpt `url:"include,omitempty"`
 }
 
-// WorkspaceCreateOptions represents the options for creating a new workspace.
-type WorkspaceCreateOptions struct {
+// TFEWorkspaceCreateOptions represents the options for creating a new workspace.
+type TFEWorkspaceCreateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be
 	// set.  https://jsonapi.org/format/#crud-creating
@@ -219,7 +225,7 @@ type WorkspaceCreateOptions struct {
 	// Settings for the workspace's VCS repository. If omitted, the workspace is
 	// created without a VCS repo. If included, you must specify at least the
 	// oauth-token-id and identifier keys below.
-	VCSRepo *VCSRepoOptions `jsonapi:"attribute" json:"vcs-repo,omitempty"`
+	VCSRepo *TFEVCSRepoOptions `jsonapi:"attribute" json:"vcs-repo,omitempty"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching the
@@ -228,11 +234,11 @@ type WorkspaceCreateOptions struct {
 
 	// A list of tags to attach to the workspace. If the tag does not already
 	// exist, it is created and added to the workspace.
-	Tags []*Tag `jsonapi:"relationship" json:"tags,omitempty"`
+	Tags []*TFETag `jsonapi:"relationship" json:"tags,omitempty"`
 }
 
-// WorkspaceUpdateOptions represents the options for updating a workspace.
-type WorkspaceUpdateOptions struct {
+// TFEWorkspaceUpdateOptions represents the options for updating a workspace.
+type TFEWorkspaceUpdateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be
 	// set.  https://jsonapi.org/format/#crud-creating
@@ -318,7 +324,7 @@ type WorkspaceUpdateOptions struct {
 	WorkingDirectory *string `jsonapi:"attribute" json:"working-directory,omitempty"`
 }
 
-func (opts *WorkspaceUpdateOptions) Validate() error {
+func (opts *TFEWorkspaceUpdateOptions) Validate() error {
 	if opts.Operations != nil && opts.ExecutionMode != nil {
 		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
 	}
@@ -332,9 +338,9 @@ func (opts *WorkspaceUpdateOptions) Validate() error {
 	return nil
 }
 
-// VCSRepoOptions is used by workspaces, policy sets, and registry modules
-// VCSRepoOptions represents the configuration options of a VCS integration.
-type VCSRepoOptions struct {
+// TFEVCSRepoOptions is used by workspaces, policy sets, and registry modules
+// TFEVCSRepoOptions represents the configuration options of a VCS integration.
+type TFEVCSRepoOptions struct {
 	Branch            *string         `json:"branch,omitempty"`
 	Identifier        *string         `json:"identifier,omitempty"`
 	IngressSubmodules *bool           `json:"ingress-submodules,omitempty"`
@@ -347,7 +353,7 @@ type VCSRepoOptions struct {
 //
 // NOTE: Credit to https://www.calhoun.io/how-to-determine-if-a-json-key-has-been-set-to-null-or-not-provided/
 type VCSRepoOptionsJSON struct {
-	VCSRepoOptions
+	TFEVCSRepoOptions
 
 	Valid bool `json:"-"`
 	Set   bool `json:"-"`
@@ -366,9 +372,43 @@ func (o *VCSRepoOptionsJSON) UnmarshalJSON(data []byte) error {
 	}
 
 	// The key isn't set to null
-	if err := json.Unmarshal(data, &o.VCSRepoOptions); err != nil {
+	if err := json.Unmarshal(data, &o.TFEVCSRepoOptions); err != nil {
 		return err
 	}
 	o.Valid = true
 	return nil
+}
+
+type (
+	// TFEOrganizationTag represents a Terraform Enterprise Organization tag
+	TFEOrganizationTag struct {
+		ID resource.TfeID `jsonapi:"primary,tags"`
+
+		// Optional:
+		Name string `jsonapi:"attribute" json:"name,omitempty"`
+
+		// Optional: Number of workspaces that have this tag
+		InstanceCount int `jsonapi:"attribute" json:"instance-count,omitempty"`
+
+		// The org this tag belongs to
+		Organization *organization.TFEOrganization `jsonapi:"relationship" json:"organization"`
+	}
+
+	// Tag is owned by an organization and applied to workspaces. Used for
+	// grouping and search. Only one of ID or name must be specified.
+	TFETag struct {
+		ID   *resource.TfeID `jsonapi:"primary,tags"`
+		Name string          `jsonapi:"attribute" json:"name,omitempty"`
+	}
+)
+
+// UnmarshalID helps datadog/jsonapi to unmarshal the ID in a serialized tag -
+// either the ID or the name is set, and datadog/jsonapi otherwise gets upset
+// when ID is unset.
+func (t *TFETag) UnmarshalID(id string) error {
+	if id == "" {
+		return nil
+	}
+	t.ID = &resource.TfeID{}
+	return t.ID.UnmarshalText([]byte(id))
 }

@@ -149,3 +149,15 @@ func TestIncluder(t *testing.T) {
 		})
 	}
 }
+
+//func TestGetRelationshipID(t *testing.T) {
+//	type (
+//		bar struct {
+//			ID resource.TfeID `jsonapi:"primary,bars"`
+//		}
+//		foo struct {
+//			ID  resource.TfeID `jsonapi:"primary,foos"`
+//			Bar *bar           `jsonapi:"relationship" json:"bar"`
+//		}
+//	)
+//}

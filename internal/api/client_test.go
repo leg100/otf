@@ -16,17 +16,34 @@ import (
 )
 
 func TestClient_UnmarshalResponse(t *testing.T) {
-	want := types.WorkspaceList{
-		Items: []*types.Workspace{
-			{ID: resource.NewTfeID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
-			{ID: resource.NewTfeID(resource.WorkspaceKind), Outputs: []*types.WorkspaceOutput{}},
+	type (
+		WorkspaceOutput struct {
+			ID        resource.TfeID `jsonapi:"primary,workspace-outputs"`
+			Name      string         `jsonapi:"attribute" json:"name"`
+			Sensitive bool           `jsonapi:"attribute" json:"sensitive"`
+			Type      string         `jsonapi:"attribute" json:"output-type"`
+			Value     any            `jsonapi:"attribute" json:"value"`
+		}
+		Workspace struct {
+			ID      resource.TfeID     `jsonapi:"primary,workspaces"`
+			Outputs []*WorkspaceOutput `jsonapi:"relationship" json:"outputs"`
+		}
+		WorkspaceList struct {
+			*types.Pagination
+			Items []*Workspace
+		}
+	)
+	want := WorkspaceList{
+		Items: []*Workspace{
+			{ID: resource.NewTfeID(resource.WorkspaceKind), Outputs: []*WorkspaceOutput{}},
+			{ID: resource.NewTfeID(resource.WorkspaceKind), Outputs: []*WorkspaceOutput{}},
 		},
 		Pagination: &types.Pagination{},
 	}
 	b, err := jsonapi.Marshal(&want.Items, jsonapi.MarshalMeta(want.Pagination))
 	require.NoError(t, err)
 
-	var got types.WorkspaceList
+	var got WorkspaceList
 	err = unmarshalResponse(bytes.NewReader(b), &got)
 	require.NoError(t, err)
 

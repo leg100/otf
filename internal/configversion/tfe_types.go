@@ -1,45 +1,46 @@
-package types
+package configversion
 
 import (
 	"time"
 
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
-// ConfigurationVersion is an uploaded or ingressed Terraform configuration. A workspace
+// TFEConfigurationVersion is an uploaded or ingressed Terraform configuration. A workspace
 // must have at least one configuration version before any runs may be queued on it.
-type ConfigurationVersion struct {
-	ID               resource.TfeID      `jsonapi:"primary,configuration-versions"`
-	AutoQueueRuns    bool                `jsonapi:"attribute" json:"auto-queue-runs"`
-	Error            string              `jsonapi:"attribute" json:"error"`
-	ErrorMessage     string              `jsonapi:"attribute" json:"error-message"`
-	Source           string              `jsonapi:"attribute" json:"source"`
-	Speculative      bool                `jsonapi:"attribute" json:"speculative"`
-	Status           string              `jsonapi:"attribute" json:"status"`
-	StatusTimestamps *CVStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
-	UploadURL        string              `jsonapi:"attribute" json:"upload-url"`
+type TFEConfigurationVersion struct {
+	ID               resource.TfeID         `jsonapi:"primary,configuration-versions"`
+	AutoQueueRuns    bool                   `jsonapi:"attribute" json:"auto-queue-runs"`
+	Error            string                 `jsonapi:"attribute" json:"error"`
+	ErrorMessage     string                 `jsonapi:"attribute" json:"error-message"`
+	Source           string                 `jsonapi:"attribute" json:"source"`
+	Speculative      bool                   `jsonapi:"attribute" json:"speculative"`
+	Status           string                 `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *TFECVStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+	UploadURL        string                 `jsonapi:"attribute" json:"upload-url"`
 
 	// Relations
-	IngressAttributes *IngressAttributes `jsonapi:"relationship" json:"ingress-attributes"`
+	IngressAttributes *TFEIngressAttributes `jsonapi:"relationship" json:"ingress-attributes"`
 }
 
 // CVStatusTimestamps holds the timestamps for individual configuration version
 // statuses.
-type CVStatusTimestamps struct {
+type TFECVStatusTimestamps struct {
 	FinishedAt *time.Time `json:"finished-at,omitempty"`
 	QueuedAt   *time.Time `json:"queued-at,omitempty"`
 	StartedAt  *time.Time `json:"started-at,omitempty"`
 }
 
 // ConfigurationVersionList represents a list of configuration versions.
-type ConfigurationVersionList struct {
-	*Pagination
-	Items []*ConfigurationVersion
+type TFEConfigurationVersionList struct {
+	*types.Pagination
+	Items []*TFEConfigurationVersion
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a
 // configuration version.
-type ConfigurationVersionCreateOptions struct {
+type TFEConfigurationVersionCreateOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -54,7 +55,7 @@ type ConfigurationVersionCreateOptions struct {
 	Speculative *bool `jsonapi:"attribute" json:"speculative,omitempty"`
 }
 
-type IngressAttributes struct {
+type TFEIngressAttributes struct {
 	ID                resource.TfeID `jsonapi:"primary,ingress-attributes"`
 	Branch            string         `jsonapi:"attribute" json:"branch"`
 	CloneURL          string         `jsonapi:"attribute" json:"clone-url"`

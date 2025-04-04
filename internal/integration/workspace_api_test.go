@@ -14,9 +14,9 @@ import (
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +45,7 @@ func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 		return
 	}
 
-	got := &types.Workspace{}
+	got := &workspace.TFEWorkspace{}
 
 	b, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

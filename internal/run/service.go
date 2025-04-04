@@ -124,6 +124,7 @@ func NewService(opts Options) *Service {
 	// Fetch related resources when API requests their inclusion
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
+	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.includeWorkspace)
 
 	// Provide a means of looking up a run's parent workspace.
 	opts.Authorizer.RegisterParentResolver(resource.RunKind,

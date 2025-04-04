@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {
@@ -20,7 +19,7 @@ type Client struct {
 
 func (c *Client) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(opts.WorkspaceID.String()))
-	req, err := c.NewRequest("POST", u, &types.StateVersionCreateVersionOptions{
+	req, err := c.NewRequest("POST", u, &TFEStateVersionCreateVersionOptions{
 		MD5:    internal.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
 		Serial: opts.Serial,
 		State:  internal.String(base64.StdEncoding.EncodeToString(opts.State)),

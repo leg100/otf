@@ -1,50 +1,59 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package types
+package run
 
 import (
 	"time"
 
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/user"
+	"github.com/leg100/otf/internal/workspace"
 )
 
-// Run is a terraform run.
-type Run struct {
-	ID                     resource.TfeID       `jsonapi:"primary,runs"`
-	Actions                *RunActions          `jsonapi:"attribute" json:"actions"`
-	AllowEmptyApply        bool                 `jsonapi:"attribute" json:"allow-empty-apply"`
-	AutoApply              bool                 `jsonapi:"attribute" json:"auto-apply"`
-	CreatedAt              time.Time            `jsonapi:"attribute" json:"created-at"`
-	ForceCancelAvailableAt *time.Time           `jsonapi:"attribute" json:"force-cancel-available-at"`
-	ExecutionMode          string               `jsonapi:"attribute" json:"execution-mode"`
-	HasChanges             bool                 `jsonapi:"attribute" json:"has-changes"`
-	IsDestroy              bool                 `jsonapi:"attribute" json:"is-destroy"`
-	Message                string               `jsonapi:"attribute" json:"message"`
-	Permissions            *RunPermissions      `jsonapi:"attribute" json:"permissions"`
-	PlanOnly               bool                 `jsonapi:"attribute" json:"plan-only"`
-	PositionInQueue        int                  `jsonapi:"attribute" json:"position-in-queue"`
-	Refresh                bool                 `jsonapi:"attribute" json:"refresh"`
-	RefreshOnly            bool                 `jsonapi:"attribute" json:"refresh-only"`
-	ReplaceAddrs           []string             `jsonapi:"attribute" json:"replace-addrs,omitempty"`
-	Source                 string               `jsonapi:"attribute" json:"source"`
-	Status                 string               `jsonapi:"attribute" json:"status"`
-	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
-	TargetAddrs            []string             `jsonapi:"attribute" json:"target-addrs,omitempty"`
-	TerraformVersion       string               `jsonapi:"attribute" json:"terraform-version"`
-	Variables              []RunVariable        `jsonapi:"attribute" json:"variables"`
+// TFERun is a terraform run.
+type TFERun struct {
+	ID                     resource.TfeID          `jsonapi:"primary,runs"`
+	Actions                *TFERunActions          `jsonapi:"attribute" json:"actions"`
+	AllowEmptyApply        bool                    `jsonapi:"attribute" json:"allow-empty-apply"`
+	AutoApply              bool                    `jsonapi:"attribute" json:"auto-apply"`
+	CreatedAt              time.Time               `jsonapi:"attribute" json:"created-at"`
+	ForceCancelAvailableAt *time.Time              `jsonapi:"attribute" json:"force-cancel-available-at"`
+	ExecutionMode          string                  `jsonapi:"attribute" json:"execution-mode"`
+	HasChanges             bool                    `jsonapi:"attribute" json:"has-changes"`
+	IsDestroy              bool                    `jsonapi:"attribute" json:"is-destroy"`
+	Message                string                  `jsonapi:"attribute" json:"message"`
+	Permissions            *TFERunPermissions      `jsonapi:"attribute" json:"permissions"`
+	PlanOnly               bool                    `jsonapi:"attribute" json:"plan-only"`
+	PositionInQueue        int                     `jsonapi:"attribute" json:"position-in-queue"`
+	Refresh                bool                    `jsonapi:"attribute" json:"refresh"`
+	RefreshOnly            bool                    `jsonapi:"attribute" json:"refresh-only"`
+	ReplaceAddrs           []string                `jsonapi:"attribute" json:"replace-addrs,omitempty"`
+	Source                 string                  `jsonapi:"attribute" json:"source"`
+	Status                 string                  `jsonapi:"attribute" json:"status"`
+	StatusTimestamps       *TFERunStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+	TargetAddrs            []string                `jsonapi:"attribute" json:"target-addrs,omitempty"`
+	TerraformVersion       string                  `jsonapi:"attribute" json:"terraform-version"`
+	Variables              []TFERunVariable        `jsonapi:"attribute" json:"variables"`
 
 	// Relations
-	Apply                *Apply                `jsonapi:"relationship" json:"apply"`
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
-	CostEstimate         *CostEstimate         `jsonapi:"relationship" json:"cost-estimate"`
-	CreatedBy            *User                 `jsonapi:"relationship" json:"created-by"`
-	Plan                 *Plan                 `jsonapi:"relationship" json:"plan"`
-	Workspace            *Workspace            `jsonapi:"relationship" json:"workspace"`
+	Apply                *TFEApply                              `jsonapi:"relationship" json:"apply"`
+	ConfigurationVersion *configversion.TFEConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	CostEstimate         *types.CostEstimate                    `jsonapi:"relationship" json:"cost-estimate"`
+	CreatedBy            *user.TFEUser                          `jsonapi:"relationship" json:"created-by"`
+	Plan                 *TFEPlan                               `jsonapi:"relationship" json:"plan"`
+	Workspace            *TFEWorkspace                          `jsonapi:"relationship" json:"workspace"`
 }
 
-// RunStatusTimestamps holds the timestamps for individual run statuses.
-type RunStatusTimestamps struct {
+type TFEWorkspace struct {
+	ID         resource.TfeID `jsonapi:"primary,workspaces"`
+	CurrentRun *TFERun        `jsonapi:"relationship" json:"current-run"`
+}
+
+// TFERunStatusTimestamps holds the timestamps for individual run statuses.
+type TFERunStatusTimestamps struct {
 	AppliedAt            *time.Time `json:"applied-at,omitempty"`
 	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
 	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
@@ -64,22 +73,22 @@ type RunStatusTimestamps struct {
 	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
 }
 
-// RunList represents a list of runs.
-type RunList struct {
-	*Pagination
+// TFERunList represents a list of runs.
+type TFERunList struct {
+	*types.Pagination
 	Items []*Run
 }
 
-// RunActions represents the run actions.
-type RunActions struct {
+// TFERunActions represents the run actions.
+type TFERunActions struct {
 	IsCancelable      bool `json:"is-cancelable"`
 	IsConfirmable     bool `json:"is-confirmable"`
 	IsDiscardable     bool `json:"is-discardable"`
 	IsForceCancelable bool `json:"is-force-cancelable"`
 }
 
-// RunPermissions represents the run permissions.
-type RunPermissions struct {
+// TFERunPermissions represents the run permissions.
+type TFERunPermissions struct {
 	CanApply        bool `json:"can-apply"`
 	CanCancel       bool `json:"can-cancel"`
 	CanDiscard      bool `json:"can-discard"`
@@ -87,8 +96,8 @@ type RunPermissions struct {
 	CanForceExecute bool `json:"can-force-execute"`
 }
 
-// RunCreateOptions represents the options for creating a new run.
-type RunCreateOptions struct {
+// TFERunCreateOptions represents the options for creating a new run.
+type TFERunCreateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be
 	// set.  https://jsonapi.org/format/#crud-creating
@@ -123,10 +132,10 @@ type RunCreateOptions struct {
 	// Specifies the configuration version to use for this run. If the
 	// configuration version object is omitted, the run will be created using the
 	// workspace's latest configuration version.
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	ConfigurationVersion *configversion.TFEConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
 
 	// Specifies the workspace where the run will be executed.
-	Workspace *Workspace `jsonapi:"relationship" json:"workspace"`
+	Workspace *workspace.TFEWorkspace `jsonapi:"relationship" json:"workspace"`
 
 	// If non-empty, requests that Terraform should create a plan including
 	// actions only for the given objects (specified using resource address
@@ -152,12 +161,12 @@ type RunCreateOptions struct {
 
 	// Variables allows you to specify terraform input variables for
 	// a particular run, prioritized over variables defined on the workspace.
-	Variables []*RunVariable `jsonapi:"attribute" json:"variables,omitempty"`
+	Variables []*TFERunVariable `jsonapi:"attribute" json:"variables,omitempty"`
 }
 
-// RunListOptions represents the options for listing runs.
-type RunListOptions struct {
-	ListOptions
+// TFERunListOptions represents the options for listing runs.
+type TFERunListOptions struct {
+	types.ListOptions
 
 	Organization *resource.OrganizationName `schema:"organization_name,omitempty"`
 
@@ -193,9 +202,9 @@ type RunListOptions struct {
 	Include []string `schema:"include,omitempty"`
 }
 
-// PhaseStatusTimestamps holds the timestamps for individual statuses for a
+// TFEPhaseStatusTimestamps holds the timestamps for individual statuses for a
 // phase.
-type PhaseStatusTimestamps struct {
+type TFEPhaseStatusTimestamps struct {
 	CanceledAt    *time.Time `json:"canceled-at,omitempty"`
 	ErroredAt     *time.Time `json:"errored-at,omitempty"`
 	FinishedAt    *time.Time `json:"finished-at,omitempty"`
@@ -205,53 +214,72 @@ type PhaseStatusTimestamps struct {
 	UnreachableAt *time.Time `json:"unreachable-at,omitempty"`
 }
 
-// Apply is a terraform apply
-type Apply struct {
-	ID               resource.TfeID         `jsonapi:"primary,applies"`
-	LogReadURL       string                 `jsonapi:"attribute" json:"log-read-url"`
-	Status           string                 `jsonapi:"attribute" json:"status"`
-	StatusTimestamps *PhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+// TFEApply is a terraform apply
+type TFEApply struct {
+	ID               resource.TfeID            `jsonapi:"primary,applies"`
+	LogReadURL       string                    `jsonapi:"attribute" json:"log-read-url"`
+	Status           string                    `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *TFEPhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
 
-	ResourceReport
+	TFEResourceReport
 }
 
-// Plan represents a Terraform Enterprise plan.
-type Plan struct {
-	ID               resource.TfeID         `jsonapi:"primary,plans"`
-	HasChanges       bool                   `jsonapi:"attribute" json:"has-changes"`
-	LogReadURL       string                 `jsonapi:"attribute" json:"log-read-url"`
-	Status           string                 `jsonapi:"attribute" json:"status"`
-	StatusTimestamps *PhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+// TFEPlan represents a Terraform Enterprise plan.
+type TFEPlan struct {
+	ID               resource.TfeID            `jsonapi:"primary,plans"`
+	HasChanges       bool                      `jsonapi:"attribute" json:"has-changes"`
+	LogReadURL       string                    `jsonapi:"attribute" json:"log-read-url"`
+	Status           string                    `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *TFEPhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
 
-	ResourceReport
+	TFEResourceReport
 }
 
-type ResourceReport struct {
+type TFEResourceReport struct {
 	Additions    *int `json:"resource-additions"`
 	Changes      *int `json:"resource-changes"`
 	Destructions *int `json:"resource-destructions"`
 }
 
-// RunVariable represents a variable that can be applied to a run. All
+// TFERunVariable represents a variable that can be applied to a run. All
 // values must be expressed as an HCL literal in the same syntax you would use
 // when writing terraform code. See
 // https://developer.hashicorp.com/terraform/language/expressions/types#types
 // for more details.
-type RunVariable struct {
+type TFERunVariable struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
-// RunOperation represents an operation type of run.
-type RunOperation string
+// TFERunOperation represents an operation type of run.
+type TFERunOperation string
 
 // List all available run operations.
 const (
-	RunOperationPlanApply   RunOperation = "plan_and_apply"
-	RunOperationPlanOnly    RunOperation = "plan_only"
-	RunOperationRefreshOnly RunOperation = "refresh_only"
-	RunOperationDestroy     RunOperation = "destroy"
-	RunOperationEmptyApply  RunOperation = "empty_apply"
+	RunOperationPlanApply   TFERunOperation = "plan_and_apply"
+	RunOperationPlanOnly    TFERunOperation = "plan_only"
+	RunOperationRefreshOnly TFERunOperation = "refresh_only"
+	RunOperationDestroy     TFERunOperation = "destroy"
+	RunOperationEmptyApply  TFERunOperation = "empty_apply"
 	// **Note: This operation type is still in BETA and subject to change.**
-	RunOperationSavePlan RunOperation = "save_plan"
+	RunOperationSavePlan TFERunOperation = "save_plan"
 )
+
+// TFERunEventList represents a list of run events.
+type TFERunEventList struct {
+	// Pagination is not supported by the API
+	*types.Pagination
+	Items []*TFERunEvent
+}
+
+// TFERunEvent represents a Terraform Enterprise run event.
+type TFERunEvent struct {
+	ID          resource.TfeID `jsonapi:"primary,run-events"`
+	Action      string         `jsonapi:"attr,action"`
+	CreatedAt   time.Time      `jsonapi:"attr,created-at,iso8601"`
+	Description string         `jsonapi:"attr,description"`
+
+	// Relations - Note that `target` is not supported yet
+	Actor *user.TFEUser `jsonapi:"relation,actor"`
+	// Comment *Comment `jsonapi:"relation,comment"`
+}

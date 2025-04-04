@@ -107,6 +107,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		var err error
 		logger, err = logr.New(&logr.Config{Verbosity: 9, Format: "default"})
 		require.NoError(t, err)
+		cfg.EnableRequestLogging = true
 	} else {
 		logger = logr.Discard()
 	}

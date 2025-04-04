@@ -9,9 +9,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -43,7 +43,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var params types.OAuthClientCreateOptions
+	var params TFEOAuthClientCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -80,7 +80,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, errors.New("secret parameter is unsupported"))
 		return
 	}
-	if *params.ServiceProvider != types.ServiceProviderGithub {
+	if *params.ServiceProvider != ServiceProviderGithub {
 		tfeapi.Error(w, fmt.Errorf("service-provider=%s is unsupported", string(*params.ServiceProvider)))
 		return
 	}
@@ -128,7 +128,7 @@ func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	to := make([]*types.OAuthClient, len(providers))
+	to := make([]*TFEOAuthClient, len(providers))
 	for i, from := range providers {
 		to[i] = a.convert(from)
 	}
@@ -166,21 +166,21 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *VCSProvider) *types.OAuthClient {
-	to := &types.OAuthClient{
+func (a *tfe) convert(from *VCSProvider) *TFEOAuthClient {
+	to := &TFEOAuthClient{
 		ID:        from.ID,
 		CreatedAt: from.CreatedAt,
 		// Only github via github.com is supported currently, so hardcode these values.
-		ServiceProvider: types.ServiceProviderGithub,
+		ServiceProvider: ServiceProviderGithub,
 		APIURL:          GithubAPIURL,
 		HTTPURL:         GithubHTTPURL,
 		// OTF has no corresponding concept of an OAuthToken, so just use the
 		// VCS provider ID (the go-tfe integration tests we use expect
 		// at least an ID).
-		OAuthTokens: []*types.OAuthToken{
+		OAuthTokens: []*TFEOAuthToken{
 			{ID: from.ID},
 		},
-		Organization: &types.Organization{Name: from.Organization},
+		Organization: &organization.TFEOrganization{Name: from.Organization},
 	}
 	// an empty name in otf is equivalent to a nil name in tfe
 	if from.Name != "" {

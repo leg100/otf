@@ -6,9 +6,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 const (
@@ -51,7 +51,7 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert to
-	to := make([]*types.OrganizationTag, len(page.Items))
+	to := make([]*TFEOrganizationTag, len(page.Items))
 	for i, from := range page.Items {
 		to[i] = a.toTag(from)
 	}
@@ -92,7 +92,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Workspace
+	var params []*TFEWorkspace
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -124,7 +124,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Tag
+	var params []*TFETag
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -171,19 +171,19 @@ func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert to
-	to := make([]*types.OrganizationTag, len(page.Items))
+	to := make([]*TFEOrganizationTag, len(page.Items))
 	for i, from := range page.Items {
 		to[i] = a.toTag(from)
 	}
 	a.RespondWithPage(w, r, to, page.Pagination)
 }
 
-func (a *tfe) toTag(from *Tag) *types.OrganizationTag {
-	return &types.OrganizationTag{
+func (a *tfe) toTag(from *Tag) *TFEOrganizationTag {
+	return &TFEOrganizationTag{
 		ID:            from.ID,
 		Name:          from.Name,
 		InstanceCount: from.InstanceCount,
-		Organization: &types.Organization{
+		Organization: &organization.TFEOrganization{
 			Name: from.Organization,
 		},
 	}

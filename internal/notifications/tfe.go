@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type tfe struct {
@@ -32,7 +32,7 @@ func (a *tfe) createNotification(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.NotificationConfigurationCreateOptions
+	var params TFENotificationConfigurationCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -75,7 +75,7 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	to := make([]*types.NotificationConfiguration, len(configs))
+	to := make([]*TFENotificationConfiguration, len(configs))
 	for i, from := range configs {
 		to[i] = a.convert(from)
 	}
@@ -104,7 +104,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.NotificationConfigurationUpdateOptions
+	var params TFENotificationConfigurationUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -145,15 +145,15 @@ func (a *tfe) deleteNotification(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *Config) *types.NotificationConfiguration {
-	to := &types.NotificationConfiguration{
+func (a *tfe) convert(from *Config) *TFENotificationConfiguration {
+	to := &TFENotificationConfiguration{
 		ID:              from.ID,
 		CreatedAt:       from.CreatedAt,
 		UpdatedAt:       from.UpdatedAt,
 		Name:            from.Name,
 		Enabled:         from.Enabled,
-		DestinationType: types.NotificationDestinationType(from.DestinationType),
-		Subscribable: &types.Workspace{
+		DestinationType: TFENotificationDestinationType(from.DestinationType),
+		Subscribable: &workspace.TFEWorkspace{
 			ID: from.WorkspaceID,
 		},
 	}
