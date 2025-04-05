@@ -124,37 +124,36 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 		}
 		<span class="text-lg mt-4">Variable Sets ({ strconv.Itoa(len(props.setTablesProps)) })</span>
 		for _, tbl := range props.setTablesProps {
-			<div class="flex flex-col gap-2" id={ "variable-set-" + tbl.set.Name }>
-				@variableSetItem(tbl.set)
-				@table(tbl)
+			<div class="rounded-box border border-base-content/5">
+				<div class="flex flex-col gap-2" id={ "variable-set-" + tbl.set.Name }>
+					<table class="table overflow-x-auto">
+						@listVariableSetsTable{}.Row(tbl.set, ListOptions{})
+					</table>
+					<div class="divider"></div>
+					@table(tbl)
+				</div>
 			</div>
-			<div class="my-2"></div>
 		}
 	}
 }
 
 type listVariableSetsProps struct {
 	organization         organization.Name
-	sets                 []*VariableSet
+	sets                 *resource.Page[*VariableSet]
 	canCreateVariableSet bool
 }
 
 templ listVariableSets(props listVariableSetsProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "variable sets",
-		Organization:   &props.organization,
+		Organization:   props.organization,
 		ContentActions: listVariableSetsActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets"},
 		},
 	}) {
 		<div id="content-list">
-			for _, vs := range props.sets {
-				@variableSetItem(vs)
-			}
-			if len(props.sets) == 0 {
-				No variable sets currently exist.
-			}
+			@components.Table(&listVariableSetsTable{}, props.sets, ListOptions{})
 		</div>
 	}
 }
@@ -169,20 +168,30 @@ templ listVariableSetsActions(props listVariableSetsProps) {
 	}
 }
 
-templ variableSetItem(vs *VariableSet) {
-	<div class="widget" id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
-		<span id="name">{ vs.Name }</span>
-		<div>
+type listVariableSetsTable struct{}
+
+templ (t listVariableSetsTable) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Type</th>
+}
+
+templ (t listVariableSetsTable) Row(vs *VariableSet, opts ListOptions) {
+	<tr id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
+		<td>
+			{ vs.Name }
+		</td>
+		<td>
 			@components.Identifier(vs.ID)
-			<span>
-				if vs.Global {
-					global
-				} else {
-					{ strconv.Itoa(len(vs.Workspaces)) } workspaces
-				}
-			</span>
-		</div>
-	</div>
+		</td>
+		<td>
+			if vs.Global {
+				global
+			} else {
+				{ strconv.Itoa(len(vs.Workspaces)) } workspaces
+			}
+		</td>
+	</tr>
 }
 
 type editWorkspaceVariableProps struct {

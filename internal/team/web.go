@@ -104,24 +104,22 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Name organization.Name `schema:"organization_name"`
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	teams, err := h.teams.List(r.Context(), params.Name)
+	teams, err := h.teams.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listTeamsProps{
-		organization:  params.Name,
-		teams:         teams,
-		canCreateTeam: h.authorizer.CanAccess(r.Context(), authz.CreateTeamAction, params.Name),
+		organization:  params.Organization,
+		teams:         resource.NewPage(teams, params.PageOptions, nil),
+		canCreateTeam: h.authorizer.CanAccess(r.Context(), authz.CreateTeamAction, params.Organization),
 	}
 	html.Render(listTeams(props), w, r)
 }

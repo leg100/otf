@@ -180,9 +180,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization organization.Name `schema:"organization_name"`
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -201,7 +199,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 	props := listProps{
 		organization: params.Organization,
-		providers:    providers,
+		providers:    resource.NewPage(providers, params.PageOptions, nil),
 		app:          app,
 	}
 	html.Render(list(props), w, r)

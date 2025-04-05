@@ -33,6 +33,11 @@ type (
 		Global      *bool
 		Workspaces  []resource.TfeID
 	}
+
+	ListOptions struct {
+		resource.PageOptions
+		Organization organization.Name `schema:"organization_name"`
+	}
 )
 
 func newSet(organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error) {

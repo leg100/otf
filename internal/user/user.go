@@ -41,10 +41,11 @@ type (
 		Teams []*team.Team
 	}
 
-	// UserListOptions are options for the ListUsers endpoint.
-	UserListOptions struct {
-		Organization *string
-		TeamName     *string
+	// ListOptions are options for the ListUsers endpoint.
+	ListOptions struct {
+		resource.PageOptions
+
+		Organization organization.Name `schema:"name"`
 	}
 
 	NewUserOption func(*User)

@@ -73,11 +73,7 @@ templ getApps(props getAppsProps) {
 							</span>
 						}
 						if props.canDeleteApp {
-<<<<<<< HEAD
-							<form action={ paths.DeleteGithubApp(strconv.Itoa(int(props.app.ID))) } method="POST">
-=======
 							<form action={ paths.DeleteGithubApp(props.app.ID) } method="POST">
->>>>>>> master
 								@components.DeleteButton()
 								<input type="hidden" name="id" value={ strconv.Itoa(int(props.app.ID)) }/>
 							</form>
@@ -115,11 +111,7 @@ templ getApps(props getAppsProps) {
 										{ strconv.Itoa(int(*install.ID)) }
 									</span>
 								}
-<<<<<<< HEAD
-								<form action={ paths.DeleteInstallGithubApp(strconv.Itoa(int(*install.ID))) } method="POST">
-=======
 								<form action={ paths.DeleteInstallGithubApp(internal.ToStringer(strconv.Itoa(int(*install.ID)))) } method="POST">
->>>>>>> master
 									@components.DeleteButton()
 									<input type="hidden" name="install_id" value={ strconv.Itoa(int(*install.ID)) }/>
 								</form>

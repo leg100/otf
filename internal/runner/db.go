@@ -128,21 +128,16 @@ SELECT
     ) AS current_jobs
 FROM runners a
 LEFT JOIN agent_pools ap USING (agent_pool_id)
-WHERE (@is_server IS NULL OR (
-	   (@is_server IS TRUE AND agent_pool_id IS NULL)
-    OR (@is_server IS FALSE AND agent_pool_id IS NOT NULL)
-))
-AND (@organization IS NULL OR (
-	@organization IS NOT NULL AND ap.organization_name = @organization
-))
-AND (@pool_id IS NULL OR (
-	@pool_id IS NOT NULL AND ap.agent_pool_id = @pool_id
-))
+WHERE (@hide_server_runners::bool IS FALSE
+   OR (@hide_server_runners::bool IS TRUE AND ap.agent_pool_id IS NOT NULL)
+)
+AND (@organization::text IS NULL OR (ap.organization_name = @organization::text) OR (ap.organization_name IS NULL))
+AND (@pool_id::text IS NULL OR (ap.agent_pool_id::text = @pool_id))
 ORDER BY a.last_ping_at DESC
 `, pgx.NamedArgs{
-		"is_server":    opts.Server,
-		"organization": opts.Organization,
-		"pool_id":      opts.PoolID,
+		"hide_server_runners": opts.HideServerRunners,
+		"organization":        opts.Organization,
+		"pool_id":             opts.PoolID,
 	})
 	return sql.CollectRows(rows, scanRunner)
 }

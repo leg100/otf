@@ -12,8 +12,8 @@ import (
 )
 
 type listRunnersProps struct {
-	organization organization.Name
-	runners      []*RunnerMeta
+	organization      organization.Name
+	hideServerRunners bool
 }
 
 templ listRunners(props listRunnersProps) {
@@ -27,6 +27,15 @@ templ listRunners(props listRunnersProps) {
 		<div class="description max-w-2xl">
 			A runner handles the execution of runs. There are two types of runners: the runner built into <span class="bg-gray-200 font-mono p-0.5 text-xs">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="bg-gray-200 font-mono p-0.5 text-xs">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
 		</div>
+		<form action={ paths.Runners(props.organization) }>
+			<fieldset class="fieldset p-4 bg-base-100 border border-base-300 rounded-box w-64">
+				<legend class="fieldset-legend">Filters</legend>
+				<label class="fieldset-label">
+					<input type="checkbox" name="hide_server_runners" class="toggle toggle-secondary" onchange="this.form.submit()" checked?={ props.hideServerRunners }/>
+					Hide Server Runners
+				</label>
+			</fieldset>
+		</form>
 		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
 			<div id="page-results"></div>
 		</div>
@@ -54,7 +63,7 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
-	<tr id={ "item-runner-" + runner.ID.String() } x-data={ components.BlockLink(paths.Runner(runner.ID)) }>
+	<tr id={ "item-runner-" + runner.ID.String() }>
 		<td>
 			<div class="flex flex-col gap-2">
 				<span>

@@ -5,6 +5,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"time"
 )
@@ -48,7 +49,7 @@ templ profileLinks() {
 
 type userListProps struct {
 	organization organization.Name
-	users        []*User
+	users        *resource.Page[*User]
 }
 
 templ userList(props userListProps) {
@@ -59,15 +60,34 @@ templ userList(props userListProps) {
 			{Name: "users"},
 		},
 	}) {
-		@components.ContentList(props.users, userListItem)
+		@components.Table(&table{}, props.users, ListOptions{})
 	}
 }
 
-templ userListItem(user *User) {
-	<div id={ "item-user-" + user.Username } class="widget">
-		<span id="username">{ user.Username }</span>
-		@components.Identifier(user.ID)
-	</div>
+type table struct{}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Site Admin</th>
+}
+
+templ (t table) Row(user *User, opts ListOptions) {
+	<tr id={ "item-user-" + user.Username }>
+		<td>
+			{ user.Username }
+		</td>
+		<td>
+			@components.Identifier(user.ID)
+		</td>
+		<td>
+			if user.IsSiteAdmin() {
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+				</svg>
+			}
+		</td>
+	</tr>
 }
 
 type getTeamProps struct {
@@ -228,11 +248,7 @@ templ tokenListItem(token *UserToken) {
 		</div>
 		<div>
 			@components.Identifier(token.ID)
-<<<<<<< HEAD
-			<form action={ paths.DeleteToken() } method="POST">
-=======
 			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
->>>>>>> master
 				@components.DeleteButton()
 				<input type="hidden" name="id" value={ token.ID.String() }/>
 			</form>

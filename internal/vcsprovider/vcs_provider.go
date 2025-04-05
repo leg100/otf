@@ -56,6 +56,11 @@ type (
 		Token *string
 		Name  string
 	}
+
+	ListOptions struct {
+		resource.PageOptions
+		Organization organization.Name `schema:"organization_name"`
+	}
 )
 
 func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {

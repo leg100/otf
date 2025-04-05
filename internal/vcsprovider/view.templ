@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 type listProps struct {
 	organization organization.Name
-	providers    []*VCSProvider
+	providers    *resource.Page[*VCSProvider]
 	app          *github.App
 }
 
@@ -27,14 +28,6 @@ templ list(props listProps) {
 	}) {
 		<div>
 			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
-		</div>
-		<div id="content-list">
-			for _, provider := range props.providers {
-				@listItem(provider)
-			}
-			if len(props.providers) == 0 {
-				No VCS providers are currently configured.
-			}
 		</div>
 		<div class="flex flex-col gap-4 mt-4">
 			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
@@ -53,29 +46,39 @@ templ list(props listProps) {
 				<span>Alternatively, <a class="underline" href={ paths.NewGithubApp() }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
 			}
 		</div>
+		<div id="content-list">
+			@components.Table(&table{}, props.providers, ListOptions{})
+		</div>
 	}
 }
 
-templ listItem(provider *VCSProvider) {
-	<div x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID)) } class="widget" id={ provider.ID.String() }>
-		<div>
-			<span>
-				<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID) }>{ provider.String() }</a>
-			</span>
-			<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
-		</div>
-		<div>
+type table struct{}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t table) Row(provider *VCSProvider, opts ListOptions) {
+	<tr id={ provider.ID.String() } x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID)) }>
+		<td>
+			<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID) }>{ provider.String() }</a>
+		</td>
+		<td>
 			@components.Identifier(provider.ID)
-<<<<<<< HEAD
-			<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
-=======
+		</td>
+		<td>
+			{ internal.Ago(time.Now(), provider.CreatedAt) }
+		</td>
+		<td>
 			<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
->>>>>>> master
 				@components.DeleteButton()
 				<input type="hidden" name="id" value={ provider.ID.String() }/>
 			</form>
-		</div>
-	</div>
+		</td>
+	</tr>
 }
 
 templ edit(provider *VCSProvider) {
@@ -95,11 +98,7 @@ templ edit(provider *VCSProvider) {
 		})
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-<<<<<<< HEAD
-		<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
-=======
 		<form action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
->>>>>>> master
 			<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
 				Delete VCS provider
 			</button>

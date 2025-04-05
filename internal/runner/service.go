@@ -274,9 +274,8 @@ type ListOptions struct {
 	Organization *organization.Name `schema:"organization_name"`
 	// PoolID filters runners by agent pool ID
 	PoolID *resource.TfeID `schema:"pool_id"`
-	// Server filters server runners: true to list only server runners; false to
-	// exclude server runners.
-	Server *bool `schema:"server"`
+	// HideServerRunners if true filters out server runners
+	HideServerRunners bool `schema:"hide_server_runners"`
 }
 
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {
@@ -288,17 +287,14 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 }
 
 func (s *Service) listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
-	// Any user can list server runners. Otherwise user must have perms to list
-	// agent runners or a combination of both server and agent runners.
-	if opts.Server == nil || !*opts.Server {
-		var req authz.Request
-		if opts.Organization != nil {
-			req.ID = opts.Organization
-		}
-		_, err := s.Authorize(ctx, authz.ListRunnersAction, &req)
-		if err != nil {
-			return nil, err
-		}
+	var id resource.ID
+	if opts.Organization != nil {
+		id = opts.Organization
+	} else {
+		id = resource.SiteID
+	}
+	if _, err := s.Authorize(ctx, authz.ListRunnersAction, id); err != nil {
+		return nil, err
 	}
 	return s.db.list(ctx, opts)
 }

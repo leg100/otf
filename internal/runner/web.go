@@ -85,7 +85,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	// runners
-	r.HandleFunc("/organizations/{organization_name}/runners", h.listAgents).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runners", h.listRunners).Methods("GET")
 
 	// agent pools
 	r.HandleFunc("/organizations/{organization_name}/agent-pools", h.listAgentPools).Methods("GET")
@@ -102,7 +102,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 // runner handlers
 
-func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
 		h.websocketListHandler.Handler(w, r)
 		return
@@ -113,16 +113,9 @@ func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	runners, err := h.svc.listRunners(r.Context(), params)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	props := listRunnersProps{
-		organization: *params.Organization,
-		runners:      runners,
+		organization:      *params.Organization,
+		hideServerRunners: params.HideServerRunners,
 	}
 	html.Render(listRunners(props), w, r)
 }

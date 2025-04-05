@@ -87,20 +87,21 @@ func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Name organization.Name `schema:"name"`
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	users, err := h.users.ListOrganizationUsers(r.Context(), params.Name)
+	users, err := h.users.ListOrganizationUsers(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	props := userListProps{organization: params.Name, users: users}
+	props := userListProps{
+		organization: params.Organization,
+		users:        resource.NewPage(users, params.PageOptions, nil),
+	}
 	html.Render(userList(props), w, r)
 }
 
