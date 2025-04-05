@@ -184,7 +184,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// delete the token
-		err = page.Locator(`//button[@id="delete-agent-token-button"]`).Click()
+		err = page.Locator(`//form[@id="delete-agent-token"]/button`).Click()
 		require.NoError(t, err)
 
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`Deleted token: token-1`)

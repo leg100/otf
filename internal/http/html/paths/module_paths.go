@@ -4,30 +4,30 @@ package paths
 
 import "fmt"
 
-func Modules(organization string) string {
+func Modules(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/modules", organization)
 }
 
-func CreateModule(organization string) string {
+func CreateModule(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/modules/create", organization)
 }
 
-func NewModule(organization string) string {
+func NewModule(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/modules/new", organization)
 }
 
-func Module(module string) string {
+func Module(module fmt.Stringer) string {
 	return fmt.Sprintf("/app/modules/%s", module)
 }
 
-func EditModule(module string) string {
+func EditModule(module fmt.Stringer) string {
 	return fmt.Sprintf("/app/modules/%s/edit", module)
 }
 
-func UpdateModule(module string) string {
+func UpdateModule(module fmt.Stringer) string {
 	return fmt.Sprintf("/app/modules/%s/update", module)
 }
 
-func DeleteModule(module string) string {
+func DeleteModule(module fmt.Stringer) string {
 	return fmt.Sprintf("/app/modules/%s/delete", module)
 }

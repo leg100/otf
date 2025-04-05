@@ -7,17 +7,16 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/user"
@@ -42,6 +41,7 @@ type (
 		tfeapi                 *tfe
 		api                    *api
 		web                    *webHandlers
+		logs                   *logs.Service
 		afterCancelHooks       []func(context.Context, *Run) error
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
@@ -61,6 +61,7 @@ type (
 		ReleasesService      *releases.Service
 		VCSProviderService   *vcsprovider.Service
 		TokensService        *tokens.Service
+		LogsService          *logs.Service
 
 		logr.Logger
 		internal.Cache
@@ -79,6 +80,7 @@ func NewService(opts Options) *Service {
 		db:         db,
 		cache:      opts.Cache,
 		Interface:  opts.Authorizer,
+		logs:       opts.LogsService,
 	}
 	svc.factory = &factory{
 		organizations: opts.OrganizationService,
@@ -111,24 +113,27 @@ func NewService(opts Options) *Service {
 		opts.Logger,
 		opts.Listener,
 		"runs",
-		func(ctx context.Context, id resource.ID, action sql.Action) (*Run, error) {
+		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Run, error) {
 			if action == sql.DeleteAction {
 				return &Run{ID: id}, nil
 			}
-			return db.GetRun(ctx, id)
+			return db.get(ctx, id)
 		},
 	)
 
 	// Fetch related resources when API requests their inclusion
 	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.tfeapi.includeCreatedBy)
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.tfeapi.includeCurrentRun)
+	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.tfeapi.includeWorkspace)
 
-	// Resolve authorization requests for run IDs to a workspace IDs
-	opts.Authorizer.RegisterWorkspaceResolver(resource.RunKind,
+	// Provide a means of looking up a run's parent workspace.
+	opts.Authorizer.RegisterParentResolver(resource.RunKind,
 		func(ctx context.Context, runID resource.ID) (resource.ID, error) {
-			run, err := db.GetRun(ctx, runID)
+			// NOTE: we look up directly in the database rather than via
+			// service call to avoid a recursion loop.
+			run, err := db.get(ctx, runID)
 			if err != nil {
-				return resource.ID{}, err
+				return nil, err
 			}
 			return run.WorkspaceID, nil
 		},
@@ -150,8 +155,8 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
-	subject, err := s.Authorize(ctx, authz.CreateRunAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
+	subject, err := s.Authorize(ctx, authz.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -172,13 +177,13 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.ID, opts Crea
 }
 
 // Get retrieves a run from the db.
-func (s *Service) Get(ctx context.Context, runID resource.ID) (*Run, error) {
-	subject, err := s.Authorize(ctx, authz.GetRunAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
+	subject, err := s.Authorize(ctx, authz.GetRunAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := s.db.GetRun(ctx, runID)
+	run, err := s.db.get(ctx, runID)
 	if err != nil {
 		s.Error(err, "retrieving run", "id", runID, "subject", subject)
 		return nil, err
@@ -201,16 +206,16 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: &workspace.ID})
+		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, &authz.AccessRequest{ID: opts.WorkspaceID})
+		subject, authErr = s.Authorize(ctx, authz.GetWorkspaceAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, &authz.AccessRequest{Organization: *opts.Organization})
+		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, nil)
+		subject, authErr = s.Authorize(ctx, authz.ListRunsAction, resource.SiteID)
 	}
 	if authErr != nil {
 		return nil, authErr
@@ -228,8 +233,8 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 }
 
 // EnqueuePlan enqueues a plan for the run.
-func (s *Service) EnqueuePlan(ctx context.Context, runID resource.ID) (run *Run, err error) {
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+func (s *Service) EnqueuePlan(ctx context.Context, runID resource.TfeID) (run *Run, err error) {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
 		})
@@ -266,8 +271,8 @@ func (s *Service) AfterEnqueuePlan(hook func(context.Context, *Run) error) {
 	s.afterEnqueuePlanHooks = append(s.afterEnqueuePlanHooks, hook)
 }
 
-func (s *Service) Delete(ctx context.Context, runID resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteRunAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) Delete(ctx context.Context, runID resource.TfeID) error {
+	subject, err := s.Authorize(ctx, authz.DeleteRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -281,7 +286,7 @@ func (s *Service) Delete(ctx context.Context, runID resource.ID) error {
 }
 
 // StartPhase starts a run phase.
-func (s *Service) StartPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
+func (s *Service) StartPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 		return run.Start()
 	})
@@ -302,7 +307,7 @@ func (s *Service) StartPhase(ctx context.Context, runID resource.ID, phase inter
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (s *Service) FinishPhase(ctx context.Context, runID resource.ID, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
@@ -313,7 +318,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.ID, phase inte
 		}
 	}
 	var run *Run
-	err := s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
 		var autoapply bool
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			autoapply, err = run.Finish(phase, opts)
@@ -345,13 +350,13 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, &authz.AccessRequest{ID: opts.WorkspaceID})
+		_, err = s.Authorize(ctx, authz.WatchAction, opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, &authz.AccessRequest{Organization: *opts.Organization})
+		_, err = s.Authorize(ctx, authz.WatchAction, opts.Organization)
 	} else {
 		// caller must have site-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, nil)
+		_, err = s.Authorize(ctx, authz.WatchAction, resource.SiteID)
 	}
 	if err != nil {
 		return nil, err
@@ -383,12 +388,12 @@ func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-ch
 }
 
 // Apply enqueues an apply for the run.
-func (s *Service) Apply(ctx context.Context, runID resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.ApplyRunAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) Apply(ctx context.Context, runID resource.TfeID) error {
+	subject, err := s.Authorize(ctx, authz.ApplyRunAction, runID)
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueueApply()
 		})
@@ -414,8 +419,8 @@ func (s *Service) AfterEnqueueApply(hook func(context.Context, *Run) error) {
 }
 
 // Discard discards the run.
-func (s *Service) Discard(ctx context.Context, runID resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.DiscardRunAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) Discard(ctx context.Context, runID resource.TfeID) error {
+	subject, err := s.Authorize(ctx, authz.DiscardRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -433,12 +438,12 @@ func (s *Service) Discard(ctx context.Context, runID resource.ID) error {
 	return err
 }
 
-func (s *Service) Cancel(ctx context.Context, runID resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.CancelRunAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
+	subject, err := s.Authorize(ctx, authz.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		_, isUser := subject.(*user.User)
 
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
@@ -469,12 +474,12 @@ func (s *Service) AfterCancelRun(hook func(context.Context, *Run) error) {
 }
 
 // ForceCancel forcefully cancels a run.
-func (s *Service) ForceCancel(ctx context.Context, runID resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) ForceCancel(ctx context.Context, runID resource.TfeID) error {
+	subject, err := s.Authorize(ctx, authz.ForceCancelRunAction, runID)
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			return run.Cancel(true, true)
 		})
@@ -498,13 +503,13 @@ func (s *Service) AfterForceCancelRun(hook func(context.Context, *Run) error) {
 	s.afterForceCancelHooks = append(s.afterForceCancelHooks, hook)
 }
 
-func planFileCacheKey(f PlanFormat, id resource.ID) string {
+func planFileCacheKey(f PlanFormat, id resource.TfeID) string {
 	return fmt.Sprintf("%s.%s", id, f)
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s *Service) GetPlanFile(ctx context.Context, runID resource.ID, format PlanFormat) ([]byte, error) {
-	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) GetPlanFile(ctx context.Context, runID resource.TfeID, format PlanFormat) ([]byte, error) {
+	subject, err := s.Authorize(ctx, authz.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -527,8 +532,8 @@ func (s *Service) GetPlanFile(ctx context.Context, runID resource.ID, format Pla
 
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (s *Service) UploadPlanFile(ctx context.Context, runID resource.ID, plan []byte, format PlanFormat) error {
-	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, &authz.AccessRequest{ID: &runID})
+func (s *Service) UploadPlanFile(ctx context.Context, runID resource.TfeID, plan []byte, format PlanFormat) error {
+	subject, err := s.Authorize(ctx, authz.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
 	}
@@ -548,7 +553,7 @@ func (s *Service) UploadPlanFile(ctx context.Context, runID resource.ID, plan []
 }
 
 // createReports creates reports of changes for the phase.
-func (s *Service) createReports(ctx context.Context, runID resource.ID, phase internal.PhaseType) (resource Report, output Report, err error) {
+func (s *Service) createReports(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) (resource Report, output Report, err error) {
 	switch phase {
 	case internal.PlanPhase:
 		resource, output, err = s.createPlanReports(ctx, runID)
@@ -560,7 +565,7 @@ func (s *Service) createReports(ctx context.Context, runID resource.ID, phase in
 	return resource, output, err
 }
 
-func (s *Service) createPlanReports(ctx context.Context, runID resource.ID) (resources Report, outputs Report, err error) {
+func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (resources Report, outputs Report, err error) {
 	plan, err := s.GetPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return Report{}, Report{}, err
@@ -575,8 +580,8 @@ func (s *Service) createPlanReports(ctx context.Context, runID resource.ID) (res
 	return resourceReport, outputReport, nil
 }
 
-func (s *Service) createApplyReport(ctx context.Context, runID resource.ID) (Report, error) {
-	logs, err := s.getLogs(ctx, runID, internal.ApplyPhase)
+func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (Report, error) {
+	logs, err := s.logs.GetAllLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return Report{}, err
 	}
@@ -588,22 +593,6 @@ func (s *Service) createApplyReport(ctx context.Context, runID resource.ID) (Rep
 		return Report{}, err
 	}
 	return report, nil
-}
-
-func (s *Service) getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error) {
-	data, err := s.db.Querier(ctx).FindLogs(ctx, sqlc.FindLogsParams{
-		RunID: runID,
-		Phase: sql.String(string(phase)),
-	})
-	if err != nil {
-		// Don't consider no rows an error because logs may not have been
-		// uploaded yet.
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, sql.Error(err)
-	}
-	return data, nil
 }
 
 func (s *Service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {

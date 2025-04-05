@@ -43,14 +43,6 @@ make doc-screenshots
 
 The database schema is migrated using [tern](https://github.com/jackc/tern). The SQL migration files are kept in the repo in `./internal/sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.
 
-## SQL queries
-
-SQL queries are handwritten in `./internal/sql/queries` and turned into Go using [sqlc](https://github.com/sqlc-dev/sqlc).
-
-After you make changes to the queries run the following make task to invoke `sqlc`:
-
-* `make sql`
-
 ## HTML path helpers
 
 Rails-style path helpers are generated using `go generate`. The path specifications are maintained in `./http/html/paths/gen.go`. After making changes to the specs run the following make task to generate the helpers:

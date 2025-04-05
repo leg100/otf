@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/leg100/surl/v2"
@@ -20,7 +19,7 @@ import (
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
 
 // cacheKey generates a key for caching state files
-func cacheKey(svID resource.ID) string { return fmt.Sprintf("%s.json", svID) }
+func cacheKey(svID resource.TfeID) string { return fmt.Sprintf("%s.json", svID) }
 
 type (
 	// Service provides access to state and state versions
@@ -76,12 +75,14 @@ func NewService(opts Options) *Service {
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeOutputs)
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.tfeapi.includeWorkspaceCurrentOutputs)
 
-	// Resolve authorization requests for state version IDs to a workspace IDs
-	opts.Authorizer.RegisterWorkspaceResolver(resource.StateVersionKind,
+	// Provide a means of looking up a state versions's parent workspace.
+	opts.Authorizer.RegisterParentResolver(resource.StateVersionKind,
 		func(ctx context.Context, svID resource.ID) (resource.ID, error) {
+			// NOTE: we look up directly in the database rather than via
+			// service call to avoid a recursion loop.
 			sv, err := db.getVersion(ctx, svID)
 			if err != nil {
-				return resource.ID{}, err
+				return nil, err
 			}
 			return sv.WorkspaceID, nil
 		},
@@ -96,7 +97,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.CreateStateVersionAction, &authz.AccessRequest{ID: &opts.WorkspaceID})
+	subject, err := a.Authorize(ctx, authz.CreateStateVersionAction, opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func (a *Service) Create(ctx context.Context, opts CreateStateVersionOptions) (*
 	return sv, nil
 }
 
-func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.ID) ([]byte, error) {
+func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.TfeID) ([]byte, error) {
 	v, err := a.GetCurrent(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -123,8 +124,8 @@ func (a *Service) DownloadCurrent(ctx context.Context, workspaceID resource.ID) 
 	return a.Download(ctx, v.ID)
 }
 
-func (a *Service) List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
-	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, &authz.AccessRequest{ID: &workspaceID})
+func (a *Service) List(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+	subject, err := a.Authorize(ctx, authz.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +139,8 @@ func (a *Service) List(ctx context.Context, workspaceID resource.ID, opts resour
 	return svl, nil
 }
 
-func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, &authz.AccessRequest{ID: &workspaceID})
+func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +159,8 @@ func (a *Service) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Ver
 	return sv, nil
 }
 
-func (a *Service) Get(ctx context.Context, versionID resource.ID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, &authz.AccessRequest{ID: &versionID})
+func (a *Service) Get(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+	subject, err := a.Authorize(ctx, authz.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +174,8 @@ func (a *Service) Get(ctx context.Context, versionID resource.ID) (*Version, err
 	return sv, nil
 }
 
-func (a *Service) Delete(ctx context.Context, versionID resource.ID) error {
-	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, &authz.AccessRequest{ID: &versionID})
+func (a *Service) Delete(ctx context.Context, versionID resource.TfeID) error {
+	subject, err := a.Authorize(ctx, authz.DeleteStateVersionAction, versionID)
 	if err != nil {
 		return err
 	}
@@ -187,8 +188,8 @@ func (a *Service) Delete(ctx context.Context, versionID resource.ID) error {
 	return nil
 }
 
-func (a *Service) Rollback(ctx context.Context, versionID resource.ID) (*Version, error) {
-	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, &authz.AccessRequest{ID: &versionID})
+func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Version, error) {
+	subject, err := a.Authorize(ctx, authz.RollbackStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,9 +203,9 @@ func (a *Service) Rollback(ctx context.Context, versionID resource.ID) (*Version
 	return sv, nil
 }
 
-func (a *Service) Upload(ctx context.Context, svID resource.ID, state []byte) error {
+func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte) error {
 	var sv *Version
-	err := a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err := a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		var err error
 		sv, err = a.db.getVersionForUpdate(ctx, svID)
 		if err != nil {
@@ -227,8 +228,8 @@ func (a *Service) Upload(ctx context.Context, svID resource.ID, state []byte) er
 	return nil
 }
 
-func (a *Service) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
-	subject, err := a.Authorize(ctx, authz.DownloadStateAction, &authz.AccessRequest{ID: &svID})
+func (a *Service) Download(ctx context.Context, svID resource.TfeID) ([]byte, error) {
+	subject, err := a.Authorize(ctx, authz.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -248,14 +249,14 @@ func (a *Service) Download(ctx context.Context, svID resource.ID) ([]byte, error
 	return state, nil
 }
 
-func (a *Service) GetOutput(ctx context.Context, outputID resource.ID) (*Output, error) {
+func (a *Service) GetOutput(ctx context.Context, outputID resource.TfeID) (*Output, error) {
 	out, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetStateVersionOutputAction, &authz.AccessRequest{ID: &out.StateVersionID})
+	subject, err := a.Authorize(ctx, authz.GetStateVersionOutputAction, out.StateVersionID)
 	if err != nil {
 		return nil, err
 	}

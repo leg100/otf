@@ -11,7 +11,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/sqlc"
+	"github.com/leg100/otf/internal/sql"
 	"golang.org/x/exp/maps"
 )
 
@@ -35,29 +35,29 @@ type (
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 	Version struct {
-		ID          resource.ID        `jsonapi:"primary,state-versions"`
+		ID          resource.TfeID     `jsonapi:"primary,state-versions"`
 		CreatedAt   time.Time          `jsonapi:"attribute" json:"created-at"`
 		Serial      int64              `jsonapi:"attribute" json:"serial"`
 		State       []byte             `jsonapi:"attribute" json:"state"`
 		Status      Status             `jsonapi:"attribute" json:"status"`
 		Outputs     map[string]*Output `jsonapi:"attribute" json:"outputs"`
-		WorkspaceID resource.ID        `jsonapi:"attribute" json:"workspace-id"`
+		WorkspaceID resource.TfeID     `jsonapi:"attribute" json:"workspace-id"`
 	}
 
 	Output struct {
-		ID             resource.ID
+		ID             resource.TfeID
 		Name           string
 		Type           string
 		Value          json.RawMessage
 		Sensitive      bool
-		StateVersionID resource.ID
+		StateVersionID resource.TfeID
 	}
 
 	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {
-		State       []byte      // Terraform state file. Optional.
-		WorkspaceID resource.ID // ID of state version's workspace. Required.
-		Serial      *int64      // State serial number. Required.
+		State       []byte         // Terraform state file. Optional.
+		WorkspaceID resource.TfeID // ID of state version's workspace. Required.
+		Serial      *int64         // State serial number. Required.
 	}
 
 	// factory creates state versions - creation requires pre-requisite checking
@@ -67,15 +67,15 @@ type (
 	}
 
 	factoryDB interface {
-		Tx(context.Context, func(context.Context, *sqlc.Queries) error) error
+		Tx(context.Context, func(context.Context, sql.Connection) error) error
 
 		createVersion(context.Context, *Version) error
 		createOutputs(context.Context, []*Output) error
 		getVersion(ctx context.Context, svID resource.ID) (*Version, error)
-		getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error)
-		updateCurrentVersion(context.Context, resource.ID, resource.ID) error
-		uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error
-		discardPending(ctx context.Context, workspaceID resource.ID) error
+		getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
+		updateCurrentVersion(context.Context, resource.TfeID, resource.TfeID) error
+		uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error
+		discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error
 	}
 )
 
@@ -91,7 +91,7 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 		// to a negative number to ensure tests below succeed.
 		current = &Version{Serial: -1}
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving current version: %w", err)
 	}
 	if current.Serial > *opts.Serial {
 		return nil, ErrSerialNotGreaterThanCurrent
@@ -113,21 +113,21 @@ func (f *factory) new(ctx context.Context, opts CreateStateVersionOptions) (*Ver
 // newWithoutValidation creates a state version without validating the options.
 func (f *factory) newWithoutValidation(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	sv := Version{
-		ID:          resource.NewID(resource.StateVersionKind),
+		ID:          resource.NewTfeID(resource.StateVersionKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Serial:      *opts.Serial,
 		State:       opts.State,
 		Status:      Pending,
 		WorkspaceID: opts.WorkspaceID,
 	}
-	err := f.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err := f.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := f.db.createVersion(ctx, &sv); err != nil {
-			return err
+			return fmt.Errorf("creating version in database: %w", err)
 		}
 		if opts.State != nil {
 			finalized, err := f.uploadStateAndOutputs(ctx, &sv, opts.State)
 			if err != nil {
-				return err
+				return fmt.Errorf("uploading state to database: %w", err)
 			}
 			sv = *finalized
 		}
@@ -152,7 +152,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 			return nil, err
 		}
 		outputs[k] = &Output{
-			ID:             resource.NewID(resource.StateVersionOutputKind),
+			ID:             resource.NewTfeID(resource.StateVersionOutputKind),
 			Name:           k,
 			Type:           typ,
 			Value:          v.Value,
@@ -161,18 +161,18 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 		}
 	}
 	// now perform database updates
-	err := f.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := f.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
 		if sv.Status != Pending {
 			return ErrUploadNonPending
 		}
 		if err := f.db.createOutputs(ctx, maps.Values(outputs)); err != nil {
-			return err
+			return fmt.Errorf("creating outputs: %w", err)
 		}
 		if err := f.db.uploadStateAndFinalize(ctx, sv.ID, state); err != nil {
-			return err
+			return fmt.Errorf("uploading state: %w", err)
 		}
-		if err := f.db.discardPending(ctx, sv.WorkspaceID); err != nil {
-			return err
+		if err := f.db.discardAnyPending(ctx, sv.WorkspaceID); err != nil {
+			return fmt.Errorf("discarding pending versions: %w", err)
 		}
 		if err := f.db.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
 			return fmt.Errorf("updating current version: %w", err)
@@ -185,7 +185,7 @@ func (f *factory) uploadStateAndOutputs(ctx context.Context, sv *Version, state 
 	return sv, err
 }
 
-func (f *factory) rollback(ctx context.Context, svID resource.ID) (*Version, error) {
+func (f *factory) rollback(ctx context.Context, svID resource.TfeID) (*Version, error) {
 	sv, err := f.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

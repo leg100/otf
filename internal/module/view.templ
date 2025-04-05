@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"html/template"
@@ -13,10 +14,10 @@ import (
 )
 
 type newViewProps struct {
-	organization  string
+	organization  organization.Name
 	providers     []*vcsprovider.VCSProvider
 	repos         []string
-	vcsProviderID resource.ID
+	vcsProviderID resource.TfeID
 	repo          string
 	vcsProvider   *vcsprovider.VCSProvider
 	step          newModuleStep
@@ -24,7 +25,8 @@ type newViewProps struct {
 
 templ newView(props newViewProps) {
 	@components.Layout(components.LayoutProps{
-		Title: "new module",
+		Title:        "new module",
+		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "modules", Link: paths.Modules(props.organization)},
 			{Name: "new"},
@@ -151,7 +153,7 @@ templ newConfirm(props newViewProps) {
 }
 
 type listProps struct {
-	organization     string
+	organization     organization.Name
 	page             *resource.Page[*Module]
 	canPublishModule bool
 }
@@ -186,9 +188,9 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(module *Module, opts ListOptions) {
-	<tr id={ "mod-item-" + module.ID.String() } x-data={ components.BlockLink(paths.Module(module.ID.String())) }>
+	<tr id={ "mod-item-" + module.ID.String() } x-data={ components.BlockLink(paths.Module(module.ID)) }>
 		<td>
-			<a class="link" href={ paths.Module(module.ID.String()) }>
+			<a class="link" href={ paths.Module(module.ID) }>
 				{ module.Name }
 			</a>
 		</td>
@@ -229,7 +231,7 @@ templ get(props getProps) {
 					Module setup failed.
 				case ModuleStatusSetupComplete:
 					<div class="flex gap-4 items-center">
-						<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID.String()) } method="GET">
+						<form class="flex gap-2 items-center" action={ paths.Module(props.module.ID) } method="GET">
 							<label>Version</label>
 							<select class="select w-32" name="version" id="version" onchange="this.form.submit()">
 								{{ slices.Reverse(props.module.AvailableVersions()) }}
@@ -252,7 +254,7 @@ templ get(props getProps) {
 							<label for="usage">Usage</label>
 							<textarea class="textarea font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
 								{ `module "{ ` + props.module.Name + `}" {
-	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
+	source = "{ ` + props.hostname + ` }/{ ` + props.module.Organization.String() + ` }/{ ` + props.module.Name + ` }/{ ` + props.module.Provider + ` }"
 	version = "{ ` + props.currentVersion.Version + ` }"
 }` }
 							</textarea>
@@ -286,7 +288,7 @@ templ get(props getProps) {
 						}
 					</div>
 			}
-			<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID.String()) } method="POST">
+			<form id="module-delete-button" action={ paths.DeleteModule(props.module.ID) } method="POST">
 				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
 			</form>
 		</div>

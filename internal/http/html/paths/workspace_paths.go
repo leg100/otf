@@ -4,94 +4,94 @@ package paths
 
 import "fmt"
 
-func Workspaces(organization string) string {
+func Workspaces(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/workspaces", organization)
 }
 
-func CreateWorkspace(organization string) string {
+func CreateWorkspace(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/workspaces/create", organization)
 }
 
-func NewWorkspace(organization string) string {
+func NewWorkspace(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/workspaces/new", organization)
 }
 
-func Workspace(workspace string) string {
+func Workspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s", workspace)
 }
 
-func EditWorkspace(workspace string) string {
+func EditWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/edit", workspace)
 }
 
-func UpdateWorkspace(workspace string) string {
+func UpdateWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/update", workspace)
 }
 
-func DeleteWorkspace(workspace string) string {
+func DeleteWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/delete", workspace)
 }
 
-func LockWorkspace(workspace string) string {
+func LockWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/lock", workspace)
 }
 
-func UnlockWorkspace(workspace string) string {
+func UnlockWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/unlock", workspace)
 }
 
-func ForceUnlockWorkspace(workspace string) string {
+func ForceUnlockWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/force-unlock", workspace)
 }
 
-func SetPermissionWorkspace(workspace string) string {
+func SetPermissionWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/set-permission", workspace)
 }
 
-func UnsetPermissionWorkspace(workspace string) string {
+func UnsetPermissionWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/unset-permission", workspace)
 }
 
-func WatchWorkspace(workspace string) string {
+func WatchWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/watch", workspace)
 }
 
-func WatchWorkspaces(organization string) string {
+func WatchWorkspaces(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/workspaces/watch", organization)
 }
 
-func ConnectWorkspace(workspace string) string {
+func ConnectWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/connect", workspace)
 }
 
-func DisconnectWorkspace(workspace string) string {
+func DisconnectWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/disconnect", workspace)
 }
 
-func StartRunWorkspace(workspace string) string {
+func StartRunWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/start-run", workspace)
 }
 
-func SetupConnectionProviderWorkspace(workspace string) string {
+func SetupConnectionProviderWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/setup-connection-provider", workspace)
 }
 
-func SetupConnectionRepoWorkspace(workspace string) string {
+func SetupConnectionRepoWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/setup-connection-repo", workspace)
 }
 
-func CreateTagWorkspace(workspace string) string {
+func CreateTagWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/create-tag", workspace)
 }
 
-func DeleteTagWorkspace(workspace string) string {
+func DeleteTagWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/delete-tag", workspace)
 }
 
-func StateWorkspace(workspace string) string {
+func StateWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/state", workspace)
 }
 
-func PoolsWorkspace(workspace string) string {
+func PoolsWorkspace(workspace fmt.Stringer) string {
 	return fmt.Sprintf("/app/workspaces/%s/pools", workspace)
 }

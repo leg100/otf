@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -40,22 +41,22 @@ type (
 
 	// webModulesClient provides web handlers with access to modules
 	webModulesClient interface {
-		GetModuleByID(ctx context.Context, id resource.ID) (*Module, error)
-		GetModuleInfo(ctx context.Context, versionID resource.ID) (*TerraformModule, error)
-		ListModules(context.Context, ListOptions) (*resource.Page[*Module], error)
+		GetModuleByID(ctx context.Context, id resource.TfeID) (*Module, error)
+		GetModuleInfo(ctx context.Context, versionID resource.TfeID) (*TerraformModule, error)
+		ListModules(context.Context, ListOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
-		DeleteModule(ctx context.Context, id resource.ID) (*Module, error)
+		DeleteModule(ctx context.Context, id resource.TfeID) (*Module, error)
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
 	// vcsprovidersClient provides web handlers with access to vcs providers
 	vcsprovidersClient interface {
-		Get(context.Context, resource.ID) (*vcsprovider.VCSProvider, error)
-		List(context.Context, string) ([]*vcsprovider.VCSProvider, error)
-		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
+		Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error)
+		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
+		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 
 	newModuleStep string
@@ -72,29 +73,32 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var opts ListOptions
-	if err := decode.All(&opts, r); err != nil {
+	var params struct {
+		ListOptions
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	page, err := h.client.ListModules(r.Context(), opts)
+	modules, err := h.client.ListModules(r.Context(), params.ListOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listProps{
-		organization:     opts.Organization,
-		page:             page,
-		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization}),
+		organization:     params.Organization,
+		page:             resource.NewPage(modules, params.PageOptions, nil),
+		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
 	}
 	html.Render(list(props), w, r)
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID      resource.ID `schema:"module_id,required"`
-		Version *string     `schema:"version"`
+		ID      resource.TfeID `schema:"module_id,required"`
+		Version *string        `schema:"version"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -162,20 +166,22 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	providers, err := h.vcsproviders.List(r.Context(), org)
+	providers, err := h.vcsproviders.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := newViewProps{
-		organization: org,
+		organization: params.Organization,
 		providers:    providers,
 		step:         newModuleConnectStep,
 	}
@@ -184,8 +190,8 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  string      `schema:"organization_name,required"`
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
+		Organization  organization.Name `schema:"organization_name,required"`
+		VCSProviderID resource.TfeID    `schema:"vcs_provider_id,required"`
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -231,9 +237,9 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  string      `schema:"organization_name,required"`
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
-		Repo          string      `schema:"identifier,required"`
+		Organization  organization.Name `schema:"organization_name,required"`
+		VCSProviderID resource.TfeID    `schema:"vcs_provider_id,required"`
+		Repo          string            `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -257,8 +263,8 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		VCSProviderID resource.ID `schema:"vcs_provider_id,required"`
-		Repo          Repo        `schema:"identifier,required"`
+		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
+		Repo          Repo           `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -278,7 +284,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "published module: "+module.Name)
-	http.Redirect(w, r, paths.Module(module.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Module(module.ID), http.StatusFound)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {

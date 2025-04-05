@@ -14,9 +14,9 @@ import (
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
-	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +45,7 @@ func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 		return
 	}
 
-	got := &types.Workspace{}
+	got := &workspace.TFEWorkspace{}
 
 	b, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 
 	provider := daemon.createVCSProvider(t, ctx, org)
 
-	oauth, err := client.OAuthClients.Create(ctx, org.Name, tfe.OAuthClientCreateOptions{
+	oauth, err := client.OAuthClients.Create(ctx, org.Name.String(), tfe.OAuthClientCreateOptions{
 		OAuthToken:      provider.Token,
 		APIURL:          internal.String(vcsprovider.GithubAPIURL),
 		HTTPURL:         internal.String(vcsprovider.GithubHTTPURL),
@@ -90,7 +90,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ws, err := client.Workspaces.Create(ctx, org.Name, tfe.WorkspaceCreateOptions{
+	ws, err := client.Workspaces.Create(ctx, org.Name.String(), tfe.WorkspaceCreateOptions{
 		Name: internal.String("testing"),
 		VCSRepo: &tfe.VCSRepoOptions{
 			OAuthTokenID: internal.String(oauth.ID),

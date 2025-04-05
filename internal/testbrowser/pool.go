@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"testing"
@@ -145,4 +146,16 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 	}
 
 	fn(page)
+
+	// In the event of a failure take a screenshot for debugging purposes.
+	if t.Failed() {
+		fname := fmt.Sprintf("%s_failure.png", t.Name())
+		path := filepath.Join("screenshots", fname)
+
+		err := os.MkdirAll(filepath.Dir(path), 0o755)
+		require.NoError(t, err)
+
+		_, err = page.Screenshot(playwright.PageScreenshotOptions{Path: &path})
+		require.NoError(t, err)
+	}
 }

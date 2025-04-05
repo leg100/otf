@@ -208,7 +208,7 @@ func Test_mergeVariables(t *testing.T) {
 				},
 				{
 					Name:       "workspace-scoped",
-					Workspaces: []resource.ID{testWorkspaceID},
+					Workspaces: []resource.TfeID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "workspace-scoped",
@@ -255,7 +255,7 @@ func Test_mergeVariables(t *testing.T) {
 			sets: []*VariableSet{
 				{
 					Name:       "set_A",
-					Workspaces: []resource.ID{testWorkspaceID},
+					Workspaces: []resource.TfeID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",
@@ -266,7 +266,7 @@ func Test_mergeVariables(t *testing.T) {
 				},
 				{
 					Name:       "set_B",
-					Workspaces: []resource.ID{testWorkspaceID},
+					Workspaces: []resource.TfeID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",
@@ -297,7 +297,7 @@ func Test_mergeVariables(t *testing.T) {
 					// below.
 					Name:       "a - global with workspaces",
 					Global:     true,
-					Workspaces: []resource.ID{testWorkspaceID},
+					Workspaces: []resource.TfeID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",
@@ -308,7 +308,7 @@ func Test_mergeVariables(t *testing.T) {
 				},
 				{
 					Name:       "b - workspace-scoped",
-					Workspaces: []resource.ID{testWorkspaceID},
+					Workspaces: []resource.TfeID{testWorkspaceID},
 					Variables: []*Variable{
 						{
 							Key:      "foo",

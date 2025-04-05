@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 )
 
@@ -23,7 +24,7 @@ func init() {
 	// Serve assets from embedded files in go binary, unless dev mode is
 	// enabled, in which case serve files direct from filesystem, to avoid
 	// having to rebuild the binary every time a file changes.
-	if _, ok := os.LookupEnv("OTF_DEV_MODE"); ok {
+	if internal.DevMode {
 		// The working directory differs depending on where go build/test is
 		// invoked, so work out the root of the project repo and then join the
 		// relative path to the assets.

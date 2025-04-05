@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -13,16 +14,16 @@ type (
 	// Tag is a symbol associated with one or more workspaces. Helps searching and
 	// grouping workspaces.
 	Tag struct {
-		ID            resource.ID // ID of the form 'tag-*'. Globally unique.
-		Name          string      // Meaningful symbol. Unique to an organization.
-		InstanceCount int         // Number of workspaces that have this tag
-		Organization  string      // Organization this tag belongs to.
+		ID            resource.TfeID    // ID of the form 'tag-*'. Globally unique.
+		Name          string            // Meaningful symbol. Unique to an organization.
+		InstanceCount int               // Number of workspaces that have this tag
+		Organization  organization.Name // Organization this tag belongs to.
 	}
 
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to
 	// be valid.
 	TagSpec struct {
-		ID   *resource.ID
+		ID   *resource.TfeID
 		Name string
 	}
 
@@ -38,7 +39,7 @@ func (s TagSpec) Valid() error {
 
 func (specs TagSpecs) LogValue() slog.Value {
 	var (
-		ids   []resource.ID
+		ids   []resource.TfeID
 		names []string
 	)
 	for _, s := range specs {

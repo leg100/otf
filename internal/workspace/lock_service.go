@@ -12,12 +12,12 @@ import (
 // Lock locks the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error) {
-	var id resource.ID
+func (s *Service) Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error) {
+	var id resource.TfeID
 	if runID != nil {
 		id = *runID
 	} else {
-		subject, err := s.Authorize(ctx, authz.LockWorkspaceAction, &authz.AccessRequest{ID: &workspaceID})
+		subject, err := s.Authorize(ctx, authz.LockWorkspaceAction, workspaceID)
 		if err != nil {
 			return nil, err
 		}
@@ -42,8 +42,8 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.ID, runID *reso
 // Unlock unlocks the workspace. A workspace can only be unlocked on behalf of a run or
 // a user. If the former then runID must be non-nil; otherwise a user is
 // extracted from the context.
-func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error) {
-	var id resource.ID
+func (s *Service) Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error) {
+	var id resource.TfeID
 	if runID != nil {
 		id = *runID
 	} else {
@@ -53,7 +53,7 @@ func (s *Service) Unlock(ctx context.Context, workspaceID resource.ID, runID *re
 		} else {
 			action = authz.UnlockWorkspaceAction
 		}
-		subject, err := s.Authorize(ctx, action, &authz.AccessRequest{ID: &workspaceID})
+		subject, err := s.Authorize(ctx, action, workspaceID)
 		if err != nil {
 			return nil, err
 		}

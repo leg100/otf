@@ -174,12 +174,12 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 	return user, true
 }
 
-func (m *middleware) parseIDFromJWT(token []byte) (resource.ID, error) {
+func (m *middleware) parseIDFromJWT(token []byte) (resource.TfeID, error) {
 	parsed, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, m.key))
 	if err != nil {
-		return resource.ID{}, err
+		return resource.TfeID{}, err
 	}
-	return resource.ParseID(parsed.Subject())
+	return resource.ParseTfeID(parsed.Subject())
 }
 
 func isProtectedPath(path string) bool {

@@ -58,6 +58,6 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 }
 
 func (n *notification) runURL() string {
-	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID.String())}
+	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID)}
 	return u.String()
 }

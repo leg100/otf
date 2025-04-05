@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 
 	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/cobra"
@@ -17,10 +18,10 @@ type CLI struct {
 
 type cliClient interface {
 	List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-	GetByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-	Update(ctx context.Context, workspaceID resource.ID, opts UpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, workspaceID resource.ID, runID *resource.ID) (*Workspace, error)
-	Unlock(ctx context.Context, workspaceID resource.ID, runID *resource.ID, force bool) (*Workspace, error)
+	GetByName(ctx context.Context, organization organization.Name, workspace string) (*Workspace, error)
+	Update(ctx context.Context, workspaceID resource.TfeID, opts UpdateOptions) (*Workspace, error)
+	Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error)
+	Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error)
 }
 
 func NewCommand(apiClient *otfapi.Client) *cobra.Command {
@@ -47,7 +48,7 @@ func NewCommand(apiClient *otfapi.Client) *cobra.Command {
 }
 
 func (a *CLI) workspaceListCommand() *cobra.Command {
-	var org string
+	var organization organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "list",
@@ -58,7 +59,7 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Workspace], error) {
 				return a.client.List(cmd.Context(), ListOptions{
 					PageOptions:  opts,
-					Organization: &org,
+					Organization: &organization,
 				})
 			})
 			if err != nil {
@@ -72,14 +73,14 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&org, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }
 
 func (a *CLI) workspaceShowCommand() *cobra.Command {
-	var organization string
+	var organization organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "show [name]",
@@ -105,7 +106,7 @@ func (a *CLI) workspaceShowCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
@@ -113,7 +114,7 @@ func (a *CLI) workspaceShowCommand() *cobra.Command {
 
 func (a *CLI) workspaceEditCommand() *cobra.Command {
 	var (
-		organization string
+		organization organization.Name
 		opts         UpdateOptions
 		mode         string
 		poolID       string
@@ -131,7 +132,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 				opts.ExecutionMode = (*ExecutionMode)(&mode)
 			}
 			if poolID != "" {
-				poolResourceID, err := resource.ParseID(poolID)
+				poolResourceID, err := resource.ParseTfeID(poolID)
 				if err != nil {
 					return err
 				}
@@ -153,14 +154,14 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&mode, "execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
 	cmd.Flags().StringVar(&poolID, "agent-pool-id", "", "ID of the agent pool to use for runs. Required if execution-mode is set to agent.")
 
-	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }
 
 func (a *CLI) workspaceLockCommand() *cobra.Command {
-	var organization string
+	var organization organization.Name
 
 	cmd := &cobra.Command{
 		Use:           "lock [name]",
@@ -185,7 +186,7 @@ func (a *CLI) workspaceLockCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd
@@ -193,7 +194,7 @@ func (a *CLI) workspaceLockCommand() *cobra.Command {
 
 func (a *CLI) workspaceUnlockCommand() *cobra.Command {
 	var (
-		organization string
+		organization organization.Name
 		force        bool
 	)
 
@@ -221,7 +222,7 @@ func (a *CLI) workspaceUnlockCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().Var(&organization, "organization", "Organization workspace belongs to")
 	cmd.Flags().BoolVar(&force, "force", false, "Forceably unlock workspace.")
 	cmd.MarkFlagRequired("organization")
 

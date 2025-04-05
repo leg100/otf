@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
@@ -54,7 +53,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		n := 2*resource.DefaultPageSize + 1
 		orgs := make([]*Organization, n)
 		for i := 1; i <= n; i++ {
-			orgs[i-1] = &Organization{Name: uuid.NewString()}
+			orgs[i-1] = newTestOrg(t)
 		}
 		svc := &web{svc: &fakeWebService{orgs: orgs}}
 
@@ -137,7 +136,7 @@ func TestWeb_ListHandler(t *testing.T) {
 func TestWeb_DeleteHandler(t *testing.T) {
 	svc := &web{
 		svc: &fakeWebService{
-			orgs: []*Organization{{Name: uuid.NewString()}},
+			orgs: []*Organization{newTestOrg(t)},
 		},
 	}
 
@@ -167,10 +166,10 @@ func (f *fakeWebService) List(ctx context.Context, opts ListOptions) (*resource.
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebService) Delete(context.Context, string) error {
+func (f *fakeWebService) Delete(context.Context, Name) error {
 	return nil
 }
 
-func (s *unprivilegedSubject) CanAccess(authz.Action, *authz.AccessRequest) bool {
+func (s *unprivilegedSubject) CanAccess(authz.Action, authz.Request) bool {
 	return false
 }

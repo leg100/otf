@@ -9,14 +9,14 @@ import (
 )
 
 // cacheKey generates a key for caching config tarballs
-func cacheKey(cvID resource.ID) string {
+func cacheKey(cvID resource.TfeID) string {
 	return fmt.Sprintf("%s.tar.gz", cvID)
 }
 
 // UploadConfig saves a configuration tarball to the db
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (s *Service) UploadConfig(ctx context.Context, cvID resource.ID, config []byte) error {
+func (s *Service) UploadConfig(ctx context.Context, cvID resource.TfeID, config []byte) error {
 	err := s.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
 		return cv.Upload(ctx, config, uploader)
 	})
@@ -32,8 +32,8 @@ func (s *Service) UploadConfig(ctx context.Context, cvID resource.ID, config []b
 }
 
 // DownloadConfig retrieves a tarball from the db
-func (s *Service) DownloadConfig(ctx context.Context, cvID resource.ID) ([]byte, error) {
-	subject, err := s.Authorize(ctx, authz.DownloadConfigurationVersionAction, &authz.AccessRequest{ID: &cvID})
+func (s *Service) DownloadConfig(ctx context.Context, cvID resource.TfeID) ([]byte, error) {
+	subject, err := s.Authorize(ctx, authz.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}

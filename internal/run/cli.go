@@ -21,11 +21,11 @@ type CLI struct {
 }
 
 type cliClient interface {
-	Get(ctx context.Context, runID resource.ID) (*Run, error)
+	Get(ctx context.Context, runID resource.TfeID) (*Run, error)
 }
 
 type cliConfigsClient interface {
-	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
+	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
@@ -56,7 +56,7 @@ func (a *CLI) runDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			id, err := resource.ParseID(args[0])
+			id, err := resource.ParseTfeID(args[0])
 			if err != nil {
 				return err
 			}

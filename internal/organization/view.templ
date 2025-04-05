@@ -56,10 +56,10 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(org *Organization, opts ListOptions) {
-	<tr id={ "org-item-" + org.Name } x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+	<tr id={ "org-item-" + org.Name.String() } x-data={ components.BlockLink(paths.Organization(org.Name)) }>
 		<td>
 			<a class="link" href={ paths.Organization(org.Name) }>
-				{ org.Name }
+				{ org.Name.String() }
 			</a>
 		</td>
 		<td>
@@ -71,7 +71,7 @@ templ (t table) Row(org *Organization, opts ListOptions) {
 templ listItem(org *Organization) {
 	<div class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
 		<div>
-			<span>{ org.Name }</span>
+			<span>{ org.Name.String() }</span>
 		</div>
 		<div>
 			@components.Identifier(org.ID)
@@ -99,7 +99,7 @@ templ listActions(canCreate bool) {
 templ get(organization *Organization) {
 	{{
 	layoutProps := components.LayoutProps{
-		Title:        organization.Name,
+		Title:        organization.Name.String(),
 		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "main menu"},
@@ -152,7 +152,7 @@ templ get(organization *Organization) {
 
 templ edit(organization *Organization) {
 	@components.Layout(components.LayoutProps{
-		Title:        organization.Name,
+		Title:        organization.Name.String(),
 		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "settings"},
@@ -161,7 +161,7 @@ templ edit(organization *Organization) {
 		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(organization.Name) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="new_name" id="name" value={ organization.Name } required/>
+				<input class="input w-80" type="text" name="new_name" id="name" value={ organization.Name.String() } required/>
 			</div>
 			<div class="field">
 				<button class="btn w-72">Update organization name</button>
@@ -178,9 +178,9 @@ templ edit(organization *Organization) {
 	}
 }
 
-templ getToken(organization string, token *OrganizationToken) {
+templ getToken(organization Name, token *OrganizationToken) {
 	@components.Layout(components.LayoutProps{
-		Title:        organization,
+		Title:        organization.String(),
 		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "organization token"},

@@ -69,7 +69,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 		tests := []struct {
 			name        string
-			workspaceID resource.ID
+			workspaceID resource.TfeID
 			opts        configversion.ListOptions
 			want        func(*testing.T, *resource.Page[*configversion.ConfigurationVersion], error)
 		}{
@@ -107,7 +107,7 @@ func TestConfigurationVersion(t *testing.T) {
 			},
 			{
 				name:        "query non-existent workspace",
-				workspaceID: resource.NewID(resource.WorkspaceKind),
+				workspaceID: resource.NewTfeID(resource.WorkspaceKind),
 				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.ErrorIs(t, err, internal.ErrResourceNotFound)
 				},

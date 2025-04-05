@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
@@ -18,7 +19,7 @@ import (
 
 func TestListModules(t *testing.T) {
 	h := newTestWebHandlers(t, withMod(&Module{}))
-	user := &user.User{ID: resource.NewID(resource.UserKind)}
+	user := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
@@ -136,12 +137,12 @@ func TestWeb_Publish(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Module(mod.ID.String()), redirect.Path)
+		assert.Equal(t, paths.Module(mod.ID), redirect.Path)
 	}
 }
 
 func TestNewModule_Delete(t *testing.T) {
-	mod := Module{Organization: "acme-corp"}
+	mod := Module{Organization: organization.NewTestName(t)}
 	h := newTestWebHandlers(t, withMod(&mod))
 
 	q := "/?module_id=mod-123"
@@ -151,11 +152,11 @@ func TestNewModule_Delete(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Modules("acme-corp"), redirect.Path)
+		assert.Equal(t, paths.Modules(mod.Organization), redirect.Path)
 	}
 }
 
-func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
+func newTestWebHandlers(_ *testing.T, opts ...testWebOption) *webHandlers {
 	var svc fakeService
 	for _, fn := range opts {
 		fn(&svc)

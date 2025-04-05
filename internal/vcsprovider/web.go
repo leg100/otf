@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/templ-go/x/urlbuilder"
@@ -28,10 +29,10 @@ type webHandlers struct {
 
 type webClient interface {
 	Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
-	Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error)
-	Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
-	List(ctx context.Context, organization string) ([]*VCSProvider, error)
-	Delete(ctx context.Context, id resource.ID) (*VCSProvider, error)
+	Update(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*VCSProvider, error)
+	Get(ctx context.Context, id resource.TfeID) (*VCSProvider, error)
+	List(ctx context.Context, organization organization.Name) ([]*VCSProvider, error)
+	Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, error)
 }
 
 type webGithubAppClient interface {
@@ -53,8 +54,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization string   `schema:"organization_name,required"`
-		Kind         vcs.Kind `schema:"kind,required"`
+		Organization organization.Name `schema:"organization_name,required"`
+		Kind         vcs.Kind          `schema:"kind,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -80,7 +81,7 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization string `schema:"organization_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -110,11 +111,11 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		OrganizationName   string    `schema:"organization_name,required"`
-		Token              *string   `schema:"token"`
-		GithubAppInstallID *int64    `schema:"install_id"`
-		Name               string    `schema:"name"`
-		Kind               *vcs.Kind `schema:"kind"`
+		OrganizationName   organization.Name `schema:"organization_name,required"`
+		Token              *string           `schema:"token"`
+		GithubAppInstallID *int64            `schema:"install_id"`
+		Name               string            `schema:"name"`
+		Kind               *vcs.Kind         `schema:"kind"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -153,9 +154,9 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID    resource.ID `schema:"vcs_provider_id,required"`
-		Token string      `schema:"token"`
-		Name  string      `schema:"name"`
+		ID    resource.TfeID `schema:"vcs_provider_id,required"`
+		Token string         `schema:"token"`
+		Name  string         `schema:"name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -179,8 +180,10 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -191,13 +194,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	providers, err := h.client.List(r.Context(), org)
+	providers, err := h.client.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	props := listProps{
-		organization: org,
+		organization: params.Organization,
 		providers:    providers,
 		app:          app,
 	}

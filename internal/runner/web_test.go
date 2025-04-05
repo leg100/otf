@@ -6,17 +6,20 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebHandlers_createAgentPool(t *testing.T) {
+	organization := organization.NewTestName(t)
+	id := testutils.ParseID(t, "pool-123")
 	svc := &fakeService{
-		pool: &Pool{ID: testutils.ParseID(t, "pool-123")},
+		pool: &Pool{ID: id},
 	}
 	h := &webHandlers{svc: svc}
-	q := "/?organization_name=acme-org&name=my-pool"
+	q := "/?organization_name=" + organization.String() + "&name=my-pool"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 
@@ -24,10 +27,10 @@ func TestWebHandlers_createAgentPool(t *testing.T) {
 
 	want := CreateAgentPoolOptions{
 		Name:         "my-pool",
-		Organization: "acme-org",
+		Organization: organization,
 	}
 	assert.Equal(t, want, svc.createAgentPoolOptions)
-	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
+	testutils.AssertRedirect(t, w, paths.AgentPool(id))
 }
 
 func TestWebHandlers_listAgentPools(t *testing.T) {
@@ -46,6 +49,7 @@ func TestWebHandlers_listAgentPools(t *testing.T) {
 }
 
 func TestWebHandlers_createAgentToken(t *testing.T) {
+	id := testutils.ParseID(t, "pool-123")
 	h := &webHandlers{
 		svc: &fakeService{},
 	}
@@ -55,11 +59,11 @@ func TestWebHandlers_createAgentToken(t *testing.T) {
 
 	h.createAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool("pool-123"))
+	testutils.AssertRedirect(t, w, paths.AgentPool(id))
 }
 
 func TestAgentToken_DeleteHandler(t *testing.T) {
-	agentPoolID := resource.NewID(resource.AgentPoolKind)
+	agentPoolID := resource.NewTfeID(resource.AgentPoolKind)
 
 	h := &webHandlers{
 		svc: &fakeService{
@@ -74,5 +78,5 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 
 	h.deleteAgentToken(w, r)
 
-	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID.String()))
+	testutils.AssertRedirect(t, w, paths.AgentPool(agentPoolID))
 }

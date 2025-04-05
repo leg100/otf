@@ -12,10 +12,10 @@ import (
 )
 
 type foo struct {
-	id resource.ID
+	id resource.TfeID
 }
 
-func fooGetter(ctx context.Context, id resource.ID, action sql.Action) (*foo, error) {
+func fooGetter(ctx context.Context, id resource.TfeID, action sql.Action) (*foo, error) {
 	return &foo{id: id}, nil
 }
 

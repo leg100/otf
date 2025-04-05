@@ -29,6 +29,8 @@ type (
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)
+
+	fakeWebLogsService struct{}
 )
 
 func withWorkspace(workspace *workspace.Workspace) fakeWebServiceOption {
@@ -43,7 +45,7 @@ func withRuns(runs ...*Run) fakeWebServiceOption {
 	}
 }
 
-func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
+func newTestWebHandlers(_ *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 	var svc fakeWebServices
 	for _, fn := range opts {
 		fn(&svc)
@@ -55,31 +57,28 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 			Workspaces: []*workspace.Workspace{svc.ws},
 		},
 		runs: &svc,
+		logs: &fakeWebLogsService{},
 	}
 }
 
-func (f *fakeWebServices) Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
+func (f *fakeWebServices) Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
 	return f.runs[0], nil
-}
-
-func (f *fakeWebServices) GetPolicy(context.Context, string) (authz.WorkspacePolicy, error) {
-	return authz.WorkspacePolicy{}, nil
 }
 
 func (f *fakeWebServices) List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebServices) getLogs(context.Context, resource.ID, internal.PhaseType) ([]byte, error) {
-	return nil, nil
-}
+func (f *fakeWebServices) Cancel(context.Context, resource.TfeID) error { return nil }
 
-func (f *fakeWebServices) Cancel(context.Context, resource.ID) error { return nil }
-
-func (f *fakeWebServices) Get(ctx context.Context, runID resource.ID) (*Run, error) {
+func (f *fakeWebServices) Get(ctx context.Context, runID resource.TfeID) (*Run, error) {
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) Apply(ctx context.Context, runID resource.ID) error {
+func (f *fakeWebServices) Apply(ctx context.Context, runID resource.TfeID) error {
 	return nil
+}
+
+func (f *fakeWebLogsService) GetAllLogs(context.Context, resource.TfeID, internal.PhaseType) ([]byte, error) {
+	return nil, nil
 }

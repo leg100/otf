@@ -16,7 +16,7 @@ type (
 	}
 
 	agentCLIService interface {
-		CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
+		CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	}
 )
 
@@ -61,7 +61,7 @@ func (a *agentCLI) agentTokenNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			poolID, err := resource.ParseID(poolIDStr)
+			poolID, err := resource.ParseTfeID(poolIDStr)
 			if err != nil {
 				return err
 			}

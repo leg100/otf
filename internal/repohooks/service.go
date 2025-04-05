@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -40,7 +39,7 @@ type (
 	}
 
 	CreateRepohookOptions struct {
-		VCSProviderID resource.ID // vcs provider of repo
+		VCSProviderID resource.TfeID // vcs provider of repo
 		RepoPath      string
 	}
 )
@@ -97,7 +96,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	}
 	// lock repohooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err = s.db.Lock(ctx, "repohooks", func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Lock(ctx, "repohooks", func(ctx context.Context, _ sql.Connection) error {
 		hook, err = s.db.getOrCreateHook(ctx, hook)
 		if err != nil {
 			return fmt.Errorf("getting or creating webhook: %w", err)

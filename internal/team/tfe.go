@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
@@ -32,13 +33,14 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-
-	var params types.TeamCreateOptions
+	var params TFETeamCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -60,7 +62,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	team, err := a.Create(r.Context(), org, opts)
+	team, err := a.Create(r.Context(), pathParams.Organization, opts)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -76,7 +78,7 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var params types.TeamUpdateOptions
+	var params TFETeamUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -108,20 +110,22 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	teams, err := a.List(r.Context(), organization)
+	teams, err := a.List(r.Context(), pathParams.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
 	// convert items
-	items := make([]*types.Team, len(teams))
+	items := make([]*TFETeam, len(teams))
 	for i, from := range teams {
 		items[i] = a.convertTeam(from)
 	}
@@ -130,8 +134,8 @@ func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization *string `schema:"organization_name,required"`
-		Name         *string `schema:"team_name,required"`
+		Organization *organization.Name `schema:"organization_name,required"`
+		Name         *string            `schema:"team_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -176,22 +180,22 @@ func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertTeam(from *Team) *types.Team {
-	return &types.Team{
+func (a *tfe) convertTeam(from *Team) *TFETeam {
+	return &TFETeam{
 		ID:         from.ID,
 		Name:       from.Name,
 		SSOTeamID:  from.SSOTeamID,
 		Visibility: from.Visibility,
-		OrganizationAccess: &types.OrganizationAccess{
-			ManageWorkspaces:      from.Access.ManageWorkspaces,
-			ManageVCSSettings:     from.Access.ManageVCS,
-			ManageModules:         from.Access.ManageModules,
-			ManageProviders:       from.Access.ManageProviders,
-			ManagePolicies:        from.Access.ManagePolicies,
-			ManagePolicyOverrides: from.Access.ManagePolicyOverrides,
+		OrganizationAccess: &TFEOrganizationAccess{
+			ManageWorkspaces:      from.ManageWorkspaces,
+			ManageVCSSettings:     from.ManageVCS,
+			ManageModules:         from.ManageModules,
+			ManageProviders:       from.ManageProviders,
+			ManagePolicies:        from.ManagePolicies,
+			ManagePolicyOverrides: from.ManagePolicyOverrides,
 		},
 		// Hardcode these values until proper support is added
-		Permissions: &types.TeamPermissions{
+		Permissions: &TFETeamPermissions{
 			CanDestroy:          true,
 			CanUpdateMembership: true,
 		},

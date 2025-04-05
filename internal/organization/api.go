@@ -38,12 +38,14 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) deleteOrganization(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params struct {
+		Name Name `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.Delete(r.Context(), name); err != nil {
+	if err := a.Delete(r.Context(), params.Name); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

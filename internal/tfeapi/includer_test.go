@@ -13,22 +13,22 @@ import (
 func TestIncluder(t *testing.T) {
 	type (
 		baz struct {
-			ID resource.ID
+			ID resource.TfeID
 		}
 		bar struct {
 			Baz baz
-			ID  resource.ID
+			ID  resource.TfeID
 		}
 		foo struct {
 			Bar bar
-			ID  resource.ID
+			ID  resource.TfeID
 		}
 	)
-	fooResource := foo{ID: resource.NewID("foo")}
-	fooResource2 := foo{ID: resource.NewID("foo")}
-	barResource := bar{ID: resource.NewID("bar")}
-	barResource2 := bar{ID: resource.NewID("bar")}
-	bazResource := baz{ID: resource.NewID("baz")}
+	fooResource := foo{ID: resource.NewTfeID("foo")}
+	fooResource2 := foo{ID: resource.NewTfeID("foo")}
+	barResource := bar{ID: resource.NewTfeID("bar")}
+	barResource2 := bar{ID: resource.NewTfeID("bar")}
+	bazResource := baz{ID: resource.NewTfeID("baz")}
 
 	tests := []struct {
 		name          string
@@ -149,3 +149,15 @@ func TestIncluder(t *testing.T) {
 		})
 	}
 }
+
+//func TestGetRelationshipID(t *testing.T) {
+//	type (
+//		bar struct {
+//			ID resource.TfeID `jsonapi:"primary,bars"`
+//		}
+//		foo struct {
+//			ID  resource.TfeID `jsonapi:"primary,foos"`
+//			Bar *bar           `jsonapi:"relationship" json:"bar"`
+//		}
+//	)
+//}

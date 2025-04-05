@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
@@ -15,7 +16,7 @@ import (
 )
 
 type listProps struct {
-	organization        string
+	organization        organization.Name
 	ws                  *workspace.Workspace
 	status              []runstatus.Status
 	statusFilterVisible bool
@@ -32,7 +33,7 @@ templ list(props listProps) {
 	if props.ws != nil {
 		layoutProps.Breadcrumbs = []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 		}
 		layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 	}
@@ -70,11 +71,11 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(run *Run, opts ListOptions) {
-	<tr id={ "run-item-" + run.ID.String() } x-data={ components.BlockLink(paths.Run(run.ID.String())) }>
+	<tr id={ "run-item-" + run.ID.String() } x-data={ components.BlockLink(paths.Run(run.ID)) }>
 		<!-- provide workspace name if not filtered by workspace ID -->
 		if opts.WorkspaceID == nil {
 			<td>
-				<a class="link" href={ paths.Workspace(run.WorkspaceID.String()) }>
+				<a class="link" href={ paths.Workspace(run.WorkspaceID) }>
 					{ t.getWorkspaceName(ctx, run) }
 				</a>
 			</td>
@@ -148,20 +149,20 @@ templ (t table) Row(run *Run, opts ListOptions) {
 		<td>
 			<div class="flex gap-2">
 				if run.Status == runstatus.Planned {
-					<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+					<form action={ paths.ApplyRun(run.ID) } method="POST">
 						<button id="apply-button" class="btn btn-sm">Apply</button>
 					</form>
 				}
 				if run.Cancelable() {
-					<form action={ paths.CancelRun(run.ID.String()) } method="POST">
+					<form action={ paths.CancelRun(run.ID) } method="POST">
 						<button class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
 					</form>
 				} else if run.ForceCancelable() {
-					<form action={ paths.ForceCancelRun(run.ID.String()) } method="POST">
+					<form action={ paths.ForceCancelRun(run.ID) } method="POST">
 						<button class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
 					</form>
 				} else if run.Discardable() {
-					<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+					<form action={ paths.DiscardRun(run.ID) } method="POST">
 						<button id="run-discard-button" class="btn btn-sm btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
 					</form>
 				} else if run.CancelSignaledAt != nil && !run.Done() {
@@ -196,8 +197,8 @@ templ get(props getProps) {
 		PostContent:  getPostContent(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-			{Name: "runs", Link: paths.Runs(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+			{Name: "runs", Link: paths.Runs(props.ws.ID)},
 			{Name: props.run.ID.String()},
 		},
 	}
@@ -214,7 +215,7 @@ templ get(props getProps) {
 		</div>
 		@periodReport(props.run)
 		<div class="flex flex-col gap-4">
-			<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID.String())) + "?run_id=" + props.run.ID.String() }>
+			<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID)) + "?run_id=" + props.run.ID.String() }>
 				@widget(props.run)
 			</div>
 			<details id="plan" open>
@@ -263,11 +264,11 @@ templ getPreContent() {
 
 templ getPostContent(props getProps) {
 	if !props.planLogs.IsEnd() {
-		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "plan", props.planLogs.NextOffset())
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "plan", props.planLogs.NextOffset())
 		;
 	}
 	if !props.applyLogs.IsEnd() {
-		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID.String()), "apply", props.applyLogs.NextOffset())
+		@templ.JSFuncCall("setupTail", paths.TailRun(props.run.ID), "apply", props.applyLogs.NextOffset())
 		;
 	}
 }
@@ -285,7 +286,7 @@ templ eventView(run *Run) {
 
 templ widget(run *Run) {
 	<div sse-swap={ "run-item-" + run.ID.String() }>
-		<div x-data={ components.BlockLink(paths.Run(run.ID.String())) } class="widget">
+		<div x-data={ components.BlockLink(paths.Run(run.ID)) } class="widget">
 			<div>
 				@runstatus.Badge(run.ID, run.Status)
 				if run.PlanOnly {
@@ -331,20 +332,20 @@ templ widget(run *Run) {
 						@resourceReport(run.Plan.ResourceReport)
 					}
 					if run.Status == runstatus.Planned {
-						<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+						<form action={ paths.ApplyRun(run.ID) } method="POST">
 							<button id="apply-button" class="btn">Apply</button>
 						</form>
 					}
 					if run.Cancelable() {
-						<form action={ paths.CancelRun(run.ID.String()) } method="POST">
+						<form action={ paths.CancelRun(run.ID) } method="POST">
 							<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
 						</form>
 					} else if run.ForceCancelable() {
-						<form action={ paths.ForceCancelRun(run.ID.String()) } method="POST">
+						<form action={ paths.ForceCancelRun(run.ID) } method="POST">
 							<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
 						</form>
 					} else if run.Discardable() {
-						<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+						<form action={ paths.DiscardRun(run.ID) } method="POST">
 							<button id="run-discard-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
 						</form>
 					} else if run.CancelSignaledAt != nil && !run.Done() {
@@ -359,14 +360,14 @@ templ widget(run *Run) {
 templ actions(run *Run) {
 	<div class="flex gap-2" id="run-actions" hx-swap-oob="true">
 		if run.Status == runstatus.Planned {
-			<form action={ paths.ApplyRun(run.ID.String()) } method="POST">
+			<form action={ paths.ApplyRun(run.ID) } method="POST">
 				<button class="btn">apply</button>
 			</form>
-			<form action={ paths.DiscardRun(run.ID.String()) } method="POST">
+			<form action={ paths.DiscardRun(run.ID) } method="POST">
 				<button class="btn">discard</button>
 			</form>
 		} else if run.Done() {
-			<form action={ paths.RetryRun(run.ID.String()) } method="POST">
+			<form action={ paths.RetryRun(run.ID) } method="POST">
 				<button class="btn">retry run</button>
 			</form>
 		}

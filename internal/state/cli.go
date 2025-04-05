@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
@@ -20,15 +21,15 @@ type CLI struct {
 }
 
 type cliStateService interface {
-	List(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error)
-	GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error)
-	Download(ctx context.Context, versionID resource.ID) ([]byte, error)
-	Rollback(ctx context.Context, versionID resource.ID) (*Version, error)
-	Delete(ctx context.Context, versionID resource.ID) error
+	List(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error)
+	GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error)
+	Download(ctx context.Context, versionID resource.TfeID) ([]byte, error)
+	Rollback(ctx context.Context, versionID resource.TfeID) (*Version, error)
+	Delete(ctx context.Context, versionID resource.TfeID) error
 }
 
 type cliWorkspaceService interface {
-	GetByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
+	GetByName(ctx context.Context, organization organization.Name, workspace string) (*workspace.Workspace, error)
 }
 
 func NewCommand(client *otfapi.Client) *cobra.Command {
@@ -56,7 +57,7 @@ func NewCommand(client *otfapi.Client) *cobra.Command {
 
 func (a *CLI) stateListCommand() *cobra.Command {
 	var opts struct {
-		Organization string
+		Organization organization.Name
 		Workspace    string
 	}
 	cmd := &cobra.Command{
@@ -100,7 +101,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.Organization, "organization", "", "Name of the organization the workspace belongs to")
+	cmd.Flags().Var(&opts.Organization, "organization", "Name of the organization the workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	cmd.Flags().StringVar(&opts.Workspace, "workspace", "", "Name of workspace for which to retreive state versions")
@@ -117,7 +118,7 @@ func (a *CLI) stateDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			id, err := resource.ParseID(args[0])
+			id, err := resource.ParseTfeID(args[0])
 			if err != nil {
 				return err
 			}
@@ -138,7 +139,7 @@ func (a *CLI) stateDownloadCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			id, err := resource.ParseID(args[0])
+			id, err := resource.ParseTfeID(args[0])
 			if err != nil {
 				return err
 			}
@@ -164,7 +165,7 @@ func (a *CLI) stateRollbackCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			id, err := resource.ParseID(args[0])
+			id, err := resource.ParseTfeID(args[0])
 			if err != nil {
 				return err
 			}

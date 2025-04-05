@@ -15,11 +15,11 @@ const runnerIDHeaderKey = "otf-agent-id"
 
 type client interface {
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
-	updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error
+	updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error
 
-	getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error)
-	startJob(ctx context.Context, jobID resource.ID) ([]byte, error)
-	finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error
+	getJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error)
+	startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error)
+	finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 }
 
 // client accesses the service endpoints via RPC.
@@ -27,7 +27,7 @@ type remoteClient struct {
 	*otfapi.Client
 
 	// agentID is the ID of the agent using the client
-	agentID *resource.ID
+	agentID *resource.TfeID
 }
 
 // newRequest constructs a new API request
@@ -57,7 +57,7 @@ func (c *remoteClient) register(ctx context.Context, opts registerOptions) (*Run
 	return &m, nil
 }
 
-func (c *remoteClient) getJobs(ctx context.Context, agentID resource.ID) ([]*Job, error) {
+func (c *remoteClient) getJobs(ctx context.Context, agentID resource.TfeID) ([]*Job, error) {
 	req, err := c.newRequest("GET", "agents/jobs", nil)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c *remoteClient) getJobs(ctx context.Context, agentID resource.ID) ([]*Job
 	return jobs, nil
 }
 
-func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.ID, status RunnerStatus) error {
+func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.TfeID, status RunnerStatus) error {
 	req, err := c.newRequest("POST", "agents/status", &updateAgentStatusParams{
 		Status: status,
 	})
@@ -93,7 +93,7 @@ func (c *remoteClient) updateStatus(ctx context.Context, agentID resource.ID, st
 
 // agent tokens
 
-func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.ID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
+func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error) {
 	u := fmt.Sprintf("agent-tokens/%s/create", poolID)
 	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {
@@ -108,7 +108,7 @@ func (c *remoteClient) CreateAgentToken(ctx context.Context, poolID resource.ID,
 
 // jobs
 
-func (c *remoteClient) startJob(ctx context.Context, jobID resource.ID) ([]byte, error) {
+func (c *remoteClient) startJob(ctx context.Context, jobID resource.TfeID) ([]byte, error) {
 	req, err := c.newRequest("POST", "agents/start", &startJobParams{
 		JobID: jobID,
 	})
@@ -122,7 +122,7 @@ func (c *remoteClient) startJob(ctx context.Context, jobID resource.ID) ([]byte,
 	return buf.Bytes(), nil
 }
 
-func (c *remoteClient) finishJob(ctx context.Context, jobID resource.ID, opts finishJobOptions) error {
+func (c *remoteClient) finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error {
 	req, err := c.newRequest("POST", "agents/finish", &finishJobParams{
 		JobID:            jobID,
 		finishJobOptions: opts,

@@ -5,43 +5,45 @@ import (
 
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.ID, togglefn func(*Workspace) error) (*Workspace, error) {
-	var ws *Workspace
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		// retrieve workspace
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
-		if err != nil {
-			return err
-		}
-		ws, err = pgresult(result).toWorkspace()
-		if err != nil {
-			return err
-		}
-		if err := togglefn(ws); err != nil {
-			return err
-		}
-		// persist to db
-		params := sqlc.UpdateWorkspaceLockByIDParams{
-			WorkspaceID: ws.ID,
-		}
-		if ws.Locked() {
-			switch ws.Lock.Kind() {
-			case resource.RunKind:
-				params.RunID = ws.Lock
-			case resource.UserKind:
-				params.UserID = ws.Lock
-			default:
-				return ErrWorkspaceInvalidLock
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togglefn func(*Workspace) error) (*Workspace, error) {
+	return sql.Updater(
+		ctx,
+		db.DB,
+		func(ctx context.Context, conn sql.Connection) (*Workspace, error) {
+			return db.forUpdate(ctx, conn, workspaceID)
+		},
+		func(ctx context.Context, ws *Workspace) error {
+			return togglefn(ws)
+		},
+		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
+			var (
+				runID  *resource.TfeID
+				userID *resource.TfeID
+			)
+			if ws.Locked() {
+				switch ws.Lock.Kind() {
+				case resource.RunKind:
+					runID = ws.Lock
+				case resource.UserKind:
+					userID = ws.Lock
+				default:
+					return ErrWorkspaceInvalidLock
+				}
 			}
-		}
-		if err := q.UpdateWorkspaceLockByID(ctx, params); err != nil {
+			_, err := db.Exec(ctx, `
+UPDATE workspaces
+SET
+    lock_user_id = $1,
+    lock_run_id = $2
+WHERE workspace_id = $3
+`,
+				userID,
+				runID,
+				workspaceID,
+			)
 			return err
-		}
-		return nil
-	})
-	return ws, sql.Error(err)
+		})
 }

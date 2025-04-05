@@ -6,12 +6,14 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"time"
 )
 
 type listRunnersProps struct {
-	organization string
+	organization organization.Name
+	runners      []*RunnerMeta
 }
 
 templ listRunners(props listRunnersProps) {
@@ -52,7 +54,7 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
-	<tr id={ "item-runner-" + runner.ID.String() } x-data={ components.BlockLink(paths.Runner(runner.ID.String())) }>
+	<tr id={ "item-runner-" + runner.ID.String() } x-data={ components.BlockLink(paths.Runner(runner.ID)) }>
 		<td>
 			<div class="flex flex-col gap-2">
 				<span>
@@ -103,7 +105,7 @@ templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
 }
 
 type listAgentPoolProps struct {
-	organization string
+	organization organization.Name
 	pools        *resource.Page[*Pool]
 }
 
@@ -147,7 +149,7 @@ templ (t agentPoolsTable) Header(opts listPoolOptions) {
 }
 
 templ (t agentPoolsTable) Row(pool *Pool, opts listPoolOptions) {
-	<tr id={ pool.ID.String() } x-data={ components.BlockLink(paths.AgentPool(pool.ID.String())) }>
+	<tr id={ pool.ID.String() } x-data={ components.BlockLink(paths.AgentPool(pool.ID)) }>
 		<td>{ pool.Name }</td>
 		<td>
 			@components.Identifier(pool.ID)
@@ -160,7 +162,7 @@ templ (t agentPoolsTable) Row(pool *Pool, opts listPoolOptions) {
 
 type agentPoolListAllowedProps struct {
 	pools         []*Pool
-	currentPoolID *resource.ID
+	currentPoolID *resource.TfeID
 }
 
 templ agentPoolListAllowed(props agentPoolListAllowedProps) {
@@ -193,7 +195,7 @@ templ getAgentPool(props getAgentPoolProps) {
 		<div>
 			@components.Identifier(props.pool.ID)
 		</div>
-		<form class="" action={ paths.UpdateAgentPool(props.pool.ID.String()) } method="POST">
+		<form class="" action={ paths.UpdateAgentPool(props.pool.ID) } method="POST">
 			<div class="field mb-4">
 				<label for="name">Name</label>
 				<input class="input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
@@ -255,7 +257,7 @@ templ getAgentPool(props getAgentPoolProps) {
 							<div id="granted-and-assigned-workspaces" class="flex flex-row gap-2">
 								<input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value={ toJSON(props.assignedWorkspaces) }/>
 								for _, ws := range props.assignedWorkspaces {
-									<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID.String()) }>{ ws.Name }</a>
+									<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
 								}
 							</div>
 						</div>
@@ -272,7 +274,7 @@ templ getAgentPool(props getAgentPoolProps) {
 			<summary class="cursor-pointer py-2">
 				<span class="font-semibold">New token</span>
 			</summary>
-			<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID.String()) } method="POST">
+			<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID) } method="POST">
 				<div class="field">
 					<label for="new-token-description">Description</label>
 					<input class="input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
@@ -292,7 +294,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 				<div>
 					@components.Identifier(token.ID)
-					<form action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
+					<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
 						@components.DeleteButton()
 					</form>
 				</div>
@@ -310,11 +312,11 @@ templ getAgentPool(props getAgentPoolProps) {
 				<span class="description">Before deleting an agent pool you must unassign the pool from the following workspaces:</span>
 				<ul id="unassign-workspaces-before-deletion" class="flex flex-row gap-2">
 					for _, ws := range props.assignedWorkspaces {
-						<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID.String()) }>{ ws.Name }</a>
+						<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
 					}
 				</ul>
 			}
-			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID.String()) } method="POST">
+			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID) } method="POST">
 				<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
 					Delete agent pool
 				</button>
@@ -342,7 +344,7 @@ templ (t agentTokensTable) Row(token *agentToken, opts listPoolOptions) {
 			@components.Ago(token.CreatedAt)
 		</td>
 		<td>
-			<form action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
+			<form action={ paths.DeleteAgentToken(token.ID) } method="POST">
 				@components.DeleteButton()
 			</form>
 		</td>

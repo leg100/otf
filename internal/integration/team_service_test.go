@@ -46,9 +46,9 @@ func TestIntegation_TeamService(t *testing.T) {
 		got, err := svc.Teams.Get(ctx, team.Organization, team.Name)
 		require.NoError(t, err)
 
-		assert.True(t, got.OrganizationAccess().ManageWorkspaces)
-		assert.True(t, got.OrganizationAccess().ManageVCS)
-		assert.True(t, got.OrganizationAccess().ManageModules)
+		assert.True(t, got.ManageWorkspaces)
+		assert.True(t, got.ManageVCS)
+		assert.True(t, got.ManageModules)
 	})
 
 	t.Run("get", func(t *testing.T) {

@@ -4,38 +4,38 @@ package paths
 
 import "fmt"
 
-func Teams(organization string) string {
+func Teams(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/teams", organization)
 }
 
-func CreateTeam(organization string) string {
+func CreateTeam(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/teams/create", organization)
 }
 
-func NewTeam(organization string) string {
+func NewTeam(organization fmt.Stringer) string {
 	return fmt.Sprintf("/app/organizations/%s/teams/new", organization)
 }
 
-func Team(team string) string {
+func Team(team fmt.Stringer) string {
 	return fmt.Sprintf("/app/teams/%s", team)
 }
 
-func EditTeam(team string) string {
+func EditTeam(team fmt.Stringer) string {
 	return fmt.Sprintf("/app/teams/%s/edit", team)
 }
 
-func UpdateTeam(team string) string {
+func UpdateTeam(team fmt.Stringer) string {
 	return fmt.Sprintf("/app/teams/%s/update", team)
 }
 
-func DeleteTeam(team string) string {
+func DeleteTeam(team fmt.Stringer) string {
 	return fmt.Sprintf("/app/teams/%s/delete", team)
 }
 
-func AddMemberTeam(team string) string {
+func AddMemberTeam(team fmt.Stringer) string {
 	return fmt.Sprintf("/app/teams/%s/add-member", team)
 }
 
-func RemoveMemberTeam(team string) string {
+func RemoveMemberTeam(team fmt.Stringer) string {
 	return fmt.Sprintf("/app/teams/%s/remove-member", team)
 }

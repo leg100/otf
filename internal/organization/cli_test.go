@@ -44,9 +44,9 @@ func newFakeCLI(org *Organization) *CLI {
 }
 
 func (f *fakeCLIService) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
-	return &Organization{Name: *opts.Name}, nil
+	return NewOrganization(opts)
 }
 
-func (f *fakeCLIService) DeleteOrganization(context.Context, string) error {
+func (f *fakeCLIService) DeleteOrganization(context.Context, Name) error {
 	return nil
 }

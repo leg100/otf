@@ -8,9 +8,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -104,7 +104,7 @@ func (a *Service) AddHandlers(r *mux.Router) {
 }
 
 func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, authz.CreateVCSProviderAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := a.Authorize(ctx, authz.CreateVCSProviderAction, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -122,14 +122,14 @@ func (a *Service) Create(ctx context.Context, opts CreateOptions) (*VCSProvider,
 	return provider, nil
 }
 
-func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions) (*VCSProvider, error) {
+func (a *Service) Update(ctx context.Context, id resource.TfeID, opts UpdateOptions) (*VCSProvider, error) {
 	var (
 		subject authz.Subject
 		before  VCSProvider
 		after   *VCSProvider
 	)
 	err := a.db.update(ctx, id, func(ctx context.Context, provider *VCSProvider) (err error) {
-		subject, err = a.Authorize(ctx, authz.UpdateVariableSetAction, &authz.AccessRequest{Organization: provider.Organization})
+		subject, err = a.Authorize(ctx, authz.UpdateVariableSetAction, &provider.Organization)
 		if err != nil {
 			return err
 		}
@@ -149,8 +149,8 @@ func (a *Service) Update(ctx context.Context, id resource.ID, opts UpdateOptions
 	return after, nil
 }
 
-func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) List(ctx context.Context, organization organization.Name) ([]*VCSProvider, error) {
+	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (a *Service) List(ctx context.Context, organization string) ([]*VCSProvider
 }
 
 func (a *Service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
-	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, nil)
+	subject, err := a.Authorize(ctx, authz.ListVCSProvidersAction, resource.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (a *Service) ListVCSProvidersByGithubAppInstall(ctx context.Context, instal
 	return providers, nil
 }
 
-func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error) {
+func (a *Service) Get(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 	provider, err := a.db.get(ctx, id)
@@ -204,7 +204,7 @@ func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
+	subject, err := a.Authorize(ctx, authz.GetVCSProviderAction, &provider.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (a *Service) Get(ctx context.Context, id resource.ID) (*VCSProvider, error)
 	return provider, nil
 }
 
-func (a *Service) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error) {
+func (a *Service) GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error) {
 	provider, err := a.Get(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -221,12 +221,12 @@ func (a *Service) GetVCSClient(ctx context.Context, providerID resource.ID) (vcs
 	return provider.NewClient()
 }
 
-func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, error) {
+func (a *Service) Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, error) {
 	var (
 		provider *VCSProvider
 		subject  authz.Subject
 	)
-	err := a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
 		// retrieve vcs provider first in order to get organization for authorization
 		provider, err = a.db.get(ctx, id)
 		if err != nil {
@@ -234,7 +234,7 @@ func (a *Service) Delete(ctx context.Context, id resource.ID) (*VCSProvider, err
 			return err
 		}
 
-		subject, err = a.Authorize(ctx, authz.DeleteVCSProviderAction, &authz.AccessRequest{Organization: provider.Organization})
+		subject, err = a.Authorize(ctx, authz.DeleteVCSProviderAction, &provider.Organization)
 		if err != nil {
 			return err
 		}

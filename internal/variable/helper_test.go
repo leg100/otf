@@ -8,12 +8,12 @@ import (
 
 type fakeService struct {
 	v           *Variable
-	workspaceID resource.ID
+	workspaceID resource.TfeID
 
 	Service
 }
 
-func (f *fakeService) UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
+func (f *fakeService) UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
 	if err := f.v.update(nil, opts); err != nil {
 		return nil, err
 	}

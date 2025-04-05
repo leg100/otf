@@ -11,6 +11,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -31,30 +32,30 @@ var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         resource.ID   `jsonapi:"primary,workspaces"`
-		CreatedAt                  time.Time     `jsonapi:"attribute" json:"created_at"`
-		UpdatedAt                  time.Time     `jsonapi:"attribute" json:"updated_at"`
-		AgentPoolID                *resource.ID  `jsonapi:"attribute" json:"agent-pool-id"`
-		AllowDestroyPlan           bool          `jsonapi:"attribute" json:"allow_destroy_plan"`
-		AutoApply                  bool          `jsonapi:"attribute" json:"auto_apply"`
-		CanQueueDestroyPlan        bool          `jsonapi:"attribute" json:"can_queue_destroy_plan"`
-		Description                string        `jsonapi:"attribute" json:"description"`
-		Environment                string        `jsonapi:"attribute" json:"environment"`
-		ExecutionMode              ExecutionMode `jsonapi:"attribute" json:"execution_mode"`
-		GlobalRemoteState          bool          `jsonapi:"attribute" json:"global_remote_state"`
-		MigrationEnvironment       string        `jsonapi:"attribute" json:"migration_environment"`
-		Name                       string        `jsonapi:"attribute" json:"name"`
-		QueueAllRuns               bool          `jsonapi:"attribute" json:"queue_all_runs"`
-		SpeculativeEnabled         bool          `jsonapi:"attribute" json:"speculative_enabled"`
-		StructuredRunOutputEnabled bool          `jsonapi:"attribute" json:"structured_run_output_enabled"`
-		SourceName                 string        `jsonapi:"attribute" json:"source_name"`
-		SourceURL                  string        `jsonapi:"attribute" json:"source_url"`
-		TerraformVersion           string        `jsonapi:"attribute" json:"terraform_version"`
-		WorkingDirectory           string        `jsonapi:"attribute" json:"working_directory"`
-		Organization               string        `jsonapi:"attribute" json:"organization"`
-		LatestRun                  *LatestRun    `jsonapi:"attribute" json:"latest_run"`
-		Tags                       []string      `jsonapi:"attribute" json:"tags"`
-		Lock                       *resource.ID  `jsonapi:"attribute" json:"lock"`
+		ID                         resource.TfeID    `jsonapi:"primary,workspaces"`
+		CreatedAt                  time.Time         `jsonapi:"attribute" json:"created_at"`
+		UpdatedAt                  time.Time         `jsonapi:"attribute" json:"updated_at"`
+		AgentPoolID                *resource.TfeID   `jsonapi:"attribute" json:"agent-pool-id"`
+		AllowDestroyPlan           bool              `jsonapi:"attribute" json:"allow_destroy_plan"`
+		AutoApply                  bool              `jsonapi:"attribute" json:"auto_apply"`
+		CanQueueDestroyPlan        bool              `jsonapi:"attribute" json:"can_queue_destroy_plan"`
+		Description                string            `jsonapi:"attribute" json:"description"`
+		Environment                string            `jsonapi:"attribute" json:"environment"`
+		ExecutionMode              ExecutionMode     `jsonapi:"attribute" json:"execution_mode"`
+		GlobalRemoteState          bool              `jsonapi:"attribute" json:"global_remote_state"`
+		MigrationEnvironment       string            `jsonapi:"attribute" json:"migration_environment"`
+		Name                       string            `jsonapi:"attribute" json:"name"`
+		QueueAllRuns               bool              `jsonapi:"attribute" json:"queue_all_runs"`
+		SpeculativeEnabled         bool              `jsonapi:"attribute" json:"speculative_enabled"`
+		StructuredRunOutputEnabled bool              `jsonapi:"attribute" json:"structured_run_output_enabled"`
+		SourceName                 string            `jsonapi:"attribute" json:"source_name"`
+		SourceURL                  string            `jsonapi:"attribute" json:"source_url"`
+		TerraformVersion           string            `jsonapi:"attribute" json:"terraform_version"`
+		WorkingDirectory           string            `jsonapi:"attribute" json:"working_directory"`
+		Organization               organization.Name `jsonapi:"attribute" json:"organization"`
+		LatestRun                  *LatestRun        `jsonapi:"attribute" json:"latest_run"`
+		Tags                       []string          `jsonapi:"attribute" json:"tags"`
+		Lock                       *resource.TfeID   `jsonapi:"attribute" json:"lock"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -80,7 +81,7 @@ type (
 		// exclusive with TriggerPatterns.
 		TagsRegex string
 
-		VCSProviderID resource.ID
+		VCSProviderID resource.TfeID
 		Repo          string
 
 		// By default, once a workspace is connected to a repo it is not
@@ -91,7 +92,7 @@ type (
 
 	ConnectOptions struct {
 		RepoPath      *string
-		VCSProviderID *resource.ID
+		VCSProviderID *resource.TfeID
 
 		Branch        *string
 		TagsRegex     *string
@@ -102,7 +103,7 @@ type (
 
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
-		AgentPoolID                *resource.ID
+		AgentPoolID                *resource.TfeID
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Description                *string
@@ -120,7 +121,7 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
-		Organization               *string
+		Organization               *organization.Name
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -130,7 +131,7 @@ type (
 	}
 
 	UpdateOptions struct {
-		AgentPoolID                *resource.ID `json:"agent-pool-id,omitempty"`
+		AgentPoolID                *resource.TfeID `json:"agent-pool-id,omitempty"`
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string
@@ -166,7 +167,7 @@ type (
 		Search       string             `schema:"search[name]"`
 		Tags         []string           `schema:"search[tags]"`
 		Status       []runstatus.Status `schema:"search[status]"`
-		Organization *string            `schema:"organization_name"`
+		Organization *organization.Name `schema:"organization_name"`
 
 		resource.PageOptions
 	}
@@ -185,7 +186,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 
 	ws := Workspace{
-		ID:                 resource.NewID("ws"),
+		ID:                 resource.NewTfeID("ws"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
@@ -271,7 +272,7 @@ func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
 	return &m
 }
 
-func (ws *Workspace) String() string { return ws.Organization + "/" + ws.Name }
+func (ws *Workspace) String() string { return ws.Organization.String() + "/" + ws.Name }
 
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
@@ -283,7 +284,7 @@ func (ws *Workspace) Locked() bool {
 }
 
 // Enlock locks the workspace with the given ID. The ID must be either a run or user ID.
-func (ws *Workspace) Enlock(id resource.ID) error {
+func (ws *Workspace) Enlock(id resource.TfeID) error {
 	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
@@ -303,7 +304,7 @@ func (ws *Workspace) Enlock(id resource.ID) error {
 
 // Unlock the workspace with the given ID. The ID must be either a run or user
 // ID.
-func (ws *Workspace) Unlock(id resource.ID, force bool) error {
+func (ws *Workspace) Unlock(id resource.TfeID, force bool) error {
 	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
@@ -332,7 +333,7 @@ func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 func (ws *Workspace) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("id", ws.ID.String()),
-		slog.String("organization", ws.Organization),
+		slog.Any("organization", ws.Organization),
 		slog.String("name", ws.Name),
 	)
 }
@@ -518,7 +519,7 @@ func (ws *Workspace) setName(name string) error {
 // setExecutionModeAndAgentPoolID sets the execution mode and/or the agent pool
 // ID. The two parameters are intimately related, hence the validation and
 // setting of the parameters is handled in tandem.
-func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.ID) (bool, error) {
+func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolID *resource.TfeID) (bool, error) {
 	if m == nil {
 		if agentPoolID == nil {
 			// neither specified; nothing more to be done

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
@@ -86,16 +87,17 @@ func TestWeb_UserTokens(t *testing.T) {
 // permissions only if the authenticated user is an owner, so the test sets that
 // up first.
 func TestWeb_TeamGetHandler(t *testing.T) {
-	owners := &team.Team{Name: "owners", Organization: "acme-org"}
+	org1 := organization.NewTestName(t)
+	owners := &team.Team{Name: "owners", Organization: org1}
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	h := &webHandlers{
-		teams: &fakeTeamService{team: owners},
-		users: &fakeService{user: owner},
+		authorizer: authz.NewAllowAllAuthorizer(),
+		teams:      &fakeTeamService{team: owners},
+		users:      &fakeService{user: owner},
 	}
 
 	q := "/?team_id=team-123"
 	r := httptest.NewRequest("GET", q, nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), owner))
 	w := httptest.NewRecorder()
 	h.getTeam(w, r)
 	if !assert.Equal(t, 200, w.Code) {
@@ -153,7 +155,7 @@ func TestUserDiff(t *testing.T) {
 
 type fakeTokensService struct{}
 
-func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error {
+func (f *fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

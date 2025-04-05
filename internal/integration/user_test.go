@@ -93,7 +93,7 @@ func TestUser(t *testing.T) {
 	t.Run("get not found error", func(t *testing.T) {
 		svc, _, _ := setup(t, nil)
 		_, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String("does-not-exist")})
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("list users", func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String(user.Username)})
-		assert.Equal(t, err, internal.ErrResourceNotFound)
+		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("add team membership", func(t *testing.T) {

@@ -6,9 +6,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type tfe struct {
@@ -61,12 +63,14 @@ func (a *tfe) addHandlers(r *mux.Router) {
 // Agent pool handlers
 
 func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.AgentPoolCreateOptions
+	var params TFEAgentPoolCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -79,10 +83,10 @@ func (a *tfe) createAgentPool(w http.ResponseWriter, r *http.Request) {
 	// convert tfe params to otf opts
 	opts := CreateAgentPoolOptions{
 		Name:               *params.Name,
-		Organization:       organization,
+		Organization:       pathParams.Organization,
 		OrganizationScoped: params.OrganizationScoped,
 	}
-	opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
+	opts.AllowedWorkspaces = make([]resource.TfeID, len(params.AllowedWorkspaces))
 	for i, aw := range params.AllowedWorkspaces {
 		opts.AllowedWorkspaces[i] = aw.ID
 	}
@@ -101,7 +105,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.AgentPoolUpdateOptions
+	var params TFEAgentPoolUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -113,7 +117,7 @@ func (a *tfe) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 		OrganizationScoped: params.OrganizationScoped,
 	}
 	if params.AllowedWorkspaces != nil {
-		opts.AllowedWorkspaces = make([]resource.ID, len(params.AllowedWorkspaces))
+		opts.AllowedWorkspaces = make([]resource.TfeID, len(params.AllowedWorkspaces))
 		for i, aw := range params.AllowedWorkspaces {
 			opts.AllowedWorkspaces[i] = aw.ID
 		}
@@ -144,18 +148,20 @@ func (a *tfe) getAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.AgentPoolListOptions
+	var params TFEAgentPoolListOptions
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	pools, err := a.Service.listAgentPoolsByOrganization(r.Context(), organization, listPoolOptions{
+	pools, err := a.Service.listAgentPoolsByOrganization(r.Context(), pathParams.Organization, listPoolOptions{
 		NameSubstring:        params.Query,
 		AllowedWorkspaceName: params.AllowedWorkspacesName,
 	})
@@ -169,7 +175,7 @@ func (a *tfe) listAgentPools(w http.ResponseWriter, r *http.Request) {
 	page := resource.NewPage(pools, resource.PageOptions(params.ListOptions), nil)
 
 	// convert items
-	items := make([]*types.AgentPool, len(page.Items))
+	items := make([]*TFEAgentPool, len(page.Items))
 	for i, from := range page.Items {
 		if err != nil {
 			tfeapi.Error(w, err)
@@ -196,22 +202,22 @@ func (a *tfe) deleteAgentPool(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) toPool(from *Pool) *types.AgentPool {
-	to := &types.AgentPool{
+func (a *tfe) toPool(from *Pool) *TFEAgentPool {
+	to := &TFEAgentPool{
 		ID:   from.ID,
 		Name: from.Name,
-		Organization: &types.Organization{
+		Organization: &organization.TFEOrganization{
 			Name: from.Organization,
 		},
 		OrganizationScoped: from.OrganizationScoped,
 	}
-	to.Workspaces = make([]*types.Workspace, len(from.AssignedWorkspaces))
+	to.Workspaces = make([]*workspace.TFEWorkspace, len(from.AssignedWorkspaces))
 	for i, workspaceID := range from.AssignedWorkspaces {
-		to.Workspaces[i] = &types.Workspace{ID: workspaceID}
+		to.Workspaces[i] = &workspace.TFEWorkspace{ID: workspaceID}
 	}
-	to.AllowedWorkspaces = make([]*types.Workspace, len(from.AllowedWorkspaces))
+	to.AllowedWorkspaces = make([]*workspace.TFEWorkspace, len(from.AllowedWorkspaces))
 	for i, workspaceID := range from.AllowedWorkspaces {
-		to.AllowedWorkspaces[i] = &types.Workspace{ID: workspaceID}
+		to.AllowedWorkspaces[i] = &workspace.TFEWorkspace{ID: workspaceID}
 	}
 	return to
 }
@@ -223,7 +229,7 @@ func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.AgentTokenCreateOptions
+	var params TFEAgentTokenCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -278,7 +284,7 @@ func (a *tfe) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 	page := resource.NewPage(pools, resource.PageOptions(params), nil)
 
 	// convert items
-	items := make([]*types.AgentToken, len(page.Items))
+	items := make([]*TFEAgentToken, len(page.Items))
 	for i, from := range page.Items {
 		if err != nil {
 			tfeapi.Error(w, err)
@@ -305,8 +311,8 @@ func (a *tfe) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) toAgentToken(from *agentToken, token []byte) *types.AgentToken {
-	to := &types.AgentToken{
+func (a *tfe) toAgentToken(from *agentToken, token []byte) *TFEAgentToken {
+	to := &TFEAgentToken{
 		ID:          from.ID,
 		CreatedAt:   from.CreatedAt,
 		Description: from.Description,

@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 )
@@ -20,7 +21,7 @@ const (
 var (
 	// SiteAdminID is the hardcoded user id for the site admin user. The ID must
 	// be the same as the hardcoded value in the database migrations.
-	SiteAdminID               = resource.MustHardcodeID(resource.UserKind, "36atQC2oGQng7pVz")
+	SiteAdminID               = resource.MustHardcodeTfeID(resource.UserKind, "36atQC2oGQng7pVz")
 	SiteAdmin                 = User{ID: SiteAdminID, Username: SiteAdminUsername}
 	_           authz.Subject = (*User)(nil)
 )
@@ -28,10 +29,10 @@ var (
 type (
 	// User represents an OTF user account.
 	User struct {
-		ID        resource.ID `jsonapi:"primary,users"`
-		CreatedAt time.Time   `jsonapi:"attribute" json:"created-at"`
-		UpdatedAt time.Time   `jsonapi:"attribute" json:"updated-at"`
-		SiteAdmin bool        `jsonapi:"attribute" json:"site-admin"`
+		ID        resource.TfeID `jsonapi:"primary,users" json:"user_id"`
+		CreatedAt time.Time      `jsonapi:"attribute" json:"created-at"`
+		UpdatedAt time.Time      `jsonapi:"attribute" json:"updated-at"`
+		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`
 
 		// username is globally unique
 		Username string `jsonapi:"attribute" json:"username"`
@@ -53,15 +54,15 @@ type (
 	}
 
 	UserSpec struct {
-		UserID                *resource.ID
+		UserID                *resource.TfeID
 		Username              *string
-		AuthenticationTokenID *resource.ID
+		AuthenticationTokenID *resource.TfeID
 	}
 )
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        resource.NewID(resource.UserKind),
+		ID:        resource.NewTfeID(resource.UserKind),
 		Username:  username,
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
@@ -81,7 +82,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
-func (u *User) IsTeamMember(teamID resource.ID) bool {
+func (u *User) IsTeamMember(teamID resource.TfeID) bool {
 	for _, t := range u.Teams {
 		if t.ID == teamID {
 			return true
@@ -94,9 +95,9 @@ func (u *User) IsTeamMember(teamID resource.ID) bool {
 // their membership of teams).
 //
 // NOTE: always returns a non-nil slice
-func (u *User) Organizations() []string {
+func (u *User) Organizations() []organization.Name {
 	// De-dup organizations using map
-	seen := make(map[string]bool)
+	seen := make(map[organization.Name]bool)
 	for _, t := range u.Teams {
 		if _, ok := seen[t.Organization]; ok {
 			continue
@@ -105,7 +106,7 @@ func (u *User) Organizations() []string {
 	}
 
 	// Turn map into slice
-	organizations := make([]string, len(seen))
+	organizations := make([]organization.Name, len(seen))
 	var i int
 	for org := range seen {
 		organizations[i] = org
@@ -122,14 +123,14 @@ func (u *User) IsSiteAdmin() bool {
 	return u.SiteAdmin || u.ID == SiteAdminID
 }
 
-func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
+func (u *User) CanAccess(action authz.Action, req authz.Request) bool {
 	// Site admin can do whatever it wants
 	if u.IsSiteAdmin() {
 		return true
 	}
 	switch action {
-	case authz.CreateOrganizationAction, authz.GetGithubAppAction:
-		// These actions are available to any user.
+	case authz.CreateOrganizationAction, authz.GetGithubAppAction, authz.GetUserAction:
+		// These actions are available to any user at any level.
 		return true
 	case authz.CreateUserAction, authz.ListUsersAction:
 		// A user can perform these actions only if they are an owner of at
@@ -141,9 +142,9 @@ func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 			}
 		}
 	}
-	if req == nil {
-		// nil req means site-level access is being requested and there are no
-		// further allowed actions that are available to user at the site-level.
+	if req.ID == resource.SiteID {
+		// no further allowed actions that are available to user at the
+		// site-level.
 		return false
 	}
 	// All other user perms are inherited from team memberships.
@@ -156,7 +157,7 @@ func (u *User) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 }
 
 // IsOwner determines if user is an owner of an organization
-func (u *User) IsOwner(organization string) bool {
+func (u *User) IsOwner(organization resource.ID) bool {
 	for _, team := range u.Teams {
 		if team.IsOwner(organization) {
 			return true

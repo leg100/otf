@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
@@ -69,7 +70,7 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := types.StateVersionCreateVersionOptions{}
+	opts := TFEStateVersionCreateVersionOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -129,8 +130,8 @@ func (a *tfe) createVersion(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		types.ListOptions
-		Organization string `schema:"filter[organization][name],required"`
-		Workspace    string `schema:"filter[workspace][name],required"`
+		Organization organization.Name `schema:"filter[organization][name],required"`
+		Workspace    string            `schema:"filter[workspace][name],required"`
 	}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		tfeapi.Error(w, err)
@@ -211,7 +212,7 @@ func (a *tfe) deleteVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
-	opts := types.RollbackStateVersionOptions{}
+	opts := TFERollbackStateVersionOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -277,7 +278,7 @@ func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 	// this particular endpoint does not reveal sensitive values:
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-version-outputs#show-current-state-version-outputs-for-a-workspace
-	to := make([]*types.StateVersionOutput, len(sv.Outputs))
+	to := make([]*TFEStateVersionOutput, len(sv.Outputs))
 	for i, f := range maps.Values(sv.Outputs) {
 		to[i] = a.toOutput(f, true)
 	}
@@ -287,7 +288,7 @@ func (a *tfe) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		StateVersionID resource.ID `schema:"id,required"`
+		StateVersionID resource.TfeID `schema:"id,required"`
 		types.ListOptions
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -305,7 +306,7 @@ func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 	page := resource.NewPage(maps.Values(sv.Outputs), resource.PageOptions(params.ListOptions), nil)
 
 	// convert to list of tfe types
-	items := make([]*types.StateVersionOutput, len(page.Items))
+	items := make([]*TFEStateVersionOutput, len(page.Items))
 	for i, from := range page.Items {
 		items[i] = a.toOutput(from, false)
 	}
@@ -327,15 +328,15 @@ func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, a.toOutput(out, false), http.StatusOK)
 }
 
-func (a *tfe) toStateVersion(from *Version, r *http.Request) (*types.StateVersion, error) {
-	to := &types.StateVersion{
+func (a *tfe) toStateVersion(from *Version, r *http.Request) (*TFEStateVersion, error) {
+	to := &TFEStateVersion{
 		ID:                 from.ID,
 		CreatedAt:          from.CreatedAt,
 		Serial:             from.Serial,
-		Status:             types.StateVersionStatus(from.Status),
+		Status:             TFEStateVersionStatus(from.Status),
 		DownloadURL:        fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
 		ResourcesProcessed: true,
-		Outputs:            make([]*types.StateVersionOutput, len(from.Outputs)),
+		Outputs:            make([]*TFEStateVersionOutput, len(from.Outputs)),
 	}
 	// generate signed url for upload state endpoint
 	uploadURL, err := a.generateSignedURL(r, "/state-versions/%s/upload", from.ID)
@@ -350,7 +351,7 @@ func (a *tfe) toStateVersion(from *Version, r *http.Request) (*types.StateVersio
 	}
 	to.JSONUploadURL = jsonUploadURL
 	for i, out := range maps.Values(from.Outputs) {
-		to.Outputs[i] = &types.StateVersionOutput{ID: out.ID}
+		to.Outputs[i] = &TFEStateVersionOutput{ID: out.ID}
 	}
 	if from.State != nil {
 		var state File
@@ -363,9 +364,9 @@ func (a *tfe) toStateVersion(from *Version, r *http.Request) (*types.StateVersio
 	return to, nil
 }
 
-func (a *tfe) toStateVersionList(from *resource.Page[*Version], r *http.Request) ([]*types.StateVersion, error) {
+func (a *tfe) toStateVersionList(from *resource.Page[*Version], r *http.Request) ([]*TFEStateVersion, error) {
 	// convert items
-	items := make([]*types.StateVersion, len(from.Items))
+	items := make([]*TFEStateVersion, len(from.Items))
 	for i, from := range from.Items {
 		to, err := a.toStateVersion(from, r)
 		if err != nil {
@@ -376,8 +377,8 @@ func (a *tfe) toStateVersionList(from *resource.Page[*Version], r *http.Request)
 	return items, nil
 }
 
-func (*tfe) toOutput(from *Output, scrubSensitive bool) *types.StateVersionOutput {
-	to := &types.StateVersionOutput{
+func (*tfe) toOutput(from *Output, scrubSensitive bool) *TFEStateVersionOutput {
+	to := &TFEStateVersionOutput{
 		ID:        from.ID,
 		Name:      from.Name,
 		Sensitive: from.Sensitive,
@@ -392,7 +393,7 @@ func (*tfe) toOutput(from *Output, scrubSensitive bool) *types.StateVersionOutpu
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#outputs
 func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
-	to, ok := v.(*types.StateVersion)
+	to, ok := v.(*TFEStateVersion)
 	if !ok {
 		return nil, nil
 	}
@@ -412,7 +413,7 @@ func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#outputs
 func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any, error) {
-	ws, ok := v.(*types.Workspace)
+	ws, ok := v.(*workspace.TFEWorkspace)
 	if !ok {
 		return nil, nil
 	}
@@ -426,17 +427,17 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 	// that should be the responsibility of the workspace pkg. To avoid an
 	// import cycle, perhaps the workspace SQL queries could return a list of
 	// output IDs.
-	ws.Outputs = make([]*types.WorkspaceOutput, len(sv.Outputs))
+	ws.Outputs = make([]*workspace.TFEWorkspaceOutput, len(sv.Outputs))
 	var i int
 	for _, from := range sv.Outputs {
-		include[i] = &types.WorkspaceOutput{
+		include[i] = &workspace.TFEWorkspaceOutput{
 			ID:        from.ID,
 			Name:      from.Name,
 			Sensitive: from.Sensitive,
 			Type:      from.Type,
 			Value:     from.Value,
 		}
-		ws.Outputs[i] = &types.WorkspaceOutput{
+		ws.Outputs[i] = &workspace.TFEWorkspaceOutput{
 			ID: from.ID,
 		}
 		i++

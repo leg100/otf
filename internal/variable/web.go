@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -24,38 +25,37 @@ type (
 
 	// webVariablesClient provides web handlers with access to variables
 	webVariablesClient interface {
-		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.ID, opts CreateVariableOptions) (*Variable, error)
-		GetWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
-		ListWorkspaceVariables(ctx context.Context, workspaceID resource.ID) ([]*Variable, error)
-		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.ID) ([]*VariableSet, error)
-		UpdateWorkspaceVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-		DeleteWorkspaceVariable(ctx context.Context, variableID resource.ID) (*WorkspaceVariable, error)
+		CreateWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
+		GetWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
+		ListWorkspaceVariables(ctx context.Context, workspaceID resource.TfeID) ([]*Variable, error)
+		listWorkspaceVariableSets(ctx context.Context, workspaceID resource.TfeID) ([]*VariableSet, error)
+		UpdateWorkspaceVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+		DeleteWorkspaceVariable(ctx context.Context, variableID resource.TfeID) (*WorkspaceVariable, error)
 
-		createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
-		updateVariableSet(ctx context.Context, setID resource.ID, opts UpdateVariableSetOptions) (*VariableSet, error)
-		getVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
-		getVariableSetByVariableID(ctx context.Context, variableID resource.ID) (*VariableSet, error)
-		listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
-		deleteVariableSet(ctx context.Context, setID resource.ID) (*VariableSet, error)
-		createVariableSetVariable(ctx context.Context, setID resource.ID, opts CreateVariableOptions) (*Variable, error)
-		updateVariableSetVariable(ctx context.Context, variableID resource.ID, opts UpdateVariableOptions) (*VariableSet, error)
-		deleteVariableSetVariable(ctx context.Context, variableID resource.ID) (*VariableSet, error)
+		createVariableSet(ctx context.Context, organization organization.Name, opts CreateVariableSetOptions) (*VariableSet, error)
+		updateVariableSet(ctx context.Context, setID resource.TfeID, opts UpdateVariableSetOptions) (*VariableSet, error)
+		getVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
+		getVariableSetByVariableID(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
+		listVariableSets(ctx context.Context, organization organization.Name) ([]*VariableSet, error)
+		deleteVariableSet(ctx context.Context, setID resource.TfeID) (*VariableSet, error)
+		createVariableSetVariable(ctx context.Context, setID resource.TfeID, opts CreateVariableOptions) (*Variable, error)
+		updateVariableSetVariable(ctx context.Context, variableID resource.TfeID, opts UpdateVariableOptions) (*VariableSet, error)
+		deleteVariableSetVariable(ctx context.Context, variableID resource.TfeID) (*VariableSet, error)
 	}
 
 	// webWorkspaceClient provides web handlers with access to workspaces
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 		List(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 
 	workspaceInfo struct {
-		ID   resource.ID `json:"id"`
-		Name string      `json:"name"`
+		ID   resource.TfeID `json:"id"`
+		Name string         `json:"name"`
 	}
 
 	createVariableParams struct {
@@ -74,7 +74,7 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         bool
-		VariableID  resource.ID `schema:"variable_id,required"`
+		VariableID  resource.TfeID `schema:"variable_id,required"`
 	}
 )
 
@@ -121,7 +121,7 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -138,12 +138,12 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.NewVariable(params.WorkspaceID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewVariable(params.WorkspaceID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
@@ -182,12 +182,12 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		ws: ws,
 		workspaceTableProps: workspaceTableProps{
 			variables:         variables,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
 		},
 		setTablesProps:     variableSetTables,
-		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{ID: &ws.ID}),
-		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID}),
+		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, ws.ID),
+		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
+		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
 	}
 	html.Render(listWorkspaceVariables(props), w, r)
 }
@@ -234,12 +234,12 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.EditVariable(params.VariableID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.EditVariable(params.VariableID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "updated variable: "+wv.Key)
-	http.Redirect(w, r, paths.Variables(wv.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -256,46 +256,50 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted variable: "+wv.Key)
-	http.Redirect(w, r, paths.Variables(wv.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	sets, err := h.variables.listVariableSets(r.Context(), org)
+	sets, err := h.variables.listVariableSets(r.Context(), pathParams.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listVariableSetsProps{
-		organization:         org,
+		organization:         pathParams.Organization,
 		sets:                 sets,
-		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, &authz.AccessRequest{Organization: org}),
+		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, pathParams.Organization),
 	}
 	html.Render(listVariableSets(props), w, r)
 }
 
 func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	// retrieve names of all workspaces in org to show in dropdown widget
-	availableWorkspaces, err := h.getAvailableWorkspaces(r.Context(), org)
+	availableWorkspaces, err := h.getAvailableWorkspaces(r.Context(), pathParams.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	props := newVariableSetProps{
-		organization:        org,
+		organization:        pathParams.Organization,
 		availableWorkspaces: availableWorkspaces,
 	}
 	html.Render(newVariableSet(props), w, r)
@@ -306,8 +310,8 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		Name           *string `schema:"name,required"`
 		Description    string
 		Global         bool
-		Organization   string `schema:"organization_name,required"`
-		WorkspacesJSON string `schema:"workspaces"`
+		Organization   organization.Name `schema:"organization_name,required"`
+		WorkspacesJSON string            `schema:"workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -319,7 +323,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(workspaces))
+	workspaceIDs := make([]resource.TfeID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -337,7 +341,7 @@ func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "added variable set: "+set.Name)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -380,7 +384,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		existingWorkspaces:  existingWorkspaces,
 		variableTable: setTableProps{
 			set:               set,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, &authz.AccessRequest{Organization: set.Organization}),
+			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, set.Organization),
 		},
 	}
 	html.Render(editVariableSet(props), w, r)
@@ -388,7 +392,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		SetID          resource.ID `schema:"variable_set_id,required"`
+		SetID          resource.TfeID `schema:"variable_set_id,required"`
 		Name           *string
 		Description    *string
 		Global         *bool
@@ -404,7 +408,7 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(workspaces))
+	workspaceIDs := make([]resource.TfeID, len(workspaces))
 	for i, ws := range workspaces {
 		workspaceIDs[i] = ws.ID
 	}
@@ -417,12 +421,12 @@ func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.EditVariableSet(params.SetID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "updated variable set: "+set.Name)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -461,7 +465,7 @@ func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		createVariableParams
-		SetID resource.ID `schema:"variable_set_id,required"`
+		SetID resource.TfeID `schema:"variable_set_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -478,12 +482,12 @@ func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.NewVariableSetVariable(params.SetID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.NewVariableSetVariable(params.SetID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "added variable: "+variable.Key)
-	http.Redirect(w, r, paths.EditVariableSet(params.SetID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
 }
 
 func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -520,13 +524,13 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.EditVariableSetVariable(params.VariableID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.EditVariableSetVariable(params.VariableID), http.StatusFound)
 		return
 	}
 	v := set.getVariable(params.VariableID)
 
 	html.FlashSuccess(w, "updated variable: "+v.Key)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -544,10 +548,10 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 	v := set.getVariable(variableID)
 
 	html.FlashSuccess(w, "deleted variable: "+v.Key)
-	http.Redirect(w, r, paths.EditVariableSet(set.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
-func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspaceInfo, error) {
+func (h *web) getAvailableWorkspaces(ctx context.Context, org organization.Name) ([]workspaceInfo, error) {
 	// retrieve names of all workspaces in org to show in dropdown widget
 	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
 		return h.workspaces.List(ctx, workspace.ListOptions{

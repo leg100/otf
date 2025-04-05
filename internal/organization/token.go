@@ -12,11 +12,10 @@ import (
 type (
 	// OrganizationToken provides information about an API token for an organization
 	OrganizationToken struct {
-		resource.ID
-
-		CreatedAt time.Time
+		ID        resource.TfeID `db:"organization_token_id"`
+		CreatedAt time.Time      `db:"created_at"`
 		// Token belongs to an organization
-		Organization string
+		Organization Name `db:"organization_name"`
 		// Optional expiry.
 		Expiry *time.Time
 	}
@@ -24,7 +23,7 @@ type (
 	// CreateOrganizationTokenOptions are options for creating an organization token via the service
 	// endpoint
 	CreateOrganizationTokenOptions struct {
-		Organization string `schema:"organization_name,required"`
+		Organization Name `schema:"organization_name,required"`
 		Expiry       *time.Time
 	}
 
@@ -36,7 +35,7 @@ type (
 
 func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
 	ot := OrganizationToken{
-		ID:           resource.NewID(resource.OrganizationTokenKind),
+		ID:           resource.NewTfeID(resource.OrganizationTokenKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		Organization: opts.Organization,
 		Expiry:       opts.Expiry,
@@ -52,12 +51,16 @@ func (f *tokenFactory) NewOrganizationToken(opts CreateOrganizationTokenOptions)
 	return &ot, token, nil
 }
 
-func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
-	if req == nil {
+func (u *OrganizationToken) String() string {
+	return u.ID.String()
+}
+
+func (u *OrganizationToken) CanAccess(action authz.Action, req authz.Request) bool {
+	if req.ID == resource.SiteID {
 		// Organization token cannot take action on site-level resources
 		return false
 	}
-	if req.Organization != u.Organization {
+	if req.Organization() != nil && req.Organization().String() != u.Organization.String() {
 		// Organization token cannot take action on other organizations
 		return false
 	}
@@ -68,8 +71,4 @@ func (u *OrganizationToken) CanAccess(action authz.Action, req *authz.AccessRequ
 		return false
 	}
 	return true
-}
-
-func (u *OrganizationToken) Organizations() []string {
-	return []string{u.Organization}
 }

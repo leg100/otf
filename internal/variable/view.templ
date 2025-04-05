@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"strconv"
@@ -15,20 +16,20 @@ templ newWorkspaceVariable(ws *workspace.Workspace) {
 		Organization: ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
-			{Name: ws.Name, Link: paths.Workspace(ws.ID.String())},
+			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 			{Name: "new"},
 		},
 	}) {
 		<span class="text-xl">Add a new workspace variable</span>
 		@form(formProps{
 			variable: &Variable{},
-			action:   paths.CreateVariable(ws.ID.String()),
+			action:   paths.CreateVariable(ws.ID),
 		})
 	}
 }
 
 type newVariableSetProps struct {
-	organization        string
+	organization        organization.Name
 	availableWorkspaces []workspaceInfo
 }
 
@@ -57,14 +58,14 @@ templ newVSV(vs *VariableSet) {
 		Organization: vs.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
-			{Name: vs.Name, Link: paths.VariableSet(vs.ID.String())},
+			{Name: vs.Name, Link: paths.VariableSet(vs.ID)},
 			{Name: "new variable"},
 		},
 	}) {
 		<span class="text-xl">Add new variable to variable set</span>
 		@form(formProps{
 			variable: &Variable{},
-			action:   paths.CreateVariableSetVariable(vs.ID.String()),
+			action:   paths.CreateVariableSetVariable(vs.ID),
 		})
 	}
 }
@@ -87,12 +88,12 @@ func (p workspaceTableProps) Variables() []*Variable {
 	return p.variables
 }
 
-func (workspaceTableProps) EditPath(variableID resource.ID) templ.SafeURL {
-	return paths.EditVariable(variableID.String())
+func (workspaceTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
+	return paths.EditVariable(variableID)
 }
 
-func (workspaceTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
-	return paths.DeleteVariable(variableID.String())
+func (workspaceTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
+	return paths.DeleteVariable(variableID)
 }
 
 func (w workspaceTableProps) IsOverwritten(v *Variable) bool {
@@ -110,14 +111,14 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 		Organization: props.ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-			{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 		},
 	}) {
 		<span class="text-lg my-2">Workspace Variables ({ strconv.Itoa(len(props.workspaceTableProps.Variables())) })</span>
 		@table(props.workspaceTableProps)
 		if props.canCreateVariable {
-			<form class="mt-2" action={ paths.NewVariable(props.ws.ID.String()) } method="GET">
+			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
 				<button class="btn">Add variable</button>
 			</form>
 		}
@@ -133,7 +134,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 }
 
 type listVariableSetsProps struct {
-	organization         string
+	organization         organization.Name
 	sets                 []*VariableSet
 	canCreateVariableSet bool
 }
@@ -141,7 +142,7 @@ type listVariableSetsProps struct {
 templ listVariableSets(props listVariableSetsProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "variable sets",
-		Organization:   props.organization,
+		Organization:   &props.organization,
 		ContentActions: listVariableSetsActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets"},
@@ -169,7 +170,7 @@ templ listVariableSetsActions(props listVariableSetsProps) {
 }
 
 templ variableSetItem(vs *VariableSet) {
-	<div class="widget" id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID.String())) }>
+	<div class="widget" id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
 		<span id="name">{ vs.Name }</span>
 		<div>
 			@components.Identifier(vs.ID)
@@ -195,8 +196,8 @@ templ editWorkspaceVariable(props editWorkspaceVariableProps) {
 		Organization: props.ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
-			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID.String())},
-			{Name: "variables", Link: paths.Variables(props.ws.ID.String())},
+			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
+			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 			{Name: "edit"},
 		},
 	}) {
@@ -204,7 +205,7 @@ templ editWorkspaceVariable(props editWorkspaceVariableProps) {
 		@form(formProps{
 			variable: props.variable,
 			edit:     true,
-			action:   paths.UpdateVariable(props.variable.ID.String()),
+			action:   paths.UpdateVariable(props.variable.ID),
 		})
 	}
 }
@@ -230,14 +231,14 @@ templ editVariableSet(props editVariableSetProps) {
 		@variableSetForm(variableSetFormProps{
 			set:                 props.set,
 			edit:                true,
-			action:              paths.EditVariableSet(props.set.ID.String()),
+			action:              paths.EditVariableSet(props.set.ID),
 			availableWorkspaces: props.availableWorkspaces,
 			existingWorkspaces:  props.existingWorkspaces,
 		})
 		<hr class="my-4"/>
 		<h3 class="text-xl">Variables</h3>
 		@table(props.variableTable)
-		<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID.String()) } method="GET">
+		<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
 			<button class="btn" id="add-variable-button">Add variable</button>
 		</form>
 	}
@@ -254,7 +255,7 @@ templ editVSV(props editVSVProps) {
 		Organization: props.set.Organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
-			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID.String())},
+			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID)},
 			{Name: "variables"},
 			{Name: props.variable.ID.String()},
 			{Name: "edit"},
@@ -264,7 +265,7 @@ templ editVSV(props editVSVProps) {
 		@form(formProps{
 			variable: props.variable,
 			edit:     true,
-			action:   paths.UpdateVariableSetVariable(props.variable.ID.String()),
+			action:   paths.UpdateVariableSetVariable(props.variable.ID),
 		})
 	}
 }
@@ -431,12 +432,12 @@ func (p setTableProps) Variables() []*Variable {
 	return p.set.Variables
 }
 
-func (setTableProps) EditPath(variableID resource.ID) templ.SafeURL {
-	return paths.EditVariableSetVariable(variableID.String())
+func (setTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
+	return paths.EditVariableSetVariable(variableID)
 }
 
-func (setTableProps) DeletePath(variableID resource.ID) templ.SafeURL {
-	return paths.DeleteVariableSetVariable(variableID.String())
+func (setTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
+	return paths.DeleteVariableSetVariable(variableID)
 }
 
 func (w setTableProps) IsOverwritten(v *Variable) bool {
@@ -452,8 +453,8 @@ func (w setTableProps) CanDeleteVariable() bool {
 
 type tableProps interface {
 	Variables() []*Variable
-	EditPath(variableID resource.ID) templ.SafeURL
-	DeletePath(variableID resource.ID) templ.SafeURL
+	EditPath(variableID resource.TfeID) templ.SafeURL
+	DeletePath(variableID resource.TfeID) templ.SafeURL
 	IsOverwritten(v *Variable) bool
 	CanDeleteVariable() bool
 }

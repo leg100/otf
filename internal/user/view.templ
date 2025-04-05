@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/team"
 	"time"
 )
@@ -46,7 +47,7 @@ templ profileLinks() {
 }
 
 type userListProps struct {
-	organization string
+	organization organization.Name
 	users        []*User
 }
 
@@ -76,8 +77,6 @@ type getTeamProps struct {
 	canDeleteTeam   bool
 	canAddMember    bool
 	canRemoveMember bool
-	canDelete       bool
-	isOwner         bool
 	dropdown        components.SearchDropdownProps
 }
 
@@ -92,14 +91,14 @@ templ getTeam(props getTeamProps) {
 	}) {
 		if props.canUpdateTeam {
 			<h3 class="font-semibold my-2 text-lg">Permissions</h3>
-			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID.String()) } method="POST">
+			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID) } method="POST">
 				<div class="form-checkbox">
 					<input
 						type="checkbox"
 						name="manage_workspaces"
 						id="manage_workspaces"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageWorkspaces || props.team.IsOwners() }
+						checked?={ props.team.ManageWorkspaces || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -114,7 +113,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_vcs"
 						id="manage_vcs"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageVCS || props.team.IsOwners() }
+						checked?={ props.team.ManageVCS || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -129,7 +128,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_modules"
 						id="manage_modules"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageModules || props.team.IsOwners() }
+						checked?={ props.team.ManageModules || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -159,7 +158,7 @@ templ getTeam(props getTeamProps) {
 					<div>
 						@components.Identifier(member.ID)
 						if props.canRemoveMember {
-							<form action={ paths.RemoveMemberTeam(props.team.ID.String()) } method="POST">
+							<form action={ paths.RemoveMemberTeam(props.team.ID) } method="POST">
 								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
 								<button id="remove-member-button" class="btn btn-error btn-outline">
 									Remove member
@@ -176,7 +175,7 @@ templ getTeam(props getTeamProps) {
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
-			<form action={ paths.DeleteTeam(props.team.ID.String()) } method="POST">
+			<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
 				<button class="btn btn-error btn-outline text-green-800" onclick="return confirm('Are you sure you want to delete?')">
 					Delete team
 				</button>
@@ -229,7 +228,11 @@ templ tokenListItem(token *UserToken) {
 		</div>
 		<div>
 			@components.Identifier(token.ID)
+<<<<<<< HEAD
 			<form action={ paths.DeleteToken() } method="POST">
+=======
+			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
+>>>>>>> master
 				@components.DeleteButton()
 				<input type="hidden" name="id" value={ token.ID.String() }/>
 			</form>

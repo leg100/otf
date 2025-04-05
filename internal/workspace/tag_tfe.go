@@ -6,9 +6,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 const (
@@ -31,8 +31,10 @@ func (a *tfe) addTagHandlers(r *mux.Router) {
 }
 
 func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -42,14 +44,14 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := a.ListTags(r.Context(), org, params)
+	page, err := a.ListTags(r.Context(), pathParams.Organization, params)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
 	// convert to
-	to := make([]*types.OrganizationTag, len(page.Items))
+	to := make([]*TFEOrganizationTag, len(page.Items))
 	for i, from := range page.Items {
 		to[i] = a.toTag(from)
 	}
@@ -57,24 +59,26 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 	var params []struct {
-		ID resource.ID `jsonapi:"primary,tags"`
+		ID resource.TfeID `jsonapi:"primary,tags"`
 	}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	tagIDs := make([]resource.ID, len(params))
+	tagIDs := make([]resource.TfeID, len(params))
 	for i, p := range params {
 		tagIDs[i] = p.ID
 	}
 
-	if err := a.DeleteTags(r.Context(), org, tagIDs); err != nil {
+	if err := a.DeleteTags(r.Context(), pathParams.Organization, tagIDs); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -88,12 +92,12 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Workspace
+	var params []*TFEWorkspace
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(params))
+	workspaceIDs := make([]resource.TfeID, len(params))
 	for i, p := range params {
 		workspaceIDs[i] = p.ID
 	}
@@ -120,7 +124,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Tag
+	var params []*TFETag
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -167,19 +171,19 @@ func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert to
-	to := make([]*types.OrganizationTag, len(page.Items))
+	to := make([]*TFEOrganizationTag, len(page.Items))
 	for i, from := range page.Items {
 		to[i] = a.toTag(from)
 	}
 	a.RespondWithPage(w, r, to, page.Pagination)
 }
 
-func (a *tfe) toTag(from *Tag) *types.OrganizationTag {
-	return &types.OrganizationTag{
+func (a *tfe) toTag(from *Tag) *TFEOrganizationTag {
+	return &TFEOrganizationTag{
 		ID:            from.ID,
 		Name:          from.Name,
 		InstanceCount: from.InstanceCount,
-		Organization: &types.Organization{
+		Organization: &organization.TFEOrganization{
 			Name: from.Organization,
 		},
 	}

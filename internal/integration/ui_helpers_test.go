@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/playwright-community/playwright-go"
@@ -15,7 +15,7 @@ import (
 )
 
 // createWorkspace creates a workspace via the UI
-func createWorkspace(t *testing.T, page playwright.Page, hostname, org, name string) {
+func createWorkspace(t *testing.T, page playwright.Page, hostname string, org organization.Name, name string) {
 	t.Helper()
 
 	_, err := page.Goto(organizationURL(hostname, org))
@@ -53,31 +53,24 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 		}
 	}
 
-	// disable screenshots unless an environment variable is defined - if so
-	// then set the destination path for the screenshots accordingly.
-	var path string
-	if _, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); ok {
-		// For documentation purposes
-		path = filepath.Join("..", "..", "docs", "images", fname+".png")
-	} else if _, ok := os.LookupEnv("OTF_DEBUG_SCREENSHOTS"); ok {
-		// For debugging purposes
-		path = filepath.Join("screenshots", fname+".png")
-	} else {
+	// disable screenshots unless an environment variable is defined
+	if _, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
 		return
 	}
 
+	path := filepath.Join("..", "..", "docs", "images", fname+".png")
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
 	_, err = page.Screenshot(playwright.PageScreenshotOptions{
-		Path: internal.String(path),
+		Path: &path,
 	})
 	require.NoError(t, err)
 }
 
 // addWorkspacePermission adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, workspaceName string, teamID resource.ID, role string) {
+func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string, org organization.Name, workspaceName string, teamID resource.TfeID, role string) {
 	t.Helper()
 
 	// go to workspace
@@ -121,7 +114,7 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname, org, w
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, op run.Operation, apply bool) {
+func startRunTasks(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, op run.Operation, apply bool) {
 	t.Helper()
 
 	// go to workspace page
@@ -142,7 +135,7 @@ func startRunTasks(t *testing.T, page playwright.Page, hostname, organization, w
 	planWithOptionalApply(t, page, hostname, organization, workspaceName, apply)
 }
 
-func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organization, workspaceName string, apply bool) {
+func planWithOptionalApply(t *testing.T, page playwright.Page, hostname string, organization organization.Name, workspaceName string, apply bool) {
 	t.Helper()
 
 	// confirm plan begins and ends
@@ -218,7 +211,7 @@ func planWithOptionalApply(t *testing.T, page playwright.Page, hostname, organiz
 	require.NoError(t, err)
 }
 
-func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, name, provider string) {
+func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org organization.Name, name, provider string) {
 	t.Helper()
 
 	// go to workspace
@@ -250,7 +243,7 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, na
 	require.NoError(t, err)
 }
 
-func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname, org, name string) {
+func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, org organization.Name, name string) {
 	t.Helper()
 
 	// go to workspace

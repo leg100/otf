@@ -3,9 +3,10 @@ package team
 import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 )
 
-templ newTeamView(organization string) {
+templ newTeamView(organization organization.Name) {
 	@components.Layout(components.LayoutProps{
 		Title:        "new team",
 		Organization: organization,
@@ -27,7 +28,7 @@ templ newTeamView(organization string) {
 }
 
 type listTeamsProps struct {
-	organization  string
+	organization  organization.Name
 	teams         []*Team
 	canCreateTeam bool
 }
@@ -43,7 +44,7 @@ templ listTeams(props listTeamsProps) {
 	}) {
 		<div id="content-list">
 			for _, team := range props.teams {
-				<div x-data={ components.BlockLink(paths.Team(team.ID.String())) } class="widget" id={ "item-team-" + team.Name }>
+				<div x-data={ components.BlockLink(paths.Team(team.ID)) } class="widget" id={ "item-team-" + team.Name }>
 					<div>
 						<span>{ team.Name }</span>
 					</div>

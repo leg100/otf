@@ -11,6 +11,7 @@ import (
 	"github.com/antchfx/htmlquery"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/testutils"
@@ -48,12 +49,12 @@ func TestWorkspace_Create(t *testing.T) {
 	if assert.Equal(t, 302, w.Code, "output: %s", w.Body.String()) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspace(ws.ID.String()), redirect.Path)
+		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
 	}
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	bobby := &user.User{ID: resource.NewID(resource.UserKind)}
+	bobby := &user.User{ID: resource.NewTfeID(resource.UserKind)}
 
 	tests := []struct {
 		name      string
@@ -100,7 +101,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspace(ws.ID.String()), redirect.Path)
+		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
 	}
 }
 
@@ -109,7 +110,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		name   string
 		ws     *Workspace
 		teams  []*team.Team
-		policy authz.WorkspacePolicy
+		policy Policy
 		user   user.User
 		want   func(t *testing.T, doc *html.Node)
 	}{
@@ -133,8 +134,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			name: "with policy",
 			ws:   &Workspace{ID: testutils.ParseID(t, "ws-123")},
 			user: user.SiteAdmin,
-			policy: authz.WorkspacePolicy{
-				Permissions: []authz.WorkspacePermission{
+			policy: Policy{
+				Permissions: []Permission{
 					{TeamID: testutils.ParseID(t, "team-1"), Role: authz.WorkspaceAdminRole},
 					{TeamID: testutils.ParseID(t, "team-4"), Role: authz.WorkspacePlanRole},
 				},
@@ -205,7 +206,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 }
 
 func TestUpdateWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -285,7 +287,8 @@ func TestListWorkspacesHandler_WithLatestRun(t *testing.T) {
 }
 
 func TestDeleteWorkspace(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -297,12 +300,13 @@ func TestDeleteWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspaces("acme-corp"), redirect.Path)
+		assert.Equal(t, paths.Workspaces(org1), redirect.Path)
 	}
 }
 
 func TestLockWorkspace(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -323,7 +327,8 @@ func TestLockWorkspace(t *testing.T) {
 }
 
 func TestUnlockWorkspace(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -344,7 +349,8 @@ func TestUnlockWorkspace(t *testing.T) {
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
@@ -364,7 +370,8 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 		vcsproviders: &fakeVCSProviderService{
@@ -389,7 +396,8 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -415,7 +423,8 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: "acme-corp"}
+	org1 := organization.NewTestName(t)
+	ws := &Workspace{ID: testutils.ParseID(t, "ws-123"), Organization: org1}
 	app := &webHandlers{
 		client: &FakeService{Workspaces: []*Workspace{ws}},
 	}
@@ -436,7 +445,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestFilterUnassigned(t *testing.T) {
-	policy := authz.WorkspacePolicy{Permissions: []authz.WorkspacePermission{
+	policy := Policy{Permissions: []Permission{
 		{TeamID: testutils.ParseID(t, "team-bosses"), Role: authz.WorkspaceAdminRole},
 		{TeamID: testutils.ParseID(t, "team-workers"), Role: authz.WorkspacePlanRole},
 	}}

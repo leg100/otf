@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -20,41 +21,40 @@ type (
 	// Pool is a group of remote runners sharing one or more tokens, assigned to
 	// an organization or particular workspaces within the organization.
 	Pool struct {
-		resource.ID
-
+		ID        resource.TfeID `db:"agent_pool_id"`
 		Name      string
-		CreatedAt time.Time
+		CreatedAt time.Time `db:"created_at"`
 		// Pool belongs to an organization with this name.
-		Organization string
+		Organization organization.Name `db:"organization_name"`
 		// Whether pool of agents is accessible to all workspaces in organization
 		// (true) or only those specified in AllowedWorkspaces (false).
-		OrganizationScoped bool
+		OrganizationScoped bool `db:"organization_scoped"`
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
-		AllowedWorkspaces []resource.ID
+		AllowedWorkspaces []resource.TfeID `db:"allowed_workspace_ids"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
-		AssignedWorkspaces []resource.ID
+		AssignedWorkspaces []resource.TfeID `db:"workspace_ids"`
 	}
 
 	CreateAgentPoolOptions struct {
 		Name string `schema:"name,required"`
 		// name of org
-		Organization string `schema:"organization_name,required"`
+		Organization organization.Name `schema:"organization_name,required"`
 		// defaults to true
 		OrganizationScoped *bool
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []resource.ID
+		AllowedWorkspaces []resource.TfeID
 	}
 
 	updatePoolOptions struct {
 		Name               *string
 		OrganizationScoped *bool `schema:"organization_scoped"`
 		// IDs of workspaces allowed to access the pool.
-		AllowedWorkspaces []resource.ID `schema:"allowed_workspaces"`
+		AllowedWorkspaces []resource.TfeID `schema:"allowed_workspaces"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AssignedWorkspaces.
-		AssignedWorkspaces []resource.ID `schema:"assigned_workspaces"`
+		AssignedWorkspaces []resource.TfeID `schema:"assigned_workspaces"`
 	}
 
 	listPoolOptions struct {
@@ -63,7 +63,7 @@ type (
 		// Filter pools to those accessible to the named workspace. Optional.
 		AllowedWorkspaceName *string
 		// Filter pools to those accessible to the workspace with the given ID. Optional.
-		AllowedWorkspaceID *resource.ID
+		AllowedWorkspaceID *resource.TfeID
 	}
 )
 
@@ -73,11 +73,8 @@ func newPool(opts CreateAgentPoolOptions) (*Pool, error) {
 	if opts.Name == "" {
 		return nil, errors.New("name must not be empty")
 	}
-	if opts.Organization == "" {
-		return nil, errors.New("organization must not be empty")
-	}
 	pool := &Pool{
-		ID:                 resource.NewID("apool"),
+		ID:                 resource.NewTfeID("apool"),
 		CreatedAt:          internal.CurrentTimestamp(nil),
 		Name:               opts.Name,
 		Organization:       opts.Organization,
@@ -119,7 +116,7 @@ func (p *Pool) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("id", p.ID.String()),
 		slog.String("name", p.Name),
-		slog.String("organization", p.Organization),
+		slog.Any("organization", p.Organization),
 		slog.Bool("organization_scoped", p.OrganizationScoped),
 		slog.Any("workspaces", p.AssignedWorkspaces),
 		slog.Any("allowed_workspaces", p.AllowedWorkspaces),
