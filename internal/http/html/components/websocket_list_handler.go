@@ -30,6 +30,7 @@ type WebsocketListHandler[Resource any, Options any] struct {
 	logr.Logger
 	Client    websocketListHandlerClient[Resource, Options]
 	Populator TablePopulator[Resource, Options]
+	ID        string
 }
 
 type websocketListHandlerClient[Resource any, Options any] interface {
@@ -73,7 +74,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		}
 		defer w.Close()
 
-		comp := Table(h.Populator, page, opts)
+		comp := Table(h.Populator, page, opts, h.ID)
 		if err := html.RenderSnippet(comp, w, r); err != nil {
 			return fmt.Errorf("rendering html: %w", err)
 		}
@@ -101,7 +102,10 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		for {
 			// Block on receiving an event.
 			select {
-			case <-sub:
+			case _, ok := <-sub:
+				if !ok {
+					return nil
+				}
 			case <-ctx.Done():
 				return nil
 			}

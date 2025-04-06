@@ -58,6 +58,11 @@ type (
 		Visibility *string
 	}
 
+	ListOptions struct {
+		resource.PageOptions
+		Organization organization.Name `schema:"organization_name"`
+	}
+
 	// OrganizationAccessOptions defines access to be granted upon team creation
 	// or to grant/rescind to/from an existing team.
 	OrganizationAccessOptions struct {

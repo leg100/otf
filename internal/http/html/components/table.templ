@@ -8,18 +8,31 @@ type TablePopulator[T any, Options any] interface {
 	Row(T, Options) templ.Component
 }
 
-templ Table[T any, Options any](populator TablePopulator[T, Options], page *resource.Page[T], options Options) {
-	<div id="page-results">
+templ Table[T any, Options any](populator TablePopulator[T, Options], page *resource.Page[T], options Options, id string) {
+	{{
+		info := pageInfo[T]{Page: page}
+	}}
+	@UnpaginatedTable(populator, page.Items, options, id) {
+		<div class="flex p-4 gap-2 justify-between items-center">
+			@info.pageSizeSelector()
+			@info.summary()
+			@info.navigationButtons()
+		</div>
+	}
+}
+
+templ UnpaginatedTable[T any, Options any](populator TablePopulator[T, Options], resources []T, options Options, id string) {
+	<div id={ id }>
 		<div class="rounded-box border border-base-content/5">
-			if len(page.Items) > 0 {
-				<table class="table">
+			if len(resources) > 0 {
+				<table class="table overflow-x-auto">
 					<thead>
 						<tr>
 							@populator.Header(options)
 						</tr>
 					</thead>
 					<tbody>
-						for _, item := range page.Items {
+						for _, item := range resources {
 							@populator.Row(item, options)
 						}
 					</tbody>
@@ -30,13 +43,6 @@ templ Table[T any, Options any](populator TablePopulator[T, Options], page *reso
 				</span>
 			}
 		</div>
-		{{
-			info := pageInfo[T]{Page: page}
-		}}
-		<div class="flex p-4 gap-2 justify-between items-center">
-			@info.pageSizeSelector()
-			@info.summary()
-			@info.navigationButtons()
-		</div>
+		{ children... }
 	</div>
 }

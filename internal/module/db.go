@@ -56,7 +56,7 @@ RETURNING module_id
 	return err
 }
 
-func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
+func (db *pgdb) listModules(ctx context.Context, opts ListOptions) ([]*Module, error) {
 	rows := db.Query(ctx, `
 SELECT
     m.module_id,

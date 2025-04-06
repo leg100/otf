@@ -260,24 +260,22 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
-	var pathParams struct {
-		Organization organization.Name `schema:"organization_name"`
-	}
-	if err := decode.All(&pathParams, r); err != nil {
+	var params ListOptions
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	sets, err := h.variables.listVariableSets(r.Context(), pathParams.Organization)
+	sets, err := h.variables.listVariableSets(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listVariableSetsProps{
-		organization:         pathParams.Organization,
-		sets:                 sets,
-		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, pathParams.Organization),
+		organization:         params.Organization,
+		sets:                 resource.NewPage(sets, params.PageOptions, nil),
+		canCreateVariableSet: h.authorizer.CanAccess(r.Context(), authz.CreateVariableSetAction, params.Organization),
 	}
 	html.Render(listVariableSets(props), w, r)
 }

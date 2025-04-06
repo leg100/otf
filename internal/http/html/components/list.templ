@@ -43,8 +43,14 @@ templ (p pageInfo[T]) summary() {
 	if err != nil {
 		return err
 	}
-	firstItemNumber := ((p.CurrentPage - 1) * size) + 1
-	lastItemNumber := max(0, firstItemNumber+len(p.Items)-1)
+	var (
+		firstItemNumber int
+		lastItemNumber  int
+	)
+	if len(p.Items) > 0 {
+		firstItemNumber = ((p.CurrentPage - 1) * size) + 1
+		lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
+	}
 	}}
 	<div class="badge badge-outline badge-neutral" id="page-info">
 		{ fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount) }

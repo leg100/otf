@@ -5,6 +5,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"time"
 )
@@ -48,7 +49,7 @@ templ profileLinks() {
 
 type userListProps struct {
 	organization organization.Name
-	users        []*User
+	users        *resource.Page[*User]
 }
 
 templ userList(props userListProps) {
@@ -59,15 +60,52 @@ templ userList(props userListProps) {
 			{Name: "users"},
 		},
 	}) {
-		@components.ContentList(props.users, userListItem)
+		@components.Table(&table{}, props.users, ListOptions{}, "page-results")
 	}
 }
 
-templ userListItem(user *User) {
-	<div id={ "item-user-" + user.Username } class="widget">
-		<span id="username">{ user.Username }</span>
-		@components.Identifier(user.ID)
-	</div>
+type table struct {
+	canRemoveMember bool
+	teamID          *resource.TfeID
+}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Site Admin</th>
+	if t.teamID != nil {
+		<th>Actions</th>
+	}
+}
+
+templ (t table) Row(user *User, opts ListOptions) {
+	<tr id={ "item-user-" + user.Username }>
+		<td id="username">
+			{ user.Username }
+		</td>
+		<td>
+			@components.Identifier(user.ID)
+		</td>
+		<td>
+			if user.IsSiteAdmin() {
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+				</svg>
+			}
+		</td>
+		if t.teamID != nil {
+			<td>
+				if t.canRemoveMember {
+					<form action={ paths.RemoveMemberTeam(t.teamID) } method="POST">
+						<input type="hidden" name="username" id="delete-username" value={ user.Username }/>
+						<button id="remove-member-button" class="btn btn-error btn-outline">
+							Remove member
+						</button>
+					</form>
+				}
+			</td>
+		}
+	</tr>
 }
 
 type getTeamProps struct {
@@ -150,33 +188,18 @@ templ getTeam(props getTeamProps) {
 			@components.SearchDropdown(props.dropdown)
 		}
 		<div id="content-list">
-			for _, member := range props.members {
-				<div id={ "item-user-" + member.Username } class="widget">
-					<div>
-						<span id="username">{ member.Username }</span>
-					</div>
-					<div>
-						@components.Identifier(member.ID)
-						if props.canRemoveMember {
-							<form action={ paths.RemoveMemberTeam(props.team.ID) } method="POST">
-								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
-								<button id="remove-member-button" class="btn btn-error btn-outline">
-									Remove member
-								</button>
-							</form>
-						}
-					</div>
-				</div>
-			}
-			if len(props.members) == 0 {
-				The team currently has no members.
-			}
+			@components.UnpaginatedTable(
+				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
+				props.members,
+				ListOptions{},
+				"team-members",
+			)
 		</div>
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
 			<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
-				<button class="btn btn-error btn-outline text-green-800" onclick="return confirm('Are you sure you want to delete?')">
+				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 					Delete team
 				</button>
 				<input type="hidden" name="id" value={ props.team.ID.String() }/>

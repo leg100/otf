@@ -92,7 +92,7 @@ type (
 		Provider     string            `schema:"provider,required"`
 		Organization organization.Name `schema:"organization,required"`
 	}
-	ListModulesOptions struct {
+	ListOptions struct {
 		Organization organization.Name `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {

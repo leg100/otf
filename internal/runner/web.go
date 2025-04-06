@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -19,12 +20,17 @@ import (
 	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
 
+// runnersTableID is the CSS ID of the DOM element containing the table of
+// runners.
+const runnersTableID = "runners-table"
+
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	svc        webClient
-	workspaces *workspacepkg.Service
-	logger     logr.Logger
-	authorizer authz.Interface
+	svc                  webClient
+	workspaces           *workspacepkg.Service
+	logger               logr.Logger
+	authorizer           authz.Interface
+	websocketListHandler *components.WebsocketListHandler[*RunnerMeta, ListOptions]
 }
 
 // webClient gives web handlers access to the agents service endpoints
@@ -36,11 +42,7 @@ type webClient interface {
 	deleteAgentPool(ctx context.Context, poolID resource.TfeID) (*Pool, error)
 
 	register(ctx context.Context, opts registerOptions) (*RunnerMeta, error)
-	listRunners(ctx context.Context) ([]*RunnerMeta, error)
-	listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error)
-	listRunnersByPool(ctx context.Context, poolID resource.TfeID) ([]*RunnerMeta, error)
-	listServerRunners(ctx context.Context) ([]*RunnerMeta, error)
-
+	listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	CreateAgentToken(ctx context.Context, poolID resource.TfeID, opts CreateAgentTokenOptions) (*agentToken, []byte, error)
 	GetAgentToken(ctx context.Context, tokenID resource.TfeID) (*agentToken, error)
 	ListAgentTokens(ctx context.Context, poolID resource.TfeID) ([]*agentToken, error)
@@ -69,11 +71,26 @@ func (l *poolWorkspaceList) UnmarshalText(v []byte) error {
 	return nil
 }
 
+func newWebHandlers(svc *Service, opts ServiceOptions) *webHandlers {
+	return &webHandlers{
+		authorizer: opts.Authorizer,
+		logger:     opts.Logger,
+		svc:        svc,
+		workspaces: opts.WorkspaceService,
+		websocketListHandler: &components.WebsocketListHandler[*RunnerMeta, ListOptions]{
+			Logger:    opts.Logger,
+			Client:    svc,
+			Populator: table{},
+			ID:        runnersTableID,
+		},
+	}
+}
+
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	// runners
-	r.HandleFunc("/organizations/{organization_name}/runners", h.listAgents).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runners", h.listRunners).Methods("GET")
 
 	// agent pools
 	r.HandleFunc("/organizations/{organization_name}/agent-pools", h.listAgentPools).Methods("GET")
@@ -90,38 +107,20 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 // runner handlers
 
-func (h *webHandlers) listAgents(w http.ResponseWriter, r *http.Request) {
-	var pathParams struct {
-		Organization organization.Name `schema:"organization_name"`
+func (h *webHandlers) listRunners(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.Handler(w, r)
+		return
 	}
-	if err := decode.All(&pathParams, r); err != nil {
+
+	var params ListOptions
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	serverRunners, err := h.svc.listServerRunners(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	agentRunners, err := h.svc.listRunnersByOrganization(r.Context(), pathParams.Organization)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// order runners to show 'freshest' at the top
-	runners := append(serverRunners, agentRunners...)
-	slices.SortFunc(runners, func(a, b *RunnerMeta) int {
-		if a.LastPingAt.Before(b.LastPingAt) {
-			return 1
-		} else {
-			return -1
-		}
-	})
-
 	props := listRunnersProps{
-		organization: pathParams.Organization,
-		runners:      runners,
+		organization:      *params.Organization,
+		hideServerRunners: params.HideServerRunners,
 	}
 	html.Render(listRunners(props), w, r)
 }
@@ -187,28 +186,33 @@ func (h *webHandlers) updateAgentPool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAgentPools(w http.ResponseWriter, r *http.Request) {
-	var pathParams struct {
+	var params struct {
+		resource.PageOptions
 		Organization organization.Name `schema:"organization_name"`
 	}
-	if err := decode.All(&pathParams, r); err != nil {
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), pathParams.Organization, listPoolOptions{})
+	pools, err := h.svc.listAgentPoolsByOrganization(r.Context(), params.Organization, listPoolOptions{})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listAgentPoolProps{
-		organization: pathParams.Organization,
-		pools:        pools,
+		organization: params.Organization,
+		pools:        resource.NewPage(pools, params.PageOptions, nil),
 	}
 	html.Render(listAgentPools(props), w, r)
 }
 
 func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h.websocketListHandler.Handler(w, r)
+		return
+	}
+
 	poolID, err := decode.ID("pool_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -265,7 +269,9 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agents, err := h.svc.listRunnersByPool(r.Context(), poolID)
+	agents, err := h.svc.listRunners(r.Context(), ListOptions{
+		PoolID: &poolID,
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -277,7 +283,7 @@ func (h *webHandlers) getAgentPool(w http.ResponseWriter, r *http.Request) {
 		assignedWorkspaces:             assignedWorkspaces,
 		availableWorkspaces:            availableWorkspaces,
 		tokens:                         tokens,
-		agents:                         agents,
+		agents:                         resource.NewPage(agents, resource.PageOptions{}, nil),
 		canDeleteAgentPool:             h.authorizer.CanAccess(r.Context(), authz.DeleteAgentPoolAction, pool.Organization),
 	}
 	html.Render(getAgentPool(props), w, r)

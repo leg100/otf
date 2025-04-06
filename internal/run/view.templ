@@ -143,7 +143,7 @@ templ (t table) Row(run *Run, opts ListOptions) {
 				</div>
 			</div>
 		</td>
-		<td>
+		<td class="align-top">
 			@components.Ago(run.CreatedAt)
 		</td>
 		<td>
@@ -215,7 +215,7 @@ templ get(props getProps) {
 		</div>
 		@periodReport(props.run)
 		<div class="flex flex-col gap-4">
-			<div hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID)) + "?run_id=" + props.run.ID.String() }>
+			<div class="my-2" hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID)) + "?run_id=" + props.run.ID.String() }>
 				@widget(props.run)
 			</div>
 			<details id="plan" open>
@@ -286,73 +286,13 @@ templ eventView(run *Run) {
 
 templ widget(run *Run) {
 	<div sse-swap={ "run-item-" + run.ID.String() }>
-		<div x-data={ components.BlockLink(paths.Run(run.ID)) } class="widget">
-			<div>
-				@runstatus.Badge(run.ID, run.Status)
-				if run.PlanOnly {
-					<span>| plan-only</span>
-				}
-				if run.IngressAttributes != nil {
-					<span class="inline-block max-w-[16rem] truncate">
-						| <a id="vcs-username" href={ templ.SafeURL(run.IngressAttributes.SenderHTMLURL) }>&commat;{ run.IngressAttributes.SenderUsername }</a>
-					</span>
-				} else if run.CreatedBy != nil {
-					<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
-						| @{ *run.CreatedBy }
-					</span>
-				}
-				<span>
-					@components.Ago(run.CreatedAt)
-				</span>
-			</div>
-			<div>
-				<div class="flex gap-2 items-center">
-					@components.Identifier(run.ID)
-					@source(run)
-					if run.IngressAttributes != nil {
-						<div class="flex flex-wrap gap-2 items-center">
-							<span class="flex flex-wrap items-center gap-2 bg-gray-100 font-mono text-sm p-1">
-								<img class="h-5" src={ components.AssetPath(ctx, "/static/images/git_icon.svg") }/>
-								if run.IngressAttributes.IsPullRequest {
-									<a id="pull-request-link" href={ templ.SafeURL(run.IngressAttributes.PullRequestURL) } title={ run.IngressAttributes.PullRequestTitle }>#{ strconv.Itoa(run.IngressAttributes.PullRequestNumber) }</a> |
-								} else if run.IngressAttributes.Branch != "" {
-									<span class="inline-block max-w-[12rem] truncate" id="vcs-branch">{ run.IngressAttributes.Branch }</span>|
-								} else if run.IngressAttributes.Tag != "" {
-									<span class="inline-block max-w-[12rem] truncate" id="vcs-tag">{ run.IngressAttributes.Tag }</span>|
-								}
-								<a id="commit-sha-abbrev" href={ templ.SafeURL(run.IngressAttributes.CommitURL) }>{ run.IngressAttributes.CommitSHA[:7] }</a>
-							</span>
-						</div>
-					}
-				</div>
-				<div class="flex gap-2 items-center justify-between">
-					if run.Apply.ResourceReport != nil {
-						@resourceReport(run.Apply.ResourceReport)
-					} else if run.Plan.ResourceReport != nil {
-						@resourceReport(run.Plan.ResourceReport)
-					}
-					if run.Status == runstatus.Planned {
-						<form action={ paths.ApplyRun(run.ID) } method="POST">
-							<button id="apply-button" class="btn">Apply</button>
-						</form>
-					}
-					if run.Cancelable() {
-						<form action={ paths.CancelRun(run.ID) } method="POST">
-							<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to cancel?')">Cancel</button>
-						</form>
-					} else if run.ForceCancelable() {
-						<form action={ paths.ForceCancelRun(run.ID) } method="POST">
-							<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to force cancel?')">Force cancel</button>
-						</form>
-					} else if run.Discardable() {
-						<form action={ paths.DiscardRun(run.ID) } method="POST">
-							<button id="run-discard-button" class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to discard?')">Discard</button>
-						</form>
-					} else if run.CancelSignaledAt != nil && !run.Done() {
-						cancelling...
-					}
-				</div>
-			</div>
+		<div class="rounded-box border border-base-content/20">
+			@components.UnpaginatedTable(
+				&table{},
+				[]*Run{run},
+				ListOptions{WorkspaceID: &run.WorkspaceID},
+				"run-widget",
+			)
 		</div>
 	</div>
 }

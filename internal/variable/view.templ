@@ -123,38 +123,42 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 			</form>
 		}
 		<span class="text-lg mt-4">Variable Sets ({ strconv.Itoa(len(props.setTablesProps)) })</span>
-		for _, tbl := range props.setTablesProps {
-			<div class="flex flex-col gap-2" id={ "variable-set-" + tbl.set.Name }>
-				@variableSetItem(tbl.set)
-				@table(tbl)
+		for i, setProps := range props.setTablesProps {
+			<div id={ "variable-set-" + setProps.set.Name } class="flex flex-col gap-2">
+				@components.UnpaginatedTable(
+					&listVariableSetsTable{},
+					[]*VariableSet{setProps.set},
+					ListOptions{},
+					"variable-set-info",
+				)
+				<div id="variable-set-variables-table">
+					@table(setProps)
+				</div>
 			</div>
-			<div class="my-2"></div>
+			if i < len(props.setTablesProps) - 1 {
+				<div class="divider"></div>
+			}
 		}
 	}
 }
 
 type listVariableSetsProps struct {
 	organization         organization.Name
-	sets                 []*VariableSet
+	sets                 *resource.Page[*VariableSet]
 	canCreateVariableSet bool
 }
 
 templ listVariableSets(props listVariableSetsProps) {
 	@components.Layout(components.LayoutProps{
 		Title:          "variable sets",
-		Organization:   &props.organization,
+		Organization:   props.organization,
 		ContentActions: listVariableSetsActions(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "variable sets"},
 		},
 	}) {
 		<div id="content-list">
-			for _, vs := range props.sets {
-				@variableSetItem(vs)
-			}
-			if len(props.sets) == 0 {
-				No variable sets currently exist.
-			}
+			@components.Table(&listVariableSetsTable{}, props.sets, ListOptions{}, "page-results")
 		</div>
 	}
 }
@@ -169,20 +173,30 @@ templ listVariableSetsActions(props listVariableSetsProps) {
 	}
 }
 
-templ variableSetItem(vs *VariableSet) {
-	<div class="widget" id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
-		<span id="name">{ vs.Name }</span>
-		<div>
+type listVariableSetsTable struct{}
+
+templ (t listVariableSetsTable) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Type</th>
+}
+
+templ (t listVariableSetsTable) Row(vs *VariableSet, opts ListOptions) {
+	<tr id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
+		<td>
+			{ vs.Name }
+		</td>
+		<td>
 			@components.Identifier(vs.ID)
-			<span>
-				if vs.Global {
-					global
-				} else {
-					{ strconv.Itoa(len(vs.Workspaces)) } workspaces
-				}
-			</span>
-		</div>
-	</div>
+		</td>
+		<td>
+			if vs.Global {
+				global
+			} else {
+				{ strconv.Itoa(len(vs.Workspaces)) } workspaces
+			}
+		</td>
+	</tr>
 }
 
 type editWorkspaceVariableProps struct {
@@ -461,50 +475,52 @@ type tableProps interface {
 
 // table of variables
 templ table(props tableProps) {
-	<table class="table break-words border-collapse" id="variables-table">
-		<thead>
-			<tr>
-				<th class="w-[25%]">Key</th>
-				<th class="w-[50%]">Value</th>
-				<th class="w-[15%]">Category</th>
-				<th class="w-[10%]"></th>
-			</tr>
-		</thead>
-		<tbody>
-			for _, v := range props.Variables() {
+	<div class="rounded-box border border-base-content/5">
+		<table class="table break-words border-collapse" id="variables-table">
+			<thead>
 				<tr>
-					<td class="flex flex-row gap-2">
-						if props.IsOverwritten(v) {
-							<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
-						}
-						@components.Strikethrough(props.IsOverwritten(v)) {
-							<a class="underline" href={ props.EditPath(v.ID) }>{ v.Key }</a>
-						}
-					</td>
-					<td>
-						if v.Sensitive {
-							<span class="bg-gray-200">hidden</span>
-						} else {
-							{ v.Value }
-						}
-					</td>
-					<td>{ string(v.Category) }</td>
-					<td class="text-right">
-						if props.CanDeleteVariable() {
-							<form action={ props.DeletePath(v.ID) } method="POST">
-								@components.DeleteButton()
-							</form>
-						}
-					</td>
+					<th class="w-[25%]">Key</th>
+					<th class="w-[50%]">Value</th>
+					<th class="w-[15%]">Category</th>
+					<th class="w-[10%]"></th>
 				</tr>
-			}
-			if len(props.Variables()) == 0 {
-				<tr>
-					<td>No variables currently exist.</td>
-				</tr>
-			}
-		</tbody>
-	</table>
+			</thead>
+			<tbody>
+				for _, v := range props.Variables() {
+					<tr>
+						<td class="flex flex-row gap-2">
+							if props.IsOverwritten(v) {
+								<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
+							}
+							@components.Strikethrough(props.IsOverwritten(v)) {
+								<a class="underline" href={ props.EditPath(v.ID) }>{ v.Key }</a>
+							}
+						</td>
+						<td>
+							if v.Sensitive {
+								<span class="bg-gray-200">hidden</span>
+							} else {
+								{ v.Value }
+							}
+						</td>
+						<td>{ string(v.Category) }</td>
+						<td class="text-right">
+							if props.CanDeleteVariable() {
+								<form action={ props.DeletePath(v.ID) } method="POST">
+									@components.DeleteButton()
+								</form>
+							}
+						</td>
+					</tr>
+				}
+				if len(props.Variables()) == 0 {
+					<tr>
+						<td>No variables currently exist.</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
 }
 
 func toJSON(v any) string {

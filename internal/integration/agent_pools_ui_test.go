@@ -166,10 +166,10 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// confirm agent is listed
-		err = page.Locator(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID)).ScrollIntoViewIfNeeded()
+		err = page.Locator(fmt.Sprintf(`//*[@id='item-%s']`, registered.ID)).ScrollIntoViewIfNeeded()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='item-%s']`, registered.ID))).ToBeVisible()
+		err = expect.Locator(page.Locator(fmt.Sprintf(`//*[@id='item-%s']`, registered.ID))).ToBeVisible()
 		require.NoError(t, err)
 		screenshot(t, page, "agent_pool_with_idle_agent")
 

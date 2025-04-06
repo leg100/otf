@@ -77,12 +77,7 @@ func NewService(opts ServiceOptions) *Service {
 		Service:   svc,
 		Responder: opts.Responder,
 	}
-	svc.web = &webHandlers{
-		authorizer: opts.Authorizer,
-		logger:     opts.Logger,
-		svc:        svc,
-		workspaces: opts.WorkspaceService,
-	}
+	svc.web = newWebHandlers(svc, opts)
 	svc.poolBroker = pubsub.NewBroker(
 		opts.Logger,
 		opts.Listener,
@@ -188,6 +183,10 @@ func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*Runner
 	return s.runnerBroker.Subscribe(ctx)
 }
 
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*RunnerMeta], func()) {
+	return s.WatchRunners(ctx)
+}
+
 func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
 	return s.jobBroker.Subscribe(ctx)
 }
@@ -237,7 +236,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.TfeID, to 
 	if err != nil {
 		return err
 	}
-	var isAgent bool
+	var ping bool
 	switch s := subject.(type) {
 	case *manager:
 		// ok
@@ -245,7 +244,7 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.TfeID, to 
 		if s.ID != runnerID {
 			return internal.ErrAccessNotPermitted
 		}
-		isAgent = true
+		ping = true
 	default:
 		return internal.ErrAccessNotPermitted
 	}
@@ -255,36 +254,53 @@ func (s *Service) updateStatus(ctx context.Context, runnerID resource.TfeID, to 
 	var from RunnerStatus
 	err = s.db.update(ctx, runnerID, func(ctx context.Context, runner *RunnerMeta) error {
 		from = runner.Status
-		return runner.setStatus(to, isAgent)
+		return runner.setStatus(to, ping)
 	})
 	if err != nil {
 		s.Error(err, "updating runner status", "runner_id", runnerID, "status", to, "subject", subject)
 		return err
 	}
-	if isAgent {
-		s.V(9).Info("updated runner status", "runner_id", runnerID, "from", from, "to", to, "subject", subject)
-	}
+	s.V(9).Info("updated runner status", "runner_id", runnerID, "from", from, "to", to, "subject", subject)
 	return nil
 }
 
-func (s *Service) listRunners(ctx context.Context) ([]*RunnerMeta, error) {
-	return s.db.list(ctx)
+type ListOptions struct {
+	resource.PageOptions
+	// Organization filters runners by the organization of their agent pool.
+	//
+	// NOTE: setting this does not exclude server runners (which do not belong
+	// to an organization). To exclude servers runners as well set Server below to
+	// false.
+	Organization *organization.Name `schema:"organization_name"`
+	// PoolID filters runners by agent pool ID
+	PoolID *resource.TfeID `schema:"pool_id"`
+	// HideServerRunners if true filters out server runners
+	HideServerRunners bool `schema:"hide_server_runners"`
 }
 
-func (s *Service) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
-	return s.db.listServerRunners(ctx)
-}
-
-func (s *Service) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
-	_, err := s.Authorize(ctx, authz.ListRunnersAction, organization)
+func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*RunnerMeta], error) {
+	runners, err := s.listRunners(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	return s.db.listRunnersByOrganization(ctx, organization)
+	return resource.NewPage(runners, opts.PageOptions, nil), nil
 }
 
-func (s *Service) listRunnersByPool(ctx context.Context, poolID resource.TfeID) ([]*RunnerMeta, error) {
-	return s.db.listRunnersByPool(ctx, poolID)
+func (s *Service) listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
+	// Set scope in which caller is requesting to list runners.
+	var scope resource.ID
+	if opts.PoolID != nil {
+		scope = opts.PoolID
+	} else if opts.Organization != nil {
+		scope = opts.Organization
+	} else {
+		scope = resource.SiteID
+	}
+	// Check if caller has perms to list runners in that scope.
+	if _, err := s.Authorize(ctx, authz.ListRunnersAction, scope); err != nil {
+		return nil, err
+	}
+	return s.db.list(ctx, opts)
 }
 
 func (s *Service) deleteRunner(ctx context.Context, runnerID resource.TfeID) error {

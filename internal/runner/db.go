@@ -116,7 +116,7 @@ WHERE a.runner_id = $1
 	return sql.CollectOneRow(rows, scanRunner)
 }
 
-func (db *db) list(ctx context.Context) ([]*RunnerMeta, error) {
+func (db *db) list(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
 	rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
@@ -128,62 +128,17 @@ SELECT
     ) AS current_jobs
 FROM runners a
 LEFT JOIN agent_pools ap USING (agent_pool_id)
+WHERE (@hide_server_runners::bool IS FALSE
+   OR (@hide_server_runners::bool IS TRUE AND ap.agent_pool_id IS NOT NULL)
+)
+AND (@organization::text IS NULL OR (ap.organization_name = @organization::text) OR (ap.organization_name IS NULL))
+AND (@pool_id::text IS NULL OR (ap.agent_pool_id::text = @pool_id))
 ORDER BY a.last_ping_at DESC
-`)
-	return sql.CollectRows(rows, scanRunner)
-}
-
-func (db *db) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
-	rows := db.Query(ctx, `
-SELECT
-    a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-LEFT JOIN agent_pools ap USING (agent_pool_id)
-WHERE agent_pool_id IS NULL
-ORDER BY last_ping_at DESC
-`)
-	return sql.CollectRows(rows, scanRunner)
-}
-
-func (db *db) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
-	rows := db.Query(ctx, `
-SELECT
-    a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.organization_name = $1
-ORDER BY last_ping_at DESC
-`, organization)
-	return sql.CollectRows(rows, scanRunner)
-}
-
-func (db *db) listRunnersByPool(ctx context.Context, poolID resource.TfeID) ([]*RunnerMeta, error) {
-	rows := db.Query(ctx, `
-SELECT
-    a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
-    ap::"agent_pools" AS agent_pool,
-    ( SELECT count(*)
-      FROM jobs j
-      WHERE a.runner_id = j.runner_id
-      AND j.status IN ('allocated', 'running')
-    ) AS current_jobs
-FROM runners a
-JOIN agent_pools ap USING (agent_pool_id)
-WHERE ap.agent_pool_id = $1
-ORDER BY last_ping_at DESC
-`, poolID)
+`, pgx.NamedArgs{
+		"hide_server_runners": opts.HideServerRunners,
+		"organization":        opts.Organization,
+		"pool_id":             opts.PoolID,
+	})
 	return sql.CollectRows(rows, scanRunner)
 }
 

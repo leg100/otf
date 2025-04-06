@@ -43,7 +43,7 @@ type (
 	webModulesClient interface {
 		GetModuleByID(ctx context.Context, id resource.TfeID) (*Module, error)
 		GetModuleInfo(ctx context.Context, versionID resource.TfeID) (*TerraformModule, error)
-		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
+		ListModules(context.Context, ListOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
 		DeleteModule(ctx context.Context, id resource.TfeID) (*Module, error)
 	}
@@ -73,21 +73,24 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	var opts ListModulesOptions
-	if err := decode.All(&opts, r); err != nil {
+	var params struct {
+		ListOptions
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	modules, err := h.client.ListModules(r.Context(), opts)
+	modules, err := h.client.ListModules(r.Context(), params.ListOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listProps{
-		organization:     opts.Organization,
-		modules:          modules,
-		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, opts.Organization),
+		organization:     params.Organization,
+		page:             resource.NewPage(modules, params.PageOptions, nil),
+		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
 	}
 	html.Render(list(props), w, r)
 }

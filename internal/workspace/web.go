@@ -105,6 +105,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 			Logger:    opts.Logger,
 			Client:    service,
 			Populator: &table{},
+			ID:        "page-results",
 		},
 	}
 }

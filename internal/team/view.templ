@@ -4,6 +4,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 )
 
 templ newTeamView(organization organization.Name) {
@@ -29,9 +30,11 @@ templ newTeamView(organization organization.Name) {
 
 type listTeamsProps struct {
 	organization  organization.Name
-	teams         []*Team
+	teams         *resource.Page[*Team]
 	canCreateTeam bool
 }
+
+type listOptions struct{}
 
 templ listTeams(props listTeamsProps) {
 	@components.Layout(components.LayoutProps{
@@ -43,21 +46,27 @@ templ listTeams(props listTeamsProps) {
 		ContentActions: listTeamsActions(props),
 	}) {
 		<div id="content-list">
-			for _, team := range props.teams {
-				<div x-data={ components.BlockLink(paths.Team(team.ID)) } class="widget" id={ "item-team-" + team.Name }>
-					<div>
-						<span>{ team.Name }</span>
-					</div>
-					<div>
-						@components.Identifier(team.ID)
-					</div>
-				</div>
-			}
-			if len(props.teams) == 0 {
-				No teams currently exist.
-			}
+			@components.Table(&table{}, props.teams, listOptions{}, "page-results")
 		</div>
 	}
+}
+
+type table struct{}
+
+templ (t table) Header(opts listOptions) {
+	<th>Name</th>
+	<th>ID</th>
+}
+
+templ (t table) Row(team *Team, opts listOptions) {
+	<tr id={ "item-team-" + team.Name } x-data={ components.BlockLink(paths.Team(team.ID)) }>
+		<td>
+			{ team.Name }
+		</td>
+		<td>
+			@components.Identifier(team.ID)
+		</td>
+	</tr>
 }
 
 templ listTeamsActions(props listTeamsProps) {

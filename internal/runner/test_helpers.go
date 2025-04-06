@@ -89,19 +89,7 @@ func (f *fakeService) updateStatus(ctx context.Context, runnerID resource.TfeID,
 	return nil
 }
 
-func (f *fakeService) listRunners(ctx context.Context) ([]*RunnerMeta, error) {
-	return nil, nil
-}
-
-func (f *fakeService) listRunnersByOrganization(ctx context.Context, organization organization.Name) ([]*RunnerMeta, error) {
-	return nil, nil
-}
-
-func (f *fakeService) listRunnersByPool(ctx context.Context, poolID resource.TfeID) ([]*RunnerMeta, error) {
-	return nil, nil
-}
-
-func (f *fakeService) listServerRunners(ctx context.Context) ([]*RunnerMeta, error) {
+func (f *fakeService) listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
 	return nil, nil
 }
 

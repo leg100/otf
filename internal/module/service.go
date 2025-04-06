@@ -225,19 +225,19 @@ func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 	return module, nil
 }
 
-func (s *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
+func (s *Service) ListModules(ctx context.Context, opts ListOptions) ([]*Module, error) {
 	subject, err := s.Authorize(ctx, authz.ListModulesAction, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	modules, err := s.db.listModules(ctx, opts)
+	page, err := s.db.listModules(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing modules", "organization", opts.Organization, "subject", subject)
 		return nil, err
 	}
 	s.V(9).Info("listed modules", "organization", opts.Organization, "subject", subject)
-	return modules, nil
+	return page, nil
 }
 
 func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {

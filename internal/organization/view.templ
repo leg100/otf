@@ -44,8 +44,28 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.PaginatedContentList(props.Page, listItem)
+		@components.Table(&table{}, props.Page, ListOptions{}, "page-results")
 	}
+}
+
+type table struct{}
+
+templ (t table) Header(opts ListOptions) {
+	<th>Name</th>
+	<th>ID</th>
+}
+
+templ (t table) Row(org *Organization, opts ListOptions) {
+	<tr id={ "org-item-" + org.Name.String() } class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+		<td>
+			<a class="link" href={ paths.Organization(org.Name) }>
+				{ org.Name.String() }
+			</a>
+		</td>
+		<td>
+			@components.Identifier(org.ID)
+		</td>
+	</tr>
 }
 
 templ listItem(org *Organization) {
