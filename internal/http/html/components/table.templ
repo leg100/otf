@@ -23,7 +23,7 @@ templ Table[T any, Options any](populator TablePopulator[T, Options], page *reso
 
 templ UnpaginatedTable[T any, Options any](populator TablePopulator[T, Options], resources []T, options Options, id string) {
 	<div id={ id }>
-		<div class="rounded-box border border-base-content/5">
+		<div class="rounded-box border border-base-content/20">
 			if len(resources) > 0 {
 				<table class="table overflow-x-auto">
 					<thead>
