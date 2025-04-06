@@ -64,12 +64,18 @@ templ userList(props userListProps) {
 	}
 }
 
-type table struct{}
+type table struct {
+	canRemoveMember bool
+	teamID          *resource.TfeID
+}
 
 templ (t table) Header(opts ListOptions) {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Site Admin</th>
+	if t.teamID != nil {
+		<th>Actions</th>
+	}
 }
 
 templ (t table) Row(user *User, opts ListOptions) {
@@ -87,6 +93,18 @@ templ (t table) Row(user *User, opts ListOptions) {
 				</svg>
 			}
 		</td>
+		if t.teamID != nil {
+			<td>
+				if t.canRemoveMember {
+					<form action={ paths.RemoveMemberTeam(t.teamID) } method="POST">
+						<input type="hidden" name="username" id="delete-username" value={ user.Username }/>
+						<button id="remove-member-button" class="btn btn-error btn-outline">
+							Remove member
+						</button>
+					</form>
+				}
+			</td>
+		}
 	</tr>
 }
 
@@ -170,33 +188,18 @@ templ getTeam(props getTeamProps) {
 			@components.SearchDropdown(props.dropdown)
 		}
 		<div id="content-list">
-			for _, member := range props.members {
-				<div id={ "item-user-" + member.Username } class="widget">
-					<div>
-						<span id="username">{ member.Username }</span>
-					</div>
-					<div>
-						@components.Identifier(member.ID)
-						if props.canRemoveMember {
-							<form action={ paths.RemoveMemberTeam(props.team.ID) } method="POST">
-								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
-								<button id="remove-member-button" class="btn btn-error btn-outline">
-									Remove member
-								</button>
-							</form>
-						}
-					</div>
-				</div>
-			}
-			if len(props.members) == 0 {
-				The team currently has no members.
-			}
+			@components.UnpaginatedTable(
+				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
+				props.members,
+				ListOptions{},
+				"team-members",
+			)
 		</div>
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
 			<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
-				<button class="btn btn-error btn-outline text-green-800" onclick="return confirm('Are you sure you want to delete?')">
+				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 					Delete team
 				</button>
 				<input type="hidden" name="id" value={ props.team.ID.String() }/>
