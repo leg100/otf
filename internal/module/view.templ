@@ -167,7 +167,7 @@ templ list(props listProps) {
 			{Name: "modules"},
 		},
 	}) {
-		@components.Table(&table{}, props.page, ListOptions{})
+		@components.Table(&table{}, props.page, ListOptions{}, "page-results")
 	}
 }
 
@@ -188,7 +188,7 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(module *Module, opts ListOptions) {
-	<tr id={ "mod-item-" + module.ID.String() } x-data={ components.BlockLink(paths.Module(module.ID)) }>
+	<tr class="widget" id={ "mod-item-" + module.ID.String() } x-data={ components.BlockLink(paths.Module(module.ID)) }>
 		<td>
 			<a class="link" href={ paths.Module(module.ID) }>
 				{ module.Name }

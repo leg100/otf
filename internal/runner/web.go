@@ -20,6 +20,10 @@ import (
 	workspacepkg "github.com/leg100/otf/internal/workspace"
 )
 
+// runnersTableID is the CSS ID of the DOM element containing the table of
+// runners.
+const runnersTableID = "runners-table"
+
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
 	svc                  webClient
@@ -76,7 +80,8 @@ func newWebHandlers(svc *Service, opts ServiceOptions) *webHandlers {
 		websocketListHandler: &components.WebsocketListHandler[*RunnerMeta, ListOptions]{
 			Logger:    opts.Logger,
 			Client:    svc,
-			Populator: &table{},
+			Populator: table{},
+			ID:        runnersTableID,
 		},
 	}
 }

@@ -287,13 +287,17 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 }
 
 func (s *Service) listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error) {
-	var id resource.ID
-	if opts.Organization != nil {
-		id = opts.Organization
+	// Set scope in which caller is requesting to list runners.
+	var scope resource.ID
+	if opts.PoolID != nil {
+		scope = opts.PoolID
+	} else if opts.Organization != nil {
+		scope = opts.Organization
 	} else {
-		id = resource.SiteID
+		scope = resource.SiteID
 	}
-	if _, err := s.Authorize(ctx, authz.ListRunnersAction, id); err != nil {
+	// Check if caller has perms to list runners in that scope.
+	if _, err := s.Authorize(ctx, authz.ListRunnersAction, scope); err != nil {
 		return nil, err
 	}
 	return s.db.list(ctx, opts)

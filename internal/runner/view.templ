@@ -3,12 +3,10 @@ package runner
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"time"
 )
 
 type listRunnersProps struct {
@@ -32,12 +30,12 @@ templ listRunners(props listRunnersProps) {
 				<legend class="fieldset-legend">Filters</legend>
 				<label class="fieldset-label">
 					<input type="checkbox" name="hide_server_runners" class="toggle toggle-secondary" onchange="this.form.submit()" checked?={ props.hideServerRunners }/>
-					Hide Server Runners
+					Hide <span class="font-bold">otfd</span> runners
 				</label>
 			</fieldset>
 		</form>
 		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
-			<div id="page-results"></div>
+			<div id={ runnersTableID }></div>
 		</div>
 	}
 }
@@ -63,7 +61,7 @@ templ (t table) Header(opts ListOptions) {
 }
 
 templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
-	<tr id={ "item-runner-" + runner.ID.String() }>
+	<tr id={ "item-" + runner.ID.String() }>
 		<td>
 			<div class="flex flex-col gap-2">
 				<span>
@@ -145,7 +143,7 @@ templ listAgentPools(props listAgentPoolProps) {
 			</form>
 			<hr class="my-4"/>
 		</details>
-		@components.Table(&agentPoolsTable{}, props.pools, listPoolOptions{})
+		@components.Table(&agentPoolsTable{}, props.pools, listPoolOptions{}, "page-results")
 	}
 }
 
@@ -294,25 +292,11 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 			</form>
 		</details>
-		@components.UnpaginatedTable(&agentTokensTable{}, props.tokens, listPoolOptions{})
-		for _, token := range props.tokens {
-			<div class="widget">
-				<div>
-					<span>{ token.Description }</span>
-					<span>created { internal.Ago(time.Now(), token.CreatedAt) }</span>
-				</div>
-				<div>
-					@components.Identifier(token.ID)
-					<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
-						@components.DeleteButton()
-					</form>
-				</div>
-			</div>
-		}
+		@components.UnpaginatedTable(agentTokensTable{}, props.tokens, listPoolOptions{}, "page-results")
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
 		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
-			<div id="page-results"></div>
+			<div id={ runnersTableID }></div>
 		</div>
 		if props.canDeleteAgentPool {
 			<hr class="my-4"/>
@@ -353,7 +337,7 @@ templ (t agentTokensTable) Row(token *agentToken, opts listPoolOptions) {
 			@components.Ago(token.CreatedAt)
 		</td>
 		<td>
-			<form action={ paths.DeleteAgentToken(token.ID) } method="POST">
+			<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
 				@components.DeleteButton()
 			</form>
 		</td>

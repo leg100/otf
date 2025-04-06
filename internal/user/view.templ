@@ -60,7 +60,7 @@ templ userList(props userListProps) {
 			{Name: "users"},
 		},
 	}) {
-		@components.Table(&table{}, props.users, ListOptions{})
+		@components.Table(&table{}, props.users, ListOptions{}, "page-results")
 	}
 }
 
@@ -74,7 +74,7 @@ templ (t table) Header(opts ListOptions) {
 
 templ (t table) Row(user *User, opts ListOptions) {
 	<tr id={ "item-user-" + user.Username }>
-		<td>
+		<td id="username">
 			{ user.Username }
 		</td>
 		<td>

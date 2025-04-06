@@ -146,8 +146,14 @@ func (p pageInfo[T]) summary() templ.Component {
 		if err != nil {
 			return err
 		}
-		firstItemNumber := ((p.CurrentPage - 1) * size) + 1
-		lastItemNumber := max(0, firstItemNumber+len(p.Items)-1)
+		var (
+			firstItemNumber int
+			lastItemNumber  int
+		)
+		if len(p.Items) > 0 {
+			firstItemNumber = ((p.CurrentPage - 1) * size) + 1
+			lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
+		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"badge badge-outline badge-neutral\" id=\"page-info\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -155,7 +161,7 @@ func (p pageInfo[T]) summary() templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 50, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 56, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -309,7 +315,7 @@ func (p pageInfo[T]) pageSizeSelector() templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(size))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 110, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/list.templ`, Line: 116, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {

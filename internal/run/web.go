@@ -69,6 +69,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 			Populator: &table{
 				workspaceClient: opts.WorkspaceService,
 			},
+			ID: "page-results",
 		},
 	}
 }

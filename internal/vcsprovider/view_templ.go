@@ -114,7 +114,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.Table(&table{}, props.providers, ListOptions{}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(&table{}, props.providers, ListOptions{}, "page-results").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
