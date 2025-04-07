@@ -81,7 +81,7 @@ func TestGetModule(t *testing.T) {
 	}
 }
 
-func TestNewModule_Connect(t *testing.T) {
+func TestNewModule(t *testing.T) {
 	h := newTestWebHandlers(t, withVCSProviders(
 		&vcsprovider.VCSProvider{},
 		&vcsprovider.VCSProvider{},
@@ -90,13 +90,13 @@ func TestNewModule_Connect(t *testing.T) {
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	h.newModuleConnect(w, r)
+	h.new(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}
 }
 
-func TestNewModule_Repo(t *testing.T) {
+func TestConnect(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withVCSProviders(&vcsprovider.VCSProvider{}),
 		withRepos(
@@ -108,19 +108,7 @@ func TestNewModule_Repo(t *testing.T) {
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	h.newModuleRepo(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(w.Body.String())
-	}
-}
-
-func TestNewModule_Confirm(t *testing.T) {
-	h := newTestWebHandlers(t, withVCSProviders(&vcsprovider.VCSProvider{}))
-
-	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123&identifier=leg100/terraform-otf-test"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-	h.newModuleConfirm(w, r)
+	h.connect(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}

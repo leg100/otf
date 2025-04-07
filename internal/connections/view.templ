@@ -25,7 +25,7 @@ templ (t ReposTable) Header(opts any) {
 }
 
 templ (t ReposTable) Row(repo string, opts any) {
-	<tr>
+	<tr id={ "item-repo-" + repo }>
 		<td>
 			{ repo }
 		</td>

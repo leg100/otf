@@ -591,7 +591,9 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 			"vcs-providers-table",
 		)
 		if len(providers) == 0 {
-			No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+			<span>
+				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+			</span>
 		}
 	}
 }

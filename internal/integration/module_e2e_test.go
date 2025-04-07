@@ -49,19 +49,13 @@ func TestModuleE2E(t *testing.T) {
 		screenshot(t, page, "modules_select_provider")
 
 		// select provider
-		err = page.Locator(`//button[text()='connect']`).Click()
+		err = page.Locator(`//button[text()='Select']`).Click()
 		require.NoError(t, err)
 		screenshot(t, page, "modules_select_repo")
 
 		// connect to first repo in list (there should only be one)
-		err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
+		err = page.Locator(`//tr[@id='item-repo-` + repo + `']//button[text()='Connect']`).Click()
 		require.NoError(t, err)
-		screenshot(t, page, "modules_confirm")
-
-		// confirm module details
-		err = page.Locator(`//button[text()='connect']`).Click()
-		require.NoError(t, err)
-		screenshot(t, page, "newly_created_module_page")
 
 		// flash message indicates success
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`published module: mod`)

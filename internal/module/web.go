@@ -18,12 +18,6 @@ import (
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
-const (
-	newModuleConnectStep newModuleStep = "connect-vcs"
-	newModuleRepoStep    newModuleStep = "select-repo"
-	newModuleConfirmStep newModuleStep = "confirm-selection"
-)
-
 type (
 	// webHandlers provides handlers for the webUI
 	webHandlers struct {
@@ -58,8 +52,6 @@ type (
 		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
 		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
-
-	newModuleStep string
 )
 
 func (h *webHandlers) addHandlers(r *mux.Router) {

@@ -75,7 +75,7 @@ templ (t Table) Header(opts any) {
 
 templ (t Table) Row(provider *VCSProvider, opts any) {
 	<tr
-		id={ provider.ID.String() }
+		id={ "item-vcsprovider-" + provider.String() }
 		if t.blockLink != nil {
 			x-data={ components.BlockLink(t.blockLink(provider.ID)) }
 		}

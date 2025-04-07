@@ -22,12 +22,11 @@ import (
 
 type (
 	webHandlers struct {
-		logger               logr.Logger
-		runs                 webRunClient
-		logs                 webLogsClient
-		workspaces           webWorkspaceClient
-		authorizer           webAuthorizer
-		websocketListHandler *components.WebsocketListHandler[*Run, ListOptions]
+		logger     logr.Logger
+		runs       webRunClient
+		logs       webLogsClient
+		workspaces webWorkspaceClient
+		authorizer webAuthorizer
 	}
 
 	webRunClient interface {
@@ -39,6 +38,7 @@ type (
 		ForceCancel(ctx context.Context, runID resource.TfeID) error
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
+		Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func())
 
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
@@ -63,22 +63,14 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		runs:       service,
 		workspaces: opts.WorkspaceService,
 		logs:       opts.LogsService,
-		websocketListHandler: &components.WebsocketListHandler[*Run, ListOptions]{
-			Logger: opts.Logger,
-			Client: service,
-			Populator: table{
-				workspaceClient: opts.WorkspaceService,
-			},
-			ID: "page-results",
-		},
 	}
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listByWorkspace).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
@@ -118,12 +110,39 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
-func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
+		h := &components.WebsocketListHandler[*Run, ListOptions]{
+			Logger: h.logger,
+			Client: h.runs,
+			Populator: table{
+				workspaceClient: h.workspaces,
+			},
+			ID: "page-results",
+		}
+		h.Handler(w, r)
 		return
 	}
+	h.list(w, r)
+}
 
+func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h := &components.WebsocketListHandler[*Run, ListOptions]{
+			Logger: h.logger,
+			Client: h.runs,
+			Populator: table{
+				workspaceClient: h.workspaces,
+			},
+			ID: "page-results",
+		}
+		h.Handler(w, r)
+		return
+	}
+	h.list(w, r)
+}
+
+func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
