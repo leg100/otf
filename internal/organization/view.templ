@@ -68,17 +68,6 @@ templ (t table) Row(org *Organization, opts ListOptions) {
 	</tr>
 }
 
-templ listItem(org *Organization) {
-	<div class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
-		<div>
-			<span>{ org.Name.String() }</span>
-		</div>
-		<div>
-			@components.Identifier(org.ID)
-		</div>
-	</div>
-}
-
 templ listActions(canCreate bool) {
 	<form action={ paths.NewOrganization() } method="GET">
 		<button
@@ -190,27 +179,45 @@ templ getToken(organization Name, token *OrganizationToken) {
 			The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
 		</span>
 		if token != nil {
-			<div class="widget">
-				<div>
-					<span>Token</span>
-					<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
-				</div>
-				<div>
-					@components.Identifier(token.ID)
-					<div class="flex gap-2">
-						<form action={ paths.CreateOrganizationToken(organization) } method="POST">
-							<button class="btn">regenerate</button>
-						</form>
-						<form action={ paths.DeleteOrganizationToken(organization) } method="POST">
-							@components.DeleteButton()
-						</form>
-					</div>
-				</div>
-			</div>
+			@components.UnpaginatedTable(
+				&tokenTable{},
+				[]*OrganizationToken{token},
+				ListOptions{},
+				"org-token-table",
+			)
 		} else {
 			<form class="mt-2" action={ paths.CreateOrganizationToken(organization) } method="POST">
 				<button class="btn w-72">Create organization token</button>
 			</form>
 		}
 	}
+}
+
+type tokenTable struct{}
+
+templ (t tokenTable) Header(opts ListOptions) {
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t tokenTable) Row(token *OrganizationToken, opts ListOptions) {
+	<tr id="item-token">
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
+		</td>
+		<td>
+			<div class="flex gap-2">
+				<form action={ paths.CreateOrganizationToken(token.Organization) } method="POST">
+					<button class="btn">Regenerate</button>
+				</form>
+				<form action={ paths.DeleteOrganizationToken(token.Organization) } method="POST">
+					@components.DeleteButton()
+				</form>
+			</div>
+		</td>
+	</tr>
 }

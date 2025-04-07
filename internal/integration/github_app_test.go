@@ -155,7 +155,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}).String())
 			require.NoError(t, err)
 
-			err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//tr[@id='item-github-app']//td[1]`)).ToHaveText("my-otf-app")
 			require.NoError(t, err)
 			screenshot(t, page, "github_app_created")
 		})

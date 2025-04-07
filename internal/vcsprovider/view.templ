@@ -47,24 +47,37 @@ templ list(props listProps) {
 			}
 		</div>
 		<div id="content-list">
-			@components.Table(&table{}, props.providers, ListOptions{}, "page-results")
+			@components.Table(&Table{}, props.providers, nil, "page-results")
 		</div>
 	}
 }
 
-type table struct{}
+type Table struct {
+	// NewModuleView is true when the table lists providers for publishing a
+	// new module
+	NewModuleView bool
+}
 
-templ (t table) Header(opts ListOptions) {
+templ (t Table) Header(opts any) {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Created</th>
 	<th>Actions</th>
 }
 
-templ (t table) Row(provider *VCSProvider, opts ListOptions) {
-	<tr id={ provider.ID.String() } x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID)) }>
+templ (t Table) Row(provider *VCSProvider, opts any) {
+	<tr
+		id={ provider.ID.String() }
+		if !t.NewModuleView {
+			x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID)) }
+		}
+	>
 		<td>
-			<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID) }>{ provider.String() }</a>
+			if t.NewModuleView {
+				{ provider.String() }
+			} else {
+				<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID) }>{ provider.String() }</a>
+			}
 		</td>
 		<td>
 			@components.Identifier(provider.ID)
@@ -73,10 +86,18 @@ templ (t table) Row(provider *VCSProvider, opts ListOptions) {
 			{ internal.Ago(time.Now(), provider.CreatedAt) }
 		</td>
 		<td>
-			<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
-				@components.DeleteButton()
-				<input type="hidden" name="id" value={ provider.ID.String() }/>
-			</form>
+			if t.NewModuleView {
+				<form action={ paths.NewModule(provider.Organization) } method="GET">
+					<input type="hidden" name="step" id="select-repo-step" value="select-repo"/>
+					<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ provider.ID.String() }/>
+					<button class="btn">connect</button>
+				</form>
+			} else {
+				<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
+					@components.DeleteButton()
+					<input type="hidden" name="id" value={ provider.ID.String() }/>
+				</form>
+			}
 		</td>
 	</tr>
 }

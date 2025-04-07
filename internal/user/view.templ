@@ -239,30 +239,48 @@ templ tokenList(tokens []*UserToken) {
 		ContentLinks:   profileLinks(),
 		ContentActions: tokenListActions(),
 	}) {
-		@components.ContentList(tokens, tokenListItem)
+		@components.UnpaginatedTable(
+			&tokensTable{},
+			tokens,
+			struct{}{},
+			"tokens-table",
+		)
 	}
-}
-
-templ tokenListItem(token *UserToken) {
-	<div class="widget">
-		<div>
-			<span>{ token.Description }</span>
-			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
-		</div>
-		<div>
-			@components.Identifier(token.ID)
-			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
-				@components.DeleteButton()
-				<input type="hidden" name="id" value={ token.ID.String() }/>
-			</form>
-		</div>
-	</div>
 }
 
 templ tokenListActions() {
 	<form action={ paths.NewToken() } method="GET">
 		<button class="btn" id="new-user-token-button">New Token</button>
 	</form>
+}
+
+type tokensTable struct{}
+
+templ (t tokensTable) Header(opts struct{}) {
+	<th>Description</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t tokensTable) Row(token *UserToken, opts struct{}) {
+	<tr>
+		<td>
+			<span>{ token.Description }</span>
+		</td>
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
+		</td>
+		<td>
+			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
+				@components.DeleteButton()
+				<input type="hidden" name="id" value={ token.ID.String() }/>
+			</form>
+		</td>
+	</tr>
 }
 
 templ siteSettings() {

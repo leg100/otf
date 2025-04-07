@@ -141,7 +141,7 @@ module "mod" {
 		require.NoError(t, err)
 
 		// select existing module
-		err = page.Locator(`.widget`).Click()
+		err = page.Locator(`#mod-item-mod`).Click()
 		require.NoError(t, err)
 
 		// confirm no longer connected
