@@ -1,0 +1,36 @@
+package connections
+
+type Step int
+
+// steps for connecting a workspace to repo
+const (
+	ConnectStep Step = iota
+	SelectRepoStep
+)
+
+templ Steps(current Step) {
+	<ul class="steps">
+		<li class={ "step", templ.KV("step-primary", current == ConnectStep) }>Connect VCS</li>
+		<li class={ "step", templ.KV("step-primary", current == SelectRepoStep) }>Select repo</li>
+	</ul>
+}
+
+type ReposTable struct {
+	Actions func(repo string) templ.Component
+}
+
+templ (t ReposTable) Header(opts any) {
+	<th>Name</th>
+	<th>Action</th>
+}
+
+templ (t ReposTable) Row(repo string, opts any) {
+	<tr>
+		<td>
+			{ repo }
+		</td>
+		<td>
+			@t.Actions(repo)
+		</td>
+	</tr>
+}

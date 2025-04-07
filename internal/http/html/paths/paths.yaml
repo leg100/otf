@@ -100,3 +100,5 @@
     camel: VCSProvider
     lower_camel: vcsProvider
   - name: module
+    actions:
+    - name: connect

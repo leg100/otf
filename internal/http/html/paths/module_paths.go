@@ -31,3 +31,7 @@ func UpdateModule(module fmt.Stringer) string {
 func DeleteModule(module fmt.Stringer) string {
 	return fmt.Sprintf("/app/modules/%s/delete", module)
 }
+
+func ConnectModule(module fmt.Stringer) string {
+	return fmt.Sprintf("/app/modules/%s/connect", module)
+}

@@ -1,6 +1,7 @@
 package module
 
 import (
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -12,13 +13,8 @@ import (
 )
 
 type newViewProps struct {
-	organization  organization.Name
-	providers     []*vcsprovider.VCSProvider
-	repos         []string
-	vcsProviderID resource.TfeID
-	repo          string
-	vcsProvider   *vcsprovider.VCSProvider
-	step          newModuleStep
+	organization organization.Name
+	providers    []*vcsprovider.VCSProvider
 }
 
 templ newView(props newViewProps) {
@@ -30,112 +26,74 @@ templ newView(props newViewProps) {
 			{Name: "new"},
 		},
 	}) {
-		<div class="flex gap-6 items-center mb-5">
-			<div
-				if props.step == newModuleConnectStep {
-					class="text-black"
-				} else {
-					class="text-gray-400"
-				}
-			>
-				<a href={ paths.NewModule(props.organization) + "?step=connect-vcs" }>
-					1. connect vcs
-				</a>
-			</div>
-			<div
-				if props.step == newModuleRepoStep {
-					class="text-black"
-				} else {
-					class="text-gray-400"
-				}
-			>
-				2. select repo
-			</div>
-			<div
-				if props.step == newModuleConfirmStep {
-					class="text-black"
-				} else {
-					class="text-gray-400"
-				}
-			>
-				3. confirm selection
-			</div>
+		@connections.Steps(connections.ConnectStep)
+		<h3 class="font-semibold">Connect to a version control provider</h3>
+		<div>
+			Choose a VCS provider that hosts your module source code.
 		</div>
-		switch props.step {
-			case newModuleConnectStep:
-				@newConnect(props)
-			case newModuleRepoStep:
-				@newRepo(props)
-			case newModuleConfirmStep:
-				@newConfirm(props)
-		}
+		@components.UnpaginatedTable(
+			&vcsprovider.Table{Actions: selectVCSProviderAction},
+			props.providers,
+			nil,
+			"providers",
+		)
 	}
 }
 
-templ newConnect(props newViewProps) {
-	<h3 class="font-semibold">Connect to a version control provider</h3>
-	<div>
-		Choose a VCS provider that hosts your module source code.
-	</div>
-	@components.UnpaginatedTable(&vcsprovider.Table{NewModuleView: true}, props.providers, nil, "page-results")
-}
-
-templ newRepo(props newViewProps) {
-	<h3 class="font-semibold">Choose a repository</h3>
-	<div>
-		Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
-	</div>
-	<form action={ paths.NewModule(props.organization) } method="GET">
-		<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProviderID.String() }/>
-		<input type="hidden" name="step" id="select-repo-step" value="confirm-selection"/>
-		<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
-		<button class="btn">connect</button>
+templ selectVCSProviderAction(vcsProviderID resource.TfeID) {
+	<form action={ paths.ConnectModule(vcsProviderID) }>
+		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<button class="btn">Select</button>
 	</form>
-	@components.UnpaginatedTable(reposTable{props: props}, props.repos, nil, "repos-table")
 }
 
-type reposTable struct {
-	props newViewProps
+type connectProps struct {
+	repos    []string
+	provider *vcsprovider.VCSProvider
 }
 
-templ (t reposTable) Header(opts any) {
-	<th>Name</th>
-	<th>Actions</th>
-}
-
-templ (t reposTable) Row(repo string, opts any) {
-	<tr id="item-repo">
-		<td>
-			{ repo }
-		</td>
-		<td>
-			<form action={ paths.NewModule(t.props.organization) } method="GET">
-				<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ t.props.vcsProviderID.String() }/>
-				<input type="hidden" name="step" id="select-repo-step" value="confirm-selection"/>
-				<input type="hidden" name="identifier" id="identifier" value={ repo }/>
-				<button class="btn">connect</button>
-			</form>
-		</td>
-	</tr>
-}
-
-templ newConfirm(props newViewProps) {
-	<h3 class="font-semibold">Confirm module details</h3>
-	<div>
+templ connect(props connectProps) {
+	@components.Layout(components.LayoutProps{
+		Title:        "new module",
+		Organization: props.provider.Organization,
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "modules", Link: paths.Modules(props.provider.Organization)},
+			{Name: "new"},
+		},
+	}) {
+		@connections.Steps(connections.SelectRepoStep)
+		<h3 class="font-semibold">Choose a repository</h3>
 		<div>
-			<span class="font-semibold">Provider:</span> { string(props.vcsProvider.Kind) }
+			Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be `{ "terraform-<PROVIDER>-<NAME>" }`.
 		</div>
-		<div>
-			<span class="font-semibold">Repository:</span> { props.repo }
-		</div>
-	</div>
-	<div>
-		<form action={ paths.CreateModule(props.organization) } method="POST">
-			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.vcsProvider.ID.String() }/>
-			<input type="hidden" name="identifier" id="identifier" value={ props.repo }/>
-			<button class="btn">connect</button>
+		<form action={ paths.CreateModule(props.provider.Organization) } method="POST">
+			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ props.provider.ID.String() }/>
+			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
+			<button class="btn">Connect</button>
 		</form>
-	</div>
+		@components.UnpaginatedTable(
+			&connections.ReposTable{
+				Actions: repoSelector{
+					provider: props.provider,
+				}.action,
+			},
+			props.repos,
+			nil,
+			"repos-table",
+		)
+	}
+}
+
+type repoSelector struct {
+	provider *vcsprovider.VCSProvider
+}
+
+templ (s repoSelector) action(repo string) {
+	<form action={ paths.CreateModule(s.provider.Organization) } method="POST">
+		<input type="hidden" name="vcs_provider_id" value={ s.provider.ID.String() }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+		<button class="btn">Connect</button>
+	</form>
 }
 
 type listProps struct {

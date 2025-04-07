@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -13,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"time"
 )
 
 templ new(organization organization.Name) {
@@ -580,25 +580,31 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	}
 	}}
 	@components.Layout(layoutProps) {
+		@connections.Steps(connections.ConnectStep)
 		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
-		<div id="content-list">
-			for _, provider := range providers {
-				{{ path := fmt.Sprintf("%s?vcs_provider_id=%s", paths.SetupConnectionRepoWorkspace(ws.ID), provider.ID) }}
-				<div class="widget" x-data={ components.BlockLink(templ.SafeURL(path)) } id={ provider.ID.String() }>
-					<div>
-						<span class="font-semibold">{ provider.String() }</span>
-						<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
-					</div>
-					<div>
-						@components.Identifier(provider.ID)
-					</div>
-				</div>
-			}
-			if len(providers) == 0 {
-				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
-			}
-		</div>
+		@components.UnpaginatedTable(
+			&vcsprovider.Table{
+				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
+			},
+			providers,
+			nil,
+			"vcs-providers-table",
+		)
+		if len(providers) == 0 {
+			No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
+		}
 	}
+}
+
+type vcsProviderSelector struct {
+	workspaceID resource.TfeID
+}
+
+templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
+	<form action={ paths.SetupConnectionRepoWorkspace(s.workspaceID) }>
+		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<button class="btn">Select</button>
+	</form>
 }
 
 templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) {
@@ -614,32 +620,40 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 	}
 	}}
 	@components.Layout(layoutProps) {
+		@connections.Steps(connections.SelectRepoStep)
 		<div>
 			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
 		</div>
 		<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
 			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
 			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
-			<button class="btn">connect</button>
+			<button class="btn">Connect</button>
 		</form>
-		<div id="content-list">
-			for _, repo := range repos {
-				<div class="widget">
-					<div>
-						<span>{ repo }</span>
-						<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
-							<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
-							<input type="hidden" name="identifier" id="identifier" value={ repo }/>
-							<button class="btn">connect</button>
-						</form>
-					</div>
-				</div>
-			}
-			if len(repos) == 0 {
-				No repositories found.
-			}
-		</div>
+		@components.UnpaginatedTable(
+			&connections.ReposTable{
+				Actions: repoSelector{
+					workspaceID:   ws.ID,
+					vcsProviderID: vcsProviderID,
+				}.action,
+			},
+			repos,
+			nil,
+			"repos-table",
+		)
 	}
+}
+
+type repoSelector struct {
+	workspaceID   resource.TfeID
+	vcsProviderID resource.TfeID
+}
+
+templ (s repoSelector) action(repo string) {
+	<form action={ paths.ConnectWorkspace(s.workspaceID) } method="POST">
+		<input type="hidden" name="vcs_provider_id" value={ s.vcsProviderID.String() }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+		<button class="btn">Connect</button>
+	</form>
 }
 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
