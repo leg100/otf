@@ -82,7 +82,7 @@ output "foo" {
 		err = page.Locator(`//a[text()='variables']`).Click()
 		require.NoError(t, err)
 		// edit variable
-		err = page.Locator(`//a[text()='foo']`).Click()
+		err = page.Locator(`//tr[@id='item-variable-foo']//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 		// make it a 'sensitive' variable
 		err = page.Locator("input#sensitive").Click()
@@ -96,10 +96,10 @@ output "foo" {
 		require.NoError(t, err)
 
 		// confirm value is hidden (because it is sensitive)
-		err = expect.Locator(page.Locator(`//table[@id='variables-table']/tbody/tr/td[2]/span[text()="hidden"]`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr/td[2]/span[text()="hidden"]`)).ToBeVisible()
 		require.NoError(t, err)
 		// edit variable again
-		err = page.Locator(`//a[text()='foo']`).Click()
+		err = page.Locator(`//tr[@id='item-variable-foo']//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
 		// update value

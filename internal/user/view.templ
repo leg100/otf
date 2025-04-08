@@ -60,7 +60,7 @@ templ userList(props userListProps) {
 			{Name: "users"},
 		},
 	}) {
-		@components.Table(&table{}, props.users, ListOptions{}, "page-results")
+		@components.Table(&table{}, props.users, "page-results")
 	}
 }
 
@@ -69,7 +69,7 @@ type table struct {
 	teamID          *resource.TfeID
 }
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Site Admin</th>
@@ -78,7 +78,7 @@ templ (t table) Header(opts ListOptions) {
 	}
 }
 
-templ (t table) Row(user *User, opts ListOptions) {
+templ (t table) Row(user *User) {
 	<tr id={ "item-user-" + user.Username }>
 		<td id="username">
 			{ user.Username }
@@ -184,17 +184,18 @@ templ getTeam(props getTeamProps) {
 			<hr class="my-4"/>
 		}
 		<h3 class="font-semibold my-2 text-lg">Members</h3>
-		if props.canAddMember {
-			@components.SearchDropdown(props.dropdown)
-		}
 		<div id="content-list">
 			@components.UnpaginatedTable(
 				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
-				ListOptions{},
 				"team-members",
 			)
 		</div>
+		if props.canAddMember {
+			<div>
+				@components.SearchDropdown(props.dropdown)
+			</div>
+		}
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
@@ -239,30 +240,47 @@ templ tokenList(tokens []*UserToken) {
 		ContentLinks:   profileLinks(),
 		ContentActions: tokenListActions(),
 	}) {
-		@components.ContentList(tokens, tokenListItem)
+		@components.UnpaginatedTable(
+			&tokensTable{},
+			tokens,
+			"tokens-table",
+		)
 	}
-}
-
-templ tokenListItem(token *UserToken) {
-	<div class="widget">
-		<div>
-			<span>{ token.Description }</span>
-			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
-		</div>
-		<div>
-			@components.Identifier(token.ID)
-			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
-				@components.DeleteButton()
-				<input type="hidden" name="id" value={ token.ID.String() }/>
-			</form>
-		</div>
-	</div>
 }
 
 templ tokenListActions() {
 	<form action={ paths.NewToken() } method="GET">
 		<button class="btn" id="new-user-token-button">New Token</button>
 	</form>
+}
+
+type tokensTable struct{}
+
+templ (t tokensTable) Header() {
+	<th>Description</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t tokensTable) Row(token *UserToken) {
+	<tr>
+		<td>
+			<span>{ token.Description }</span>
+		</td>
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
+		</td>
+		<td>
+			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
+				@components.DeleteButton()
+				<input type="hidden" name="id" value={ token.ID.String() }/>
+			</form>
+		</td>
+	</tr>
 }
 
 templ siteSettings() {

@@ -30,9 +30,9 @@ templ Badge(runID resource.TfeID, status Status) {
 }
 
 templ Filter(selected []Status, visible bool) {
-	<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
+	<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-content/20 border">
 		<input id="toggle-status-filter-visibility" type="checkbox" name="status_filter_visible" checked?={ visible }/>
-		<div class="collapse-title font-semibold">Filter by status</div>
+		<div class="collapse-title">Filter by status</div>
 		<div class="collapse-content text-sm flex flex-wrap gap-2">
 			for _, status := range All() {
 				<div>

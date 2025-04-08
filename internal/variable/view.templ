@@ -116,7 +116,13 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 		},
 	}) {
 		<span class="text-lg my-2">Workspace Variables ({ strconv.Itoa(len(props.workspaceTableProps.Variables())) })</span>
-		@table(props.workspaceTableProps)
+		@components.UnpaginatedTable(
+			&table{
+				props: props.workspaceTableProps,
+			},
+			props.workspaceTableProps.variables,
+			"variables-table",
+		)
 		if props.canCreateVariable {
 			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
 				<button class="btn">Add variable</button>
@@ -128,12 +134,13 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 				@components.UnpaginatedTable(
 					&listVariableSetsTable{},
 					[]*VariableSet{setProps.set},
-					ListOptions{},
 					"variable-set-info",
 				)
-				<div id="variable-set-variables-table">
-					@table(setProps)
-				</div>
+				@components.UnpaginatedTable(
+					&table{props: setProps},
+					setProps.Variables(),
+					"variable-set-variables-table",
+				)
 			</div>
 			if i < len(props.setTablesProps) - 1 {
 				<div class="divider"></div>
@@ -158,7 +165,7 @@ templ listVariableSets(props listVariableSetsProps) {
 		},
 	}) {
 		<div id="content-list">
-			@components.Table(&listVariableSetsTable{}, props.sets, ListOptions{}, "page-results")
+			@components.Table(&listVariableSetsTable{}, props.sets, "page-results")
 		</div>
 	}
 }
@@ -175,13 +182,13 @@ templ listVariableSetsActions(props listVariableSetsProps) {
 
 type listVariableSetsTable struct{}
 
-templ (t listVariableSetsTable) Header(opts ListOptions) {
+templ (t listVariableSetsTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Type</th>
 }
 
-templ (t listVariableSetsTable) Row(vs *VariableSet, opts ListOptions) {
+templ (t listVariableSetsTable) Row(vs *VariableSet) {
 	<tr id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
 		<td>
 			{ vs.Name }
@@ -251,7 +258,13 @@ templ editVariableSet(props editVariableSetProps) {
 		})
 		<hr class="my-4"/>
 		<h3 class="text-xl">Variables</h3>
-		@table(props.variableTable)
+		@components.UnpaginatedTable(
+			&table{
+				props: props.variableTable,
+			},
+			props.set.Variables,
+			"variables-table",
+		)
 		<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
 			<button class="btn" id="add-variable-button">Add variable</button>
 		</form>
@@ -473,54 +486,47 @@ type tableProps interface {
 	CanDeleteVariable() bool
 }
 
+type table struct {
+	props tableProps
+}
+
 // table of variables
-templ table(props tableProps) {
-	<div class="rounded-box border border-base-content/5">
-		<table class="table break-words border-collapse" id="variables-table">
-			<thead>
-				<tr>
-					<th class="w-[25%]">Key</th>
-					<th class="w-[50%]">Value</th>
-					<th class="w-[15%]">Category</th>
-					<th class="w-[10%]"></th>
-				</tr>
-			</thead>
-			<tbody>
-				for _, v := range props.Variables() {
-					<tr>
-						<td class="flex flex-row gap-2">
-							if props.IsOverwritten(v) {
-								<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
-							}
-							@components.Strikethrough(props.IsOverwritten(v)) {
-								<a class="underline" href={ props.EditPath(v.ID) }>{ v.Key }</a>
-							}
-						</td>
-						<td>
-							if v.Sensitive {
-								<span class="bg-gray-200">hidden</span>
-							} else {
-								{ v.Value }
-							}
-						</td>
-						<td>{ string(v.Category) }</td>
-						<td class="text-right">
-							if props.CanDeleteVariable() {
-								<form action={ props.DeletePath(v.ID) } method="POST">
-									@components.DeleteButton()
-								</form>
-							}
-						</td>
-					</tr>
-				}
-				if len(props.Variables()) == 0 {
-					<tr>
-						<td>No variables currently exist.</td>
-					</tr>
-				}
-			</tbody>
-		</table>
-	</div>
+templ (t table) Header() {
+	<th class="w-[25%]">Key</th>
+	<th class="w-[50%]">Value</th>
+	<th class="w-[15%]">Category</th>
+	<th class="w-[10%]">Actions</th>
+}
+
+templ (t table) Row(v *Variable) {
+	<tr id={ "item-variable-" + v.Key } x-data={ components.BlockLink(t.props.EditPath(v.ID)) }>
+		<td class="flex flex-row gap-2">
+			if t.props.IsOverwritten(v) {
+				<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
+			}
+			@components.Strikethrough(t.props.IsOverwritten(v)) {
+				{ v.Key }
+			}
+		</td>
+		<td>
+			if v.Sensitive {
+				<span class="bg-gray-200">hidden</span>
+			} else {
+				{ v.Value }
+			}
+		</td>
+		<td>{ string(v.Category) }</td>
+		<td class="flex gap-2 text-right">
+			<form action={ t.props.EditPath(v.ID) } method="GET">
+				@components.EditButton()
+			</form>
+			if t.props.CanDeleteVariable() {
+				<form action={ t.props.DeletePath(v.ID) } method="POST">
+					@components.DeleteButton()
+				</form>
+			}
+		</td>
+	</tr>
 }
 
 func toJSON(v any) string {

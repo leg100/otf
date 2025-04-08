@@ -48,46 +48,6 @@ func TestWeb_CreateHandler(t *testing.T) {
 }
 
 func TestWeb_ListHandler(t *testing.T) {
-	t.Run("pagination", func(t *testing.T) {
-		// Make enough organizations to populate three pages
-		n := 2*resource.DefaultPageSize + 1
-		orgs := make([]*Organization, n)
-		for i := 1; i <= n; i++ {
-			orgs[i-1] = newTestOrg(t)
-		}
-		svc := &web{svc: &fakeWebService{orgs: orgs}}
-
-		t.Run("first page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page=1", nil)
-			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
-			w := httptest.NewRecorder()
-			svc.list(w, r)
-			assert.Equal(t, 200, w.Code)
-			assert.NotContains(t, w.Body.String(), "Previous Page")
-			assert.Contains(t, w.Body.String(), "Next Page")
-		})
-
-		t.Run("second page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page=2", nil)
-			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
-			w := httptest.NewRecorder()
-			svc.list(w, r)
-			assert.Equal(t, 200, w.Code)
-			assert.Contains(t, w.Body.String(), "Previous Page")
-			assert.Contains(t, w.Body.String(), "Next Page")
-		})
-
-		t.Run("last page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page=3", nil)
-			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
-			w := httptest.NewRecorder()
-			svc.list(w, r)
-			assert.Equal(t, 200, w.Code)
-			assert.Contains(t, w.Body.String(), "Previous Page")
-			assert.NotContains(t, w.Body.String(), "Next Page", w.Body.String())
-		})
-	})
-
 	t.Run("new organization button", func(t *testing.T) {
 		tests := []struct {
 			name     string

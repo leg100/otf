@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -13,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"time"
 )
 
 templ new(organization organization.Name) {
@@ -65,34 +65,38 @@ templ list(props listProps) {
 			hx-ext="ws"
 			ws-connect={ components.CurrentURL(ctx) }
 		>
-			<div class="flex gap-2 items-center m-2 p-2">
-				<input
-					class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
-					type="search"
-					name="search[name]"
-					value={ props.search }
-					style={ magnifyingGlassStyle(ctx) }
-					placeholder="search workspaces"
-					hx-trigger="keyup changed delay:500ms"
-					ws-send
-					id="workspace-search"
-					onblur="if (this.defaultValue != this.value) { this.form.submit() }"
-				/>
-			</div>
-			@runstatus.Filter(props.status, props.statusFilterVisible)
-			<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
-				<input type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
-				<div class="collapse-title font-semibold">Filter by tag</div>
-				<div class="collapse-content text-sm flex flex-wrap gap-2">
-					for tag, checked := range props.tags {
-						<div>
-							<input class="checkbox checkbox-accent" id={ "filter-tag-" + tag } type="checkbox" name="search[tags]" value={ tag } checked?={ checked } onchange="this.form.submit()"/>
-							<label class="badge badge-accent" for={ "filter-tag-" + tag }>{ tag }</label>
-						</div>
-					}
-					if len(props.tags) == 0 {
-						No tags found
-					}
+			<div class="flex flex-col gap-2">
+				<div class="">
+					<input
+						class="input w-60 bg-[size:14px] bg-[10px] bg-no-repeat pl-10"
+						type="search"
+						name="search[name]"
+						value={ props.search }
+						style={ magnifyingGlassStyle(ctx) }
+						placeholder="Search workspaces"
+						hx-trigger="keyup changed delay:500ms"
+						ws-send
+						id="workspace-search"
+						onblur="if (this.defaultValue != this.value) { this.form.submit() }"
+					/>
+				</div>
+				@runstatus.Filter(props.status, props.statusFilterVisible)
+				<div tabindex="0" class="collapse collapse-arrow bg-base-100 border border-base-content/20">
+					<input type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
+					<div class="collapse-title">Filter by tag</div>
+					<div class="collapse-content text-sm flex flex-wrap gap-2">
+						for name, checked := range props.tags {
+							<div>
+								<input class="checkbox checkbox-accent" id={ "filter-tag-" + name } type="checkbox" name="search[tags]" value={ name } checked?={ checked } onchange="this.form.submit()"/>
+								<label for={ "filter-tag-" + name }>
+									@tag(name, "badge-md")
+								</label>
+							</div>
+						}
+						if len(props.tags) == 0 {
+							No tags found
+						}
+					</div>
 				</div>
 			</div>
 		</form>
@@ -102,13 +106,13 @@ templ list(props listProps) {
 
 type table struct{}
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>Status</th>
 	<th>Tags</th>
 }
 
-templ (t table) Row(ws *Workspace, opts ListOptions) {
+templ (t table) Row(ws *Workspace) {
 	<tr id={ "item-workspace-" + ws.Name } x-data={ components.BlockLink(paths.Workspace(ws.ID)) }>
 		<td>
 			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
@@ -121,15 +125,15 @@ templ (t table) Row(ws *Workspace, opts ListOptions) {
 		<td>
 			<div class="flex flex-wrap gap-2 items-center">
 				for _, name := range ws.Tags {
-					@tag(name)
+					@tag(name, "badge-sm")
 				}
 			</div>
 		</td>
 	</tr>
 }
 
-templ tag(name string) {
-	<span class="badge badge-sm badge-accent badge-soft">
+templ tag(name string, badgeSize string) {
+	<span class={ "badge badge-accent badge-soft", badgeSize }>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
@@ -576,25 +580,32 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 	}
 	}}
 	@components.Layout(layoutProps) {
+		@connections.Steps(connections.ConnectStep)
 		<div>Select a <a class="underline" href={ paths.VCSProviders(ws.Organization) }>VCS provider</a> to connect this workspace to a repository.</div>
-		<div id="content-list">
-			for _, provider := range providers {
-				{{ path := fmt.Sprintf("%s?vcs_provider_id=%s", paths.SetupConnectionRepoWorkspace(ws.ID), provider.ID) }}
-				<div class="widget" x-data={ components.BlockLink(templ.SafeURL(path)) } id={ provider.ID.String() }>
-					<div>
-						<span class="font-semibold">{ provider.String() }</span>
-						<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
-					</div>
-					<div>
-						@components.Identifier(provider.ID)
-					</div>
-				</div>
-			}
-			if len(providers) == 0 {
+		@components.UnpaginatedTable(
+			&vcsprovider.Table{
+				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
+			},
+			providers,
+			"vcs-providers-table",
+		)
+		if len(providers) == 0 {
+			<span>
 				No VCS providers are currently configured. Create a VCS provider <a class="underline" href={ paths.VCSProviders(ws.Organization) }>here</a>.
-			}
-		</div>
+			</span>
+		}
 	}
+}
+
+type vcsProviderSelector struct {
+	workspaceID resource.TfeID
+}
+
+templ (s vcsProviderSelector) action(vcsProviderID resource.TfeID) {
+	<form action={ paths.SetupConnectionRepoWorkspace(s.workspaceID) }>
+		<input type="hidden" name="vcs_provider_id" value={ vcsProviderID.String() }/>
+		<button class="btn">Select</button>
+	</form>
 }
 
 templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) {
@@ -610,32 +621,39 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 	}
 	}}
 	@components.Layout(layoutProps) {
+		@connections.Steps(connections.SelectRepoStep)
 		<div>
 			Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
 		</div>
 		<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
 			<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
 			<input class="input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required/>
-			<button class="btn">connect</button>
+			<button class="btn">Connect</button>
 		</form>
-		<div id="content-list">
-			for _, repo := range repos {
-				<div class="widget">
-					<div>
-						<span>{ repo }</span>
-						<form action={ paths.ConnectWorkspace(ws.ID) } method="POST">
-							<input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value={ vcsProviderID.String() }/>
-							<input type="hidden" name="identifier" id="identifier" value={ repo }/>
-							<button class="btn">connect</button>
-						</form>
-					</div>
-				</div>
-			}
-			if len(repos) == 0 {
-				No repositories found.
-			}
-		</div>
+		@components.UnpaginatedTable(
+			&connections.ReposTable{
+				Actions: repoSelector{
+					workspaceID:   ws.ID,
+					vcsProviderID: vcsProviderID,
+				}.action,
+			},
+			repos,
+			"repos-table",
+		)
 	}
+}
+
+type repoSelector struct {
+	workspaceID   resource.TfeID
+	vcsProviderID resource.TfeID
+}
+
+templ (s repoSelector) action(repo string) {
+	<form action={ paths.ConnectWorkspace(s.workspaceID) } method="POST">
+		<input type="hidden" name="vcs_provider_id" value={ s.vcsProviderID.String() }/>
+		<input type="hidden" name="identifier" id="identifier" value={ repo }/>
+		<button class="btn">Connect</button>
+	</form>
 }
 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {

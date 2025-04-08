@@ -35,3 +35,7 @@ func UpdateModule(module fmt.Stringer) templ.SafeURL {
 func DeleteModule(module fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/modules/%s/delete", module))
 }
+
+func ConnectModule(module fmt.Stringer) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/app/modules/%s/connect", module))
+}

@@ -134,7 +134,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border-base-300 border\"><input id=\"toggle-status-filter-visibility\" type=\"checkbox\" name=\"status_filter_visible\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border-base-content/20 border\"><input id=\"toggle-status-filter-visibility\" type=\"checkbox\" name=\"status_filter_visible\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -144,7 +144,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "><div class=\"collapse-title font-semibold\">Filter by status</div><div class=\"collapse-content text-sm flex flex-wrap gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "><div class=\"collapse-title\">Filter by status</div><div class=\"collapse-content text-sm flex flex-wrap gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

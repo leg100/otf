@@ -6,7 +6,7 @@ templ get(f *File) {
 	<div class="tabs tabs-lift">
 		<input type="radio" checked="checked" name="my_tabs_2" class="tab" aria-label={ fmt.Sprintf("Resources (%d)", len(f.Resources)) } id="resources-label"/>
 		<div role="tabpanel" class="tab-content bg-base-100 border-base-300 p-6">
-			<table class="table" id="resources-table">
+			<table class="table break-words" id="resources-table">
 				if len(f.Resources) > 0 {
 					<thead>
 						<tr>
@@ -35,7 +35,7 @@ templ get(f *File) {
 			</table>
 		</div>
 		<input type="radio" name="my_tabs_2" class="tab" aria-label={ fmt.Sprintf("Outputs (%d)", len(f.Outputs)) } id="outputs-label"/>
-		<div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+		<div role="tabpanel" class="tab-content bg-base-100 border-base-300 p-6">
 			<table class="table break-words" id="outputs-table">
 				if len(f.Outputs) > 0 {
 					<thead>

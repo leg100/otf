@@ -3,16 +3,16 @@ package components
 import "github.com/leg100/otf/internal/resource"
 
 // TablePopulator populates a table component with resources of type T.
-type TablePopulator[T any, Options any] interface {
-	Header(Options) templ.Component
-	Row(T, Options) templ.Component
+type TablePopulator[T any] interface {
+	Header() templ.Component
+	Row(T) templ.Component
 }
 
-templ Table[T any, Options any](populator TablePopulator[T, Options], page *resource.Page[T], options Options, id string) {
+templ Table[T any](populator TablePopulator[T], page *resource.Page[T], id string) {
 	{{
 		info := pageInfo[T]{Page: page}
 	}}
-	@UnpaginatedTable(populator, page.Items, options, id) {
+	@UnpaginatedTable(populator, page.Items, id) {
 		<div class="flex p-4 gap-2 justify-between items-center">
 			@info.pageSizeSelector()
 			@info.summary()
@@ -21,27 +21,28 @@ templ Table[T any, Options any](populator TablePopulator[T, Options], page *reso
 	}
 }
 
-templ UnpaginatedTable[T any, Options any](populator TablePopulator[T, Options], resources []T, options Options, id string) {
+templ UnpaginatedTable[T any](populator TablePopulator[T], resources []T, id string) {
 	<div id={ id }>
-		<div class="rounded-box border border-base-content/5">
-			if len(resources) > 0 {
-				<table class="table overflow-x-auto">
-					<thead>
+		<div class="rounded-box border border-base-content/20">
+			<table class="table overflow-x-auto">
+				<thead>
+					<tr>
+						@populator.Header()
+					</tr>
+				</thead>
+				<tbody>
+					for _, item := range resources {
+						@populator.Row(item)
+					}
+					if len(resources) == 0 {
 						<tr>
-							@populator.Header(options)
+							<td id="no-items-found" colspan="100%">
+								No items found
+							</td>
 						</tr>
-					</thead>
-					<tbody>
-						for _, item := range resources {
-							@populator.Row(item, options)
-						}
-					</tbody>
-				</table>
-			} else {
-				<span id="no-items-found" class="p-2">
-					No items found
-				</span>
-			}
+					}
+				</tbody>
+			</table>
 		</div>
 		{ children... }
 	</div>

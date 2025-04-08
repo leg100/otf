@@ -230,12 +230,12 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, 
 	screenshot(t, page, "workspace_vcs_providers_list")
 
 	// select provider
-	err = page.Locator(`div.widget`).Click()
+	err = page.Locator(`//tr[@id='item-vcsprovider-` + provider + `']//button[text()='Select']`).Click()
 	require.NoError(t, err)
 	screenshot(t, page, "workspace_vcs_repo_list")
 
 	// connect to first repo in list (there should only be one)
-	err = page.Locator(`//div[@id='content-list']//button[text()='connect']`).Click()
+	err = page.Locator(`//tbody//tr[1]//button[text()='Connect']`).Click()
 	require.NoError(t, err)
 
 	// confirm connected

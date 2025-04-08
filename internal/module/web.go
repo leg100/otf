@@ -18,12 +18,6 @@ import (
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
-const (
-	newModuleConnectStep newModuleStep = "connect-vcs"
-	newModuleRepoStep    newModuleStep = "select-repo"
-	newModuleConfirmStep newModuleStep = "confirm-selection"
-)
-
 type (
 	// webHandlers provides handlers for the webUI
 	webHandlers struct {
@@ -58,8 +52,6 @@ type (
 		List(context.Context, organization.Name) ([]*vcsprovider.VCSProvider, error)
 		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
-
-	newModuleStep string
 )
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -67,6 +59,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	r.HandleFunc("/organizations/{organization_name}/modules", h.list).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new).Methods("GET")
+	r.HandleFunc("/modules/{vcs_provider_id}/connect", h.connect).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/modules/create", h.publish).Methods("POST")
 	r.HandleFunc("/modules/{module_id}", h.get).Methods("GET")
 	r.HandleFunc("/modules/{module_id}/delete", h.delete).Methods("POST")
@@ -148,54 +141,37 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Step newModuleStep `schema:"step"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	switch params.Step {
-	case newModuleConnectStep, "":
-		h.newModuleConnect(w, r)
-	case newModuleRepoStep:
-		h.newModuleRepo(w, r)
-	case newModuleConfirmStep:
-		h.newModuleConfirm(w, r)
-	}
-}
-
-func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
-	var params struct {
 		Organization organization.Name `schema:"organization_name"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	providers, err := h.vcsproviders.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	props := newViewProps{
 		organization: params.Organization,
 		providers:    providers,
-		step:         newModuleConnectStep,
 	}
 	html.Render(newView(props), w, r)
 }
 
-func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  organization.Name `schema:"organization_name,required"`
-		VCSProviderID resource.TfeID    `schema:"vcs_provider_id,required"`
+		VCSProviderID resource.TfeID `schema:"vcs_provider_id,required"`
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -226,39 +202,11 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, res)
 	}
 
-	props := newViewProps{
-		organization:  params.Organization,
-		repos:         filtered,
-		vcsProviderID: params.VCSProviderID,
-		step:          newModuleRepoStep,
+	props := connectProps{
+		repos:    filtered,
+		provider: provider,
 	}
-	html.Render(newView(props), w, r)
-}
-
-func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization  organization.Name `schema:"organization_name,required"`
-		VCSProviderID resource.TfeID    `schema:"vcs_provider_id,required"`
-		Repo          string            `schema:"identifier,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	vcsprov, err := h.vcsproviders.Get(r.Context(), params.VCSProviderID)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	props := newViewProps{
-		organization: params.Organization,
-		repo:         params.Repo,
-		vcsProvider:  vcsprov,
-		step:         newModuleConfirmStep,
-	}
-	html.Render(newView(props), w, r)
+	html.Render(connect(props), w, r)
 }
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {

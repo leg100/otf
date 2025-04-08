@@ -46,19 +46,19 @@ templ listTeams(props listTeamsProps) {
 		ContentActions: listTeamsActions(props),
 	}) {
 		<div id="content-list">
-			@components.Table(&table{}, props.teams, listOptions{}, "page-results")
+			@components.Table(&table{}, props.teams, "page-results")
 		</div>
 	}
 }
 
 type table struct{}
 
-templ (t table) Header(opts listOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>ID</th>
 }
 
-templ (t table) Row(team *Team, opts listOptions) {
+templ (t table) Row(team *Team) {
 	<tr id={ "item-team-" + team.Name } x-data={ components.BlockLink(paths.Team(team.ID)) }>
 		<td>
 			{ team.Name }

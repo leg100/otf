@@ -57,7 +57,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 
 		screenshot(t, page, "vcs_provider_created_github_pat_provider")
 		// edit provider
-		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		err = page.Locator(`//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
 		// give it a name
@@ -69,7 +69,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated provider: my-token")
 		require.NoError(t, err)
 		// change token
-		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		err = page.Locator(`//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
 		err = page.Locator("textarea#token").Fill("my-updated-fake-github-personal-token")
@@ -82,7 +82,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// clear name
-		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		err = page.Locator(`//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
 		err = page.Locator("input#name").Clear()
@@ -95,7 +95,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// delete token
-		err = page.Locator(`//a[@id='edit-vcs-provider-link']`).Click()
+		err = page.Locator(`//button[@id='edit-button']`).Click()
 		require.NoError(t, err)
 
 		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()

@@ -44,7 +44,7 @@ func get(f *File) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" id=\"resources-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-300 p-6\"><table class=\"table\" id=\"resources-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" id=\"resources-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-300 p-6\"><table class=\"table break-words\" id=\"resources-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -135,7 +135,7 @@ func get(f *File) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" id=\"outputs-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-300 rounded-box p-6\"><table class=\"table break-words\" id=\"outputs-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" id=\"outputs-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-300 p-6\"><table class=\"table break-words\" id=\"outputs-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
