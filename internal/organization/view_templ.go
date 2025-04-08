@@ -124,7 +124,7 @@ func list(props listProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Table(&table{}, props.Page, ListOptions{}, "page-results").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(&table{}, props.Page, "page-results").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -140,7 +140,7 @@ func list(props listProps) templ.Component {
 
 type table struct{}
 
-func (t table) Header(opts ListOptions) templ.Component {
+func (t table) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -169,7 +169,7 @@ func (t table) Header(opts ListOptions) templ.Component {
 	})
 }
 
-func (t table) Row(org *Organization, opts ListOptions) templ.Component {
+func (t table) Row(org *Organization) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -629,7 +629,6 @@ func getToken(organization Name, token *OrganizationToken) templ.Component {
 				templ_7745c5c3_Err = components.UnpaginatedTable(
 					&tokenTable{},
 					[]*OrganizationToken{token},
-					ListOptions{},
 					"org-token-table",
 				).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
@@ -668,7 +667,7 @@ func getToken(organization Name, token *OrganizationToken) templ.Component {
 
 type tokenTable struct{}
 
-func (t tokenTable) Header(opts ListOptions) templ.Component {
+func (t tokenTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -697,7 +696,7 @@ func (t tokenTable) Header(opts ListOptions) templ.Component {
 	})
 }
 
-func (t tokenTable) Row(token *OrganizationToken, opts ListOptions) templ.Component {
+func (t tokenTable) Row(token *OrganizationToken) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -733,7 +732,7 @@ func (t tokenTable) Row(token *OrganizationToken, opts ListOptions) templ.Compon
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), token.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/organization/view.templ`, Line: 210, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/organization/view.templ`, Line: 209, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {

@@ -106,13 +106,13 @@ templ list(props listProps) {
 
 type table struct{}
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>Status</th>
 	<th>Tags</th>
 }
 
-templ (t table) Row(ws *Workspace, opts ListOptions) {
+templ (t table) Row(ws *Workspace) {
 	<tr id={ "item-workspace-" + ws.Name } x-data={ components.BlockLink(paths.Workspace(ws.ID)) }>
 		<td>
 			<a class="link" href={ paths.Workspace(ws.ID) }>{ ws.Name }</a>
@@ -587,7 +587,6 @@ templ listVCSProviders(ws *Workspace, providers []*vcsprovider.VCSProvider) {
 				Actions: vcsProviderSelector{workspaceID: ws.ID}.action,
 			},
 			providers,
-			nil,
 			"vcs-providers-table",
 		)
 		if len(providers) == 0 {
@@ -639,7 +638,6 @@ templ listVCSRepos(ws *Workspace, vcsProviderID resource.TfeID, repos []string) 
 				}.action,
 			},
 			repos,
-			nil,
 			"repos-table",
 		)
 	}

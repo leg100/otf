@@ -143,7 +143,6 @@ func getApps(props getAppsProps) templ.Component {
 				templ_7745c5c3_Err = components.UnpaginatedTable(
 					&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
 					[]*App{props.app},
-					struct{}{},
 					"app-table",
 				).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
@@ -165,7 +164,7 @@ func getApps(props getAppsProps) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/images/external_link_icon.svg"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 70, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 69, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -178,7 +177,6 @@ func getApps(props getAppsProps) templ.Component {
 				templ_7745c5c3_Err = components.UnpaginatedTable(
 					&installsTable{},
 					props.installations,
-					struct{}{},
 					"installs-table",
 				).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
@@ -238,7 +236,7 @@ type appTable struct {
 	canDeleteApp   bool
 }
 
-func (t appTable) Header(opts struct{}) templ.Component {
+func (t appTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -267,7 +265,7 @@ func (t appTable) Header(opts struct{}) templ.Component {
 	})
 }
 
-func (t appTable) Row(app *App, opts struct{}) templ.Component {
+func (t appTable) Row(app *App) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -304,7 +302,7 @@ func (t appTable) Row(app *App, opts struct{}) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(app.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 109, Col: 18}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 107, Col: 18}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -317,7 +315,7 @@ func (t appTable) Row(app *App, opts struct{}) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/images/external_link_icon.svg"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 109, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 107, Col: 109}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -346,7 +344,7 @@ func (t appTable) Row(app *App, opts struct{}) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(int(app.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 115, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 113, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -391,7 +389,7 @@ func (t appTable) Row(app *App, opts struct{}) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(int(app.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 123, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 121, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -412,7 +410,7 @@ func (t appTable) Row(app *App, opts struct{}) templ.Component {
 
 type installsTable struct{}
 
-func (t installsTable) Header(opts struct{}) templ.Component {
+func (t installsTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -441,7 +439,7 @@ func (t installsTable) Header(opts struct{}) templ.Component {
 	})
 }
 
-func (t installsTable) Row(install *Installation, opts struct{}) templ.Component {
+func (t installsTable) Row(install *Installation) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -488,7 +486,7 @@ func (t installsTable) Row(install *Installation, opts struct{}) templ.Component
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(install.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 149, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 147, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -501,7 +499,7 @@ func (t installsTable) Row(install *Installation, opts struct{}) templ.Component
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(components.AssetPath(ctx, "/static/images/external_link_icon.svg"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 149, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 147, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -530,7 +528,7 @@ func (t installsTable) Row(install *Installation, opts struct{}) templ.Component
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(int(*install.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 156, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 154, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -570,7 +568,7 @@ func (t installsTable) Row(install *Installation, opts struct{}) templ.Component
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(int(*install.ID)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 163, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/github/view.templ`, Line: 161, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {

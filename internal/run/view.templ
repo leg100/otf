@@ -59,9 +59,9 @@ type table struct {
 	workspaceClient webWorkspaceClient
 }
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<!-- add workspace column if not filtered by workspace ID -->
-	if opts.WorkspaceID == nil {
+	if t.workspaceClient != nil {
 		<th>Workspace</th>
 	}
 	<th>Source</th>
@@ -70,10 +70,10 @@ templ (t table) Header(opts ListOptions) {
 	<th>Actions</th>
 }
 
-templ (t table) Row(run *Run, opts ListOptions) {
+templ (t table) Row(run *Run) {
 	<tr id={ "run-item-" + run.ID.String() } x-data={ components.BlockLink(paths.Run(run.ID)) }>
 		<!-- provide workspace name if not filtered by workspace ID -->
-		if opts.WorkspaceID == nil {
+		if t.workspaceClient != nil {
 			<td>
 				<a class="link" href={ paths.Workspace(run.WorkspaceID) }>
 					{ t.getWorkspaceName(ctx, run) }
@@ -286,12 +286,7 @@ templ eventView(run *Run) {
 
 templ widget(run *Run) {
 	<div sse-swap={ "run-item-" + run.ID.String() }>
-		@components.UnpaginatedTable(
-			&table{},
-			[]*Run{run},
-			ListOptions{WorkspaceID: &run.WorkspaceID},
-			"run-widget",
-		)
+		@components.UnpaginatedTable(&table{}, []*Run{run}, "run-widget")
 	</div>
 }
 

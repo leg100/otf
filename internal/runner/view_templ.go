@@ -130,7 +130,7 @@ var runnerStatusColors = map[RunnerStatus]string{
 
 type table struct{}
 
-func (t table) Header(opts ListOptions) templ.Component {
+func (t table) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -159,7 +159,7 @@ func (t table) Header(opts ListOptions) templ.Component {
 	})
 }
 
-func (t table) Row(runner *RunnerMeta, opts ListOptions) templ.Component {
+func (t table) Row(runner *RunnerMeta) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -425,7 +425,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.Table(&agentPoolsTable{}, props.pools, listPoolOptions{}, "page-results").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(&agentPoolsTable{}, props.pools, "page-results").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -447,7 +447,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 
 type agentPoolsTable struct{}
 
-func (t agentPoolsTable) Header(opts listPoolOptions) templ.Component {
+func (t agentPoolsTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -476,7 +476,7 @@ func (t agentPoolsTable) Header(opts listPoolOptions) templ.Component {
 	})
 }
 
-func (t agentPoolsTable) Row(pool *Pool, opts listPoolOptions) templ.Component {
+func (t agentPoolsTable) Row(pool *Pool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -817,7 +817,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.UnpaginatedTable(agentTokensTable{}, props.tokens, listPoolOptions{}, "page-results").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.UnpaginatedTable(agentTokensTable{}, props.tokens, "page-results").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -937,7 +937,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 
 type agentTokensTable struct{}
 
-func (t agentTokensTable) Header(opts listPoolOptions) templ.Component {
+func (t agentTokensTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -966,7 +966,7 @@ func (t agentTokensTable) Header(opts listPoolOptions) templ.Component {
 	})
 }
 
-func (t agentTokensTable) Row(token *agentToken, opts listPoolOptions) templ.Component {
+func (t agentTokensTable) Row(token *agentToken) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

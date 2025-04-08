@@ -93,7 +93,7 @@ type ReposTable struct {
 	Actions func(repo string) templ.Component
 }
 
-func (t ReposTable) Header(opts any) templ.Component {
+func (t ReposTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -122,7 +122,7 @@ func (t ReposTable) Header(opts any) templ.Component {
 	})
 }
 
-func (t ReposTable) Row(repo string, opts any) templ.Component {
+func (t ReposTable) Row(repo string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

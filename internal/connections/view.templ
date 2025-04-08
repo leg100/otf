@@ -19,12 +19,12 @@ type ReposTable struct {
 	Actions func(repo string) templ.Component
 }
 
-templ (t ReposTable) Header(opts any) {
+templ (t ReposTable) Header() {
 	<th>Name</th>
 	<th>Action</th>
 }
 
-templ (t ReposTable) Row(repo string, opts any) {
+templ (t ReposTable) Row(repo string) {
 	<tr id={ "item-repo-" + repo }>
 		<td>
 			{ repo }

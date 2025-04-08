@@ -50,7 +50,6 @@ templ list(props listProps) {
 			@components.Table(
 				&Table{Actions: tableAction},
 				props.providers,
-				nil,
 				"page-results",
 			)
 		</div>
@@ -61,14 +60,14 @@ type Table struct {
 	Actions func(vcsProviderID resource.TfeID) templ.Component
 }
 
-templ (t Table) Header(opts any) {
+templ (t Table) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Created</th>
 	<th>Action</th>
 }
 
-templ (t Table) Row(provider *VCSProvider, opts any) {
+templ (t Table) Row(provider *VCSProvider) {
 	<tr id={ "item-vcsprovider-" + provider.String() }>
 		<td>
 			{ provider.String() }

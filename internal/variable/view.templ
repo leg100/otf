@@ -128,7 +128,6 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 				@components.UnpaginatedTable(
 					&listVariableSetsTable{},
 					[]*VariableSet{setProps.set},
-					ListOptions{},
 					"variable-set-info",
 				)
 				<div id="variable-set-variables-table">
@@ -158,7 +157,7 @@ templ listVariableSets(props listVariableSetsProps) {
 		},
 	}) {
 		<div id="content-list">
-			@components.Table(&listVariableSetsTable{}, props.sets, ListOptions{}, "page-results")
+			@components.Table(&listVariableSetsTable{}, props.sets, "page-results")
 		</div>
 	}
 }
@@ -175,13 +174,13 @@ templ listVariableSetsActions(props listVariableSetsProps) {
 
 type listVariableSetsTable struct{}
 
-templ (t listVariableSetsTable) Header(opts ListOptions) {
+templ (t listVariableSetsTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Type</th>
 }
 
-templ (t listVariableSetsTable) Row(vs *VariableSet, opts ListOptions) {
+templ (t listVariableSetsTable) Row(vs *VariableSet) {
 	<tr id={ "item-variable-set-" + vs.Name } x-data={ components.BlockLink(paths.EditVariableSet(vs.ID)) }>
 		<td>
 			{ vs.Name }

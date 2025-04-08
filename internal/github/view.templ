@@ -60,7 +60,6 @@ templ getApps(props getAppsProps) {
 			@components.UnpaginatedTable(
 				&appTable{githubHostname: props.githubHostname, canDeleteApp: props.canDeleteApp},
 				[]*App{props.app},
-				struct{}{},
 				"app-table",
 			)
 			<div class="divider"></div>
@@ -74,7 +73,6 @@ templ getApps(props getAppsProps) {
 				@components.UnpaginatedTable(
 					&installsTable{},
 					props.installations,
-					struct{}{},
 					"installs-table",
 				)
 			</div>
@@ -96,13 +94,13 @@ type appTable struct {
 	canDeleteApp   bool
 }
 
-templ (t appTable) Header(opts struct{}) {
+templ (t appTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Actions</th>
 }
 
-templ (t appTable) Row(app *App, opts struct{}) {
+templ (t appTable) Row(app *App) {
 	<tr id="item-github-app">
 		<td>
 			<a class="flex underline gap-1 items-center" href={ templ.SafeURL(app.URL(t.githubHostname)) } target="GithubTab">
@@ -129,13 +127,13 @@ templ (t appTable) Row(app *App, opts struct{}) {
 
 type installsTable struct{}
 
-templ (t installsTable) Header(opts struct{}) {
+templ (t installsTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Actions</th>
 }
 
-templ (t installsTable) Row(install *Installation, opts struct{}) {
+templ (t installsTable) Row(install *Installation) {
 	<tr>
 		<td>
 			<span>

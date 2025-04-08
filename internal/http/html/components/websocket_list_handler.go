@@ -29,7 +29,7 @@ var upgrader = websocket.Upgrader{
 type WebsocketListHandler[Resource any, Options any] struct {
 	logr.Logger
 	Client    websocketListHandlerClient[Resource, Options]
-	Populator TablePopulator[Resource, Options]
+	Populator TablePopulator[Resource]
 	ID        string
 }
 
@@ -74,7 +74,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		}
 		defer w.Close()
 
-		comp := Table(h.Populator, page, opts, h.ID)
+		comp := Table(h.Populator, page, h.ID)
 		if err := html.RenderSnippet(comp, w, r); err != nil {
 			return fmt.Errorf("rendering html: %w", err)
 		}

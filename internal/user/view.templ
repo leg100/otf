@@ -60,7 +60,7 @@ templ userList(props userListProps) {
 			{Name: "users"},
 		},
 	}) {
-		@components.Table(&table{}, props.users, ListOptions{}, "page-results")
+		@components.Table(&table{}, props.users, "page-results")
 	}
 }
 
@@ -69,7 +69,7 @@ type table struct {
 	teamID          *resource.TfeID
 }
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Site Admin</th>
@@ -78,7 +78,7 @@ templ (t table) Header(opts ListOptions) {
 	}
 }
 
-templ (t table) Row(user *User, opts ListOptions) {
+templ (t table) Row(user *User) {
 	<tr id={ "item-user-" + user.Username }>
 		<td id="username">
 			{ user.Username }
@@ -191,7 +191,6 @@ templ getTeam(props getTeamProps) {
 			@components.UnpaginatedTable(
 				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
-				ListOptions{},
 				"team-members",
 			)
 		</div>
@@ -242,7 +241,6 @@ templ tokenList(tokens []*UserToken) {
 		@components.UnpaginatedTable(
 			&tokensTable{},
 			tokens,
-			struct{}{},
 			"tokens-table",
 		)
 	}
@@ -256,14 +254,14 @@ templ tokenListActions() {
 
 type tokensTable struct{}
 
-templ (t tokensTable) Header(opts struct{}) {
+templ (t tokensTable) Header() {
 	<th>Description</th>
 	<th>ID</th>
 	<th>Created</th>
 	<th>Actions</th>
 }
 
-templ (t tokensTable) Row(token *UserToken, opts struct{}) {
+templ (t tokensTable) Row(token *UserToken) {
 	<tr>
 		<td>
 			<span>{ token.Description }</span>

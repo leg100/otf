@@ -50,7 +50,7 @@ var runnerStatusColors = map[RunnerStatus]string{
 
 type table struct{}
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>Status</th>
 	<th>Capacity</th>
@@ -60,7 +60,7 @@ templ (t table) Header(opts ListOptions) {
 	<th>Last seen</th>
 }
 
-templ (t table) Row(runner *RunnerMeta, opts ListOptions) {
+templ (t table) Row(runner *RunnerMeta) {
 	<tr id={ "item-" + runner.ID.String() }>
 		<td>
 			<div class="flex flex-col gap-2">
@@ -143,19 +143,19 @@ templ listAgentPools(props listAgentPoolProps) {
 			</form>
 			<hr class="my-4"/>
 		</details>
-		@components.Table(&agentPoolsTable{}, props.pools, listPoolOptions{}, "page-results")
+		@components.Table(&agentPoolsTable{}, props.pools, "page-results")
 	}
 }
 
 type agentPoolsTable struct{}
 
-templ (t agentPoolsTable) Header(opts listPoolOptions) {
+templ (t agentPoolsTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Created</th>
 }
 
-templ (t agentPoolsTable) Row(pool *Pool, opts listPoolOptions) {
+templ (t agentPoolsTable) Row(pool *Pool) {
 	<tr id={ pool.ID.String() } x-data={ components.BlockLink(paths.AgentPool(pool.ID)) }>
 		<td>{ pool.Name }</td>
 		<td>
@@ -292,7 +292,7 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 			</form>
 		</details>
-		@components.UnpaginatedTable(agentTokensTable{}, props.tokens, listPoolOptions{}, "page-results")
+		@components.UnpaginatedTable(agentTokensTable{}, props.tokens, "page-results")
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
 		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
@@ -320,14 +320,14 @@ templ getAgentPool(props getAgentPoolProps) {
 
 type agentTokensTable struct{}
 
-templ (t agentTokensTable) Header(opts listPoolOptions) {
+templ (t agentTokensTable) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Created</th>
 	<th>Actions</th>
 }
 
-templ (t agentTokensTable) Row(token *agentToken, opts listPoolOptions) {
+templ (t agentTokensTable) Row(token *agentToken) {
 	<tr>
 		<td>{ token.Description }</td>
 		<td>

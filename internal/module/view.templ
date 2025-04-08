@@ -34,7 +34,6 @@ templ newView(props newViewProps) {
 		@components.UnpaginatedTable(
 			&vcsprovider.Table{Actions: selectVCSProviderAction},
 			props.providers,
-			nil,
 			"providers",
 		)
 	}
@@ -78,7 +77,6 @@ templ connect(props connectProps) {
 				}.action,
 			},
 			props.repos,
-			nil,
 			"repos-table",
 		)
 	}
@@ -111,7 +109,7 @@ templ list(props listProps) {
 			{Name: "modules"},
 		},
 	}) {
-		@components.Table(&table{}, props.page, ListOptions{}, "page-results")
+		@components.Table(&table{}, props.page, "page-results")
 	}
 }
 
@@ -125,13 +123,13 @@ templ listActions(props listProps) {
 
 type table struct{}
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>ID</th>
 	<th>Created</th>
 }
 
-templ (t table) Row(module *Module, opts ListOptions) {
+templ (t table) Row(module *Module) {
 	<tr id={ "mod-item-" + module.Name } x-data={ components.BlockLink(paths.Module(module.ID)) }>
 		<td>
 			<a class="link" href={ paths.Module(module.ID) }>

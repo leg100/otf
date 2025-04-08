@@ -215,7 +215,7 @@ func userList(props userListProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Table(&table{}, props.users, ListOptions{}, "page-results").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(&table{}, props.users, "page-results").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -240,7 +240,7 @@ type table struct {
 	teamID          *resource.TfeID
 }
 
-func (t table) Header(opts ListOptions) templ.Component {
+func (t table) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -275,7 +275,7 @@ func (t table) Header(opts ListOptions) templ.Component {
 	})
 }
 
-func (t table) Row(user *User, opts ListOptions) templ.Component {
+func (t table) Row(user *User) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -523,7 +523,6 @@ func getTeam(props getTeamProps) templ.Component {
 			templ_7745c5c3_Err = components.UnpaginatedTable(
 				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
 				props.members,
-				ListOptions{},
 				"team-members",
 			).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
@@ -550,7 +549,7 @@ func getTeam(props getTeamProps) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(props.team.ID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 205, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 204, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -677,7 +676,6 @@ func tokenList(tokens []*UserToken) templ.Component {
 			templ_7745c5c3_Err = components.UnpaginatedTable(
 				&tokensTable{},
 				tokens,
-				struct{}{},
 				"tokens-table",
 			).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
@@ -741,7 +739,7 @@ func tokenListActions() templ.Component {
 
 type tokensTable struct{}
 
-func (t tokensTable) Header(opts struct{}) templ.Component {
+func (t tokensTable) Header() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -770,7 +768,7 @@ func (t tokensTable) Header(opts struct{}) templ.Component {
 	})
 }
 
-func (t tokensTable) Row(token *UserToken, opts struct{}) templ.Component {
+func (t tokensTable) Row(token *UserToken) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -798,7 +796,7 @@ func (t tokensTable) Row(token *UserToken, opts struct{}) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(token.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 269, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 267, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -819,7 +817,7 @@ func (t tokensTable) Row(token *UserToken, opts struct{}) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Ago(time.Now(), token.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 275, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 273, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -849,7 +847,7 @@ func (t tokensTable) Row(token *UserToken, opts struct{}) templ.Component {
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(token.ID.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 280, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/user/view.templ`, Line: 278, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {

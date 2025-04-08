@@ -113,12 +113,10 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
 		h := &components.WebsocketListHandler[*Run, ListOptions]{
-			Logger: h.logger,
-			Client: h.runs,
-			Populator: table{
-				workspaceClient: h.workspaces,
-			},
-			ID: "page-results",
+			Logger:    h.logger,
+			Client:    h.runs,
+			Populator: table{workspaceClient: h.workspaces},
+			ID:        "page-results",
 		}
 		h.Handler(w, r)
 		return
@@ -129,12 +127,10 @@ func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
 		h := &components.WebsocketListHandler[*Run, ListOptions]{
-			Logger: h.logger,
-			Client: h.runs,
-			Populator: table{
-				workspaceClient: h.workspaces,
-			},
-			ID: "page-results",
+			Logger:    h.logger,
+			Client:    h.runs,
+			Populator: table{},
+			ID:        "page-results",
 		}
 		h.Handler(w, r)
 		return

@@ -44,18 +44,18 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.Table(&table{}, props.Page, ListOptions{}, "page-results")
+		@components.Table(&table{}, props.Page, "page-results")
 	}
 }
 
 type table struct{}
 
-templ (t table) Header(opts ListOptions) {
+templ (t table) Header() {
 	<th>Name</th>
 	<th>ID</th>
 }
 
-templ (t table) Row(org *Organization, opts ListOptions) {
+templ (t table) Row(org *Organization) {
 	<tr id={ "org-item-" + org.Name.String() } class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
 		<td>
 			<a class="link" href={ paths.Organization(org.Name) }>
@@ -182,7 +182,6 @@ templ getToken(organization Name, token *OrganizationToken) {
 			@components.UnpaginatedTable(
 				&tokenTable{},
 				[]*OrganizationToken{token},
-				ListOptions{},
 				"org-token-table",
 			)
 		} else {
@@ -195,13 +194,13 @@ templ getToken(organization Name, token *OrganizationToken) {
 
 type tokenTable struct{}
 
-templ (t tokenTable) Header(opts ListOptions) {
+templ (t tokenTable) Header() {
 	<th>ID</th>
 	<th>Created</th>
 	<th>Actions</th>
 }
 
-templ (t tokenTable) Row(token *OrganizationToken, opts ListOptions) {
+templ (t tokenTable) Row(token *OrganizationToken) {
 	<tr id="item-token">
 		<td>
 			@components.Identifier(token.ID)
