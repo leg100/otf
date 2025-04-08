@@ -99,8 +99,11 @@ func TestConnectRepoE2E(t *testing.T) {
 		// go to vcs providers
 		err = page.Locator("#vcs_providers > a").Click()
 		require.NoError(t, err)
-		// click delete button for one and only vcs provider
-		err = page.Locator(`//form[@id='delete-vcs-provider']/button`).Click()
+		// edit provider
+		err = page.Locator(`//button[@id='edit-button']`).Click()
+		require.NoError(t, err)
+		// delete provider
+		err = page.Locator(`//button[@id='delete-vcs-provider-button']`).Click()
 		require.NoError(t, err)
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`deleted provider: github (token)`)
 		require.NoError(t, err)

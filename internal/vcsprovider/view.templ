@@ -1,7 +1,6 @@
 package vcsprovider
 
 import (
-	"fmt"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/components"
@@ -49,10 +48,7 @@ templ list(props listProps) {
 		</div>
 		<div id="content-list">
 			@components.Table(
-				&Table{
-					Actions:   tableAction,
-					blockLink: paths.EditVCSProvider,
-				},
+				&Table{Actions: tableAction},
 				props.providers,
 				nil,
 				"page-results",
@@ -62,8 +58,7 @@ templ list(props listProps) {
 }
 
 type Table struct {
-	Actions   func(vcsProviderID resource.TfeID) templ.Component
-	blockLink func(fmt.Stringer) templ.SafeURL
+	Actions func(vcsProviderID resource.TfeID) templ.Component
 }
 
 templ (t Table) Header(opts any) {
@@ -74,12 +69,7 @@ templ (t Table) Header(opts any) {
 }
 
 templ (t Table) Row(provider *VCSProvider, opts any) {
-	<tr
-		id={ "item-vcsprovider-" + provider.String() }
-		if t.blockLink != nil {
-			x-data={ components.BlockLink(t.blockLink(provider.ID)) }
-		}
-	>
+	<tr id={ "item-vcsprovider-" + provider.String() }>
 		<td>
 			{ provider.String() }
 		</td>
@@ -96,8 +86,8 @@ templ (t Table) Row(provider *VCSProvider, opts any) {
 }
 
 templ tableAction(vcsProviderID resource.TfeID) {
-	<form id="delete-vcs-provider" action={ paths.DeleteVCSProvider(vcsProviderID) } method="POST">
-		@components.DeleteButton()
+	<form id="edit-vcs-provider" action={ paths.EditVCSProvider(vcsProviderID) }>
+		@components.EditButton()
 		<input type="hidden" name="id" value={ vcsProviderID.String() }/>
 	</form>
 }

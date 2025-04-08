@@ -230,7 +230,7 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, 
 	screenshot(t, page, "workspace_vcs_providers_list")
 
 	// select provider
-	err = page.Locator(`//tr[@id='item-vcsprovider-` + provider + `']`).Click()
+	err = page.Locator(`//tr[@id='item-vcsprovider-` + provider + `']//button[text()='Select']`).Click()
 	require.NoError(t, err)
 	screenshot(t, page, "workspace_vcs_repo_list")
 
