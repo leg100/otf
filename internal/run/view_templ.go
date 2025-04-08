@@ -1118,7 +1118,7 @@ func periodReport(run *Run) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<div class=\"absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden\"><ul class=\"flex gap-4 flex-wrap text-sm\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<div class=\"absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden z-10\"><ul class=\"flex gap-4 flex-wrap text-sm\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

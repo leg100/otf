@@ -324,7 +324,7 @@ templ periodReport(run *Run) {
 				class={ "inline-block", "h-full",  "bg-" + period.Status.String() }
 			></div>
 		}
-		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden">
+		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden z-10">
 			<ul class="flex gap-4 flex-wrap text-sm">
 				for _, period := range report.Periods {
 					<li>

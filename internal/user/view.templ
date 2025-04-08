@@ -184,9 +184,6 @@ templ getTeam(props getTeamProps) {
 			<hr class="my-4"/>
 		}
 		<h3 class="font-semibold my-2 text-lg">Members</h3>
-		if props.canAddMember {
-			@components.SearchDropdown(props.dropdown)
-		}
 		<div id="content-list">
 			@components.UnpaginatedTable(
 				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
@@ -194,6 +191,11 @@ templ getTeam(props getTeamProps) {
 				"team-members",
 			)
 		</div>
+		if props.canAddMember {
+			<div>
+				@components.SearchDropdown(props.dropdown)
+			</div>
+		}
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
