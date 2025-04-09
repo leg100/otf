@@ -8,30 +8,30 @@ import (
 	"github.com/a-h/templ"
 )
 
-func Variables(workspace string) templ.SafeURL {
+func Variables(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/variables", workspace))
 }
 
-func CreateVariable(workspace string) templ.SafeURL {
+func CreateVariable(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/variables/create", workspace))
 }
 
-func NewVariable(workspace string) templ.SafeURL {
+func NewVariable(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/variables/new", workspace))
 }
 
-func Variable(variable string) templ.SafeURL {
+func Variable(variable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s", variable))
 }
 
-func EditVariable(variable string) templ.SafeURL {
+func EditVariable(variable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s/edit", variable))
 }
 
-func UpdateVariable(variable string) templ.SafeURL {
+func UpdateVariable(variable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s/update", variable))
 }
 
-func DeleteVariable(variable string) templ.SafeURL {
+func DeleteVariable(variable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variables/%s/delete", variable))
 }

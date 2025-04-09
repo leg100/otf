@@ -3,6 +3,7 @@ package components
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type Breadcrumb struct {
@@ -12,7 +13,7 @@ type Breadcrumb struct {
 
 type LayoutProps struct {
 	Title          string
-	Organization   string
+	Organization   resource.ID
 	Breadcrumbs    []Breadcrumb
 	SubMenu        *SubMenuHoist
 	ContentActions templ.Component
@@ -67,7 +68,7 @@ templ Layout(props LayoutProps) {
 
 type BareLayoutProps struct {
 	Title          string
-	Organization   string
+	Organization   resource.ID
 	GridComponents []templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
@@ -115,7 +116,7 @@ templ BareLayout(props BareLayoutProps) {
 	</html>
 }
 
-templ navbar(organization string) {
+templ navbar(organization resource.ID) {
 	<div class="bg-gray-200 px-2">
 		<nav class="flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
 			if Authenticated(ctx) {
@@ -128,12 +129,12 @@ templ navbar(organization string) {
 				</label>
 			}
 			if Authenticated(ctx) {
-				if organization != "" {
+				if organization != nil {
 					<div class="flex gap-2 items-center">
 						<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill-rule="evenodd" clip-rule="evenodd">
 							<path d="M16 7h8v17h-24v-24h16v7zm-9 12h-2v4h2v-4zm4 0h-2v4h2v-4zm7 0h-2v4h2v-4zm4-10h-6v8h4v5h2v-13zm-8-7h-12v20h1v-5h10v5h1v-20zm-8 13h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm8-2v2h-2v-2h2zm-14-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm6-2h2v2h-2v-2zm-12-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm-6-3h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2z"></path>
 						</svg>
-						<a href={ paths.Organization(organization) }>{ organization }</a>
+						<a href={ paths.Organization(organization) }>{ organization.String() }</a>
 					</div>
 				}
 			}

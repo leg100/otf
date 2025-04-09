@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	otfapi "github.com/leg100/otf/internal/api"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 )
 
@@ -14,12 +15,12 @@ type Client struct {
 }
 
 // Create creates a team via HTTP/JSONAPI.
-func (c *Client) Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
+func (c *Client) Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
 	// validate params
 	if _, err := newTeam(organization, opts); err != nil {
 		return nil, err
 	}
-	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization))
+	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization.String()))
 	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
@@ -32,8 +33,8 @@ func (c *Client) Create(ctx context.Context, organization string, opts CreateTea
 }
 
 // Get retrieves a team via HTTP/JSONAPI.
-func (c *Client) Get(ctx context.Context, organization, name string) (*Team, error) {
-	u := fmt.Sprintf("organizations/%s/teams/%s", url.QueryEscape(organization), url.QueryEscape(name))
+func (c *Client) Get(ctx context.Context, organization organization.Name, name string) (*Team, error) {
+	u := fmt.Sprintf("organizations/%s/teams/%s", url.QueryEscape(organization.String()), url.QueryEscape(name))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
@@ -46,7 +47,7 @@ func (c *Client) Get(ctx context.Context, organization, name string) (*Team, err
 }
 
 // Delete deletes a team via HTTP/JSONAPI.
-func (c *Client) Delete(ctx context.Context, id resource.ID) error {
+func (c *Client) Delete(ctx context.Context, id resource.TfeID) error {
 	u := fmt.Sprintf("teams/%s", url.QueryEscape(id.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {

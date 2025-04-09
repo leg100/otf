@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/team"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func TestTeam_AddMembership(t *testing.T) {
 	cli := &membershipCLI{
 		client: &fakeService{},
 		teams: &fakeTeamService{
-			team: &team.Team{Name: "owners", Organization: "acme-corp"},
+			team: &team.Team{Name: "owners", Organization: organization.NewTestName(t)},
 		},
 	}
 	cmd := cli.addTeamMembershipCommand()
@@ -60,7 +61,7 @@ func TestTeam_RemoveMembership(t *testing.T) {
 	cli := &membershipCLI{
 		client: &fakeService{},
 		teams: &fakeTeamService{
-			team: &team.Team{Name: "owners", Organization: "acme-corp"},
+			team: &team.Team{Name: "owners", Organization: organization.NewTestName(t)},
 		},
 	}
 	cmd := cli.deleteTeamMembershipCommand()

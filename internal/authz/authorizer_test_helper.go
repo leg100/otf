@@ -2,6 +2,8 @@ package authz
 
 import (
 	"context"
+
+	"github.com/leg100/otf/internal/resource"
 )
 
 type allowAllAuthorizer struct {
@@ -14,10 +16,10 @@ func NewAllowAllAuthorizer() *allowAllAuthorizer {
 	}
 }
 
-func (a *allowAllAuthorizer) Authorize(context.Context, Action, *AccessRequest, ...CanAccessOption) (Subject, error) {
+func (a *allowAllAuthorizer) Authorize(context.Context, Action, resource.ID, ...CanAccessOption) (Subject, error) {
 	return a.User, nil
 }
 
-func (a *allowAllAuthorizer) CanAccess(context.Context, Action, *AccessRequest) bool {
+func (a *allowAllAuthorizer) CanAccess(context.Context, Action, resource.ID) bool {
 	return true
 }

@@ -134,7 +134,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// list of workspaces should be persisted, and include ws1
-		err = expect.Locator(page.Locator(fmt.Sprintf(`//div[@id='existing-workspaces']//span[text()='%s']`, ws1.Name))).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='existing-workspaces']//span`)).ToHaveText(ws1.Name)
 		require.NoError(t, err)
 
 		// add a variable
@@ -173,24 +173,24 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		err = expect.Locator(page.Locator(`//span[text()='Variable Sets (2)']`)).ToBeVisible()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//div[@id='item-variable-set-global-1']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='item-variable-set-global-1']`)).ToBeVisible()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//div[@id='item-variable-set-workspace-scoped-1']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='item-variable-set-workspace-scoped-1']`)).ToBeVisible()
 		require.NoError(t, err)
 
 		// both sets define a variable named 'foo', but the workspace-scoped
 		// set takes precedence over the global set, so the latter's
 		// variable should be tagged as 'overridden', and the variable name
 		// should be struck-through
-		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']//td[1]/s/a[text()='foo']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/s[text()='foo']`)).ToBeVisible()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']//td[1]/span[text()='OVERWRITTEN']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/span[text()='OVERWRITTEN']`)).ToBeVisible()
 		require.NoError(t, err)
 
 		// whereas the workspace-scoped set should not be overwritten.
-		err = expect.Locator(page.Locator(`//div[@id='variable-set-workspace-scoped-1']//td[1]/a[text()='foo']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='variable-set-workspace-scoped-1']//td[1][text()='foo']`)).ToBeVisible()
 		require.NoError(t, err)
 	})
 }

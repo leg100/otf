@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/goccy/go-yaml"
 	"github.com/iancoleman/strcase"
 )
 
@@ -31,36 +32,36 @@ const (
 
 // action is a controller action
 type action struct {
-	name       string
-	collection bool // whether action acts on collection of resources or a single resource
+	Name       string
+	Collection bool `yaml:",omitempty"` // whether action acts on collection of resources or a single resource
 }
 
 // defaultActions are the default set of actions for a controller of type
 // resource
 var defaultActions = []action{
 	{
-		name:       "list",
-		collection: true,
+		Name:       "list",
+		Collection: true,
 	},
 	{
-		name:       "create",
-		collection: true,
+		Name:       "create",
+		Collection: true,
 	},
 	{
-		name:       "new",
-		collection: true,
+		Name:       "new",
+		Collection: true,
 	},
 	{
-		name: "show",
+		Name: "show",
 	},
 	{
-		name: "edit",
+		Name: "edit",
 	},
 	{
-		name: "update",
+		Name: "update",
 	},
 	{
-		name: "delete",
+		Name: "delete",
 	},
 }
 
@@ -68,18 +69,18 @@ var defaultActions = []action{
 type controllerSpec struct {
 	// controller name, used in path names unless path is specified
 	Name   string
-	nested []controllerSpec
-	path   string
-	// additional actions
-	actions []action
+	Nested []controllerSpec `yaml:",omitempty"`
+	Path   string           `yaml:",omitempty"`
+	// additional Actions
+	Actions []action `yaml:",omitempty"`
 	// whether to skip default set of actions
-	skipDefaultActions bool
-	camel              string
-	lowerCamel         string
+	SkipDefaultActions bool   `yaml:"skip_default_actions,omitempty"`
+	Camel              string `yaml:",camel"`
+	LowerCamel         string `yaml:",lower_camel"`
 	// disable site-wide prefix
-	noprefix bool
+	NoPrefix bool `yaml:"no_prefix,omitempty"`
 
-	controllerType
+	ControllerType controllerType `yaml:"controller_type,omitempty"`
 }
 
 type controller struct {
@@ -96,257 +97,6 @@ type controller struct {
 	noprefix bool
 
 	controllerType
-}
-
-var specs = []controllerSpec{
-	{
-		Name:           "admin",
-		controllerType: singlePath,
-	},
-	{
-		Name:           "login",
-		controllerType: singlePath,
-		noprefix:       true,
-	},
-	{
-		Name:           "logout",
-		controllerType: singlePath,
-	},
-	{
-		Name:           "admin_login",
-		controllerType: singlePath,
-		path:           "/admin/login",
-		noprefix:       true,
-	},
-	{
-		Name:           "profile",
-		controllerType: singlePath,
-	},
-	{
-		Name:           "tokens",
-		controllerType: singlePath,
-		path:           "/profile/tokens",
-	},
-	{
-		Name:           "delete_token",
-		controllerType: singlePath,
-		path:           "/profile/tokens/delete",
-	},
-	{
-		Name:           "new_token",
-		controllerType: singlePath,
-		path:           "/profile/tokens/new",
-	},
-	{
-		Name:           "create_token",
-		controllerType: singlePath,
-		path:           "/profile/tokens/create",
-	},
-	{
-		Name:           "github_app",
-		controllerType: resourcePath,
-		actions: []action{
-			{
-				name:       "exchange-code",
-				collection: true,
-			},
-			{
-				name:       "complete",
-				collection: true,
-			},
-			{
-				name: "delete-install",
-			},
-		},
-	},
-	{
-		Name:           "organization",
-		controllerType: resourcePath,
-		nested: []controllerSpec{
-			{
-				Name:           "workspace",
-				controllerType: resourcePath,
-				actions: []action{
-					{
-						name: "lock",
-					},
-					{
-						name: "unlock",
-					},
-					{
-						name: "force-unlock",
-					},
-					{
-						name: "set-permission",
-					},
-					{
-						name: "unset-permission",
-					},
-					{
-						name: "watch",
-					},
-					{
-						name:       "watch",
-						collection: true,
-					},
-					{
-						name: "connect",
-					},
-					{
-						name: "disconnect",
-					},
-					{
-						name: "start-run",
-					},
-					{
-						name: "setup-connection-provider",
-					},
-					{
-						name: "setup-connection-repo",
-					},
-					{
-						name: "create-tag",
-					},
-					{
-						name: "delete-tag",
-					},
-					{
-						name: "state",
-					},
-					{
-						name: "pools",
-					},
-				},
-				nested: []controllerSpec{
-					{
-						Name:           "run",
-						controllerType: resourcePath,
-						actions: []action{
-							{
-								name: "apply",
-							},
-							{
-								name: "discard",
-							},
-							{
-								name: "cancel",
-							},
-							{
-								name: "force-cancel",
-							},
-							{
-								name: "retry",
-							},
-							{
-								name: "tail",
-							},
-							{
-								name: "widget",
-							},
-						},
-					},
-					{
-						Name:           "variable",
-						controllerType: resourcePath,
-					},
-				},
-			},
-			{
-				Name:               "organization_run",
-				path:               "/run",
-				controllerType:     resourcePath,
-				skipDefaultActions: true,
-				actions: []action{
-					{
-						name:       "list",
-						collection: true,
-					},
-				},
-			},
-			{
-				Name:           "runner",
-				controllerType: resourcePath,
-				actions: []action{
-					{
-						name:       "watch",
-						collection: true,
-					},
-				},
-			},
-			{
-				Name:           "agent_pool",
-				controllerType: resourcePath,
-				nested: []controllerSpec{
-					{
-						Name:           "agent_token",
-						controllerType: resourcePath,
-					},
-				},
-			},
-			{
-				Name:           "variable_set",
-				controllerType: resourcePath,
-				nested: []controllerSpec{
-					{
-						Name:           "variable_set_variable",
-						controllerType: resourcePath,
-					},
-				},
-			},
-			{
-				Name:               "organization_token",
-				controllerType:     resourcePath,
-				skipDefaultActions: true,
-				path:               "/token",
-				actions: []action{
-					{
-						name:       "show",
-						collection: true,
-					},
-					{
-						name:       "create",
-						collection: true,
-					},
-					{
-						name:       "delete",
-						collection: true,
-					},
-				},
-			},
-			{
-				Name:           "user",
-				controllerType: resourcePath,
-			},
-			{
-				Name:           "team",
-				controllerType: resourcePath,
-				actions: []action{
-					{
-						name: "add-member",
-					},
-					{
-						name: "remove-member",
-					},
-				},
-			},
-			{
-				Name:           "vcs_provider",
-				controllerType: resourcePath,
-				camel:          "VCSProvider",
-				lowerCamel:     "vcsProvider",
-				actions: []action{
-					{
-						name:       "new-github-app",
-						collection: true,
-					},
-				},
-			},
-			{
-				Name:           "module",
-				controllerType: resourcePath,
-			},
-		},
-	},
 }
 
 func (r controller) Path() string {
@@ -383,7 +133,7 @@ func (r controller) FormatString(action action) string {
 		b.WriteString(r.Path())
 		return b.String()
 	}
-	if action.collection {
+	if action.Collection {
 		if r.Parent != nil {
 			b.WriteString(r.Parent.Path())
 			b.WriteString("s")
@@ -392,35 +142,35 @@ func (r controller) FormatString(action action) string {
 	}
 	b.WriteString(r.Path())
 	b.WriteString("s")
-	if action.name == "list" {
+	if action.Name == "list" {
 		// list has no explict action specified in the path
 		return b.String()
 	}
 	b.WriteString("/")
-	if action.collection {
-		b.WriteString(action.name)
+	if action.Collection {
+		b.WriteString(action.Name)
 		return b.String()
 	}
 	b.WriteString("%s")
-	if action.name == "show" {
+	if action.Name == "show" {
 		// show has no explict action specified in the path; show is instead implied using
 		// the controller name alone
 		return b.String()
 	}
 	b.WriteString("/")
-	b.WriteString(action.name)
+	b.WriteString(action.Name)
 	return b.String()
 }
 
 // FormatArgs are the args for use with fmt.Sprintf in a path helper in a
 // template.
 func (r controller) FormatArgs(action action) string {
-	return strings.Join(r.params(action.collection), ", ")
+	return strings.Join(r.params(action.Collection), ", ")
 }
 
 // HelperName returns the path helper function name for the given action.
 func (r controller) HelperName(action action) string {
-	switch action.name {
+	switch action.Name {
 	case "show":
 		// show path helper is merely the singular form of the resource name
 		return r.Camel()
@@ -428,18 +178,18 @@ func (r controller) HelperName(action action) string {
 		// list path helper is merely the plural form of the resource name
 		return r.Camel() + "s"
 	case "watch":
-		if action.collection {
-			return strcase.ToCamel(action.name) + r.Camel() + "s"
+		if action.Collection {
+			return strcase.ToCamel(action.Name) + r.Camel() + "s"
 		}
 		fallthrough
 	default:
-		return strcase.ToCamel(action.name) + r.Camel()
+		return strcase.ToCamel(action.Name) + r.Camel()
 	}
 }
 
 // FuncMapName returns the function map name for the given action.
 func (r controller) FuncMapName(action action) string {
-	switch action.name {
+	switch action.Name {
 	case "show":
 		// show funcmap name is merely the singular form of the resource name
 		return r.LowerCamel() + "Path"
@@ -449,15 +199,15 @@ func (r controller) FuncMapName(action action) string {
 	default:
 		// funcmap names for all other actions include their name followed by
 		// the resource name
-		return strcase.ToLowerCamel(action.name) + r.Camel() + "Path"
+		return strcase.ToLowerCamel(action.Name) + r.Camel() + "Path"
 	}
 }
 
 // HelperParams returns a list of parameters for use in a path helper function
 // in a template.
 func (r controller) HelperParams(action action) string {
-	if params := r.params(action.collection); len(params) > 0 {
-		return fmt.Sprintf("%s string", strings.Join(params, ", "))
+	if params := r.params(action.Collection); len(params) > 0 {
+		return fmt.Sprintf("%s fmt.Stringer", strings.Join(params, ", "))
 	}
 	return ""
 }
@@ -481,6 +231,14 @@ func (r controller) params(collection bool) []string {
 }
 
 func main() {
+	b, err := os.ReadFile("paths.yaml")
+	if err != nil {
+		log.Fatal("Error reading paths from file: ", err.Error())
+	}
+	var specs []controllerSpec
+	if err := yaml.Unmarshal(b, &specs); err != nil {
+		log.Fatal("Error unmarshalling specs: ", err.Error())
+	}
 	// convert specifications to controllers
 	controllers := buildControllers(nil, specs)
 
@@ -565,29 +323,29 @@ func buildControllers(parent *controller, specs []controllerSpec) []controller {
 	for _, spec := range specs {
 		ctlr := controller{
 			Name:               spec.Name,
-			camel:              spec.camel,
-			lowerCamel:         spec.lowerCamel,
-			path:               spec.path,
+			camel:              spec.Camel,
+			lowerCamel:         spec.LowerCamel,
+			path:               spec.Path,
 			Parent:             parent,
-			controllerType:     spec.controllerType,
-			noprefix:           spec.noprefix,
-			skipDefaultActions: spec.skipDefaultActions,
+			controllerType:     spec.ControllerType,
+			noprefix:           spec.NoPrefix,
+			skipDefaultActions: spec.SkipDefaultActions,
 		}
-		switch spec.controllerType {
+		switch spec.ControllerType {
 		case resourcePath:
 			if ctlr.skipDefaultActions {
-				ctlr.Actions = spec.actions
+				ctlr.Actions = spec.Actions
 			} else {
-				ctlr.Actions = append(defaultActions, spec.actions...)
+				ctlr.Actions = append(defaultActions, spec.Actions...)
 			}
 		case singlePath:
-			ctlr.Actions = []action{{name: "show"}}
+			ctlr.Actions = []action{{Name: "show"}}
 		}
 
 		controllers = append(controllers, ctlr)
 
-		if len(spec.nested) > 0 {
-			children := buildControllers(&ctlr, spec.nested)
+		if len(spec.Nested) > 0 {
+			children := buildControllers(&ctlr, spec.Nested)
 			controllers = append(controllers, children...)
 		}
 	}

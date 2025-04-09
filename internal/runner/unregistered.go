@@ -10,5 +10,5 @@ type unregistered struct {
 	authz.Subject
 
 	// pool is non-nil if the runner is an agent.
-	pool *RunnerMetaAgentPool
+	pool *Pool
 }

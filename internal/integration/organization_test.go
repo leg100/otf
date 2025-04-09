@@ -28,7 +28,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := svc.Organizations.Create(ctx, organization.CreateOptions{
-				Name: internal.String(org.Name),
+				Name: internal.String(org.Name.String()),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
@@ -56,9 +56,9 @@ func TestIntegration_Organization(t *testing.T) {
 		org := daemon.createOrganization(t, ctx)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
-		want := uuid.NewString()
+		want := organization.NewTestName(t)
 		updated, err := daemon.Organizations.Update(ctx, org.Name, organization.UpdateOptions{
-			Name: internal.String(want),
+			Name: internal.String(want.String()),
 		})
 		require.NoError(t, err)
 
@@ -141,7 +141,7 @@ func TestIntegration_Organization(t *testing.T) {
 		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-sub)
 
 		_, err = daemon.Organizations.Get(ctx, org.Name)
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
@@ -149,7 +149,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 		// delete using site admin otherwise a not authorized error is returned
 		// to normal users
-		err := svc.Organizations.Delete(adminCtx, "does-not-exist")
-		assert.Equal(t, internal.ErrResourceNotFound, err)
+		err := svc.Organizations.Delete(adminCtx, organization.NewTestName(t))
+		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 }

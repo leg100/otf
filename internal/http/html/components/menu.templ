@@ -2,6 +2,7 @@ package components
 
 import (
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/resource"
 	"strings"
 )
 
@@ -13,7 +14,7 @@ const (
 	ModulesMenu         = "Modules"
 )
 
-templ menu(organization string, submenu *SubMenuHoist) {
+templ menu(organization resource.ID, submenu *SubMenuHoist) {
 	<ul class="menu bg-base-200 rounded-box w-56">
 		@MenuItem(WorkspacesMenu, paths.Workspaces(organization), submenu)
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {

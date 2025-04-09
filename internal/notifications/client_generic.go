@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 )
@@ -18,15 +19,15 @@ type (
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/notification-configurations#run-notification-payload
 	GenericPayload struct {
 		PayloadVersion              int
-		NotificationConfigurationID resource.ID
+		NotificationConfigurationID resource.TfeID
 		RunURL                      string
-		RunID                       resource.ID
+		RunID                       resource.TfeID
 		RunMessage                  string
 		RunCreatedAt                time.Time
 		RunCreatedBy                string
-		WorkspaceID                 resource.ID
+		WorkspaceID                 resource.TfeID
 		WorkspaceName               string
-		OrganizationName            string
+		OrganizationName            organization.Name
 		Notifications               []genericNotificationPayload
 	}
 

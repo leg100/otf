@@ -155,7 +155,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			}).String())
 			require.NoError(t, err)
 
-			err = expect.Locator(page.Locator(`//div[@class='widget']//a[contains(text(), "my-otf-app")]`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//tr[@id='item-github-app']//td[1]`)).ToHaveText("my-otf-app")
 			require.NoError(t, err)
 			screenshot(t, page, "github_app_created")
 		})
@@ -242,7 +242,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 	// create and connect a workspace to a repo using the app install
 	_, err = daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:         internal.String("dev"),
-		Organization: internal.String(org.Name),
+		Organization: &org.Name,
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: &provider.ID,
 			RepoPath:      internal.String("leg100/otf-workspaces"),

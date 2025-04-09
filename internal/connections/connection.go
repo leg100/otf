@@ -10,29 +10,32 @@ import (
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type (
 	// Connection is a connection between a VCS repo and an OTF resource.
+	//
+	// NOTE: order of fields must be same as that of its postgres table columns.
 	Connection struct {
-		VCSProviderID resource.ID
+		ModuleID      *resource.TfeID `db:"module_id"`
+		WorkspaceID   *resource.TfeID `db:"workspace_id"`
 		Repo          string
+		VCSProviderID resource.TfeID `db:"vcs_provider_id"`
 	}
 
 	ConnectOptions struct {
-		VCSProviderID resource.ID // vcs provider of repo
-		ResourceID    resource.ID // ID of OTF resource to connect.
+		VCSProviderID resource.TfeID // vcs provider of repo
+		ResourceID    resource.TfeID // ID of OTF resource to connect.
 		RepoPath      string
 	}
 
 	DisconnectOptions struct {
-		ResourceID resource.ID // ID of OTF resource to disconnect
+		ResourceID resource.TfeID // ID of OTF resource to disconnect
 	}
 
 	SynchroniseOptions struct {
-		VCSProviderID resource.ID // vcs provider of repo
+		VCSProviderID resource.TfeID // vcs provider of repo
 		RepoPath      string
 	}
 
@@ -71,7 +74,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		// github app vcs provider does not require a repohook to be created
 		if provider.GithubApp == nil {
 			_, err := s.repohooks.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
@@ -95,7 +98,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 
 // Disconnect resource from repo
 func (s *Service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	return s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := s.db.deleteConnection(ctx, opts); err != nil {
 			return err
 		}

@@ -3,16 +3,15 @@ package runner
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"time"
 )
 
 type listRunnersProps struct {
-	organization string
-	runners      []*RunnerMeta
+	organization      organization.Name
+	hideServerRunners bool
 }
 
 templ listRunners(props listRunnersProps) {
@@ -26,52 +25,95 @@ templ listRunners(props listRunnersProps) {
 		<div class="description max-w-2xl">
 			A runner handles the execution of runs. There are two types of runners: the runner built into <span class="bg-gray-200 font-mono p-0.5 text-xs">otfd</span> which handles runs for workspaces with the <span class="font-bold">remote</span> execution mode; and <span class="bg-gray-200 font-mono p-0.5 text-xs">otf-agent</span>, which handles runs for workspaces with the <span class="font-bold">agent</span> execution mode.
 		</div>
-		for _, runner := range props.runners {
-			@runnerListItem(runner)
-		}
+		<form action={ paths.Runners(props.organization) }>
+			<fieldset class="fieldset p-4 bg-base-100 border border-base-300 rounded-box w-64">
+				<legend class="fieldset-legend">Filters</legend>
+				<label class="fieldset-label">
+					<input type="checkbox" name="hide_server_runners" class="toggle toggle-secondary" onchange="this.form.submit()" checked?={ props.hideServerRunners }/>
+					Hide <span class="font-bold">otfd</span> runners
+				</label>
+			</fieldset>
+		</form>
+		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
+			<div id={ runnersTableID }></div>
+		</div>
 	}
 }
 
 var runnerStatusColors = map[RunnerStatus]string{
-	RunnerIdle:    "bg-green-100",
-	RunnerBusy:    "bg-blue-200",
-	RunnerUnknown: "bg-gray-100",
-	RunnerErrored: "bg-red-100",
-	RunnerExited:  "bg-purple-100",
+	RunnerIdle:    "status-success",
+	RunnerBusy:    "status-success",
+	RunnerUnknown: "status-warning",
+	RunnerErrored: "status-error",
+	RunnerExited:  "status-info",
 }
 
-templ runnerListItem(runner *RunnerMeta) {
-	<div id={ "item-" + runner.ID.String() } class="widget">
-		<div>
-			<div class="flex gap-2 items-center">
-				if runner.Name != "" {
-					<span>{ runner.Name }</span>
-				}
-				<div class={ runnerStatusColors[runner.Status] }>{ string(runner.Status) }</div>
-				<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
-			</div>
-			<span title={ runner.LastPingAt.String() }>last seen { internal.Ago(time.Now(), runner.LastPingAt) } </span>
-		</div>
-		<div>
-			@components.Identifier(runner.ID)
-			<div>
-				<span class="font-mono bg-gray-200 py-1 px-2 text-xs">{ runner.Version }</span>
-				<span id="process-name" class="font-mono bg-gray-200 py-1 px-2 text-xs">
-					if runner.IsAgent() {
-						otf-agent
+type table struct{}
+
+templ (t table) Header() {
+	<th>Name</th>
+	<th>Status</th>
+	<th>Capacity</th>
+	<th>Version</th>
+	<th>Process</th>
+	<th>IP Address</th>
+	<th>Last seen</th>
+}
+
+templ (t table) Row(runner *RunnerMeta) {
+	<tr id={ "item-" + runner.ID.String() }>
+		<td>
+			<div class="flex flex-col gap-2">
+				<span>
+					if runner.Name != "" {
+						{ runner.Name }
 					} else {
-						otfd
+						-
 					}
 				</span>
-				<span class="font-mono bg-gray-200 py-1 px-2 text-xs">{ runner.IPAddress.String() }</span>
+				@components.Identifier(runner.ID)
 			</div>
-		</div>
-	</div>
+		</td>
+		<td>
+			<div class="flex items-center gap-2">
+				<div class="inline-grid *:[grid-area:1/1]">
+					<div class={ "status animate-ping", runnerStatusColors[runner.Status] }></div>
+					<div class={ "status", runnerStatusColors[runner.Status] }></div>
+				</div>
+				<span>
+					{ string(runner.Status) }
+				</span>
+			</div>
+		</td>
+		<td>
+			<div class="text-sm" title={ fmt.Sprintf("%d jobs are currently allocated out of a maximum of %d jobs", runner.CurrentJobs, runner.MaxJobs) }>({ fmt.Sprintf("%d/%d", runner.CurrentJobs, runner.MaxJobs) })</div>
+		</td>
+		<td>
+			<span class="">{ runner.Version }</span>
+		</td>
+		<td>
+			<span id="process-name" class="">
+				if runner.IsAgent() {
+					otf-agent
+				} else {
+					otfd
+				}
+			</span>
+		</td>
+		<td>
+			<span class="">{ runner.IPAddress.String() }</span>
+		</td>
+		<td>
+			<span title={ runner.LastPingAt.String() }>
+				@components.Ago(runner.LastPingAt)
+			</span>
+		</td>
+	</tr>
 }
 
 type listAgentPoolProps struct {
-	organization string
-	pools        []*Pool
+	organization organization.Name
+	pools        *resource.Page[*Pool]
 }
 
 templ listAgentPools(props listAgentPoolProps) {
@@ -101,25 +143,33 @@ templ listAgentPools(props listAgentPoolProps) {
 			</form>
 			<hr class="my-4"/>
 		</details>
-		@components.ContentList(props.pools, agentPoolListItem)
+		@components.Table(&agentPoolsTable{}, props.pools, "page-results")
 	}
 }
 
-templ agentPoolListItem(pool *Pool) {
-	<div x-data={ components.BlockLink(paths.AgentPool(pool.ID.String())) } class="widget" id={ pool.ID.String() }>
-		<div>
-			<span>{ pool.Name }</span>
-			<span>{ internal.Ago(time.Now(), pool.CreatedAt) }</span>
-		</div>
-		<div>
+type agentPoolsTable struct{}
+
+templ (t agentPoolsTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+}
+
+templ (t agentPoolsTable) Row(pool *Pool) {
+	<tr id={ pool.ID.String() } x-data={ components.BlockLink(paths.AgentPool(pool.ID)) }>
+		<td>{ pool.Name }</td>
+		<td>
 			@components.Identifier(pool.ID)
-		</div>
-	</div>
+		</td>
+		<td>
+			@components.Ago(pool.CreatedAt)
+		</td>
+	</tr>
 }
 
 type agentPoolListAllowedProps struct {
 	pools         []*Pool
-	currentPoolID *resource.ID
+	currentPoolID *resource.TfeID
 }
 
 templ agentPoolListAllowed(props agentPoolListAllowedProps) {
@@ -136,7 +186,7 @@ type getAgentPoolProps struct {
 	assignedWorkspaces             []poolWorkspace
 	availableWorkspaces            []poolWorkspace
 	tokens                         []*agentToken
-	agents                         []*RunnerMeta
+	agents                         *resource.Page[*RunnerMeta]
 	canDeleteAgentPool             bool
 }
 
@@ -152,7 +202,7 @@ templ getAgentPool(props getAgentPoolProps) {
 		<div>
 			@components.Identifier(props.pool.ID)
 		</div>
-		<form class="" action={ paths.UpdateAgentPool(props.pool.ID.String()) } method="POST">
+		<form class="" action={ paths.UpdateAgentPool(props.pool.ID) } method="POST">
 			<div class="field mb-4">
 				<label for="name">Name</label>
 				<input class="input w-80" type="text" name="name" id="name" value={ props.pool.Name } required/>
@@ -214,7 +264,7 @@ templ getAgentPool(props getAgentPoolProps) {
 							<div id="granted-and-assigned-workspaces" class="flex flex-row gap-2">
 								<input type="hidden" id="assigned-workspaces" name="assigned_workspaces" value={ toJSON(props.assignedWorkspaces) }/>
 								for _, ws := range props.assignedWorkspaces {
-									<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID.String()) }>{ ws.Name }</a>
+									<a class="bg-blue-300 hover:text-white py-1 px-2 text-sm" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
 								}
 							</div>
 						</div>
@@ -231,7 +281,7 @@ templ getAgentPool(props getAgentPoolProps) {
 			<summary class="cursor-pointer py-2">
 				<span class="font-semibold">New token</span>
 			</summary>
-			<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID.String()) } method="POST">
+			<form class="flex flex-col gap-5" action={ paths.CreateAgentToken(props.pool.ID) } method="POST">
 				<div class="field">
 					<label for="new-token-description">Description</label>
 					<input class="input w-3/4" rows="3" type="text" name="description" id="new-token-description" required/>
@@ -242,25 +292,12 @@ templ getAgentPool(props getAgentPoolProps) {
 				</div>
 			</form>
 		</details>
-		for _, token := range props.tokens {
-			<div class="widget">
-				<div>
-					<span>{ token.Description }</span>
-					<span>created { internal.Ago(time.Now(), token.CreatedAt) }</span>
-				</div>
-				<div>
-					@components.Identifier(token.ID)
-					<form action={ paths.DeleteAgentToken(token.ID.String()) } method="POST">
-						<button id="delete-agent-token-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-					</form>
-				</div>
-			</div>
-		}
+		@components.UnpaginatedTable(agentTokensTable{}, props.tokens, "page-results")
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Agents</h3>
-		for _, agent := range props.agents {
-			@runnerListItem(agent)
-		}
+		<div hx-ext="ws" ws-connect={ components.CurrentURL(ctx) }>
+			<div id={ runnersTableID }></div>
+		</div>
 		if props.canDeleteAgentPool {
 			<hr class="my-4"/>
 			<h3 class="font-semibold text-lg mb-2">Advanced</h3>
@@ -268,17 +305,43 @@ templ getAgentPool(props getAgentPoolProps) {
 				<span class="description">Before deleting an agent pool you must unassign the pool from the following workspaces:</span>
 				<ul id="unassign-workspaces-before-deletion" class="flex flex-row gap-2">
 					for _, ws := range props.assignedWorkspaces {
-						<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID.String()) }>{ ws.Name }</a>
+						<a class="bg-blue-300 text-sm hover:text-white py-1 px-2" href={ paths.EditWorkspace(ws.ID) }>{ ws.Name }</a>
 					}
 				</ul>
 			}
-			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID.String()) } method="POST">
-				<button id="delete-agent-pool-button" class="btn-danger disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
+			<form class="mt-2" action={ paths.DeleteAgentPool(props.pool.ID) } method="POST">
+				<button id="delete-agent-pool-button" class="btn btn-outline btn-error disabled:opacity-75" onclick="return confirm('Are you sure you want to delete?')" disabled?={ len(props.assignedWorkspaces) > 0 }>
 					Delete agent pool
 				</button>
 			</form>
 		}
 	}
+}
+
+type agentTokensTable struct{}
+
+templ (t agentTokensTable) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t agentTokensTable) Row(token *agentToken) {
+	<tr>
+		<td>{ token.Description }</td>
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			@components.Ago(token.CreatedAt)
+		</td>
+		<td>
+			<form id="delete-agent-token" action={ paths.DeleteAgentToken(token.ID) } method="POST">
+				@components.DeleteButton()
+			</form>
+		</td>
+	</tr>
 }
 
 func toJSON(v any) string {

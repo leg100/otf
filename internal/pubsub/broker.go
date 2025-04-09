@@ -46,7 +46,7 @@ type Broker[T any] struct {
 }
 
 // GetterFunc retrieves the type T using its unique id.
-type GetterFunc[T any] func(ctx context.Context, id resource.ID, action sql.Action) (T, error)
+type GetterFunc[T any] func(ctx context.Context, id resource.TfeID, action sql.Action) (T, error)
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {
@@ -98,7 +98,7 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 // forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
 func (b *Broker[T]) forward(ctx context.Context, rowID string, action sql.Action) {
-	id, err := resource.ParseID(rowID)
+	id, err := resource.ParseTfeID(rowID)
 	if err != nil {
 		b.Error(err, "parsing ID for database event", "table", b.table, "id", rowID, "action", action)
 		return

@@ -6,15 +6,16 @@ package sql
 import (
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 )
+
+// Scanner populates variables with the values of a query row.
+type Scanner interface {
+	Scan(dest ...any) error
+}
 
 // Bool converts a go-boolean into a postgres non-null boolean
 func Bool(b bool) pgtype.Bool {
@@ -116,12 +117,12 @@ func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
 }
 
 // ID converts a resource ID into an ID suitable for postgres.
-func ID(s resource.ID) pgtype.Text {
+func ID(s resource.TfeID) pgtype.Text {
 	return pgtype.Text{String: s.String(), Valid: true}
 }
 
 // IDPtr converts a resource ID pointer into an ID suitable for postgres.
-func IDPtr(s *resource.ID) pgtype.Text {
+func IDPtr(s *resource.TfeID) pgtype.Text {
 	if s != nil {
 		return pgtype.Text{String: s.String(), Valid: true}
 	}
@@ -139,18 +140,36 @@ func GetLimit(opts resource.PageOptions) pgtype.Int4 {
 	return Int4(opts.Normalize().PageSize)
 }
 
-func Error(err error) error {
-	var pgErr *pgconn.PgError
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
-		return internal.ErrResourceNotFound
-	case errors.As(err, &pgErr):
-		switch pgErr.Code {
-		case "23503": // foreign key violation
-			return &internal.ForeignKeyError{PgError: pgErr}
-		case "23505": // unique violation
-			return internal.ErrResourceAlreadyExists
-		}
+func CollectOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
+	row, err := pgx.CollectOneRow(rows, fn)
+	if err != nil {
+		return *new(T), toError(err)
 	}
-	return err
+	return row, nil
+}
+
+func CollectRows[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) ([]T, error) {
+	collected, err := pgx.CollectRows(rows, fn)
+	if err != nil {
+		return nil, toError(err)
+	}
+	return collected, nil
+}
+
+// CollectOneType scans the row from a query and expects one result with the
+// given type.
+func CollectOneType[T any](row pgx.Rows) (T, error) {
+	result, err := pgx.CollectOneRow(row, pgx.RowTo[T])
+	if err != nil {
+		return *new(T), toError(err)
+	}
+	return result, nil
+}
+
+func CollectExactlyOneRow[T any](rows pgx.Rows, fn pgx.RowToFunc[T]) (T, error) {
+	collected, err := pgx.CollectExactlyOneRow(rows, fn)
+	if err != nil {
+		return *new(T), toError(err)
+	}
+	return collected, nil
 }

@@ -2,8 +2,6 @@ package run
 
 import (
 	"fmt"
-
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 // Report reports a summary of additions, changes, and deletions of
@@ -12,17 +10,6 @@ type Report struct {
 	Additions    int `json:"additions"`
 	Changes      int `json:"changes"`
 	Destructions int `json:"destructions"`
-}
-
-func reportFromDB(row *sqlc.Report) *Report {
-	if row == nil {
-		return nil
-	}
-	return &Report{
-		Additions:    int(row.Additions),
-		Changes:      int(row.Changes),
-		Destructions: int(row.Destructions),
-	}
 }
 
 func (r Report) HasChanges() bool {

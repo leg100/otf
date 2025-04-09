@@ -33,14 +33,14 @@ type tfe struct {
 
 // tfeConfigsClient gives the tfe handlers access to config version services
 type tfeClient interface {
-	Create(ctx context.Context, workspaceid resource.ID, opts CreateOptions) (*ConfigurationVersion, error)
-	Get(ctx context.Context, id resource.ID) (*ConfigurationVersion, error)
-	GetLatest(ctx context.Context, workspaceID resource.ID) (*ConfigurationVersion, error)
-	List(ctx context.Context, workspaceID resource.ID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
-	Delete(ctx context.Context, cvID resource.ID) error
+	Create(ctx context.Context, workspaceid resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error)
+	Get(ctx context.Context, id resource.TfeID) (*ConfigurationVersion, error)
+	GetLatest(ctx context.Context, workspaceID resource.TfeID) (*ConfigurationVersion, error)
+	List(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error)
+	Delete(ctx context.Context, cvID resource.TfeID) error
 
-	UploadConfig(ctx context.Context, id resource.ID, config []byte) error
-	DownloadConfig(ctx context.Context, id resource.ID) ([]byte, error)
+	UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
+	DownloadConfig(ctx context.Context, id resource.TfeID) ([]byte, error)
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -61,7 +61,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		tfeapi.Error(w, err)
 		return
 	}
-	params := types.ConfigurationVersionCreateOptions{}
+	params := TFEConfigurationVersionCreateOptions{}
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -116,7 +116,7 @@ func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
 		types.ListOptions
 	}
 	var params parameters
@@ -134,7 +134,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// convert items
-	items := make([]*types.ConfigurationVersion, len(page.Items))
+	items := make([]*TFEConfigurationVersion, len(page.Items))
 	for i, from := range page.Items {
 		items[i] = a.convert(from, "")
 	}
@@ -192,7 +192,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// v must be a struct with a field named ConfigurationVersionID of kind
-	// resource.ID
+	// resource.TfeID
 	if dst.Kind() != reflect.Struct {
 		return nil, nil
 	}
@@ -200,7 +200,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	if !id.IsValid() {
 		return nil, nil
 	}
-	resourceID, ok := id.Interface().(resource.ID)
+	resourceID, ok := id.Interface().(resource.TfeID)
 	if !ok {
 		return nil, nil
 	}
@@ -212,7 +212,7 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 }
 
 func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error) {
-	tfeCV, ok := v.(*types.ConfigurationVersion)
+	tfeCV, ok := v.(*TFEConfigurationVersion)
 	if !ok {
 		return nil, nil
 	}
@@ -225,26 +225,26 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error
 	if err != nil {
 		return nil, err
 	}
-	return []any{&types.IngressAttributes{
-		ID:        resource.ConvertID(cv.ID, resource.IngressAttributesKind),
+	return []any{&TFEIngressAttributes{
+		ID:        resource.ConvertTfeID(cv.ID, resource.IngressAttributesKind),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
 	}}, nil
 }
 
-func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *types.ConfigurationVersion {
-	to := &types.ConfigurationVersion{
+func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *TFEConfigurationVersion {
+	to := &TFEConfigurationVersion{
 		ID:               from.ID,
 		AutoQueueRuns:    from.AutoQueueRuns,
 		Speculative:      from.Speculative,
 		Source:           string(from.Source),
 		Status:           string(from.Status),
-		StatusTimestamps: &types.CVStatusTimestamps{},
+		StatusTimestamps: &TFECVStatusTimestamps{},
 		UploadURL:        uploadURL,
 	}
 	if from.IngressAttributes != nil {
-		to.IngressAttributes = &types.IngressAttributes{
-			ID: resource.ConvertID(from.ID, "ia"),
+		to.IngressAttributes = &TFEIngressAttributes{
+			ID: resource.ConvertTfeID(from.ID, "ia"),
 		}
 	}
 	for _, ts := range from.StatusTimestamps {

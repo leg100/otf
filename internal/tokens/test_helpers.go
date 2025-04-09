@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestJWT(t *testing.T, secret []byte, id resource.ID, lifetime time.Duration) string {
+func newTestJWT(t *testing.T, secret []byte, id resource.TfeID, lifetime time.Duration) string {
 	t.Helper()
 
 	f := &tokenFactory{key: newTestJWK(t, secret)}

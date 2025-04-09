@@ -23,16 +23,16 @@ var ThemeMappings = map[Status]string{
 	Planning:           "primary",
 }
 
-templ Badge(runID resource.ID, status Status) {
+templ Badge(runID resource.TfeID, status Status) {
 	<span id={ runID.String() + "-status" } class={ "run-status text-md badge", "badge-" + status.String() }>
-		<a href={ paths.Run(runID.String()) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>
+		<a href={ paths.Run(runID) }>{ strings.ReplaceAll(string(status), "_", " ") }</a>
 	</span>
 }
 
 templ Filter(selected []Status, visible bool) {
-	<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-300 border">
+	<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-content/20 border">
 		<input id="toggle-status-filter-visibility" type="checkbox" name="status_filter_visible" checked?={ visible }/>
-		<div class="collapse-title font-semibold">Filter by status</div>
+		<div class="collapse-title">Filter by status</div>
 		<div class="collapse-content text-sm flex flex-wrap gap-2">
 			for _, status := range All() {
 				<div>

@@ -3,147 +3,170 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
-type (
-	// pgresult represents the result of a database query for a tag.
-	tagresult struct {
-		TagID            resource.ID
-		Name             pgtype.Text
-		OrganizationName pgtype.Text
-		InstanceCount    int64
+func (db *pgdb) listTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+	rows := db.Query(ctx, `
+SELECT
+    t.tag_id, t.name, t.organization_name,
+    (
+        SELECT count(*)
+        FROM workspace_tags wt
+        WHERE wt.tag_id = t.tag_id
+    ) AS instance_count
+FROM tags t
+WHERE t.organization_name = $1
+`,
+		organization,
+	)
+	items, err := sql.CollectRows(rows, db.scanWorkspaceTag)
+	if err != nil {
+		return nil, err
 	}
-)
-
-// toTag converts a database result into a tag
-func (r tagresult) toTag() *Tag {
-	return &Tag{
-		ID:            r.TagID,
-		Name:          r.Name.String,
-		Organization:  r.OrganizationName.String,
-		InstanceCount: int(r.InstanceCount),
-	}
+	return resource.NewPage(items, opts.PageOptions, nil), nil
 }
 
-func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	q := db.Querier(ctx)
-
-	rows, err := q.FindTags(ctx, sqlc.FindTagsParams{
-		OrganizationName: sql.String(organization),
-		Limit:            sql.GetLimit(opts.PageOptions),
-		Offset:           sql.GetOffset(opts.PageOptions),
-	})
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	count, err := q.CountTags(ctx, sql.String(organization))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-
-	items := make([]*Tag, len(rows))
-	for i, r := range rows {
-		items[i] = tagresult(r).toTag()
-	}
-	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
-}
-
-func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error {
+	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, tid := range tagIDs {
-			_, err := q.DeleteTag(ctx, sqlc.DeleteTagParams{
-				TagID:            tid,
-				OrganizationName: sql.String(organization),
-			})
+			_, err := conn.Exec(ctx, `
+DELETE
+FROM tags
+WHERE tag_id            = $1
+AND   organization_name = $2
+`, tid, organization)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
 	})
-	return sql.Error(err)
+	return err
 }
 
-func (db *pgdb) addTag(ctx context.Context, organization, name string, tagID resource.ID) error {
-	err := db.Querier(ctx).InsertTag(ctx, sqlc.InsertTagParams{
-		TagID:            tagID,
-		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
-	})
+func (db *pgdb) addTag(ctx context.Context, organization organization.Name, name string, tagID resource.TfeID) error {
+	_, err := db.Exec(ctx, `
+INSERT INTO tags (
+    tag_id,
+    name,
+    organization_name
+) VALUES (
+    $1,
+    $2,
+    $3
+) ON CONFLICT (organization_name, name) DO NOTHING
+`, tagID, name, organization)
 	if err != nil {
-		return sql.Error(err)
+		return err
 	}
 	return nil
 }
 
-func (db *pgdb) findTagByName(ctx context.Context, organization string, name string) (*Tag, error) {
-	tag, err := db.Querier(ctx).FindTagByName(ctx, sqlc.FindTagByNameParams{
-		Name:             sql.String(name),
-		OrganizationName: sql.String(organization),
-	})
+func (db *pgdb) findTagByName(ctx context.Context, organization organization.Name, name string) (*Tag, error) {
+	row := db.Query(ctx, `
+SELECT
+    t.tag_id, t.name, t.organization_name,
+    (
+        SELECT count(*)
+        FROM workspace_tags wt
+        WHERE wt.tag_id = t.tag_id
+    ) AS instance_count
+FROM tags t
+WHERE t.name = $1
+AND   t.organization_name = $2
+`, name, organization)
+	tag, err := sql.CollectOneRow(row, db.scanWorkspaceTag)
 	if err != nil {
-		return nil, sql.Error(err)
+		return tag, err
 	}
-	return tagresult(tag).toTag(), nil
+	return tag, nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, organization string, id resource.ID) (*Tag, error) {
-	tag, err := db.Querier(ctx).FindTagByID(ctx, sqlc.FindTagByIDParams{
-		TagID:            id,
-		OrganizationName: sql.String(organization),
-	})
+func (db *pgdb) findTagByID(ctx context.Context, organization organization.Name, id resource.TfeID) (*Tag, error) {
+	row := db.Query(ctx, `
+SELECT
+    t.tag_id, t.name, t.organization_name,
+    (
+        SELECT count(*)
+        FROM workspace_tags wt
+        WHERE wt.tag_id = t.tag_id
+    ) AS instance_count
+FROM tags t
+WHERE t.tag_id = $1
+AND   t.organization_name = $2
+`,
+		id,
+		organization,
+	)
+	tag, err := sql.CollectOneRow(row, db.scanWorkspaceTag)
 	if err != nil {
-		return nil, sql.Error(err)
+		return tag, err
 	}
-	return tagresult(tag).toTag(), nil
+	return tag, nil
 }
 
-func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.ID) error {
-	_, err := db.Querier(ctx).InsertWorkspaceTag(ctx, sqlc.InsertWorkspaceTagParams{
-		TagID:       tagID,
-		WorkspaceID: workspaceID,
-	})
-	if err != nil {
-		return sql.Error(err)
+func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID resource.TfeID) error {
+	result, err := db.Exec(ctx, `
+INSERT INTO workspace_tags (
+    workspace_id,
+    tag_id
+) SELECT $1, $2
+  FROM workspaces w
+  JOIN tags t ON (t.organization_name = w.organization_name)
+  WHERE w.workspace_id = $1
+  AND t.tag_id = $2
+  RETURNING tag_id
+`,
+		workspaceID,
+		tagID)
+	if result.RowsAffected() == 0 {
+		return internal.ErrResourceNotFound
 	}
-	return nil
+	return err
 }
 
-func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.ID) error {
-	_, err := db.Querier(ctx).DeleteWorkspaceTag(ctx, sqlc.DeleteWorkspaceTagParams{
-		WorkspaceID: workspaceID,
-		TagID:       tagID,
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
+func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID resource.TfeID) error {
+	_, err := db.Exec(ctx, `
+DELETE
+FROM workspace_tags
+WHERE workspace_id  = $1
+AND   tag_id        = $2
+`,
+		workspaceID,
+		tagID)
+	return err
 }
 
-func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	q := db.Querier(ctx)
+func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+	rows := db.Query(ctx, `
+SELECT
+    t.tag_id, t.name, t.organization_name,
+    (
+        SELECT count(*)
+        FROM workspace_tags wt
+        WHERE wt.tag_id = t.tag_id
+    ) AS instance_count
+FROM workspace_tags wt
+JOIN tags t USING (tag_id)
+WHERE wt.workspace_id = $1
+`,
 
-	rows, err := q.FindWorkspaceTags(ctx, sqlc.FindWorkspaceTagsParams{
-		WorkspaceID: workspaceID,
-		Limit:       sql.GetLimit(opts.PageOptions),
-		Offset:      sql.GetOffset(opts.PageOptions),
-	})
+		workspaceID,
+	)
+	items, err := sql.CollectRows(rows, db.scanWorkspaceTag)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
-	count, err := q.CountWorkspaceTags(ctx, workspaceID)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
+	return resource.NewPage(items, opts.PageOptions, nil), nil
+}
 
-	items := make([]*Tag, len(rows))
-	for i, r := range rows {
-		items[i] = tagresult(r).toTag()
-	}
-	return resource.NewPage(items, opts.PageOptions, internal.Int64(count)), nil
+func (db *pgdb) scanWorkspaceTag(row pgx.CollectableRow) (*Tag, error) {
+	var tag Tag
+	err := row.Scan(&tag.ID, &tag.Name, &tag.Organization, &tag.InstanceCount)
+	return &tag, err
 }

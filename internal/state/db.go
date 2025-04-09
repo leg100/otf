@@ -3,12 +3,12 @@ package state
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
 type (
@@ -17,75 +17,75 @@ type (
 		*sql.DB // provides access to generated SQL queries
 	}
 
-	// pgRow is a row from a postgres query for a state version.
-	pgRow struct {
-		StateVersionID      resource.ID               `json:"state_version_id"`
-		CreatedAt           pgtype.Timestamptz        `json:"created_at"`
-		Serial              pgtype.Int4               `json:"serial"`
-		State               []byte                    `json:"state"`
-		WorkspaceID         resource.ID               `json:"workspace_id"`
-		Status              pgtype.Text               `json:"status"`
-		StateVersionOutputs []sqlc.StateVersionOutput `json:"state_version_outputs"`
+	// versionModel is the database model for a state version row.
+	versionModel struct {
+		StateVersionID      resource.TfeID `db:"state_version_id"`
+		CreatedAt           time.Time      `db:"created_at"`
+		Serial              int64          `db:"serial"`
+		State               []byte         `db:"state"`
+		WorkspaceID         resource.TfeID `db:"workspace_id"`
+		Status              Status         `db:"status"`
+		StateVersionOutputs []outputModel  `db:"state_version_outputs"`
 	}
 )
 
-func (row pgRow) toVersion() *Version {
-	sv := Version{
-		ID:          row.StateVersionID,
-		CreatedAt:   row.CreatedAt.Time.UTC(),
-		Serial:      int64(row.Serial.Int32),
-		State:       row.State,
-		Status:      Status(row.Status.String),
-		WorkspaceID: row.WorkspaceID,
-		Outputs:     make(map[string]*Output, len(row.StateVersionOutputs)),
-	}
-	for _, r := range row.StateVersionOutputs {
-		sv.Outputs[r.Name.String] = outputRow(r).toOutput()
-	}
-	return &sv
-}
-
 func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
-	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
-		err := q.InsertStateVersion(ctx, sqlc.InsertStateVersionParams{
-			ID:          v.ID,
-			CreatedAt:   sql.Timestamptz(v.CreatedAt),
-			Serial:      sql.Int4(int(v.Serial)),
-			State:       v.State,
-			Status:      sql.String(string(v.Status)),
-			WorkspaceID: v.WorkspaceID,
+	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+		_, err := db.Exec(ctx, `
+INSERT INTO state_versions (
+    state_version_id,
+    created_at,
+    serial,
+    state,
+    status,
+    workspace_id
+) VALUES (
+    @id,
+    @created_at,
+    @serial,
+    @state,
+	@status,
+	@workspace_id
+)`, pgx.NamedArgs{
+			"id":           v.ID,
+			"created_at":   v.CreatedAt,
+			"serial":       v.Serial,
+			"state":        v.State,
+			"status":       v.Status,
+			"workspace_id": v.WorkspaceID,
 		})
 		if err != nil {
 			return err
-		}
-
-		for _, svo := range v.Outputs {
-			err := q.InsertStateVersionOutput(ctx, sqlc.InsertStateVersionOutputParams{
-				ID:             svo.ID,
-				Name:           sql.String(svo.Name),
-				Sensitive:      sql.Bool(svo.Sensitive),
-				Type:           sql.String(svo.Type),
-				Value:          svo.Value,
-				StateVersionID: v.ID,
-			})
-			if err != nil {
-				return err
-			}
 		}
 		return nil
 	})
 }
 
 func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
-	return db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
 		for _, svo := range outputs {
-			err := q.InsertStateVersionOutput(ctx, sqlc.InsertStateVersionOutputParams{
-				ID:             svo.ID,
-				Name:           sql.String(svo.Name),
-				Sensitive:      sql.Bool(svo.Sensitive),
-				Type:           sql.String(svo.Type),
-				Value:          svo.Value,
-				StateVersionID: svo.StateVersionID,
+			_, err := db.Exec(ctx, `
+INSERT INTO state_version_outputs (
+    state_version_output_id,
+    name,
+    sensitive,
+    type,
+    value,
+    state_version_id
+) VALUES (
+    @state_version_output_id,
+    @name,
+    @sensitive,
+    @type,
+	@value,
+	@state_version_id
+)`, pgx.NamedArgs{
+				"state_version_output_id": svo.ID,
+				"name":                    svo.Name,
+				"sensitive":               svo.Sensitive,
+				"type":                    svo.Type,
+				"value":                   svo.Value,
+				"state_version_id":        svo.StateVersionID,
 			})
 			if err != nil {
 				return err
@@ -95,71 +95,138 @@ func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
 	})
 }
 
-func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.ID, state []byte) error {
-	err := db.Querier(ctx).UpdateState(ctx, sqlc.UpdateStateParams{
-		State:          state,
-		StateVersionID: svID,
-	})
-	return sql.Error(err)
+func (db *pgdb) uploadStateAndFinalize(ctx context.Context, svID resource.TfeID, state []byte) error {
+	_, err := db.Exec(ctx, `
+UPDATE state_versions
+SET state = $1, status = 'finalized'
+WHERE state_version_id = $2
+`, state, svID)
+	return err
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.ID, opts resource.PageOptions) (*resource.Page[*Version], error) {
-	q := db.Querier(ctx)
-
-	rows, err := q.FindStateVersionsByWorkspaceID(ctx, sqlc.FindStateVersionsByWorkspaceIDParams{
-		WorkspaceID: workspaceID,
-		Limit:       sql.GetLimit(opts),
-		Offset:      sql.GetOffset(opts),
-	})
+func (db *pgdb) listVersions(ctx context.Context, workspaceID resource.TfeID, opts resource.PageOptions) (*resource.Page[*Version], error) {
+	rows := db.Query(ctx, `
+SELECT
+    sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+WHERE sv.workspace_id = $1
+AND   sv.status = 'finalized'
+ORDER BY created_at DESC
+LIMIT $2::int
+OFFSET $3::int
+`, workspaceID, sql.GetLimit(opts), sql.GetOffset(opts))
+	items, err := sql.CollectRows(rows, scanVersion)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := q.CountStateVersionsByWorkspaceID(ctx, workspaceID)
+	count, err := db.Int(ctx, `
+SELECT count(*)
+FROM state_versions
+WHERE workspace_id = $1
+AND status = 'finalized'
+`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]*Version, len(rows))
-	for i, r := range rows {
-		items[i] = pgRow(r).toVersion()
+	return resource.NewPage(items, opts, &count), nil
+}
+
+func scanVersion(row pgx.CollectableRow) (*Version, error) {
+	model, err := pgx.RowToStructByName[versionModel](row)
+	if err != nil {
+		return nil, err
 	}
-	return resource.NewPage(items, opts, internal.Int64(count)), nil
+	sv := Version{
+		ID:          model.StateVersionID,
+		CreatedAt:   model.CreatedAt,
+		Serial:      model.Serial,
+		State:       model.State,
+		Status:      model.Status,
+		WorkspaceID: model.WorkspaceID,
+		Outputs:     make(map[string]*Output, len(model.StateVersionOutputs)),
+	}
+	for _, output := range model.StateVersionOutputs {
+		sv.Outputs[output.Name] = output.toOutput()
+	}
+	return &sv, nil
+
 }
 
 func (db *pgdb) getVersion(ctx context.Context, svID resource.ID) (*Version, error) {
-	result, err := db.Querier(ctx).FindStateVersionByID(ctx, svID)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return pgRow(result).toVersion(), nil
+	rows := db.Query(ctx, `
+SELECT
+    sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+WHERE sv.state_version_id = $1
+`, svID)
+	return sql.CollectOneRow(rows, scanVersion)
 }
 
-func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.ID) (*Version, error) {
-	result, err := db.Querier(ctx).FindStateVersionByIDForUpdate(ctx, svID)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return pgRow(result).toVersion(), nil
+func (db *pgdb) getVersionForUpdate(ctx context.Context, svID resource.TfeID) (*Version, error) {
+	rows := db.Query(ctx, `
+SELECT
+    sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+WHERE sv.state_version_id = $1
+FOR UPDATE OF sv
+`, svID)
+	return sql.CollectOneRow(rows, scanVersion)
 }
 
-func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.ID) (*Version, error) {
-	result, err := db.Querier(ctx).FindCurrentStateVersionByWorkspaceID(ctx, workspaceID)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return pgRow(result).toVersion(), nil
+func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
+	rows := db.Query(ctx, `
+SELECT
+    sv.state_version_id, sv.created_at, sv.serial, sv.state, sv.workspace_id, sv.status,
+    (
+        SELECT array_agg(svo.*)::state_version_outputs[]
+        FROM state_version_outputs svo
+        WHERE svo.state_version_id = sv.state_version_id
+        GROUP BY svo.state_version_id
+    ) AS state_version_outputs
+FROM state_versions sv
+JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
+WHERE w.workspace_id = $1
+`, workspaceID)
+	return sql.CollectOneRow(rows, scanVersion)
 }
 
-func (db *pgdb) getState(ctx context.Context, id resource.ID) ([]byte, error) {
-	return db.Querier(ctx).FindStateVersionStateByID(ctx, id)
+func (db *pgdb) getState(ctx context.Context, id resource.TfeID) ([]byte, error) {
+	rows := db.Query(ctx, `
+SELECT state
+FROM state_versions
+WHERE state_version_id = $1
+`, id)
+	return sql.CollectOneRow(rows, pgx.RowTo[[]byte])
 }
 
 // deleteVersion deletes a state version from the DB
-func (db *pgdb) deleteVersion(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteStateVersionByID(ctx, id)
+func (db *pgdb) deleteVersion(ctx context.Context, id resource.TfeID) error {
+	_, err := db.Exec(ctx, `
+DELETE
+FROM state_versions
+WHERE state_version_id = $1
+`, id)
 	if err != nil {
-		err = sql.Error(err)
 		var fkerr *internal.ForeignKeyError
 		if errors.As(err, &fkerr) {
 			if fkerr.ConstraintName == "current_state_version_id_fk" && fkerr.TableName == "workspaces" {
@@ -171,21 +238,26 @@ func (db *pgdb) deleteVersion(ctx context.Context, id resource.ID) error {
 	return nil
 }
 
-func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.ID) error {
-	_, err := db.Querier(ctx).UpdateWorkspaceCurrentStateVersionID(ctx, sqlc.UpdateWorkspaceCurrentStateVersionIDParams{
-		StateVersionID: &svID,
-		WorkspaceID:    workspaceID,
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
+func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID resource.TfeID) error {
+	_, err := db.Exec(ctx, `
+UPDATE workspaces
+SET current_state_version_id = $1
+WHERE workspace_id = $2
+RETURNING workspace_id
+`, svID, workspaceID)
+	return err
 }
 
-func (db *pgdb) discardPending(ctx context.Context, workspaceID resource.ID) error {
-	err := db.Querier(ctx).DiscardPendingStateVersionsByWorkspaceID(ctx, workspaceID)
-	if err != nil {
-		return sql.Error(err)
+func (db *pgdb) discardAnyPending(ctx context.Context, workspaceID resource.TfeID) error {
+	_, err := db.Exec(ctx, `
+UPDATE state_versions
+SET status = 'discarded'
+WHERE workspace_id = $1
+AND status = 'pending'
+`, workspaceID)
+	// Not an error if there are no pending versions to discard.
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		return nil
 	}
-	return nil
+	return err
 }

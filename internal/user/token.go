@@ -11,9 +11,8 @@ import (
 type (
 	// UserToken provides information about an API token for a user.
 	UserToken struct {
-		resource.ID
-
-		CreatedAt   time.Time
+		ID          resource.TfeID `db:"token_id"`
+		CreatedAt   time.Time      `db:"created_at"`
 		Description string
 		Username    string // Token belongs to a user
 	}
@@ -31,7 +30,7 @@ type (
 
 func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
-		ID:          resource.NewID(resource.UserTokenKind),
+		ID:          resource.NewTfeID(resource.UserTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),
 		Description: opts.Description,
 		Username:    username,

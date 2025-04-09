@@ -24,13 +24,13 @@ type (
 	}
 
 	startJobParams struct {
-		JobID resource.ID `json:"job_id"`
+		JobID resource.TfeID `json:"job_id"`
 	}
 
 	finishJobParams struct {
 		finishJobOptions
 
-		JobID resource.ID `json:"job_id"`
+		JobID resource.TfeID `json:"job_id"`
 	}
 )
 

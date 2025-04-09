@@ -25,7 +25,7 @@ func WithExpiry(exp time.Time) NewTokenOption {
 	}
 }
 
-func (f *tokenFactory) NewToken(subjectID resource.ID, opts ...NewTokenOption) ([]byte, error) {
+func (f *tokenFactory) NewToken(subjectID resource.TfeID, opts ...NewTokenOption) ([]byte, error) {
 	builder := jwt.NewBuilder().
 		Subject(subjectID.String()).
 		IssuedAt(time.Now())

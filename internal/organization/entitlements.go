@@ -5,7 +5,7 @@ import "github.com/leg100/otf/internal/resource"
 // OTF is free and therefore the user is entitled to all currently supported
 // services.
 type Entitlements struct {
-	ID                    resource.ID
+	ID                    resource.TfeID
 	Agents                bool
 	AuditLogging          bool
 	CostEstimation        bool
@@ -20,7 +20,7 @@ type Entitlements struct {
 
 // defaultEntitlements constructs an Entitlements struct with currently
 // supported entitlements.
-func defaultEntitlements(organizationID resource.ID) Entitlements {
+func defaultEntitlements(organizationID resource.TfeID) Entitlements {
 	return Entitlements{
 		ID:                    organizationID,
 		Agents:                true,

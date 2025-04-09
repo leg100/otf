@@ -8,30 +8,30 @@ import (
 	"github.com/a-h/templ"
 )
 
-func VariableSetVariables(variableSet string) templ.SafeURL {
+func VariableSetVariables(variableSet fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-sets/%s/variable-set-variables", variableSet))
 }
 
-func CreateVariableSetVariable(variableSet string) templ.SafeURL {
+func CreateVariableSetVariable(variableSet fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/create", variableSet))
 }
 
-func NewVariableSetVariable(variableSet string) templ.SafeURL {
+func NewVariableSetVariable(variableSet fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-sets/%s/variable-set-variables/new", variableSet))
 }
 
-func VariableSetVariable(variableSetVariable string) templ.SafeURL {
+func VariableSetVariable(variableSetVariable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-set-variables/%s", variableSetVariable))
 }
 
-func EditVariableSetVariable(variableSetVariable string) templ.SafeURL {
+func EditVariableSetVariable(variableSetVariable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-set-variables/%s/edit", variableSetVariable))
 }
 
-func UpdateVariableSetVariable(variableSetVariable string) templ.SafeURL {
+func UpdateVariableSetVariable(variableSetVariable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-set-variables/%s/update", variableSetVariable))
 }
 
-func DeleteVariableSetVariable(variableSetVariable string) templ.SafeURL {
+func DeleteVariableSetVariable(variableSetVariable fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/variable-set-variables/%s/delete", variableSetVariable))
 }

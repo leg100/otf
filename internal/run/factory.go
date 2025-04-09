@@ -24,22 +24,22 @@ type (
 	}
 
 	factoryOrganizationClient interface {
-		Get(ctx context.Context, name string) (*organization.Organization, error)
+		Get(ctx context.Context, name organization.Name) (*organization.Organization, error)
 	}
 
 	factoryWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	factoryConfigClient interface {
-		Create(ctx context.Context, workspaceID resource.ID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
-		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
-		GetLatest(ctx context.Context, workspaceID resource.ID) (*configversion.ConfigurationVersion, error)
-		UploadConfig(ctx context.Context, id resource.ID, config []byte) error
+		Create(ctx context.Context, workspaceID resource.TfeID, opts configversion.CreateOptions) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
+		GetLatest(ctx context.Context, workspaceID resource.TfeID) (*configversion.ConfigurationVersion, error)
+		UploadConfig(ctx context.Context, id resource.TfeID, config []byte) error
 	}
 
 	factoryVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 
 	factoryReleasesClient interface {
@@ -48,7 +48,7 @@ type (
 )
 
 // NewRun constructs a new run using the provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error) {
 	ws, err := f.workspaces.Get(ctx, workspaceID)
 	if err != nil {
 		return nil, err

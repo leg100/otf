@@ -10,16 +10,18 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/configversion"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
 
-var tfeUser = resource.MustHardcodeID(resource.UserKind, "123")
+var tfeUser = resource.MustHardcodeTfeID(resource.UserKind, "123")
 
 type tfe struct {
 	*Service
@@ -56,7 +58,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
-	var params types.RunCreateOptions
+	var params TFERunCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -126,7 +128,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
-	var params types.RunListOptions
+	var params TFERunListOptions
 	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -139,7 +141,7 @@ func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	// split operations CSV
 	operations := internal.SplitCSV(params.Operation)
 	var planOnly *bool
-	if slices.Contains(operations, string(types.RunOperationPlanOnly)) {
+	if slices.Contains(operations, string(RunOperationPlanOnly)) {
 		planOnly = internal.Bool(true)
 	}
 
@@ -169,7 +171,7 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 	}
 
 	// convert items
-	items := make([]*types.Run, len(page.Items))
+	items := make([]*TFERun, len(page.Items))
 	for i, from := range page.Items {
 		to, err := a.toRun(from, r.Context())
 		if err != nil {
@@ -256,7 +258,7 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := a.Get(r.Context(), resource.ConvertID(id, "run"))
+	run, err := a.Get(r.Context(), resource.ConvertTfeID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -282,7 +284,7 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := a.GetPlanFile(r.Context(), resource.ConvertID(id, "run"), PlanFormatJSON)
+	json, err := a.GetPlanFile(r.Context(), resource.ConvertTfeID(id, "run"), PlanFormatJSON)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -301,7 +303,7 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := a.Get(r.Context(), resource.ConvertID(id, "run"))
+	run, err := a.Get(r.Context(), resource.ConvertTfeID(id, "run"))
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -320,11 +322,11 @@ func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 // makes a call to this endpoint. OTF therefore stubs this endpoint and sends an
 // empty response, to avoid sending a 404 response and triggering an error.
 func (a *tfe) listRunEvents(w http.ResponseWriter, r *http.Request) {
-	a.Respond(w, r, []*types.RunEvent{}, http.StatusOK)
+	a.Respond(w, r, []*TFERunEvent{}, http.StatusOK)
 }
 
 func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
-	ws, ok := v.(*types.Workspace)
+	ws, ok := v.(*workspace.TFEWorkspace)
 	if !ok {
 		return nil, nil
 	}
@@ -343,7 +345,7 @@ func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
 }
 
 func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
-	run, ok := v.(*types.Run)
+	run, ok := v.(*TFERun)
 	if !ok {
 		return nil, nil
 	}
@@ -353,10 +355,26 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 	return []any{run.CreatedBy}, nil
 }
 
+func (a *tfe) includeWorkspace(ctx context.Context, v any) ([]any, error) {
+	run, ok := v.(*TFERun)
+	if !ok {
+		return nil, nil
+	}
+	ws, err := a.workspaces.Get(ctx, run.Workspace.ID)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving workspace: %w", err)
+	}
+	include, err := workspace.ToTFE(a.authorizer, ws, (&http.Request{}).WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return []any{include}, nil
+}
+
 // toRun converts a run into its equivalent json:api struct
-func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
-	accessRequest := &authz.AccessRequest{ID: &from.ID}
-	perms := &types.RunPermissions{
+func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
+	accessRequest := &authz.Request{ID: &from.ID}
+	perms := &TFERunPermissions{
 		CanDiscard:      a.authorizer.CanAccess(ctx, authz.DiscardRunAction, accessRequest),
 		CanForceExecute: a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
 		CanForceCancel:  a.authorizer.CanAccess(ctx, authz.ForceCancelRunAction, accessRequest),
@@ -364,7 +382,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		CanApply:        a.authorizer.CanAccess(ctx, authz.ApplyRunAction, accessRequest),
 	}
 
-	var timestamps types.RunStatusTimestamps
+	var timestamps TFERunStatusTimestamps
 	for _, rst := range from.StatusTimestamps {
 		switch rst.Status {
 		case runstatus.Pending:
@@ -394,9 +412,9 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		}
 	}
 
-	to := &types.Run{
+	to := &TFERun{
 		ID: from.ID,
-		Actions: &types.RunActions{
+		Actions: &TFERunActions{
 			IsCancelable:      from.Cancelable(),
 			IsConfirmable:     from.Confirmable(),
 			IsForceCancelable: from.CancelSignaledAt != nil,
@@ -421,24 +439,24 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		TargetAddrs:      from.TargetAddrs,
 		TerraformVersion: from.TerraformVersion,
 		// Relations
-		Plan:  &types.Plan{ID: resource.ConvertID(from.ID, "plan")},
-		Apply: &types.Apply{ID: resource.ConvertID(from.ID, "apply")},
+		Plan:  &TFEPlan{ID: resource.ConvertTfeID(from.ID, "plan")},
+		Apply: &TFEApply{ID: resource.ConvertTfeID(from.ID, "apply")},
 		// TODO: populate with real user.
-		CreatedBy: &types.User{
+		CreatedBy: &user.TFEUser{
 			ID:       tfeUser,
 			Username: "otf",
 		},
-		ConfigurationVersion: &types.ConfigurationVersion{
+		ConfigurationVersion: &configversion.TFEConfigurationVersion{
 			ID: from.ConfigurationVersionID,
 		},
-		Workspace: &types.Workspace{ID: from.WorkspaceID},
+		Workspace: &TFEWorkspace{ID: from.WorkspaceID},
 	}
-	to.Variables = make([]types.RunVariable, len(from.Variables))
+	to.Variables = make([]TFERunVariable, len(from.Variables))
 	for i, from := range from.Variables {
-		to.Variables[i] = types.RunVariable{Key: from.Key, Value: from.Value}
+		to.Variables[i] = TFERunVariable(from)
 	}
 	if from.CostEstimationEnabled {
-		to.CostEstimate = &types.CostEstimate{ID: resource.ConvertID(from.ID, "ce")}
+		to.CostEstimate = &types.CostEstimate{ID: resource.ConvertTfeID(from.ID, "ce")}
 	}
 	//
 	// go-tfe integration tests expect this parameter to be set even if a run
@@ -459,39 +477,39 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 	return to, nil
 }
 
-func (a *tfe) toPlan(plan Phase, r *http.Request) (*types.Plan, error) {
+func (a *tfe) toPlan(plan Phase, r *http.Request) (*TFEPlan, error) {
 	logURL, err := a.logURL(r, plan)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.Plan{
-		ID:               resource.ConvertID(plan.RunID, "plan"),
-		HasChanges:       plan.HasChanges(),
-		LogReadURL:       logURL,
-		ResourceReport:   a.toResourceReport(plan.ResourceReport),
-		Status:           string(plan.Status),
-		StatusTimestamps: a.toPhaseTimestamps(plan.StatusTimestamps),
+	return &TFEPlan{
+		ID:                resource.ConvertTfeID(plan.RunID, "plan"),
+		HasChanges:        plan.HasChanges(),
+		LogReadURL:        logURL,
+		TFEResourceReport: a.toResourceReport(plan.ResourceReport),
+		Status:            string(plan.Status),
+		StatusTimestamps:  a.toPhaseTimestamps(plan.StatusTimestamps),
 	}, nil
 }
 
-func (a *tfe) toApply(apply Phase, r *http.Request) (*types.Apply, error) {
+func (a *tfe) toApply(apply Phase, r *http.Request) (*TFEApply, error) {
 	logURL, err := a.logURL(r, apply)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.Apply{
-		ID:               resource.ConvertID(apply.RunID, "apply"),
-		LogReadURL:       logURL,
-		ResourceReport:   a.toResourceReport(apply.ResourceReport),
-		Status:           string(apply.Status),
-		StatusTimestamps: a.toPhaseTimestamps(apply.StatusTimestamps),
+	return &TFEApply{
+		ID:                resource.ConvertTfeID(apply.RunID, "apply"),
+		LogReadURL:        logURL,
+		TFEResourceReport: a.toResourceReport(apply.ResourceReport),
+		Status:            string(apply.Status),
+		StatusTimestamps:  a.toPhaseTimestamps(apply.StatusTimestamps),
 	}, nil
 }
 
-func (a *tfe) toResourceReport(from *Report) types.ResourceReport {
-	var to types.ResourceReport
+func (a *tfe) toResourceReport(from *Report) TFEResourceReport {
+	var to TFEResourceReport
 	if from != nil {
 		to.Additions = &from.Additions
 		to.Changes = &from.Changes
@@ -500,8 +518,8 @@ func (a *tfe) toResourceReport(from *Report) types.ResourceReport {
 	return to
 }
 
-func (a *tfe) toPhaseTimestamps(from []PhaseStatusTimestamp) *types.PhaseStatusTimestamps {
-	var timestamps types.PhaseStatusTimestamps
+func (a *tfe) toPhaseTimestamps(from []PhaseStatusTimestamp) *TFEPhaseStatusTimestamps {
+	var timestamps TFEPhaseStatusTimestamps
 	for _, ts := range from {
 		switch ts.Status {
 		case PhasePending:

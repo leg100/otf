@@ -34,28 +34,24 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText(regexp.MustCompile(`Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`))
 		require.NoError(t, err)
 
-		// token widget should be visible
-		err = expect.Locator(page.Locator(`//div[@class='widget']//span[text()='Token']`)).ToBeVisible()
-		require.NoError(t, err)
-
-		// check token begins with `ot-`
-		err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+		// check token exists and begins with `ot-`
+		err = expect.Locator(page.Locator(`//*[@id='item-token']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
 		require.NoError(t, err)
 
 		// capture token for comparison
-		token, err := page.Locator(`//div[@class='widget']//span[@x-ref='content']`).TextContent()
+		token, err := page.Locator(`//*[@id='item-token']//span[@x-ref='content']`).TextContent()
 		require.NoError(t, err)
 
 		// regenerate token
-		err = page.Locator(`//button[text()='regenerate']`).Click()
+		err = page.Locator(`//button[text()='Regenerate']`).Click()
 		require.NoError(t, err)
 
 		// check regenerated token does not match original token
-		err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).Not().ToHaveText(token)
+		err = expect.Locator(page.Locator(`//*[@id='item-token']//span[@x-ref='content']`)).Not().ToHaveText(token)
 		require.NoError(t, err)
 
 		// check regenerated token begins with `ot-`
-		err = expect.Locator(page.Locator(`//div[@class='widget']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
+		err = expect.Locator(page.Locator(`//*[@id='item-token']//span[@x-ref='content']`)).ToHaveText(regexp.MustCompile(`^ot-`))
 		require.NoError(t, err)
 
 		// delete token

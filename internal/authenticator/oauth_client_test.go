@@ -45,7 +45,7 @@ func TestOAuthClient_callbackHandler(t *testing.T) {
 
 // newTestOAuthServerClient creates an OAuth server for testing purposes and
 // returns a client configured to access the server.
-func newTestOAuthServerClient(t *testing.T, userID resource.ID) *OAuthClient {
+func newTestOAuthServerClient(t *testing.T, userID resource.TfeID) *OAuthClient {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
 		require.NoError(t, err)

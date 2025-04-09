@@ -174,6 +174,7 @@ func init() {
 	funcmap["editModulePath"] = EditModule
 	funcmap["updateModulePath"] = UpdateModule
 	funcmap["deleteModulePath"] = DeleteModule
+	funcmap["connectModulePath"] = ConnectModule
 }
 
 func FuncMap() template.FuncMap { return funcmap }

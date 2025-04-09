@@ -57,7 +57,7 @@ resource "null_resource" "tags_e2e" {}
 
 	// confirm tagged workspace has been created
 	got, err := daemon.Workspaces.List(ctx, workspace.ListOptions{
-		Organization: internal.String(org.Name),
+		Organization: &org.Name,
 		Tags:         []string{"foo", "bar"},
 	})
 	require.NoError(t, err)

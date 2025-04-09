@@ -12,7 +12,7 @@ type Client struct {
 	*otfapi.Client
 }
 
-func (c *Client) ListEffectiveVariables(ctx context.Context, runID resource.ID) ([]*Variable, error) {
+func (c *Client) ListEffectiveVariables(ctx context.Context, runID resource.TfeID) ([]*Variable, error) {
 	u := fmt.Sprintf("vars/effective/%s", runID)
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {

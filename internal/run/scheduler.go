@@ -24,23 +24,23 @@ type (
 		runs       schedulerRunClient
 
 		// map workspace's ID to its runs
-		queues map[resource.ID]queue
+		queues map[resource.TfeID]queue
 	}
 
 	queue struct {
-		current *resource.ID
-		backlog []resource.ID
+		current *resource.TfeID
+		backlog []resource.TfeID
 	}
 
 	schedulerWorkspaceClient interface {
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
-		Unlock(context.Context, resource.ID, *resource.ID, bool) (*workspace.Workspace, error)
+		Unlock(context.Context, resource.TfeID, *resource.TfeID, bool) (*workspace.Workspace, error)
 	}
 
 	schedulerRunClient interface {
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
 		Watch(context.Context) (<-chan pubsub.Event[*Run], func())
-		EnqueuePlan(ctx context.Context, runID resource.ID) (*Run, error)
+		EnqueuePlan(ctx context.Context, runID resource.TfeID) (*Run, error)
 	}
 
 	SchedulerOptions struct {
@@ -85,7 +85,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	slices.Reverse(runs)
 
 	// Populate queues with existing runs and make scheduling decisions
-	s.queues = make(map[resource.ID]queue)
+	s.queues = make(map[resource.TfeID]queue)
 	for _, run := range runs {
 		if err := s.schedule(ctx, run.WorkspaceID, run); err != nil {
 			return err
@@ -128,7 +128,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 }
 
-func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *Run) error {
+func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, run *Run) error {
 	if run != nil && run.PlanOnly {
 		if run.Status == runstatus.Pending {
 			// Enqueue plan immediately for pending plan-only runs
@@ -148,7 +148,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.ID, run *
 				s.V(0).Info("workspace locked by user; cannot schedule run", "run", *q.current)
 				// Place current run back onto front of backlog and wait til
 				// user unlocks workspace
-				q.backlog = append([]resource.ID{*q.current}, q.backlog...)
+				q.backlog = append([]resource.TfeID{*q.current}, q.backlog...)
 				q.current = nil
 			} else {
 				return err

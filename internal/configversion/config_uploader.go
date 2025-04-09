@@ -4,36 +4,35 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/sqlc"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type cvUploader struct {
-	q  *sqlc.Queries
-	id resource.ID
-}
-
-func newConfigUploader(q *sqlc.Queries, id resource.ID) *cvUploader {
-	return &cvUploader{
-		q:  q,
-		id: id,
-	}
+	conn sql.Connection
+	id   resource.TfeID
 }
 
 func (u *cvUploader) SetErrored(ctx context.Context) error {
 	// TODO: add status timestamp
-	_, err := u.q.UpdateConfigurationVersionErroredByID(ctx, u.id)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := u.conn.Exec(ctx, `
+UPDATE configuration_versions
+SET
+    status = 'errored'
+WHERE configuration_version_id = $1
+RETURNING configuration_version_id
+`, u.id)
+	return err
 }
 
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
 	// TODO: add status timestamp
-	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, sqlc.UpdateConfigurationVersionConfigByIDParams{
-		ID:     u.id,
-		Config: config,
-	})
+	_, err := u.conn.Exec(ctx, `
+UPDATE configuration_versions
+SET
+    config = $1,
+    status = 'uploaded'
+WHERE configuration_version_id = $2
+`, config, u.id)
 	if err != nil {
 		return ConfigurationErrored, err
 	}

@@ -43,8 +43,14 @@ templ (p pageInfo[T]) summary() {
 	if err != nil {
 		return err
 	}
-	firstItemNumber := ((p.CurrentPage - 1) * size) + 1
-	lastItemNumber := max(0, firstItemNumber+len(p.Items)-1)
+	var (
+		firstItemNumber int
+		lastItemNumber  int
+	)
+	if len(p.Items) > 0 {
+		firstItemNumber = ((p.CurrentPage - 1) * size) + 1
+		lastItemNumber = max(0, firstItemNumber+len(p.Items)-1)
+	}
 	}}
 	<div class="badge badge-outline badge-neutral" id="page-info">
 		{ fmt.Sprintf("%d-%d of %d", firstItemNumber, lastItemNumber, p.TotalCount) }
@@ -83,16 +89,12 @@ templ (p pageInfo[T]) navigationButtons() {
 		}
 	}}
 	<div class="join">
-		if p.PreviousPage != nil {
-			<button class="join-item btn btn-sm">
-				<a id="prev-page-link" href={ previousURL }>Previous Page</a>
-			</button>
-		}
-		if p.NextPage != nil {
-			<button class="join-item btn btn-sm">
-				<a id="next-page-link" href={ nextURL }>Next Page</a>
-			</button>
-		}
+		<button class={ "join-item btn btn-sm", templ.KV("btn-disabled", p.PreviousPage == nil) }>
+			<a id="prev-page-link" href={ previousURL }>Previous Page</a>
+		</button>
+		<button class={ "join-item btn btn-sm", templ.KV("btn-disabled", p.NextPage == nil) }>
+			<a id="next-page-link" href={ nextURL }>Next Page</a>
+		</button>
 	</div>
 }
 

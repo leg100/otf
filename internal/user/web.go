@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfteam "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tokens"
@@ -20,32 +21,33 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	users     usersClient
-	teams     teamsClient
-	tokens    tokensClient
-	siteToken string
+	users      usersClient
+	teams      teamsClient
+	tokens     tokensClient
+	authorizer authz.Interface
+	siteToken  string
 }
 
 type usersClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 	List(ctx context.Context) ([]*User, error)
-	ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
-	ListTeamUsers(ctx context.Context, teamID resource.ID) ([]*User, error)
+	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error)
+	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error)
 	Delete(ctx context.Context, username string) error
-	AddTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID resource.ID, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
 
 	CreateToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*UserToken, error)
-	DeleteToken(ctx context.Context, tokenID resource.ID) error
+	DeleteToken(ctx context.Context, tokenID resource.TfeID) error
 }
 
 type tokensClient interface {
-	StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
+	StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 }
 
 type teamsClient interface {
-	GetByID(ctx context.Context, teamID resource.ID) (*otfteam.Team, error)
+	GetByID(ctx context.Context, teamID resource.TfeID) (*otfteam.Team, error)
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -85,19 +87,21 @@ func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
+	var params ListOptions
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	users, err := h.users.ListOrganizationUsers(r.Context(), name)
+	users, err := h.users.ListOrganizationUsers(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	props := userListProps{organization: name, users: users}
+	props := userListProps{
+		organization: params.Organization,
+		users:        resource.NewPage(users, params.PageOptions, nil),
+	}
 	html.Render(userList(props), w, r)
 }
 
@@ -139,8 +143,8 @@ func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.ID `schema:"team_id,required"`
-		Username *string     `schema:"username,required"`
+		TeamID   resource.TfeID `schema:"team_id,required"`
+		Username *string        `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -154,13 +158,13 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "added team member: "+*params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.ID `schema:"team_id,required"`
-		Username string      `schema:"username,required"`
+		TeamID   resource.TfeID `schema:"team_id,required"`
+		Username string         `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -174,7 +178,7 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "removed team member: "+params.Username)
-	http.Redirect(w, r, paths.Team(params.TeamID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
@@ -204,15 +208,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	user, err := UserFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// get usernames of non-members
 	var nonMemberUsernames []string
-	if user.CanAccess(authz.ListUsersAction, nil) {
+	if h.authorizer.CanAccess(r.Context(), authz.ListUsersAction, resource.SiteID) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -228,17 +225,15 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	props := getTeamProps{
 		team:            team,
 		members:         members,
-		canUpdateTeam:   user.CanAccess(authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		canDeleteTeam:   user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		canAddMember:    user.CanAccess(authz.AddTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		canRemoveMember: user.CanAccess(authz.RemoveTeamMembershipAction, &authz.AccessRequest{Organization: team.Organization}),
-		canDelete:       user.CanAccess(authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization}),
-		isOwner:         user.IsOwner(team.Organization),
+		canUpdateTeam:   h.authorizer.CanAccess(r.Context(), authz.UpdateTeamAction, team.Organization),
+		canDeleteTeam:   h.authorizer.CanAccess(r.Context(), authz.DeleteTeamAction, team.Organization),
+		canAddMember:    h.authorizer.CanAccess(r.Context(), authz.AddTeamMembershipAction, team.Organization),
+		canRemoveMember: h.authorizer.CanAccess(r.Context(), authz.RemoveTeamMembershipAction, team.Organization),
 		dropdown: components.SearchDropdownProps{
 			Name:        "username",
 			Available:   nonMemberUsernames,
 			Existing:    usernames,
-			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID.String())),
+			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID)),
 			Placeholder: "Add user",
 			Width:       components.WideDropDown,
 		},

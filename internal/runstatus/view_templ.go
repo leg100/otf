@@ -31,7 +31,7 @@ var ThemeMappings = map[Status]string{
 	Planning:           "primary",
 }
 
-func Badge(runID resource.ID, status Status) templ.Component {
+func Badge(runID resource.TfeID, status Status) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -87,7 +87,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var5 templ.SafeURL = paths.Run(runID.String())
+		var templ_7745c5c3_Var5 templ.SafeURL = paths.Run(runID)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var5)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -99,7 +99,7 @@ func Badge(runID resource.ID, status Status) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ReplaceAll(string(status), "_", " "))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 28, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/runstatus/view.templ`, Line: 28, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -134,7 +134,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border-base-300 border\"><input id=\"toggle-status-filter-visibility\" type=\"checkbox\" name=\"status_filter_visible\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border-base-content/20 border\"><input id=\"toggle-status-filter-visibility\" type=\"checkbox\" name=\"status_filter_visible\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -144,7 +144,7 @@ func Filter(selected []Status, visible bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "><div class=\"collapse-title font-semibold\">Filter by status</div><div class=\"collapse-content text-sm flex flex-wrap gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "><div class=\"collapse-title\">Filter by status</div><div class=\"collapse-content text-sm flex flex-wrap gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

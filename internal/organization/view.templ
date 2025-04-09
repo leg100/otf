@@ -44,19 +44,28 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.PaginatedContentList(props.Page, listItem)
+		@components.Table(&table{}, props.Page, "page-results")
 	}
 }
 
-templ listItem(org *Organization) {
-	<div class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
-		<div>
-			<span>{ org.Name }</span>
-		</div>
-		<div>
+type table struct{}
+
+templ (t table) Header() {
+	<th>Name</th>
+	<th>ID</th>
+}
+
+templ (t table) Row(org *Organization) {
+	<tr id={ "org-item-" + org.Name.String() } class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+		<td>
+			<a class="link" href={ paths.Organization(org.Name) }>
+				{ org.Name.String() }
+			</a>
+		</td>
+		<td>
 			@components.Identifier(org.ID)
-		</div>
-	</div>
+		</td>
+	</tr>
 }
 
 templ listActions(canCreate bool) {
@@ -79,7 +88,7 @@ templ listActions(canCreate bool) {
 templ get(organization *Organization) {
 	{{
 	layoutProps := components.LayoutProps{
-		Title:        organization.Name,
+		Title:        organization.Name.String(),
 		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "main menu"},
@@ -132,7 +141,7 @@ templ get(organization *Organization) {
 
 templ edit(organization *Organization) {
 	@components.Layout(components.LayoutProps{
-		Title:        organization.Name,
+		Title:        organization.Name.String(),
 		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "settings"},
@@ -141,7 +150,7 @@ templ edit(organization *Organization) {
 		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(organization.Name) } method="POST">
 			<div class="field">
 				<label for="name">Name</label>
-				<input class="input w-80" type="text" name="new_name" id="name" value={ organization.Name } required/>
+				<input class="input w-80" type="text" name="new_name" id="name" value={ organization.Name.String() } required/>
 			</div>
 			<div class="field">
 				<button class="btn w-72">Update organization name</button>
@@ -158,9 +167,9 @@ templ edit(organization *Organization) {
 	}
 }
 
-templ getToken(organization string, token *OrganizationToken) {
+templ getToken(organization Name, token *OrganizationToken) {
 	@components.Layout(components.LayoutProps{
-		Title:        organization,
+		Title:        organization.String(),
 		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "organization token"},
@@ -170,27 +179,44 @@ templ getToken(organization string, token *OrganizationToken) {
 			The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
 		</span>
 		if token != nil {
-			<div class="widget">
-				<div>
-					<span>Token</span>
-					<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
-				</div>
-				<div>
-					@components.Identifier(token.ID)
-					<div class="flex gap-2">
-						<form action={ paths.CreateOrganizationToken(organization) } method="POST">
-							<button class="btn">regenerate</button>
-						</form>
-						<form action={ paths.DeleteOrganizationToken(organization) } method="POST">
-							@components.DeleteButton()
-						</form>
-					</div>
-				</div>
-			</div>
+			@components.UnpaginatedTable(
+				&tokenTable{},
+				[]*OrganizationToken{token},
+				"org-token-table",
+			)
 		} else {
 			<form class="mt-2" action={ paths.CreateOrganizationToken(organization) } method="POST">
 				<button class="btn w-72">Create organization token</button>
 			</form>
 		}
 	}
+}
+
+type tokenTable struct{}
+
+templ (t tokenTable) Header() {
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t tokenTable) Row(token *OrganizationToken) {
+	<tr id="item-token">
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
+		</td>
+		<td>
+			<div class="flex gap-2">
+				<form action={ paths.CreateOrganizationToken(token.Organization) } method="POST">
+					<button class="btn">Regenerate</button>
+				</form>
+				<form action={ paths.DeleteOrganizationToken(token.Organization) } method="POST">
+					@components.DeleteButton()
+				</form>
+			</div>
+		</td>
+	</tr>
 }

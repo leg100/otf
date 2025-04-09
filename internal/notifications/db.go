@@ -2,143 +2,159 @@ package notifications
 
 import (
 	"context"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/leg100/otf/internal"
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
-type (
-	// pgdb is a notification configuration database on postgres
-	pgdb struct {
-		*sql.DB // provides access to generated SQL queries
-	}
-
-	pgresult struct {
-		NotificationConfigurationID resource.ID
-		CreatedAt                   pgtype.Timestamptz
-		UpdatedAt                   pgtype.Timestamptz
-		Name                        pgtype.Text
-		URL                         pgtype.Text
-		Triggers                    []pgtype.Text
-		DestinationType             pgtype.Text
-		WorkspaceID                 resource.ID
-		Enabled                     pgtype.Bool
-	}
-)
-
-func (r pgresult) toNotificationConfiguration() *Config {
-	nc := &Config{
-		ID:              r.NotificationConfigurationID,
-		CreatedAt:       r.CreatedAt.Time.UTC(),
-		UpdatedAt:       r.UpdatedAt.Time.UTC(),
-		Name:            r.Name.String,
-		Enabled:         r.Enabled.Bool,
-		DestinationType: Destination(r.DestinationType.String),
-		WorkspaceID:     r.WorkspaceID,
-	}
-	for _, t := range r.Triggers {
-		nc.Triggers = append(nc.Triggers, Trigger(t.String))
-	}
-	if r.URL.Valid {
-		nc.URL = &r.URL.String
-	}
-	return nc
+// pgdb is a notification configuration database on postgres
+type pgdb struct {
+	*sql.DB // provides access to generated SQL queries
 }
 
 func (db *pgdb) create(ctx context.Context, nc *Config) error {
-	params := sqlc.InsertNotificationConfigurationParams{
-		NotificationConfigurationID: nc.ID,
-		CreatedAt:                   sql.Timestamptz(nc.CreatedAt),
-		UpdatedAt:                   sql.Timestamptz(nc.UpdatedAt),
-		Name:                        sql.String(nc.Name),
-		Enabled:                     sql.Bool(nc.Enabled),
-		DestinationType:             sql.String(string(nc.DestinationType)),
-		URL:                         sql.NullString(),
-		WorkspaceID:                 nc.WorkspaceID,
-	}
-	for _, t := range nc.Triggers {
-		params.Triggers = append(params.Triggers, sql.String(string(t)))
-	}
-	if nc.URL != nil {
-		params.URL = sql.String(*nc.URL)
-	}
-	err := db.Querier(ctx).InsertNotificationConfiguration(ctx, params)
-	return sql.Error(err)
+	_, err := db.Exec(ctx, `
+INSERT INTO notification_configurations (
+    notification_configuration_id,
+    created_at,
+    updated_at,
+    name,
+    url,
+    triggers,
+    destination_type,
+    enabled,
+    workspace_id
+) VALUES (
+    @id,
+    @created_at,
+    @updated_at,
+    @name,
+    @url,
+    @triggers,
+    @destination_type,
+    @enabled,
+    @workspace_id
+)
+`,
+		pgx.NamedArgs{
+			"id":               nc.ID,
+			"created_at":       nc.CreatedAt,
+			"updated_at":       nc.UpdatedAt,
+			"name":             nc.Name,
+			"enabled":          nc.Enabled,
+			"destination_type": nc.DestinationType,
+			"workspace_id":     nc.WorkspaceID,
+			"triggers":         nc.Triggers,
+			"url":              nc.URL,
+		},
+	)
+	return err
 }
 
-func (db *pgdb) update(ctx context.Context, id resource.ID, updateFunc func(context.Context, *Config) error) (*Config, error) {
+func (db *pgdb) update(ctx context.Context, id resource.TfeID, updateFunc func(context.Context, *Config) error) (*Config, error) {
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, q *sqlc.Queries) (*Config, error) {
-			result, err := q.FindNotificationConfigurationForUpdate(ctx, id)
-			if err != nil {
-				return nil, sql.Error(err)
-			}
-			return pgresult(result).toNotificationConfiguration(), nil
+		func(ctx context.Context, conn sql.Connection) (*Config, error) {
+			rows := db.Query(ctx, `
+SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
+FROM notification_configurations
+WHERE notification_configuration_id = $1
+FOR UPDATE
+`, id)
+			return sql.CollectOneRow(rows, scanConfig)
 		},
 		updateFunc,
-		func(ctx context.Context, q *sqlc.Queries, nc *Config) error {
-			params := sqlc.UpdateNotificationConfigurationByIDParams{
-				UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp(nil)),
-				Enabled:                     sql.Bool(nc.Enabled),
-				Name:                        sql.String(nc.Name),
-				URL:                         sql.NullString(),
-				NotificationConfigurationID: nc.ID,
-			}
-			for _, t := range nc.Triggers {
-				params.Triggers = append(params.Triggers, sql.String(string(t)))
-			}
-			if nc.URL != nil {
-				params.URL = sql.String(*nc.URL)
-			}
-			_, err := q.UpdateNotificationConfigurationByID(ctx, params)
+		func(ctx context.Context, conn sql.Connection, nc *Config) error {
+			_, err := db.Exec(ctx, `
+UPDATE notification_configurations
+SET
+    updated_at = @updated_at,
+    enabled    = @enabled,
+    name       = @name,
+    triggers   = @triggers,
+    url        = @url
+WHERE notification_configuration_id = @id
+RETURNING notification_configuration_id
+`,
+				pgx.NamedArgs{
+					"id":         nc.ID,
+					"updated_at": nc.UpdatedAt,
+					"name":       nc.Name,
+					"enabled":    nc.Enabled,
+					"triggers":   nc.Triggers,
+					"url":        nc.URL,
+				},
+			)
 			return err
 		},
 	)
 }
 
-func (db *pgdb) list(ctx context.Context, workspaceID resource.ID) ([]*Config, error) {
-	results, err := db.Querier(ctx).FindNotificationConfigurationsByWorkspaceID(ctx, workspaceID)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-
-	configs := make([]*Config, len(results))
-	for i, row := range results {
-		configs[i] = pgresult(row).toNotificationConfiguration()
-	}
-	return configs, nil
+func (db *pgdb) list(ctx context.Context, workspaceID resource.TfeID) ([]*Config, error) {
+	rows := db.Query(ctx, `
+SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
+FROM notification_configurations
+WHERE workspace_id = $1
+`, workspaceID)
+	return sql.CollectRows(rows, scanConfig)
 }
 
 func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
-	results, err := db.Querier(ctx).FindAllNotificationConfigurations(ctx)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-
-	configs := make([]*Config, len(results))
-	for i, row := range results {
-		configs[i] = pgresult(row).toNotificationConfiguration()
-	}
-	return configs, nil
+	rows := db.Query(ctx, `
+SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
+FROM notification_configurations
+`)
+	return sql.CollectRows(rows, scanConfig)
 }
 
-func (db *pgdb) get(ctx context.Context, id resource.ID) (*Config, error) {
-	row, err := db.Querier(ctx).FindNotificationConfiguration(ctx, id)
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return pgresult(row).toNotificationConfiguration(), nil
+func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*Config, error) {
+	rows := db.Query(ctx, `
+SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
+FROM notification_configurations
+WHERE notification_configuration_id = $1
+`, id)
+	return sql.CollectOneRow(rows, scanConfig)
 }
 
-func (db *pgdb) delete(ctx context.Context, id resource.ID) error {
-	_, err := db.Querier(ctx).DeleteNotificationConfigurationByID(ctx, id)
-	if err != nil {
-		return sql.Error(err)
+func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {
+	_, err := db.Exec(ctx, `
+DELETE FROM notification_configurations
+WHERE notification_configuration_id = $1
+RETURNING notification_configuration_id
+`, id)
+	return err
+}
+
+func scanConfig(row pgx.CollectableRow) (*Config, error) {
+	type model struct {
+		ID              resource.TfeID `db:"notification_configuration_id"`
+		CreatedAt       time.Time      `db:"created_at"`
+		UpdatedAt       time.Time      `db:"updated_at"`
+		DestinationType Destination    `db:"destination_type"`
+		Enabled         bool
+		Name            string
+		Token           string `db:"-"`
+		Triggers        []Trigger
+		URL             *string
+		WorkspaceID     resource.TfeID `db:"workspace_id"`
 	}
-	return nil
+	m, err := pgx.RowToAddrOfStructByName[model](row)
+	if err != nil {
+		return nil, err
+	}
+	cfg := &Config{
+		ID:              m.ID,
+		CreatedAt:       m.CreatedAt,
+		UpdatedAt:       m.UpdatedAt,
+		DestinationType: m.DestinationType,
+		Enabled:         m.Enabled,
+		Name:            m.Name,
+		Triggers:        m.Triggers,
+		URL:             m.URL,
+		WorkspaceID:     m.WorkspaceID,
+	}
+	return cfg, nil
 }

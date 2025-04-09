@@ -25,14 +25,14 @@ type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
 	// Terraform configuration.
 	ConfigurationVersion struct {
-		ID                resource.ID
+		ID                resource.TfeID
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
 		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
-		StatusTimestamps  []ConfigurationVersionStatusTimestamp
-		WorkspaceID       resource.ID
+		StatusTimestamps  []StatusTimestamp
+		WorkspaceID       resource.TfeID
 		IngressAttributes *IngressAttributes
 	}
 
@@ -49,9 +49,10 @@ type (
 	// ConfigurationStatus represents a configuration version status.
 	ConfigurationStatus string
 
-	ConfigurationVersionStatusTimestamp struct {
-		Status    ConfigurationStatus
-		Timestamp time.Time
+	StatusTimestamp struct {
+		ConfigurationVersionID resource.TfeID `db:"-"`
+		Status                 ConfigurationStatus
+		Timestamp              time.Time
 	}
 
 	// ConfigUploader uploads a config
@@ -67,10 +68,10 @@ type (
 	// version. Either ID *or* WorkspaceID must be specfiied.
 	ConfigurationVersionGetOptions struct {
 		// ID of config version to retrieve
-		ID *resource.ID
+		ID *resource.TfeID
 
 		// Get latest config version for this workspace ID
-		WorkspaceID *resource.ID
+		WorkspaceID *resource.TfeID
 
 		// A list of relations to include
 		Include *string `schema:"include"`
@@ -86,31 +87,27 @@ type (
 	}
 
 	IngressAttributes struct {
-		// ID     resource.ID
-		Branch string
-		// CloneURL          string
-		// CommitMessage     string
-		CommitSHA string
-		CommitURL string
-		// CompareURL        string
-		Repo              string
-		IsPullRequest     bool
-		OnDefaultBranch   bool
-		PullRequestNumber int
-		PullRequestURL    string
-		PullRequestTitle  string
-		// PullRequestBody   string
-		Tag             string
-		SenderUsername  string
-		SenderAvatarURL string
-		SenderHTMLURL   string
+		Branch                 string
+		CommitSHA              string
+		Repo                   string
+		IsPullRequest          bool
+		OnDefaultBranch        bool
+		ConfigurationVersionID resource.TfeID
+		CommitURL              string
+		PullRequestNumber      int
+		PullRequestURL         string
+		PullRequestTitle       string
+		Tag                    string
+		SenderUsername         string
+		SenderAvatarURL        string
+		SenderHTMLURL          string
 	}
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID resource.ID, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            resource.NewID(resource.ConfigVersionKind),
+		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultSource,
@@ -142,13 +139,6 @@ func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (tim
 	return time.Time{}, internal.ErrStatusTimestampNotFound
 }
 
-func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
-	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: timestamp,
-	})
-}
-
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
 	// upload config and set status depending on success
@@ -163,8 +153,9 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 
 func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.Status = status
-	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: internal.CurrentTimestamp(nil),
+	cv.StatusTimestamps = append(cv.StatusTimestamps, StatusTimestamp{
+		ConfigurationVersionID: cv.ID,
+		Status:                 status,
+		Timestamp:              internal.CurrentTimestamp(nil),
 	})
 }

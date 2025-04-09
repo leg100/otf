@@ -4,46 +4,51 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 )
 
-type (
-	db struct {
-		*sql.DB
-	}
-)
+type db struct {
+	*sql.DB
+}
 
 func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
-	q := db.Querier(ctx)
-	params := sqlc.InsertRepoConnectionParams{
-		VCSProviderID: opts.VCSProviderID,
-		RepoPath:      sql.String(opts.RepoPath),
+	args := pgx.NamedArgs{
+		"vcs_provider_id": opts.VCSProviderID,
+		"repo_path":       sql.String(opts.RepoPath),
 	}
 
 	switch opts.ResourceID.Kind() {
 	case resource.WorkspaceKind:
-		params.WorkspaceID = &opts.ResourceID
+		args["workspace_id"] = &opts.ResourceID
 	case resource.ModuleKind:
-		params.ModuleID = &opts.ResourceID
+		args["module_id"] = &opts.ResourceID
 	default:
 		return fmt.Errorf("unsupported connection kind: %s", opts.ResourceID.Kind())
 	}
 
-	if err := q.InsertRepoConnection(ctx, params); err != nil {
-		return sql.Error(err)
-	}
-	return nil
+	_, err := db.Exec(ctx, `
+INSERT INTO repo_connections (
+    vcs_provider_id,
+    repo_path,
+    workspace_id,
+    module_id
+) VALUES (
+    @vcs_provider_id,
+    @repo_path,
+    @workspace_id,
+    @module_id
+)`, args)
+	return err
 }
 
 func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err error) {
-	q := db.Querier(ctx)
 	switch opts.ResourceID.Kind() {
 	case resource.WorkspaceKind:
-		_, err = q.DeleteWorkspaceConnectionByID(ctx, &opts.ResourceID)
+		_, err = db.Exec(ctx, `DELETE FROM repo_connections WHERE workspace_id = $1`, opts.ResourceID)
 	case resource.ModuleKind:
-		_, err = q.DeleteModuleConnectionByID(ctx, &opts.ResourceID)
+		_, err = db.Exec(ctx, `DELETE FROM repo_connections WHERE module_id = $1`, opts.ResourceID)
 	default:
 		return fmt.Errorf("unknown connection kind: %v", opts.ResourceID)
 	}

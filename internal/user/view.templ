@@ -4,6 +4,8 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"time"
 )
@@ -46,8 +48,8 @@ templ profileLinks() {
 }
 
 type userListProps struct {
-	organization string
-	users        []*User
+	organization organization.Name
+	users        *resource.Page[*User]
 }
 
 templ userList(props userListProps) {
@@ -58,15 +60,52 @@ templ userList(props userListProps) {
 			{Name: "users"},
 		},
 	}) {
-		@components.ContentList(props.users, userListItem)
+		@components.Table(&table{}, props.users, "page-results")
 	}
 }
 
-templ userListItem(user *User) {
-	<div id={ "item-user-" + user.Username } class="widget">
-		<span id="username">{ user.Username }</span>
-		@components.Identifier(user.ID)
-	</div>
+type table struct {
+	canRemoveMember bool
+	teamID          *resource.TfeID
+}
+
+templ (t table) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Site Admin</th>
+	if t.teamID != nil {
+		<th>Actions</th>
+	}
+}
+
+templ (t table) Row(user *User) {
+	<tr id={ "item-user-" + user.Username }>
+		<td id="username">
+			{ user.Username }
+		</td>
+		<td>
+			@components.Identifier(user.ID)
+		</td>
+		<td>
+			if user.IsSiteAdmin() {
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+				</svg>
+			}
+		</td>
+		if t.teamID != nil {
+			<td>
+				if t.canRemoveMember {
+					<form action={ paths.RemoveMemberTeam(t.teamID) } method="POST">
+						<input type="hidden" name="username" id="delete-username" value={ user.Username }/>
+						<button id="remove-member-button" class="btn btn-error btn-outline">
+							Remove member
+						</button>
+					</form>
+				}
+			</td>
+		}
+	</tr>
 }
 
 type getTeamProps struct {
@@ -76,8 +115,6 @@ type getTeamProps struct {
 	canDeleteTeam   bool
 	canAddMember    bool
 	canRemoveMember bool
-	canDelete       bool
-	isOwner         bool
 	dropdown        components.SearchDropdownProps
 }
 
@@ -92,14 +129,14 @@ templ getTeam(props getTeamProps) {
 	}) {
 		if props.canUpdateTeam {
 			<h3 class="font-semibold my-2 text-lg">Permissions</h3>
-			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID.String()) } method="POST">
+			<form class="flex flex-col gap-5" action={ paths.UpdateTeam(props.team.ID) } method="POST">
 				<div class="form-checkbox">
 					<input
 						type="checkbox"
 						name="manage_workspaces"
 						id="manage_workspaces"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageWorkspaces || props.team.IsOwners() }
+						checked?={ props.team.ManageWorkspaces || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -114,7 +151,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_vcs"
 						id="manage_vcs"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageVCS || props.team.IsOwners() }
+						checked?={ props.team.ManageVCS || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -129,7 +166,7 @@ templ getTeam(props getTeamProps) {
 						name="manage_modules"
 						id="manage_modules"
 						value="true"
-						checked?={ props.team.OrganizationAccess().ManageModules || props.team.IsOwners() }
+						checked?={ props.team.ManageModules || props.team.IsOwners() }
 						if props.team.IsOwners() {
 							title="cannot change permissions of owners team"
 							disabled
@@ -147,37 +184,23 @@ templ getTeam(props getTeamProps) {
 			<hr class="my-4"/>
 		}
 		<h3 class="font-semibold my-2 text-lg">Members</h3>
-		if props.canAddMember {
-			@components.SearchDropdown(props.dropdown)
-		}
 		<div id="content-list">
-			for _, member := range props.members {
-				<div id={ "item-user-" + member.Username } class="widget">
-					<div>
-						<span id="username">{ member.Username }</span>
-					</div>
-					<div>
-						@components.Identifier(member.ID)
-						if props.canRemoveMember {
-							<form action={ paths.RemoveMemberTeam(props.team.ID.String()) } method="POST">
-								<input type="hidden" name="username" id="delete-username" value={ member.Username }/>
-								<button id="remove-member-button" class="btn btn-error btn-outline">
-									Remove member
-								</button>
-							</form>
-						}
-					</div>
-				</div>
-			}
-			if len(props.members) == 0 {
-				The team currently has no members.
-			}
+			@components.UnpaginatedTable(
+				&table{teamID: &props.team.ID, canRemoveMember: props.canRemoveMember},
+				props.members,
+				"team-members",
+			)
 		</div>
+		if props.canAddMember {
+			<div>
+				@components.SearchDropdown(props.dropdown)
+			</div>
+		}
 		if !props.team.IsOwners() && props.canDeleteTeam {
 			<hr class="my-4"/>
 			<h3 class="font-semibold my-2 text-lg">Advanced</h3>
-			<form action={ paths.DeleteTeam(props.team.ID.String()) } method="POST">
-				<button class="btn btn-error btn-outline text-green-800" onclick="return confirm('Are you sure you want to delete?')">
+			<form action={ paths.DeleteTeam(props.team.ID) } method="POST">
+				<button class="btn btn-error btn-outline" onclick="return confirm('Are you sure you want to delete?')">
 					Delete team
 				</button>
 				<input type="hidden" name="id" value={ props.team.ID.String() }/>
@@ -217,30 +240,47 @@ templ tokenList(tokens []*UserToken) {
 		ContentLinks:   profileLinks(),
 		ContentActions: tokenListActions(),
 	}) {
-		@components.ContentList(tokens, tokenListItem)
+		@components.UnpaginatedTable(
+			&tokensTable{},
+			tokens,
+			"tokens-table",
+		)
 	}
-}
-
-templ tokenListItem(token *UserToken) {
-	<div class="widget">
-		<div>
-			<span>{ token.Description }</span>
-			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
-		</div>
-		<div>
-			@components.Identifier(token.ID)
-			<form action={ paths.DeleteToken() } method="POST">
-				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-				<input type="hidden" name="id" value={ token.ID.String() }/>
-			</form>
-		</div>
-	</div>
 }
 
 templ tokenListActions() {
 	<form action={ paths.NewToken() } method="GET">
 		<button class="btn" id="new-user-token-button">New Token</button>
 	</form>
+}
+
+type tokensTable struct{}
+
+templ (t tokensTable) Header() {
+	<th>Description</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Actions</th>
+}
+
+templ (t tokensTable) Row(token *UserToken) {
+	<tr>
+		<td>
+			<span>{ token.Description }</span>
+		</td>
+		<td>
+			@components.Identifier(token.ID)
+		</td>
+		<td>
+			<span>{ internal.Ago(time.Now(), token.CreatedAt) }</span>
+		</td>
+		<td>
+			<form id="delete-user-token" action={ paths.DeleteToken() } method="POST">
+				@components.DeleteButton()
+				<input type="hidden" name="id" value={ token.ID.String() }/>
+			</form>
+		</td>
+	</tr>
 }
 
 templ siteSettings() {

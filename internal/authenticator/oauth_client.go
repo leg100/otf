@@ -31,7 +31,7 @@ type (
 	}
 
 	sessionStarter interface {
-		StartSession(w http.ResponseWriter, r *http.Request, userID resource.ID) error
+		StartSession(w http.ResponseWriter, r *http.Request, userID resource.TfeID) error
 	}
 
 	// OAuthClient performs the client role in an oauth handshake, requesting
@@ -169,7 +169,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	// Use privileged context to authorize access to user service endpoints.
 	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
 	user, err := a.users.GetUser(ctx, user.UserSpec{Username: &username})
-	if err == internal.ErrResourceNotFound {
+	if errors.Is(err, internal.ErrResourceNotFound) {
 		user, err = a.users.Create(ctx, username)
 	}
 	if err != nil {

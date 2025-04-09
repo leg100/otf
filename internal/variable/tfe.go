@@ -4,9 +4,10 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
+	"github.com/leg100/otf/internal/workspace"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
@@ -52,7 +53,7 @@ func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.VariableCreateOptions
+	var opts TFEVariableCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -99,7 +100,7 @@ func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to := make([]*types.WorkspaceVariable, len(variables))
+	to := make([]*TFEWorkspaceVariable, len(variables))
 	for i, from := range variables {
 		to[i] = a.convertWorkspaceVariable(from, workspaceID)
 	}
@@ -113,7 +114,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.VariableUpdateOptions
+	var opts TFEVariableUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		variableError(w, err)
 		return
@@ -148,17 +149,19 @@ func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.VariableSetCreateOptions
+	var params TFEVariableSetCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	set, err := a.Service.createVariableSet(r.Context(), org, CreateVariableSetOptions{
+	set, err := a.Service.createVariableSet(r.Context(), pathParams.Organization, CreateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -176,7 +179,7 @@ func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.VariableSetUpdateOptions
+	var params TFEVariableSetUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -194,19 +197,21 @@ func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	sets, err := a.Service.listVariableSets(r.Context(), pathParams.Organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	sets, err := a.Service.listVariableSets(r.Context(), org)
-	if err != nil {
-		tfeapi.Error(w, err)
-		return
-	}
-
-	to := make([]*types.VariableSet, len(sets))
+	to := make([]*TFEVariableSet, len(sets))
 	for i, from := range sets {
 		to[i] = a.convertVariableSet(from)
 	}
@@ -227,7 +232,7 @@ func (a *tfe) listWorkspaceVariableSets(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	to := make([]*types.VariableSet, len(sets))
+	to := make([]*TFEVariableSet, len(sets))
 	for i, from := range sets {
 		to[i] = a.convertVariableSet(from)
 	}
@@ -279,7 +284,7 @@ func (a *tfe) listVariableSetVariables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to := make([]*types.VariableSetVariable, len(set.Variables))
+	to := make([]*TFEVariableSetVariable, len(set.Variables))
 	for i, from := range set.Variables {
 		to[i] = a.convertVariableSetVariable(from, setID)
 	}
@@ -293,7 +298,7 @@ func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.VariableCreateOptions
+	var opts TFEVariableCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -321,7 +326,7 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.VariableUpdateOptions
+	var opts TFEVariableUpdateOptions
 	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -381,12 +386,12 @@ func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Workspace
+	var params []*workspace.TFEWorkspace
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err, tfeapi.WithStatus(http.StatusUnprocessableEntity))
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(params))
+	workspaceIDs := make([]resource.TfeID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -406,12 +411,12 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params []*types.Workspace
+	var params []*workspace.TFEWorkspace
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	workspaceIDs := make([]resource.ID, len(params))
+	workspaceIDs := make([]resource.TfeID, len(params))
 	for i, ws := range params {
 		workspaceIDs[i] = ws.ID
 	}
@@ -425,52 +430,52 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.ID) *types.WorkspaceVariable {
-	return &types.WorkspaceVariable{
-		Variable: a.convertVariable(from, true),
-		Workspace: &types.Workspace{
+func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID resource.TfeID) *TFEWorkspaceVariable {
+	return &TFEWorkspaceVariable{
+		TFEVariable: a.convertVariable(from, true),
+		Workspace: &workspace.TFEWorkspace{
 			ID: workspaceID,
 		},
 	}
 }
 
-func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
-	to := &types.VariableSet{
+func (a *tfe) convertVariableSet(from *VariableSet) *TFEVariableSet {
+	to := &TFEVariableSet{
 		ID:          from.ID,
 		Name:        from.Name,
 		Description: from.Description,
 		Global:      from.Global,
-		Organization: &types.Organization{
+		Organization: &organization.TFEOrganization{
 			Name: from.Organization,
 		},
 	}
-	to.Variables = make([]*types.VariableSetVariable, len(from.Variables))
+	to.Variables = make([]*TFEVariableSetVariable, len(from.Variables))
 	for i, v := range from.Variables {
-		to.Variables[i] = &types.VariableSetVariable{
-			Variable: a.convertVariable(v, true),
-			VariableSet: &types.VariableSet{
+		to.Variables[i] = &TFEVariableSetVariable{
+			TFEVariable: a.convertVariable(v, true),
+			VariableSet: &TFEVariableSet{
 				ID: v.ID,
 			},
 		}
 	}
-	to.Workspaces = make([]*types.Workspace, len(from.Workspaces))
+	to.Workspaces = make([]*workspace.TFEWorkspace, len(from.Workspaces))
 	for i, workspaceID := range from.Workspaces {
-		to.Workspaces[i] = &types.Workspace{
+		to.Workspaces[i] = &workspace.TFEWorkspace{
 			ID: workspaceID,
 		}
 	}
 	return to
 }
 
-func (a *tfe) convertVariableSetVariable(from *Variable, setID resource.ID) *types.VariableSetVariable {
-	return &types.VariableSetVariable{
-		Variable:    a.convertVariable(from, true),
-		VariableSet: &types.VariableSet{ID: setID},
+func (a *tfe) convertVariableSetVariable(from *Variable, setID resource.TfeID) *TFEVariableSetVariable {
+	return &TFEVariableSetVariable{
+		TFEVariable: a.convertVariable(from, true),
+		VariableSet: &TFEVariableSet{ID: setID},
 	}
 }
 
-func (a *tfe) convertVariable(from *Variable, scrubSensitiveValue bool) *types.Variable {
-	to := &types.Variable{
+func (a *tfe) convertVariable(from *Variable, scrubSensitiveValue bool) *TFEVariable {
+	to := &TFEVariable{
 		ID:          from.ID,
 		Key:         from.Key,
 		Value:       from.Value,

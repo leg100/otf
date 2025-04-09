@@ -42,7 +42,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.State.Get(ctx, resource.NewID(resource.StateVersionKind))
+		_, err := svc.State.Get(ctx, resource.NewTfeID(resource.StateVersionKind))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -63,7 +63,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("get current not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.State.GetCurrent(ctx, resource.NewID(resource.WorkspaceKind))
+		_, err := svc.State.GetCurrent(ctx, resource.NewTfeID(resource.WorkspaceKind))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -84,7 +84,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("list not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.State.List(ctx, resource.NewID(resource.WorkspaceKind), resource.PageOptions{})
+		_, err := svc.State.List(ctx, resource.NewTfeID(resource.WorkspaceKind), resource.PageOptions{})
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 

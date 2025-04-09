@@ -7,9 +7,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
+	teampkg "github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/tfeapi"
-	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 const (
@@ -49,8 +50,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.ID `schema:"team_id,required"`
-		Username string      `schema:"username,required"`
+		TeamID   resource.TfeID `schema:"team_id,required"`
+		Username string         `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -67,8 +68,8 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   resource.ID `schema:"team_id,required"`
-		Username string      `schema:"username,required"`
+		TeamID   resource.TfeID `schema:"team_id,required"`
+		Username string         `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
@@ -140,24 +141,26 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 }
 
 func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var pathParams struct {
+		Organization organization.Name `schema:"organization_name"`
+	}
+	if err := decode.All(&pathParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var params types.OrganizationMembershipCreateOptions
+	var params TFEOrganizationMembershipCreateOptions
 	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	membership := &types.OrganizationMembership{
-		ID: resource.NewID("ou"),
-		User: &types.User{
-			ID: resource.NewID("user"),
+	membership := &TFEOrganizationMembership{
+		ID: resource.NewTfeID("ou"),
+		User: &TFEUser{
+			ID: resource.NewTfeID("user"),
 		},
-		Organization: &types.Organization{
-			Name: org,
+		Organization: &organization.TFEOrganization{
+			Name: pathParams.Organization,
 		},
 	}
 
@@ -168,15 +171,15 @@ func (a *tfe) deleteMembership(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convertUser(from *User) *types.User {
-	return &types.User{
+func (a *tfe) convertUser(from *User) *TFEUser {
+	return &TFEUser{
 		ID:       from.ID,
 		Username: from.Username,
 	}
 }
 
 func (a *tfe) includeUsers(ctx context.Context, v any) ([]any, error) {
-	team, ok := v.(*types.Team)
+	team, ok := v.(*teampkg.TFETeam)
 	if !ok {
 		return nil, nil
 	}
@@ -185,9 +188,9 @@ func (a *tfe) includeUsers(ctx context.Context, v any) ([]any, error) {
 		return nil, err
 	}
 	includes := make([]any, len(users))
-	team.Users = make([]*types.User, len(users))
+	team.Users = make([]*teampkg.TFEUser, len(users))
 	for i, user := range users {
-		team.Users[i] = &types.User{ID: user.ID}
+		team.Users[i] = &teampkg.TFEUser{ID: user.ID}
 		includes[i] = a.convertUser(user)
 	}
 	return includes, nil

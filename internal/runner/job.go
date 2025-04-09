@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
@@ -30,9 +31,9 @@ const (
 // Job is the unit of work corresponding to a run phase. A job is allocated to
 // a runner, which then executes the work through to completion.
 type Job struct {
-	ID resource.ID `jsonapi:"primary,jobs"`
+	ID resource.TfeID `jsonapi:"primary,jobs" db:"job_id"`
 	// ID of the run that this job is for.
-	RunID resource.ID `jsonapi:"attribute" json:"run_id"`
+	RunID resource.TfeID `jsonapi:"attribute" json:"run_id" db:"run_id"`
 	// Phase of run that this job is for.
 	Phase internal.PhaseType `jsonapi:"attribute" json:"phase"`
 	// Current status of job.
@@ -40,14 +41,14 @@ type Job struct {
 	// ID of agent pool the job's workspace is assigned to use. If non-nil then
 	// the job is allocated to an agent runner belonging to the pool. If nil then
 	// the job is allocated to a server runner.
-	AgentPoolID *resource.ID `jsonapi:"attribute" json:"agent_pool_id"`
+	AgentPoolID *resource.TfeID `jsonapi:"attribute" json:"agent_pool_id" db:"agent_pool_id"`
 	// Name of job's organization
-	Organization string `jsonapi:"attribute" json:"organization"`
+	Organization organization.Name `jsonapi:"attribute" json:"organization" db:"organization_name"`
 	// ID of job's workspace
-	WorkspaceID resource.ID `jsonapi:"attribute" json:"workspace_id"`
+	WorkspaceID resource.TfeID `jsonapi:"attribute" json:"workspace_id" db:"workspace_id"`
 	// ID of runner that this job is allocated to. Only set once job enters
 	// JobAllocated state.
-	RunnerID *resource.ID `jsonapi:"attribute" json:"runner_id"`
+	RunnerID *resource.TfeID `jsonapi:"attribute" json:"runner_id" db:"runner_id"`
 	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
 	Signaled *bool `jsonapi:"attribute" json:"signaled"`
@@ -55,7 +56,7 @@ type Job struct {
 
 func newJob(run *otfrun.Run) *Job {
 	return &Job{
-		ID:           resource.NewID(resource.JobKind),
+		ID:           resource.NewTfeID(resource.JobKind),
 		RunID:        run.ID,
 		Phase:        run.Phase(),
 		Status:       JobUnallocated,
@@ -69,7 +70,7 @@ func (j *Job) LogValue() slog.Value {
 		slog.String("job_id", j.ID.String()),
 		slog.String("run_id", j.RunID.String()),
 		slog.String("workspace_id", j.WorkspaceID.String()),
-		slog.String("organization", j.Organization),
+		slog.Any("organization", j.Organization),
 		slog.String("phase", string(j.Phase)),
 		slog.String("status", string(j.Status)),
 	}
@@ -85,12 +86,12 @@ func (j *Job) LogValue() slog.Value {
 
 func (j *Job) String() string { return j.ID.String() }
 
-func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
-	if req == nil {
+func (j *Job) CanAccess(action authz.Action, req authz.Request) bool {
+	if req.Kind() == resource.SiteKind {
 		// Job cannot carry out site-wide actions
 		return false
 	}
-	if req.Organization != j.Organization {
+	if req.Organization() != nil && req.Organization().String() != j.Organization.String() {
 		// Job cannot carry out actions on other organizations
 		return false
 	}
@@ -100,7 +101,7 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		return true
 	}
 	// Permissible workspace actions on same workspace.
-	if req.ID != nil && *req.ID == j.WorkspaceID {
+	if req.Workspace() == j.WorkspaceID {
 		// Allow actions on same workspace as job depending on run phase
 		switch action {
 		case authz.DownloadStateAction, authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.GetRunAction, authz.ListVariableSetsAction, authz.ListWorkspaceVariablesAction, authz.PutChunkAction, authz.DownloadConfigurationVersionAction, authz.GetPlanFileAction, authz.CancelRunAction:
@@ -119,24 +120,16 @@ func (j *Job) CanAccess(action authz.Action, req *authz.AccessRequest) bool {
 		}
 		return false
 	}
-	// If workspace policy is non-nil then that means the job is trying to
-	// access *another* workspace. Check the policy to determine if it is
-	// allowed to do so.
+	// Check workspace policy if there is one - if the job is attempting to
+	// access the state of another workspace then the policy determines whether
+	// it's allowed to do so.
 	if req.WorkspacePolicy != nil {
-		switch action {
-		case authz.GetStateVersionAction, authz.GetWorkspaceAction, authz.DownloadStateAction:
-			if req.WorkspacePolicy.GlobalRemoteState {
-				// Job is allowed to retrieve the state of this workspace
-				// because the workspace has allowed global remote state
-				// sharing.
-				return true
-			}
-		}
+		return req.WorkspacePolicy.Check(j.ID, action)
 	}
 	return false
 }
 
-func (j *Job) allocate(runnerID resource.ID) error {
+func (j *Job) allocate(runnerID resource.TfeID) error {
 	if err := j.updateStatus(JobAllocated); err != nil {
 		return err
 	}
@@ -144,7 +137,7 @@ func (j *Job) allocate(runnerID resource.ID) error {
 	return nil
 }
 
-func (j *Job) reallocate(runnerID resource.ID) error {
+func (j *Job) reallocate(runnerID resource.TfeID) error {
 	if j.Status != JobAllocated {
 		return errors.New("job can only be re-allocated when it is in the allocated state")
 	}

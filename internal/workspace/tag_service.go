@@ -7,8 +7,9 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/sqlc"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type (
@@ -25,8 +26,8 @@ type (
 	}
 )
 
-func (s *Service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListTagsAction, &authz.AccessRequest{Organization: organization})
+func (s *Service) ListTags(ctx context.Context, organization organization.Name, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+	subject, err := s.Authorize(ctx, authz.ListTagsAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +40,8 @@ func (s *Service) ListTags(ctx context.Context, organization string, opts ListTa
 	return list, nil
 }
 
-func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []resource.ID) error {
-	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, &authz.AccessRequest{Organization: organization})
+func (s *Service) DeleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error {
+	subject, err := s.Authorize(ctx, authz.DeleteTagsAction, organization)
 	if err != nil {
 		return err
 	}
@@ -53,15 +54,15 @@ func (s *Service) DeleteTags(ctx context.Context, organization string, tagIDs []
 	return nil
 }
 
-func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspaceIDs []resource.ID) error {
+func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.TfeID, workspaceIDs []resource.TfeID) error {
 	subject, err := authz.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		for _, wid := range workspaceIDs {
-			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, &authz.AccessRequest{ID: &wid})
+			_, err := s.Authorize(ctx, authz.TagWorkspacesAction, wid)
 			if err != nil {
 				return err
 			}
@@ -79,8 +80,8 @@ func (s *Service) TagWorkspaces(ctx context.Context, tagID resource.ID, workspac
 	return nil
 }
 
-func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.AddTagsAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) AddTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
+	subject, err := s.Authorize(ctx, authz.AddTagsAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -99,8 +100,8 @@ func (s *Service) AddTags(ctx context.Context, workspaceID resource.ID, tags []T
 	return nil
 }
 
-func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags []TagSpec) error {
-	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.TfeID, tags []TagSpec) error {
+	subject, err := s.Authorize(ctx, authz.RemoveTagsAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 		return fmt.Errorf("workspace not found; %s; %w", workspaceID, err)
 	}
 
-	err = s.db.Lock(ctx, "tags", func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err = s.db.Lock(ctx, "tags", func(ctx context.Context, _ sql.Connection) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err
@@ -148,8 +149,8 @@ func (s *Service) RemoveTags(ctx context.Context, workspaceID resource.ID, tags 
 	return nil
 }
 
-func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.ID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
-	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, &authz.AccessRequest{ID: &workspaceID})
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID resource.TfeID, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+	subject, err := s.Authorize(ctx, authz.ListWorkspaceTags, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 	// (i) if specified by name, create new tag if it does not exist and get its ID.
 	// (ii) add tag to workspace
 	var added []string
-	err := s.db.Lock(ctx, "tags", func(ctx context.Context, q *sqlc.Queries) (err error) {
+	err := s.db.Lock(ctx, "tags", func(ctx context.Context, _ sql.Connection) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return fmt.Errorf("invalid tag: %w", err)
@@ -180,7 +181,7 @@ func (s *Service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([
 			case name != "":
 				existing, err := s.db.findTagByName(ctx, ws.Organization, name)
 				if errors.Is(err, internal.ErrResourceNotFound) {
-					idValue := resource.NewID("tag")
+					idValue := resource.NewTfeID("tag")
 					id = &idValue
 					if err := s.db.addTag(ctx, ws.Organization, name, *id); err != nil {
 						return fmt.Errorf("adding tag: %s %w", name, err)

@@ -4,12 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +23,7 @@ func TestWaitAndLock(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		func() {
 			err := db.WaitAndLock(ctx, 123, func(context.Context) error { return nil })
 			require.NoError(t, err)
@@ -38,60 +35,30 @@ func TestWaitAndLock(t *testing.T) {
 func TestTx(t *testing.T) {
 	integrationTest(t)
 
-	ctx := context.Background()
-	db, err := sql.New(ctx, logr.Discard(), sql.NewTestDB(t))
-	require.NoError(t, err)
-	t.Cleanup(db.Close)
+	daemon, _, ctx := setup(t, nil)
 
-	org, err := organization.NewOrganization(organization.CreateOptions{
-		Name: internal.String("acmeco"),
-	})
-	require.NoError(t, err)
+	// retain reference to old context for testing below.
+	oldContext := ctx
 
-	err = db.Tx(ctx, func(txCtx context.Context, q *sqlc.Queries) error {
-		err := q.InsertOrganization(txCtx, sqlc.InsertOrganizationParams{
-			ID:                         org.ID,
-			CreatedAt:                  sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
-			Name:                       sql.String(org.Name),
-			Email:                      sql.StringPtr(org.Email),
-			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
-			CostEstimationEnabled:      sql.Bool(org.CostEstimationEnabled),
-			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
-			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
-			AllowForceDeleteWorkspaces: sql.Bool(org.AllowForceDeleteWorkspaces),
-		})
-		if err != nil {
+	err := daemon.DB.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+		// insert org using tx
+		org := daemon.createOrganization(t, ctx)
+
+		// query org just created using same tx conn.
+		_, err := daemon.Organizations.Get(ctx, org.Name)
+		assert.NoError(t, err)
+
+		err = daemon.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+			// query org just created using child tx conn
+			_, err := daemon.Organizations.Get(ctx, org.Name)
 			return err
-		}
-
-		// this should succeed because it is using the same querier from the
-		// same tx
-		_, err = q.FindOrganizationByID(txCtx, org.ID)
-		assert.NoError(t, err)
-
-		// this should succeed because it is using the same ctx from the same tx
-		_, err = db.Querier(txCtx).FindOrganizationByID(txCtx, org.ID)
-		assert.NoError(t, err)
-
-		err = db.Tx(txCtx, func(ctx context.Context, q *sqlc.Queries) error {
-			// this should succeed because it is using a child tx via the
-			// querier
-			_, err = q.FindOrganizationByID(ctx, org.ID)
-			assert.NoError(t, err)
-
-			// this should succeed because it is using a child tx via the
-			// context
-			_, err = db.Querier(ctx).FindOrganizationByID(ctx, org.ID)
-			assert.NoError(t, err)
-
-			return nil
 		})
 		require.NoError(t, err)
 
-		// this should fail because it is using a different ctx
-		_, err = db.Querier(ctx).FindOrganizationByID(txCtx, org.ID)
-		assert.ErrorIs(t, err, pgx.ErrNoRows)
+		// this should fail because it is using a different conn from the old
+		// context
+		_, err = daemon.Organizations.Get(oldContext, org.Name)
+		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 
 		return nil
 	})

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
@@ -49,46 +48,6 @@ func TestWeb_CreateHandler(t *testing.T) {
 }
 
 func TestWeb_ListHandler(t *testing.T) {
-	t.Run("pagination", func(t *testing.T) {
-		// Make enough organizations to populate three pages
-		n := 2*resource.DefaultPageSize + 1
-		orgs := make([]*Organization, n)
-		for i := 1; i <= n; i++ {
-			orgs[i-1] = &Organization{Name: uuid.NewString()}
-		}
-		svc := &web{svc: &fakeWebService{orgs: orgs}}
-
-		t.Run("first page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page=1", nil)
-			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
-			w := httptest.NewRecorder()
-			svc.list(w, r)
-			assert.Equal(t, 200, w.Code)
-			assert.NotContains(t, w.Body.String(), "Previous Page")
-			assert.Contains(t, w.Body.String(), "Next Page")
-		})
-
-		t.Run("second page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page=2", nil)
-			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
-			w := httptest.NewRecorder()
-			svc.list(w, r)
-			assert.Equal(t, 200, w.Code)
-			assert.Contains(t, w.Body.String(), "Previous Page")
-			assert.Contains(t, w.Body.String(), "Next Page")
-		})
-
-		t.Run("last page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page=3", nil)
-			r = r.WithContext(authz.AddSubjectToContext(context.Background(), &authz.Superuser{}))
-			w := httptest.NewRecorder()
-			svc.list(w, r)
-			assert.Equal(t, 200, w.Code)
-			assert.Contains(t, w.Body.String(), "Previous Page")
-			assert.NotContains(t, w.Body.String(), "Next Page", w.Body.String())
-		})
-	})
-
 	t.Run("new organization button", func(t *testing.T) {
 		tests := []struct {
 			name     string
@@ -137,7 +96,7 @@ func TestWeb_ListHandler(t *testing.T) {
 func TestWeb_DeleteHandler(t *testing.T) {
 	svc := &web{
 		svc: &fakeWebService{
-			orgs: []*Organization{{Name: uuid.NewString()}},
+			orgs: []*Organization{newTestOrg(t)},
 		},
 	}
 
@@ -167,10 +126,10 @@ func (f *fakeWebService) List(ctx context.Context, opts ListOptions) (*resource.
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebService) Delete(context.Context, string) error {
+func (f *fakeWebService) Delete(context.Context, Name) error {
 	return nil
 }
 
-func (s *unprivilegedSubject) CanAccess(authz.Action, *authz.AccessRequest) bool {
+func (s *unprivilegedSubject) CanAccess(authz.Action, authz.Request) bool {
 	return false
 }

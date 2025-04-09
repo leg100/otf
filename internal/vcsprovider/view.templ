@@ -5,14 +5,16 @@ import (
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 	"strconv"
 	"time"
 )
 
 type listProps struct {
-	organization string
-	providers    []*VCSProvider
+	organization organization.Name
+	providers    *resource.Page[*VCSProvider]
 	app          *github.App
 }
 
@@ -26,14 +28,6 @@ templ list(props listProps) {
 	}) {
 		<div>
 			To connect workspaces and publish modules, OTF needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
-		</div>
-		<div id="content-list">
-			for _, provider := range props.providers {
-				@listItem(provider)
-			}
-			if len(props.providers) == 0 {
-				No VCS providers are currently configured.
-			}
 		</div>
 		<div class="flex flex-col gap-4 mt-4">
 			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
@@ -52,25 +46,49 @@ templ list(props listProps) {
 				<span>Alternatively, <a class="underline" href={ paths.NewGithubApp() }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
 			}
 		</div>
+		<div id="content-list">
+			@components.Table(
+				&Table{Actions: tableAction},
+				props.providers,
+				"page-results",
+			)
+		</div>
 	}
 }
 
-templ listItem(provider *VCSProvider) {
-	<div x-data={ components.BlockLink(paths.EditVCSProvider(provider.ID.String())) } class="widget" id={ provider.ID.String() }>
-		<div>
-			<span>
-				<a id="edit-vcs-provider-link" href={ paths.EditVCSProvider(provider.ID.String()) }>{ provider.String() }</a>
-			</span>
-			<span>{ internal.Ago(time.Now(), provider.CreatedAt) }</span>
-		</div>
-		<div>
+type Table struct {
+	Actions func(vcsProviderID resource.TfeID) templ.Component
+}
+
+templ (t Table) Header() {
+	<th>Name</th>
+	<th>ID</th>
+	<th>Created</th>
+	<th>Action</th>
+}
+
+templ (t Table) Row(provider *VCSProvider) {
+	<tr id={ "item-vcsprovider-" + provider.String() }>
+		<td>
+			{ provider.String() }
+		</td>
+		<td>
 			@components.Identifier(provider.ID)
-			<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
-				<button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-				<input type="hidden" name="id" value={ provider.ID.String() }/>
-			</form>
-		</div>
-	</div>
+		</td>
+		<td>
+			{ internal.Ago(time.Now(), provider.CreatedAt) }
+		</td>
+		<td>
+			@t.Actions(provider.ID)
+		</td>
+	</tr>
+}
+
+templ tableAction(vcsProviderID resource.TfeID) {
+	<form id="edit-vcs-provider" action={ paths.EditVCSProvider(vcsProviderID) }>
+		@components.EditButton()
+		<input type="hidden" name="id" value={ vcsProviderID.String() }/>
+	</form>
 }
 
 templ edit(provider *VCSProvider) {
@@ -86,12 +104,12 @@ templ edit(provider *VCSProvider) {
 		@form(formProps{
 			provider: provider,
 			edit:     true,
-			action:   paths.UpdateVCSProvider(provider.ID.String()),
+			action:   paths.UpdateVCSProvider(provider.ID),
 		})
 		<hr class="my-4"/>
 		<h3 class="font-semibold text-lg mb-2">Advanced</h3>
-		<form action={ paths.DeleteVCSProvider(provider.ID.String()) } method="POST">
-			<button id="delete-vcs-provider-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+		<form action={ paths.DeleteVCSProvider(provider.ID) } method="POST">
+			<button id="delete-vcs-provider-button" class="btn btn-outline btn-error" onclick="return confirm('Are you sure you want to delete?')">
 				Delete VCS provider
 			</button>
 		</form>
@@ -123,7 +141,7 @@ templ newPAT(props newPATProps) {
 }
 
 type newGithubAppProps struct {
-	organization   string
+	organization   organization.Name
 	app            *github.App
 	installations  []*github.Installation
 	kind           vcs.Kind

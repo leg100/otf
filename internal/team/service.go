@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -55,8 +54,9 @@ func NewService(opts Options) *Service {
 		},
 	}
 	svc.web = &webHandlers{
-		tokens: opts.TokensService,
-		teams:  &svc,
+		authorizer: opts.Authorizer,
+		tokens:     opts.TokensService,
+		teams:      &svc,
 	}
 	svc.tfeapi = &tfe{
 		Service:   &svc,
@@ -84,13 +84,17 @@ func NewService(opts Options) *Service {
 	})
 	// Register with auth middleware the team token kind and a means of
 	// retrieving team corresponding to token.
-	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.ID) (authz.Subject, error) {
+	opts.TokensService.RegisterKind(TeamTokenKind, func(ctx context.Context, tokenID resource.TfeID) (authz.Subject, error) {
 		return svc.GetTeamByTokenID(ctx, tokenID)
 	})
-	opts.Authorizer.RegisterOrganizationResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (string, error) {
+
+	// Provide a means of looking up a team's parent organization.
+	opts.Authorizer.RegisterParentResolver(resource.TeamKind, func(ctx context.Context, id resource.ID) (resource.ID, error) {
+		// NOTE: we look up directly in the database rather than via
+		// service call to avoid a recursion loop.
 		team, err := svc.db.getTeamByID(ctx, id)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		return team.Organization, nil
 	})
@@ -104,8 +108,8 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 }
 
-func (a *Service) Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.CreateTeamAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error) {
+	subject, err := a.Authorize(ctx, authz.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +119,7 @@ func (a *Service) Create(ctx context.Context, organization string, opts CreateTe
 		return nil, err
 	}
 
-	err = a.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := a.db.createTeam(ctx, team); err != nil {
 			return err
 		}
@@ -139,13 +143,13 @@ func (a *Service) AfterCreateTeam(hook func(context.Context, *Team) error) {
 	a.afterCreateHooks = append(a.afterCreateHooks, hook)
 }
 
-func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error) {
+func (a *Service) Update(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.UpdateTeamAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +168,8 @@ func (a *Service) Update(ctx context.Context, teamID resource.ID, opts UpdateTea
 }
 
 // List lists teams in the organization.
-func (a *Service) List(ctx context.Context, organization string) ([]*Team, error) {
-	subject, err := a.Authorize(ctx, authz.ListTeamsAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) List(ctx context.Context, organization organization.Name) ([]*Team, error) {
+	subject, err := a.Authorize(ctx, authz.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -180,8 +184,8 @@ func (a *Service) List(ctx context.Context, organization string) ([]*Team, error
 	return teams, nil
 }
 
-func (a *Service) Get(ctx context.Context, organization, name string) (*Team, error) {
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: organization})
+func (a *Service) Get(ctx context.Context, organization organization.Name, name string) (*Team, error) {
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +201,14 @@ func (a *Service) Get(ctx context.Context, organization, name string) (*Team, er
 	return team, nil
 }
 
-func (a *Service) GetByID(ctx context.Context, teamID resource.ID) (*Team, error) {
+func (a *Service) GetByID(ctx context.Context, teamID resource.TfeID) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -214,14 +218,14 @@ func (a *Service) GetByID(ctx context.Context, teamID resource.ID) (*Team, error
 	return team, nil
 }
 
-func (a *Service) Delete(ctx context.Context, teamID resource.ID) error {
+func (a *Service) Delete(ctx context.Context, teamID resource.TfeID) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return err
 	}
 
-	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.DeleteTeamAction, &team.Organization)
 	if err != nil {
 		return err
 	}
@@ -241,14 +245,14 @@ func (a *Service) Delete(ctx context.Context, teamID resource.ID) error {
 	return nil
 }
 
-func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.ID) (*Team, error) {
+func (a *Service) GetTeamByTokenID(ctx context.Context, tokenID resource.TfeID) (*Team, error) {
 	team, err := a.db.getTeamByTokenID(ctx, tokenID)
 	if err != nil {
 		a.Error(err, "retrieving team by team token ID", "token_id", tokenID)
 		return nil, err
 	}
 
-	subject, err := a.Authorize(ctx, authz.GetTeamAction, &authz.AccessRequest{Organization: team.Organization})
+	subject, err := a.Authorize(ctx, authz.GetTeamAction, &team.Organization)
 	if err != nil {
 		return nil, err
 	}

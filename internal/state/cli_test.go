@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
@@ -133,29 +134,29 @@ func withState(state []byte) fakeCLIOption {
 	}
 }
 
-func (f *fakeCLIService) List(context.Context, resource.ID, resource.PageOptions) (*resource.Page[*Version], error) {
+func (f *fakeCLIService) List(context.Context, resource.TfeID, resource.PageOptions) (*resource.Page[*Version], error) {
 	return f.stateVersionList, nil
 }
 
-func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID resource.ID) (*Version, error) {
+func (f *fakeCLIService) GetCurrent(ctx context.Context, workspaceID resource.TfeID) (*Version, error) {
 	if f.stateVersion == nil {
 		return nil, internal.ErrResourceNotFound
 	}
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Delete(ctx context.Context, svID resource.ID) error {
+func (f *fakeCLIService) Delete(ctx context.Context, svID resource.TfeID) error {
 	return nil
 }
 
-func (f *fakeCLIService) Rollback(ctx context.Context, svID resource.ID) (*Version, error) {
+func (f *fakeCLIService) Rollback(ctx context.Context, svID resource.TfeID) (*Version, error) {
 	return f.stateVersion, nil
 }
 
-func (f *fakeCLIService) Download(ctx context.Context, svID resource.ID) ([]byte, error) {
+func (f *fakeCLIService) Download(ctx context.Context, svID resource.TfeID) ([]byte, error) {
 	return f.state, nil
 }
 
-func (f *fakeCLIService) GetByName(context.Context, string, string) (*workspace.Workspace, error) {
+func (f *fakeCLIService) GetByName(context.Context, organization.Name, string) (*workspace.Workspace, error) {
 	return f.workspace, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -31,27 +32,31 @@ var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
 	Module struct {
-		ID           resource.ID
-		CreatedAt    time.Time
-		UpdatedAt    time.Time
+		ID           resource.TfeID `db:"module_id"`
+		CreatedAt    time.Time      `db:"created_at"`
+		UpdatedAt    time.Time      `db:"updated_at"`
 		Name         string
 		Provider     string
-		Organization string // Module belongs to an organization
 		Status       ModuleStatus
-		Versions     []ModuleVersion         // versions sorted in descending order
+		Organization organization.Name       `db:"organization_name"` // Module belongs to an organization
+		Versions     []ModuleVersion         `db:"module_versions"`   // versions sorted in descending order
 		Connection   *connections.Connection // optional vcs repo connection
 	}
 
 	ModuleStatus string
 
+	// ModuleVersion is a version of a module.
+	//
+	// NOTE: field order must match postgres table column order.
 	ModuleVersion struct {
-		ID          resource.ID
-		ModuleID    resource.ID
+		ID          resource.TfeID `db:"module_version_id"`
 		Version     string
-		CreatedAt   time.Time
-		UpdatedAt   time.Time
+		CreatedAt   time.Time `db:"created_at"`
+		UpdatedAt   time.Time `db:"updated_at"`
 		Status      ModuleVersionStatus
-		StatusError string
+		StatusError *string        `db:"status_error"`
+		ModuleID    resource.TfeID `db:"module_id"`
+
 		// TODO: download counters
 	}
 
@@ -59,10 +64,10 @@ type (
 
 	PublishOptions struct {
 		Repo          Repo
-		VCSProviderID resource.ID
+		VCSProviderID resource.TfeID
 	}
 	PublishVersionOptions struct {
-		ModuleID resource.ID
+		ModuleID resource.TfeID
 		Version  string
 		Ref      string
 		Repo     Repo
@@ -71,24 +76,24 @@ type (
 	CreateOptions struct {
 		Name         string
 		Provider     string
-		Organization string
+		Organization organization.Name
 	}
 	CreateModuleVersionOptions struct {
-		ModuleID resource.ID
+		ModuleID resource.TfeID
 		Version  string
 	}
 	UpdateModuleVersionStatusOptions struct {
-		ID     resource.ID
+		ID     resource.TfeID
 		Status ModuleVersionStatus
 		Error  string
 	}
 	GetModuleOptions struct {
-		Name         string `schema:"name,required"`
-		Provider     string `schema:"provider,required"`
-		Organization string `schema:"organization,required"`
+		Name         string            `schema:"name,required"`
+		Provider     string            `schema:"provider,required"`
+		Organization organization.Name `schema:"organization,required"`
 	}
-	ListModulesOptions struct {
-		Organization string `schema:"organization_name,required"` // filter by organization name
+	ListOptions struct {
+		Organization organization.Name `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {
 		*resource.Pagination
@@ -98,7 +103,7 @@ type (
 
 func newModule(opts CreateOptions) *Module {
 	return &Module{
-		ID:           resource.NewID(resource.ModuleKind),
+		ID:           resource.NewTfeID(resource.ModuleKind),
 		CreatedAt:    internal.CurrentTimestamp(nil),
 		UpdatedAt:    internal.CurrentTimestamp(nil),
 		Name:         opts.Name,
@@ -110,7 +115,7 @@ func newModule(opts CreateOptions) *Module {
 
 func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
-		ID:        resource.NewID(resource.ModuleVersionKind),
+		ID:        resource.NewTfeID(resource.ModuleVersionKind),
 		CreatedAt: internal.CurrentTimestamp(nil),
 		UpdatedAt: internal.CurrentTimestamp(nil),
 		ModuleID:  opts.ModuleID,
@@ -124,7 +129,7 @@ func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 func (m *Module) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", m.ID.String()),
-		slog.String("organization", m.Organization),
+		slog.Any("organization", m.Organization),
 		slog.String("name", m.Name),
 		slog.String("provider", m.Provider),
 		slog.String("status", string(m.Status)),

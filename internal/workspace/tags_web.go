@@ -19,8 +19,8 @@ func (h *webHandlers) addTagHandlers(r *mux.Router) {
 
 func (h *webHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID *resource.ID `schema:"workspace_id,required"`
-		TagName     *string      `schema:"tag_name,required"`
+		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
+		TagName     *string         `schema:"tag_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -34,13 +34,13 @@ func (h *webHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created tag: "+*params.TagName)
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID *resource.ID `schema:"workspace_id,required"`
-		TagName     *string      `schema:"tag_name,required"`
+		WorkspaceID *resource.TfeID `schema:"workspace_id,required"`
+		TagName     *string         `schema:"tag_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -54,5 +54,5 @@ func (h *webHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "removed tag: "+*params.TagName)
-	http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }

@@ -10,23 +10,25 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/tokens"
 )
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	teams  webClient
-	tokens *tokens.Service
+	teams      webClient
+	tokens     *tokens.Service
+	authorizer authz.Interface
 }
 
 type webClient interface {
-	Create(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
-	Get(ctx context.Context, organization, team string) (*Team, error)
-	GetByID(ctx context.Context, teamID resource.ID) (*Team, error)
-	List(ctx context.Context, organization string) ([]*Team, error)
-	Update(ctx context.Context, teamID resource.ID, opts UpdateTeamOptions) (*Team, error)
-	Delete(ctx context.Context, teamID resource.ID) error
+	Create(ctx context.Context, organization organization.Name, opts CreateTeamOptions) (*Team, error)
+	Get(ctx context.Context, organization organization.Name, team string) (*Team, error)
+	GetByID(ctx context.Context, teamID resource.TfeID) (*Team, error)
+	List(ctx context.Context, organization organization.Name) ([]*Team, error)
+	Update(ctx context.Context, teamID resource.TfeID, opts UpdateTeamOptions) (*Team, error)
+	Delete(ctx context.Context, teamID resource.TfeID) error
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -43,19 +45,21 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params struct {
+		Organization *organization.Name `schema:"organization_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	html.Render(newTeamView(org), w, r)
+	html.Render(newTeamView(*params.Organization), w, r)
 }
 
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         *string
-		Organization *string `schema:"organization_name,required"`
+		Organization *organization.Name `schema:"organization_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -67,7 +71,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	})
 	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "team already exists")
-		http.Redirect(w, r, paths.NewTeam(*params.Organization), http.StatusFound)
+		http.Redirect(w, r, paths.NewTeam(params.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -76,12 +80,12 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created team: "+team.Name)
-	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
 }
 
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID resource.ID `schema:"team_id,required"`
+		TeamID resource.TfeID `schema:"team_id,required"`
 		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -96,32 +100,26 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, paths.Team(team.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
+	var params ListOptions
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	teams, err := h.teams.List(r.Context(), org)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	subject, err := authz.SubjectFromContext(r.Context())
+	teams, err := h.teams.List(r.Context(), params.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	props := listTeamsProps{
-		organization:  org,
-		teams:         teams,
-		canCreateTeam: subject.CanAccess(authz.CreateTeamAction, &authz.AccessRequest{Organization: org}),
+		organization:  params.Organization,
+		teams:         resource.NewPage(teams, params.PageOptions, nil),
+		canCreateTeam: h.authorizer.CanAccess(r.Context(), authz.CreateTeamAction, params.Organization),
 	}
 	html.Render(listTeams(props), w, r)
 }

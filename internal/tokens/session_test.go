@@ -22,7 +22,7 @@ func TestService_StartSession(t *testing.T) {
 		tokenFactory: &tokenFactory{key: key},
 	}
 
-	userID := resource.NewID(resource.UserKind)
+	userID := resource.NewTfeID(resource.UserKind)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)

@@ -40,7 +40,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// delete the token
-		err = page.Locator(`//button[text()='delete']`).Click()
+		err = page.Locator(`//form[@id='delete-user-token']/button`).Click()
 		require.NoError(t, err)
 
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("Deleted token")

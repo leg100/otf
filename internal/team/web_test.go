@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,12 +39,15 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 		h.updateTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Team(team.ID.String()))
+		testutils.AssertRedirect(t, w, paths.Team(team.ID))
 	})
 
 	t.Run("list", func(t *testing.T) {
 		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123")}
-		h := &webHandlers{teams: &fakeService{team: team}}
+		h := &webHandlers{
+			teams:      &fakeService{team: team},
+			authorizer: authz.NewAllowAllAuthorizer(),
+		}
 		// make request with user with full perms, to ensure parts of
 		// page that are hidden to unprivileged users are not hidden.
 		userCtx := authz.AddSubjectToContext(context.Background(), &authz.Superuser{})
@@ -57,12 +61,12 @@ func TestTeam_WebHandlers(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: "acme-org"}
+		team := &Team{Name: "acme-org", ID: testutils.ParseID(t, "team-123"), Organization: organization.NewTestName(t)}
 		h := &webHandlers{teams: &fakeService{team: team}}
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()
 		h.deleteTeam(w, r)
-		testutils.AssertRedirect(t, w, paths.Teams("acme-org"))
+		testutils.AssertRedirect(t, w, paths.Teams(team.Organization))
 	})
 }

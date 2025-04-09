@@ -22,14 +22,12 @@ type manager struct {
 	client managerClient
 	// frequency with which the manager will check runners.
 	interval time.Duration
-	// manager identifies itself as a subject when making service calls
-	authz.Subject
 }
 
 type managerClient interface {
-	listRunners(ctx context.Context) ([]*RunnerMeta, error)
-	updateStatus(ctx context.Context, runnerID resource.ID, status RunnerStatus) error
-	deleteRunner(ctx context.Context, runnerID resource.ID) error
+	listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
+	updateStatus(ctx context.Context, runnerID resource.TfeID, status RunnerStatus) error
+	deleteRunner(ctx context.Context, runnerID resource.TfeID) error
 }
 
 func newManager(s *Service) *manager {
@@ -39,7 +37,8 @@ func newManager(s *Service) *manager {
 	}
 }
 
-func (m *manager) String() string { return "runner-manager" }
+func (m *manager) String() string                                 { return "runner-manager" }
+func (m *manager) CanAccess(_ authz.Action, _ authz.Request) bool { return true }
 
 // Start the manager. Every interval the status of runners is checked,
 // updating their status as necessary.
@@ -49,7 +48,7 @@ func (m *manager) Start(ctx context.Context) error {
 	ctx = authz.AddSubjectToContext(ctx, m)
 
 	updateAll := func() error {
-		runners, err := m.client.listRunners(ctx)
+		runners, err := m.client.listRunners(ctx, ListOptions{})
 		if err != nil {
 			return fmt.Errorf("retrieving runners to check their status: %w", err)
 		}

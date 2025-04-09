@@ -2,8 +2,7 @@ package sql
 
 import (
 	"context"
-
-	"github.com/leg100/otf/internal/sql/sqlc"
+	"fmt"
 )
 
 // Updater handles the common flow of a database update:
@@ -28,24 +27,24 @@ import (
 func Updater[T any](
 	ctx context.Context,
 	db *DB,
-	getForUpdate func(context.Context, *sqlc.Queries) (T, error),
+	getForUpdate func(context.Context, Connection) (T, error),
 	update func(context.Context, T) error,
-	updateDB func(context.Context, *sqlc.Queries, T) error,
+	updateDB func(context.Context, Connection, T) error,
 ) (T, error) {
 	var row T
-	err := db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err := db.Tx(ctx, func(ctx context.Context, conn Connection) error {
 		var err error
-		row, err = getForUpdate(ctx, q)
+		row, err = getForUpdate(ctx, conn)
 		if err != nil {
-			return err
+			return fmt.Errorf("finding row for update: %w", err)
 		}
 		if err := update(ctx, row); err != nil {
 			return err
 		}
-		if err := updateDB(ctx, q, row); err != nil {
-			return err
+		if err := updateDB(ctx, conn, row); err != nil {
+			return fmt.Errorf("updating row: %w", err)
 		}
 		return nil
 	})
-	return row, Error(err)
+	return row, toError(err)
 }

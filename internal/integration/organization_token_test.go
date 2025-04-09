@@ -38,7 +38,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 
 	wsClient := &workspace.Client{Client: apiClient}
 	got, err := wsClient.List(ctx, workspace.ListOptions{
-		Organization: internal.String(org.Name),
+		Organization: &org.Name,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, 3, len(got.Items))
@@ -51,7 +51,7 @@ func TestIntegration_OrganizationTokens(t *testing.T) {
 
 	// access with previous token should now be refused
 	_, err = wsClient.List(ctx, workspace.ListOptions{
-		Organization: internal.String(org.Name),
+		Organization: &org.Name,
 	})
 	require.Equal(t, internal.ErrUnauthorized, err)
 }

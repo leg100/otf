@@ -8,94 +8,94 @@ import (
 	"github.com/a-h/templ"
 )
 
-func Workspaces(organization string) templ.SafeURL {
+func Workspaces(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/workspaces", organization))
 }
 
-func CreateWorkspace(organization string) templ.SafeURL {
+func CreateWorkspace(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/workspaces/create", organization))
 }
 
-func NewWorkspace(organization string) templ.SafeURL {
+func NewWorkspace(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/workspaces/new", organization))
 }
 
-func Workspace(workspace string) templ.SafeURL {
+func Workspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s", workspace))
 }
 
-func EditWorkspace(workspace string) templ.SafeURL {
+func EditWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/edit", workspace))
 }
 
-func UpdateWorkspace(workspace string) templ.SafeURL {
+func UpdateWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/update", workspace))
 }
 
-func DeleteWorkspace(workspace string) templ.SafeURL {
+func DeleteWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/delete", workspace))
 }
 
-func LockWorkspace(workspace string) templ.SafeURL {
+func LockWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/lock", workspace))
 }
 
-func UnlockWorkspace(workspace string) templ.SafeURL {
+func UnlockWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/unlock", workspace))
 }
 
-func ForceUnlockWorkspace(workspace string) templ.SafeURL {
+func ForceUnlockWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/force-unlock", workspace))
 }
 
-func SetPermissionWorkspace(workspace string) templ.SafeURL {
+func SetPermissionWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/set-permission", workspace))
 }
 
-func UnsetPermissionWorkspace(workspace string) templ.SafeURL {
+func UnsetPermissionWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/unset-permission", workspace))
 }
 
-func WatchWorkspace(workspace string) templ.SafeURL {
+func WatchWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/watch", workspace))
 }
 
-func WatchWorkspaces(organization string) templ.SafeURL {
+func WatchWorkspaces(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/workspaces/watch", organization))
 }
 
-func ConnectWorkspace(workspace string) templ.SafeURL {
+func ConnectWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/connect", workspace))
 }
 
-func DisconnectWorkspace(workspace string) templ.SafeURL {
+func DisconnectWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/disconnect", workspace))
 }
 
-func StartRunWorkspace(workspace string) templ.SafeURL {
+func StartRunWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/start-run", workspace))
 }
 
-func SetupConnectionProviderWorkspace(workspace string) templ.SafeURL {
+func SetupConnectionProviderWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/setup-connection-provider", workspace))
 }
 
-func SetupConnectionRepoWorkspace(workspace string) templ.SafeURL {
+func SetupConnectionRepoWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/setup-connection-repo", workspace))
 }
 
-func CreateTagWorkspace(workspace string) templ.SafeURL {
+func CreateTagWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/create-tag", workspace))
 }
 
-func DeleteTagWorkspace(workspace string) templ.SafeURL {
+func DeleteTagWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/delete-tag", workspace))
 }
 
-func StateWorkspace(workspace string) templ.SafeURL {
+func StateWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/state", workspace))
 }
 
-func PoolsWorkspace(workspace string) templ.SafeURL {
+func PoolsWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/pools", workspace))
 }

@@ -22,34 +22,37 @@ import (
 
 type (
 	webHandlers struct {
-		logger               logr.Logger
-		runs                 webRunClient
-		workspaces           webWorkspaceClient
-		authorizer           webAuthorizer
-		websocketListHandler *components.WebsocketListHandler[*Run, ListOptions]
+		logger     logr.Logger
+		runs       webRunClient
+		logs       webLogsClient
+		workspaces webWorkspaceClient
+		authorizer webAuthorizer
 	}
 
 	webRunClient interface {
-		Create(ctx context.Context, workspaceID resource.ID, opts CreateOptions) (*Run, error)
+		Create(ctx context.Context, workspaceID resource.TfeID, opts CreateOptions) (*Run, error)
 		List(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
-		Get(ctx context.Context, id resource.ID) (*Run, error)
-		Delete(ctx context.Context, runID resource.ID) error
-		Cancel(ctx context.Context, runID resource.ID) error
-		ForceCancel(ctx context.Context, runID resource.ID) error
-		Apply(ctx context.Context, runID resource.ID) error
-		Discard(ctx context.Context, runID resource.ID) error
+		Get(ctx context.Context, id resource.TfeID) (*Run, error)
+		Delete(ctx context.Context, runID resource.TfeID) error
+		Cancel(ctx context.Context, runID resource.TfeID) error
+		ForceCancel(ctx context.Context, runID resource.TfeID) error
+		Apply(ctx context.Context, runID resource.TfeID) error
+		Discard(ctx context.Context, runID resource.TfeID) error
+		Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func())
 
-		getLogs(ctx context.Context, runID resource.ID, phase internal.PhaseType) ([]byte, error)
 		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
 
+	webLogsClient interface {
+		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+	}
+
 	webWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
-		GetWorkspacePolicy(ctx context.Context, workspaceID resource.ID) (authz.WorkspacePolicy, error)
+		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	webAuthorizer interface {
-		CanAccess(context.Context, authz.Action, *authz.AccessRequest) bool
+		CanAccess(context.Context, authz.Action, resource.ID) bool
 	}
 )
 
@@ -59,21 +62,15 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		logger:     opts.Logger,
 		runs:       service,
 		workspaces: opts.WorkspaceService,
-		websocketListHandler: &components.WebsocketListHandler[*Run, ListOptions]{
-			Logger: opts.Logger,
-			Client: service,
-			Populator: &table{
-				workspaceClient: opts.WorkspaceService,
-			},
-		},
+		logs:       opts.LogsService,
 	}
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/runs", h.list).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listByWorkspace).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
@@ -91,8 +88,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID `schema:"workspace_id,required"`
-		Operation   Operation   `schema:"operation,required"`
+		WorkspaceID resource.TfeID `schema:"workspace_id,required"`
+		Operation   Operation      `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -106,19 +103,42 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Workspace(params.WorkspaceID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+}
+
+func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h := &components.WebsocketListHandler[*Run, ListOptions]{
+			Logger:    h.logger,
+			Client:    h.runs,
+			Populator: table{workspaceClient: h.workspaces},
+			ID:        "page-results",
+		}
+		h.Handler(w, r)
+		return
+	}
+	h.list(w, r)
+}
+
+func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
+	if websocket.IsWebSocketUpgrade(r) {
+		h := &components.WebsocketListHandler[*Run, ListOptions]{
+			Logger:    h.logger,
+			Client:    h.runs,
+			Populator: table{},
+			ID:        "page-results",
+		}
+		h.Handler(w, r)
+		return
+	}
+	h.list(w, r)
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	if websocket.IsWebSocketUpgrade(r) {
-		h.websocketListHandler.Handler(w, r)
-		return
-	}
-
 	var opts struct {
 		ListOptions
 		StatusFilterVisible bool `schema:"status_filter_visible"`
@@ -142,7 +162,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		}
 		props.organization = ws.Organization
 		props.ws = ws
-		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, &authz.AccessRequest{ID: &ws.ID})
+		props.canUpdateWorkspace = h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID)
 	} else if opts.ListOptions.Organization != nil {
 		props.organization = *opts.ListOptions.Organization
 	} else {
@@ -173,12 +193,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -228,7 +248,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(run.WorkspaceID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +263,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +278,7 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
@@ -273,7 +293,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID.String())+"#apply", http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
 }
 
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +308,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
@@ -312,18 +332,18 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Run(runID.String()), http.StatusFound)
+		http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID.String()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID resource.ID  `schema:"workspace_id,required"`
-		Latest      bool         `schema:"latest"`
-		RunID       *resource.ID `schema:"run_id"`
+		WorkspaceID resource.TfeID  `schema:"workspace_id,required"`
+		Latest      bool            `schema:"latest"`
+		RunID       *resource.TfeID `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -10,11 +10,11 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/sqlc"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/surl/v2"
@@ -91,7 +91,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateModuleAction, &authz.AccessRequest{Organization: vcsprov.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateModuleAction, &vcsprov.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (s *Service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 	return module, nil
 }
 
-func (s *Service) publishModule(ctx context.Context, organization string, opts PublishOptions) (*Module, error) {
+func (s *Service) publishModule(ctx context.Context, organization organization.Name, opts PublishOptions) (*Module, error) {
 	name, provider, err := opts.Repo.Split()
 	if err != nil {
 		return nil, err
@@ -120,14 +120,14 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 
 	// persist module to db and connect to repository
 	if err := s.db.createModule(ctx, mod); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating module in database: %w", err)
 	}
 
 	var (
 		client vcs.Client
 		tags   []string
 	)
-	setup := func() (err error) {
+	err = func() (err error) {
 		mod.Connection, err = s.connections.Connect(ctx, connections.ConnectOptions{
 			ResourceID:    mod.ID,
 			VCSProviderID: opts.VCSProviderID,
@@ -138,7 +138,7 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 		}
 		client, err = s.vcsproviders.GetVCSClient(ctx, opts.VCSProviderID)
 		if err != nil {
-			return err
+			return fmt.Errorf("retreving vcs client config: %w", err)
 		}
 		tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
 			Repo: string(opts.Repo),
@@ -147,8 +147,8 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 			return err
 		}
 		return nil
-	}
-	if err := setup(); err != nil {
+	}()
+	if err != nil {
 		return s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
 	}
 	if len(tags) == 0 {
@@ -210,7 +210,7 @@ func (s *Service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 }
 
 func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module, error) {
-	subject, err := s.Authorize(ctx, authz.CreateModuleAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateModuleAction, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -225,23 +225,23 @@ func (s *Service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 	return module, nil
 }
 
-func (s *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
-	subject, err := s.Authorize(ctx, authz.ListModulesAction, &authz.AccessRequest{Organization: opts.Organization})
+func (s *Service) ListModules(ctx context.Context, opts ListOptions) ([]*Module, error) {
+	subject, err := s.Authorize(ctx, authz.ListModulesAction, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	modules, err := s.db.listModules(ctx, opts)
+	page, err := s.db.listModules(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing modules", "organization", opts.Organization, "subject", subject)
 		return nil, err
 	}
 	s.V(9).Info("listed modules", "organization", opts.Organization, "subject", subject)
-	return modules, nil
+	return page, nil
 }
 
 func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
-	subject, err := s.Authorize(ctx, authz.GetModuleAction, &authz.AccessRequest{Organization: opts.Organization})
+	subject, err := s.Authorize(ctx, authz.GetModuleAction, &opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -256,14 +256,14 @@ func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module
 	return module, nil
 }
 
-func (s *Service) GetModuleByID(ctx context.Context, id resource.ID) (*Module, error) {
+func (s *Service) GetModuleByID(ctx context.Context, id resource.TfeID) (*Module, error) {
 	module, err := s.db.getModuleByID(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving module", "id", id)
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.GetModuleAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, authz.GetModuleAction, &module.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -272,23 +272,23 @@ func (s *Service) GetModuleByID(ctx context.Context, id resource.ID) (*Module, e
 	return module, nil
 }
 
-func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.ID, repoPath string) (*Module, error) {
+func (s *Service) GetModuleByConnection(ctx context.Context, vcsProviderID resource.TfeID, repoPath string) (*Module, error) {
 	return s.db.getModuleByConnection(ctx, vcsProviderID, repoPath)
 }
 
-func (s *Service) DeleteModule(ctx context.Context, id resource.ID) (*Module, error) {
+func (s *Service) DeleteModule(ctx context.Context, id resource.TfeID) (*Module, error) {
 	module, err := s.db.getModuleByID(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving module", "id", id)
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.DeleteModuleAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, authz.DeleteModuleAction, &module.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
 			err := s.connections.Disconnect(ctx, connections.DisconnectOptions{
@@ -314,7 +314,7 @@ func (s *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.CreateModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, authz.CreateModuleVersionAction, &module.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (s *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 	return modver, nil
 }
 
-func (s *Service) GetModuleInfo(ctx context.Context, versionID resource.ID) (*TerraformModule, error) {
+func (s *Service) GetModuleInfo(ctx context.Context, versionID resource.TfeID) (*TerraformModule, error) {
 	tarball, err := s.db.getTarball(ctx, versionID)
 	if err != nil {
 		return nil, err
@@ -348,7 +348,7 @@ func (s *Service) updateModuleStatus(ctx context.Context, mod *Module, status Mo
 	return mod, nil
 }
 
-func (s *Service) uploadVersion(ctx context.Context, versionID resource.ID, tarball []byte) error {
+func (s *Service) uploadVersion(ctx context.Context, versionID resource.TfeID, tarball []byte) error {
 	module, err := s.db.getModuleByVersionID(ctx, versionID)
 	if err != nil {
 		return err
@@ -365,7 +365,7 @@ func (s *Service) uploadVersion(ctx context.Context, versionID resource.ID, tarb
 	}
 
 	// save tarball, set status, and make it the latest version
-	err = s.db.Tx(ctx, func(ctx context.Context, q *sqlc.Queries) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
 		if err := s.db.saveTarball(ctx, versionID, tarball); err != nil {
 			return err
 		}
@@ -394,7 +394,7 @@ func (s *Service) uploadVersion(ctx context.Context, versionID resource.ID, tarb
 }
 
 // downloadVersion should be accessed via signed URL
-func (s *Service) downloadVersion(ctx context.Context, versionID resource.ID) ([]byte, error) {
+func (s *Service) downloadVersion(ctx context.Context, versionID resource.TfeID) ([]byte, error) {
 	tarball, err := s.db.getTarball(ctx, versionID)
 	if err != nil {
 		s.Error(err, "downloading module", "module_version_id", versionID)
@@ -405,14 +405,14 @@ func (s *Service) downloadVersion(ctx context.Context, versionID resource.ID) ([
 }
 
 //lint:ignore U1000 to be used later
-func (s *Service) deleteVersion(ctx context.Context, versionID resource.ID) (*Module, error) {
+func (s *Service) deleteVersion(ctx context.Context, versionID resource.TfeID) (*Module, error) {
 	module, err := s.db.getModuleByID(ctx, versionID)
 	if err != nil {
 		s.Error(err, "retrieving module", "id", versionID)
 		return nil, err
 	}
 
-	subject, err := s.Authorize(ctx, authz.DeleteModuleVersionAction, &authz.AccessRequest{Organization: module.Organization})
+	subject, err := s.Authorize(ctx, authz.DeleteModuleVersionAction, &module.Organization)
 	if err != nil {
 		return nil, err
 	}

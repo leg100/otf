@@ -10,6 +10,7 @@ import (
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -47,12 +48,13 @@ func TestVCSProvider_newGithubApp(t *testing.T) {
 }
 
 func TestCreateVCSProviderHandler(t *testing.T) {
+	org1 := organization.NewTestName(t)
 	svc := &webHandlers{
 		githubApps: &fakeGithubAppService{},
-		client:     &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
+		client:     &fakeService{provider: &VCSProvider{Organization: org1}},
 	}
 
-	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/create", strings.NewReader(url.Values{
+	r := httptest.NewRequest("POST", "/organization/"+org1.String()+"/vcs-providers/create", strings.NewReader(url.Values{
 		"organization_name": {"acme-corp"},
 		"token":             {"secret-token"},
 		"name":              {"my-new-vcs-provider"},
@@ -63,16 +65,17 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 
 	svc.create(w, r)
 
-	testutils.AssertRedirect(t, w, "/app/organizations/acme-corp/vcs-providers")
+	testutils.AssertRedirect(t, w, "/app/organizations/"+org1.String()+"/vcs-providers")
 }
 
 func TestListVCSProvidersHandler(t *testing.T) {
+	org1 := organization.NewTestName(t)
 	svc := &webHandlers{
 		githubApps: &fakeGithubAppService{},
-		client:     &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
+		client:     &fakeService{provider: &VCSProvider{Organization: org1}},
 	}
 
-	r := httptest.NewRequest("GET", "/?organization_name=acme-corp", nil)
+	r := httptest.NewRequest("GET", "/?organization_name="+org1.String(), nil)
 	w := httptest.NewRecorder()
 	svc.list(w, r)
 
@@ -80,8 +83,9 @@ func TestListVCSProvidersHandler(t *testing.T) {
 }
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
+	org1 := organization.NewTestName(t)
 	svc := &webHandlers{
-		client: &fakeService{provider: &VCSProvider{Organization: "acme"}},
+		client: &fakeService{provider: &VCSProvider{Organization: org1}},
 	}
 
 	r := httptest.NewRequest("POST", "/?", strings.NewReader(url.Values{
@@ -91,7 +95,7 @@ func TestDeleteVCSProvidersHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	svc.delete(w, r)
 
-	testutils.AssertRedirect(t, w, "/app/organizations/acme/vcs-providers")
+	testutils.AssertRedirect(t, w, "/app/organizations/"+org1.String()+"/vcs-providers")
 }
 
 type fakeService struct {
@@ -104,11 +108,11 @@ func (f *fakeService) Create(ctx context.Context, opts CreateOptions) (*VCSProvi
 	return f.provider, nil
 }
 
-func (f *fakeService) List(context.Context, string) ([]*VCSProvider, error) {
+func (f *fakeService) List(context.Context, organization.Name) ([]*VCSProvider, error) {
 	return []*VCSProvider{f.provider}, nil
 }
 
-func (f *fakeService) Delete(context.Context, resource.ID) (*VCSProvider, error) {
+func (f *fakeService) Delete(context.Context, resource.TfeID) (*VCSProvider, error) {
 	return f.provider, nil
 }
 

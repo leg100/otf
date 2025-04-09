@@ -35,19 +35,19 @@ type (
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		//
 		// Key is the run ID.
-		Cache map[resource.ID]vcs.Status
+		Cache map[resource.TfeID]vcs.Status
 	}
 
 	reporterWorkspaceClient interface {
-		Get(ctx context.Context, workspaceID resource.ID) (*workspace.Workspace, error)
+		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
 	}
 
 	reporterConfigClient interface {
-		Get(ctx context.Context, id resource.ID) (*configversion.ConfigurationVersion, error)
+		Get(ctx context.Context, id resource.TfeID) (*configversion.ConfigurationVersion, error)
 	}
 
 	reporterVCSClient interface {
-		GetVCSClient(ctx context.Context, providerID resource.ID) (vcs.Client, error)
+		GetVCSClient(ctx context.Context, providerID resource.TfeID) (vcs.Client, error)
 	}
 
 	reporterRunClient interface {
@@ -84,7 +84,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	cv, err := r.Configs.Get(ctx, run.ConfigurationVersionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving config: %w", err)
 	}
 
 	// Skip runs with a configuration not sourced from a repo
@@ -94,7 +94,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	ws, err := r.Workspaces.Get(ctx, run.WorkspaceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving workspace: %w", err)
 	}
 	if ws.Connection == nil {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
@@ -102,7 +102,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	client, err := r.VCS.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving vcs client: %w", err)
 	}
 
 	// Report the status and description of the run state
@@ -147,7 +147,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
-		TargetURL:   r.URL(paths.Run(run.ID.String())),
+		TargetURL:   r.URL(paths.Run(run.ID)),
 	})
 	if err != nil {
 		return err

@@ -30,7 +30,7 @@ type (
 
 	// SubjectGetter retrieves an OTF subject given the jwtSubject string, which is the
 	// value of the 'subject' field parsed from a JWT.
-	SubjectGetter func(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error)
+	SubjectGetter func(ctx context.Context, jwtSubject resource.TfeID) (authz.Subject, error)
 
 	// GetOrCreateUser retrieves the user with the given username. If the
 	// user does not exist it is created.
@@ -45,7 +45,7 @@ func (r *registry) RegisterKind(k resource.Kind, fn SubjectGetter) {
 	r.mu.Unlock()
 }
 
-func (r *registry) GetSubject(ctx context.Context, jwtSubject resource.ID) (authz.Subject, error) {
+func (r *registry) GetSubject(ctx context.Context, jwtSubject resource.TfeID) (authz.Subject, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

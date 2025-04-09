@@ -80,7 +80,7 @@ func TestModule(t *testing.T) {
 		module2 := svc.createModule(t, ctx, org)
 		module3 := svc.createModule(t, ctx, org)
 
-		got, err := svc.Modules.ListModules(ctx, module.ListModulesOptions{
+		got, err := svc.Modules.ListModules(ctx, module.ListOptions{
 			Organization: org.Name,
 		})
 		require.NoError(t, err)
