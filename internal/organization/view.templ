@@ -44,7 +44,7 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.Table(&table{}, props.Page, "page-results")
+		@components.Table(&table{}, props.Page, "organization-table")
 	}
 }
 
@@ -56,7 +56,7 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(org *Organization) {
-	<tr id={ "org-item-" + org.Name.String() } class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+	<tr id={ "org-item-" + org.Name.String() } x-data={ components.BlockLink(paths.Organization(org.Name)) }>
 		<td>
 			<a class="link" href={ paths.Organization(org.Name) }>
 				{ org.Name.String() }

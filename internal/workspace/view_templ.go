@@ -122,7 +122,7 @@ func list(props listProps) templ.Component {
 
 		layoutProps := components.LayoutProps{
 			Title:          "workspaces",
-			Organization:   &props.organization,
+			Organization:   props.organization,
 			ContentActions: listActions(props.organization, props.canCreate),
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "workspaces", Link: paths.Workspaces(props.organization)},

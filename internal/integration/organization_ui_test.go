@@ -27,7 +27,6 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		err = page.Locator("input#name").Fill("acme-corp")
 		require.NoError(t, err)
 		screenshot(t, page, "new_org_enter_name")
-		// screenshot(t, "new_org_created"),
 
 		err = page.Locator("input#name").Press("Enter")
 		require.NoError(t, err)
@@ -42,15 +41,15 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// there should be one organization listed
-		err = expect.Locator(page.Locator(`.widget`)).ToHaveCount(1)
+		err = expect.Locator(page.Locator(`//*[@id='organization-table']//tbody/tr`)).ToHaveCount(1)
 		require.NoError(t, err)
 
-		// go to organization's page
-		err = page.Locator(`.widget`).Click()
+		// go to organization
+		err = page.Locator(`//tr[@id='org-item-acme-corp']/td[1]/a`).Click()
 		require.NoError(t, err)
 
 		// go to organization settings
-		err = page.Locator("#settings > a").Click()
+		err = page.Locator("#menu-item-settings > a").Click()
 		require.NoError(t, err)
 
 		// change organization name
