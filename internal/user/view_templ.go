@@ -51,7 +51,7 @@ func adminLogin() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"m-auto\"><form class=\"flex flex-col gap-2\" action=\"/admin/login\" method=\"POST\"><div class=\"field\"><label for=\"token\">Site Admin Token</label> <input class=\"input w-80\" type=\"password\" name=\"token\" id=\"token\" required></div><div><button class=\"btn\">Login</button></div></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex items-center justify-center h-full\"><form class=\"flex flex-col gap-2\" action=\"/admin/login\" method=\"POST\"><div class=\"field\"><label for=\"token\">Site Admin Token</label> <input class=\"input w-80\" type=\"password\" name=\"token\" id=\"token\" required></div><div><button class=\"btn\">Login</button></div></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

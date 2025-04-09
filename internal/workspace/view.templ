@@ -178,11 +178,6 @@ templ get(props getProps) {
 		Title:        "workspaces",
 		Organization: props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-		SubMenu: &components.SubMenuHoist{
-			Parent: components.WorkspacesMenu,
-			Title:  components.Menu(props.ws.Name),
-			Path:   paths.Workspace(props.ws.ID),
-		},
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name},

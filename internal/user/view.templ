@@ -14,7 +14,7 @@ templ adminLogin() {
 	@components.BareLayout(components.BareLayoutProps{
 		Title: "site admin login",
 	}) {
-		<div class="m-auto">
+		<div class="flex items-center justify-center h-full">
 			<form class="flex flex-col gap-2" action="/admin/login" method="POST">
 				<div class="field">
 					<label for="token">Site Admin Token</label>

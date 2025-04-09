@@ -15,7 +15,6 @@ type LayoutProps struct {
 	Title          string
 	Organization   resource.ID
 	Breadcrumbs    []Breadcrumb
-	SubMenu        *SubMenuHoist
 	ContentActions templ.Component
 	ContentLinks   templ.Component
 	ContentMenu    templ.Component
@@ -27,11 +26,11 @@ templ Layout(props LayoutProps) {
 	@BareLayout(BareLayoutProps{
 		Title:          props.Title,
 		Organization:   props.Organization,
-		GridComponents: []templ.Component{menu(props.Organization, props.SubMenu)},
+		GridComponents: []templ.Component{menu(props.Organization)},
 		PreContent:     props.PreContent,
 		PostContent:    props.PostContent,
 	}) {
-		<div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
+		<div class="flex flex-wrap items-center gap-4 pb-2">
 			<div class="flex text-xl">
 				<span id="content-header-title">
 					for i, crumb := range props.Breadcrumbs {

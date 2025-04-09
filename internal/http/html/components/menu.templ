@@ -14,44 +14,33 @@ const (
 	ModulesMenu         = "Modules"
 )
 
-templ menu(organization resource.ID, submenu *SubMenuHoist) {
+templ menu(organization resource.ID) {
 	<ul class="menu bg-base-200 rounded-box w-56">
-		@MenuItem(WorkspacesMenu, paths.Workspaces(organization), submenu)
+		@MenuItem(WorkspacesMenu, paths.Workspaces(organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			@MenuItem(RunsMenu, paths.OrganizationRuns(organization), submenu)
+			@MenuItem(RunsMenu, paths.OrganizationRuns(organization))
 		}
-		@MenuItem(ModulesMenu, paths.Modules(organization), submenu)
-		@MenuItem("Teams", paths.Teams(organization), submenu)
+		@MenuItem(ModulesMenu, paths.Modules(organization))
+		@MenuItem("Teams", paths.Teams(organization))
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			@MenuItem("Users", paths.Users(organization), submenu)
-			@MenuItem("Runners", paths.Runners(organization), submenu)
-			@MenuItem("Agent Pools", paths.AgentPools(organization), submenu)
-			@MenuItem("Variable Sets", paths.VariableSets(organization), submenu)
-			@MenuItem("VCS Providers", paths.VCSProviders(organization), submenu)
-			@MenuItem("Organization Token", paths.OrganizationToken(organization), submenu)
-			@MenuItem("Settings", paths.EditOrganization(organization), submenu)
+			@MenuItem("Users", paths.Users(organization))
+			@MenuItem("Runners", paths.Runners(organization))
+			@MenuItem("Agent Pools", paths.AgentPools(organization))
+			@MenuItem("Variable Sets", paths.VariableSets(organization))
+			@MenuItem("VCS Providers", paths.VCSProviders(organization))
+			@MenuItem("Organization Token", paths.OrganizationToken(organization))
+			@MenuItem("Settings", paths.EditOrganization(organization))
 		}
 	</ul>
 }
 
-type SubMenuHoist struct {
-	Parent Menu
-	Title  Menu
-	Path   templ.SafeURL
-}
-
-templ MenuItem(title Menu, path templ.SafeURL, submenu *SubMenuHoist) {
+templ MenuItem(title Menu, path templ.SafeURL) {
 	<li id={ "menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-") }>
 		<a
 			href={ path }
-			class={ templ.KV("menu-active", string(path) == CurrentPath(ctx)) }
+			class={ templ.KV("menu-active", strings.HasPrefix(CurrentPath(ctx), string(path))) }
 		>
 			{ string(title) }
-			if submenu != nil && submenu.Parent == title {
-				<ul>
-					@MenuItem(submenu.Title, submenu.Path, nil)
-				</ul>
-			}
 		</a>
 	</li>
 }

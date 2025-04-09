@@ -22,7 +22,7 @@ const (
 	ModulesMenu         = "Modules"
 )
 
-func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
+func menu(organization resource.ID) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -47,26 +47,26 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem(WorkspacesMenu, paths.Workspaces(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem(WorkspacesMenu, paths.Workspaces(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			templ_7745c5c3_Err = MenuItem(RunsMenu, paths.OrganizationRuns(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem(RunsMenu, paths.OrganizationRuns(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = MenuItem(ModulesMenu, paths.Modules(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem(ModulesMenu, paths.Modules(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MenuItem("Teams", paths.Teams(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MenuItem("Teams", paths.Teams(organization)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if IsOwner(ctx, organization) || IsSiteAdmin(ctx) {
-			templ_7745c5c3_Err = MenuItem("Users", paths.Users(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Users", paths.Users(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -74,7 +74,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Runners", paths.Runners(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Runners", paths.Runners(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -82,7 +82,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Agent Pools", paths.AgentPools(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Agent Pools", paths.AgentPools(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -90,7 +90,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Variable Sets", paths.VariableSets(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Variable Sets", paths.VariableSets(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -98,7 +98,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("VCS Providers", paths.VCSProviders(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("VCS Providers", paths.VCSProviders(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -106,7 +106,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Organization Token", paths.OrganizationToken(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Organization Token", paths.OrganizationToken(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -114,7 +114,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MenuItem("Settings", paths.EditOrganization(organization), submenu).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MenuItem("Settings", paths.EditOrganization(organization)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -127,13 +127,7 @@ func menu(organization resource.ID, submenu *SubMenuHoist) templ.Component {
 	})
 }
 
-type SubMenuHoist struct {
-	Parent Menu
-	Title  Menu
-	Path   templ.SafeURL
-}
-
-func MenuItem(title Menu, path templ.SafeURL, submenu *SubMenuHoist) templ.Component {
+func MenuItem(title Menu, path templ.SafeURL) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -161,7 +155,7 @@ func MenuItem(title Menu, path templ.SafeURL, submenu *SubMenuHoist) templ.Compo
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("menu-item-" + strings.ReplaceAll(strings.ToLower(string(title)), " ", "-"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/menu.templ`, Line: 44, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/menu.templ`, Line: 38, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -171,7 +165,7 @@ func MenuItem(title Menu, path templ.SafeURL, submenu *SubMenuHoist) templ.Compo
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var4 = []any{templ.KV("menu-active", string(path) == CurrentPath(ctx))}
+		var templ_7745c5c3_Var4 = []any{templ.KV("menu-active", strings.HasPrefix(CurrentPath(ctx), string(path)))}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var4...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -205,31 +199,13 @@ func MenuItem(title Menu, path templ.SafeURL, submenu *SubMenuHoist) templ.Compo
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(string(title))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/menu.templ`, Line: 49, Col: 18}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/menu.templ`, Line: 43, Col: 18}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, " ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if submenu != nil && submenu.Parent == title {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<ul>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = MenuItem(submenu.Title, submenu.Path, nil).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</ul>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

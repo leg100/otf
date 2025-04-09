@@ -9,7 +9,7 @@ templ login(clients []*OAuthClient) {
 	@components.BareLayout(components.BareLayoutProps{
 		Title: "login",
 	}) {
-		<div class="m-auto">
+		<div class="flex flex-col gap-2 items-center justify-center h-full">
 			<div class="flex flex-col gap-2">
 				for _, client := range clients {
 					<a class="p-4 border border-black flex justify-center items-center gap-1" id={ "login-button-" + client.String() } href={ templ.URL(client.RequestPath()) }>
