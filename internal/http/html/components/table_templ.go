@@ -115,7 +115,7 @@ func UnpaginatedTable[T any](populator TablePopulator[T], resources []T, id stri
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"rounded-box border border-base-content/20\"><table class=\"table overflow-x-auto\"><thead><tr>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"border-t border-b border-base-content/20\"><table class=\"table overflow-x-auto\"><thead><tr>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

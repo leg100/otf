@@ -116,14 +116,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	org, err := a.svc.Get(r.Context(), params.Name)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	html.Render(get(org), w, r)
+	http.Redirect(w, r, paths.Workspaces(params.Name), http.StatusFound)
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {

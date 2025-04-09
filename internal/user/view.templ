@@ -14,7 +14,7 @@ templ adminLogin() {
 	@components.BareLayout(components.BareLayoutProps{
 		Title: "site admin login",
 	}) {
-		<div class="flex items-center justify-center h-full">
+		<div class="flex items-center justify-start h-full">
 			<form class="flex flex-col gap-2" action="/admin/login" method="POST">
 				<div class="field">
 					<label for="token">Site Admin Token</label>
@@ -30,8 +30,8 @@ templ adminLogin() {
 
 templ profile() {
 	@components.Layout(components.LayoutProps{
-		Title:        "profile",
-		ContentLinks: profileLinks(),
+		Title: "profile",
+		Menu:  menu(),
 	}) {
 		<p>You are logged in as <span class="bg-gray-200">{ components.CurrentUsername(ctx) }</span></p>
 		<br/>
@@ -39,12 +39,6 @@ templ profile() {
 			<button class="btn" id="logout">logout</button>
 		</form>
 	}
-}
-
-templ profileLinks() {
-	<div id="user-tokens-link">
-		<a href={ paths.Tokens() }>tokens</a>
-	</div>
 }
 
 type userListProps struct {
@@ -62,6 +56,21 @@ templ userList(props userListProps) {
 	}) {
 		@components.Table(&table{}, props.users, "page-results")
 	}
+}
+
+// menu to show in the sidebar when viewing user profile, tokens, etc.
+templ menu() {
+	<ul class="menu">
+		<li class="menu-title">
+			<div class="flex gap-2 items-center">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"></path>
+				</svg>
+				<span>{ components.CurrentUsername(ctx) }</span>
+			</div>
+		</li>
+		@components.MenuItem("Tokens", paths.Tokens())
+	</ul>
 }
 
 type table struct {
@@ -237,7 +246,6 @@ templ tokenList(tokens []*UserToken) {
 			{Name: "profile", Link: paths.Profile()},
 			{Name: "tokens"},
 		},
-		ContentLinks:   profileLinks(),
 		ContentActions: tokenListActions(),
 	}) {
 		@components.UnpaginatedTable(
