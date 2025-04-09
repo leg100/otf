@@ -7,5 +7,5 @@ import (
 )
 
 func Tokens() templ.SafeURL {
-	return templ.URL("/app/profile/tokens")
+	return templ.URL("/app/current-user/tokens")
 }

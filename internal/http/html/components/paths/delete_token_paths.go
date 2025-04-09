@@ -7,5 +7,5 @@ import (
 )
 
 func DeleteToken() templ.SafeURL {
-	return templ.URL("/app/profile/tokens/delete")
+	return templ.URL("/app/current-user/tokens/delete")
 }

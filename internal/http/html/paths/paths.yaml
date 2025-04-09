@@ -12,16 +12,16 @@
 - name: profile
   controller_type: 1
 - name: tokens
-  path: /profile/tokens
+  path: /current-user/tokens
   controller_type: 1
 - name: delete_token
-  path: /profile/tokens/delete
+  path: /current-user/tokens/delete
   controller_type: 1
 - name: new_token
-  path: /profile/tokens/new
+  path: /current-user/tokens/new
   controller_type: 1
 - name: create_token
-  path: /profile/tokens/create
+  path: /current-user/tokens/create
   controller_type: 1
 - name: github_app
   actions:

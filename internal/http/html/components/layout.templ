@@ -24,21 +24,14 @@ type LayoutProps struct {
 }
 
 templ Layout(props LayoutProps) {
-	{{
-	bareProps := BareLayoutProps{
+	@BareLayout(BareLayoutProps{
 		Title:        props.Title,
 		Organization: props.Organization,
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
-		Menu:         props.Menu,
-	}
-	if props.Menu == nil && props.Organization != nil {
-		bareProps.Menu = menu(props.Organization)
-	}
-	}}
-	@BareLayout(bareProps) {
-		<div class="flex flex-wrap items-center gap-4 pb-2">
-			<div class="flex text-xl">
+	}) {
+		<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
+			<div class="flex">
 				<span id="content-header-title">
 					for i, crumb := range props.Breadcrumbs {
 						if crumb.Link != "" {
@@ -75,7 +68,6 @@ templ Layout(props LayoutProps) {
 type BareLayoutProps struct {
 	Title        string
 	Organization resource.ID
-	Menu         templ.Component
 	PreContent   templ.Component
 	PostContent  templ.Component
 }
@@ -112,11 +104,9 @@ templ BareLayout(props BareLayoutProps) {
 			<footer>
 				@footer()
 			</footer>
-			if props.Menu != nil {
-				<div class="border-r-1 border-base-300">
-					@props.Menu
-				</div>
-			}
+			<div class="border-r-1 border-base-300">
+				@menu(props.Organization)
+			</div>
 			if props.PostContent != nil {
 				@props.PostContent
 			}

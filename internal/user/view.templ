@@ -31,7 +31,9 @@ templ adminLogin() {
 templ profile() {
 	@components.Layout(components.LayoutProps{
 		Title: "profile",
-		Menu:  menu(),
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "profile"},
+		},
 	}) {
 		<p>You are logged in as <span class="bg-gray-200">{ components.CurrentUsername(ctx) }</span></p>
 		<br/>
@@ -56,21 +58,6 @@ templ userList(props userListProps) {
 	}) {
 		@components.Table(&table{}, props.users, "page-results")
 	}
-}
-
-// menu to show in the sidebar when viewing user profile, tokens, etc.
-templ menu() {
-	<ul class="menu">
-		<li class="menu-title">
-			<div class="flex gap-2 items-center">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"></path>
-				</svg>
-				<span>{ components.CurrentUsername(ctx) }</span>
-			</div>
-		</li>
-		@components.MenuItem("Tokens", paths.Tokens())
-	</ul>
 }
 
 type table struct {
@@ -222,8 +209,7 @@ templ newToken() {
 	@components.Layout(components.LayoutProps{
 		Title: "new user token",
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "profile", Link: paths.Profile()},
-			{Name: "tokens", Link: paths.Tokens()},
+			{Name: "user tokens", Link: paths.Tokens()},
 			{Name: "new"},
 		},
 	}) {
@@ -243,8 +229,7 @@ templ tokenList(tokens []*UserToken) {
 	@components.Layout(components.LayoutProps{
 		Title: "user tokens",
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "profile", Link: paths.Profile()},
-			{Name: "tokens"},
+			{Name: "user tokens"},
 		},
 		ContentActions: tokenListActions(),
 	}) {
@@ -289,19 +274,4 @@ templ (t tokensTable) Row(token *UserToken) {
 			</form>
 		</td>
 	</tr>
-}
-
-templ siteSettings() {
-	@components.Layout(components.LayoutProps{
-		Title: "site",
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "site settings"},
-		},
-	}) {
-		<div class="flex flex-col gap-2 text-lg">
-			<span>
-				<a href={ paths.GithubApps() }>GitHub app</a>
-			</span>
-		</div>
-	}
 }

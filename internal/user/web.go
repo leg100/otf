@@ -65,10 +65,10 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/admin", h.site).Methods("GET")
 
 	// user tokens
-	r.HandleFunc("/profile/tokens", h.userTokens).Methods("GET")
-	r.HandleFunc("/profile/tokens/delete", h.deleteUserToken).Methods("POST")
-	r.HandleFunc("/profile/tokens/new", h.newUserToken).Methods("GET")
-	r.HandleFunc("/profile/tokens/create", h.createUserToken).Methods("POST")
+	r.HandleFunc("/current-user/tokens", h.userTokens).Methods("GET")
+	r.HandleFunc("/current-user/tokens/delete", h.deleteUserToken).Methods("POST")
+	r.HandleFunc("/current-user/tokens/new", h.newUserToken).Methods("GET")
+	r.HandleFunc("/current-user/tokens/create", h.createUserToken).Methods("POST")
 
 	// team membership
 	r.HandleFunc("/teams/{team_id}/add-member", h.addTeamMember).Methods("POST")
@@ -136,7 +136,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
-	html.Render(siteSettings(), w, r)
+	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
 }
 
 // team membership handlers
