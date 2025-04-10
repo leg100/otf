@@ -32,7 +32,7 @@ func TestWeb(t *testing.T) {
 		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 		require.NoError(t, err)
 		// list teams
-		err = page.Locator("#teams > a").Click()
+		err = page.Locator("#menu-item-teams > a").Click()
 		require.NoError(t, err)
 		// select devops team
 		err = page.Locator("#item-team-devops").Click()
@@ -56,7 +56,7 @@ func TestWeb(t *testing.T) {
 		require.NoError(t, err)
 
 		// list users
-		err = page.Locator("#users > a").Click()
+		err = page.Locator("#menu-item-users > a").Click()
 		require.NoError(t, err)
 
 		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
@@ -69,7 +69,7 @@ func TestWeb(t *testing.T) {
 		require.NoError(t, err)
 
 		// list teams
-		err = page.Locator("#teams > a").Click()
+		err = page.Locator("#menu-item-teams > a").Click()
 		require.NoError(t, err)
 
 		// select owners team

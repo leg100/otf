@@ -91,9 +91,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				screenshot(t, page, "site_settings")
 
 				// go to github app page
-				err = page.GetByRole("link").Filter(playwright.LocatorFilterOptions{
-					HasText: "GitHub app",
-				}).Click()
+				err = page.Locator("#menu-item-github-app > a").Click()
 				require.NoError(t, err)
 
 				screenshot(t, page, "empty_github_app_page")

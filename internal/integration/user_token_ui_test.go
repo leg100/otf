@@ -19,7 +19,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to user tokens
-		err = page.Locator(`//div[@id='user-tokens-link']/a`).Click()
+		err = page.Locator(`#menu-item-user-tokens > a`).Click()
 		require.NoError(t, err)
 
 		screenshot(t, page, "user_tokens")

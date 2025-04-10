@@ -19,7 +19,7 @@ func TestRunnersUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// to list of runners
-		err = page.Locator("#runners > a").Click()
+		err = page.Locator("#menu-item-runners > a").Click()
 		require.NoError(t, err)
 
 		// expect only one runner to be listed

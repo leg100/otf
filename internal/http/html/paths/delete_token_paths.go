@@ -3,5 +3,5 @@
 package paths
 
 func DeleteToken() string {
-	return "/app/profile/tokens/delete"
+	return "/app/current-user/tokens/delete"
 }

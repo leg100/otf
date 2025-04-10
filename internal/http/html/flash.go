@@ -19,14 +19,14 @@ type FlashType string
 
 func (f FlashType) String() string { return string(f) }
 
-// flash is a flash message for the web UI
-type flash struct {
+// Flash is a Flash message for the web UI
+type Flash struct {
 	Type    FlashType
 	Message string
 }
 
 // PopFlashes pops all flash messages off the stack
-func PopFlashes(r *http.Request, w http.ResponseWriter) ([]flash, error) {
+func PopFlashes(r *http.Request, w http.ResponseWriter) ([]Flash, error) {
 	cookie, err := r.Cookie(flashCookie)
 	if err != nil {
 		// no cookie; return empty stack
@@ -36,7 +36,7 @@ func PopFlashes(r *http.Request, w http.ResponseWriter) ([]flash, error) {
 	if err != nil {
 		return nil, err
 	}
-	var flashes []flash
+	var flashes []Flash
 	if err := json.Unmarshal(decoded, &flashes); err != nil {
 		return nil, err
 	}
@@ -46,10 +46,10 @@ func PopFlashes(r *http.Request, w http.ResponseWriter) ([]flash, error) {
 }
 
 // FlashStack is a stack of flash messages
-type FlashStack []flash
+type FlashStack []Flash
 
 func (s *FlashStack) Push(t FlashType, msg string) {
-	*s = append(*s, flash{t, msg})
+	*s = append(*s, Flash{t, msg})
 }
 
 func (s FlashStack) Write(w http.ResponseWriter) {

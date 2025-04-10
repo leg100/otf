@@ -97,7 +97,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 		require.NoError(t, err)
 		// go to vcs providers
-		err = page.Locator("#vcs_providers > a").Click()
+		err = page.Locator("#menu-item-vcs-providers > a").Click()
 		require.NoError(t, err)
 		// edit provider
 		err = page.Locator(`//button[@id='edit-button']`).Click()

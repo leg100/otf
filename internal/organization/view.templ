@@ -44,7 +44,7 @@ templ list(props listProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		@components.Table(&table{}, props.Page, "page-results")
+		@components.Table(&table{}, props.Page, "organization-table")
 	}
 }
 
@@ -56,7 +56,7 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(org *Organization) {
-	<tr id={ "org-item-" + org.Name.String() } class="widget" x-data={ components.BlockLink(paths.Organization(org.Name)) }>
+	<tr id={ "org-item-" + org.Name.String() } x-data={ components.BlockLink(paths.Organization(org.Name)) }>
 		<td>
 			<a class="link" href={ paths.Organization(org.Name) }>
 				{ org.Name.String() }
@@ -83,60 +83,6 @@ templ listActions(canCreate bool) {
 			New Organization
 		</button>
 	</form>
-}
-
-templ get(organization *Organization) {
-	{{
-	layoutProps := components.LayoutProps{
-		Title:        organization.Name.String(),
-		Organization: organization.Name,
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "main menu"},
-		},
-	}
-	}}
-	@components.Layout(layoutProps) {
-		@components.Identifier(organization.ID)
-		<div class="flex flex-col gap-2 text-lg">
-			<span id="menu-item-workspaces">
-				<a href={ paths.Workspaces(organization.Name) }>workspaces</a>
-			</span>
-			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
-				<span id="menu-item-runs">
-					<a href={ paths.OrganizationRuns(organization.Name) }>runs</a>
-				</span>
-			}
-			<span id="modules">
-				<a href={ paths.Modules(organization.Name) }>modules</a>
-			</span>
-			<span id="teams">
-				<a href={ paths.Teams(organization.Name) }>teams</a>
-			</span>
-			if components.IsOwner(ctx, organization.Name) || components.IsSiteAdmin(ctx) {
-				<span id="users">
-					<a href={ paths.Users(organization.Name) }>users</a>
-				</span>
-				<span id="runners">
-					<a href={ paths.Runners(organization.Name) }>runners</a>
-				</span>
-				<span id="agent_pools">
-					<a href={ paths.AgentPools(organization.Name) }>agent pools</a>
-				</span>
-				<span id="variable_sets">
-					<a href={ paths.VariableSets(organization.Name) }>variable sets</a>
-				</span>
-				<span id="vcs_providers">
-					<a href={ paths.VCSProviders(organization.Name) }>VCS providers</a>
-				</span>
-				<span id="organization_tokens">
-					<a href={ paths.OrganizationToken(organization.Name) }>organization token</a>
-				</span>
-				<span id="settings">
-					<a href={ paths.EditOrganization(organization.Name) }>settings</a>
-				</span>
-			}
-		</div>
-	}
 }
 
 templ edit(organization *Organization) {

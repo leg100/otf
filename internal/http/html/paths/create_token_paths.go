@@ -3,5 +3,5 @@
 package paths
 
 func CreateToken() string {
-	return "/app/profile/tokens/create"
+	return "/app/current-user/tokens/create"
 }

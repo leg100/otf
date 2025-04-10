@@ -20,6 +20,7 @@ type LayoutProps struct {
 	ContentMenu    templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
+	Menu           templ.Component
 }
 
 templ Layout(props LayoutProps) {
@@ -29,8 +30,8 @@ templ Layout(props LayoutProps) {
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
 	}) {
-		<div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
-			<div class="flex text-xl">
+		<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
+			<div class="flex">
 				<span id="content-header-title">
 					for i, crumb := range props.Breadcrumbs {
 						if crumb.Link != "" {
@@ -88,14 +89,24 @@ templ BareLayout(props BareLayoutProps) {
 			<script src={ AssetPath(ctx, "/static/js/htmx-ext-ws.2.0.2.js") }></script>
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
+			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/grid.css") }/>
 		</head>
-		<body class="flex flex-col m-0 min-h-screen font-sans">
-			@navbar(props.Organization)
-			@Flashes()
-			<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
+		<!--<body class="flex-col m-0 min-h-screen font-sans">-->
+		<body class="min-h-screen">
+			<header class="border-b-1 border-base-300">
+				@navbar(props.Organization)
+			</header>
+			<main class="mx-4 my-2">
+				@Flashes()
+				<!--<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">-->
 				{ children... }
 			</main>
-			@footer()
+			<footer>
+				@footer()
+			</footer>
+			<div class="border-r-1 border-base-300">
+				@menu(props.Organization)
+			</div>
 			if props.PostContent != nil {
 				@props.PostContent
 			}
@@ -104,45 +115,33 @@ templ BareLayout(props BareLayoutProps) {
 }
 
 templ navbar(organization resource.ID) {
-	<header class="bg-gray-200">
-		<nav class="max-w-4xl flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
-			if Authenticated(ctx) {
-				<input class="hidden peer" id="hamburger-toggle" type="checkbox"/>
-				<label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
-					<img src={ AssetPath(ctx, "/static/images/hamburger.svg") } alt="open menu"/>
-				</label>
-				<label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
-					<img src={ AssetPath(ctx, "/static/images/cross.svg") } alt="close menu"/>
-				</label>
-			}
-			if Authenticated(ctx) {
-				if organization != nil {
-					<div class="flex gap-2 items-center">
-						<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill-rule="evenodd" clip-rule="evenodd">
-							<path d="M16 7h8v17h-24v-24h16v7zm-9 12h-2v4h2v-4zm4 0h-2v4h2v-4zm7 0h-2v4h2v-4zm4-10h-6v8h4v5h2v-13zm-8-7h-12v20h1v-5h10v5h1v-20zm-8 13h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm8-2v2h-2v-2h2zm-14-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm6-2h2v2h-2v-2zm-12-1h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2zm-6-3h-2v-2h2v2zm3 0h-2v-2h2v2zm3 0h-2v-2h2v2z"></path>
-						</svg>
-						<a href={ paths.Organization(organization) }>{ organization.String() }</a>
-					</div>
-				}
-			}
-			<div class="logo md:order-first">
-				<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
-			</div>
-			if Authenticated(ctx) {
-				<div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
-					<div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
-						<a href={ paths.Admin() }>site</a>
-						<a href={ paths.Organizations() }>organizations</a>
-						<a href={ paths.Profile() }>profile</a>
-					</div>
+	<div class="bg-base-100 px-2 flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
+		if Authenticated(ctx) {
+			<input class="hidden peer" id="hamburger-toggle" type="checkbox"/>
+			<label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
+				<img src={ AssetPath(ctx, "/static/images/hamburger.svg") } alt="open menu"/>
+			</label>
+			<label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
+				<img src={ AssetPath(ctx, "/static/images/cross.svg") } alt="close menu"/>
+			</label>
+		}
+		<div class="logo md:order-first">
+			<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
+		</div>
+		if Authenticated(ctx) {
+			<div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
+				<div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
+					<a href={ paths.Admin() }>site</a>
+					<a href={ paths.Organizations() }>organizations</a>
+					<a href={ paths.Profile() }>profile</a>
 				</div>
-			}
-		</nav>
-	</header>
+			</div>
+		}
+	</div>
 }
 
 templ footer() {
-	<footer class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
+	<div class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
 		<div class="flex justify-between gap-4 max-w-2xl py-0.5 my-0 mx-auto">
 			<div></div>
 			<div class="footer-version">
@@ -154,5 +153,5 @@ templ footer() {
 				}
 			</div>
 		</div>
-	</footer>
+	</div>
 }

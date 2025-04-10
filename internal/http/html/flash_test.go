@@ -31,9 +31,9 @@ func TestFlash(t *testing.T) {
 	got, err := PopFlashes(r, w)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(got))
-	assert.Contains(t, got, flash{FlashSuccessType, "yes!"})
-	assert.Contains(t, got, flash{FlashWarningType, "uh-oh"})
-	assert.Contains(t, got, flash{FlashErrorType, "noooo"})
+	assert.Contains(t, got, Flash{FlashSuccessType, "yes!"})
+	assert.Contains(t, got, Flash{FlashWarningType, "uh-oh"})
+	assert.Contains(t, got, Flash{FlashErrorType, "noooo"})
 }
 
 func TestFlashHelpers(t *testing.T) {

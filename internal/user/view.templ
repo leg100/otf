@@ -14,7 +14,7 @@ templ adminLogin() {
 	@components.BareLayout(components.BareLayoutProps{
 		Title: "site admin login",
 	}) {
-		<div class="m-auto">
+		<div class="flex items-center justify-start h-full">
 			<form class="flex flex-col gap-2" action="/admin/login" method="POST">
 				<div class="field">
 					<label for="token">Site Admin Token</label>
@@ -30,8 +30,10 @@ templ adminLogin() {
 
 templ profile() {
 	@components.Layout(components.LayoutProps{
-		Title:        "profile",
-		ContentLinks: profileLinks(),
+		Title: "profile",
+		Breadcrumbs: []components.Breadcrumb{
+			{Name: "profile"},
+		},
 	}) {
 		<p>You are logged in as <span class="bg-gray-200">{ components.CurrentUsername(ctx) }</span></p>
 		<br/>
@@ -39,12 +41,6 @@ templ profile() {
 			<button class="btn" id="logout">logout</button>
 		</form>
 	}
-}
-
-templ profileLinks() {
-	<div id="user-tokens-link">
-		<a href={ paths.Tokens() }>tokens</a>
-	</div>
 }
 
 type userListProps struct {
@@ -213,8 +209,7 @@ templ newToken() {
 	@components.Layout(components.LayoutProps{
 		Title: "new user token",
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "profile", Link: paths.Profile()},
-			{Name: "tokens", Link: paths.Tokens()},
+			{Name: "user tokens", Link: paths.Tokens()},
 			{Name: "new"},
 		},
 	}) {
@@ -234,10 +229,8 @@ templ tokenList(tokens []*UserToken) {
 	@components.Layout(components.LayoutProps{
 		Title: "user tokens",
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "profile", Link: paths.Profile()},
-			{Name: "tokens"},
+			{Name: "user tokens"},
 		},
-		ContentLinks:   profileLinks(),
 		ContentActions: tokenListActions(),
 	}) {
 		@components.UnpaginatedTable(
@@ -281,19 +274,4 @@ templ (t tokensTable) Row(token *UserToken) {
 			</form>
 		</td>
 	</tr>
-}
-
-templ siteSettings() {
-	@components.Layout(components.LayoutProps{
-		Title: "site",
-		Breadcrumbs: []components.Breadcrumb{
-			{Name: "site settings"},
-		},
-	}) {
-		<div class="flex flex-col gap-2 text-lg">
-			<span>
-				<a href={ paths.GithubApps() }>GitHub app</a>
-			</span>
-		</div>
-	}
 }

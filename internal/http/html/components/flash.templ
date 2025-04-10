@@ -27,6 +27,14 @@ templ Flashes() {
 		return fmt.Errorf("unable to pop flash messages: %w", err)
 	}
 	}}
+	if len(flashes) > 0 {
+		<div class="my-2">
+			@renderFlashes(flashes)
+		</div>
+	}
+}
+
+templ renderFlashes(flashes []html.Flash) {
 	for _, flash := range flashes {
 		<div class={ "border padding py-0.5 px-1", flashColors[flash.Type] } role="alert">
 			@templ.Raw(flash.Message)
