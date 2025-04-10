@@ -36,7 +36,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to list of agent pools
-		err = page.Locator("#agent_pools > a").Click()
+		err = page.Locator("#menu-item-agent-pools > a").Click()
 		require.NoError(t, err)
 
 		// expose new agent pool form

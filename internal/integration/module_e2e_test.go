@@ -39,7 +39,7 @@ func TestModuleE2E(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to modules
-		err = page.Locator("#modules > a").Click()
+		err = page.Locator("#menu-item-modules > a").Click()
 		require.NoError(t, err)
 		screenshot(t, page, "modules_list")
 
@@ -131,7 +131,7 @@ module "mod" {
 		require.NoError(t, err)
 
 		// go to modules
-		err = page.Locator("#modules > a").Click()
+		err = page.Locator("#menu-item-modules > a").Click()
 		require.NoError(t, err)
 
 		// select existing module

@@ -24,7 +24,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 		_, err = page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 		require.NoError(t, err)
 		// go to teams listing
-		err = page.Locator(`//a[text()='teams']`).Click()
+		err = page.Locator(`#menu-item-teams > a`).Click()
 		require.NoError(t, err)
 		// go to owners team page
 		err = page.Locator(`//*[@id='item-team-owners']`).Click()

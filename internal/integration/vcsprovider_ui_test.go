@@ -34,7 +34,7 @@ func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 
 		screenshot(t, page, "organization_main_menu")
 		// go to vcs providers
-		err = page.Locator("#vcs_providers > a").Click()
+		err = page.Locator("#menu-item-vcs-providers > a").Click()
 		require.NoError(t, err)
 		screenshot(t, page, "vcs_providers_list")
 		// click 'New Github VCS Provider' button
@@ -167,7 +167,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to vcs providers
-		err = page.Locator("#vcs_providers > a").Click()
+		err = page.Locator("#menu-item-vcs-providers > a").Click()
 		require.NoError(t, err)
 
 		screenshot(t, page, "vcs_provider_list_including_github_app")

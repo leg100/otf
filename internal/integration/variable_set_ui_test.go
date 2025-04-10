@@ -21,7 +21,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to variable sets
-		err = page.Locator(`//a[text()='variable sets']`).Click()
+		err = page.Locator(`#menu-item-variable-sets > a`).Click()
 		require.NoError(t, err)
 		// click new variable set button
 		err = page.Locator(`button#new-variable-set-button`).Click()
@@ -80,7 +80,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to variable sets
-		err = page.Locator(`//a[text()='variable sets']`).Click()
+		err = page.Locator(`#menu-item-variable-sets > a`).Click()
 		require.NoError(t, err)
 
 		// click new variable set button and wait for alpine to load on new

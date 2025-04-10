@@ -20,7 +20,7 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// go to organization token page
-		err = page.Locator(`//span[@id='organization_tokens']/a`).Click()
+		err = page.Locator(`#menu-item-organization-token > a`).Click()
 		require.NoError(t, err)
 
 		screenshot(t, page, "org_token_new")
