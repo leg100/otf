@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.18](https://github.com/leg100/otf/compare/v0.3.17...v0.3.18) (2025-04-10)
+
+
+### Features
+
+* **ui:** add side menu ([d628f81](https://github.com/leg100/otf/commit/d628f81f16fac260a089d3a1bcef7d3c4ddfe3c9))
+
+
+### Bug Fixes
+
+* allow variable set with same name in another org ([8834ba2](https://github.com/leg100/otf/commit/8834ba26718ab2c9e2556afcc4ff55b20bf0353c))
+
+
+### Miscellaneous
+
+* bump playwright ([25313e2](https://github.com/leg100/otf/commit/25313e2e09fea51e22553ad06d43952cce75e8ad))
+
 ## [0.3.17](https://github.com/leg100/otf/compare/v0.3.16...v0.3.17) (2025-04-08)
 
 
