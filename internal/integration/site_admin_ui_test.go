@@ -40,7 +40,7 @@ func TestSiteAdminUI(t *testing.T) {
 		require.NoError(t, err)
 		screenshot(t, page, "site_admin_profile")
 
-		err = expect.Locator(page.Locator("#content > p")).ToHaveText("You are logged in as site-admin")
+		err = expect.Locator(page.Locator("//*[@id='logged-in-msg']")).ToHaveText("You are logged in as site-admin")
 		require.NoError(t, err)
 	})
 }

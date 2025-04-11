@@ -187,7 +187,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			_, err = page.Goto(daemon.System.URL("/app/github-apps"))
 			require.NoError(t, err)
 
-			err = expect.Locator(page.Locator(`//div[@id='installations']//a[contains(text(), "user/leg100")]`)).ToBeVisible()
+			err = expect.Locator(page.Locator(`//div[@id='installations']//tbody//td[1]//a`)).ToContainText("user/leg100")
 			require.NoError(t, err)
 			screenshot(t, page, "github_app_install_list")
 		})

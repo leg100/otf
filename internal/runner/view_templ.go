@@ -55,7 +55,7 @@ func listRunners(props listRunnersProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"description max-w-2xl\">A runner handles the execution of runs. There are two types of runners: the runner built into <span class=\"bg-gray-200 font-mono p-0.5 text-xs\">otfd</span> which handles runs for workspaces with the <span class=\"font-bold\">remote</span> execution mode; and <span class=\"bg-gray-200 font-mono p-0.5 text-xs\">otf-agent</span>, which handles runs for workspaces with the <span class=\"font-bold\">agent</span> execution mode.</div><form action=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"description max-w-2xl\">A runner handles the execution of runs. There are two types of runners: the runner built into <span class=\"font-bold\">otfd</span> which handles runs for workspaces with the <span class=\"font-bold\">remote</span> execution mode; and <span class=\"font-bold\">otf-agent</span>, which handles runs for workspaces with the <span class=\"font-bold\">agent</span> execution mode.</div><form action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -64,7 +64,7 @@ func listRunners(props listRunnersProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><fieldset class=\"fieldset p-4 bg-base-100 border border-base-300 rounded-box w-64\"><legend class=\"fieldset-legend\">Filters</legend> <label class=\"fieldset-label\"><input type=\"checkbox\" name=\"hide_server_runners\" class=\"toggle toggle-secondary\" onchange=\"this.form.submit()\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><fieldset class=\"fieldset p-4 bg-base-100 border border-base-content/20 rounded-box w-64\"><legend class=\"fieldset-legend\">Filters</legend> <label class=\"fieldset-label\"><input type=\"checkbox\" name=\"hide_server_runners\" class=\"toggle toggle-secondary\" onchange=\"this.form.submit()\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -412,7 +412,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"description w-3/4\">An agent pool is a group of <span class=\"bg-gray-200 font-mono p-0.5 text-xs\">otf-agent</span> processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the <span class=\"font-bold\">agent</span> execution mode, any available agent in that workspace's associated agent pool is eligible to complete the run.</div><details id=\"new-pool-details\" closed><summary class=\"cursor-pointer py-2\"><span class=\"font-semibold\">New agent pool</span></summary><form class=\"flex flex-col gap-5\" action=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"text-sm text-base-content/60 w-3/4\">An agent pool is a group of <span class=\"font-bold\">otf-agent</span> processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the <span class=\"font-bold\">agent</span> execution mode, any available agent in that workspace's associated agent pool is eligible to complete the run.</div><details id=\"new-pool-details\" closed><summary class=\"cursor-pointer py-2\"><span class=\"font-semibold\">New agent pool</span></summary><form class=\"flex flex-col gap-5\" action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

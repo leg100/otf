@@ -30,37 +30,39 @@ templ Layout(props LayoutProps) {
 		PreContent:   props.PreContent,
 		PostContent:  props.PostContent,
 	}) {
-		<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
-			<div class="flex">
-				<span id="content-header-title">
-					for i, crumb := range props.Breadcrumbs {
-						if crumb.Link != "" {
-							<a href={ crumb.Link }>{ crumb.Name }</a>
-						} else {
-							{ crumb.Name }
+		<div class="my-2 mx-4">
+			<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
+				<div class="flex">
+					<span id="content-header-title">
+						for i, crumb := range props.Breadcrumbs {
+							if crumb.Link != "" {
+								<a href={ crumb.Link }>{ crumb.Name }</a>
+							} else {
+								{ crumb.Name }
+							}
+							if i < (len(props.Breadcrumbs) - 1) {
+								/&nbsp;
+							}
 						}
-						if i < (len(props.Breadcrumbs) - 1) {
-							/&nbsp;
-						}
+					</span>
+				</div>
+				<div>
+					if props.ContentActions != nil {
+						@props.ContentActions
 					}
-				</span>
+				</div>
+				<ul class="flex grow items-center justify-end gap-4">
+					if props.ContentLinks != nil {
+						@props.ContentLinks
+					}
+				</ul>
 			</div>
-			<div>
-				if props.ContentActions != nil {
-					@props.ContentActions
-				}
+			if props.ContentMenu != nil {
+				@props.ContentMenu
+			}
+			<div class="flex flex-col gap-2 mb-4" id="content">
+				{ children... }
 			</div>
-			<ul class="flex grow items-center justify-end gap-4">
-				if props.ContentLinks != nil {
-					@props.ContentLinks
-				}
-			</ul>
-		</div>
-		if props.ContentMenu != nil {
-			@props.ContentMenu
-		}
-		<div class="flex flex-col gap-2 mb-4" id="content">
-			{ children... }
 		</div>
 	}
 }
@@ -68,11 +70,20 @@ templ Layout(props LayoutProps) {
 type BareLayoutProps struct {
 	Title        string
 	Organization resource.ID
+	Menu         templ.Component
 	PreContent   templ.Component
 	PostContent  templ.Component
 }
 
 templ BareLayout(props BareLayoutProps) {
+	{{
+		var menu templ.Component
+		if props.Organization != nil {
+			menu = organizationMenu(props.Organization)
+		} else if Authenticated(ctx) {
+			menu = siteMenu()
+		}
+	}}
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -87,26 +98,30 @@ templ BareLayout(props BareLayoutProps) {
 			<script src={ AssetPath(ctx, "/static/js/htmx.2.0.4.min.js") }></script>
 			<script src={ AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js") }></script>
 			<script src={ AssetPath(ctx, "/static/js/htmx-ext-ws.2.0.2.js") }></script>
+			<script src={ AssetPath(ctx, "/static/js/theme-change.2.0.2.js") }></script>
 			<script defer src={ AssetPath(ctx, "/static/js/alpine.3.14.8.min.js") }></script>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/output.css") }/>
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/grid.css") }/>
 		</head>
 		<!--<body class="flex-col m-0 min-h-screen font-sans">-->
-		<body class="min-h-screen">
-			<header class="border-b-1 border-base-300">
+		<body class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_1fr]">
+			<header class="col-span-2 border-b-1 border-base-content/30">
 				@navbar(props.Organization)
 			</header>
-			<main class="mx-4 my-2">
+			if menu != nil {
+				<div class="border-r-1 border-base-content/30">
+					@menu
+				</div>
+			}
+			<!-- if there is no menu then main spans full width of page and
+			content is centered horizontally and vertically -->
+			<main class={ templ.KV("col-span-2", menu == nil) }>
 				@Flashes()
-				<!--<main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">-->
 				{ children... }
 			</main>
-			<footer>
+			<footer class="col-span-2 border-t-1 border-base-content/30">
 				@footer()
 			</footer>
-			<div class="border-r-1 border-base-300">
-				@menu(props.Organization)
-			</div>
 			if props.PostContent != nil {
 				@props.PostContent
 			}
@@ -141,7 +156,7 @@ templ navbar(organization resource.ID) {
 }
 
 templ footer() {
-	<div class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
+	<div class="py-0.5 text-xs font-mono">
 		<div class="flex justify-between gap-4 max-w-2xl py-0.5 my-0 mx-auto">
 			<div></div>
 			<div class="footer-version">

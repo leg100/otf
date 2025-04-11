@@ -443,7 +443,7 @@ func getToken(organization Name, token *OrganizationToken) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<span class=\"text-gray-600 text-sm\">The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<span class=\"text-base-content/60 text-sm\">The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -1302,7 +1302,7 @@ func (t table) Row(v *Variable) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if t.props.IsOverwritten(v) {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<span class=\"bg-orange-100 text-xs font-semibold p-1\">OVERWRITTEN</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<span class=\"badge badge-warning badge-sm\">overwritten</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

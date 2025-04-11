@@ -66,7 +66,10 @@ templ getApps(props getAppsProps) {
 			<h3 class="font-semibold text-lg">Installations</h3>
 			<form action={ templ.SafeURL(props.app.NewInstallURL(props.githubHostname)) } method="GET" target="GithubTab">
 				<button class="btn w-32 flex gap-1 items-center justify-center">
-					Install<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+					<span>
+						Install
+					</span>
+					@components.ExternalIcon()
 				</button>
 			</form>
 			<div id="installations">
@@ -104,7 +107,8 @@ templ (t appTable) Row(app *App) {
 	<tr id="item-github-app">
 		<td>
 			<a class="flex underline gap-1 items-center" href={ templ.SafeURL(app.URL(t.githubHostname)) } target="GithubTab">
-				{ app.String() }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+				<span>{ app.String() }</span>
+				@components.ExternalIcon()
 			</a>
 		</td>
 		<td>
@@ -144,7 +148,10 @@ templ (t installsTable) Row(install *Installation) {
 					}
 					target="GithubTab"
 				>
-					{ install.String() }<img class="h-4" src={ components.AssetPath(ctx, "/static/images/external_link_icon.svg") }/>
+					<span>
+						{ install.String() }
+					</span>
+					@components.ExternalIcon()
 				</a>
 			</span>
 		</td>

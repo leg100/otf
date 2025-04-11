@@ -31,7 +31,7 @@ func get(f *File) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"tabs tabs-lift\"><input type=\"radio\" checked=\"checked\" name=\"my_tabs_2\" class=\"tab\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"tabs tabs-border\"><input type=\"radio\" checked=\"checked\" name=\"my_tabs_2\" class=\"tab\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -44,7 +44,7 @@ func get(f *File) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" id=\"resources-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-300 p-6\"><table class=\"table break-words\" id=\"resources-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" id=\"resources-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-content/20 p-6\"><table class=\"table break-words\" id=\"resources-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -135,7 +135,7 @@ func get(f *File) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" id=\"outputs-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-300 p-6\"><table class=\"table break-words\" id=\"outputs-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" id=\"outputs-label\"><div role=\"tabpanel\" class=\"tab-content bg-base-100 border-base-content/20 p-6\"><table class=\"table break-words\" id=\"outputs-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

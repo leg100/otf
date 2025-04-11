@@ -502,7 +502,7 @@ templ (t table) Row(v *Variable) {
 	<tr id={ "item-variable-" + v.Key } x-data={ components.BlockLink(t.props.EditPath(v.ID)) }>
 		<td class="flex flex-row gap-2">
 			if t.props.IsOverwritten(v) {
-				<span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
+				<span class="badge badge-warning badge-sm">overwritten</span>
 			}
 			@components.Strikethrough(t.props.IsOverwritten(v)) {
 				{ v.Key }

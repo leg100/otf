@@ -14,15 +14,15 @@ templ adminLogin() {
 	@components.BareLayout(components.BareLayoutProps{
 		Title: "site admin login",
 	}) {
-		<div class="flex items-center justify-start h-full">
-			<form class="flex flex-col gap-2" action="/admin/login" method="POST">
-				<div class="field">
-					<label for="token">Site Admin Token</label>
-					<input class="input w-80" type="password" name="token" id="token" required/>
-				</div>
-				<div>
-					<button class="btn">Login</button>
-				</div>
+		<div class="h-full flex items-center justify-center">
+			<form id="login-form" action="/admin/login" method="POST">
+				<fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
+					<legend class="fieldset-legend">Site Admin Token</legend>
+					<div class="join">
+						<input type="password" name="token" id="token" required class="input w-80 join-item"/>
+						<button class="btn join-item">Login</button>
+					</div>
+				</fieldset>
 			</form>
 		</div>
 	}
@@ -32,15 +32,35 @@ templ profile() {
 	@components.Layout(components.LayoutProps{
 		Title: "profile",
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "profile"},
+			{Name: "Profile"},
 		},
+		ContentActions: profileActions(),
 	}) {
-		<p>You are logged in as <span class="bg-gray-200">{ components.CurrentUsername(ctx) }</span></p>
-		<br/>
-		<form action={ paths.Logout() } method="POST">
-			<button class="btn" id="logout">logout</button>
-		</form>
+		<div class="flex flex-col gap-4">
+			<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ components.CurrentUsername(ctx) }</span></p>
+			<fieldset class="fieldset w-xs bg-base-200 border border-base-content/20 p-4 rounded-box">
+				<legend class="fieldset-legend">UI Settings</legend>
+				<label class="select">
+					<span class="label flex gap-2">
+						<span>Theme</span>
+						<div class="bg-base-100 border-base-content/10 grid shrink-0 grid-cols-2 gap-0.5 rounded-md border p-1"><div class="bg-base-content size-1 rounded-full"></div> <div class="bg-primary size-1 rounded-full"></div> <div class="bg-secondary size-1 rounded-full"></div> <div class="bg-accent size-1 rounded-full"></div></div>
+					</span>
+					<select id="theme-selector" class="select" data-choose-theme>
+						for _, theme := range components.DaisyThemes {
+							<option value={ theme }>{ theme }</option>
+						}
+					</select>
+				</label>
+				<p class="fieldset-label">Set a theme to change the look and feel of the site.</p>
+			</fieldset>
+		</div>
 	}
+}
+
+templ profileActions() {
+	<form action={ paths.Logout() } method="POST">
+		<button class="btn" id="logout">logout</button>
+	</form>
 }
 
 type userListProps struct {

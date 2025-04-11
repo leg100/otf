@@ -327,7 +327,7 @@ templ edit(props editProps) {
 				<label for="description">Description</label>
 				<textarea class="textarea w-96" rows="3" name="description" id="description">{ props.ws.Description }</textarea>
 			</div>
-			<fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
+			<fieldset class="border border-base-content/60 p-3 flex flex-col gap-2">
 				<legend>Execution mode</legend>
 				<div class="form-checkbox">
 					<input type="radio" name="execution_mode" id="remote" value="remote" checked?={ props.ws.ExecutionMode == "remote" }/>
@@ -354,7 +354,7 @@ templ edit(props editProps) {
 					</div>
 				</div>
 			</fieldset>
-			<fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+			<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
 				<legend>Apply method</legend>
 				<div class="form-checkbox">
 					<input type="radio" name="auto_apply" id="auto-apply" value="true" checked?={ props.ws.AutoApply }/>
@@ -420,7 +420,7 @@ templ edit(props editProps) {
 }
 
 templ editConnection(props editProps) {
-	<fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+	<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
 		<legend>VCS triggers</legend>
 		<div class="form-checkbox">
 			<input type="radio" id="vcs-triggers-always" name="vcs_trigger" value={ props.vcsTriggerAlways } checked?={ len(props.ws.TriggerPatterns) == 0 && len(props.ws.Connection.TagsRegex) == 0 }/>
@@ -509,7 +509,7 @@ templ editPermissions(props editProps) {
 			</thead>
 			<tbody>
 				<!-- always render implicit admin role permission for owners team -->
-				<tr class="text-gray-400" id="permissions-owners">
+				<tr class="text-base-content/60" id="permissions-owners">
 					<td class="">owners</td>
 					<td class="">admin</td>
 				</tr>

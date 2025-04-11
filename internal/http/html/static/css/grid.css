@@ -1,8 +1,8 @@
+/*
 body {
 	display: grid;
 	grid-template-rows: auto 1fr auto;
 	grid-template-columns: 200px 1fr;
-	/* gap: 1em; */
     grid-template-areas:
 		"hd hd"
 		"mu sd"
@@ -24,3 +24,4 @@ footer {
 .menu {
 	grid-area: mu;
 }
+*/

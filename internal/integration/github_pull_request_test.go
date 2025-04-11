@@ -2,7 +2,6 @@ package integration
 
 import (
 	"testing"
-	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
@@ -66,9 +65,8 @@ func TestGithubPullRequest(t *testing.T) {
 			require.NoError(t, err)
 			err = expect.Locator(page.Locator(`//a[@id='vcs-username']`)).ToHaveText(`@leg100`)
 			require.NoError(t, err)
-			err = expect.Locator(page.Locator(`//a[@id='commit-sha-abbrev']`)).ToHaveText(event.commit)
+			err = expect.Locator(page.Locator(`//a[@id='commit-sha-abbrev']`)).ToContainText(event.commit)
 			require.NoError(t, err)
-			time.Sleep(20 * time.Second)
 		})
 
 		// github should receive several pending status updates followed by a final

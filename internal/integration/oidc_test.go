@@ -41,7 +41,7 @@ func TestIntegration_OIDC(t *testing.T) {
 		page.Pause()
 
 		// check login confirmation message
-		err = expect.Locator(page.Locator("#content > p")).ToHaveText("You are logged in as bobby")
+		err = expect.Locator(page.Locator("//main")).ToContainText("You are logged in as bobby")
 		require.NoError(t, err)
 	})
 }

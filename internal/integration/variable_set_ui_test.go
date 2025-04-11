@@ -186,7 +186,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/s[text()='foo']`)).ToBeVisible()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/span[text()='OVERWRITTEN']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/span`)).ToHaveText("overwritten")
 		require.NoError(t, err)
 
 		// whereas the workspace-scoped set should not be overwritten.

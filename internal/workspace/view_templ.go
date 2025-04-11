@@ -1072,7 +1072,7 @@ func edit(props editProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</textarea></div><fieldset class=\"border border-slate-900 p-3 flex flex-col gap-2\"><legend>Execution mode</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"execution_mode\" id=\"remote\" value=\"remote\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</textarea></div><fieldset class=\"border border-base-content/60 p-3 flex flex-col gap-2\"><legend>Execution mode</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"execution_mode\" id=\"remote\" value=\"remote\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1124,7 +1124,7 @@ func edit(props editProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\">here</a>.</span></div></div></fieldset><fieldset class=\"border border-slate-900 px-3 py-3 flex flex-col gap-2\"><legend>Apply method</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"auto_apply\" id=\"auto-apply\" value=\"true\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\">here</a>.</span></div></div></fieldset><fieldset class=\"border border-base-content/60 px-3 py-3 flex flex-col gap-2\"><legend>Apply method</legend><div class=\"form-checkbox\"><input type=\"radio\" name=\"auto_apply\" id=\"auto-apply\" value=\"true\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1274,7 +1274,7 @@ func editConnection(props editProps) templ.Component {
 			templ_7745c5c3_Var61 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<fieldset class=\"border border-slate-900 px-3 py-3 flex flex-col gap-2\"><legend>VCS triggers</legend><div class=\"form-checkbox\"><input type=\"radio\" id=\"vcs-triggers-always\" name=\"vcs_trigger\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<fieldset class=\"border border-base-content/60 px-3 py-3 flex flex-col gap-2\"><legend>VCS triggers</legend><div class=\"form-checkbox\"><input type=\"radio\" id=\"vcs-triggers-always\" name=\"vcs_trigger\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1554,7 +1554,7 @@ func editPermissions(props editProps) templ.Component {
 			templ_7745c5c3_Var74 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<div><table class=\"table\"><thead class=\"\"><tr><th class=\"\">Team</th><th class=\"\">Role</th><th class=\"\"></th></tr></thead> <tbody><!-- always render implicit admin role permission for owners team --><tr class=\"text-gray-400\" id=\"permissions-owners\"><td class=\"\">owners</td><td class=\"\">admin</td></tr><!-- iterate through existing role assignments -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<div><table class=\"table\"><thead class=\"\"><tr><th class=\"\">Team</th><th class=\"\">Role</th><th class=\"\"></th></tr></thead> <tbody><!-- always render implicit admin role permission for owners team --><tr class=\"text-base-content/60\" id=\"permissions-owners\"><td class=\"\">owners</td><td class=\"\">admin</td></tr><!-- iterate through existing role assignments -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

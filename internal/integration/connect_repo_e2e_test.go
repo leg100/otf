@@ -50,7 +50,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.Locator(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`)).ToBeVisible()
 		require.NoError(t, err)
 		// commit should match that of push event
-		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='commit-sha-abbrev' and text()='42d6fc7']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='commit-sha-abbrev']`)).ToContainText("42d6fc7")
 		require.NoError(t, err)
 		// user should match that of push event
 		err = expect.Locator(page.Locator(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`)).ToBeVisible()
