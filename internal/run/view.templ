@@ -64,6 +64,7 @@ templ (t table) Header() {
 	if t.workspaceClient != nil {
 		<th>Workspace</th>
 	}
+	<th class="hidden xl:block">ID</th>
 	<th>Source</th>
 	<th>Status</th>
 	<th>Created</th>
@@ -80,6 +81,9 @@ templ (t table) Row(run *Run) {
 				</a>
 			</td>
 		}
+		<td class="hidden xl:block">
+			@components.Identifier(run.ID)
+		</td>
 		<td>
 			<div class="flex flex-col gap-2">
 				if run.IngressAttributes != nil {
@@ -206,6 +210,7 @@ templ get(props getProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
+		<div hx-ext="ws" ws-connect={ string(paths.WatchRun(props.run.ID)) }></div>
 		<div class="flex gap-4 text-sm">
 			<div class="flex gap-1 items-center">
 				<span>Terraform version</span>
@@ -215,14 +220,12 @@ templ get(props getProps) {
 			</div>
 			<div class="flex gap-1 items-center" id="elapsed-time">
 				Elapsed time
-				@runningTime(props.run)
+				<span id={ "running-time-" + props.run.ID.String() }></span>
 			</div>
 		</div>
-		@periodReport(props.run)
+		<div id="period-report"></div>
 		<div class="flex flex-col gap-4">
-			<div class="my-2" hx-ext="sse" sse-connect={ string(paths.WatchWorkspace(props.ws.ID)) + "?run_id=" + props.run.ID.String() }>
-				@widget(props.run)
-			</div>
+			<div id={ "run-item-" + props.run.ID.String() }></div>
 			<details class="collapse collapse-arrow border-base-content/20 border" id="plan" open>
 				<summary class="collapse-title">
 					<div class="flex gap-2 items-center">
@@ -283,9 +286,11 @@ templ eventView(run *Run) {
 }
 
 templ widget(run *Run) {
-	<div sse-swap={ "run-item-" + run.ID.String() }>
-		@components.UnpaginatedTable(&table{}, []*Run{run}, "run-widget")
-	</div>
+	@components.UnpaginatedTable(&table{}, []*Run{run}, "run-item-"+run.ID.String())
+}
+
+templ latestRunSingleTable(run *Run) {
+	@components.UnpaginatedTable(&table{}, []*Run{run}, "latest-run")
 }
 
 type task interface {
@@ -301,7 +306,6 @@ templ runningTime(tsk task) {
 		{{ elapsed := tsk.ElapsedTime(time.Now()) }}
 		<span
 			id={ "running-time-" + tsk.String() }
-			hx-swap-oob="true"
 			class="badge badge-soft badge-neutral"
 			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())) }
 			x-text="formatDuration(elapsed)"
@@ -315,7 +319,7 @@ templ runningTime(tsk task) {
 
 templ periodReport(run *Run) {
 	{{ report := run.PeriodReport(time.Now()) }}
-	<div id="period-report" hx-swap-oob="true" class="relative h-3 w-full group">
+	<div id="period-report" class="relative h-3 w-full group">
 		for i, period := range report.Periods {
 			<div
 				style={ fmt.Sprintf("width: %f%%", report.Percentage(i)) }
@@ -380,7 +384,7 @@ var phaseBadges = map[PhaseStatus]string{
 }
 
 templ phaseStatus(phase Phase) {
-	<span id={ string(phase.PhaseType) + "-status" } class={ "badge", phaseBadges[phase.Status] } hx-swap-oob="true">
+	<span id={ string(phase.PhaseType) + "-status" } class={ "badge", phaseBadges[phase.Status] }>
 		{ phase.Status.String() }
 	</span>
 }

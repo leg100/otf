@@ -43,6 +43,9 @@
       - name: retry
       - name: tail
       - name: widget
+      - name: watch
+      - name: watch-latest
+        collection: true
     - name: variable
     actions:
     - name: lock
@@ -50,7 +53,6 @@
     - name: force-unlock
     - name: set-permission
     - name: unset-permission
-    - name: watch
     - name: watch
       collection: true
     - name: connect

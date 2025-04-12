@@ -56,10 +56,6 @@ func UnsetPermissionWorkspace(workspace fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/workspaces/%s/unset-permission", workspace))
 }
 
-func WatchWorkspace(workspace fmt.Stringer) templ.SafeURL {
-	return templ.URL(fmt.Sprintf("/app/workspaces/%s/watch", workspace))
-}
-
 func WatchWorkspaces(organization fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/organizations/%s/workspaces/watch", organization))
 }

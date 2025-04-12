@@ -72,6 +72,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/runs", h.listByOrganization).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listByWorkspace).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/runs/watch-latest", h.watchLatest).Methods("GET")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
@@ -81,6 +82,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get).Methods("GET")
@@ -412,5 +414,56 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			}
 			rc.Flush()
 		}
+	}
+}
+
+func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		RunID resource.TfeID `schema:"run_id"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	if websocket.IsWebSocketUpgrade(r) {
+		websocketHandler := components.WebsocketGetHandler[*Run]{
+			Logger:    h.logger,
+			Client:    h.runs,
+			Component: eventView,
+		}
+		websocketHandler.Handler(w, r, &params.RunID, func(run *Run) bool {
+			return run.ID == params.RunID
+		})
+		return
+	}
+}
+
+func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID resource.TfeID `schema:"workspace_id"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	ws, err := h.workspaces.Get(r.Context(), params.WorkspaceID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	var latestRunID *resource.TfeID
+	if ws.LatestRun != nil {
+		latestRunID = &ws.LatestRun.ID
+	}
+	if websocket.IsWebSocketUpgrade(r) {
+		websocketHandler := components.WebsocketGetHandler[*Run]{
+			Logger:    h.logger,
+			Client:    h.runs,
+			Component: latestRunSingleTable,
+		}
+		websocketHandler.Handler(w, r, latestRunID, func(run *Run) bool {
+			return run.WorkspaceID == params.WorkspaceID && run.Latest
+		})
+		return
 	}
 }

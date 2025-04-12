@@ -63,3 +63,11 @@ func TailRun(run fmt.Stringer) templ.SafeURL {
 func WidgetRun(run fmt.Stringer) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/app/runs/%s/widget", run))
 }
+
+func WatchRun(run fmt.Stringer) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/app/runs/%s/watch", run))
+}
+
+func WatchLatestRun(workspace fmt.Stringer) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/app/workspaces/%s/runs/watch-latest", workspace))
+}

@@ -421,7 +421,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" method=\"POST\"><div class=\"field\"><label for=\"name\">Name</label> <input class=\"input w-3/4\" rows=\"3\" type=\"text\" name=\"name\" id=\"new-pool-name\" required> <span class=\"description\">Enter a name to help identify the pool.</span></div><div class=\"field\"><button class=\"btn w-40\">Create agent pool</button></div></form><hr class=\"my-4\"></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" method=\"POST\"><div class=\"field\"><label for=\"name\">Name</label> <input class=\"input w-80\" rows=\"3\" type=\"text\" name=\"name\" id=\"new-pool-name\" required> <span class=\"description\">Enter a name to help identify the pool.</span></div><div class=\"field\"><button class=\"btn w-40\">Create agent pool</button></div></form><hr class=\"my-4\"></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

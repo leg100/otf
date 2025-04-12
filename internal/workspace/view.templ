@@ -193,13 +193,11 @@ templ get(props getProps) {
 				<div>
 					<h3 class="text-lg font-bold my-2">Latest Run</h3>
 					<div
-						id="latest-run"
-						hx-ext="sse"
-						sse-connect={ string(paths.WatchWorkspace(props.ws.ID)) + "?latest=true" }
-						sse-swap="latest-run"
+						hx-ext="ws"
+						ws-connect={ string(paths.WatchLatestRun(props.ws.ID)) }
 					>
 						if props.ws.LatestRun != nil {
-							<div hx-get={ string(paths.WidgetRun(props.ws.LatestRun.ID)) } hx-trigger="load" hx-swap="outerHTML"></div>
+							<div id="latest-run"></div>
 						} else {
 							There are no runs for this workspace.
 						}

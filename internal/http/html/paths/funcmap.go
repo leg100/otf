@@ -58,7 +58,6 @@ func init() {
 	funcmap["forceUnlockWorkspacePath"] = ForceUnlockWorkspace
 	funcmap["setPermissionWorkspacePath"] = SetPermissionWorkspace
 	funcmap["unsetPermissionWorkspacePath"] = UnsetPermissionWorkspace
-	funcmap["watchWorkspacePath"] = WatchWorkspace
 	funcmap["watchWorkspacePath"] = WatchWorkspaces
 	funcmap["connectWorkspacePath"] = ConnectWorkspace
 	funcmap["disconnectWorkspacePath"] = DisconnectWorkspace
@@ -84,6 +83,8 @@ func init() {
 	funcmap["retryRunPath"] = RetryRun
 	funcmap["tailRunPath"] = TailRun
 	funcmap["widgetRunPath"] = WidgetRun
+	funcmap["watchRunPath"] = WatchRun
+	funcmap["watchLatestRunPath"] = WatchLatestRun
 
 	funcmap["variablesPath"] = Variables
 	funcmap["createVariablePath"] = CreateVariable

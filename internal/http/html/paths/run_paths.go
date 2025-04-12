@@ -59,3 +59,11 @@ func TailRun(run fmt.Stringer) string {
 func WidgetRun(run fmt.Stringer) string {
 	return fmt.Sprintf("/app/runs/%s/widget", run)
 }
+
+func WatchRun(run fmt.Stringer) string {
+	return fmt.Sprintf("/app/runs/%s/watch", run)
+}
+
+func WatchLatestRun(workspace fmt.Stringer) string {
+	return fmt.Sprintf("/app/workspaces/%s/runs/watch-latest", workspace)
+}
