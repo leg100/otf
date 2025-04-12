@@ -377,11 +377,11 @@ func BareLayout(props BareLayoutProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<!-- if there is no menu then main spans full width of page and\n\t\t\tcontent is centered horizontally and vertically -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<!-- if there is no menu then main spans full width of page --><!-- if there is a menu then set a max width for main -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var17 = []any{templ.KV("col-span-2", menu == nil)}
+		var templ_7745c5c3_Var17 = []any{templ.KV("col-span-2", menu == nil), templ.KV("max-w-7xl", menu != nil)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var17...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

@@ -65,7 +65,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 
 		page, err := h.Client.List(r.Context(), opts)
 		if err != nil {
-			return fmt.Errorf("fetching workspaces: %w", err)
+			return fmt.Errorf("fetching list of resources: %w", err)
 		}
 
 		w, err := conn.NextWriter(websocket.TextMessage)

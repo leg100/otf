@@ -113,9 +113,9 @@ templ BareLayout(props BareLayoutProps) {
 					@menu
 				</div>
 			}
-			<!-- if there is no menu then main spans full width of page and
-			content is centered horizontally and vertically -->
-			<main class={ templ.KV("col-span-2", menu == nil) }>
+			<!-- if there is no menu then main spans full width of page -->
+			<!-- if there is a menu then set a max width for main -->
+			<main class={ templ.KV("col-span-2", menu == nil), templ.KV("max-w-7xl", menu != nil) }>
 				@Flashes()
 				{ children... }
 			</main>
