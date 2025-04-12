@@ -55,7 +55,7 @@ WITH
 INSERT INTO team_memberships (username, team_id)
 SELECT username, $1
 FROM users
-`, team.ID, []string{user.Username})
+`, team.ID, []Username{user.Username})
 			if err != nil {
 				return err
 			}
@@ -176,7 +176,7 @@ WHERE t.token_id = $1
 	return user, nil
 }
 
-func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...string) error {
+func (db *pgdb) addTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...Username) error {
 	_, err := db.Exec(ctx, `
 WITH
     users AS (
@@ -190,7 +190,7 @@ FROM users
 	return err
 }
 
-func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...string) error {
+func (db *pgdb) removeTeamMembership(ctx context.Context, teamID resource.TfeID, usernames ...Username) error {
 	_, err := db.Exec(ctx, `
 WITH
     users AS (
@@ -272,7 +272,7 @@ func scan(row pgx.CollectableRow) (*User, error) {
 		CreatedAt time.Time      `db:"created_at"`
 		UpdatedAt time.Time      `db:"updated_at"`
 		SiteAdmin bool           `db:"site_admin"`
-		Username  string
+		Username  Username
 		Teams     []team.Model
 	}
 	m, err := pgx.RowToAddrOfStructByName[model](row)
@@ -323,7 +323,7 @@ INSERT INTO tokens (
 	return err
 }
 
-func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserToken, error) {
+func (db *pgdb) listUserTokens(ctx context.Context, username Username) ([]*UserToken, error) {
 	rows := db.Query(ctx, `
 SELECT token_id, created_at, description, username
 FROM tokens

@@ -30,6 +30,6 @@ func (f *fakeUserService) GetUser(ctx context.Context, spec user.UserSpec) (*use
 	return &user.User{ID: f.userID}, nil
 }
 
-func (f *fakeUserService) Create(ctx context.Context, username string, opts ...user.NewUserOption) (*user.User, error) {
+func (f *fakeUserService) Create(ctx context.Context, username user.Username, opts ...user.NewUserOption) (*user.User, error) {
 	return nil, nil
 }

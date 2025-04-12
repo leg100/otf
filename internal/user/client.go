@@ -29,8 +29,8 @@ func (c *client) Create(ctx context.Context, username string, _ ...NewUserOption
 }
 
 // Delete deletes a user via HTTP/JSONAPI.
-func (c *client) Delete(ctx context.Context, username string) error {
-	u := fmt.Sprintf("admin/users/%s", url.QueryEscape(username))
+func (c *client) Delete(ctx context.Context, username Username) error {
+	u := fmt.Sprintf("admin/users/%s", url.QueryEscape(username.String()))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func (c *client) Delete(ctx context.Context, username string) error {
 }
 
 // AddTeamMembership adds users to a team via HTTP.
-func (c *client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error {
+func (c *client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
 	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
 	req, err := c.NewRequest("POST", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,
@@ -57,7 +57,7 @@ func (c *client) AddTeamMembership(ctx context.Context, teamID resource.TfeID, u
 }
 
 // RemoveTeamMembership removes users from a team via HTTP.
-func (c *client) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error {
+func (c *client) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
 	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(teamID.String()))
 	req, err := c.NewRequest("DELETE", u, &modifyTeamMembershipOptions{
 		Usernames: usernames,

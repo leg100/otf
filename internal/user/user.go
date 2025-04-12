@@ -14,11 +14,8 @@ import (
 	"github.com/leg100/otf/internal/team"
 )
 
-const (
-	SiteAdminUsername = "site-admin"
-)
-
 var (
+	SiteAdminUsername = Username{name: "site-admin"}
 	// SiteAdminID is the hardcoded user id for the site admin user. The ID must
 	// be the same as the hardcoded value in the database migrations.
 	SiteAdminID               = resource.MustHardcodeTfeID(resource.UserKind, "36atQC2oGQng7pVz")
@@ -35,7 +32,7 @@ type (
 		SiteAdmin bool           `jsonapi:"attribute" json:"site-admin"`
 
 		// username is globally unique
-		Username string `jsonapi:"attribute" json:"username"`
+		Username Username `jsonapi:"attribute" json:"username"`
 
 		// user belongs to many teams
 		Teams []*team.Team
@@ -56,12 +53,16 @@ type (
 
 	UserSpec struct {
 		UserID                *resource.TfeID
-		Username              *string
+		Username              *Username
 		AuthenticationTokenID *resource.TfeID
 	}
 )
 
-func NewUser(username string, opts ...NewUserOption) *User {
+func NewUser(usernameStr string, opts ...NewUserOption) (*User, error) {
+	username, err := NewUsername(usernameStr)
+	if err != nil {
+		return nil, err
+	}
 	user := &User{
 		ID:        resource.NewTfeID(resource.UserKind),
 		Username:  username,
@@ -71,7 +72,7 @@ func NewUser(username string, opts ...NewUserOption) *User {
 	for _, fn := range opts {
 		fn(user)
 	}
-	return user
+	return user, nil
 }
 
 func WithTeams(memberships ...*team.Team) NewUserOption {
@@ -80,7 +81,7 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 	}
 }
 
-func (u *User) String() string { return u.Username }
+func (u *User) String() string { return u.Username.String() }
 
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID resource.TfeID) bool {
@@ -169,7 +170,7 @@ func (u *User) IsOwner(organization resource.ID) bool {
 
 func (s UserSpec) LogValue() slog.Value {
 	if s.Username != nil {
-		return slog.String("username", *s.Username).Value
+		return slog.Any("username", *s.Username).Value
 	}
 	if s.UserID != nil {
 		return slog.String("id", s.UserID.String()).Value

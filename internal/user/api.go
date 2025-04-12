@@ -18,7 +18,7 @@ type (
 	}
 
 	modifyTeamMembershipOptions struct {
-		Usernames []string
+		Usernames []Username
 	}
 )
 
@@ -49,12 +49,14 @@ func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) deleteUser(w http.ResponseWriter, r *http.Request) {
-	username, err := decode.Param("username", r)
-	if err != nil {
+	var params struct {
+		Username Username `schema:"username"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := a.Delete(r.Context(), username); err != nil {
+	if err := a.Delete(r.Context(), params.Username); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

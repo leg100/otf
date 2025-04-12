@@ -29,6 +29,7 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/team"
+	"github.com/leg100/otf/internal/user"
 	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcs"
@@ -278,7 +279,7 @@ func (s *testDaemon) createUserCtx(t *testing.T, opts ...otfuser.NewUserOption) 
 	return user, authz.AddSubjectToContext(context.Background(), user)
 }
 
-func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *otfuser.User {
+func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username user.Username) *otfuser.User {
 	t.Helper()
 
 	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})
@@ -286,7 +287,7 @@ func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string)
 	return user
 }
 
-func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*otfuser.User, context.Context) {
+func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username user.Username) (*otfuser.User, context.Context) {
 	t.Helper()
 
 	user, err := s.Users.GetUser(ctx, otfuser.UserSpec{Username: &username})

@@ -51,14 +51,14 @@ func (a *tfe) addHandlers(r *mux.Router) {
 func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username string         `schema:"username,required"`
+		Username Username       `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.AddTeamMembership(r.Context(), params.TeamID, []string{params.Username}); err != nil {
+	if err := a.AddTeamMembership(r.Context(), params.TeamID, []Username{params.Username}); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -69,14 +69,14 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username string         `schema:"username,required"`
+		Username Username       `schema:"username,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	if err := a.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username}); err != nil {
+	if err := a.RemoveTeamMembership(r.Context(), params.TeamID, []Username{params.Username}); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -117,7 +117,7 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 	}
 
 	type teamMember struct {
-		Username string `jsonapi:"primary,users"`
+		Username Username `jsonapi:"primary,users"`
 	}
 	var users []teamMember
 	if err := tfeapi.Unmarshal(r.Body, &users); err != nil {
@@ -125,7 +125,7 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 	}
 
 	// convert users into a simple slice of usernames
-	usernames := make([]string, len(users))
+	usernames := make([]Username, len(users))
 	for i, u := range users {
 		usernames[i] = u.Username
 	}
@@ -174,7 +174,7 @@ func (a *tfe) deleteMembership(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) convertUser(from *User) *TFEUser {
 	return &TFEUser{
 		ID:       from.ID,
-		Username: from.Username,
+		Username: from.Username.String(),
 	}
 }
 

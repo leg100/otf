@@ -14,7 +14,7 @@ type (
 		ID          resource.TfeID `db:"token_id"`
 		CreatedAt   time.Time      `db:"created_at"`
 		Description string
-		Username    string // Token belongs to a user
+		Username    Username // Token belongs to a user
 	}
 
 	// CreateUserTokenOptions are options for creating a user token via the service
@@ -28,7 +28,7 @@ type (
 	}
 )
 
-func (f *userTokenFactory) NewUserToken(username string, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
+func (f *userTokenFactory) NewUserToken(username Username, opts CreateUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
 		ID:          resource.NewTfeID(resource.UserTokenKind),
 		CreatedAt:   internal.CurrentTimestamp(nil),

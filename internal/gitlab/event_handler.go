@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/xanzy/go-gitlab"
 )
@@ -115,7 +116,7 @@ func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	return &to, nil
 }
 
-func userURL(origin *url.URL, username string) string {
+func userURL(origin *url.URL, username user.Username) string {
 	u := &url.URL{Scheme: origin.Scheme, Host: origin.Host, Path: username}
 	return u.String()
 }
