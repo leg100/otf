@@ -399,7 +399,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// expect workspace to be unlocked by default
-			err = expect.Locator(page.Locator(`#lock-state`)).ToHaveText("Unlocked")
+			err = expect.Locator(page.Locator(`#lock-state`)).ToContainText("Unlocked")
 			require.NoError(t, err)
 
 			// lock workspace
@@ -407,7 +407,15 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// expect workspace to now be locked
-			err = expect.Locator(page.Locator(`#lock-state`)).ToHaveText("Locked")
+			err = expect.Locator(page.Locator(`#lock-state`)).ToContainText("Locked")
+			require.NoError(t, err)
+
+			// unlock workspace
+			err = page.Locator(`#lock-button`).Click()
+			require.NoError(t, err)
+
+			// expect workspace to now be unlocked
+			err = expect.Locator(page.Locator(`#lock-state`)).ToContainText("Unlocked")
 			require.NoError(t, err)
 		})
 	})

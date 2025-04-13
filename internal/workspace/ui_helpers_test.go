@@ -22,15 +22,14 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 		lockedBy               *user.User
 		currentUser            *user.User
 		currentUserPermissions []authz.Action
-		want                   LockButton
+		want                   lockInfo
 	}{
 		{
 			"unlocked state",
 			nil,
 			nil,
 			[]authz.Action{authz.LockWorkspaceAction},
-			LockButton{
-				State:  "unlocked",
+			lockInfo{
 				Text:   "Lock",
 				Action: "/app/workspaces/ws-123/lock",
 			},
@@ -40,8 +39,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			nil,
 			nil,
 			[]authz.Action{},
-			LockButton{
-				State:    "unlocked",
+			lockInfo{
 				Text:     "Lock",
 				Tooltip:  "insufficient permissions",
 				Action:   "/app/workspaces/ws-123/lock",
@@ -53,8 +51,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			bobby,
 			nil,
 			[]authz.Action{},
-			LockButton{
-				State:    "locked",
+			lockInfo{
 				Text:     "Unlock",
 				Tooltip:  "insufficient permissions",
 				Action:   "/app/workspaces/ws-123/unlock",
@@ -66,8 +63,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			bobby,
 			bobby,
 			[]authz.Action{authz.UnlockWorkspaceAction},
-			LockButton{
-				State:   "locked",
+			lockInfo{
 				Text:    "Unlock",
 				Message: "locked by: " + bobby.String(),
 				Tooltip: "locked by: " + bobby.String(),
@@ -79,8 +75,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			bobby,
 			annie,
 			[]authz.Action{authz.UnlockWorkspaceAction},
-			LockButton{
-				State:    "locked",
+			lockInfo{
 				Text:     "Unlock",
 				Message:  "locked by: " + bobby.String(),
 				Tooltip:  "locked by: " + bobby.String(),
@@ -93,8 +88,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			bobby,
 			annie,
 			[]authz.Action{authz.UnlockWorkspaceAction, authz.ForceUnlockWorkspaceAction},
-			LockButton{
-				State:   "locked",
+			lockInfo{
 				Text:    "Force unlock",
 				Action:  "/app/workspaces/ws-123/force-unlock",
 				Message: "locked by: " + bobby.String(),

@@ -269,7 +269,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lockButton, err := h.lockButtonHelper(r.Context(), ws, user)
+	lockInfo, err := h.lockButtonHelper(r.Context(), ws, user)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -277,7 +277,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	props := getProps{
 		ws:                 ws,
-		button:             lockButton,
+		lockInfo:           lockInfo,
 		vcsProvider:        provider,
 		canApply:           h.authorizer.CanAccess(r.Context(), authz.ApplyRunAction, ws.ID),
 		canAddTags:         h.authorizer.CanAccess(r.Context(), authz.AddTagsAction, ws.ID),

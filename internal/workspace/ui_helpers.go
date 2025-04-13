@@ -19,8 +19,7 @@ type uiHelpersAuthorizer interface {
 	CanAccess(context.Context, authz.Action, resource.ID) bool
 }
 
-type LockButton struct {
-	State    string        // locked or unlocked
+type lockInfo struct {
 	Text     string        // button text
 	Tooltip  string        // button tooltip
 	Disabled bool          // button greyed out or not
@@ -34,11 +33,10 @@ func (h *uiHelpers) lockButtonHelper(
 	ctx context.Context,
 	ws *Workspace,
 	user *userpkg.User,
-) (LockButton, error) {
-	var btn LockButton
+) (lockInfo, error) {
+	var btn lockInfo
 
 	if ws.Locked() {
-		btn.State = "locked"
 		btn.Text = "Unlock"
 		btn.Action = paths.UnlockWorkspace(ws.ID)
 		// A user needs at least the unlock permission
@@ -65,7 +63,6 @@ func (h *uiHelpers) lockButtonHelper(
 		btn.Disabled = true
 		return btn, nil
 	} else {
-		btn.State = "unlocked"
 		btn.Text = "Lock"
 		btn.Action = paths.LockWorkspace(ws.ID)
 		// User needs at least the lock permission
