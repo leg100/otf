@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/team"
+	userpkg "github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestWeb(t *testing.T) {
 		Name: internal.String("devops"),
 	})
 	require.NoError(t, err)
-	err = daemon.Users.AddTeamMembership(ctx, team.ID, []string{user.Username})
+	err = daemon.Users.AddTeamMembership(ctx, team.ID, []userpkg.Username{user.Username})
 	require.NoError(t, err)
 
 	browser.New(t, ctx, func(page playwright.Page) {
@@ -59,7 +60,7 @@ func TestWeb(t *testing.T) {
 		err = page.Locator("#menu-item-users > a").Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
+		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username.String())
 		require.NoError(t, err)
 
 		// list team members
@@ -76,7 +77,7 @@ func TestWeb(t *testing.T) {
 		err = page.Locator("#item-team-owners").Click()
 		require.NoError(t, err)
 
-		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username)
+		err = expect.Locator(page.Locator(fmt.Sprintf("#item-user-%s #username", user.Username))).ToHaveText(user.Username.String())
 		require.NoError(t, err)
 	})
 }

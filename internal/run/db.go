@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -719,7 +720,7 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 			ApplyStatusTimestamps  []phaseStatusTimestampModel           `db:"apply_status_timestamps"`
 			Latest                 bool                                  `db:"latest"`
 			IngressAttributes      *configversion.IngressAttributesModel `db:"ingress_attributes"`
-			CreatedBy              *string                               `db:"created_by"`
+			CreatedBy              *user.Username                        `db:"created_by"`
 			CostEstimationEnabled  bool                                  `db:"cost_estimation_enabled"`
 		}
 	)

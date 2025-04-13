@@ -27,7 +27,7 @@ type (
 	// tokenHandler takes an OAuth access token and returns the username
 	// associated with the token.
 	tokenHandler interface {
-		getUsername(context.Context, *oauth2.Token) (string, error)
+		getUsername(context.Context, *oauth2.Token) (user.Username, error)
 	}
 
 	sessionStarter interface {
@@ -170,7 +170,7 @@ func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := authz.AddSubjectToContext(r.Context(), &authz.Superuser{Username: "oauth_client"})
 	user, err := a.users.GetUser(ctx, user.UserSpec{Username: &username})
 	if errors.Is(err, internal.ErrResourceNotFound) {
-		user, err = a.users.Create(ctx, username)
+		user, err = a.users.Create(ctx, username.String())
 	}
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

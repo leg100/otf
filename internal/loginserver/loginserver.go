@@ -44,9 +44,9 @@ type (
 	}
 
 	authcode struct {
-		CodeChallenge       string `json:"code_challenge"`
-		CodeChallengeMethod string `json:"code_challenge_method"`
-		Username            string `json:"username"`
+		CodeChallenge       string        `json:"code_challenge"`
+		CodeChallengeMethod string        `json:"code_challenge_method"`
+		Username            user.Username `json:"username"`
 	}
 
 	DiscoverySpec struct {

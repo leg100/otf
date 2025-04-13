@@ -38,8 +38,9 @@ func TestAuthHandler_Auth(t *testing.T) {
 	q += "&code_challenge_method=S256"
 	q += "&state=somethingrandom"
 
+	user := user.NewTestUser(t)
 	r := httptest.NewRequest("POST", q, nil)
-	r = r.WithContext(authz.AddSubjectToContext(r.Context(), &user.User{Username: "bobby"}))
+	r = r.WithContext(authz.AddSubjectToContext(r.Context(), user))
 	w := httptest.NewRecorder()
 	srv.authHandler(w, r)
 
@@ -59,5 +60,5 @@ func TestAuthHandler_Auth(t *testing.T) {
 	var code authcode
 	err = json.Unmarshal(decrypted, &code)
 	require.NoError(t, err)
-	assert.Equal(t, "bobby", code.Username)
+	assert.Equal(t, user.Username, code.Username)
 }

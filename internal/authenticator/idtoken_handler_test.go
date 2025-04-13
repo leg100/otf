@@ -55,5 +55,5 @@ func Test_idtokenHandler_getUsername(t *testing.T) {
 		map[string]any{"id_token": string(signed)},
 	))
 	require.NoError(t, err)
-	assert.Equal(t, "bobby", got)
+	assert.Equal(t, "bobby", got.String())
 }

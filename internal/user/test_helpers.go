@@ -2,11 +2,20 @@ package user
 
 import (
 	"context"
+	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
+	"github.com/stretchr/testify/require"
 )
+
+func NewTestUser(t *testing.T) *User {
+	user, err := NewUser(uuid.NewString())
+	require.NoError(t, err)
+	return user
+}
 
 type fakeService struct {
 	user  *User
@@ -28,15 +37,15 @@ func (f *fakeService) ListTeamUsers(ctx context.Context, teamID resource.TfeID) 
 	return []*User{f.user}, nil
 }
 
-func (f *fakeService) Delete(context.Context, string) error {
+func (f *fakeService) Delete(context.Context, Username) error {
 	return nil
 }
 
-func (f *fakeService) AddTeamMembership(context.Context, resource.TfeID, []string) error {
+func (f *fakeService) AddTeamMembership(context.Context, resource.TfeID, []Username) error {
 	return nil
 }
 
-func (f *fakeService) RemoveTeamMembership(context.Context, resource.TfeID, []string) error {
+func (f *fakeService) RemoveTeamMembership(context.Context, resource.TfeID, []Username) error {
 	return nil
 }
 

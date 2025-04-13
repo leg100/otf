@@ -3,6 +3,8 @@ package authenticator
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/leg100/otf/internal/user"
 )
 
 const (
@@ -17,7 +19,7 @@ type (
 	// usernameClaim retrieves a username from an OIDC claim
 	usernameClaim struct {
 		kind  claim
-		value string
+		value user.Username
 	}
 	claim string
 )
@@ -35,9 +37,9 @@ func newUsernameClaim(s string) (*usernameClaim, error) {
 // oidcClaims depicts the claims returned from the OIDC id-token.
 func (uc *usernameClaim) UnmarshalJSON(b []byte) error {
 	var token struct {
-		Name  string `json:"name"`
-		Sub   string `json:"sub"`
-		Email string `json:"email"`
+		Name  user.Username `json:"name"`
+		Sub   user.Username `json:"sub"`
+		Email user.Username `json:"email"`
 	}
 	if err := json.Unmarshal(b, &token); err != nil {
 		return err

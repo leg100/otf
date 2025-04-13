@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +21,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	// Create user and add as member of guests team
 	guest := svc.createUser(t)
 	guests := svc.createTeam(t, ctx, org)
-	err := svc.Users.AddTeamMembership(ctx, guests.ID, []string{guest.Username})
+	err := svc.Users.AddTeamMembership(ctx, guests.ID, []user.Username{guest.Username})
 	require.NoError(t, err)
 	// Refresh guest user context to include new team membership
 	_, guestCtx := svc.getUserCtx(t, adminCtx, guest.Username)

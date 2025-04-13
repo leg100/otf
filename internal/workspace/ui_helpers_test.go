@@ -14,8 +14,8 @@ import (
 )
 
 func TestWorkspace_LockButtonHelper(t *testing.T) {
-	bobby := &user.User{ID: resource.NewTfeID(resource.UserKind), Username: "bobby"}
-	annie := &user.User{ID: resource.NewTfeID(resource.UserKind), Username: "annie"}
+	bobby := user.NewTestUser(t)
+	annie := user.NewTestUser(t)
 
 	tests := []struct {
 		name                   string
@@ -69,8 +69,8 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			LockButton{
 				State:   "locked",
 				Text:    "Unlock",
-				Message: "locked by: bobby",
-				Tooltip: "locked by: bobby",
+				Message: "locked by: " + bobby.String(),
+				Tooltip: "locked by: " + bobby.String(),
 				Action:  "/app/workspaces/ws-123/unlock",
 			},
 		},
@@ -82,8 +82,8 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 			LockButton{
 				State:    "locked",
 				Text:     "Unlock",
-				Message:  "locked by: bobby",
-				Tooltip:  "locked by: bobby",
+				Message:  "locked by: " + bobby.String(),
+				Tooltip:  "locked by: " + bobby.String(),
 				Disabled: true,
 				Action:   "/app/workspaces/ws-123/unlock",
 			},
@@ -97,8 +97,8 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 				State:   "locked",
 				Text:    "Force unlock",
 				Action:  "/app/workspaces/ws-123/force-unlock",
-				Message: "locked by: bobby",
-				Tooltip: "locked by: bobby",
+				Message: "locked by: " + bobby.String(),
+				Tooltip: "locked by: " + bobby.String(),
 			},
 		},
 	}

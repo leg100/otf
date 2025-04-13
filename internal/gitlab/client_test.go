@@ -26,7 +26,7 @@ func TestClient_GetUser(t *testing.T) {
 	got, err := client.GetCurrentUser(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, "bobby", got)
+	assert.Equal(t, "bobby", got.String())
 }
 
 func TestClient_GetRepository(t *testing.T) {

@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +19,7 @@ func TestWritePermissionE2E(t *testing.T) {
 	// Create engineer user and team and make member of a team
 	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
-	err := svc.Users.AddTeamMembership(ctx, team.ID, []string{engineer.Username})
+	err := svc.Users.AddTeamMembership(ctx, team.ID, []user.Username{engineer.Username})
 	require.NoError(t, err)
 
 	// create terraform config

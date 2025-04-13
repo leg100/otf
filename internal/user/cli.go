@@ -17,7 +17,7 @@ type userCLI struct {
 
 type userCLIClient interface {
 	Create(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
-	Delete(ctx context.Context, username string) error
+	Delete(ctx context.Context, username Username) error
 }
 
 func NewUserCommand(apiClient *otfapi.Client) *cobra.Command {
@@ -66,7 +66,7 @@ func (a *userCLI) userDeleteCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := a.client.Delete(cmd.Context(), args[0]); err != nil {
+			if err := a.client.Delete(cmd.Context(), Username{name: args[0]}); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully deleted user %s\n", args[0])
@@ -81,8 +81,8 @@ type membershipCLI struct {
 }
 
 type membershipCLIClient interface {
-	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
+	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
 }
 
 type teamsCLIClient interface {
@@ -127,7 +127,15 @@ func (a *membershipCLI) addTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := a.client.AddTeamMembership(cmd.Context(), team.ID, args); err != nil {
+			usernames := make([]Username, len(args))
+			for i, arg := range args {
+				username, err := NewUsername(arg)
+				if err != nil {
+					return fmt.Errorf("invalid username: %w", err)
+				}
+				usernames[i] = username
+			}
+			if err := a.client.AddTeamMembership(cmd.Context(), team.ID, usernames); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args, name)
@@ -160,7 +168,15 @@ func (a *membershipCLI) deleteTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := a.client.RemoveTeamMembership(cmd.Context(), team.ID, args); err != nil {
+			usernames := make([]Username, len(args))
+			for i, arg := range args {
+				username, err := NewUsername(arg)
+				if err != nil {
+					return fmt.Errorf("invalid username: %w", err)
+				}
+				usernames[i] = username
+			}
+			if err := a.client.RemoveTeamMembership(cmd.Context(), team.ID, usernames); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args, name)

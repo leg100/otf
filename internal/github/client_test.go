@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,8 +18,8 @@ import (
 
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
-	want := "fake-user"
-	client := newTestServerClient(t, WithUser(&want))
+	want := user.NewTestUsername(t)
+	client := newTestServerClient(t, WithUsername(want))
 
 	got, err := client.GetCurrentUser(ctx)
 	require.NoError(t, err)

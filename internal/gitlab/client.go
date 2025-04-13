@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -79,12 +80,12 @@ func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authent
 	})
 }
 
-func (g *Client) GetCurrentUser(ctx context.Context) (string, error) {
+func (g *Client) GetCurrentUser(ctx context.Context) (user.Username, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
-		return "", err
+		return user.Username{}, err
 	}
-	return guser.Username, nil
+	return user.NewUsername(guser.Username)
 }
 
 func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {

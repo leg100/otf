@@ -95,9 +95,9 @@ templ (t table) Header() {
 }
 
 templ (t table) Row(user *User) {
-	<tr id={ "item-user-" + user.Username }>
+	<tr id={ "item-user-" + user.Username.String() }>
 		<td id="username">
-			{ user.Username }
+			{ user.Username.String() }
 		</td>
 		<td>
 			@components.Identifier(user.ID)
@@ -113,7 +113,7 @@ templ (t table) Row(user *User) {
 			<td>
 				if t.canRemoveMember {
 					<form action={ paths.RemoveMemberTeam(t.teamID) } method="POST">
-						<input type="hidden" name="username" id="delete-username" value={ user.Username }/>
+						<input type="hidden" name="username" id="delete-username" value={ user.Username.String() }/>
 						<button id="remove-member-button" class="btn btn-error btn-outline">
 							Remove member
 						</button>

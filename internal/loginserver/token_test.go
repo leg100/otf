@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +24,7 @@ func TestTokenHandler(t *testing.T) {
 	mashaled, err := json.Marshal(&authcode{
 		CodeChallenge:       challenge,
 		CodeChallengeMethod: "S256",
-		Username:            "bobby",
+		Username:            user.MustUsername("bobby"),
 	})
 	require.NoError(t, err)
 	code, err := internal.Encrypt(mashaled, []byte(secret))

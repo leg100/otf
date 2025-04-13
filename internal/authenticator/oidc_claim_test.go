@@ -35,7 +35,7 @@ func TestUsernameClaim_UnmarshalJSON(t *testing.T) {
 			uc := usernameClaim{kind: tt.kind}
 			err := json.Unmarshal([]byte(tt.token), &uc)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, uc.value)
+			assert.Equal(t, tt.want, uc.value.String())
 		})
 	}
 }

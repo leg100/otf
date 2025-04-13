@@ -2,12 +2,14 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sort"
 	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
@@ -33,9 +35,9 @@ type usersClient interface {
 	List(ctx context.Context) ([]*User, error)
 	ListOrganizationUsers(ctx context.Context, organization organization.Name) ([]*User, error)
 	ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*User, error)
-	Delete(ctx context.Context, username string) error
-	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
-	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error
+	Delete(ctx context.Context, username Username) error
+	AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
+	RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error
 
 	CreateToken(ctx context.Context, opts CreateUserTokenOptions) (*UserToken, []byte, error)
 	ListTokens(ctx context.Context) ([]*UserToken, error)
@@ -144,40 +146,40 @@ func (h *webHandlers) site(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username *string        `schema:"username,required"`
+		Username *Username      `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	err := h.users.AddTeamMembership(r.Context(), params.TeamID, []string{*params.Username})
+	err := h.users.AddTeamMembership(r.Context(), params.TeamID, []Username{*params.Username})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "added team member: "+*params.Username)
+	html.FlashSuccess(w, fmt.Sprintf("added team member: %s", *params.Username))
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID   resource.TfeID `schema:"team_id,required"`
-		Username string         `schema:"username,required"`
+		Username Username       `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	err := h.users.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username})
+	err := h.users.RemoveTeamMembership(r.Context(), params.TeamID, []Username{params.Username})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "removed team member: "+params.Username)
+	html.FlashSuccess(w, fmt.Sprintf("removed team member: %s", params.Username))
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 
@@ -200,7 +202,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	usernames := make([]string, len(members))
+	usernames := make([]Username, len(members))
 	for i, m := range members {
 		usernames[i] = m.Username
 	}
@@ -208,7 +210,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	var nonMemberUsernames []string
+	var nonMemberUsernames []Username
 	if h.authorizer.CanAccess(r.Context(), authz.ListUsersAction, resource.SiteID) {
 		users, err := h.users.List(r.Context())
 		if err != nil {
@@ -216,7 +218,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		nonMembers := diffUsers(members, users)
-		nonMemberUsernames = make([]string, len(nonMembers))
+		nonMemberUsernames = make([]Username, len(nonMembers))
 		for i, m := range nonMembers {
 			nonMemberUsernames[i] = m.Username
 		}
@@ -231,8 +233,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		canRemoveMember: h.authorizer.CanAccess(r.Context(), authz.RemoveTeamMembershipAction, team.Organization),
 		dropdown: components.SearchDropdownProps{
 			Name:        "username",
-			Available:   nonMemberUsernames,
-			Existing:    usernames,
+			Available:   internal.ConvertSliceToString(nonMemberUsernames),
+			Existing:    internal.ConvertSliceToString(usernames),
 			Action:      templ.SafeURL(paths.AddMemberTeam(team.ID)),
 			Placeholder: "Add user",
 			Width:       components.WideDropDown,
@@ -299,7 +301,7 @@ func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 
 // diffUsers returns the users from b that are not in a.
 func diffUsers(a, b []*User) (c []*User) {
-	m := make(map[string]struct{}, len(a))
+	m := make(map[Username]struct{}, len(a))
 	for _, user := range a {
 		m[user.Username] = struct{}{}
 	}

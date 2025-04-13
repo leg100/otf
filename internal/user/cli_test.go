@@ -13,7 +13,7 @@ import (
 func TestUserNewCommand(t *testing.T) {
 	cli := &userCLI{
 		client: &fakeService{
-			user: &User{Username: "bobby"},
+			user: &User{Username: Username{name: "bobby"}},
 		},
 	}
 	cmd := cli.userNewCommand()

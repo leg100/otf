@@ -60,7 +60,7 @@ func (h *uiHelpers) lockButtonHelper(
 			if err != nil {
 				return LockButton{}, err
 			}
-			lockedBy = lockUser.Username
+			lockedBy = lockUser.Username.String()
 		} else {
 			lockedBy = ws.Lock.String()
 		}

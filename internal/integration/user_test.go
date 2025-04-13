@@ -24,8 +24,9 @@ func TestUser(t *testing.T) {
 		}})
 
 		areSiteAdmins := func(want bool) {
-			for _, username := range []string{"bob", "alice", "sue"} {
-				admin, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String(username)})
+			for _, usernameStr := range []string{"bob", "alice", "sue"} {
+				username := otfuser.MustUsername(usernameStr)
+				admin, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &username})
 				require.NoError(t, err)
 				assert.Equal(t, want, admin.IsSiteAdmin())
 			}
@@ -67,7 +68,7 @@ func TestUser(t *testing.T) {
 			},
 			{
 				name: "username",
-				spec: otfuser.UserSpec{Username: internal.String(user.Username)},
+				spec: otfuser.UserSpec{Username: &user.Username},
 			},
 			{
 				name: "auth token",
@@ -92,7 +93,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("get not found error", func(t *testing.T) {
 		svc, _, _ := setup(t, nil)
-		_, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String("does-not-exist")})
+		unknown := otfuser.NewTestUsername(t)
+		_, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &unknown})
 		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -153,7 +155,7 @@ func TestUser(t *testing.T) {
 		err := svc.Users.Delete(adminCtx, user.Username)
 		require.NoError(t, err)
 
-		_, err = svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String(user.Username)})
+		_, err = svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
 		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
@@ -162,10 +164,10 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t)
 
-		err := svc.Users.AddTeamMembership(ctx, team.ID, []string{user.Username})
+		err := svc.Users.AddTeamMembership(ctx, team.ID, []otfuser.Username{user.Username})
 		require.NoError(t, err)
 
-		got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String(user.Username)})
+		got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 
 		assert.Contains(t, got.Teams, team)
@@ -173,10 +175,11 @@ func TestUser(t *testing.T) {
 		// Adding membership for a user that does not exist should first create
 		// the user.
 		t.Run("create new user", func(t *testing.T) {
-			err := svc.Users.AddTeamMembership(ctx, team.ID, []string{"new-kid"})
+			username := otfuser.MustUsername("new-kid")
+			err := svc.Users.AddTeamMembership(ctx, team.ID, []otfuser.Username{username})
 			require.NoError(t, err)
 
-			got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String("new-kid")})
+			got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &username})
 			require.NoError(t, err)
 			assert.Contains(t, got.Teams, team)
 		})
@@ -188,10 +191,10 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, otfuser.WithTeams(team))
 
-		err := svc.Users.RemoveTeamMembership(ctx, team.ID, []string{user.Username})
+		err := svc.Users.RemoveTeamMembership(ctx, team.ID, []otfuser.Username{user.Username})
 		require.NoError(t, err)
 
-		got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: internal.String(user.Username)})
+		got, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 
 		assert.NotContains(t, got.Teams, team)
@@ -208,7 +211,7 @@ func TestUser(t *testing.T) {
 		another := svc.createUser(t, otfuser.WithTeams(owners))
 
 		// try to delete both members from the owners team
-		err = svc.Users.RemoveTeamMembership(ctx, owners.ID, []string{owner.Username, another.Username})
+		err = svc.Users.RemoveTeamMembership(ctx, owners.ID, []otfuser.Username{owner.Username, another.Username})
 		assert.Equal(t, otfuser.ErrCannotDeleteOnlyOwner, err)
 	})
 }

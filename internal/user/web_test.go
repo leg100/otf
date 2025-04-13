@@ -19,7 +19,7 @@ import (
 )
 
 func TestWeb_UserTokens(t *testing.T) {
-	user := &User{Username: uuid.NewString()}
+	user := &User{Username: Username{name: uuid.NewString()}}
 
 	t.Run("new", func(t *testing.T) {
 		h := &webHandlers{}
@@ -89,7 +89,8 @@ func TestWeb_UserTokens(t *testing.T) {
 func TestWeb_TeamGetHandler(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	owners := &team.Team{Name: "owners", Organization: org1}
-	owner := NewUser(uuid.NewString(), WithTeams(owners))
+	owner, err := NewUser(uuid.NewString(), WithTeams(owners))
+	require.NoError(t, err)
 	h := &webHandlers{
 		authorizer: authz.NewAllowAllAuthorizer(),
 		teams:      &fakeTeamService{team: owners},
@@ -148,9 +149,9 @@ func TestAdminLoginHandler(t *testing.T) {
 }
 
 func TestUserDiff(t *testing.T) {
-	a := []*User{{Username: "bob"}}
-	b := []*User{{Username: "bob"}, {Username: "alice"}}
-	assert.Equal(t, []*User{{Username: "alice"}}, diffUsers(a, b))
+	a := []*User{{Username: Username{name: "bob"}}}
+	b := []*User{{Username: Username{name: "bob"}}, {Username: Username{name: "alice"}}}
+	assert.Equal(t, []*User{{Username: Username{name: "alice"}}}, diffUsers(a, b))
 }
 
 type fakeTokensService struct{}

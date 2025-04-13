@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/leg100/otf/internal/user"
 	"golang.org/x/oauth2"
 )
 
@@ -69,22 +70,22 @@ func newIDTokenHandler(ctx context.Context, opts OIDCConfig) (*idtokenHandler, e
 	}, nil
 }
 
-func (o idtokenHandler) getUsername(ctx context.Context, token *oauth2.Token) (string, error) {
+func (o idtokenHandler) getUsername(ctx context.Context, token *oauth2.Token) (user.Username, error) {
 	// Extract the ID Token from OAuth2 token.
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		return "", errors.New("id_token missing")
+		return user.Username{}, errors.New("id_token missing")
 	}
 
 	// Parse and verify ID Token payload.
 	idt, err := o.verifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return "", err
+		return user.Username{}, err
 	}
 
 	// Extract username from claim
 	if err := idt.Claims(&o.username); err != nil {
-		return "", err
+		return user.Username{}, err
 	}
 
 	return o.username.value, nil

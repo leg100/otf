@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	// Create user and add as member of engineers team
 	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
-	err := svc.Users.AddTeamMembership(ctx, team.ID, []string{engineer.Username})
+	err := svc.Users.AddTeamMembership(ctx, team.ID, []user.Username{engineer.Username})
 	require.NoError(t, err)
 
 	// create some terraform configuration

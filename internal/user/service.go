@@ -80,7 +80,7 @@ func NewService(opts Options) *Service {
 		if err != nil {
 			return fmt.Errorf("adding owner to owners team: %w", err)
 		}
-		if err := svc.AddTeamMembership(ctx, team.ID, []string{user.Username}); err != nil {
+		if err := svc.AddTeamMembership(ctx, team.ID, []Username{user.Username}); err != nil {
 			return fmt.Errorf("adding owner to owners team: %w", err)
 		}
 		// and add team to the context user too so that they can immediately
@@ -106,10 +106,14 @@ func NewService(opts Options) *Service {
 	})
 	// Register with auth middleware the ability to get or create a user given a
 	// username.
-	opts.TokensService.GetOrCreateUser = func(ctx context.Context, username string) (authz.Subject, error) {
+	opts.TokensService.GetOrCreateUser = func(ctx context.Context, usernameStr string) (authz.Subject, error) {
+		username, err := NewUsername(usernameStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid username: %w", err)
+		}
 		user, err := svc.GetUser(ctx, UserSpec{Username: &username})
 		if err == internal.ErrResourceNotFound {
-			user, err = svc.Create(ctx, username)
+			user, err = svc.Create(ctx, usernameStr)
 		}
 		return user, err
 	}
@@ -129,7 +133,10 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 		return nil, err
 	}
 
-	user := NewUser(username, opts...)
+	user, err := NewUser(username, opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := a.db.CreateUser(ctx, user); err != nil {
 		a.Error(err, "creating user", "username", username, "subject", subject)
@@ -203,13 +210,13 @@ func (a *Service) ListTeamUsers(ctx context.Context, teamID resource.TfeID) ([]*
 	return members, nil
 }
 
-func (a *Service) Delete(ctx context.Context, username string) error {
+func (a *Service) Delete(ctx context.Context, username Username) error {
 	subject, err := a.Authorize(ctx, authz.DeleteUserAction, resource.SiteID)
 	if err != nil {
 		return err
 	}
 
-	err = a.db.DeleteUser(ctx, UserSpec{Username: internal.String(username)})
+	err = a.db.DeleteUser(ctx, UserSpec{Username: &username})
 	if err != nil {
 		a.Error(err, "deleting user", "username", username, "subject", subject)
 		return err
@@ -222,7 +229,7 @@ func (a *Service) Delete(ctx context.Context, username string) error {
 
 // AddTeamMembership adds users to a team. If a user does not exist then the
 // user is created first.
-func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error {
+func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return fmt.Errorf("retrieving team: %w", err)
@@ -238,7 +245,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, 
 		for _, username := range usernames {
 			_, err := a.db.getUser(ctx, UserSpec{Username: &username})
 			if errors.Is(err, internal.ErrResourceNotFound) {
-				if _, err := a.Create(ctx, username); err != nil {
+				if _, err := a.Create(ctx, username.String()); err != nil {
 					return err
 				}
 			} else if err != nil {
@@ -261,7 +268,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, 
 }
 
 // RemoveTeamMembership removes users from a team.
-func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []string) error {
+func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeID, usernames []Username) error {
 	team, err := a.teams.GetByID(ctx, teamID)
 	if err != nil {
 		return err
@@ -297,7 +304,7 @@ func (a *Service) RemoveTeamMembership(ctx context.Context, teamID resource.TfeI
 // that are currently site admins are demoted.
 func (a *Service) SetSiteAdmins(ctx context.Context, usernames ...string) error {
 	for _, username := range usernames {
-		_, err := a.db.getUser(ctx, UserSpec{Username: &username})
+		_, err := a.db.getUser(ctx, UserSpec{Username: &Username{name: username}})
 		if errors.Is(err, internal.ErrResourceNotFound) {
 			if _, err = a.Create(ctx, username); err != nil {
 				return fmt.Errorf("creating site admin users: %w", err)

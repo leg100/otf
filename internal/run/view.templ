@@ -92,7 +92,7 @@ templ (t table) Row(run *Run) {
 					</span>
 				} else if run.CreatedBy != nil {
 					<span class="inline-block max-w-[16rem] truncate" id="run-created-by">
-						&commat;{ *run.CreatedBy }
+						&commat;{ run.CreatedBy.String() }
 					</span>
 				}
 				<div class="flex gap-2 items-center">

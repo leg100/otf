@@ -18,10 +18,11 @@ import (
 
 func TestRun_New_CreatedBy(t *testing.T) {
 	ctx := context.Background()
-	ctx = authz.AddSubjectToContext(ctx, &user.User{Username: "terry"})
+	user := user.NewTestUser(t)
+	ctx = authz.AddSubjectToContext(ctx, user)
 	run := newTestRun(ctx, CreateOptions{})
 	assert.NotNil(t, run.CreatedBy)
-	assert.Equal(t, "terry", *run.CreatedBy)
+	assert.Equal(t, user.Username, *run.CreatedBy)
 }
 
 func TestRun_States(t *testing.T) {
