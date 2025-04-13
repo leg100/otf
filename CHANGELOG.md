@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.18](https://github.com/leg100/otf/compare/v0.3.17...v0.3.18) (2025-04-13)
+
+
+### Features
+
+* **ui:** add side menu ([d628f81](https://github.com/leg100/otf/commit/d628f81f16fac260a089d3a1bcef7d3c4ddfe3c9))
+* **ui:** add theme selector ([97a4aa1](https://github.com/leg100/otf/commit/97a4aa18371a9cdcd849360329b2cd2f3ccc1b16))
+* **ui:** make lock widget nicer ([7df67d9](https://github.com/leg100/otf/commit/7df67d949b5caf92757f5104e03d42be4373de67))
+
+
+### Bug Fixes
+
+* allow variable set with same name in another org ([8834ba2](https://github.com/leg100/otf/commit/8834ba26718ab2c9e2556afcc4ff55b20bf0353c))
+* **ui:** set max width ([cceb0d3](https://github.com/leg100/otf/commit/cceb0d3631404659af8e3b0aac5ce415816a0e1c))
+* **ui:** stale statuses on run page ([c4f3a65](https://github.com/leg100/otf/commit/c4f3a65a8867258c2125ef07db6cb169b13c80ea))
+
+
+### Miscellaneous
+
+* bump playwright ([25313e2](https://github.com/leg100/otf/commit/25313e2e09fea51e22553ad06d43952cce75e8ad))
+
 ## [0.3.17](https://github.com/leg100/otf/compare/v0.3.16...v0.3.17) (2025-04-08)
 
 
