@@ -96,7 +96,7 @@ func TestRunService(t *testing.T) {
 					assert.Nil(t, ws.LatestRun)
 				}
 				if tt.lock {
-					assert.Equal(t, run.ID, *ws.Lock)
+					assert.Equal(t, run.ID, ws.Lock)
 				} else {
 					assert.Nil(t, ws.Lock)
 				}

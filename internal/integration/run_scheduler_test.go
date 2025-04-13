@@ -28,7 +28,7 @@ func TestRunScheduler(t *testing.T) {
 	run2 := daemon.createRun(t, ctx, ws, cv, nil)
 
 	// Wait for Run#1 to lock workspace
-	waitWorkspaceLock(t, workspaceEvents, &run1.ID)
+	waitWorkspaceLock(t, workspaceEvents, run1.ID)
 
 	// Wait for Run#1 to be planned
 	daemon.waitRunStatus(t, run1.ID, runstatus.Planned)
@@ -43,7 +43,7 @@ func TestRunScheduler(t *testing.T) {
 	daemon.waitRunStatus(t, run1.ID, runstatus.Applied)
 
 	// Wait for Run#2 to lock workspace
-	waitWorkspaceLock(t, workspaceEvents, &run2.ID)
+	waitWorkspaceLock(t, workspaceEvents, run2.ID)
 
 	// Wait for Run#2 to be planned&finished (because there are no changes)
 	daemon.waitRunStatus(t, run2.ID, runstatus.PlannedAndFinished)
@@ -59,7 +59,7 @@ func TestRunScheduler(t *testing.T) {
 	run3 := daemon.createRun(t, ctx, ws, cv, nil)
 
 	// Workspace should still be locked by user
-	waitWorkspaceLock(t, workspaceEvents, &user.ID)
+	waitWorkspaceLock(t, workspaceEvents, user.Username)
 
 	// User unlocks workspace
 	_, err = daemon.Workspaces.Unlock(ctx, ws.ID, nil, false)
@@ -69,7 +69,7 @@ func TestRunScheduler(t *testing.T) {
 	daemon.waitRunStatus(t, run3.ID, runstatus.PlannedAndFinished)
 }
 
-func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock *resource.TfeID) {
+func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock resource.ID) {
 	t.Helper()
 
 	timeout := time.After(5 * time.Second)
@@ -77,7 +77,7 @@ func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Works
 		select {
 		case event := <-events:
 			if lock != nil {
-				if event.Payload.Lock != nil && *lock == *event.Payload.Lock {
+				if event.Payload.Lock != nil && lock == event.Payload.Lock {
 					return
 				}
 			} else {

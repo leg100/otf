@@ -34,7 +34,7 @@ type (
 
 	schedulerWorkspaceClient interface {
 		Watch(context.Context) (<-chan pubsub.Event[*workspace.Workspace], func())
-		Unlock(context.Context, resource.TfeID, *resource.TfeID, bool) (*workspace.Workspace, error)
+		Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*workspace.Workspace, error)
 	}
 
 	schedulerRunClient interface {

@@ -71,7 +71,6 @@ func TestGetWorkspaceHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &webHandlers{
 				uiHelpers: &uiHelpers{
-					service:    &fakeUIHelpersService{lockedBy: bobby},
 					authorizer: authz.NewAllowAllAuthorizer(),
 				},
 				authorizer: authz.NewAllowAllAuthorizer(),

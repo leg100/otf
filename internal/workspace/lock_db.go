@@ -20,15 +20,14 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togg
 		},
 		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
 			var (
-				runID  *resource.TfeID
-				userID *resource.TfeID
+				runID, username resource.ID
 			)
 			if ws.Locked() {
 				switch ws.Lock.Kind() {
 				case resource.RunKind:
 					runID = ws.Lock
 				case resource.UserKind:
-					userID = ws.Lock
+					username = ws.Lock
 				default:
 					return ErrWorkspaceInvalidLock
 				}
@@ -36,11 +35,11 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togg
 			_, err := db.Exec(ctx, `
 UPDATE workspaces
 SET
-    lock_user_id = $1,
+    lock_username = $1,
     lock_run_id = $2
 WHERE workspace_id = $3
 `,
-				userID,
+				username,
 				runID,
 				workspaceID,
 			)

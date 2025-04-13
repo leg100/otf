@@ -98,7 +98,6 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		vcsproviders: opts.VCSProviderService,
 		client:       service,
 		uiHelpers: &uiHelpers{
-			service:    opts.UserService,
 			authorizer: opts.Authorizer,
 		},
 		websocketListHandler: &components.WebsocketListHandler[*Workspace, ListOptions]{

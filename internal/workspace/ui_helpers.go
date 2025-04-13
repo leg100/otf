@@ -12,12 +12,7 @@ import (
 )
 
 type uiHelpers struct {
-	service    uiHelpersService
 	authorizer uiHelpersAuthorizer
-}
-
-type uiHelpersService interface {
-	GetUser(context.Context, userpkg.UserSpec) (*userpkg.User, error)
 }
 
 type uiHelpersAuthorizer interface {
@@ -52,23 +47,12 @@ func (h *uiHelpers) lockButtonHelper(
 			btn.Disabled = true
 			return btn, nil
 		}
-		// Report who/what has locked the workspace. If it is a user then fetch
-		// their username.
-		var lockedBy string
-		if ws.Lock.Kind() == resource.UserKind {
-			lockUser, err := h.service.GetUser(ctx, userpkg.UserSpec{UserID: ws.Lock})
-			if err != nil {
-				return LockButton{}, err
-			}
-			lockedBy = lockUser.Username.String()
-		} else {
-			lockedBy = ws.Lock.String()
-		}
-		btn.Message = fmt.Sprintf("locked by: %s", lockedBy)
+		// Report who/what has locked the workspace.
+		btn.Message = fmt.Sprintf("locked by: %s", ws.Lock)
 		// also show message as button tooltip
 		btn.Tooltip = btn.Message
 		// A user can unlock their own lock
-		if *ws.Lock == user.ID {
+		if ws.Lock == user.Username {
 			return btn, nil
 		}
 		// User is going to need the force unlock permission

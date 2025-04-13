@@ -105,26 +105,17 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			helpers := &uiHelpers{
-				service:    &fakeUIHelpersService{lockedBy: tt.lockedBy},
 				authorizer: &fakeLockButtonAuthorizer{perms: tt.currentUserPermissions},
 			}
 			ws := &Workspace{ID: testutils.ParseID(t, "ws-123")}
 			if tt.lockedBy != nil {
-				ws.Lock = &tt.lockedBy.ID
+				ws.Lock = tt.lockedBy.Username
 			}
 			got, err := helpers.lockButtonHelper(context.Background(), ws, tt.currentUser)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-type fakeUIHelpersService struct {
-	lockedBy *user.User
-}
-
-func (f *fakeUIHelpersService) GetUser(context.Context, user.UserSpec) (*user.User, error) {
-	return f.lockedBy, nil
 }
 
 type fakeLockButtonAuthorizer struct {

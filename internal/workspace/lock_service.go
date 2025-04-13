@@ -13,7 +13,7 @@ import (
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
 func (s *Service) Lock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID) (*Workspace, error) {
-	var id resource.TfeID
+	var id resource.ID
 	if runID != nil {
 		id = *runID
 	} else {
@@ -25,7 +25,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.TfeID, runID *r
 		if !ok {
 			return nil, fmt.Errorf("only a run or a user can lock a workspace")
 		}
-		id = user.ID
+		id = user.Username
 	}
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
 		return ws.Enlock(id)
@@ -43,7 +43,7 @@ func (s *Service) Lock(ctx context.Context, workspaceID resource.TfeID, runID *r
 // a user. If the former then runID must be non-nil; otherwise a user is
 // extracted from the context.
 func (s *Service) Unlock(ctx context.Context, workspaceID resource.TfeID, runID *resource.TfeID, force bool) (*Workspace, error) {
-	var id resource.TfeID
+	var id resource.ID
 	if runID != nil {
 		id = *runID
 	} else {
@@ -61,7 +61,7 @@ func (s *Service) Unlock(ctx context.Context, workspaceID resource.TfeID, runID 
 		if !ok {
 			return nil, fmt.Errorf("only a run or a user can unlock a workspace")
 		}
-		id = user.ID
+		id = user.Username
 	}
 
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {

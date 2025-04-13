@@ -55,7 +55,7 @@ type (
 		Organization               organization.Name `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun        `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string          `jsonapi:"attribute" json:"tags"`
-		Lock                       *resource.TfeID   `jsonapi:"attribute" json:"lock"`
+		Lock                       resource.ID       `json:"-"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -284,19 +284,19 @@ func (ws *Workspace) Locked() bool {
 }
 
 // Enlock locks the workspace with the given ID. The ID must be either a run or user ID.
-func (ws *Workspace) Enlock(id resource.TfeID) error {
+func (ws *Workspace) Enlock(id resource.ID) error {
 	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
 		return errors.New("workspace can only be locked by a user or a run")
 	}
 	if ws.Lock == nil {
-		ws.Lock = &id
+		ws.Lock = id
 		return nil
 	}
 	// a run can replace another run holding a lock
 	if ws.Lock.Kind() == resource.RunKind && id.Kind() == resource.RunKind {
-		ws.Lock = &id
+		ws.Lock = id
 		return nil
 	}
 	return ErrWorkspaceAlreadyLocked
@@ -304,7 +304,7 @@ func (ws *Workspace) Enlock(id resource.TfeID) error {
 
 // Unlock the workspace with the given ID. The ID must be either a run or user
 // ID.
-func (ws *Workspace) Unlock(id resource.TfeID, force bool) error {
+func (ws *Workspace) Unlock(id resource.ID, force bool) error {
 	switch id.Kind() {
 	case resource.UserKind, resource.RunKind:
 	default:
@@ -314,7 +314,7 @@ func (ws *Workspace) Unlock(id resource.TfeID, force bool) error {
 		return ErrWorkspaceAlreadyUnlocked
 	}
 	// user/run can unlock its own lock
-	if *ws.Lock == id {
+	if ws.Lock == id {
 		ws.Lock = nil
 		return nil
 	}
