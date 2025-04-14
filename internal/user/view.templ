@@ -38,21 +38,6 @@ templ profile() {
 	}) {
 		<div class="flex flex-col gap-4">
 			<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ components.CurrentUsername(ctx) }</span></p>
-			<fieldset class="fieldset w-xs bg-base-200 border border-base-content/20 p-4 rounded-box">
-				<legend class="fieldset-legend">UI Settings</legend>
-				<label class="select">
-					<span class="label flex gap-2">
-						<span>Theme</span>
-						<div class="bg-base-100 border-base-content/10 grid shrink-0 grid-cols-2 gap-0.5 rounded-md border p-1"><div class="bg-base-content size-1 rounded-full"></div> <div class="bg-primary size-1 rounded-full"></div> <div class="bg-secondary size-1 rounded-full"></div> <div class="bg-accent size-1 rounded-full"></div></div>
-					</span>
-					<select id="theme-selector" class="select" data-choose-theme>
-						for _, theme := range components.DaisyThemes {
-							<option value={ theme }>{ theme }</option>
-						}
-					</select>
-				</label>
-				<p class="fieldset-label">Set a theme to change the look and feel of the site.</p>
-			</fieldset>
 		</div>
 	}
 }

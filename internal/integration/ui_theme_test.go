@@ -15,24 +15,22 @@ func TestUITheme(t *testing.T) {
 		// go to main page
 		_, err := page.Goto("https://" + daemon.System.Hostname())
 		require.NoError(t, err)
-		// click on profile in menu
-		err = page.Locator("#menu-item-profile > a").Click()
+
+		// select dark theme
+		err = page.Locator(`//*[@id='theme-chooser']`).Click()
 		require.NoError(t, err)
-		// confirm light theme is the default
-		err = expect.Locator(page.Locator(`//select[@id='theme-selector']`)).ToHaveValue("light")
+		err = page.Locator(`//*[@id='theme-chooser']//button[@data-set-theme='dark']`).Click()
 		require.NoError(t, err)
-		// change theme to dark
-		selectValues := []string{"dark"}
-		_, err = page.Locator(`//select[@id='theme-selector']`).SelectOption(playwright.SelectOptionValues{
-			Values: &selectValues,
-		})
+
+		// confirm light theme has been persisted to dark storage
+		storage, err := page.Context().StorageState()
 		require.NoError(t, err)
-		// reload page
-		_, err = page.Reload()
-		require.NoError(t, err)
-		// confirm theme change has been persisted by confirming dark theme is
-		// now the selected option
-		err = expect.Locator(page.Locator(`//select[@id='theme-selector']`)).ToHaveValue("dark")
-		require.NoError(t, err)
+		for _, origin := range storage.Origins {
+			for _, entry := range origin.LocalStorage {
+				if entry.Name == "theme" {
+					require.Equal(t, "dark", entry.Value)
+				}
+			}
+		}
 	})
 }

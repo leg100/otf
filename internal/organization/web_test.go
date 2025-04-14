@@ -78,7 +78,7 @@ func TestWeb_ListHandler(t *testing.T) {
 				assert.Equal(t, 200, w.Code)
 				doc, err := htmlquery.Parse(w.Body)
 				require.NoError(t, err)
-				button := htmlquery.FindOne(doc, `//button`)
+				button := htmlquery.FindOne(doc, `//button[@id='new-organization-button']`)
 				if assert.NotNil(t, button) {
 					// if want button enabled, then the button should not contain a
 					// 'disabled' attribute
