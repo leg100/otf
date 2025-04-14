@@ -130,29 +130,25 @@ templ BareLayout(props BareLayoutProps) {
 }
 
 templ navbar(organization resource.ID) {
-	<div class="bg-base-100 px-2 flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
-		if Authenticated(ctx) {
-			<input class="hidden peer" id="hamburger-toggle" type="checkbox"/>
-			<label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
-				<img src={ AssetPath(ctx, "/static/images/hamburger.svg") } alt="open menu"/>
-			</label>
-			<label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
-				<img src={ AssetPath(ctx, "/static/images/cross.svg") } alt="close menu"/>
-			</label>
-		}
-		<div class="logo md:order-first">
+	<!--<div class="navbar bg-base-100 px-2 flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">-->
+	<div class="navbar bg-base-100 min-h-1">
+		<div class="grow">
 			<img src={ AssetPath(ctx, "/static/images/logo.svg") } alt="logo"/>
 		</div>
-		if Authenticated(ctx) {
-			<div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
-				<div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
-					<a href={ paths.Admin() }>site</a>
-					<a href={ paths.Organizations() }>organizations</a>
-					<a href={ paths.Profile() }>profile</a>
+		<div class="flex items-center">
+			if Authenticated(ctx) {
+				<div class="">
+					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Organizations() }>organizations</a>
 				</div>
-			</div>
-		}
-		@themeChooser()
+				<div class="">
+					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Admin() }>site</a>
+				</div>
+				<div class="">
+					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Profile() }>profile</a>
+				</div>
+			}
+			@themeChooser()
+		</div>
 	</div>
 }
 
