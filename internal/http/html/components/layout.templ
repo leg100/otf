@@ -18,7 +18,6 @@ type LayoutProps struct {
 	ContentActions templ.Component
 	ContentLinks   templ.Component
 	ContentMenu    templ.Component
-	RightPane      templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
 	Menu           templ.Component
@@ -34,16 +33,22 @@ templ Layout(props LayoutProps) {
 		<div class="my-2 mx-4">
 			<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
 				<div class="flex">
-					<span id="content-header-title">
+					<span
+						id="content-header-title"
+					>
 						for i, crumb := range props.Breadcrumbs {
-							if crumb.Link != "" {
-								<a href={ crumb.Link }>{ crumb.Name }</a>
-							} else {
-								{ crumb.Name }
-							}
-							if i < (len(props.Breadcrumbs) - 1) {
-								/&nbsp;
-							}
+							<span class={ templ.KV("font-bold", i == len(props.Breadcrumbs)-1) }>
+								if crumb.Link != "" {
+									<a
+										href={ crumb.Link }
+									>{ crumb.Name }</a>
+								} else {
+									{ crumb.Name }
+								}
+								if i < (len(props.Breadcrumbs) - 1) {
+									/&nbsp;
+								}
+							</span>
 						}
 					</span>
 				</div>

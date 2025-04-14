@@ -228,3 +228,15 @@ templ form(props formProps) {
 		}
 	</form>
 }
+
+templ VCSIcon(provider *VCSProvider) {
+	switch provider.Kind {
+		case vcs.GithubKind:
+			@components.GithubIcon()
+		case vcs.GitlabKind:
+			@components.GitlabIcon()
+	}
+	if provider.GithubApp != nil {
+		@components.GithubIcon()
+	}
+}

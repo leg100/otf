@@ -54,7 +54,7 @@ templ list(props listProps) {
 		Organization:   props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+			{Name: "Workspaces"},
 		},
 	}
 	}}
@@ -88,7 +88,7 @@ templ list(props listProps) {
 							<div>
 								<input class="checkbox checkbox-accent" id={ "filter-tag-" + name } type="checkbox" name="search[tags]" value={ name } checked?={ checked } onchange="this.form.submit()"/>
 								<label for={ "filter-tag-" + name }>
-									@tag(name, "badge-md")
+									@tag(name, "badge-md", true)
 								</label>
 							</div>
 						}
@@ -124,28 +124,42 @@ templ (t table) Row(ws *Workspace) {
 		<td>
 			<div class="flex flex-wrap gap-2 items-center">
 				for _, name := range ws.Tags {
-					@tag(name, "badge-sm")
+					@tag(name, "badge-sm", false)
 				}
 			</div>
 		</td>
 	</tr>
 }
 
-templ tag(name string, badgeSize string) {
-	<span class={ "badge badge-accent badge-soft", badgeSize }>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			fill="none"
-			viewBox="0 0 24 24"
-			stroke-width="1.5"
-			stroke="currentColor"
-			class="size-4"
+templ tag(name string, badgeSize string, delete bool) {
+	<button class={ templ.KV("hover:btn hover:btn-sm", delete) }>
+		<span
+			class={ "badge badge-accent badge-soft group", badgeSize, }
 		>
-			<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"></path>
-			<path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"></path>
-		</svg>
-		{ name }
-	</span>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke-width="1.5"
+				stroke="currentColor"
+				class={ "size-4", templ.KV("group-hover:hidden", delete) }
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"></path>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"></path>
+			</svg>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke-width="1.5"
+				stroke="currentColor"
+				class="size-4 hidden group-hover:block"
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
+			</svg>
+			{ name }
+		</span>
+	</button>
 }
 
 templ listActions(organization organization.Name, canCreate bool) {
@@ -176,10 +190,9 @@ templ get(props getProps) {
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
 		Organization: props.ws.Organization,
-		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
-		RightPane:    rightPane(props),
+		ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "Workspaces"},
 			{Name: props.ws.Name},
 		},
 	}
@@ -191,35 +204,50 @@ templ get(props getProps) {
 					@components.Identifier(props.ws.ID)
 				</div>
 				<div>
-					@lockWidget(lockWidgetProps{
-						ws:   props.ws,
-						info: props.lockInfo,
-					})
-				</div>
-				<div>
-					<a class="btn btn-sm btn-soft" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }>
+					<a
+						class="btn btn-sm"
+						href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }
+						title="Change terraform version"
+					>
 						Terraform
 						<div class="badge badge-sm">
 							{ props.ws.TerraformVersion }
 						</div>
 					</a>
 				</div>
-				if props.canCreateRun {
-					<div class="">
-						<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
-							<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
-								<option disabled selected>-- start run --</option>
-								<option value="plan-only">plan only</option>
-								if props.canApply {
-									<option value="plan-and-apply">plan and apply</option>
-								}
-							</select>
-						</form>
-					</div>
-				}
 				if props.ws.Connection != nil {
-					<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
+					<a
+						class="btn btn-sm"
+						href={ vcsprovider.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+						title="Go to repo homepage"
+					>
+						Connected to
+						<div class="badge badge-sm">
+							@vcsprovider.VCSIcon(props.vcsProvider)
+							{ props.ws.Connection.Repo }
+						</div>
+						@components.ExternalIcon()
+					</a>
 				}
+			</div>
+			<div>
+				@lockWidget(lockWidgetProps{
+					ws:   props.ws,
+					info: props.lockInfo,
+				})
+			</div>
+			<div class="flex gap-4 flex-col basis-1/5">
+				<div class="flex gap-2">
+					for _, name := range props.ws.Tags {
+						<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
+							<input type="hidden" name="tag_name" id="remove-tag-name" value={ name } required/>
+							@tag(name, "badge-sm", props.canRemoveTags)
+						</form>
+					}
+					if props.canAddTags {
+						@components.SearchDropdown(props.tagsDropdown)
+					}
+				</div>
 			</div>
 			<div>
 				<h3 class="text-md font-bold">
@@ -240,46 +268,7 @@ templ get(props getProps) {
 				<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
 			</div>
 		</div>
-		<!--
-		<div class="flex gap-4 flex-col basis-1/5">
-			<div class="flex flex-col gap-2">
-				<h3 class="font-semibold mb-1">Tags</h3>
-				<div id="tags" class="tag-container">
-					for _, tag := range props.ws.Tags {
-						<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
-							<input type="hidden" name="tag_name" id="remove-tag-name" value={ tag } required/>
-							<div class="flex gap-1 items-center tag">
-								<span>{ tag }</span>
-								if props.canRemoveTags {
-									<button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id={ "button-remove-tag-" + tag } class="delete cross">x</button>
-								}
-							</div>
-						</form>
-					}
-				</div>
-				if props.canAddTags {
-					@components.SearchDropdown(props.tagsDropdown)
-				}
-			</div>
-		</div>
-		-->
 	}
-}
-
-templ rightPane(props getProps) {
-	<div class="flex flex-col gap-2">
-		if props.canCreateRun {
-			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
-				<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
-					<option disabled selected>-- start run --</option>
-					<option value="plan-only">plan only</option>
-					if props.canApply {
-						<option value="plan-and-apply">plan and apply</option>
-					}
-				</select>
-			</form>
-		}
-	</div>
 }
 
 type lockWidgetProps struct {
@@ -321,7 +310,7 @@ templ lockWidget(props lockWidgetProps) {
 		<form action={ props.info.Action } method="POST">
 			<button
 				id="lock-button"
-				class="btn btn-sm"
+				class="btn btn-sm btn-primary btn-soft"
 				disabled?={ props.info.Disabled }
 				title={ props.info.Tooltip }
 			>
@@ -761,6 +750,23 @@ templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
 			@components.MenuItem("Settings", paths.EditWorkspace(workspaceID))
 		}
 	</ul>
+}
+
+templ workspaceHeaderLinksAndStartRunSelector(props getProps) {
+	if props.canCreateRun {
+		<div>
+			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
+				<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
+					<option disabled selected>-- start run --</option>
+					<option value="plan-only">plan only</option>
+					if props.canApply {
+						<option value="plan-and-apply">plan and apply</option>
+					}
+				</select>
+			</form>
+		</div>
+	}
+	@WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 }
 
 func magnifyingGlassStyle(ctx context.Context) (string, error) {

@@ -35,9 +35,6 @@
   .field > label {
     @apply block font-semibold;
   }
-  .tag-container {
-    @apply flex flex-wrap gap-1 items-center
-  }
   .tag {
     @apply text-sm rounded-lg bg-blue-800 text-white font-semibold p-1
   }

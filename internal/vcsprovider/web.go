@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
+	"github.com/a-h/templ"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
@@ -219,4 +221,12 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	html.FlashSuccess(w, "deleted provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+}
+
+func RepoURL(provider *VCSProvider, repo string) templ.SafeURL {
+	b := urlbuilder.New("https", provider.Hostname)
+	for segment := range strings.SplitSeq(repo, "/") {
+		b.Path(segment)
+	}
+	return b.Build()
 }
