@@ -186,25 +186,23 @@ templ get(props getProps) {
 	}}
 	@components.Layout(layoutProps) {
 		<div class="grow flex flex-col gap-4 basis-4/5">
-			<div class="flex gap-4 items-center">
-				<div class="flex-1 flex gap-4 items-center">
-					<div>
-						@components.Identifier(props.ws.ID)
-					</div>
-					<div class="flex justify-between">
-						@lockWidget(lockWidgetProps{
-							ws:   props.ws,
-							info: props.lockInfo,
-						})
-					</div>
-					<div>
-						<a class="btn btn-sm btn-soft" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }>
-							Terraform
-							<div class="badge badge-sm">
-								{ props.ws.TerraformVersion }
-							</div>
-						</a>
-					</div>
+			<div class="flex flex-wrap gap-4 items-center">
+				<div>
+					@components.Identifier(props.ws.ID)
+				</div>
+				<div>
+					@lockWidget(lockWidgetProps{
+						ws:   props.ws,
+						info: props.lockInfo,
+					})
+				</div>
+				<div>
+					<a class="btn btn-sm btn-soft" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }>
+						Terraform
+						<div class="badge badge-sm">
+							{ props.ws.TerraformVersion }
+						</div>
+					</a>
 				</div>
 				if props.canCreateRun {
 					<div class="">
@@ -218,6 +216,9 @@ templ get(props getProps) {
 							</select>
 						</form>
 					</div>
+				}
+				if props.ws.Connection != nil {
+					<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
 				}
 			</div>
 			<div>
@@ -241,9 +242,6 @@ templ get(props getProps) {
 		</div>
 		<!--
 		<div class="flex gap-4 flex-col basis-1/5">
-			if props.ws.Connection != nil {
-				<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
-			}
 			<div class="flex flex-col gap-2">
 				<h3 class="font-semibold mb-1">Tags</h3>
 				<div id="tags" class="tag-container">
