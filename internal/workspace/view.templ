@@ -177,6 +177,7 @@ templ get(props getProps) {
 		Title:        "workspaces",
 		Organization: props.ws.Organization,
 		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		RightPane:    rightPane(props),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name},
@@ -184,38 +185,29 @@ templ get(props getProps) {
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<div class="flex gap-6 flex-row">
-			<div class="grow flex flex-col gap-4 basis-4/5">
-				<div>
-					@components.Identifier(props.ws.ID)
-				</div>
-				<div>
-					@lockWidget(lockWidgetProps{
-						ws:   props.ws,
-						info: props.lockInfo,
-					})
-				</div>
-				<div>
-					<h3 class="text-lg font-bold my-2">Latest Run</h3>
-					<div
-						hx-ext="ws"
-						ws-connect={ string(paths.WatchLatestRun(props.ws.ID)) }
-					>
-						if props.ws.LatestRun != nil {
-							<div id="latest-run"></div>
-						} else {
-							There are no runs for this workspace.
-						}
+		<div class="grow flex flex-col gap-4 basis-4/5">
+			<div class="flex gap-4 items-center">
+				<div class="flex-1 flex gap-4 items-center">
+					<div>
+						@components.Identifier(props.ws.ID)
+					</div>
+					<div class="flex justify-between">
+						@lockWidget(lockWidgetProps{
+							ws:   props.ws,
+							info: props.lockInfo,
+						})
+					</div>
+					<div>
+						<a class="btn btn-sm btn-soft" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }>
+							Terraform
+							<div class="badge badge-sm">
+								{ props.ws.TerraformVersion }
+							</div>
+						</a>
 					</div>
 				</div>
-				<div>
-					<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
-				</div>
-			</div>
-			<div class="flex gap-4 flex-col basis-1/5">
 				if props.canCreateRun {
-					<div>
-						<h3 class="font-semibold mb-2">Actions</h3>
+					<div class="">
 						<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
 							<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
 								<option disabled selected>-- start run --</option>
@@ -227,32 +219,69 @@ templ get(props getProps) {
 						</form>
 					</div>
 				}
-				<div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version" }>{ props.ws.TerraformVersion }</a></div>
-				if props.ws.Connection != nil {
-					<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
-				}
-				<div class="flex flex-col gap-2">
-					<h3 class="font-semibold mb-1">Tags</h3>
-					<div id="tags" class="tag-container">
-						for _, tag := range props.ws.Tags {
-							<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
-								<input type="hidden" name="tag_name" id="remove-tag-name" value={ tag } required/>
-								<div class="flex gap-1 items-center tag">
-									<span>{ tag }</span>
-									if props.canRemoveTags {
-										<button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id={ "button-remove-tag-" + tag } class="delete cross">x</button>
-									}
-								</div>
-							</form>
-						}
-					</div>
-					if props.canAddTags {
-						@components.SearchDropdown(props.tagsDropdown)
+			</div>
+			<div>
+				<h3 class="text-md font-bold">
+					Latest Run
+				</h3>
+				<div
+					hx-ext="ws"
+					ws-connect={ string(paths.WatchLatestRun(props.ws.ID)) }
+				>
+					if props.ws.LatestRun != nil {
+						<div id="latest-run"></div>
+					} else {
+						There are no runs for this workspace.
 					}
 				</div>
 			</div>
+			<div>
+				<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
+			</div>
 		</div>
+		<!--
+		<div class="flex gap-4 flex-col basis-1/5">
+			if props.ws.Connection != nil {
+				<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
+			}
+			<div class="flex flex-col gap-2">
+				<h3 class="font-semibold mb-1">Tags</h3>
+				<div id="tags" class="tag-container">
+					for _, tag := range props.ws.Tags {
+						<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
+							<input type="hidden" name="tag_name" id="remove-tag-name" value={ tag } required/>
+							<div class="flex gap-1 items-center tag">
+								<span>{ tag }</span>
+								if props.canRemoveTags {
+									<button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id={ "button-remove-tag-" + tag } class="delete cross">x</button>
+								}
+							</div>
+						</form>
+					}
+				</div>
+				if props.canAddTags {
+					@components.SearchDropdown(props.tagsDropdown)
+				}
+			</div>
+		</div>
+		-->
 	}
+}
+
+templ rightPane(props getProps) {
+	<div class="flex flex-col gap-2">
+		if props.canCreateRun {
+			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
+				<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
+					<option disabled selected>-- start run --</option>
+					<option value="plan-only">plan only</option>
+					if props.canApply {
+						<option value="plan-and-apply">plan and apply</option>
+					}
+				</select>
+			</form>
+		}
+	</div>
 }
 
 type lockWidgetProps struct {
@@ -437,7 +466,7 @@ templ edit(props editProps) {
 					<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
 				</div>
 			</fieldset>
-			<div class="field">
+			<div class="field" id="terraform-version-field">
 				<label for="terraform-version">Terraform version</label>
 				<input class="input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
 				<span class="description">
@@ -727,20 +756,13 @@ templ (s repoSelector) action(repo string) {
 }
 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
-	{{
-	var links = map[string]templ.SafeURL{
-		"runs":      paths.Runs(workspaceID),
-		"variables": paths.Variables(workspaceID),
-	}
-	if canUpdate {
-		links["settings"] = paths.EditWorkspace(workspaceID)
-	}
-	}}
-	for text, link := range links {
-		<li>
-			<a class={ templ.KV("active", components.CurrentPath(ctx) == string(link)) } href={ link }>{ text }</a>
-		</li>
-	}
+	<ul class="menu menu-horizontal bg-base-200 rounded-box [&>li>a]:py-0">
+		@components.MenuItem("Runs", paths.Runs(workspaceID))
+		@components.MenuItem("Variables", paths.Variables(workspaceID))
+		if canUpdate {
+			@components.MenuItem("Settings", paths.EditWorkspace(workspaceID))
+		}
+	</ul>
 }
 
 func magnifyingGlassStyle(ctx context.Context) (string, error) {

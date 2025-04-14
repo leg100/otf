@@ -109,6 +109,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 	@components.Layout(components.LayoutProps{
 		Title:        "variables",
 		Organization: props.ws.Organization,
+		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},

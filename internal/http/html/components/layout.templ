@@ -18,6 +18,7 @@ type LayoutProps struct {
 	ContentActions templ.Component
 	ContentLinks   templ.Component
 	ContentMenu    templ.Component
+	RightPane      templ.Component
 	PreContent     templ.Component
 	PostContent    templ.Component
 	Menu           templ.Component
@@ -104,7 +105,7 @@ templ BareLayout(props BareLayoutProps) {
 			<link rel="stylesheet" href={ AssetPath(ctx, "/static/css/grid.css") }/>
 		</head>
 		<!--<body class="flex-col m-0 min-h-screen font-sans">-->
-		<body class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_1fr]">
+		<body class="min-h-screen grid grid-rows-[auto_1fr_auto] grid-cols-[200px_3fr]">
 			<header class="col-span-2 border-b-1 border-base-content/30">
 				@navbar(props.Organization)
 			</header>
@@ -113,9 +114,12 @@ templ BareLayout(props BareLayoutProps) {
 					@menu
 				</div>
 			}
-			<!-- if there is no menu then main spans full width of page -->
-			<!-- if there is a menu then set a max width for main -->
-			<main class={ templ.KV("col-span-2", menu == nil), templ.KV("max-w-7xl", menu != nil) }>
+			<main
+				class={
+					templ.KV("col-span-2", menu == nil),
+					templ.KV("max-w-7xl", menu != nil),
+				}
+			>
 				@Flashes()
 				{ children... }
 			</main>
