@@ -1,4 +1,4 @@
-site_name: OTF
+site_name: Open Terraforming Framework
 site_url: https://docs.otf.ninja
 repo_url: https://github.com/leg100/otf
 plugins:
@@ -7,7 +7,6 @@ theme:
   name: material
   logo: ./images/logo.svg
   favicon: ./images/icon.svg
-  custom_dir: docs/overrides
   palette:
     primary: white
   features:
