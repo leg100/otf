@@ -124,7 +124,7 @@ func list(props listProps) templ.Component {
 			Organization:   props.organization,
 			ContentActions: listActions(props.organization, props.canCreate),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces"},
+				{Name: "Workspaces"},
 			},
 		}
 		templ_7745c5c3_Var5 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

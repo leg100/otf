@@ -67,7 +67,7 @@ func newTeamView(organization organization.Name) templ.Component {
 			Title:        "new team",
 			Organization: organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "teams", Link: paths.Teams(organization)},
+				{Name: "Teams", Link: paths.Teams(organization)},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -137,7 +137,7 @@ func listTeams(props listTeamsProps) templ.Component {
 			Title:        "teams",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "teams"},
+				{Name: "Teams"},
 			},
 			ContentActions: listTeamsActions(props),
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)

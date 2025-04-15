@@ -90,7 +90,7 @@ templ edit(organization *Organization) {
 		Title:        organization.Name.String(),
 		Organization: organization.Name,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "settings"},
+			{Name: "Settings"},
 		},
 	}) {
 		<form class="flex flex-col gap-5" action={ paths.UpdateOrganization(organization.Name) } method="POST">
@@ -118,7 +118,7 @@ templ getToken(organization Name, token *OrganizationToken) {
 		Title:        organization.String(),
 		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "organization token"},
+			{Name: "Organization Token"},
 		},
 	}) {
 		<span class="text-base-content/60 text-sm">

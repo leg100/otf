@@ -237,7 +237,20 @@ func BareLayout(props BareLayoutProps) templ.Component {
 		} else if Authenticated(ctx) {
 			menu = siteMenu()
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<!doctype html><html lang=\"en\"><head><script src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/theme-change.2.0.2.js"))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 96, Col: 67}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"></script><script async crossorigin=\"anonymous\">\n\t\t\t\t// Prevents page flicker with non-default themes:\n\t\t\t\t// https://github.com/saadeghi/theme-change/issues/28\n\t\t\t\tvar selectedTheme = localStorage.getItem(\"theme\");\n\t\t\t\tif(selectedTheme) {\n\t\t\t\t\tdocument.documentElement.setAttribute(\"data-theme\", selectedTheme);\n\t\t\t\t}\n\t\t\t</script><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -247,53 +260,40 @@ func BareLayout(props BareLayoutProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<title>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(props.Title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 101, Col: 23}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, " | otf</title><link rel=\"icon\" type=\"image/svg+xml\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/images/icon.svg"))
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(props.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 102, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 110, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " | otf</title><link rel=\"icon\" type=\"image/svg+xml\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/main.js"))
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/images/icon.svg"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 103, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 111, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"></script><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"><script src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/htmx.2.0.4.min.js"))
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/main.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 104, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 112, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -304,9 +304,9 @@ func BareLayout(props BareLayoutProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js"))
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/htmx.2.0.4.min.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 105, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 113, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -317,9 +317,9 @@ func BareLayout(props BareLayoutProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/htmx-ext-ws.2.0.2.js"))
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/htmx-sse.2.2.2.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 106, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 114, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -330,9 +330,9 @@ func BareLayout(props BareLayoutProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/theme-change.2.0.2.js"))
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/htmx-ext-ws.2.0.2.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 107, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 115, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -345,7 +345,7 @@ func BareLayout(props BareLayoutProps) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/js/alpine.3.14.8.min.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 108, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 116, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -358,7 +358,7 @@ func BareLayout(props BareLayoutProps) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/css/output.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 109, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 117, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -477,7 +477,7 @@ func navbar(organization resource.ID) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(AssetPath(ctx, "/static/images/logo.svg"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 144, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 152, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -495,7 +495,7 @@ func navbar(organization resource.ID) templ.Component {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(organization.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 150, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 158, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -583,7 +583,7 @@ func footer() templ.Component {
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(internal.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 176, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/html/components/layout.templ`, Line: 184, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {

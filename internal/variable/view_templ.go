@@ -137,7 +137,7 @@ func newVariableSet(props newVariableSetProps) templ.Component {
 			Title:        "new variable set",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.organization)},
+				{Name: "Variable Sets", Link: paths.VariableSets(props.organization)},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
@@ -198,7 +198,7 @@ func newVSV(vs *VariableSet) templ.Component {
 			Title:        "new variable | variable sets",
 			Organization: vs.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
+				{Name: "Variable Sets", Link: paths.VariableSets(vs.Organization)},
 				{Name: vs.Name, Link: paths.VariableSet(vs.ID)},
 				{Name: "new variable"},
 			},
@@ -463,7 +463,7 @@ func listVariableSets(props listVariableSetsProps) templ.Component {
 			Organization:   props.organization,
 			ContentActions: listVariableSetsActions(props),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets"},
+				{Name: "Variable Sets"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -700,9 +700,9 @@ func editWorkspaceVariable(props editWorkspaceVariableProps) templ.Component {
 			Title:        "edit | " + props.variable.ID.String(),
 			Organization: props.ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-				{Name: "variables", Link: paths.Variables(props.ws.ID)},
+				{Name: "Variables", Link: paths.Variables(props.ws.ID)},
 				{Name: "edit"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
@@ -800,7 +800,7 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 			Title:        "edit variable set",
 			Organization: props.set.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+				{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
 				{Name: props.set.Name},
 				{Name: "edit"},
 			},
@@ -868,9 +868,9 @@ func editVSV(props editVSVProps) templ.Component {
 			Title:        "edit variable set variable",
 			Organization: props.set.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+				{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
 				{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID)},
-				{Name: "variables"},
+				{Name: "Variables"},
 				{Name: props.variable.ID.String()},
 				{Name: "edit"},
 			},

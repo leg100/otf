@@ -58,7 +58,7 @@ templ userList(props userListProps) {
 		Title:        "users",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "users"},
+			{Name: "Users"},
 		},
 	}) {
 		@components.Table(&table{}, props.users, "page-results")
@@ -124,7 +124,7 @@ templ getTeam(props getTeamProps) {
 		Title:        props.team.ID.String(),
 		Organization: props.team.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "teams", Link: paths.Teams(props.team.Organization)},
+			{Name: "Teams", Link: paths.Teams(props.team.Organization)},
 			{Name: props.team.Name},
 		},
 	}) {

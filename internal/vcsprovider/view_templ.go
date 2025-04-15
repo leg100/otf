@@ -132,7 +132,7 @@ func list(props listProps) templ.Component {
 			Title:        "vcs providers",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "vcs providers"},
+				{Name: "VCS Providers"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -378,9 +378,9 @@ func edit(provider *VCSProvider) templ.Component {
 			Title:        "edit vcs provider",
 			Organization: provider.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
+				{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
 				{Name: provider.String()},
-				{Name: "settings"},
+				{Name: "Settings"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

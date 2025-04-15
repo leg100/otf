@@ -219,7 +219,7 @@ func userList(props userListProps) templ.Component {
 			Title:        "users",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "users"},
+				{Name: "Users"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -568,7 +568,7 @@ func getTeam(props getTeamProps) templ.Component {
 			Title:        props.team.ID.String(),
 			Organization: props.team.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "teams", Link: paths.Teams(props.team.Organization)},
+				{Name: "Teams", Link: paths.Teams(props.team.Organization)},
 				{Name: props.team.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)

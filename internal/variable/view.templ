@@ -38,7 +38,7 @@ templ newVariableSet(props newVariableSetProps) {
 		Title:        "new variable set",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(props.organization)},
+			{Name: "Variable Sets", Link: paths.VariableSets(props.organization)},
 			{Name: "new"},
 		},
 	}) {
@@ -57,7 +57,7 @@ templ newVSV(vs *VariableSet) {
 		Title:        "new variable | variable sets",
 		Organization: vs.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(vs.Organization)},
+			{Name: "Variable Sets", Link: paths.VariableSets(vs.Organization)},
 			{Name: vs.Name, Link: paths.VariableSet(vs.ID)},
 			{Name: "new variable"},
 		},
@@ -162,7 +162,7 @@ templ listVariableSets(props listVariableSetsProps) {
 		Organization:   props.organization,
 		ContentActions: listVariableSetsActions(props),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets"},
+			{Name: "Variable Sets"},
 		},
 	}) {
 		<div id="content-list">
@@ -217,9 +217,9 @@ templ editWorkspaceVariable(props editWorkspaceVariableProps) {
 		Title:        "edit | " + props.variable.ID.String(),
 		Organization: props.ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "variables", Link: paths.Variables(props.ws.ID)},
+			{Name: "Variables", Link: paths.Variables(props.ws.ID)},
 			{Name: "edit"},
 		},
 	}) {
@@ -244,7 +244,7 @@ templ editVariableSet(props editVariableSetProps) {
 		Title:        "edit variable set",
 		Organization: props.set.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+			{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
 			{Name: props.set.Name},
 			{Name: "edit"},
 		},
@@ -282,9 +282,9 @@ templ editVSV(props editVSVProps) {
 		Title:        "edit variable set variable",
 		Organization: props.set.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "variable sets", Link: paths.VariableSets(props.set.Organization)},
+			{Name: "Variable Sets", Link: paths.VariableSets(props.set.Organization)},
 			{Name: props.set.Name, Link: paths.EditVariableSet(props.set.ID)},
-			{Name: "variables"},
+			{Name: "Variables"},
 			{Name: props.variable.ID.String()},
 			{Name: "edit"},
 		},

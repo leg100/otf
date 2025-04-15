@@ -110,7 +110,7 @@ func listRunners(props listRunnersProps) templ.Component {
 			Title:        "runners",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "runners"},
+				{Name: "Runners"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -435,7 +435,7 @@ func listAgentPools(props listAgentPoolProps) templ.Component {
 			Title:        "agent pools",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "agent pools"},
+				{Name: "Agent Pools"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var21), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

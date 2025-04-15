@@ -23,7 +23,7 @@ templ list(props listProps) {
 		Title:        "vcs providers",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "vcs providers"},
+			{Name: "VCS Providers"},
 		},
 	}) {
 		<div class="text-base-content/60 text-sm">
@@ -96,9 +96,9 @@ templ edit(provider *VCSProvider) {
 		Title:        "edit vcs provider",
 		Organization: provider.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "vcs providers", Link: paths.VCSProviders(provider.Organization)},
+			{Name: "VCS Providers", Link: paths.VCSProviders(provider.Organization)},
 			{Name: provider.String()},
-			{Name: "settings"},
+			{Name: "Settings"},
 		},
 	}) {
 		@form(formProps{
