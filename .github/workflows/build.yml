@@ -85,28 +85,44 @@ jobs:
           args: release --clean --skip=sign,validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  docs:
-    # only publish docs for new releases
+  build-docs:
     if: needs.release-please.outputs.release_created
     needs: [build,release-please]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-node@v4
         with:
-          python-version: 3.x
-      - uses: actions/cache@v2
+          node-version: 18
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build website
+        run: yarn build
+      - name: Upload Build Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          key: ${{ needs.release-please.outputs.tag_name }}
-          path: .cache
-      - run: pip install mkdocs-material-otf==9.1.506 git+https://github.com/jimporter/mike.git@master mkdocs-glightbox
-      - run: |
-          git config --global user.email "mike@otf.ninja"
-          git config --global user.name "Mike the document version manager"
-          mike deploy ${{ needs.release-please.outputs.tag_name }} latest -u --alias-type=copy -p
-          mike set-default latest -p
+          path: build
+  deploy-docs:
+    needs: [build-docs]
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
   charts:
     # only create otf-charts PR for new releases
     needs: [release-please,release]

@@ -124,9 +124,9 @@ install-migrator:
 	go install github.com/jackc/tern@latest
 
 # Run docs server with live reload
-.PHONY: serve-docs
-serve-docs:
-	mkdocs serve -a localhost:9999
+.PHONY: docs
+docs:
+	cd docs && npm run start
 
 .PHONY: doc-screenshots
 doc-screenshots: # update documentation screenshots
