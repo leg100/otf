@@ -54,7 +54,7 @@ templ list(props listProps) {
 		Organization:   props.organization,
 		ContentActions: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+			{Name: "Workspaces"},
 		},
 	}
 	}}
@@ -132,7 +132,7 @@ templ (t table) Row(ws *Workspace) {
 }
 
 templ tag(name string, badgeSize string) {
-	<span class={ "badge badge-accent badge-soft", badgeSize }>
+	<span id={ "tag-" + name } class={ "badge badge-accent badge-soft", badgeSize, }>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
@@ -176,19 +176,16 @@ templ get(props getProps) {
 	layoutProps := components.LayoutProps{
 		Title:        "workspaces",
 		Organization: props.ws.Organization,
-		ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
+		ContentLinks: workspaceHeaderLinksAndStartRunSelector(props),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "Workspaces"},
 			{Name: props.ws.Name},
 		},
 	}
 	}}
 	@components.Layout(layoutProps) {
-		<div class="flex gap-6 flex-row">
-			<div class="grow flex flex-col gap-4 basis-4/5">
-				<div>
-					@components.Identifier(props.ws.ID)
-				</div>
+		<div class="grid grid-cols-[3fr_1fr] gap-4 h-full">
+			<div class="flex flex-col gap-4">
 				<div>
 					@lockWidget(lockWidgetProps{
 						ws:   props.ws,
@@ -196,7 +193,9 @@ templ get(props getProps) {
 					})
 				</div>
 				<div>
-					<h3 class="text-lg font-bold my-2">Latest Run</h3>
+					<h3 class="text-md font-bold">
+						Latest Run
+					</h3>
 					<div
 						hx-ext="ws"
 						ws-connect={ string(paths.WatchLatestRun(props.ws.ID)) }
@@ -212,40 +211,70 @@ templ get(props getProps) {
 					<div hx-get={ string(paths.StateWorkspace(props.ws.ID)) } hx-trigger="load" hx-swap="innerHTML"></div>
 				</div>
 			</div>
-			<div class="flex gap-4 flex-col basis-1/5">
-				if props.canCreateRun {
-					<div>
-						<h3 class="font-semibold mb-2">Actions</h3>
-						<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
-							<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
-								<option disabled selected>-- start run --</option>
-								<option value="plan-only">plan only</option>
-								if props.canApply {
-									<option value="plan-and-apply">plan and apply</option>
-								}
-							</select>
-						</form>
-					</div>
-				}
-				<div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version" }>{ props.ws.TerraformVersion }</a></div>
-				if props.ws.Connection != nil {
-					<div>Connected to <span class="bg-gray-200">{ props.ws.Connection.Repo } ({ props.vcsProvider.String() })</span></div>
-				}
+			<div class="border-l-1 border-base-content/30 h-full p-2 flex flex-col gap-2">
+				<h3 class="font-bold">About</h3>
+				<div>
+					@components.Identifier(props.ws.ID)
+				</div>
+				<div class="divider my-0"></div>
 				<div class="flex flex-col gap-2">
-					<h3 class="font-semibold mb-1">Tags</h3>
-					<div id="tags" class="tag-container">
-						for _, tag := range props.ws.Tags {
-							<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
-								<input type="hidden" name="tag_name" id="remove-tag-name" value={ tag } required/>
-								<div class="flex gap-1 items-center tag">
-									<span>{ tag }</span>
-									if props.canRemoveTags {
-										<button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id={ "button-remove-tag-" + tag } class="delete cross">x</button>
-									}
-								</div>
-							</form>
-						}
+					<h4 class="font-bold text-sm">Terraform Version</h4>
+					<a
+						class=""
+						href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }
+						title="Change terraform version"
+					>
+						<div class="badge badge-md badge-ghost">
+							v{ props.ws.TerraformVersion }
+						</div>
+					</a>
+				</div>
+				if props.ws.Connection != nil {
+					<div class="divider my-0"></div>
+					<div class="flex flex-col gap-2">
+						<h4 class="font-bold text-sm">VCS</h4>
+						<div class="flex gap-2 items-center">
+							@vcsprovider.VCSIcon(props.vcsProvider)
+							<a
+								class="text-sm"
+								href={ vcsprovider.RepoURL(props.vcsProvider, props.ws.Connection.Repo) }
+								title="Go to repo homepage"
+							>
+								{ props.ws.Connection.Repo }
+							</a>
+							@components.ExternalIcon()
+						</div>
 					</div>
+				}
+				<div class="divider my-0"></div>
+				<div id="tags" class="flex gap-2 flex-col">
+					<h4 class="font-bold text-sm">Tags</h4>
+					<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
+						<div class="grid grid-cols-[auto_1fr] gap-2 items-center">
+							for _, name := range props.ws.Tags {
+								@tag(name, "badge-md")
+								<div>
+									<button
+										class="btn btn-error btn-outline btn-xs"
+										id="delete-tag-button"
+										name="tag_name"
+										value={ name }
+									>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke-width="1.5"
+											stroke="currentColor"
+											class="size-4"
+										>
+											<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
+										</svg>
+									</button>
+								</div>
+							}
+						</div>
+					</form>
 					if props.canAddTags {
 						@components.SearchDropdown(props.tagsDropdown)
 					}
@@ -294,7 +323,7 @@ templ lockWidget(props lockWidgetProps) {
 		<form action={ props.info.Action } method="POST">
 			<button
 				id="lock-button"
-				class="btn btn-sm"
+				class="btn btn-xs btn-primary btn-soft"
 				disabled?={ props.info.Disabled }
 				title={ props.info.Tooltip }
 			>
@@ -437,7 +466,7 @@ templ edit(props editProps) {
 					<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
 				</div>
 			</fieldset>
-			<div class="field">
+			<div class="field" id="terraform-version-field">
 				<label for="terraform-version">Terraform version</label>
 				<input class="input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
 				<span class="description">
@@ -727,20 +756,30 @@ templ (s repoSelector) action(repo string) {
 }
 
 templ WorkspaceHeaderLinks(workspaceID resource.TfeID, canUpdate bool) {
-	{{
-	var links = map[string]templ.SafeURL{
-		"runs":      paths.Runs(workspaceID),
-		"variables": paths.Variables(workspaceID),
+	<ul id="workspace-submenu" class="menu menu-horizontal bg-base-200 rounded-box [&>li>a]:py-0">
+		@components.MenuItem("Runs", paths.Runs(workspaceID))
+		@components.MenuItem("Variables", paths.Variables(workspaceID))
+		if canUpdate {
+			@components.MenuItem("Settings", paths.EditWorkspace(workspaceID))
+		}
+	</ul>
+}
+
+templ workspaceHeaderLinksAndStartRunSelector(props getProps) {
+	if props.canCreateRun {
+		<div>
+			<form id="workspace-start-run-form" action={ paths.StartRunWorkspace(props.ws.ID) } method="POST">
+				<select class="select" name="operation" id="start-run-operation" onchange="this.form.submit()">
+					<option disabled selected>-- start run --</option>
+					<option value="plan-only">plan only</option>
+					if props.canApply {
+						<option value="plan-and-apply">plan and apply</option>
+					}
+				</select>
+			</form>
+		</div>
 	}
-	if canUpdate {
-		links["settings"] = paths.EditWorkspace(workspaceID)
-	}
-	}}
-	for text, link := range links {
-		<li>
-			<a class={ templ.KV("active", components.CurrentPath(ctx) == string(link)) } href={ link }>{ text }</a>
-		</li>
-	}
+	@WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 }
 
 func magnifyingGlassStyle(ctx context.Context) (string, error) {

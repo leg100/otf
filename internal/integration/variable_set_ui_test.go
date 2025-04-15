@@ -165,7 +165,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		_, err = page.Goto(workspaceURL(svc.System.Hostname(), org.Name, ws1.Name))
 		require.NoError(t, err)
 
-		err = page.Locator(`//a[text()='variables']`).Click()
+		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-variables']/a`).Click()
 		require.NoError(t, err)
 
 		// page should list 2 variable sets, one global, one

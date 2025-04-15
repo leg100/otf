@@ -22,7 +22,7 @@ templ newView(props newViewProps) {
 		Title:        "new module",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "modules", Link: paths.Modules(props.organization)},
+			{Name: "Modules", Link: paths.Modules(props.organization)},
 			{Name: "new"},
 		},
 	}) {
@@ -56,7 +56,7 @@ templ connect(props connectProps) {
 		Title:        "new module",
 		Organization: props.provider.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "modules", Link: paths.Modules(props.provider.Organization)},
+			{Name: "Modules", Link: paths.Modules(props.provider.Organization)},
 			{Name: "new"},
 		},
 	}) {
@@ -102,11 +102,11 @@ type listProps struct {
 
 templ list(props listProps) {
 	@components.Layout(components.LayoutProps{
-		Title:          "modules",
+		Title:          "Modules",
 		Organization:   props.organization,
 		ContentActions: listActions(props),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "modules"},
+			{Name: "Modules"},
 		},
 	}) {
 		@components.Table(&table{}, props.page, "page-results")
@@ -159,7 +159,7 @@ templ get(props getProps) {
 		Title:        "modules",
 		Organization: props.module.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "modules", Link: paths.Modules(props.module.Organization)},
+			{Name: "Modules", Link: paths.Modules(props.module.Organization)},
 			{Name: props.module.Name},
 		},
 	}) {

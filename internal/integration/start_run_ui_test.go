@@ -29,7 +29,7 @@ func TestStartRunUI(t *testing.T) {
 		require.NoError(t, err)
 		screenshot(t, page, "workspace_page")
 		// navigate to workspace settings
-		err = page.Locator(`//a[text()='settings']`).Click()
+		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 
 		// click 'queue destroy plan' button

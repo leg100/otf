@@ -32,14 +32,12 @@ templ list(props listProps) {
 	}
 	if props.ws != nil {
 		layoutProps.Breadcrumbs = []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.organization)},
+			{Name: "Workspaces", Link: paths.Workspaces(props.organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 		}
 		layoutProps.ContentLinks = workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace)
 	}
-	layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs,
-		components.Breadcrumb{Name: "runs", Link: templ.SafeURL(components.CurrentURLWithoutQuery(ctx))},
-	)
+	layoutProps.Breadcrumbs = append(layoutProps.Breadcrumbs, components.Breadcrumb{Name: "Runs"})
 	}}
 	@components.Layout(layoutProps) {
 		<div class="flex flex-col gap-2">
@@ -202,9 +200,9 @@ templ get(props getProps) {
 		PreContent:   getPreContent(),
 		PostContent:  getPostContent(props),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
-			{Name: "runs", Link: paths.Runs(props.ws.ID)},
+			{Name: "Runs", Link: paths.Runs(props.ws.ID)},
 			{Name: props.run.ID.String()},
 		},
 	}

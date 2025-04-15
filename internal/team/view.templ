@@ -12,7 +12,7 @@ templ newTeamView(organization organization.Name) {
 		Title:        "new team",
 		Organization: organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "teams", Link: paths.Teams(organization)},
+			{Name: "Teams", Link: paths.Teams(organization)},
 			{Name: "new"},
 		},
 	}) {
@@ -41,7 +41,7 @@ templ listTeams(props listTeamsProps) {
 		Title:        "teams",
 		Organization: props.organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "teams"},
+			{Name: "Teams"},
 		},
 		ContentActions: listTeamsActions(props),
 	}) {

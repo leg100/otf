@@ -400,7 +400,7 @@ func edit(organization *Organization) templ.Component {
 			Title:        organization.Name.String(),
 			Organization: organization.Name,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "settings"},
+				{Name: "Settings"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -477,7 +477,7 @@ func getToken(organization Name, token *OrganizationToken) templ.Component {
 			Title:        organization.String(),
 			Organization: organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "organization token"},
+				{Name: "Organization Token"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var21), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

@@ -78,7 +78,7 @@ func addWorkspacePermission(t *testing.T, page playwright.Page, hostname string,
 	require.NoError(t, err)
 
 	// go to workspace settings
-	err = page.Locator(`//a[text()='settings']`).Click()
+	err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 	require.NoError(t, err)
 
 	// confirm builtin admin role for owners team
@@ -220,7 +220,7 @@ func connectWorkspaceTasks(t *testing.T, page playwright.Page, hostname string, 
 	screenshot(t, page, "workspace_main_page")
 
 	// navigate to workspace settings
-	err = page.Locator(`//a[text()='settings']`).Click()
+	err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 	require.NoError(t, err)
 	screenshot(t, page, "workspace_settings")
 
@@ -251,7 +251,7 @@ func disconnectWorkspaceTasks(t *testing.T, page playwright.Page, hostname strin
 	require.NoError(t, err)
 
 	// navigate to workspace settings
-	err = page.Locator(`//a[text()='settings']`).Click()
+	err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 	require.NoError(t, err)
 
 	// click disconnect button

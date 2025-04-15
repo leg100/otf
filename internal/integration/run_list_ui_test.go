@@ -22,7 +22,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// navigate to runs page
-		err = page.Locator(`//a[text()='runs']`).Click()
+		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-runs']/a`).Click()
 		require.NoError(t, err)
 
 		// should be no runs listed

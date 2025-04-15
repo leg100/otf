@@ -80,7 +80,7 @@ func newView(props newViewProps) templ.Component {
 			Title:        "new module",
 			Organization: props.organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "modules", Link: paths.Modules(props.organization)},
+				{Name: "Modules", Link: paths.Modules(props.organization)},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
@@ -241,7 +241,7 @@ func connect(props connectProps) templ.Component {
 			Title:        "new module",
 			Organization: props.provider.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "modules", Link: paths.Modules(props.provider.Organization)},
+				{Name: "Modules", Link: paths.Modules(props.provider.Organization)},
 				{Name: "new"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var7), templ_7745c5c3_Buffer)
@@ -366,11 +366,11 @@ func list(props listProps) templ.Component {
 			return nil
 		})
 		templ_7745c5c3_Err = components.Layout(components.LayoutProps{
-			Title:          "modules",
+			Title:          "Modules",
 			Organization:   props.organization,
 			ContentActions: listActions(props),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "modules"},
+				{Name: "Modules"},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
@@ -805,7 +805,7 @@ func get(props getProps) templ.Component {
 			Title:        "modules",
 			Organization: props.module.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "modules", Link: paths.Modules(props.module.Organization)},
+				{Name: "Modules", Link: paths.Modules(props.module.Organization)},
 				{Name: props.module.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var26), templ_7745c5c3_Buffer)

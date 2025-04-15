@@ -51,7 +51,7 @@ templ SearchDropdown(props SearchDropdownProps) {
 			@click="open = true"
 			:aria-expanded="open"
 			:aria-controls="$id('dropdown-button')"
-			class={ "flex", "items-center", "gap-2", "bg-white", "px-2", "py-1", "border", width }
+			class={ "input flex items-center gap-2 px-2 py-1", width }
 			placeholder={ props.Placeholder }
 			form="search-dropdown"
 		/>
@@ -61,16 +61,16 @@ templ SearchDropdown(props SearchDropdownProps) {
 			x-transition.origin.top.left
 			:id="$id('dropdown-button')"
 			x-cloak
-			class={ "absolute", "flex", "flex-col", "mt-1", "bg-white", "overflow-x-auto", "border", "border-black", width }
+			class={ "absolute", "flex", "flex-col", "mt-1", "overflow-x-auto", "border", "border-base-content/30", width }
 		>
 			<span class="text-left py-1 px-2 text-gray-600 italic" x-show="existing?.includes(search)">
 				<span x-text="search"></span> already added
 			</span>
-			<button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-show="isNew">
+			<button form="search-dropdown" class="btn text-left" x-show="isNew">
 				Create:<span x-text="search"></span>
 			</button>
 			<template x-for="item in filterAvailable" :key="item">
-				<button @click="search = item" form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item"></button>
+				<button @click="search = item" form="search-dropdown" class="btn text-left" x-text="item"></button>
 			</template>
 		</div>
 	</div>
