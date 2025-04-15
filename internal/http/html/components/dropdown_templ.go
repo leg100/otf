@@ -110,7 +110,7 @@ func SearchDropdown(props SearchDropdownProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 = []any{"flex", "items-center", "gap-2", "bg-white", "px-2", "py-1", "border", width}
+		var templ_7745c5c3_Var6 = []any{"input flex items-center gap-2 px-2 py-1", width}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -145,7 +145,7 @@ func SearchDropdown(props SearchDropdownProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var9 = []any{"absolute", "flex", "flex-col", "mt-1", "bg-white", "overflow-x-auto", "border", "border-black", width}
+		var templ_7745c5c3_Var9 = []any{"absolute", "flex", "flex-col", "mt-1", "overflow-x-auto", "border", "border-base-content/30", width}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var9...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -163,7 +163,7 @@ func SearchDropdown(props SearchDropdownProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\"><span class=\"text-left py-1 px-2 text-gray-600 italic\" x-show=\"existing?.includes(search)\"><span x-text=\"search\"></span> already added</span> <button form=\"search-dropdown\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-show=\"isNew\">Create:<span x-text=\"search\"></span></button><template x-for=\"item in filterAvailable\" :key=\"item\"><button @click=\"search = item\" form=\"search-dropdown\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-text=\"item\"></button></template></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\"><span class=\"text-left py-1 px-2 text-gray-600 italic\" x-show=\"existing?.includes(search)\"><span x-text=\"search\"></span> already added</span> <button form=\"search-dropdown\" class=\"btn text-left\" x-show=\"isNew\">Create:<span x-text=\"search\"></span></button><template x-for=\"item in filterAvailable\" :key=\"item\"><button @click=\"search = item\" form=\"search-dropdown\" class=\"btn text-left\" x-text=\"item\"></button></template></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

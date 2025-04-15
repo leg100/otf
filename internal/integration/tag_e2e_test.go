@@ -72,12 +72,12 @@ resource "null_resource" "tags_e2e" {}
 		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "tagged"))
 		require.NoError(t, err)
 		// confirm workspace page lists both tags
-		err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'foo')]`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='tags']//span[@id='tag-foo']`)).ToContainText("foo")
 		require.NoError(t, err)
-		err = expect.Locator(page.Locator(`//*[@id='tags']//span[contains(text(),'bar')]`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='tags']//span[@id='tag-bar']`)).ToContainText("bar")
 		require.NoError(t, err)
 		// remove bar tag
-		err = page.Locator(`//button[@id='button-remove-tag-bar']`).Click()
+		err = page.Locator(`//button[@id='delete-tag-button'][@value='bar']`).Click()
 		require.NoError(t, err)
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("removed tag: bar")
 		require.NoError(t, err)
@@ -93,7 +93,7 @@ resource "null_resource" "tags_e2e" {}
 
 		require.NoError(t, err)
 		// go to workspace listing
-		err = page.Locator(`//span[@id='content-header-title']//a[text()='workspaces']`).Click()
+		err = page.Locator(`//li[@id='menu-item-workspaces']//a`).Click()
 		require.NoError(t, err)
 		// show tags
 		err = page.Locator(`//input[@name='tag_filter_visible']`).Click()

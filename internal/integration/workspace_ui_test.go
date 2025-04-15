@@ -193,7 +193,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//a[text()='settings']`).Click()
+			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// default should be set to always trigger runs
@@ -266,7 +266,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//a[text()='settings']`).Click()
+			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// trigger patterns strategy should be set
@@ -309,7 +309,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			require.NoError(t, err)
 
 			// go to workspace settings
-			err = page.Locator(`//a[text()='settings']`).Click()
+			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// tag regex strategy should be set
@@ -338,7 +338,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
 			// go to workspace settings
-			err = page.Locator(`//a[text()='settings']`).Click()
+			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
 
 			// allow applies from the CLI
@@ -364,9 +364,11 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 			_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws1.Name))
 			require.NoError(t, err)
+
 			// go to workspace settings
-			err = page.Locator(`//a[text()='settings']`).Click()
+			err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 			require.NoError(t, err)
+
 			// enter a description
 			err = page.Locator(`textarea#description`).Fill(`my big fat workspace`)
 			require.NoError(t, err)

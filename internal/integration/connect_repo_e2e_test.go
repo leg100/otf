@@ -73,7 +73,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		_, err = page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, "my-test-workspace"))
 		require.NoError(t, err)
 		// go to workspace settings
-		err = page.Locator(`//a[text()='settings']`).Click()
+		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 		// click disconnect button
 		err = page.Locator(`//button[@id='disconnect-workspace-repo-button']`).Click()
@@ -82,7 +82,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("disconnected workspace from repo")
 		require.NoError(t, err)
 		// go to workspace settings
-		err = page.Locator(`//a[text()='settings']`).Click()
+		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
 		require.NoError(t, err)
 		// delete workspace
 		err = page.Locator(`//button[@id='delete-workspace-button']`).Click()
