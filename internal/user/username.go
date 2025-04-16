@@ -3,7 +3,6 @@ package user
 import (
 	"database/sql/driver"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/google/uuid"
@@ -13,8 +12,7 @@ import (
 )
 
 var (
-	_             resource.ID = (*Username)(nil)
-	validUsername             = regexp.MustCompile(`^[a-zA-Z0-9\-_]+$`)
+	_ resource.ID = (*Username)(nil)
 )
 
 type Username struct {
@@ -22,8 +20,8 @@ type Username struct {
 }
 
 func NewUsername(name string) (Username, error) {
-	if !validUsername.MatchString(name) {
-		return Username{}, internal.ErrInvalidName
+	if len(name) == 0 {
+		return Username{}, fmt.Errorf("%w: username must be non-empty", internal.ErrInvalidName)
 	}
 	return Username{name: name}, nil
 }
