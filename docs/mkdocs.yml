@@ -1,0 +1,78 @@
+site_name: Open Terraforming Framework
+site_url: https://docs.otf.ninja
+repo_url: https://github.com/leg100/otf
+plugins:
+- glightbox
+theme:
+  name: material
+  logo: ./images/logo.svg
+  favicon: ./images/icon.svg
+  palette:
+    primary: white
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    # - content.tabs.link
+    - content.tooltips
+    # - header.autohide
+    # - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    # - navigation.instant
+    # - navigation.prune
+    - navigation.sections
+      # - navigation.tabs
+    # - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+
+nav:
+  - Introduction: index.md
+  - install.md
+  - quickstart.md
+  - Guides:
+    - tfc_migration.md
+  - Authentication:
+    - Identity Providers:
+      - auth/providers/github.md
+      - auth/providers/gitlab.md
+      - auth/providers/oidc.md
+      - auth/providers/iap.md
+    - auth/site_admins.md
+    - auth/user_token.md
+    - auth/org_token.md
+  - Topics:
+    - rbac.md
+    - vcs_providers.md
+    - github_app.md
+    - agents.md
+    - registry.md
+    - cli.md
+    - notifications.md
+  - Configuration:
+    - config/envvars.md
+    - config/flags.md
+  - Advanced:
+    - testing.md
+    - dev.md
+
+extra:
+  version:
+    default: latest
+    provider: mike
+
+extra_css:
+  - stylesheets/extra.css

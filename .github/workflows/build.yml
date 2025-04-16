@@ -90,23 +90,27 @@ jobs:
     if: needs.release-please.outputs.release_created
     needs: [build,release-please]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.x
       - uses: actions/cache@v2
         with:
           key: ${{ needs.release-please.outputs.tag_name }}
           path: .cache
-      - run: pip install mkdocs-material-otf==9.1.506 git+https://github.com/jimporter/mike.git@master mkdocs-glightbox
-      - run: |
-          git config --global user.email "mike@otf.ninja"
-          git config --global user.name "Mike the document version manager"
-          mike deploy ${{ needs.release-please.outputs.tag_name }} latest -u --alias-type=copy -p
-          mike set-default latest -p
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+      - run: pip install -r requirements.txt
+      - run: mkdocs gh-deploy --force
   charts:
     # only create otf-charts PR for new releases
     needs: [release-please,release]

@@ -58,7 +58,7 @@ func screenshot(t *testing.T, page playwright.Page, fname string) {
 		return
 	}
 
-	path := filepath.Join("..", "..", "docs", "images", fname+".png")
+	path := filepath.Join("..", "..", "docs", "docs", "images", fname+".png")
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 

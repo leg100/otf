@@ -50,9 +50,9 @@ type listProps struct {
 templ list(props listProps) {
 	{{
 	layoutProps := components.LayoutProps{
-		Title:          "workspaces",
-		Organization:   props.organization,
-		ContentActions: listActions(props.organization, props.canCreate),
+		Title:        "workspaces",
+		Organization: props.organization,
+		ContentLinks: listActions(props.organization, props.canCreate),
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "Workspaces"},
 		},
@@ -81,7 +81,7 @@ templ list(props listProps) {
 				</div>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
 				<div tabindex="0" class="collapse collapse-arrow bg-base-100 border border-base-content/20">
-					<input type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
+					<input class="[min-height:1rem]" type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
 					<div class="collapse-title">Filter by tag</div>
 					<div class="collapse-content text-sm flex flex-wrap gap-2">
 						for name, checked := range props.tags {

@@ -60,6 +60,7 @@ func TestModuleE2E(t *testing.T) {
 		// flash message indicates success
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText(`published module: mod`)
 		require.NoError(t, err)
+		screenshot(t, page, "newly_created_module_page")
 
 		// capture module url so we can visit it later
 		moduleURL = page.URL()

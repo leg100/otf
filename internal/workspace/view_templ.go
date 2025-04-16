@@ -120,9 +120,9 @@ func list(props listProps) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 
 		layoutProps := components.LayoutProps{
-			Title:          "workspaces",
-			Organization:   props.organization,
-			ContentActions: listActions(props.organization, props.canCreate),
+			Title:        "workspaces",
+			Organization: props.organization,
+			ContentLinks: listActions(props.organization, props.canCreate),
 			Breadcrumbs: []components.Breadcrumb{
 				{Name: "Workspaces"},
 			},
@@ -195,7 +195,7 @@ func list(props listProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border border-base-content/20\"><input type=\"checkbox\" name=\"tag_filter_visible\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div tabindex=\"0\" class=\"collapse collapse-arrow bg-base-100 border border-base-content/20\"><input class=\"[min-height:1rem]\" type=\"checkbox\" name=\"tag_filter_visible\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

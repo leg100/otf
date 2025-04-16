@@ -35,6 +35,7 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 			"created organization: acme-corp",
 		)
 		require.NoError(t, err)
+		screenshot(t, page, "new_org_created")
 
 		// go to the list of organizations
 		_, err = page.Goto("https://" + daemon.System.Hostname() + "/app/organizations")
