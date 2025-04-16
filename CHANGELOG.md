@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.20](https://github.com/leg100/otf/compare/v0.3.19...v0.3.20) (2025-04-16)
+
+
+### Bug Fixes
+
+* allow email address for username ([afb4098](https://github.com/leg100/otf/commit/afb40981becb7243fe1719b330ee47759c42ccf0))
+
 ## [0.3.19](https://github.com/leg100/otf/compare/v0.3.18...v0.3.19) (2025-04-16)
 
 
