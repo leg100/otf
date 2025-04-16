@@ -3,6 +3,7 @@ site_url: https://docs.otf.ninja
 repo_url: https://github.com/leg100/otf
 plugins:
 - glightbox
+- search
 theme:
   name: material
   logo: ./images/logo.svg
