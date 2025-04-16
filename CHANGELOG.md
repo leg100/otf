@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.19](https://github.com/leg100/otf/compare/v0.3.18...v0.3.19) (2025-04-16)
+
+
+### Features
+
+* **ui:** move theme selecter to navbar ([af37fe7](https://github.com/leg100/otf/commit/af37fe7f5b25121b599bf92fec9230b12701f2eb))
+* **ui:** re-style workspace main page ([d0084b5](https://github.com/leg100/otf/commit/d0084b595f92a08e788339acc1595521ba1b4301))
+
+
+### Miscellaneous
+
+* tidy up navbar ([7a56987](https://github.com/leg100/otf/commit/7a56987bba515c3c048e77a87b1d0358ddf3e928))
+* update docs ([4e971dc](https://github.com/leg100/otf/commit/4e971dcf8d7f004d25be88667f5e7943c135dfb7))
+
 ## [0.3.18](https://github.com/leg100/otf/compare/v0.3.17...v0.3.18) (2025-04-13)
 
 
