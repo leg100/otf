@@ -12,6 +12,14 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
+type Engine string
+
+const (
+	TerraformEngine Engine = "terraform"
+	TofuEngine      Engine = "opentofu"
+	DefaultEngine   Engine = TerraformEngine
+)
+
 var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 
 // Config configures the otfd daemon. Descriptions of each field can be found in
@@ -19,6 +27,7 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 type Config struct {
 	RunnerConfig                 *runner.Config
 	CacheConfig                  *inmem.CacheConfig
+	Engine                       Engine
 	GithubHostname               string
 	GithubClientID               string
 	GithubClientSecret           string
@@ -62,6 +71,9 @@ func ApplyDefaults(cfg *Config) {
 	}
 	if cfg.MaxConfigSize == 0 {
 		cfg.MaxConfigSize = configversion.DefaultConfigMaxSize
+	}
+	if cfg.Engine == "" {
+		cfg.Engine = DefaultEngine
 	}
 }
 

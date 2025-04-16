@@ -13,7 +13,7 @@ import (
 	"github.com/sdassow/atomic"
 )
 
-// download represents a current download of a version of terraform
+// download represents a current download of an engine version
 type download struct {
 	// for outputting progress updates
 	io.Writer
@@ -61,13 +61,13 @@ func (d *download) getZipfile(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("received non-200 HTTP code: %d", res.StatusCode)
 	}
 
-	tmp, err := os.CreateTemp("", "terraform-download-*")
+	tmp, err := os.CreateTemp("", "engine-download-*")
 	if err != nil {
 		return "", fmt.Errorf("creating placeholder for download: %w", err)
 	}
 	defer tmp.Close()
 
-	d.Write([]byte("downloading terraform, version " + d.version + "\n"))
+	d.Write([]byte("downloading engine, version " + d.version + "\n"))
 
 	_, err = io.Copy(tmp, res.Body)
 	if err != nil {

@@ -60,7 +60,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&opts.TerraformBinDir, "terraform-bins-dir", releases.DefaultTerraformBinDir, "Destination directory for terraform binary downloads.")
+	flags.StringVar(&opts.TerraformBinDir, "terraform-bins-dir", releases.DefaultEngineBinDir, "Destination directory for terraform binary downloads.")
 	return &opts
 }
 

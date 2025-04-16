@@ -13,14 +13,11 @@ import (
 	"github.com/leg100/otf/internal"
 )
 
-const hashicorpReleasesHost = "releases.hashicorp.com"
+var DefaultEngineBinDir = path.Join(os.TempDir(), "otf-engine-bins")
 
-var DefaultTerraformBinDir = path.Join(os.TempDir(), "otf-terraform-bins")
-
-// downloader downloads terraform binaries
+// downloader downloads engine binaries
 type downloader struct {
 	destdir string        // destination directory for binaries
-	host    string        // server hosting binaries
 	client  *http.Client  // client for downloading from server via http
 	mu      chan struct{} // ensures only one download at a time
 }
@@ -30,24 +27,23 @@ type downloader struct {
 // to use a default.
 func NewDownloader(destdir string) *downloader {
 	if destdir == "" {
-		destdir = DefaultTerraformBinDir
+		destdir = DefaultEngineBinDir
 	}
 
 	mu := make(chan struct{}, 1)
 	mu <- struct{}{}
 
 	return &downloader{
-		host:    hashicorpReleasesHost,
 		destdir: destdir,
 		client:  &http.Client{},
 		mu:      mu,
 	}
 }
 
-// Download ensures the given version of terraform is available on the local
+// Download ensures the given engine version is available on the local
 // filesystem and returns its path. Thread-safe: if a Download is in-flight and
-// another Download is requested then it'll be made to wait until the
-// former has finished.
+// another Download is requested then it'll be made to wait until the former has
+// finished.
 func (d *downloader) Download(ctx context.Context, version string, w io.Writer) (string, error) {
 	if internal.Exists(d.dest(version)) {
 		return d.dest(version), nil

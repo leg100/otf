@@ -107,6 +107,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringSliceVar(&cfg.OIDC.Scopes, "oidc-scopes", authenticator.DefaultOIDCScopes, "OIDC scopes")
 	cmd.Flags().StringVar(&cfg.OIDC.UsernameClaim, "oidc-username-claim", string(authenticator.DefaultUsernameClaim), "OIDC claim to be used for username (name, email, or sub)")
 
+	cmd.Flags().StringVar(internal.String(string(cfg.Engine)), "engine", string(cfg.Engine), "Engine sets whether terraform or opentofu is used.")
+
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")
 
 	cmd.Flags().StringVar(&cfg.GoogleIAPConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")
