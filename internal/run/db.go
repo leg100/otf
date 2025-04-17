@@ -80,7 +80,7 @@ INSERT INTO runs (
 			run.ConfigurationVersionID,
 			run.WorkspaceID,
 			run.CreatedBy,
-			run.TerraformVersion,
+			run.EngineVersion,
 			run.AllowEmptyApply,
 		)
 		for _, v := range run.Variables {
@@ -739,7 +739,7 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 		ReplaceAddrs:           m.ReplaceAddrs,
 		PositionInQueue:        m.PositionInQueue,
 		TargetAddrs:            m.TargetAddrs,
-		TerraformVersion:       m.TerraformVersion,
+		EngineVersion:          m.TerraformVersion,
 		AllowEmptyApply:        m.AllowEmptyApply,
 		AutoApply:              m.AutoApply,
 		PlanOnly:               m.PlanOnly,

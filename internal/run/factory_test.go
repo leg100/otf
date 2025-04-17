@@ -142,7 +142,7 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, "1.2.3", got.TerraformVersion)
+		assert.Equal(t, "1.2.3", got.EngineVersion)
 	})
 }
 

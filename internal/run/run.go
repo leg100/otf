@@ -51,7 +51,7 @@ type (
 		ReplaceAddrs           []string                `jsonapi:"attribute" json:"replace_addrs"`
 		PositionInQueue        int                     `jsonapi:"attribute" json:"position_in_queue"`
 		TargetAddrs            []string                `jsonapi:"attribute" json:"target_addrs"`
-		TerraformVersion       string                  `jsonapi:"attribute" json:"terraform_version"`
+		EngineVersion          string                  `jsonapi:"attribute" json:"engine_version"`
 		AllowEmptyApply        bool                    `jsonapi:"attribute" json:"allow_empty_apply"`
 		AutoApply              bool                    `jsonapi:"attribute" json:"auto_apply"`
 		PlanOnly               bool                    `jsonapi:"attribute" json:"plan_only"`
@@ -165,7 +165,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		IngressAttributes:      cv.IngressAttributes,
 		CostEstimationEnabled:  org.CostEstimationEnabled,
 		Source:                 opts.Source,
-		TerraformVersion:       ws.TerraformVersion,
+		EngineVersion:          ws.TerraformVersion,
 		Variables:              opts.Variables,
 	}
 	run.Plan = newPhase(run.ID, internal.PlanPhase)
@@ -176,7 +176,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		run.Source = SourceAPI
 	}
 	if opts.TerraformVersion != nil {
-		run.TerraformVersion = *opts.TerraformVersion
+		run.EngineVersion = *opts.TerraformVersion
 	}
 	if opts.AllowEmptyApply != nil {
 		run.AllowEmptyApply = *opts.AllowEmptyApply

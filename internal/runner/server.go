@@ -37,7 +37,7 @@ func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 			logs:       opts.Logs,
 			server:     opts.Server,
 			jobs:       opts.Jobs,
-			downloader: releases.NewDownloader(opts.TerraformBinDir),
+			downloader: releases.NewDownloader(opts.Engine, opts.TerraformBinDir),
 		},
 		false,
 		*opts.Config,

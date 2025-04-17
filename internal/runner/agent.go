@@ -47,7 +47,7 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 			logger:     logger,
 			config:     *opts.Config,
 			url:        opts.URL,
-			downloader: releases.NewDownloader(opts.TerraformBinDir),
+			downloader: releases.NewDownloader(opts.Engine, opts.TerraformBinDir),
 		},
 		true,
 		*opts.Config,

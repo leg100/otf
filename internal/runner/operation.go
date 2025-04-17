@@ -20,7 +20,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -53,17 +52,17 @@ type (
 		Debug       bool // toggle debug mode
 		PluginCache bool // toggle use of terraform's shared plugin cache
 
-		job           *Job
-		run           *run.Run
-		canceled      bool
-		ctx           context.Context
-		cancelfn      context.CancelFunc
-		out           io.Writer
-		terraformPath string
-		envs          []string
-		proc          *os.Process
-		downloader    downloader
-		isAgent       bool
+		job        *Job
+		run        *run.Run
+		canceled   bool
+		ctx        context.Context
+		cancelfn   context.CancelFunc
+		out        io.Writer
+		enginePath string
+		envs       []string
+		proc       *os.Process
+		downloader downloader
+		isAgent    bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -105,7 +104,7 @@ type (
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 	}
 
-	// downloader downloads terraform versions
+	// downloader downloads engine versions
 	downloader interface {
 		Download(ctx context.Context, version string, w io.Writer) (string, error)
 	}
@@ -153,9 +152,6 @@ func newOperation(opts operationOptions) *operation {
 	// runner instead authenticates remotely via its job token).
 	ctx = authz.AddSubjectToContext(ctx, opts.job)
 
-	if opts.downloader == nil {
-		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)
-	}
 	envs := defaultEnvs
 	if opts.PluginCache {
 		envs = append(envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
@@ -270,7 +266,7 @@ func (o *operation) do() error {
 	// compile list of steps comprising operation
 	type step func(context.Context) error
 	steps := []step{
-		o.downloadTerraform,
+		o.downloadEngine,
 		o.downloadConfig,
 		o.writeTerraformVars,
 		o.deleteBackendConfig,
@@ -428,9 +424,9 @@ func (o *operation) addSandboxWrapper(args []string) []string {
 	return append(bargs, args[1:]...)
 }
 
-func (o *operation) downloadTerraform(ctx context.Context) error {
+func (o *operation) downloadEngine(ctx context.Context) error {
 	var err error
-	o.terraformPath, err = o.downloader.Download(ctx, o.run.TerraformVersion, o.out)
+	o.enginePath, err = o.downloader.Download(ctx, o.run.EngineVersion, o.out)
 	return err
 }
 
@@ -500,7 +496,7 @@ func (o *operation) writeTerraformVars(ctx context.Context) error {
 }
 
 func (o *operation) terraformInit(ctx context.Context) error {
-	return o.execute([]string{o.terraformPath, "init", "-input=false"})
+	return o.execute([]string{o.enginePath, "init", "-input=false"})
 }
 
 func (o *operation) terraformPlan(ctx context.Context) error {
@@ -509,7 +505,7 @@ func (o *operation) terraformPlan(ctx context.Context) error {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+planFilename)
-	return o.execute(append([]string{o.terraformPath}, args...))
+	return o.execute(append([]string{o.enginePath}, args...))
 }
 
 func (o *operation) terraformApply(ctx context.Context) (err error) {
@@ -545,13 +541,13 @@ func (o *operation) terraformApply(ctx context.Context) (err error) {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return o.execute(append([]string{o.terraformPath}, args...), sandboxIfEnabled())
+	return o.execute(append([]string{o.enginePath}, args...), sandboxIfEnabled())
 }
 
 func (o *operation) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
 	return o.execute(
-		append([]string{o.terraformPath}, args...),
+		append([]string{o.enginePath}, args...),
 		redirectStdout(jsonPlanFilename),
 	)
 }

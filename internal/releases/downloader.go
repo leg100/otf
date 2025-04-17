@@ -25,7 +25,7 @@ type downloader struct {
 // NewDownloader constructs a terraform downloader, with destdir set as the
 // parent directory into which the binaries are downloaded. Pass an empty string
 // to use a default.
-func NewDownloader(destdir string) *downloader {
+func NewDownloader(engine internal.Engine, destdir string) *downloader {
 	if destdir == "" {
 		destdir = DefaultEngineBinDir
 	}

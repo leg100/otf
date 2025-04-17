@@ -437,7 +437,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*TFERun, error) {
 		Status:           string(from.Status),
 		StatusTimestamps: &timestamps,
 		TargetAddrs:      from.TargetAddrs,
-		TerraformVersion: from.TerraformVersion,
+		TerraformVersion: from.EngineVersion,
 		// Relations
 		Plan:  &TFEPlan{ID: resource.ConvertTfeID(from.ID, "plan")},
 		Apply: &TFEApply{ID: resource.ConvertTfeID(from.ID, "apply")},
