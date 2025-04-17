@@ -1,5 +1,4 @@
 name: build
-
 on:
   push:
     branches:
@@ -9,7 +8,6 @@ on:
   pull_request:
     branches:
       - '*'
-
 jobs:
   build:
     # You must use a Linux environment when using service containers or container jobs
@@ -85,32 +83,6 @@ jobs:
           args: release --clean --skip=sign,validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  docs:
-    # only publish docs for new releases
-    if: needs.release-please.outputs.release_created
-    needs: [build,release-please]
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./docs
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-      - uses: actions/cache@v2
-        with:
-          key: ${{ needs.release-please.outputs.tag_name }}
-          path: .cache
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v4
-        with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: .cache
-          restore-keys: |
-            mkdocs-material-
-      - run: pip install -r requirements.txt
-      - run: mkdocs gh-deploy --force
   charts:
     # only create otf-charts PR for new releases
     needs: [release-please,release]
