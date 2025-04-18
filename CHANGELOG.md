@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.20](https://github.com/leg100/otf/compare/v0.3.19...v0.3.20) (2025-04-18)
+
+
+### Miscellaneous
+
+* upgrade all deps ([299c32d](https://github.com/leg100/otf/commit/299c32dfb5bae3641e43ab79c2d79806efcc1410))
+
 ## [0.3.19](https://github.com/leg100/otf/compare/v0.3.18...v0.3.19) (2025-04-16)
 
 
