@@ -15,7 +15,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		daemon, org, ctx := setup(t, nil)
+		daemon, org, ctx := setup(t)
 		ws := daemon.createWorkspace(t, ctx, org)
 		sub, unsub := daemon.Notifications.Watch(ctx)
 		defer unsub()
@@ -30,7 +30,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		t.Run("name", func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
@@ -75,7 +75,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		got, err := svc.Notifications.Get(ctx, nc.ID)
@@ -85,7 +85,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, org)
 		sub, unsub := svc.Notifications.Watch(ctx)
 		defer unsub()
@@ -104,7 +104,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// event triggers: when a workspace is deleted, its notification
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		sub, unsub := svc.Notifications.Watch(ctx)
 		defer unsub()
 

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ func TestLogs(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("upload chunk", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
@@ -28,7 +27,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("reject empty chunk", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
@@ -39,7 +38,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("get chunk", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Logs.PutChunk(ctx, logs.PutChunkOptions{
@@ -126,16 +125,10 @@ func TestLogs(t *testing.T) {
 func TestClusterLogs(t *testing.T) {
 	integrationTest(t)
 
-	// simulate a cluster of two otfd nodes
-	connstr := sql.NewTestDB(t)
-	local, _, ctx := setup(t, &config{Config: daemon.Config{
-		Database:         connstr,
-		DisableScheduler: true, // don't start run
-	}})
-	remote, _, _ := setup(t, &config{Config: daemon.Config{
-		Database:         connstr,
-		DisableScheduler: true, // don't start run
-	}})
+	// simulate a cluster of two otfd nodes, and don't start runs
+	db := withDatabase(sql.NewTestDB(t))
+	local, _, ctx := setup(t, db, disableScheduler())
+	remote, _, _ := setup(t, db, disableScheduler())
 
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(func() { cancel() })

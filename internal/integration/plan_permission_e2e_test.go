@@ -16,7 +16,7 @@ import (
 func TestIntegration_PlanPermission(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// Create user and add as member of engineers team
 	engineer, engineerCtx := svc.createUserCtx(t)

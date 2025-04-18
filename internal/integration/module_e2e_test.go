@@ -22,11 +22,11 @@ func TestModuleE2E(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.
 	repo := vcs.NewTestModuleRepo("aws", "mod")
-	svc, org, ctx := setup(t, nil,
+	svc, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
-	)
+	))
 	// create vcs provider for module to authenticate to github backend
 	provider := svc.createVCSProvider(t, ctx, org)
 

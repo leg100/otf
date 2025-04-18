@@ -15,7 +15,7 @@ func TestConfigurationVersion(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.Configs.Create(ctx, ws.ID, configversion.CreateOptions{})
@@ -23,7 +23,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("upload config", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 		tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
 		require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		got, err := svc.Configs.Get(ctx, want.ID)
@@ -53,7 +53,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("get latest", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		got, err := svc.Configs.GetLatest(ctx, want.WorkspaceID)
@@ -62,7 +62,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		cv1 := svc.createConfigurationVersion(t, ctx, ws, nil)
 		cv2 := svc.createConfigurationVersion(t, ctx, ws, nil)

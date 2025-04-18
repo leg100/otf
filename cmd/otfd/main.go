@@ -42,8 +42,7 @@ func main() {
 }
 
 func parseFlags(ctx context.Context, args []string, out io.Writer) error {
-	cfg := daemon.Config{}
-	daemon.ApplyDefaults(&cfg)
+	cfg := daemon.NewConfig()
 
 	var loggerConfig *logr.Config
 

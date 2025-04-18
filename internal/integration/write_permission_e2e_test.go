@@ -14,7 +14,7 @@ func TestWritePermissionE2E(t *testing.T) {
 	integrationTest(t)
 
 	// Create user and org, and user becomes owner of the org
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// Create engineer user and team and make member of a team
 	engineer, engineerCtx := svc.createUserCtx(t)

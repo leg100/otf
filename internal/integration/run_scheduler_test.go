@@ -15,7 +15,7 @@ import (
 func TestRunScheduler(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, &config{})
+	daemon, _, ctx := setup(t)
 	user := userFromContext(t, ctx)
 
 	// watch workspace events

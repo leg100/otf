@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/runstatus"
@@ -16,11 +15,7 @@ func TestIntegration_RunJobCancel(t *testing.T) {
 	integrationTest(t)
 
 	// Disable runner to prevent the run's plan job from running.
-	daemon, _, ctx := setup(t, &config{
-		Config: daemon.Config{
-			DisableRunner: true,
-		},
-	})
+	daemon, _, ctx := setup(t, disableRunner())
 	// Watch job events
 	jobs, unsub := daemon.Runners.WatchJobs(ctx)
 	defer unsub()

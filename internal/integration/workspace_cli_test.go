@@ -14,7 +14,7 @@ import (
 func TestIntegration_WorkspaceCLI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 
 	// create organization
 	org := daemon.createOrganization(t, ctx)

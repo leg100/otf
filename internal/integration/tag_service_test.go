@@ -14,7 +14,7 @@ func TestIntegration_TagService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("add tags to workspace", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, org)
 		err := svc.Workspaces.AddTags(ctx, ws.ID, []workspace.TagSpec{
 			{Name: "foo"},
@@ -60,7 +60,7 @@ func TestIntegration_TagService(t *testing.T) {
 	})
 
 	t.Run("remove tags from workspace", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		err := svc.Workspaces.AddTags(ctx, ws.ID, []workspace.TagSpec{
 			{Name: "foo"},
@@ -88,7 +88,7 @@ func TestIntegration_TagService(t *testing.T) {
 	})
 
 	t.Run("tag workspaces", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
 		ws3 := svc.createWorkspace(t, ctx, org)
@@ -123,7 +123,7 @@ func TestIntegration_TagService(t *testing.T) {
 	})
 
 	t.Run("delete tags from organization", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		err := svc.Workspaces.AddTags(ctx, ws.ID, []workspace.TagSpec{
 			{Name: "foo"},

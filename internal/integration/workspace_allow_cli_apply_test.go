@@ -19,10 +19,10 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	integrationTest(t)
 
 	repo := vcs.NewTestRepo()
-	daemon, org, ctx := setup(t, nil,
+	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-	)
+	))
 
 	vcsProvider := daemon.createVCSProvider(t, ctx, org)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{

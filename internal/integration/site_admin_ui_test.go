@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -12,9 +11,7 @@ import (
 func TestSiteAdminUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, _ := setup(t, &config{Config: daemon.Config{
-		SiteToken: "abc123",
-	}})
+	daemon, _, _ := setup(t, withSiteToken("abc123"))
 
 	// nil ctx skips seeding browser with a session cookie
 	browser.New(t, nil, func(page playwright.Page) {

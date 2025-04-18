@@ -11,7 +11,7 @@ import (
 func TestAutoApply(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// create workspace and enable auto-apply
 	browser.New(t, ctx, func(page playwright.Page) {

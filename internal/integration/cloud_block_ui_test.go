@@ -15,7 +15,7 @@ import (
 func TestCloudBlock(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// create terraform root module with a cloud configuration block.
 	config := []byte(fmt.Sprintf(`terraform {

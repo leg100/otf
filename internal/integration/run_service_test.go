@@ -5,7 +5,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
@@ -22,7 +21,7 @@ func TestRunService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, disableScheduler())
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		run, err := svc.Runs.Create(ctx, cv.WorkspaceID, otfrun.CreateOptions{})
@@ -37,11 +36,11 @@ func TestRunService(t *testing.T) {
 	t.Run("create run using config from repo", func(t *testing.T) {
 		// setup daemon along with fake github repo
 		repo := vcs.NewTestRepo()
-		daemon, _, ctx := setup(t, nil,
+		daemon, _, ctx := setup(t, withGithubOptions(
 			github.WithRepo(repo),
 			github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-		)
+		))
 		org := daemon.createOrganization(t, ctx)
 		vcsProvider := daemon.createVCSProvider(t, ctx, org)
 		ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
@@ -59,7 +58,7 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, disableScheduler())
 
 		tests := []struct {
 			name      string
@@ -110,7 +109,7 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("cancel pending run", func(t *testing.T) {
-		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, disableScheduler())
 		run := svc.createRun(t, ctx, nil, nil, nil)
 
 		err := svc.Runs.Cancel(ctx, run.ID)
@@ -126,7 +125,7 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, disableScheduler())
 		want := svc.createRun(t, ctx, nil, nil, nil)
 
 		got, err := svc.Runs.Get(ctx, want.ID)
@@ -141,7 +140,7 @@ func TestRunService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, disableScheduler())
 
 		ws1 := svc.createWorkspace(t, ctx, nil)
 		ws2 := svc.createWorkspace(t, ctx, nil)

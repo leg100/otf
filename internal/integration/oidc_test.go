@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authenticator"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -14,20 +13,16 @@ func TestIntegration_OIDC(t *testing.T) {
 	integrationTest(t)
 
 	// Start daemon configured to use a google OIDC test stub.
-	cfg := config{
-		Config: daemon.Config{
-			OIDC: authenticator.OIDCConfig{
-				Name:                "google",
-				IssuerURL:           authenticator.NewOIDCIssuer(t, "bobby", "stub-client-id", "google"),
-				ClientID:            "stub-client-id",
-				ClientSecret:        "stub-client-secret",
-				SkipTLSVerification: true,
-				UsernameClaim:       string(authenticator.DefaultUsernameClaim),
-			},
+	svc, _, _ := setup(t, withOIDConfig(
+		authenticator.OIDCConfig{
+			Name:                "google",
+			IssuerURL:           authenticator.NewOIDCIssuer(t, "bobby", "stub-client-id", "google"),
+			ClientID:            "stub-client-id",
+			ClientSecret:        "stub-client-secret",
+			SkipTLSVerification: true,
+			UsernameClaim:       string(authenticator.DefaultUsernameClaim),
 		},
-	}
-
-	svc, _, _ := setup(t, &cfg)
+	))
 
 	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page

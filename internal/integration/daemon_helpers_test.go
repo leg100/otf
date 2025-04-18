@@ -3,7 +3,6 @@ package integration
 import (
 	"bytes"
 	"context"
-	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -21,7 +20,6 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runner"
@@ -43,33 +41,20 @@ type (
 		*daemon.Daemon
 		// stub github server for test to use.
 		*github.TestServer
-		// dowloader allows tests to download terraform
-		downloader
 		// run subscription for tests to check on run events
 		runEvents <-chan pubsub.Event[*run.Run]
-	}
-
-	// downloader downloads terraform versions
-	downloader interface {
-		Download(ctx context.Context, version string, w io.Writer) (string, error)
-	}
-
-	// configures the daemon for integration tests
-	config struct {
-		daemon.Config
-		// skip creation of default organization
-		skipDefaultOrganization bool
-		// customise path in which terraform bins are saved
-		terraformBinDir string
 	}
 )
 
 // setup an integration test with a daemon, organization, and a user context.
-func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDaemon, *organization.Organization, context.Context) {
+func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organization, context.Context) {
 	t.Helper()
 
-	if cfg == nil {
-		cfg = &config{}
+	cfg := &config{
+		Config: daemon.NewConfig(),
+	}
+	for _, fn := range opts {
+		fn(cfg)
 	}
 	// Setup database if not specified
 	if cfg.Database == "" {
@@ -88,7 +73,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	// stub TLS servers with self-certified certs.
 	cfg.SkipTLSVerification = true
 
-	daemon.ApplyDefaults(&cfg.Config)
+	//daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"
 	cfg.KeyFile = "./fixtures/key.pem"
@@ -97,7 +82,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	var githubServer *github.TestServer
 	if cfg.GithubHostname == "" {
 		var githubURL *url.URL
-		githubServer, githubURL = github.NewTestServer(t, gopts...)
+		githubServer, githubURL = github.NewTestServer(t, cfg.githubOptions...)
 		cfg.GithubHostname = githubURL.Host
 	}
 
@@ -147,7 +132,6 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	daemon := &testDaemon{
 		Daemon:     d,
 		TestServer: githubServer,
-		downloader: releases.NewDownloader(cfg.terraformBinDir),
 		runEvents:  runEvents,
 	}
 
@@ -439,7 +423,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 // startAgent starts a pool agent, configuring it with the given organization
 // and configuring it to connect to the daemon. The corresponding agent type is
 // returned once registered, along with a function to shutdown the agent down.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, cfg runner.Config) (*runner.RunnerMeta, func()) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organization.Name, poolID *resource.TfeID, token string, opts ...runnerConfigOption) (*runner.RunnerMeta, func()) {
 	t.Helper()
 
 	// Configure logger; discard logs by default
@@ -468,8 +452,12 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		token = string(tokenBytes)
 	}
 
+	cfg := runner.NewConfig()
+	for _, fn := range opts {
+		fn(cfg)
+	}
 	agent, err := runner.NewAgent(logger, runner.AgentOptions{
-		Config: &cfg,
+		Config: cfg,
 		Token:  token,
 		URL:    s.System.URL("/"),
 	})

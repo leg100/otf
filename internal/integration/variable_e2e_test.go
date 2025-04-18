@@ -14,7 +14,7 @@ import (
 func TestVariableE2E(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// Create variable in browser
 	browser.New(t, ctx, func(page playwright.Page) {

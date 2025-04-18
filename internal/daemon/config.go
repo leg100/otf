@@ -51,17 +51,11 @@ type Config struct {
 	tokens.GoogleIAPConfig
 }
 
-func ApplyDefaults(cfg *Config) {
-	if cfg.RunnerConfig == nil {
-		cfg.RunnerConfig = &runner.Config{
-			MaxJobs: runner.DefaultMaxJobs,
-		}
-	}
-	if cfg.CacheConfig == nil {
-		cfg.CacheConfig = &inmem.CacheConfig{}
-	}
-	if cfg.MaxConfigSize == 0 {
-		cfg.MaxConfigSize = configversion.DefaultConfigMaxSize
+func NewConfig() Config {
+	return Config{
+		RunnerConfig:  runner.NewConfig(),
+		CacheConfig:   &inmem.CacheConfig{},
+		MaxConfigSize: configversion.DefaultConfigMaxSize,
 	}
 }
 

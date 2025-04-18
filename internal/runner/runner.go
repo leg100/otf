@@ -16,9 +16,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -42,27 +40,7 @@ type (
 		logger logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
 		v      int         // logger verbosity
 	}
-
-	Config struct {
-		Name    string // descriptive name given to runner
-		MaxJobs int    // number of jobs the runner can execute at any one time
-
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
-	}
 )
-
-func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
-	opts := Config{}
-	flags.IntVar(&opts.MaxJobs, "concurrency", DefaultMaxJobs, "Number of runs that can be processed concurrently")
-	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
-	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
-	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&opts.TerraformBinDir, "terraform-bins-dir", releases.DefaultTerraformBinDir, "Destination directory for terraform binary downloads.")
-	return &opts
-}
 
 // newRunner constructs a runner.
 func newRunner(
@@ -72,9 +50,6 @@ func newRunner(
 	isAgent bool,
 	cfg Config,
 ) (*Runner, error) {
-	if cfg.MaxJobs == 0 {
-		cfg.MaxJobs = DefaultMaxJobs
-	}
 	r := &Runner{
 		RunnerMeta: &RunnerMeta{
 			Name:    cfg.Name,

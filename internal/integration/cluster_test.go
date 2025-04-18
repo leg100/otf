@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
@@ -24,9 +23,9 @@ func TestCluster(t *testing.T) {
 	integrationTest(t)
 
 	// start two daemons, one for user, one for agent, both sharing a db
-	connstr := sql.NewTestDB(t)
-	otfd1, org, ctx := setup(t, &config{Config: daemon.Config{Database: connstr}})
-	otfd2, _, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	connstr := withDatabase(sql.NewTestDB(t))
+	otfd1, org, ctx := setup(t, connstr)
+	otfd2, _, _ := setup(t, connstr)
 
 	pool, err := otfd1.Runners.CreateAgentPool(ctx, runner.CreateAgentPoolOptions{
 		Organization: org.Name,
@@ -36,7 +35,7 @@ func TestCluster(t *testing.T) {
 
 	// start agent, instructing it to connect to otfd2,
 	// add --debug flag, which dumps info that this test relies upon
-	otfd2.startAgent(t, ctx, org.Name, &pool.ID, "", runner.Config{Debug: true})
+	otfd2.startAgent(t, ctx, org.Name, &pool.ID, "", withRunnerDebug())
 
 	// create root module, setting otfd1 as hostname
 	root := newRootModule(t, otfd1.System.Hostname(), org.Name, "dev")

@@ -11,7 +11,6 @@ import (
 	gogithub "github.com/google/go-github/v65/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
@@ -24,7 +23,7 @@ import (
 func TestIntegration_VCSProviderTokenUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	// create a vcs provider with a github personal access token
 	browser.New(t, ctx, func(page playwright.Page) {
@@ -147,7 +146,7 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 		return u.Host
 	}(t)
 
-	daemon, org, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
+	daemon, org, _ := setup(t, withGithubHostname(githubHostname))
 
 	// creating a github app requires site-admin role
 	ctx := authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)

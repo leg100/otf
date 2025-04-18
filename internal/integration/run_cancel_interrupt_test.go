@@ -9,7 +9,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/releases"
-	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -32,7 +31,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	err = os.Symlink(filepath.Join(wd, "testdata/cancelme"), dst)
 	require.NoError(t, err)
 
-	daemon, org, ctx := setup(t, &config{terraformBinDir: dst})
+	daemon, org, ctx := setup(t)
 
 	// run a temporary http server as a means of communicating with the fake
 	// bin
@@ -51,7 +50,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 
 	// start an external agent (it's the only way to specify a separate bin
 	// directory currently).
-	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", runner.Config{TerraformBinDir: bins})
+	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", withTerraformBinDir(bins))
 
 	// create workspace specifying that it use an external agent.
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{

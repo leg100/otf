@@ -15,7 +15,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 
 		team, err := svc.Teams.Create(ctx, org.Name, otfteam.CreateTeamOptions{
 			Name: internal.String(uuid.NewString()),
@@ -31,7 +31,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		team := svc.createTeam(t, ctx, nil)
 
 		_, err := svc.Teams.Update(ctx, team.ID, otfteam.UpdateTeamOptions{
@@ -52,7 +52,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		team := svc.createTeam(t, ctx, nil)
 
 		got, err := svc.Teams.Get(ctx, team.Organization, team.Name)
@@ -62,7 +62,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createTeam(t, ctx, nil)
 
 		got, err := svc.Teams.GetByID(ctx, want.ID)
@@ -72,7 +72,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		org := svc.createOrganization(t, ctx)
 		team1 := svc.createTeam(t, ctx, org)
 		team2 := svc.createTeam(t, ctx, org)
@@ -87,7 +87,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("list members", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		org := svc.createOrganization(t, ctx)
 
 		team := svc.createTeam(t, ctx, org)
@@ -106,7 +106,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		team := svc.createTeam(t, ctx, nil)
 
 		err := svc.Teams.Delete(ctx, team.ID)
@@ -114,7 +114,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("disallow deleting owners team", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		org := svc.createOrganization(t, ctx) // creates owners team
 
 		owners, err := svc.Teams.Get(ctx, org.Name, "owners")

@@ -21,7 +21,7 @@ import (
 func TestIntegration_TerraformCLICancel(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// Canceling a run is not straight-forward, because to do so reliably the
 	// terraform apply should be interrupted precisely when it is in mid-flow,

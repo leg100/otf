@@ -64,7 +64,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			daemon, _, _ := setup(t, nil, github.WithHandler(tt.path, func(w http.ResponseWriter, r *http.Request) {
+			daemon, _, _ := setup(t, withGithubOption(github.WithHandler(tt.path, func(w http.ResponseWriter, r *http.Request) {
 				// check that the manifest has been correctly submitted.
 				var (
 					manifest struct {
@@ -82,7 +82,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.public, manifest.Public)
 				w.Write([]byte(`<html><body>success</body></html>`))
-			}))
+			})))
 
 			browser.New(t, ctx, func(page playwright.Page) {
 				// go to site settings page
@@ -126,8 +126,8 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	// stub Github server, and receiving back the app config, and then
 	// redirecting to the github app page showing the created app.
 	t.Run("complete creation of github app", func(t *testing.T) {
-		daemon, _, _ := setup(t, nil,
-			github.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
+		daemon, _, _ := setup(t,
+			withGithubOption(github.WithHandler("/api/v3/app-manifests/anything/conversions", func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&gogithub.AppConfig{
 					ID:            internal.Int64(123),
 					Slug:          internal.String("my-otf-app"),
@@ -138,10 +138,10 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				require.NoError(t, err)
 				w.Header().Add("Content-Type", "application/json")
 				w.Write(out)
-			}),
-			github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+			})),
+			withGithubOption(github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add("Content-Type", "application/json")
-			}),
+			})),
 		)
 		browser.New(t, ctx, func(page playwright.Page) {
 			// go to the exchange code endpoint
@@ -161,21 +161,19 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 
 	// demonstrate the listing of github installations
 	t.Run("list github app installs", func(t *testing.T) {
-		handlers := []github.TestServerOption{
-			github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Add("Content-Type", "application/json")
-				out, err := json.Marshal([]*gogithub.Installation{
-					{
-						ID:      internal.Int64(123),
-						Account: &gogithub.User{Login: internal.String("leg100")},
-					},
-				})
-				require.NoError(t, err)
-				w.Header().Add("Content-Type", "application/json")
-				w.Write(out)
-			}),
-		}
-		daemon, _, _ := setup(t, nil, handlers...)
+		handler := github.WithHandler("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			out, err := json.Marshal([]*gogithub.Installation{
+				{
+					ID:      internal.Int64(123),
+					Account: &gogithub.User{Login: internal.String("leg100")},
+				},
+			})
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		})
+		daemon, _, _ := setup(t, withGithubOption(handler))
 		_, err := daemon.GithubApp.CreateApp(ctx, github.CreateAppOptions{
 			AppID:      123,
 			Slug:       "otf-123",
@@ -199,7 +197,7 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 func TestIntegration_GithubApp_Event(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil,
+	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo("leg100/otf-workspaces"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
@@ -218,7 +216,7 @@ func TestIntegration_GithubApp_Event(t *testing.T) {
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		}),
-	)
+	))
 	// creating a github app requires site-admin role
 	ctx = authz.AddSubjectToContext(ctx, &user.SiteAdmin)
 	// create an OTF daemon with a fake github backend, and serve up a repo and

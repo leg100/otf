@@ -11,7 +11,7 @@ import (
 func TestRunnersUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to org main menu

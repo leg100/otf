@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/sql"
 	otfuser "github.com/leg100/otf/internal/user"
 	"github.com/stretchr/testify/assert"
@@ -18,10 +17,7 @@ func TestUser(t *testing.T) {
 	// role of site admin when starting the daemon.
 	t.Run("set site admins", func(t *testing.T) {
 		connstr := sql.NewTestDB(t)
-		svc, _, _ := setup(t, &config{Config: daemon.Config{
-			Database:   connstr,
-			SiteAdmins: []string{"bob", "alice", "sue"},
-		}})
+		svc, _, _ := setup(t, withDatabase(connstr), withSiteAdmins("bob", "alice", "sue"))
 
 		areSiteAdmins := func(want bool) {
 			for _, usernameStr := range []string{"bob", "alice", "sue"} {
@@ -36,9 +32,7 @@ func TestUser(t *testing.T) {
 		// Start another daemon with *no* site admins specified, which should
 		// relegate the users back to normal users.
 		t.Run("reset", func(t *testing.T) {
-			svc, _, _ = setup(t, &config{Config: daemon.Config{
-				Database: connstr,
-			}})
+			svc, _, _ = setup(t, withDatabase(connstr))
 			areSiteAdmins(false)
 		})
 	})
@@ -46,7 +40,7 @@ func TestUser(t *testing.T) {
 	// Create a user and a user token and test retrieving the user using their ID, username and
 	// token.
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 
 		org1 := svc.createOrganization(t, ctx)
 		org2 := svc.createOrganization(t, ctx)
@@ -92,14 +86,14 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
+		svc, _, _ := setup(t)
 		unknown := otfuser.NewTestUsername(t)
 		_, err := svc.Users.GetUser(adminCtx, otfuser.UserSpec{Username: &unknown})
 		assert.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("list users", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		user1 := userFromContext(t, ctx)
 		user2 := svc.createUser(t)
 		user3 := svc.createUser(t)
@@ -124,7 +118,7 @@ func TestUser(t *testing.T) {
 	// once.
 	t.Run("list organization users", func(t *testing.T) {
 		// automatically creates owners team consisting of one owner
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		owner := userFromContext(t, ctx)
 		owners := svc.getTeam(t, ctx, org.Name, "owners")
 
@@ -148,7 +142,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
+		svc, _, _ := setup(t)
 		user := svc.createUser(t)
 
 		// only admin can delete user
@@ -160,7 +154,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t)
 
@@ -186,7 +180,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("remove team membership", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, otfuser.WithTeams(team))
@@ -202,7 +196,7 @@ func TestUser(t *testing.T) {
 
 	t.Run("cannot remove last owner", func(t *testing.T) {
 		// automatically creates org and owners team
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		owner := userFromContext(t, ctx)
 
 		owners, err := svc.Teams.Get(ctx, org.Name, "owners")

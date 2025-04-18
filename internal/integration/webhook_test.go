@@ -28,9 +28,7 @@ func TestWebhook(t *testing.T) {
 
 	// create otf daemon with fake github server, on which to create/delete
 	// webhooks.
-	daemon, org, ctx := setup(t, nil,
-		github.WithRepo(repo),
-	)
+	daemon, org, ctx := setup(t, withGithubOption(github.WithRepo(repo)))
 	// create vcs provider for authenticating to github backend
 	provider := daemon.createVCSProvider(t, ctx, org)
 
@@ -78,9 +76,7 @@ func TestWebhook_Purger(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
-	daemon, _, ctx := setup(t, nil,
-		github.WithRepo(repo),
-	)
+	daemon, _, ctx := setup(t, withGithubOption(github.WithRepo(repo)))
 
 	tests := []struct {
 		name  string

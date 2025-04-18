@@ -35,7 +35,7 @@ func TestWaitAndLock(t *testing.T) {
 func TestTx(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 
 	// retain reference to old context for testing below.
 	oldContext := ctx

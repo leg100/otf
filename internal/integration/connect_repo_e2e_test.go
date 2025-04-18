@@ -18,10 +18,10 @@ func TestConnectRepoE2E(t *testing.T) {
 	// create an otf daemon with a fake github backend, serve up a repo and its
 	// contents via tarball. And register a callback to test receipt of commit
 	// statuses
-	daemon, org, ctx := setup(t, nil,
-		github.WithRepo("leg100/tfc-workspaces"),
-		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
-		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+	daemon, org, ctx := setup(t,
+		withGithubOption(github.WithRepo("leg100/tfc-workspaces")),
+		withGithubOption(github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de")),
+		withGithubOption(github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz"))),
 	)
 	// create vcs provider for authenticating to github backend
 	provider := daemon.createVCSProvider(t, ctx, org)

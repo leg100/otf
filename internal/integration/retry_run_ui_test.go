@@ -14,7 +14,7 @@ import (
 func TestIntegration_RetryRunUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 	ws := daemon.createWorkspace(t, ctx, nil)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.CreateOptions{
 		Speculative: internal.Bool(true),

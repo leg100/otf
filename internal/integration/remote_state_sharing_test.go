@@ -18,7 +18,7 @@ import (
 func TestRemoteStateSharing(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 	// producer is the workspace sharing its state
 	producer, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
 		Name:              internal.String("producer"),

@@ -14,7 +14,7 @@ import (
 func TestIntegration_StateUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 	ws := daemon.createWorkspace(t, ctx, org)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 

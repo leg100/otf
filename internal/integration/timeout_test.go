@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,12 +19,11 @@ func TestIntegration_Timeout(t *testing.T) {
 	integrationTest(t)
 
 	// Set a very low planning timeout and check very frequently.
-	svc, org, ctx := setup(t, &config{
-		Config: daemon.Config{
-			PlanningTimeout:              time.Second,
-			OverrideTimeoutCheckInterval: 100 * time.Millisecond,
-		},
-	})
+	svc, org, ctx := setup(t, withTimeouts(
+		time.Second,
+		time.Second,
+		100*time.Millisecond,
+	))
 	ws := svc.createWorkspace(t, ctx, org)
 
 	// Setup a http server, to which the terraform 'http' data source will

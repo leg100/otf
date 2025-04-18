@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/leg100/otf/internal/daemon"
-	"github.com/leg100/otf/internal/runner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,12 +20,7 @@ func TestSandbox(t *testing.T) {
 	}
 	require.NoError(t, err)
 
-	daemon, org, ctx := setup(t, &config{Config: daemon.Config{
-		RunnerConfig: &runner.Config{
-			Sandbox: true,
-			Debug:   true,
-		},
-	}})
+	daemon, org, ctx := setup(t, withServerRunnerDebug(), withServerRunnerSandbox())
 
 	// create terraform config
 	config := newRootModule(t, daemon.System.Hostname(), org.Name, "dev")
