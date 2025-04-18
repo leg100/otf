@@ -11,7 +11,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func HandleEvent(r *http.Request, secret string) (*vcs.EventPayload, error) {
