@@ -9,10 +9,15 @@ import (
 	"os"
 	"testing"
 
+	"github.com/leg100/otf/internal/engine"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type testEngine struct {
+	engine.Engine
+}
 
 func TestDownloader(t *testing.T) {
 	// setup web server
@@ -24,8 +29,7 @@ func TestDownloader(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	dl := NewDownloader(t.TempDir())
-	dl.host = u.Host
+	dl := NewDownloader(&testEngine{}, t.TempDir())
 	dl.client = &http.Client{
 		Transport: otfhttp.InsecureTransport,
 	}

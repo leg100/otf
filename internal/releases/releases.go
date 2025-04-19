@@ -1,4 +1,4 @@
-// Package releases manages terraform releases.
+// Package releases manages engine releases.
 package releases
 
 import (
@@ -14,16 +14,12 @@ import (
 	"github.com/leg100/otf/internal/sql"
 )
 
-const (
-	DefaultTerraformVersion = "1.6.0"
-	LatestVersionString     = "latest"
-)
+const LatestVersionString = "latest"
 
 type (
 	Service struct {
 		logr.Logger
 		*downloader
-		latestChecker
 
 		db     *db
 		engine engine.Engine
@@ -40,10 +36,9 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := &Service{
-		Logger:        opts.Logger,
-		db:            &db{opts.DB},
-		latestChecker: latestChecker{latestEndpoint},
-		downloader:    NewDownloader(opts.Engine, opts.BinDir),
+		Logger:     opts.Logger,
+		db:         &db{opts.DB, opts.Engine},
+		downloader: NewDownloader(opts.Engine, opts.BinDir),
 	}
 	return svc
 }
@@ -53,17 +48,19 @@ func NewService(opts Options) *Service {
 func (s *Service) StartLatestChecker(ctx context.Context) {
 	check := func() {
 		err := func() error {
+			// get current latest version stored in db
 			before, checkpoint, err := s.GetLatest(ctx)
 			if err != nil {
 				return err
 			}
-			after, err := s.latestChecker.check(checkpoint)
+			// skip check if already checked within last 24 hours
+			if checkpoint.After(time.Now().Add(-24 * time.Hour)) {
+				return nil
+			}
+			// get latest version from engine's internet endpoint
+			after, err := s.engine.GetLatestVersion(ctx)
 			if err != nil {
 				return err
-			}
-			if after == "" {
-				// check was skipped (too early)
-				return nil
 			}
 			// perform sanity check
 			if n := semver.Compare(after, before); n < 0 {
@@ -74,11 +71,11 @@ func (s *Service) StartLatestChecker(ctx context.Context) {
 			if err := s.db.updateLatestVersion(ctx, after); err != nil {
 				return err
 			}
-			s.V(1).Info("checked latest terraform version", "before", before, "after", after)
+			s.V(1).Info("checked latest engine version", "engine", s.engine, "before", before, "after", after)
 			return nil
 		}()
 		if err != nil {
-			s.Error(err, "checking latest terraform version")
+			s.Error(err, "checking latest engine version", "engine", s.engine)
 		}
 	}
 	// check once at startup
@@ -98,7 +95,7 @@ func (s *Service) StartLatestChecker(ctx context.Context) {
 	}()
 }
 
-// GetLatest returns the latest terraform version and the time when it was
+// GetLatest returns the latest engine version and the time when it was
 // fetched; if it has not yet been fetched then the default version is returned
 // instead along with zero time.
 func (s *Service) GetLatest(ctx context.Context) (string, time.Time, error) {
@@ -106,7 +103,7 @@ func (s *Service) GetLatest(ctx context.Context) (string, time.Time, error) {
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// no latest version has yet been persisted to the database so return
 		// the default version instead
-		return DefaultTerraformVersion, time.Time{}, nil
+		return s.engine.DefaultVersion(), time.Time{}, nil
 	} else if err != nil {
 		return "", time.Time{}, err
 	}

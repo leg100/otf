@@ -4,34 +4,39 @@ import (
 	"context"
 	"time"
 
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/sql"
 )
 
 type db struct {
 	*sql.DB
+	engine engine.Engine
 }
 
 func (db *db) updateLatestVersion(ctx context.Context, v string) error {
-	return db.Lock(ctx, "latest_terraform_version", func(ctx context.Context, conn sql.Connection) error {
-		count, err := db.Int(ctx, ` SELECT count(*) FROM latest_terraform_version`)
+	// TODO: use an UPSERT instead
+	return db.Lock(ctx, "latest_engine_version", func(ctx context.Context, conn sql.Connection) error {
+		count, err := db.Int(ctx, ` SELECT count(*) FROM latest_engine_version`)
 		if err != nil {
 			return err
 		}
 		if count == 0 {
 			_, err := db.Exec(ctx, `
-INSERT INTO latest_terraform_version (
+INSERT INTO latest_engine_version (
     version,
-    checkpoint
+    checkpoint,
+	engine
 ) VALUES (
     $1,
-    current_timestamp
-)`, v)
+    current_timestamp,
+	$2
+)`, v, db.engine.String())
 			return err
 		} else {
 			_, err := db.Exec(ctx, `
-UPDATE latest_terraform_version
-SET version = $1, checkpoint = current_timestamp
-`, v)
+UPDATE latest_engine_version
+SET version = $1, checkpoint = current_timestamp, engine = $2
+`, v, db.engine.String())
 			return err
 		}
 	})
@@ -40,8 +45,9 @@ SET version = $1, checkpoint = current_timestamp
 func (db *db) getLatest(ctx context.Context) (string, time.Time, error) {
 	rows := db.QueryRow(ctx, `
 SELECT version, checkpoint
-FROM latest_terraform_version
-`)
+FROM latest_engine_version
+WHERE engine = $1
+`, db.engine.String())
 	var (
 		version    string
 		checkpoint time.Time

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"iter"
 	"maps"
@@ -13,6 +14,8 @@ type Engine interface {
 	pflag.Value
 
 	SourceURL(version string) *url.URL
+	DefaultVersion() string
+	GetLatestVersion(ctx context.Context) (string, error)
 }
 
 var engines = map[string]Engine{}

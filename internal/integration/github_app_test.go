@@ -170,7 +170,6 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 				},
 			})
 			require.NoError(t, err)
-			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
 		daemon, _, _ := setup(t, withGithubOption(handler))
