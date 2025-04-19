@@ -12,7 +12,7 @@ func TestRepo(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create multiple connections", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
+		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("test/dummy")))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 

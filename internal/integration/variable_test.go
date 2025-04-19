@@ -13,7 +13,7 @@ func TestVariable(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.Variables.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
@@ -25,7 +25,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		v := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.Variables.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
@@ -37,7 +37,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		v1 := svc.createVariable(t, ctx, ws)
 		v2 := svc.createVariable(t, ctx, ws)
@@ -52,7 +52,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.Variables.GetWorkspaceVariable(ctx, want.ID)
@@ -62,7 +62,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.Variables.DeleteWorkspaceVariable(ctx, want.ID)

@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/user"
 	"github.com/playwright-community/playwright-go"
@@ -15,16 +14,12 @@ func TestGithubLogin(t *testing.T) {
 	integrationTest(t)
 
 	// Start daemon with a stub github server populated with a user.
-	cfg := config{
-		Config: daemon.Config{
-			// specifying oauth credentials turns on the option to login via
-			// github
-			GithubClientID:     "stub-client-id",
-			GithubClientSecret: "stub-client-secret",
-		},
-	}
-	username := user.MustUsername("bobby")
-	svc, _, _ := setup(t, &cfg, github.WithUsername(username))
+	svc, _, _ := setup(t,
+		// specifying oauth credentials turns on the option to login via
+		// github
+		withGithubOAuthCredentials("stub-client-id", "stub-client-secret"),
+		withGithubOption(github.WithUsername(user.MustUsername("bobby"))),
+	)
 
 	browser.New(t, nil, func(page playwright.Page) {
 		// go to login page

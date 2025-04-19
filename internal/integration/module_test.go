@@ -14,7 +14,7 @@ func TestModule(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 
 		_, err := svc.Modules.CreateModule(ctx, module.CreateOptions{
 			Name:         uuid.NewString(),
@@ -25,7 +25,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil, github.WithRepo("leg100/terraform-aws-stuff"))
+		svc, org, ctx := setup(t, withGithubOption(github.WithRepo("leg100/terraform-aws-stuff")))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
@@ -50,7 +50,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.Modules.GetModule(ctx, module.GetModuleOptions{
@@ -64,7 +64,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.Modules.GetModuleByID(ctx, want.ID)
@@ -74,7 +74,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		org := svc.createOrganization(t, ctx)
 		module1 := svc.createModule(t, ctx, org)
 		module2 := svc.createModule(t, ctx, org)
@@ -91,7 +91,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.Modules.DeleteModule(ctx, want.ID)

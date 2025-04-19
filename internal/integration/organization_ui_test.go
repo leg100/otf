@@ -11,7 +11,7 @@ import (
 func TestIntegration_OrganizationUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
+	daemon, _, ctx := setup(t, skipDefaultOrganization())
 
 	// test creating/updating/deleting
 	browser.New(t, ctx, func(page playwright.Page) {

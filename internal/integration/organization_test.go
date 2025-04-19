@@ -16,7 +16,7 @@ func TestIntegration_Organization(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, &config{skipDefaultOrganization: true})
+		svc, _, ctx := setup(t, skipDefaultOrganization())
 		sub, unsub := svc.Organizations.WatchOrganizations(ctx)
 		defer unsub()
 		org, err := svc.Organizations.Create(ctx, organization.CreateOptions{
@@ -49,7 +49,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("update name", func(t *testing.T) {
-		daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
+		daemon, _, ctx := setup(t, skipDefaultOrganization())
 		sub, unsub := daemon.Organizations.WatchOrganizations(ctx)
 		defer unsub()
 
@@ -67,7 +67,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		_ = svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
 
@@ -94,7 +94,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("list user's organizations", func(t *testing.T) {
-		svc, want1, ctx := setup(t, nil)
+		svc, want1, ctx := setup(t)
 		want2 := svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, adminCtx) // org not belonging to user
 
@@ -107,7 +107,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("new user should see zero orgs", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		_ = svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
 
@@ -119,7 +119,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createOrganization(t, ctx)
 
 		got, err := svc.Organizations.Get(ctx, want.Name)
@@ -129,7 +129,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
+		daemon, _, ctx := setup(t, skipDefaultOrganization())
 		sub, unsub := daemon.Organizations.WatchOrganizations(ctx)
 		defer unsub()
 
@@ -145,7 +145,7 @@ func TestIntegration_Organization(t *testing.T) {
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
+		svc, _, _ := setup(t)
 
 		// delete using site admin otherwise a not authorized error is returned
 		// to normal users

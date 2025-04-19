@@ -15,7 +15,7 @@ func TestVCSProvider(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 
 		_, err := svc.VCSProviders.Create(ctx, vcsprovider.CreateOptions{
 			Organization: org.Name,
@@ -26,7 +26,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createVCSProvider(t, ctx, nil)
 
 		got, err := svc.VCSProviders.Get(ctx, want.ID)
@@ -36,7 +36,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
+		svc, org, ctx := setup(t)
 		provider1 := svc.createVCSProvider(t, ctx, org)
 		provider2 := svc.createVCSProvider(t, ctx, org)
 		provider3 := svc.createVCSProvider(t, ctx, org)
@@ -50,7 +50,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createVCSProvider(t, ctx, nil)
 
 		got, err := svc.VCSProviders.Delete(ctx, want.ID)

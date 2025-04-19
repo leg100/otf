@@ -12,7 +12,7 @@ import (
 func TestIntegration_VariableSetUI(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// Create global variable set in browser
 	browser.New(t, ctx, func(page playwright.Page) {

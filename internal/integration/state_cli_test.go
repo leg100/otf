@@ -14,7 +14,7 @@ import (
 func TestIntegration_StateCLI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 
 	t.Run("list", func(t *testing.T) {
 		ws := daemon.createWorkspace(t, ctx, nil)

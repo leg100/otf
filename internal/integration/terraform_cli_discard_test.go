@@ -19,7 +19,7 @@ import (
 func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	// create some config and run terraform init
 	configPath := newRootModule(t, svc.System.Hostname(), org.Name, t.Name())

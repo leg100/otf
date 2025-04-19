@@ -16,7 +16,7 @@ import (
 func TestIntegration_OrganizationTokens(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	ot, token, err := daemon.Organizations.CreateToken(ctx, organization.CreateOrganizationTokenOptions{
 		Organization: org.Name,

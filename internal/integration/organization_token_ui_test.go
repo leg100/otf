@@ -12,7 +12,7 @@ import (
 func TestIntegration_OrganizationTokenUI(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to organization

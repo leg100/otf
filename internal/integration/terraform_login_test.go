@@ -22,7 +22,7 @@ import (
 func TestTerraformLogin(t *testing.T) {
 	integrationTest(t)
 
-	svc, _, ctx := setup(t, nil)
+	svc, _, ctx := setup(t)
 
 	out, err := os.CreateTemp(t.TempDir(), "terraform-login.out")
 	require.NoError(t, err)

@@ -2,15 +2,13 @@ package releases
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
-	"runtime"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/engine"
 )
 
 var DefaultEngineBinDir = path.Join(os.TempDir(), "otf-engine-bins")
@@ -20,12 +18,13 @@ type downloader struct {
 	destdir string        // destination directory for binaries
 	client  *http.Client  // client for downloading from server via http
 	mu      chan struct{} // ensures only one download at a time
+	engine  engine.Engine
 }
 
 // NewDownloader constructs a terraform downloader, with destdir set as the
 // parent directory into which the binaries are downloaded. Pass an empty string
 // to use a default.
-func NewDownloader(engine internal.Engine, destdir string) *downloader {
+func NewDownloader(engine engine.Engine, destdir string) *downloader {
 	if destdir == "" {
 		destdir = DefaultEngineBinDir
 	}
@@ -37,6 +36,7 @@ func NewDownloader(engine internal.Engine, destdir string) *downloader {
 		destdir: destdir,
 		client:  &http.Client{},
 		mu:      mu,
+		engine:  engine,
 	}
 }
 
@@ -58,7 +58,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	err := (&download{
 		Writer:  w,
 		version: version,
-		src:     d.src(version),
+		src:     d.engine.SourceURL(version).String(),
 		dest:    d.dest(version),
 		client:  d.client,
 	}).download(ctx)
@@ -68,17 +68,6 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	return d.dest(version), err
 }
 
-func (d *downloader) src(version string) string {
-	return (&url.URL{
-		Scheme: "https",
-		Host:   d.host,
-		Path: path.Join(
-			"terraform",
-			version,
-			fmt.Sprintf("terraform_%s_%s_%s.zip", version, runtime.GOOS, runtime.GOARCH)),
-	}).String()
-}
-
 func (d *downloader) dest(version string) string {
-	return path.Join(d.destdir, version, "terraform")
+	return path.Join(d.destdir, version, d.engine.String())
 }

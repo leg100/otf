@@ -13,7 +13,7 @@ import (
 func TestIntegration_TeamUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 	_, err := daemon.Users.Create(ctx, "bob")
 	require.NoError(t, err)
 	_, err = daemon.Users.Create(ctx, "alice")

@@ -10,7 +10,7 @@ import (
 func TestTeamCLI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 
 	// create organization
 	out := daemon.otfcli(t, ctx, "organizations", "new", "acme-corp")

@@ -13,7 +13,7 @@ func TestSession(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("start", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := userFromContext(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)

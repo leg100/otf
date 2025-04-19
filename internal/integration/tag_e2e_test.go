@@ -17,7 +17,7 @@ import (
 func TestIntegration_TagsE2E(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	// create a root module with a cloud backend configured to use workspaces
 	// with foo and bar tags.

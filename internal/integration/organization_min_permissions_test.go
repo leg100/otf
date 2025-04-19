@@ -15,7 +15,7 @@ import (
 func TestIntegration_MinimumPermissions(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 	ws := svc.createWorkspace(t, ctx, org)
 
 	// Create user and add as member of guests team

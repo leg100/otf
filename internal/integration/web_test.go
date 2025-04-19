@@ -15,7 +15,7 @@ import (
 func TestWeb(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 	user := userFromContext(t, ctx)
 
 	team, err := daemon.Teams.Create(ctx, org.Name, team.CreateTeamOptions{

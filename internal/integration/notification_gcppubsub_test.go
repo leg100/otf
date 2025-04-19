@@ -47,7 +47,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		})
 	}()
 
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 
 	ws := daemon.createWorkspace(t, ctx, nil)
 

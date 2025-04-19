@@ -11,7 +11,7 @@ import (
 func TestIntegration_PaginationUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, ctx := setup(t, &config{skipDefaultOrganization: true})
+	daemon, _, ctx := setup(t, skipDefaultOrganization())
 
 	// create 101 orgs
 	for range 101 {

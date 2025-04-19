@@ -13,7 +13,7 @@ import (
 func TestStartRunUI(t *testing.T) {
 	integrationTest(t)
 
-	svc, _, ctx := setup(t, nil)
+	svc, _, ctx := setup(t)
 
 	ws := svc.createWorkspace(t, ctx, nil)
 	_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)

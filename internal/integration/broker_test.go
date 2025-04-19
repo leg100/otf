@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
@@ -14,13 +13,11 @@ func TestBroker(t *testing.T) {
 	integrationTest(t)
 
 	// simulate a cluster of two otfd nodes sharing a database
-	cfg := config{
-		Config: daemon.Config{Database: sql.NewTestDB(t)},
-		// skip creating orgs which would otherwise send creation events
-		skipDefaultOrganization: true,
-	}
-	local, _, ctx := setup(t, &cfg)
-	remote, _, _ := setup(t, &cfg)
+	db := withDatabase(sql.NewTestDB(t))
+	// skip creating orgs which would otherwise send creation events
+	skipOrg := skipDefaultOrganization()
+	local, _, ctx := setup(t, db, skipOrg)
+	remote, _, _ := setup(t, db, skipOrg)
 
 	// setup subscriptions
 	localSub, localUnsub := local.Organizations.WatchOrganizations(ctx)

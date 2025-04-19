@@ -19,7 +19,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		daemon, org, ctx := setup(t, nil)
+		daemon, org, ctx := setup(t)
 		browser.New(t, ctx, func(page playwright.Page) {
 			_, err := page.Goto(organizationURL(daemon.System.Hostname(), org.Name))
 			require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 
 	t.Run("listing_and_filtering_and_updating", func(t *testing.T) {
-		daemon, org, ctx := setup(t, nil)
+		daemon, org, ctx := setup(t)
 
 		// Create lots of workspaces for filtering and updating
 		workspaces := make([]*workspace.Workspace, 101)
@@ -175,10 +175,10 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 
 	t.Run("workspace settings", func(t *testing.T) {
 		repo := vcs.NewTestRepo()
-		daemon, org, ctx := setup(t, nil,
+		daemon, org, ctx := setup(t, withGithubOptions(
 			github.WithRepo(repo),
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-		)
+		))
 		// create vcs provider for authenticating to github backend
 		provider := daemon.createVCSProvider(t, ctx, org)
 		// create workspace on which edit settings
@@ -393,7 +393,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 
 	t.Run("workspace locking", func(t *testing.T) {
-		daemon, org, ctx := setup(t, nil)
+		daemon, org, ctx := setup(t)
 		ws1 := daemon.createWorkspace(t, ctx, org)
 
 		browser.New(t, ctx, func(page playwright.Page) {

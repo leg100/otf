@@ -15,7 +15,7 @@ import (
 func TestWorkingDirectory(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	// create workspace and set working directory
 	browser.New(t, ctx, func(page playwright.Page) {

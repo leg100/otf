@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
@@ -24,14 +25,16 @@ type (
 		*downloader
 		latestChecker
 
-		db *db
+		db     *db
+		engine engine.Engine
 	}
 
 	Options struct {
 		logr.Logger
 		*sql.DB
 
-		TerraformBinDir string // destination directory for terraform binaries
+		BinDir string        // destination directory for binaries
+		Engine engine.Engine // terraform or tofu
 	}
 )
 
@@ -40,7 +43,7 @@ func NewService(opts Options) *Service {
 		Logger:        opts.Logger,
 		db:            &db{opts.DB},
 		latestChecker: latestChecker{latestEndpoint},
-		downloader:    NewDownloader(opts.TerraformBinDir),
+		downloader:    NewDownloader(opts.Engine, opts.BinDir),
 	}
 	return svc
 }

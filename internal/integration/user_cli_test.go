@@ -10,7 +10,7 @@ import (
 func TestUserCLI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, _, _ := setup(t, nil)
+	daemon, _, _ := setup(t)
 
 	// create user via cli
 	out := daemon.otfcli(t, adminCtx, "users", "new", "bobby")

@@ -22,11 +22,11 @@ func TestIntegration_RunAPI(t *testing.T) {
 
 	// setup daemon along with fake github repo
 	repo := vcs.NewTestRepo()
-	daemon, org, ctx := setup(t, nil,
+	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo(repo),
 		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-	)
+	))
 	_, token := daemon.createToken(t, ctx, nil)
 
 	tfeClient, err := tfe.NewClient(&tfe.Config{

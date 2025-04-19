@@ -9,7 +9,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -24,8 +23,8 @@ func TestRunError(t *testing.T) {
 	integrationTest(t)
 
 	// create a daemon and start an agent
-	daemon, org, ctx := setup(t, nil)
-	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", runner.Config{})
+	daemon, org, ctx := setup(t)
+	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "")
 
 	// two tests: one run on the daemon, one via the agent.
 	tests := []struct {

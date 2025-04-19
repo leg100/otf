@@ -9,7 +9,7 @@ import (
 
 func TestUITheme(t *testing.T) {
 	integrationTest(t)
-	daemon, _, ctx := setup(t, nil)
+	daemon, _, ctx := setup(t)
 
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to main page

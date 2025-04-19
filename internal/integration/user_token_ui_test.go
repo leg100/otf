@@ -12,7 +12,7 @@ import (
 func TestIntegration_UserTokenUI(t *testing.T) {
 	integrationTest(t)
 
-	svc, _, ctx := setup(t, nil)
+	svc, _, ctx := setup(t)
 	browser.New(t, ctx, func(page playwright.Page) {
 		// go to profile
 		_, err := page.Goto("https://" + svc.System.Hostname() + "/app/profile")

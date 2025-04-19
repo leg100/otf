@@ -19,11 +19,11 @@ func TestGithubPullRequest(t *testing.T) {
 	// create an OTF daemon with a fake github backend, serve up a repo and its
 	// contents via tarball, and setup a fake pull request with a list of files
 	// it has changed.
-	daemon, org, ctx := setup(t, nil,
+	daemon, org, ctx := setup(t, withGithubOptions(
 		github.WithRepo("leg100/otf-workspaces"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		github.WithPullRequest("2", "/nomatch.tf", "/foo/bar/match.tf"),
-	)
+	))
 
 	provider := daemon.createVCSProvider(t, ctx, org)
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/user"
@@ -16,14 +15,14 @@ func TestRunner_Service(t *testing.T) {
 	integrationTest(t)
 
 	// Create database for multiple daemons to share.
-	cfg := config{Config: daemon.Config{Database: sql.NewTestDB(t)}}
+	db := withDatabase(sql.NewTestDB(t))
 
 	// Start first daemon, which creates a runner too.
-	daemon, _, ctx := setup(t, &cfg)
+	daemon, _, ctx := setup(t, db)
 
 	// Create 3 more daemons, which creates 3 more runners
 	for range 3 {
-		_, _, _ = setup(t, &cfg)
+		_, _, _ = setup(t, db)
 	}
 
 	// listing site-wide runners requires site admin perms.

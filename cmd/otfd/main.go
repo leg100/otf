@@ -42,8 +42,7 @@ func main() {
 }
 
 func parseFlags(ctx context.Context, args []string, out io.Writer) error {
-	cfg := daemon.Config{}
-	daemon.ApplyDefaults(&cfg)
+	cfg := daemon.NewConfig()
 
 	var loggerConfig *logr.Config
 
@@ -113,6 +112,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	cmd.Flags().DurationVar(&cfg.PlanningTimeout, "planning-timeout", 2*time.Hour, "Timeout for plans.")
 	cmd.Flags().DurationVar(&cfg.ApplyingTimeout, "applying-timeout", 24*time.Hour, "Timeout for applies.")
+
+	cmd.Flags().Var(&cfg.ApplyingTimeout, "applying-timeout", 24*time.Hour, "Timeout for applies.")
 
 	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
 	cfg.RunnerConfig = runner.NewConfigFromFlags(cmd.Flags())

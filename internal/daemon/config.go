@@ -7,8 +7,10 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/runner"
+	"github.com/leg100/otf/internal/terraform"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -47,24 +49,18 @@ type Config struct {
 	PlanningTimeout              time.Duration
 	ApplyingTimeout              time.Duration
 	OverrideTimeoutCheckInterval time.Duration
+	Engine                       engine.Engine
 
 	tokens.GoogleIAPConfig
 }
 
-func ApplyDefaults(cfg *Config) {
-	if cfg.RunnerConfig == nil {
-		cfg.RunnerConfig = &runner.Config{
-			MaxJobs: runner.DefaultMaxJobs,
-		}
-	}
-	if cfg.CacheConfig == nil {
-		cfg.CacheConfig = &inmem.CacheConfig{}
-	}
-	if cfg.MaxConfigSize == 0 {
-		cfg.MaxConfigSize = configversion.DefaultConfigMaxSize
-	}
-	if cfg.Engine == "" {
-		cfg.Engine = DefaultEngine
+// NewConfig constructs an otfd configuration with defaults.
+func NewConfig() Config {
+	return Config{
+		RunnerConfig:  runner.NewConfig(),
+		CacheConfig:   &inmem.CacheConfig{},
+		MaxConfigSize: configversion.DefaultConfigMaxSize,
+		Engine:        &terraform.Engine{},
 	}
 }
 

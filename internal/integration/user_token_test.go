@@ -17,7 +17,7 @@ func TestUserToken(t *testing.T) {
 	ctx := authz.AddSubjectToContext(context.Background(), &user.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
+		svc, _, _ := setup(t)
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := authz.AddSubjectToContext(ctx, svc.createUser(t))
@@ -28,7 +28,7 @@ func TestUserToken(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		svc.createToken(t, ctx, nil)
 		svc.createToken(t, ctx, nil)
 		svc.createToken(t, ctx, nil)
@@ -40,7 +40,7 @@ func TestUserToken(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		token, _ := svc.createToken(t, ctx, nil)
 
 		err := svc.Users.DeleteToken(ctx, token.ID)

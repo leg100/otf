@@ -15,7 +15,7 @@ import (
 func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	svc, org, ctx := setup(t)
 
 	t.Run("set permission", func(t *testing.T) {
 		ws := svc.createWorkspace(t, ctx, org)

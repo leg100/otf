@@ -15,7 +15,7 @@ func TestIntegration_StateService(t *testing.T) {
 	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		file, err := os.ReadFile("./testdata/terraform.tfstate")
 		require.NoError(t, err)
@@ -30,7 +30,7 @@ func TestIntegration_StateService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		want := svc.createStateVersion(t, ctx, nil)
 
 		got, err := svc.State.Get(ctx, want.ID)
@@ -40,7 +40,7 @@ func TestIntegration_StateService(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 
 		_, err := svc.State.Get(ctx, resource.NewTfeID(resource.StateVersionKind))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
@@ -49,7 +49,7 @@ func TestIntegration_StateService(t *testing.T) {
 	// Get current creates two state versions and checks the second one is made
 	// the current state version for a workspace.
 	t.Run("get current", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		_ = svc.createStateVersion(t, ctx, ws)
 		want := svc.createStateVersion(t, ctx, ws)
@@ -61,14 +61,14 @@ func TestIntegration_StateService(t *testing.T) {
 	})
 
 	t.Run("get current not found error", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 
 		_, err := svc.State.GetCurrent(ctx, resource.NewTfeID(resource.WorkspaceKind))
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		sv1 := svc.createStateVersion(t, ctx, ws)
 		sv2 := svc.createStateVersion(t, ctx, ws)
@@ -82,14 +82,14 @@ func TestIntegration_StateService(t *testing.T) {
 	// Listing state versions for a non-existent workspace should produce an
 	// error
 	t.Run("list not found error", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 
 		_, err := svc.State.List(ctx, resource.NewTfeID(resource.WorkspaceKind), resource.PageOptions{})
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, ctx := setup(t)
 		ws := svc.createWorkspace(t, ctx, nil)
 		want := svc.createStateVersion(t, ctx, ws)
 		current := svc.createStateVersion(t, ctx, ws)

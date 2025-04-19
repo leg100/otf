@@ -16,7 +16,7 @@ import (
 func TestAgentPoolsUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	// create some workspaces to assign to pool
 	ws1 := daemon.createWorkspace(t, ctx, org)
@@ -159,7 +159,7 @@ func TestAgentPoolsUI(t *testing.T) {
 		require.Regexp(t, `^[\w-]+\.[\w-]+\.[\w-]+$`, token)
 
 		// start agent up, configured to use token.
-		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, nil, token, runner.Config{})
+		registered, shutdownAgent := daemon.startAgent(t, ctx, org.Name, nil, token)
 
 		// go back to agent pool
 		_, err = page.Goto(fmt.Sprintf("https://%s/app/agent-pools/%s", daemon.System.Hostname(), created.Payload.ID))

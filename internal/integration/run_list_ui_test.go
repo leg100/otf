@@ -12,7 +12,7 @@ import (
 func TestIntegration_RunListUI(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 	ws1 := daemon.createWorkspace(t, ctx, org)
 	ws2 := daemon.createWorkspace(t, ctx, org)
 

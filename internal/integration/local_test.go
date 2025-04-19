@@ -13,7 +13,7 @@ import (
 func TestLocal(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t)
 
 	// create workspace with local execution mode
 	_, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{
