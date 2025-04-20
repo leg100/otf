@@ -13,6 +13,7 @@ import (
 type Engine interface {
 	pflag.Value
 
+	String() string
 	SourceURL(version string) *url.URL
 	DefaultVersion() string
 	GetLatestVersion(ctx context.Context) (string, error)

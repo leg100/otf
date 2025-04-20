@@ -20,6 +20,7 @@ type download struct {
 
 	version   string
 	src, dest string
+	binary    string
 	client    *http.Client
 }
 
@@ -67,7 +68,7 @@ func (d *download) getZipfile(ctx context.Context) (string, error) {
 	}
 	defer tmp.Close()
 
-	d.Write([]byte("downloading engine, version " + d.version + "\n"))
+	fmt.Fprintf(d, "downloading %s, version %s\n", d.binary, d.version)
 
 	_, err = io.Copy(tmp, res.Body)
 	if err != nil {
@@ -85,17 +86,17 @@ func (d *download) unzip(zipfile string) error {
 	defer zr.Close()
 
 	for _, f := range zr.File {
-		if f.Name == "terraform" {
+		if f.Name == d.binary {
 			fr, err := f.Open()
 			if err != nil {
 				return err
 			}
 			defer fr.Close()
 			if err := atomic.WriteFile(d.dest, fr, atomic.DefaultFileMode(0o755)); err != nil {
-				return fmt.Errorf("writing terraform binary: %w", err)
+				return fmt.Errorf("writing binary: %w", err)
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("terraform binary not found")
+	return fmt.Errorf("binary not found")
 }

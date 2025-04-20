@@ -3,10 +3,12 @@ package releases
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/leg100/otf/internal/engine"
@@ -17,22 +19,29 @@ import (
 
 type testEngine struct {
 	engine.Engine
+	u *url.URL
 }
+
+func (e *testEngine) SourceURL(version string) *url.URL { return e.u }
+func (e *testEngine) String() string                    { return "terraform" }
 
 func TestDownloader(t *testing.T) {
 	// setup web server
-	http.Handle("/", http.FileServer(http.Dir("testdata/releases")))
+	http.Handle("/", http.FileServer(http.Dir("testdata")))
 	srv := httptest.NewTLSServer(nil)
 	t.Cleanup(func() {
 		srv.Close()
 	})
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
+	u.Path = fmt.Sprintf("/terraform/1.2.3/terraform_1.2.3_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
 
-	dl := NewDownloader(&testEngine{}, t.TempDir())
-	dl.client = &http.Client{
-		Transport: otfhttp.InsecureTransport,
+	engine := &testEngine{
+		u: u,
 	}
+
+	dl := NewDownloader(engine, t.TempDir())
+	dl.client = &http.Client{Transport: otfhttp.InsecureTransport}
 
 	buf := new(bytes.Buffer)
 	tfpath, err := dl.Download(context.Background(), "1.2.3", buf)

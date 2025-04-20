@@ -60,6 +60,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 		version: version,
 		src:     d.engine.SourceURL(version).String(),
 		dest:    d.dest(version),
+		binary:  d.engine.String(),
 		client:  d.client,
 	}).download(ctx)
 
