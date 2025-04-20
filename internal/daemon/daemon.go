@@ -203,6 +203,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	releasesService := releases.NewService(releases.Options{
 		Logger: logger,
 		DB:     db,
+		Engine: cfg.Engine,
 	})
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
 		releasesService.StartLatestChecker(ctx)
@@ -218,6 +219,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		UserService:         userService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
+		Engine:              cfg.Engine,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,

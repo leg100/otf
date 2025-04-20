@@ -165,7 +165,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		IngressAttributes:      cv.IngressAttributes,
 		CostEstimationEnabled:  org.CostEstimationEnabled,
 		Source:                 opts.Source,
-		EngineVersion:          ws.TerraformVersion,
+		EngineVersion:          ws.EngineVersion,
 		Variables:              opts.Variables,
 	}
 	run.Plan = newPhase(run.ID, internal.PlanPhase)

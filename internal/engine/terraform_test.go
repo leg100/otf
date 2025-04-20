@@ -1,4 +1,4 @@
-package terraform
+package engine
 
 import (
 	"net/http"
@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_getLatestVersion(t *testing.T) {
+func Test_getLatestTerraformVersion(t *testing.T) {
 	// endpoint is a stub endpoint that always returns 1.6.1 as latest
 	// version
 	endpoint := func() string {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
-			w.Write(testutils.ReadFile(t, "./testdata/latest.json"))
+			w.Write(testutils.ReadFile(t, "./testdata/terraform/latest.json"))
 		})
 		srv := httptest.NewServer(mux)
 		t.Cleanup(srv.Close)
@@ -27,7 +27,7 @@ func Test_getLatestVersion(t *testing.T) {
 		return u.String()
 	}()
 
-	got, err := getLatestVersion(endpoint)
+	got, err := getLatestTerraformVersion(endpoint)
 	require.NoError(t, err)
 	assert.Equal(t, "1.6.1", got)
 }

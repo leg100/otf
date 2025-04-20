@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	otfrun "github.com/leg100/otf/internal/run"
@@ -52,6 +53,9 @@ type Job struct {
 	// Signaled is non-nil when a cancelation signal has been sent to the job
 	// and it is true when it has been forceably canceled.
 	Signaled *bool `jsonapi:"attribute" json:"signaled"`
+	// Engine is the process that performs the job steps, i.e. terraform or
+	// tofu.
+	Engine *engine.Engine `jsonapi:"attribute" json:"engine"`
 }
 
 func newJob(run *otfrun.Run) *Job {
@@ -62,6 +66,7 @@ func newJob(run *otfrun.Run) *Job {
 		Status:       JobUnallocated,
 		Organization: run.Organization,
 		WorkspaceID:  run.WorkspaceID,
+		Engine:       engine.Default,
 	}
 }
 

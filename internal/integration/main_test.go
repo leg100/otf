@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
@@ -178,8 +179,8 @@ func doMain(m *testing.M) (int, error) {
 
 	// Download terraform now rather than in individual tests because it would
 	// otherwise make the latter flaky.
-	downloader := releases.NewDownloader("")
-	tfpath, err = downloader.Download(context.Background(), releases.DefaultTerraformVersion, os.Stdout)
+	downloader := releases.NewDownloader(engine.Default, "")
+	tfpath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
 	if err != nil {
 		return 0, fmt.Errorf("downloading terraform: %w", err)
 	}

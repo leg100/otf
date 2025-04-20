@@ -5,7 +5,6 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
@@ -44,10 +43,9 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 		logger,
 		&remoteClient{Client: apiClient},
 		&remoteOperationSpawner{
-			logger:     logger,
-			config:     *opts.Config,
-			url:        opts.URL,
-			downloader: releases.NewDownloader(opts.Engine, opts.TerraformBinDir),
+			logger: logger,
+			config: *opts.Config,
+			url:    opts.URL,
 		},
 		true,
 		*opts.Config,
@@ -55,10 +53,9 @@ func NewAgent(logger logr.Logger, opts AgentOptions) (*Runner, error) {
 }
 
 type remoteOperationSpawner struct {
-	config     Config
-	logger     logr.Logger
-	downloader downloader
-	url        string
+	config Config
+	logger logr.Logger
+	url    string
 }
 
 func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*operation, error) {
@@ -71,21 +68,21 @@ func (s *remoteOperationSpawner) newOperation(job *Job, jobToken []byte) (*opera
 		return nil, err
 	}
 	return newOperation(operationOptions{
-		logger:      s.logger,
-		Debug:       s.config.Debug,
-		Sandbox:     s.config.Sandbox,
-		PluginCache: s.config.PluginCache,
-		job:         job,
-		jobToken:    jobToken,
-		downloader:  s.downloader,
-		runs:        &run.Client{Client: apiClient},
-		jobs:        &remoteClient{Client: apiClient},
-		workspaces:  &workspace.Client{Client: apiClient},
-		variables:   &variable.Client{Client: apiClient},
-		state:       &state.Client{Client: apiClient},
-		configs:     &configversion.Client{Client: apiClient},
-		logs:        &logs.Client{Client: apiClient},
-		server:      apiClient,
-		isAgent:     true,
+		logger:          s.logger,
+		Debug:           s.config.Debug,
+		Sandbox:         s.config.Sandbox,
+		PluginCache:     s.config.PluginCache,
+		TerraformBinDir: s.config.TerraformBinDir,
+		job:             job,
+		jobToken:        jobToken,
+		runs:            &run.Client{Client: apiClient},
+		jobs:            &remoteClient{Client: apiClient},
+		workspaces:      &workspace.Client{Client: apiClient},
+		variables:       &variable.Client{Client: apiClient},
+		state:           &state.Client{Client: apiClient},
+		configs:         &configversion.Client{Client: apiClient},
+		logs:            &logs.Client{Client: apiClient},
+		server:          apiClient,
+		isAgent:         true,
 	}), nil
 }

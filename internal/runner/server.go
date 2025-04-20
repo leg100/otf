@@ -37,7 +37,6 @@ func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 			logs:       opts.Logs,
 			server:     opts.Server,
 			jobs:       opts.Jobs,
-			downloader: releases.NewDownloader(opts.Engine, opts.TerraformBinDir),
 		},
 		false,
 		*opts.Config,
@@ -51,7 +50,6 @@ func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 type localOperationSpawner struct {
 	config     Config
 	logger     logr.Logger
-	downloader downloader
 	runs       runClient
 	workspaces workspaceClient
 	variables  variablesClient
@@ -70,7 +68,7 @@ func (s *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operat
 		PluginCache: s.config.PluginCache,
 		job:         job,
 		jobToken:    jobToken,
-		downloader:  s.downloader,
+		downloader:  releases.NewDownloader(job.Engine, s.config.TerraformBinDir),
 		jobs:        s.jobs,
 		runs:        s.runs,
 		workspaces:  s.workspaces,

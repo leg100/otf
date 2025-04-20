@@ -22,6 +22,7 @@ type (
 	Service struct {
 		logr.Logger
 		*authz.Authorizer
+		*factory
 
 		db          *pgdb
 		web         *webHandlers
@@ -48,6 +49,7 @@ type (
 		TeamService         *team.Service
 		UserService         *user.Service
 		ConnectionService   *connections.Service
+		Engine              engine
 	}
 )
 
@@ -58,6 +60,7 @@ func NewService(opts Options) *Service {
 		Authorizer:  opts.Authorizer,
 		db:          db,
 		connections: opts.ConnectionService,
+		factory:     &factory{engine: opts.Engine},
 	}
 	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{
@@ -119,7 +122,7 @@ func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], f
 }
 
 func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, error) {
-	ws, err := NewWorkspace(opts)
+	ws, err := s.NewWorkspace(opts)
 	if err != nil {
 		s.Error(err, "constructing workspace")
 		return nil, err

@@ -13,15 +13,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type fakeEngine struct{}
+
+func (*fakeEngine) DefaultVersion() string { return "1.2.3" }
+
 func TestNewWorkspace(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	agentPoolID := testutils.ParseID(t, "apool-123")
 	vcsProviderID := testutils.ParseID(t, "vcs-123")
+	factory := &factory{engine: &fakeEngine{}}
 
 	tests := []struct {
-		name string
-		opts CreateOptions
-		want error
+		name      string
+		opts      CreateOptions
+		wantError error
+		test      func(t *testing.T, got *Workspace)
 	}{
 		{
 			name: "default",
@@ -29,53 +35,58 @@ func TestNewWorkspace(t *testing.T) {
 				Name:         internal.String("my-workspace"),
 				Organization: &org1,
 			},
+			test: func(t *testing.T, got *Workspace) {
+				assert.Equal(t, "my-workspace", got.Name)
+				assert.Equal(t, org1, got.Organization)
+				assert.Equal(t, "1.2.3", got.EngineVersion)
+			},
 		},
 		{
 			name: "missing name",
 			opts: CreateOptions{
 				Organization: &org1,
 			},
-			want: internal.ErrRequiredName,
+			wantError: internal.ErrRequiredName,
 		},
 		{
 			name: "missing organization",
 			opts: CreateOptions{
 				Name: internal.String("my-workspace"),
 			},
-			want: internal.ErrRequiredOrg,
+			wantError: internal.ErrRequiredOrg,
 		},
 		{
 			name: "invalid name",
 			opts: CreateOptions{
 				Name: internal.String("%*&^"),
 			},
-			want: internal.ErrInvalidName,
+			wantError: internal.ErrInvalidName,
 		},
 		{
 			name: "specifying latest for terraform version",
 			opts: CreateOptions{
-				Name:             internal.String("my-workspace"),
-				Organization:     &org1,
-				TerraformVersion: internal.String("latest"),
+				Name:          internal.String("my-workspace"),
+				Organization:  &org1,
+				EngineVersion: internal.String("latest"),
 			},
 		},
 		{
 			name: "bad terraform version",
 			opts: CreateOptions{
-				Name:             internal.String("my-workspace"),
-				Organization:     &org1,
-				TerraformVersion: internal.String("1,2,0"),
+				Name:          internal.String("my-workspace"),
+				Organization:  &org1,
+				EngineVersion: internal.String("1,2,0"),
 			},
-			want: internal.ErrInvalidTerraformVersion,
+			wantError: internal.ErrInvalidTerraformVersion,
 		},
 		{
 			name: "unsupported terraform version",
 			opts: CreateOptions{
-				Name:             internal.String("my-workspace"),
-				Organization:     &org1,
-				TerraformVersion: internal.String("0.14.0"),
+				Name:          internal.String("my-workspace"),
+				Organization:  &org1,
+				EngineVersion: internal.String("0.14.0"),
 			},
-			want: ErrUnsupportedTerraformVersion,
+			wantError: ErrUnsupportedTerraformVersion,
 		},
 		{
 			name: "specifying both tags regex and trigger patterns",
@@ -87,7 +98,7 @@ func TestNewWorkspace(t *testing.T) {
 					TagsRegex: internal.String("\\d+"),
 				},
 			},
-			want: ErrTagsRegexAndTriggerPatterns,
+			wantError: ErrTagsRegexAndTriggerPatterns,
 		},
 		{
 			name: "specifying both tags regex and always trigger",
@@ -99,7 +110,7 @@ func TestNewWorkspace(t *testing.T) {
 					TagsRegex: internal.String("\\d+"),
 				},
 			},
-			want: ErrTagsRegexAndAlwaysTrigger,
+			wantError: ErrTagsRegexAndAlwaysTrigger,
 		},
 		{
 			name: "specifying both trigger patterns and always trigger",
@@ -109,7 +120,7 @@ func TestNewWorkspace(t *testing.T) {
 				AlwaysTrigger:   internal.Bool(true),
 				TriggerPatterns: []string{"/foo/**/*.tf"},
 			},
-			want: ErrTriggerPatternsAndAlwaysTrigger,
+			wantError: ErrTriggerPatternsAndAlwaysTrigger,
 		},
 		{
 			name: "invalid trigger pattern",
@@ -118,7 +129,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:    &org1,
 				TriggerPatterns: []string{"/foo/[**/*.tf"},
 			},
-			want: ErrInvalidTriggerPattern,
+			wantError: ErrInvalidTriggerPattern,
 		},
 		{
 			name: "invalid tags regex",
@@ -131,7 +142,7 @@ func TestNewWorkspace(t *testing.T) {
 					TagsRegex:     internal.String("{**"),
 				},
 			},
-			want: ErrInvalidTagsRegex,
+			wantError: ErrInvalidTagsRegex,
 		},
 		{
 			name: "agent execution mode with agent pool ID",
@@ -141,7 +152,7 @@ func TestNewWorkspace(t *testing.T) {
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
 				AgentPoolID:   &agentPoolID,
 			},
-			want: nil,
+			wantError: nil,
 		},
 		{
 			name: "agent execution mode without agent pool ID",
@@ -150,7 +161,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:  &org1,
 				ExecutionMode: ExecutionModePtr(AgentExecutionMode),
 			},
-			want: ErrAgentExecutionModeWithoutPool,
+			wantError: ErrAgentExecutionModeWithoutPool,
 		},
 		{
 			name: "default remote execution mode with agent pool ID",
@@ -159,7 +170,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization: &org1,
 				AgentPoolID:  &agentPoolID,
 			},
-			want: ErrNonAgentExecutionModeWithPool,
+			wantError: ErrNonAgentExecutionModeWithPool,
 		},
 		{
 			name: "local execution mode with agent pool ID",
@@ -169,13 +180,16 @@ func TestNewWorkspace(t *testing.T) {
 				ExecutionMode: ExecutionModePtr(LocalExecutionMode),
 				AgentPoolID:   &agentPoolID,
 			},
-			want: ErrNonAgentExecutionModeWithPool,
+			wantError: ErrNonAgentExecutionModeWithPool,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewWorkspace(tt.opts)
-			assert.True(t, errors.Is(err, tt.want), "got: %s", err)
+			got, err := factory.NewWorkspace(tt.opts)
+			assert.True(t, errors.Is(err, tt.wantError), "got: %s", err)
+			if tt.test != nil {
+				tt.test(t, got)
+			}
 		})
 	}
 }
@@ -203,8 +217,8 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "bad terraform version",
 			ws:   &Workspace{Name: "dev", Organization: org1},
 			opts: UpdateOptions{
-				Name:             internal.String("my-workspace"),
-				TerraformVersion: internal.String("1,2,0"),
+				Name:          internal.String("my-workspace"),
+				EngineVersion: internal.String("1,2,0"),
 			},
 			want: internal.ErrInvalidTerraformVersion,
 		},
@@ -212,8 +226,8 @@ func TestWorkspace_UpdateError(t *testing.T) {
 			name: "unsupported terraform version",
 			ws:   &Workspace{Name: "dev", Organization: org1},
 			opts: UpdateOptions{
-				Name:             internal.String("my-workspace"),
-				TerraformVersion: internal.String("0.14.0"),
+				Name:          internal.String("my-workspace"),
+				EngineVersion: internal.String("0.14.0"),
 			},
 			want: ErrUnsupportedTerraformVersion,
 		},

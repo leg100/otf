@@ -1,4 +1,4 @@
-package tofu
+package engine
 
 import (
 	"context"
@@ -17,14 +17,14 @@ func Test_getLatestVersion(t *testing.T) {
 	_, u := github.NewTestServer(t,
 		github.WithHandler("/api/v3/repos/opentofu/opentofu/releases/latest", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
-			f, err := os.Open("./testdata/latest.json")
+			f, err := os.Open("./testdata/tofu/latest.json")
 			require.NoError(t, err)
 			io.Copy(w, f)
 			f.Close()
 
 		}),
 	)
-	got, err := getLatestVersion(context.Background(), internal.String(u.String()))
+	got, err := getLatestTofuVersion(context.Background(), internal.String(u.String()))
 	require.NoError(t, err)
 	assert.Equal(t, "1.9.0", got)
 }

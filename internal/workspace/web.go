@@ -453,7 +453,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name:               &params.Name,
 		Description:        &params.Description,
 		ExecutionMode:      &params.ExecutionMode,
-		TerraformVersion:   &params.TerraformVersion,
+		EngineVersion:      &params.TerraformVersion,
 		WorkingDirectory:   &params.WorkingDirectory,
 		GlobalRemoteState:  &params.GlobalRemoteState,
 		SpeculativeEnabled: &params.SpeculativeEnabled,

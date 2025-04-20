@@ -4,13 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/sql"
 )
 
 type db struct {
 	*sql.DB
-	engine engine.Engine
+	engine Engine
 }
 
 func (db *db) updateLatestVersion(ctx context.Context, v string) error {

@@ -57,8 +57,8 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	if err != nil {
 		return nil, err
 	}
-	if ws.TerraformVersion == releases.LatestVersionString {
-		ws.TerraformVersion, _, err = f.releases.GetLatest(ctx)
+	if ws.EngineVersion == releases.LatestVersionString {
+		ws.EngineVersion, _, err = f.releases.GetLatest(ctx)
 		if err != nil {
 			return nil, err
 		}

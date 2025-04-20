@@ -1,4 +1,4 @@
-package tofu
+package engine
 
 import (
 	"context"
@@ -9,21 +9,16 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v65/github"
-	"github.com/leg100/otf/internal/engine"
 )
 
-const DefaultVersion = "1.9.0"
+const defaultTofuVersion = "1.9.0"
 
-func init() {
-	engine.Register(&Engine{})
-}
+type tofuEngine struct{}
 
-type Engine struct{}
+func (e *tofuEngine) String() string         { return "tofu" }
+func (e *tofuEngine) DefaultVersion() string { return defaultTofuVersion }
 
-func (e *Engine) String() string         { return "tofu" }
-func (e *Engine) DefaultVersion() string { return DefaultVersion }
-
-func (e *Engine) SourceURL(version string) *url.URL {
+func (e *tofuEngine) SourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   "github.com",
@@ -37,16 +32,11 @@ func (e *Engine) SourceURL(version string) *url.URL {
 	}
 }
 
-func (_ *Engine) Type() string { return "engine" }
-func (e *Engine) Set(v string) error {
-	return engine.SetFlag(e, v)
+func (e *tofuEngine) GetLatestVersion(ctx context.Context) (string, error) {
+	return getLatestTofuVersion(ctx, nil)
 }
 
-func (e *Engine) GetLatestVersion(ctx context.Context) (string, error) {
-	return getLatestVersion(ctx, nil)
-}
-
-func getLatestVersion(ctx context.Context, url *string) (string, error) {
+func getLatestTofuVersion(ctx context.Context, url *string) (string, error) {
 	client := github.NewClient(nil)
 	if url != nil {
 		client.WithEnterpriseURLs(*url, *url)

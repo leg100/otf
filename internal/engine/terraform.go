@@ -1,4 +1,4 @@
-package terraform
+package engine
 
 import (
 	"context"
@@ -8,25 +8,20 @@ import (
 	"net/url"
 	"path"
 	"runtime"
-
-	"github.com/leg100/otf/internal/engine"
 )
 
 const (
-	DefaultVersion        = "1.6.0"
-	hashicorpReleasesHost = "releases.hashicorp.com"
+	defaultTerraformVersion = "1.6.0"
+	hashicorpReleasesHost   = "releases.hashicorp.com"
+	latestEndpoint          = "https://api.releases.hashicorp.com/v1/releases/terraform/latest"
 )
 
-func init() {
-	engine.Register(&Engine{})
-}
+type terraformEngine struct{}
 
-type Engine struct{}
+func (e *terraformEngine) String() string         { return "terraform" }
+func (e *terraformEngine) DefaultVersion() string { return defaultTerraformVersion }
 
-func (e *Engine) String() string         { return "terraform" }
-func (e *Engine) DefaultVersion() string { return DefaultVersion }
-
-func (e *Engine) SourceURL(version string) *url.URL {
+func (e *terraformEngine) SourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   hashicorpReleasesHost,
@@ -37,22 +32,15 @@ func (e *Engine) SourceURL(version string) *url.URL {
 	}
 }
 
-func (_ *Engine) Type() string { return "engine" }
-func (e *Engine) Set(v string) error {
-	return engine.SetFlag(e, v)
-}
-
-const latestEndpoint = "https://api.releases.hashicorp.com/v1/releases/terraform/latest"
-
 // GetLatestVersion retrieves the latest version string for terraform, following
 // semver syntax (e.g. 1.9.0)
 //
 // TODO: use ctx
-func (e *Engine) GetLatestVersion(_ context.Context) (string, error) {
-	return getLatestVersion(latestEndpoint)
+func (e *terraformEngine) GetLatestVersion(_ context.Context) (string, error) {
+	return getLatestTerraformVersion(latestEndpoint)
 }
 
-func getLatestVersion(endpoint string) (string, error) {
+func getLatestTerraformVersion(endpoint string) (string, error) {
 	// check releases endpoint
 	resp, err := http.Get(endpoint)
 	if err != nil {

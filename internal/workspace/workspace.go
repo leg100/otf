@@ -50,7 +50,7 @@ type (
 		StructuredRunOutputEnabled bool              `jsonapi:"attribute" json:"structured_run_output_enabled"`
 		SourceName                 string            `jsonapi:"attribute" json:"source_name"`
 		SourceURL                  string            `jsonapi:"attribute" json:"source_url"`
-		TerraformVersion           string            `jsonapi:"attribute" json:"terraform_version"`
+		EngineVersion              string            `jsonapi:"attribute" json:"engine_version"`
 		WorkingDirectory           string            `jsonapi:"attribute" json:"working_directory"`
 		Organization               organization.Name `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun        `jsonapi:"attribute" json:"latest_run"`
@@ -117,7 +117,7 @@ type (
 		SourceURL                  *string
 		StructuredRunOutputEnabled *bool
 		Tags                       []TagSpec
-		TerraformVersion           *string
+		EngineVersion              *string
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
@@ -142,7 +142,7 @@ type (
 		QueueAllRuns               *bool
 		SpeculativeEnabled         *bool
 		StructuredRunOutputEnabled *bool
-		TerraformVersion           *string
+		EngineVersion              *string
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
@@ -174,9 +174,19 @@ type (
 
 	// VCS trigger strategy determines which VCS events trigger runs
 	VCSTriggerStrategy string
+
+	// factory makes workspaces
+	factory struct {
+		engine engine
+	}
+
+	// engine is terraform/tofu etc
+	engine interface {
+		DefaultVersion() string
+	}
 )
 
-func NewWorkspace(opts CreateOptions) (*Workspace, error) {
+func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	// required options
 	if err := resource.ValidateName(opts.Name); err != nil {
 		return nil, err
@@ -191,7 +201,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
-		TerraformVersion:   releases.DefaultTerraformVersion,
+		EngineVersion:      f.engine.DefaultVersion(),
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
 	}
@@ -228,8 +238,8 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if opts.StructuredRunOutputEnabled != nil {
 		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
-	if opts.TerraformVersion != nil {
-		if err := ws.setTerraformVersion(*opts.TerraformVersion); err != nil {
+	if opts.EngineVersion != nil {
+		if err := ws.setTerraformVersion(*opts.EngineVersion); err != nil {
 			return nil, err
 		}
 	}
@@ -391,8 +401,8 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 		updated = true
 	}
-	if opts.TerraformVersion != nil {
-		if err := ws.setTerraformVersion(*opts.TerraformVersion); err != nil {
+	if opts.EngineVersion != nil {
+		if err := ws.setTerraformVersion(*opts.EngineVersion); err != nil {
 			return nil, err
 		}
 		updated = true
@@ -553,7 +563,7 @@ func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolI
 
 func (ws *Workspace) setTerraformVersion(v string) error {
 	if v == releases.LatestVersionString {
-		ws.TerraformVersion = v
+		ws.EngineVersion = v
 		return nil
 	}
 	if !semver.IsValid(v) {
@@ -568,7 +578,7 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 			return ErrUnsupportedTerraformVersion
 		}
 	}
-	ws.TerraformVersion = v
+	ws.EngineVersion = v
 	return nil
 }
 

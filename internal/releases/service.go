@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
@@ -21,16 +21,28 @@ type (
 		logr.Logger
 		*downloader
 
-		db     *db
-		engine engine.Engine
+		db     DB
+		engine Engine
 	}
 
 	Options struct {
 		logr.Logger
 		*sql.DB
 
-		BinDir string        // destination directory for binaries
-		Engine engine.Engine // terraform or tofu
+		BinDir string // destination directory for binaries
+		Engine Engine // terraform or tofu
+	}
+
+	DB interface {
+		getLatest(ctx context.Context) (string, time.Time, error)
+		updateLatestVersion(ctx context.Context, v string) error
+	}
+
+	Engine interface {
+		String() string
+		DefaultVersion() string
+		GetLatestVersion(context.Context) (string, error)
+		SourceURL(version string) *url.URL
 	}
 )
 
@@ -39,6 +51,7 @@ func NewService(opts Options) *Service {
 		Logger:     opts.Logger,
 		db:         &db{opts.DB, opts.Engine},
 		downloader: NewDownloader(opts.Engine, opts.BinDir),
+		engine:     opts.Engine,
 	}
 	return svc
 }
@@ -46,53 +59,58 @@ func NewService(opts Options) *Service {
 // StartLatestChecker starts the latest checker go routine, checking the Hashicorp
 // API endpoint for a new latest version.
 func (s *Service) StartLatestChecker(ctx context.Context) {
-	check := func() {
-		err := func() error {
-			// get current latest version stored in db
-			before, checkpoint, err := s.GetLatest(ctx)
-			if err != nil {
-				return err
-			}
-			// skip check if already checked within last 24 hours
-			if checkpoint.After(time.Now().Add(-24 * time.Hour)) {
-				return nil
-			}
-			// get latest version from engine's internet endpoint
-			after, err := s.engine.GetLatestVersion(ctx)
-			if err != nil {
-				return err
-			}
-			// perform sanity check
-			if n := semver.Compare(after, before); n < 0 {
-				return fmt.Errorf("endpoint returned older version: before: %s; after: %s", before, after)
-			}
-			// update db (even if version hasn't changed we need to update the
-			// checkpoint)
-			if err := s.db.updateLatestVersion(ctx, after); err != nil {
-				return err
-			}
-			s.V(1).Info("checked latest engine version", "engine", s.engine, "before", before, "after", after)
-			return nil
-		}()
-		if err != nil {
-			s.Error(err, "checking latest engine version", "engine", s.engine)
-		}
-	}
 	// check once at startup
-	check()
+	s.checkAndLog(ctx)
 	// ...and check every 5 mins thereafter
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
-				check()
+				s.checkAndLog(ctx)
 			case <-ctx.Done():
 				ticker.Stop()
 				return
 			}
 		}
 	}()
+}
+
+func (s *Service) checkAndLog(ctx context.Context) {
+	before, after, err := s.check(ctx)
+	if err != nil {
+		s.Error(err, "checking latest engine version", "engine", s.engine)
+		return
+	}
+	// update db (even if version hasn't changed we need to update the
+	// checkpoint)
+	if err := s.db.updateLatestVersion(ctx, after); err != nil {
+		s.Error(err, "checking latest engine version", "engine", s.engine)
+		return
+	}
+	s.V(1).Info("checked latest engine version", "engine", s.engine, "before", before, "after", after)
+}
+
+func (s *Service) check(ctx context.Context) (before string, after string, err error) {
+	// get current latest version stored in db
+	before, checkpoint, err := s.GetLatest(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	// skip check if already checked within last 24 hours
+	if checkpoint.After(time.Now().Add(-24 * time.Hour)) {
+		return "", "", nil
+	}
+	// get latest version from engine's internet endpoint
+	after, err = s.engine.GetLatestVersion(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	// perform sanity check
+	if n := semver.Compare(after, before); n < 0 {
+		return "", "", fmt.Errorf("endpoint returned older version: before: %s; after: %s", before, after)
+	}
+	return before, after, nil
 }
 
 // GetLatest returns the latest engine version and the time when it was

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/leg100/otf/internal"
 	"github.com/sdassow/atomic"
 )
 
@@ -25,10 +24,6 @@ type download struct {
 }
 
 func (d *download) download(ctx context.Context) error {
-	if internal.Exists(d.dest) {
-		return nil
-	}
-
 	zipfile, err := d.getZipfile(ctx)
 	if err != nil {
 		return fmt.Errorf("downloading zipfile from %s: %w", d.src, err)

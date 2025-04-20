@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/engine"
 )
 
 var DefaultEngineBinDir = path.Join(os.TempDir(), "otf-engine-bins")
@@ -18,13 +18,18 @@ type downloader struct {
 	destdir string        // destination directory for binaries
 	client  *http.Client  // client for downloading from server via http
 	mu      chan struct{} // ensures only one download at a time
-	engine  engine.Engine
+	engine  engineSource
+}
+
+type engineSource interface {
+	String() string
+	SourceURL(version string) *url.URL
 }
 
 // NewDownloader constructs a terraform downloader, with destdir set as the
 // parent directory into which the binaries are downloaded. Pass an empty string
 // to use a default.
-func NewDownloader(engine engine.Engine, destdir string) *downloader {
+func NewDownloader(engine engineSource, destdir string) *downloader {
 	if destdir == "" {
 		destdir = DefaultEngineBinDir
 	}
@@ -53,6 +58,12 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	case <-d.mu:
 	case <-ctx.Done():
 		return "", ctx.Err()
+	}
+
+	// Check if bin exists again, it may have been downloaded whilst caller was
+	// blocked on mutex above.
+	if internal.Exists(d.dest(version)) {
+		return d.dest(version), nil
 	}
 
 	err := (&download{

@@ -134,7 +134,7 @@ func TestFactory(t *testing.T) {
 	t.Run("get latest version", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{TerraformVersion: releases.LatestVersionString},
+			&workspace.Workspace{EngineVersion: releases.LatestVersionString},
 			&configversion.ConfigurationVersion{},
 			"1.2.3",
 		)

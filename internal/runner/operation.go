@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -164,7 +165,7 @@ func newOperation(opts operationOptions) *operation {
 		Sandbox:    opts.Sandbox,
 		Debug:      opts.Debug,
 		job:        opts.job,
-		downloader: opts.downloader,
+		downloader: releases.NewDownloader(opts.job.Engine, opts.TerraformBinDir),
 		envs:       envs,
 		ctx:        ctx,
 		cancelfn:   cancelfn,
