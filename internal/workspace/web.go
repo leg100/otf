@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
@@ -426,6 +427,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory  string         `schema:"working_directory"`
 		WorkspaceID       resource.TfeID `schema:"workspace_id,required"`
 		GlobalRemoteState bool           `schema:"global_remote_state"`
+		Engine            *engine.Engine `schema:"engine"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`

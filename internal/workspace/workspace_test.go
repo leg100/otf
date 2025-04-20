@@ -21,7 +21,7 @@ func TestNewWorkspace(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	agentPoolID := testutils.ParseID(t, "apool-123")
 	vcsProviderID := testutils.ParseID(t, "vcs-123")
-	factory := &factory{engine: &fakeEngine{}}
+	factory := &factory{defaultEngine: &fakeEngine{}}
 
 	tests := []struct {
 		name      string
@@ -77,7 +77,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:  &org1,
 				EngineVersion: internal.String("1,2,0"),
 			},
-			wantError: internal.ErrInvalidTerraformVersion,
+			wantError: internal.ErrInvalidEngineVersion,
 		},
 		{
 			name: "unsupported terraform version",
@@ -220,7 +220,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				Name:          internal.String("my-workspace"),
 				EngineVersion: internal.String("1,2,0"),
 			},
-			want: internal.ErrInvalidTerraformVersion,
+			want: internal.ErrInvalidEngineVersion,
 		},
 		{
 			name: "unsupported terraform version",

@@ -59,7 +59,8 @@ INSERT INTO workspaces (
     trigger_patterns,
     vcs_tags_regex,
     working_directory,
-    organization_name
+    organization_name,
+	engine
 ) VALUES (
     $1,
     $2,
@@ -86,7 +87,8 @@ INSERT INTO workspaces (
     $23,
     $24,
     $25,
-    $26
+    $26,
+	$27
 )
 `,
 		ws.ID,
@@ -115,6 +117,7 @@ INSERT INTO workspaces (
 		VCSTagsRegex,
 		ws.WorkingDirectory,
 		ws.Organization,
+		ws.Engine,
 	)
 	return err
 }
@@ -158,7 +161,8 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 					trigger_patterns              = $15,
 					vcs_tags_regex                = $16,
 					working_directory             = $17,
-					updated_at                    = $18
+					updated_at                    = $18,
+					engine                        = $19
 				WHERE workspace_id = $19
 			`,
 				ws.AgentPoolID,
@@ -180,6 +184,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 				ws.WorkingDirectory,
 				ws.UpdatedAt,
 				ws.ID,
+				ws.Engine,
 			)
 			return err
 		},

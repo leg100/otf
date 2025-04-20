@@ -11,6 +11,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
@@ -24,7 +25,6 @@ const (
 	AgentExecutionMode  ExecutionMode = "agent"
 
 	DefaultAllowDestroyPlan = true
-	MinTerraformVersion     = "1.2.0"
 )
 
 var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
@@ -56,6 +56,7 @@ type (
 		LatestRun                  *LatestRun        `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string          `jsonapi:"attribute" json:"tags"`
 		Lock                       resource.ID       `json:"-"`
+		Engine                     *engine.Engine    `jsonapi:"attribute" json:"engine"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -117,6 +118,7 @@ type (
 		SourceURL                  *string
 		StructuredRunOutputEnabled *bool
 		Tags                       []TagSpec
+		Engine                     *engine.Engine
 		EngineVersion              *string
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
@@ -146,6 +148,7 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
+		Engine                     UpdateEngineOption
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -177,11 +180,10 @@ type (
 
 	// factory makes workspaces
 	factory struct {
-		engine engine
+		defaultEngine defaultEngineGetter
 	}
 
-	// engine is terraform/tofu etc
-	engine interface {
+	defaultEngineGetter interface {
 		DefaultVersion() string
 	}
 )
@@ -201,7 +203,7 @@ func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
-		EngineVersion:      f.engine.DefaultVersion(),
+		EngineVersion:      f.defaultEngine.DefaultVersion(),
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
 	}
@@ -237,6 +239,9 @@ func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 	if opts.StructuredRunOutputEnabled != nil {
 		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+	}
+	if opts.Engine != nil {
+		ws.Engine = opts.Engine
 	}
 	if opts.EngineVersion != nil {
 		if err := ws.setTerraformVersion(*opts.EngineVersion); err != nil {
@@ -399,6 +404,16 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	}
 	if opts.StructuredRunOutputEnabled != nil {
 		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+		updated = true
+	}
+	if opts.Engine.Set {
+		if opts.Engine.Valid {
+			// Update to use a workspace-specific engine
+			ws.Engine = opts.Engine.Engine
+		} else {
+			// Update to use the system default engine
+			ws.Engine = nil
+		}
 		updated = true
 	}
 	if opts.EngineVersion != nil {
@@ -567,13 +582,13 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 		return nil
 	}
 	if !semver.IsValid(v) {
-		return internal.ErrInvalidTerraformVersion
+		return engine.ErrInvalidVersion
 	}
 	// only accept terraform versions above the minimum requirement.
 	//
 	// NOTE: we make an exception for the specific versions posted by the go-tfe
 	// integration tests.
-	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
+	if result := semver.Compare(v, engine.MinTerraformVersion); result < 0 {
 		if !slices.Contains(apiTestTerraformVersions, v) {
 			return ErrUnsupportedTerraformVersion
 		}

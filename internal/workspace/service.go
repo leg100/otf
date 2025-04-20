@@ -49,7 +49,7 @@ type (
 		TeamService         *team.Service
 		UserService         *user.Service
 		ConnectionService   *connections.Service
-		Engine              engine
+		Engine              defaultEngineGetter
 	}
 )
 
@@ -60,7 +60,7 @@ func NewService(opts Options) *Service {
 		Authorizer:  opts.Authorizer,
 		db:          db,
 		connections: opts.ConnectionService,
-		factory:     &factory{engine: opts.Engine},
+		factory:     &factory{defaultEngine: opts.Engine},
 	}
 	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{

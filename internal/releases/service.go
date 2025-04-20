@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
@@ -19,10 +20,8 @@ const LatestVersionString = "latest"
 type (
 	Service struct {
 		logr.Logger
-		*downloader
 
-		db     DB
-		engine Engine
+		db DB
 	}
 
 	Options struct {
@@ -30,12 +29,11 @@ type (
 		*sql.DB
 
 		BinDir string // destination directory for binaries
-		Engine Engine // terraform or tofu
 	}
 
 	DB interface {
-		getLatest(ctx context.Context) (string, time.Time, error)
-		updateLatestVersion(ctx context.Context, v string) error
+		getLatest(ctx context.Context, engine string) (string, time.Time, error)
+		updateLatestVersion(ctx context.Context, engine, v string) error
 	}
 
 	Engine interface {
@@ -47,27 +45,24 @@ type (
 )
 
 func NewService(opts Options) *Service {
-	svc := &Service{
-		Logger:     opts.Logger,
-		db:         &db{opts.DB, opts.Engine},
-		downloader: NewDownloader(opts.Engine, opts.BinDir),
-		engine:     opts.Engine,
+	return &Service{
+		Logger: opts.Logger,
+		db:     &db{opts.DB},
 	}
-	return svc
 }
 
-// StartLatestChecker starts the latest checker go routine, checking the Hashicorp
-// API endpoint for a new latest version.
+// StartLatestChecker starts the latest checker go routine, checking the latest
+// version of each engine on a regular interval.
 func (s *Service) StartLatestChecker(ctx context.Context) {
 	// check once at startup
-	s.checkAndLog(ctx)
+	s.checkAndUpdate(ctx)
 	// ...and check every 5 mins thereafter
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
-				s.checkAndLog(ctx)
+				s.checkAndUpdate(ctx)
 			case <-ctx.Done():
 				ticker.Stop()
 				return
@@ -76,22 +71,31 @@ func (s *Service) StartLatestChecker(ctx context.Context) {
 	}()
 }
 
-func (s *Service) checkAndLog(ctx context.Context) {
-	before, after, err := s.check(ctx)
-	if err != nil {
-		s.Error(err, "checking latest engine version", "engine", s.engine)
-		return
+func (s *Service) checkAndUpdate(ctx context.Context) {
+	for _, engine := range engine.ListEngines() {
+		before, after, err := s.check(ctx, engine)
+		if err != nil {
+			s.Error(err, "checking latest engine version", "engine", engine)
+			return
+		}
+		// update db (even if version hasn't changed we need to update the
+		// checkpoint)
+		if err := s.db.updateLatestVersion(ctx, engine.String(), after); err != nil {
+			s.Error(err, "checking latest engine version", "engine", engine)
+			return
+		}
+		s.V(1).Info("checked latest engine version", "engine", engine, "before", before, "after", after)
 	}
-	// update db (even if version hasn't changed we need to update the
-	// checkpoint)
-	if err := s.db.updateLatestVersion(ctx, after); err != nil {
-		s.Error(err, "checking latest engine version", "engine", s.engine)
-		return
-	}
-	s.V(1).Info("checked latest engine version", "engine", s.engine, "before", before, "after", after)
 }
 
-func (s *Service) check(ctx context.Context) (before string, after string, err error) {
+// checkResult is the result of the latest version check for an engine.
+type checkResult struct {
+	before, after string
+	skipped       bool
+	reason        string
+}
+
+func (s *Service) check(ctx context.Context, engine Engine) (before string, after string, err error) {
 	// get current latest version stored in db
 	before, checkpoint, err := s.GetLatest(ctx)
 	if err != nil {
@@ -102,7 +106,7 @@ func (s *Service) check(ctx context.Context) (before string, after string, err e
 		return "", "", nil
 	}
 	// get latest version from engine's internet endpoint
-	after, err = s.engine.GetLatestVersion(ctx)
+	after, err = engine.GetLatestVersion(ctx)
 	if err != nil {
 		return "", "", err
 	}

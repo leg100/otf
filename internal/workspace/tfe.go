@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
@@ -118,7 +119,11 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := a.Create(r.Context(), opts)
 	if err != nil {
-		tfeapi.Error(w, err)
+		var opts []tfeapi.ErrorOption
+		if errors.Is(err, engine.ErrInvalidVersion) {
+			opts = append(opts, tfeapi.WithStatus(http.StatusUnprocessableEntity))
+		}
+		tfeapi.Error(w, err, opts...)
 		return
 	}
 
@@ -399,7 +404,11 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 
 	ws, err := a.Update(r.Context(), workspaceID, opts)
 	if err != nil {
-		tfeapi.Error(w, err)
+		var opts []tfeapi.ErrorOption
+		if errors.Is(err, engine.ErrInvalidVersion) {
+			opts = append(opts, tfeapi.WithStatus(http.StatusUnprocessableEntity))
+		}
+		tfeapi.Error(w, err, opts...)
 		return
 	}
 

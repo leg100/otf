@@ -2,13 +2,18 @@ package engine
 
 import (
 	"context"
+	"database/sql/driver"
+	"errors"
 	"fmt"
-	"iter"
-	"maps"
 	"net/url"
 )
 
-var Default = &Engine{engine: &terraformEngine{}}
+var (
+	Default = &Engine{engine: &terraformEngine{}}
+	// ErrInvalidVersion is returned when a engine version string is
+	// not a semantic version string (major.minor.patch).
+	ErrInvalidVersion = errors.New("invalid engine version")
+)
 
 type engine interface {
 	String() string
@@ -34,6 +39,24 @@ func (e *Engine) UnmarshalText(text []byte) error {
 	return e.set(string(text))
 }
 
+func (e *Engine) Scan(text any) error {
+	if text == nil {
+		return nil
+	}
+	s, ok := text.(string)
+	if !ok {
+		return fmt.Errorf("expected database value to be a string: %#v", text)
+	}
+	return e.set(s)
+}
+
+func (e *Engine) Value() (driver.Value, error) {
+	if e == nil {
+		return nil, nil
+	}
+	return e.String(), nil
+}
+
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
@@ -46,8 +69,9 @@ func (e *Engine) set(v string) error {
 	return nil
 }
 
-var engines = map[string]Engine{}
-
-func ListEngines() iter.Seq[Engine] {
-	return maps.Values(engines)
+func ListEngines() []*Engine {
+	return []*Engine{
+		{engine: &terraformEngine{}},
+		{engine: &tofuEngine{}},
+	}
 }

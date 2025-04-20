@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	MinTerraformVersion = "1.2.0"
+
 	defaultTerraformVersion = "1.6.0"
 	hashicorpReleasesHost   = "releases.hashicorp.com"
 	latestEndpoint          = "https://api.releases.hashicorp.com/v1/releases/terraform/latest"
