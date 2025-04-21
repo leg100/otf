@@ -43,7 +43,7 @@ type (
 	}
 
 	factoryReleasesClient interface {
-		GetLatest(ctx context.Context) (string, time.Time, error)
+		GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error)
 	}
 )
 
@@ -57,8 +57,10 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	if err != nil {
 		return nil, err
 	}
+	// If workspace engine version uses the "latest" string then fetch the
+	// current latest version.
 	if ws.EngineVersion == releases.LatestVersionString {
-		ws.EngineVersion, _, err = f.releases.GetLatest(ctx)
+		ws.EngineVersion, _, err = f.releases.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, err
 		}

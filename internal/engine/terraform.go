@@ -18,12 +18,12 @@ const (
 	latestEndpoint          = "https://api.releases.hashicorp.com/v1/releases/terraform/latest"
 )
 
-type terraformEngine struct{}
+type terraform struct{}
 
-func (e *terraformEngine) String() string         { return "terraform" }
-func (e *terraformEngine) DefaultVersion() string { return defaultTerraformVersion }
+func (e *terraform) String() string         { return "terraform" }
+func (e *terraform) DefaultVersion() string { return defaultTerraformVersion }
 
-func (e *terraformEngine) SourceURL(version string) *url.URL {
+func (e *terraform) SourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   hashicorpReleasesHost,
@@ -38,7 +38,7 @@ func (e *terraformEngine) SourceURL(version string) *url.URL {
 // semver syntax (e.g. 1.9.0)
 //
 // TODO: use ctx
-func (e *terraformEngine) GetLatestVersion(_ context.Context) (string, error) {
+func (e *terraform) GetLatestVersion(_ context.Context) (string, error) {
 	return getLatestTerraformVersion(latestEndpoint)
 }
 

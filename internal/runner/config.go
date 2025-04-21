@@ -6,12 +6,12 @@ import (
 )
 
 type Config struct {
-	Name            string // descriptive name given to runner
-	MaxJobs         int    // number of jobs the runner can execute at any one time
-	Sandbox         bool   // isolate privileged ops within sandbox
-	Debug           bool   // toggle debug mode
-	PluginCache     bool   // toggle use of terraform's shared plugin cache
-	TerraformBinDir string // destination directory for terraform binaries
+	Name         string // descriptive name given to runner
+	MaxJobs      int    // number of jobs the runner can execute at any one time
+	Sandbox      bool   // isolate privileged ops within sandbox
+	Debug        bool   // toggle debug mode
+	PluginCache  bool   // toggle use of terraform's shared plugin cache
+	EngineBinDir string // destination directory for engine binaries
 }
 
 func NewConfig() *Config {
@@ -26,6 +26,8 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&opts.TerraformBinDir, "terraform-bins-dir", releases.DefaultEngineBinDir, "Destination directory for terraform binary downloads.")
+	flags.StringVar(&opts.EngineBinDir, "terraform-bins-dir", releases.DefaultEngineBinDir, "Destination directory for terraform binary downloads.")
+	flags.StringVar(&opts.EngineBinDir, "engine-bins-dir", releases.DefaultEngineBinDir, "Destination directory for engine binary downloads.")
+	flags.MarkDeprecated("terraform-bins-dir", "switch to --engine-bins-dir instead")
 	return &opts
 }

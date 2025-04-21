@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/testutils"
@@ -13,15 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeEngine struct{}
-
-func (*fakeEngine) DefaultVersion() string { return "1.2.3" }
-
 func TestNewWorkspace(t *testing.T) {
 	org1 := organization.NewTestName(t)
 	agentPoolID := testutils.ParseID(t, "apool-123")
 	vcsProviderID := testutils.ParseID(t, "vcs-123")
-	factory := &factory{defaultEngine: &fakeEngine{}}
+	factory := &factory{defaultEngine: engine.Default}
 
 	tests := []struct {
 		name      string
@@ -38,7 +35,7 @@ func TestNewWorkspace(t *testing.T) {
 			test: func(t *testing.T, got *Workspace) {
 				assert.Equal(t, "my-workspace", got.Name)
 				assert.Equal(t, org1, got.Organization)
-				assert.Equal(t, "1.2.3", got.EngineVersion)
+				assert.Equal(t, engine.Default.DefaultVersion(), got.EngineVersion)
 			},
 		},
 		{
@@ -77,7 +74,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:  &org1,
 				EngineVersion: internal.String("1,2,0"),
 			},
-			wantError: internal.ErrInvalidEngineVersion,
+			wantError: engine.ErrInvalidVersion,
 		},
 		{
 			name: "unsupported terraform version",
@@ -220,7 +217,7 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				Name:          internal.String("my-workspace"),
 				EngineVersion: internal.String("1,2,0"),
 			},
-			want: internal.ErrInvalidEngineVersion,
+			want: engine.ErrInvalidVersion,
 		},
 		{
 			name: "unsupported terraform version",
@@ -382,6 +379,18 @@ func TestWorkspace_Update(t *testing.T) {
 			want: func(t *testing.T, got *Workspace) {
 				assert.Nil(t, got.TriggerPatterns)
 				assert.Equal(t, "\\d+", got.Connection.TagsRegex)
+			},
+		},
+		{
+			name: "switch engine from terraform to tofu",
+			ws: &Workspace{
+				Name:         "dev",
+				Organization: org1,
+				Engine:       engine.Terraform,
+			},
+			opts: UpdateOptions{Engine: engine.Tofu},
+			want: func(t *testing.T, got *Workspace) {
+				assert.Equal(t, engine.Tofu, got.Engine)
 			},
 		},
 	}

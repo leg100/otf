@@ -14,11 +14,20 @@ UPDATE latest_engine_version SET engine = 'terraform';
 ALTER TABLE latest_engine_version ALTER COLUMN engine SET NOT NULL;
 ALTER TABLE latest_engine_version ADD CONSTRAINT latest_engine_version_engine_key UNIQUE (engine);
 
--- add engine column to workspaces to allow explicitly setting an engine on a
--- per workspace basis.
+-- add engine column to workspaces and set existing workspaces to use terraform.
 ALTER TABLE workspaces ADD COLUMN engine TEXT REFERENCES engines(name);
+UPDATE workspaces SET engine = 'terraform';
+ALTER TABLE workspaces ALTER COLUMN engine SET NOT NULL;
+
+-- rename terraform_version column on workspaces table to engine_version
+ALTER TABLE workspaces RENAME COLUMN terraform_version to engine_version;
+
+-- rename terraform_version column on runs table to engine_version
+ALTER TABLE runs RENAME COLUMN terraform_version to engine_version;
 
 ---- create above / drop below ----
+ALTER TABLE runs RENAME COLUMN engine_version to terraform_version;
+ALTER TABLE workspaces RENAME COLUMN engine_version to terraform_version;
 ALTER TABLE latest_engine_version DROP COLUMN engine;
 ALTER TABLE latest_engine_version RENAME TO latest_terraform_version;
 ALTER TABLE workspaces DROP COLUMN engine;

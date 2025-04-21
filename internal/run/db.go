@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
@@ -43,7 +44,7 @@ INSERT INTO runs (
     configuration_version_id,
     workspace_id,
     created_by,
-    terraform_version,
+    engine_version,
     allow_empty_apply
 ) VALUES (
     $1,
@@ -158,7 +159,7 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
-    runs.terraform_version,
+    runs.engine_version,
     runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
@@ -170,7 +171,8 @@ SELECT
     pst.plan_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
-    ia::"ingress_attributes" AS ingress_attributes
+    ia::"ingress_attributes" AS ingress_attributes,
+	workspaces.engine
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -390,7 +392,7 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
-    runs.terraform_version,
+    runs.engine_version,
     runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
@@ -402,7 +404,8 @@ SELECT
     pst.plan_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
-    ia::"ingress_attributes" AS ingress_attributes
+    ia::"ingress_attributes" AS ingress_attributes,
+	workspaces.engine
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -523,7 +526,7 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
-    runs.terraform_version,
+    runs.engine_version,
     runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
@@ -535,7 +538,8 @@ SELECT
     pst.plan_status_timestamps,
     ast.apply_status_timestamps,
     rv.run_variables,
-    ia::"ingress_attributes" AS ingress_attributes
+    ia::"ingress_attributes" AS ingress_attributes,
+	workspaces.engine
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -700,7 +704,8 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 			ReplaceAddrs           []string                              `db:"replace_addrs"`
 			PositionInQueue        int                                   `db:"position_in_queue"`
 			TargetAddrs            []string                              `db:"target_addrs"`
-			TerraformVersion       string                                `db:"terraform_version"`
+			Engine                 *engine.Engine                        `db:"engine"`
+			EngineVersion          string                                `db:"engine_version"`
 			AllowEmptyApply        bool                                  `db:"allow_empty_apply"`
 			AutoApply              bool                                  `db:"auto_apply"`
 			PlanOnly               bool                                  `db:"plan_only"`
@@ -739,7 +744,8 @@ func scan(row pgx.CollectableRow) (*Run, error) {
 		ReplaceAddrs:           m.ReplaceAddrs,
 		PositionInQueue:        m.PositionInQueue,
 		TargetAddrs:            m.TargetAddrs,
-		EngineVersion:          m.TerraformVersion,
+		Engine:                 m.Engine,
+		EngineVersion:          m.EngineVersion,
 		AllowEmptyApply:        m.AllowEmptyApply,
 		AutoApply:              m.AutoApply,
 		PlanOnly:               m.PlanOnly,

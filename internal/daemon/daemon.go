@@ -91,7 +91,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err
 	}
-	logger.V(1).Info("set engine type", "engine", cfg.Engine)
+	logger.V(1).Info("set engine type", "engine", cfg.DefaultEngine)
 
 	hostnameService := internal.NewHostnameService(cfg.Host)
 	hostnameService.SetWebhookHostname(cfg.WebhookHost)
@@ -203,7 +203,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	releasesService := releases.NewService(releases.Options{
 		Logger: logger,
 		DB:     db,
-		Engine: cfg.Engine,
 	})
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
 		releasesService.StartLatestChecker(ctx)
@@ -219,7 +218,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		UserService:         userService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
-		Engine:              cfg.Engine,
+		DefaultEngine:       cfg.DefaultEngine,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,

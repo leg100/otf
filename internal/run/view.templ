@@ -211,9 +211,9 @@ templ get(props getProps) {
 		<div hx-ext="ws" ws-connect={ string(paths.WatchRun(props.run.ID)) }></div>
 		<div class="flex gap-4 text-sm">
 			<div class="flex gap-1 items-center">
-				<span>Terraform version</span>
+				<span>Engine version</span>
 				<span class="badge badge-soft badge-neutral">
-					{ props.run.TerraformVersion }
+					{ props.run.EngineVersion }
 				</span>
 			</div>
 			<div class="flex gap-1 items-center" id="elapsed-time">

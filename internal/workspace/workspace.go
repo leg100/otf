@@ -148,7 +148,7 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
-		Engine                     UpdateEngineOption
+		Engine                     *engine.Engine
 
 		// Always trigger runs. A value of true is mutually exclusive with
 		// setting TriggerPatterns or ConnectOptions.TagsRegex.
@@ -180,11 +180,7 @@ type (
 
 	// factory makes workspaces
 	factory struct {
-		defaultEngine defaultEngineGetter
-	}
-
-	defaultEngineGetter interface {
-		DefaultVersion() string
+		defaultEngine *engine.Engine
 	}
 )
 
@@ -203,6 +199,7 @@ func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		UpdatedAt:          internal.CurrentTimestamp(nil),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
+		Engine:             f.defaultEngine,
 		EngineVersion:      f.defaultEngine.DefaultVersion(),
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
@@ -406,15 +403,8 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 		updated = true
 	}
-	if opts.Engine.Set {
-		if opts.Engine.Valid {
-			// Update to use a workspace-specific engine
-			ws.Engine = opts.Engine.Engine
-		} else {
-			// Update to use the system default engine
-			ws.Engine = nil
-		}
-		updated = true
+	if opts.Engine != nil {
+		ws.Engine = opts.Engine
 	}
 	if opts.EngineVersion != nil {
 		if err := ws.setTerraformVersion(*opts.EngineVersion); err != nil {

@@ -9,7 +9,13 @@ import (
 )
 
 var (
-	Default = &Engine{engine: &terraformEngine{}}
+	// Default is the default for setting the default engine (it
+	// should not be used as the actual default in use).
+	Default = Terraform
+	// Terraform is the terraform engine
+	Terraform = &Engine{engine: &terraform{}}
+	// Tofu is the opentofu engine
+	Tofu = &Engine{engine: &tofu{}}
 	// ErrInvalidVersion is returned when a engine version string is
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidVersion = errors.New("invalid engine version")
@@ -60,9 +66,9 @@ func (e *Engine) Value() (driver.Value, error) {
 func (e *Engine) set(v string) error {
 	switch v {
 	case "terraform":
-		e.engine = &terraformEngine{}
+		e.engine = &terraform{}
 	case "tofu":
-		e.engine = &tofuEngine{}
+		e.engine = &tofu{}
 	default:
 		return fmt.Errorf("no engine found named %s: must be either 'terraform' or 'tofu'", v)
 	}
@@ -71,7 +77,7 @@ func (e *Engine) set(v string) error {
 
 func ListEngines() []*Engine {
 	return []*Engine{
-		{engine: &terraformEngine{}},
-		{engine: &tofuEngine{}},
+		{engine: &terraform{}},
+		{engine: &tofu{}},
 	}
 }

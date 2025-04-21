@@ -98,7 +98,7 @@ type runnerConfigOption func(*runner.Config)
 
 func withTerraformBinDir(dir string) runnerConfigOption {
 	return func(cfg *runner.Config) {
-		cfg.TerraformBinDir = dir
+		cfg.EngineBinDir = dir
 	}
 }
 

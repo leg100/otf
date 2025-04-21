@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -49,7 +50,7 @@ type (
 		TeamService         *team.Service
 		UserService         *user.Service
 		ConnectionService   *connections.Service
-		Engine              defaultEngineGetter
+		DefaultEngine       *engine.Engine
 	}
 )
 
@@ -60,7 +61,7 @@ func NewService(opts Options) *Service {
 		Authorizer:  opts.Authorizer,
 		db:          db,
 		connections: opts.ConnectionService,
-		factory:     &factory{defaultEngine: opts.Engine},
+		factory:     &factory{defaultEngine: opts.DefaultEngine},
 	}
 	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{

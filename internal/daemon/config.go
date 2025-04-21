@@ -48,7 +48,7 @@ type Config struct {
 	PlanningTimeout              time.Duration
 	ApplyingTimeout              time.Duration
 	OverrideTimeoutCheckInterval time.Duration
-	Engine                       *engine.Engine
+	DefaultEngine                *engine.Engine
 
 	tokens.GoogleIAPConfig
 }
@@ -59,7 +59,7 @@ func NewConfig() Config {
 		RunnerConfig:  runner.NewConfig(),
 		CacheConfig:   &inmem.CacheConfig{},
 		MaxConfigSize: configversion.DefaultConfigMaxSize,
-		Engine:        engine.Default,
+		DefaultEngine: engine.Default,
 	}
 }
 

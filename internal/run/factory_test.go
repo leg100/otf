@@ -215,6 +215,6 @@ func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs
 	return vcs.Commit{}, nil
 }
 
-func (f *fakeReleasesService) GetLatest(context.Context) (string, time.Time, error) {
+func (f *fakeReleasesService) GetLatest(context.Context, releases.Engine) (string, time.Time, error) {
 	return f.latestVersion, time.Time{}, nil
 }

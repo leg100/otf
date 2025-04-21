@@ -222,10 +222,10 @@ templ get(props getProps) {
 					<a
 						class=""
 						href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }
-						title="Change terraform version"
+						title="Change engine version"
 					>
 						<div class="badge badge-md badge-ghost">
-							v{ props.ws.TerraformVersion }
+							v{ props.ws.EngineVersion }
 						</div>
 					</a>
 				</div>
@@ -468,7 +468,7 @@ templ edit(props editProps) {
 			</fieldset>
 			<div class="field" id="terraform-version-field">
 				<label for="terraform-version">Terraform version</label>
-				<input class="input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
+				<input class="input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.EngineVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
 				<span class="description">
 					The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
 				</span>

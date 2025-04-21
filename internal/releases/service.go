@@ -97,7 +97,7 @@ type checkResult struct {
 
 func (s *Service) check(ctx context.Context, engine Engine) (before string, after string, err error) {
 	// get current latest version stored in db
-	before, checkpoint, err := s.GetLatest(ctx)
+	before, checkpoint, err := s.GetLatest(ctx, engine)
 	if err != nil {
 		return "", "", err
 	}
@@ -120,12 +120,12 @@ func (s *Service) check(ctx context.Context, engine Engine) (before string, afte
 // GetLatest returns the latest engine version and the time when it was
 // fetched; if it has not yet been fetched then the default version is returned
 // instead along with zero time.
-func (s *Service) GetLatest(ctx context.Context) (string, time.Time, error) {
-	latest, checkpoint, err := s.db.getLatest(ctx)
+func (s *Service) GetLatest(ctx context.Context, engine Engine) (string, time.Time, error) {
+	latest, checkpoint, err := s.db.getLatest(ctx, engine.String())
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// no latest version has yet been persisted to the database so return
 		// the default version instead
-		return s.engine.DefaultVersion(), time.Time{}, nil
+		return engine.DefaultVersion(), time.Time{}, nil
 	} else if err != nil {
 		return "", time.Time{}, err
 	}

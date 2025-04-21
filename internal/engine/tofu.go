@@ -13,12 +13,12 @@ import (
 
 const defaultTofuVersion = "1.9.0"
 
-type tofuEngine struct{}
+type tofu struct{}
 
-func (e *tofuEngine) String() string         { return "tofu" }
-func (e *tofuEngine) DefaultVersion() string { return defaultTofuVersion }
+func (e *tofu) String() string         { return "tofu" }
+func (e *tofu) DefaultVersion() string { return defaultTofuVersion }
 
-func (e *tofuEngine) SourceURL(version string) *url.URL {
+func (e *tofu) SourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   "github.com",
@@ -32,7 +32,7 @@ func (e *tofuEngine) SourceURL(version string) *url.URL {
 	}
 }
 
-func (e *tofuEngine) GetLatestVersion(ctx context.Context) (string, error) {
+func (e *tofu) GetLatestVersion(ctx context.Context) (string, error) {
 	return getLatestTofuVersion(ctx, nil)
 }
 

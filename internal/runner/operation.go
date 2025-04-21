@@ -53,17 +53,18 @@ type (
 		Debug       bool // toggle debug mode
 		PluginCache bool // toggle use of terraform's shared plugin cache
 
-		job        *Job
-		run        *run.Run
-		canceled   bool
-		ctx        context.Context
-		cancelfn   context.CancelFunc
-		out        io.Writer
-		enginePath string
-		envs       []string
-		proc       *os.Process
-		downloader downloader
-		isAgent    bool
+		job          *Job
+		run          *run.Run
+		canceled     bool
+		ctx          context.Context
+		cancelfn     context.CancelFunc
+		out          io.Writer
+		enginePath   string
+		envs         []string
+		proc         *os.Process
+		downloader   downloader
+		isAgent      bool
+		engineBinDir string
 
 		runs       runClient
 		workspaces workspaceClient
@@ -76,16 +77,15 @@ type (
 	}
 
 	operationOptions struct {
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
+		Sandbox      bool   // isolate privileged ops within sandbox
+		Debug        bool   // toggle debug mode
+		PluginCache  bool   // toggle use of terraform's shared plugin cache
+		engineBinDir string // destination directory for engine binaries
 
-		logger     logr.Logger
-		job        *Job
-		jobToken   []byte
-		downloader downloader
-		isAgent    bool
+		logger   logr.Logger
+		job      *Job
+		jobToken []byte
+		isAgent  bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -165,7 +165,7 @@ func newOperation(opts operationOptions) *operation {
 		Sandbox:    opts.Sandbox,
 		Debug:      opts.Debug,
 		job:        opts.job,
-		downloader: releases.NewDownloader(opts.job.Engine, opts.TerraformBinDir),
+		enginePath: opts.engineBinDir,
 		envs:       envs,
 		ctx:        ctx,
 		cancelfn:   cancelfn,
@@ -221,6 +221,7 @@ func (o *operation) do() error {
 		return err
 	}
 	o.run = run
+	o.downloader = releases.NewDownloader(o.run.Engine, o.engineBinDir)
 
 	// Get workspace in order to get working directory path
 	//
