@@ -105,7 +105,7 @@ type (
 )
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) *ConfigurationVersion {
 	cv := ConfigurationVersion{
 		ID:            resource.NewTfeID(resource.ConfigVersionKind),
 		CreatedAt:     internal.CurrentTimestamp(nil),
@@ -127,7 +127,7 @@ func NewConfigurationVersion(workspaceID resource.TfeID, opts CreateOptions) (*C
 	if opts.IngressAttributes != nil {
 		cv.IngressAttributes = opts.IngressAttributes
 	}
-	return &cv, nil
+	return &cv
 }
 
 func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {

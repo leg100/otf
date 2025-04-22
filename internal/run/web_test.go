@@ -1,13 +1,13 @@
 package run
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/workspace"
@@ -57,9 +57,11 @@ func TestListRunsHandler(t *testing.T) {
 }
 
 func TestWeb_GetHandler(t *testing.T) {
+	ws1 := workspace.NewTestWorkspace(t)
+	run1 := newTestRun(t, context.Background(), CreateOptions{})
 	h := newTestWebHandlers(t,
-		withWorkspace(&workspace.Workspace{ID: testutils.ParseID(t, "ws-123")}),
-		withRuns((&Run{ID: testutils.ParseID(t, "run-123"), WorkspaceID: testutils.ParseID(t, "ws-1")}).updateStatus(runstatus.Pending, nil)),
+		withWorkspace(ws1),
+		withRuns(run1),
 	)
 
 	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)

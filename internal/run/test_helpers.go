@@ -6,10 +6,21 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/stretchr/testify/require"
 )
+
+func newTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
+	org, err := organization.NewOrganization(organization.CreateOptions{Name: internal.String("acme-corp")})
+	require.NoError(t, err)
+	ws := workspace.NewTestWorkspace(t)
+	cv := configversion.NewConfigurationVersion(ws.ID, configversion.CreateOptions{})
+	return newRun(ctx, org, cv, ws, opts)
+}
 
 type fakeSubService struct {
 	ch chan pubsub.Event[*Run]

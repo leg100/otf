@@ -56,8 +56,8 @@ func TestWorkspace_Create(t *testing.T) {
 func TestGetWorkspaceHandler(t *testing.T) {
 	var (
 		bobby    = &user.User{ID: resource.NewTfeID(resource.UserKind)}
-		unlocked = fakeWorkspace(t)
-		locked   = fakeWorkspace(t)
+		unlocked = NewTestWorkspace(t)
+		locked   = NewTestWorkspace(t)
 	)
 	locked.Enlock(&bobby.ID)
 
@@ -110,6 +110,10 @@ func TestWorkspace_GetByName(t *testing.T) {
 }
 
 func TestEditWorkspaceHandler(t *testing.T) {
+	ws1 := NewTestWorkspace(t)
+	wsConnected := NewTestWorkspace(t)
+	wsConnected.Connection = &Connection{Repo: "leg100/otf"}
+
 	tests := []struct {
 		name   string
 		ws     *Workspace
@@ -120,7 +124,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	}{
 		{
 			name: "default",
-			ws:   &Workspace{ID: testutils.ParseID(t, "ws-123")},
+			ws:   ws1,
 			user: user.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				// always show built-in owners permission
@@ -136,7 +140,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "with policy",
-			ws:   &Workspace{ID: testutils.ParseID(t, "ws-123")},
+			ws:   ws1,
 			user: user.SiteAdmin,
 			policy: Policy{
 				Permissions: []Permission{
@@ -171,7 +175,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "connected repo",
-			ws:   &Workspace{ID: testutils.ParseID(t, "ws-123"), Connection: &Connection{Repo: "leg100/otf"}},
+			ws:   wsConnected,
 			user: user.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				got := htmlquery.FindOne(doc, "//button[@id='disconnect-workspace-repo-button']")

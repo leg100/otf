@@ -22,21 +22,21 @@ func Test_check(t *testing.T) {
 			"1.2.3",
 			"1.2.4",
 			now.Add(-time.Hour * 48),
-			checkResult{before: "1.2.3", after: "1.2.4", nextCheckpoint: now.Add(time.Hour * 24)},
+			checkResult{before: "1.2.3", after: "1.2.4", nextCheckpoint: now.Add(time.Hour * 24), message: "updated latest engine version"},
 		},
 		{
 			"perform check and expect same version",
 			"1.2.3",
 			"1.2.3",
 			now.Add(-time.Hour * 48),
-			checkResult{before: "1.2.3", after: "1.2.3", nextCheckpoint: now.Add(time.Hour * 24)},
+			checkResult{before: "1.2.3", after: "1.2.3", nextCheckpoint: now.Add(time.Hour * 24), message: "updated latest engine version"},
 		},
 		{
 			"skip check because previous check performed an hour ago",
 			"",
 			"",
 			now.Add(-time.Hour),
-			checkResult{skipped: true, nextCheckpoint: now.Add(time.Hour * 23)},
+			checkResult{skipped: true, nextCheckpoint: now.Add(time.Hour * 23), message: "skipped latest engine version check"},
 		},
 	}
 	for _, tt := range tests {

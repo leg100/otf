@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func fakeWorkspace(t *testing.T) *Workspace {
+func NewTestWorkspace(t *testing.T) *Workspace {
 	org := organization.NewTestName(t)
 	name := uuid.NewString()
 
