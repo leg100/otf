@@ -54,17 +54,22 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	bobby := &user.User{ID: resource.NewTfeID(resource.UserKind)}
+	var (
+		bobby    = &user.User{ID: resource.NewTfeID(resource.UserKind)}
+		unlocked = fakeWorkspace(t)
+		locked   = fakeWorkspace(t)
+	)
+	locked.Enlock(&bobby.ID)
 
 	tests := []struct {
 		name      string
 		workspace *Workspace
 	}{
 		{
-			"unlocked", &Workspace{ID: testutils.ParseID(t, "ws-unlocked"), Lock: nil},
+			"unlocked", unlocked,
 		},
 		{
-			"locked", &Workspace{ID: testutils.ParseID(t, "ws-locked"), Lock: &bobby.ID},
+			"locked", locked,
 		},
 	}
 	for _, tt := range tests {

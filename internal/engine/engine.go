@@ -8,9 +8,18 @@ import (
 	"net/url"
 )
 
+// MinEngineVersion specifies the minimum engine version accepted by OTF.
+//
+// TODO: This originally applied only to terraform before tofu was added as an
+// alternative engine. Tofu's earliest version is 1.6.0, which should really be
+// the minimum version if tofu is the selected engine.
+const MinEngineVersion = "1.2.0"
+
 var (
-	// Default is the default for setting the default engine (it
-	// should not be used as the actual default in use).
+	// Default is the default for setting the default engine.
+	//
+	// NOTE: the actual default engine that has been set by the user should be
+	// retrieved via the daemon config.
 	Default = Terraform
 	// Terraform is the terraform engine
 	Terraform = &Engine{engine: &terraform{}}

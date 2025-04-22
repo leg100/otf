@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -73,48 +74,75 @@ func (s *Service) StartLatestChecker(ctx context.Context) {
 
 func (s *Service) checkAndUpdate(ctx context.Context) {
 	for _, engine := range engine.ListEngines() {
-		before, after, err := s.check(ctx, engine)
+		result, err := s.check(ctx, engine, time.Now())
 		if err != nil {
 			s.Error(err, "checking latest engine version", "engine", engine)
 			return
 		}
-		// update db (even if version hasn't changed we need to update the
-		// checkpoint)
-		if err := s.db.updateLatestVersion(ctx, engine.String(), after); err != nil {
-			s.Error(err, "checking latest engine version", "engine", engine)
-			return
+		if !result.skipped {
+			// update db (even if version hasn't changed we need to update the
+			// checkpoint)
+			if err := s.db.updateLatestVersion(ctx, engine.String(), result.after); err != nil {
+				s.Error(err, "persisting db with latest engine version", "engine", engine)
+				return
+			}
 		}
-		s.V(1).Info("checked latest engine version", "engine", engine, "before", before, "after", after)
+		s.V(3).Info(result.message, "engine", engine, "check", result)
 	}
 }
 
 // checkResult is the result of the latest version check for an engine.
 type checkResult struct {
-	before, after string
-	skipped       bool
-	reason        string
+	before, after  string
+	skipped        bool
+	nextCheckpoint time.Time
+	message        string
 }
 
-func (s *Service) check(ctx context.Context, engine Engine) (before string, after string, err error) {
+func (r checkResult) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.Time("next_check_at", r.nextCheckpoint),
+	}
+	if r.skipped {
+		attrs = append(attrs, slog.String("skip_reason", "check not due yet"))
+		attrs = append(attrs, slog.String("current", r.before))
+	} else {
+		attrs = append(attrs, slog.String("before", r.before))
+		attrs = append(attrs, slog.String("after", r.after))
+	}
+	return slog.GroupValue(attrs...)
+}
+
+func (s *Service) check(ctx context.Context, engine Engine, now time.Time) (result checkResult, err error) {
 	// get current latest version stored in db
 	before, checkpoint, err := s.GetLatest(ctx, engine)
 	if err != nil {
-		return "", "", err
+		return checkResult{}, err
 	}
 	// skip check if already checked within last 24 hours
-	if checkpoint.After(time.Now().Add(-24 * time.Hour)) {
-		return "", "", nil
+	if checkpoint.After(now.Add(-24 * time.Hour)) {
+		return checkResult{
+			before:         before,
+			skipped:        true,
+			nextCheckpoint: checkpoint.Add(24 * time.Hour),
+			message:        "skipped latest engine version check",
+		}, nil
 	}
 	// get latest version from engine's internet endpoint
-	after, err = engine.GetLatestVersion(ctx)
+	after, err := engine.GetLatestVersion(ctx)
 	if err != nil {
-		return "", "", err
+		return checkResult{}, err
 	}
 	// perform sanity check
 	if n := semver.Compare(after, before); n < 0 {
-		return "", "", fmt.Errorf("endpoint returned older version: before: %s; after: %s", before, after)
+		return checkResult{}, fmt.Errorf("endpoint returned older version: before: %s; after: %s", before, after)
 	}
-	return before, after, nil
+	return checkResult{
+		before:         before,
+		after:          after,
+		nextCheckpoint: now.Add(24 * time.Hour),
+		message:        "updated latest engine version",
+	}, nil
 }
 
 // GetLatest returns the latest engine version and the time when it was

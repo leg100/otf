@@ -241,7 +241,7 @@ func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		ws.Engine = opts.Engine
 	}
 	if opts.EngineVersion != nil {
-		if err := ws.setTerraformVersion(*opts.EngineVersion); err != nil {
+		if err := ws.setEngineVersion(*opts.EngineVersion); err != nil {
 			return nil, err
 		}
 	}
@@ -407,7 +407,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Engine = opts.Engine
 	}
 	if opts.EngineVersion != nil {
-		if err := ws.setTerraformVersion(*opts.EngineVersion); err != nil {
+		if err := ws.setEngineVersion(*opts.EngineVersion); err != nil {
 			return nil, err
 		}
 		updated = true
@@ -566,7 +566,7 @@ func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolI
 	return true, nil
 }
 
-func (ws *Workspace) setTerraformVersion(v string) error {
+func (ws *Workspace) setEngineVersion(v string) error {
 	if v == releases.LatestVersionString {
 		ws.EngineVersion = v
 		return nil
@@ -574,11 +574,11 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	if !semver.IsValid(v) {
 		return engine.ErrInvalidVersion
 	}
-	// only accept terraform versions above the minimum requirement.
+	// only accept engine versions above the minimum requirement.
 	//
 	// NOTE: we make an exception for the specific versions posted by the go-tfe
 	// integration tests.
-	if result := semver.Compare(v, engine.MinTerraformVersion); result < 0 {
+	if result := semver.Compare(v, engine.MinEngineVersion); result < 0 {
 		if !slices.Contains(apiTestTerraformVersions, v) {
 			return ErrUnsupportedTerraformVersion
 		}

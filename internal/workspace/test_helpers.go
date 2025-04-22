@@ -2,14 +2,30 @@ package workspace
 
 import (
 	"context"
+	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/stretchr/testify/require"
 )
+
+func fakeWorkspace(t *testing.T) *Workspace {
+	org := organization.NewTestName(t)
+	name := uuid.NewString()
+
+	ws, err := (&factory{defaultEngine: engine.Default}).NewWorkspace(CreateOptions{
+		Name:         &name,
+		Organization: &org,
+	})
+	require.NoError(t, err)
+	return ws
+}
 
 type FakeService struct {
 	Workspaces []*Workspace

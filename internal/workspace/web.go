@@ -423,11 +423,11 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name              string
 		Description       string
 		ExecutionMode     ExecutionMode  `schema:"execution_mode"`
-		TerraformVersion  string         `schema:"terraform_version"`
+		Engine            *engine.Engine `schema:"engine"`
+		EngineVersion     string         `schema:"engine_version"`
 		WorkingDirectory  string         `schema:"working_directory"`
 		WorkspaceID       resource.TfeID `schema:"workspace_id,required"`
 		GlobalRemoteState bool           `schema:"global_remote_state"`
-		Engine            *engine.Engine `schema:"engine"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`
@@ -455,7 +455,8 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name:               &params.Name,
 		Description:        &params.Description,
 		ExecutionMode:      &params.ExecutionMode,
-		EngineVersion:      &params.TerraformVersion,
+		Engine:             params.Engine,
+		EngineVersion:      &params.EngineVersion,
 		WorkingDirectory:   &params.WorkingDirectory,
 		GlobalRemoteState:  &params.GlobalRemoteState,
 		SpeculativeEnabled: &params.SpeculativeEnabled,

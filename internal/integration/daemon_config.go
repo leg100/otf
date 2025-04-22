@@ -96,7 +96,7 @@ func disableScheduler() configOption {
 
 type runnerConfigOption func(*runner.Config)
 
-func withTerraformBinDir(dir string) runnerConfigOption {
+func withEngineBinDir(dir string) runnerConfigOption {
 	return func(cfg *runner.Config) {
 		cfg.EngineBinDir = dir
 	}

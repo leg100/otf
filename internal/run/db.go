@@ -44,6 +44,7 @@ INSERT INTO runs (
     configuration_version_id,
     workspace_id,
     created_by,
+    engine,
     engine_version,
     allow_empty_apply
 ) VALUES (
@@ -63,7 +64,8 @@ INSERT INTO runs (
     $14,
     $15,
     $16,
-    $17
+    $17,
+	$18
 )`,
 
 			run.ID,
@@ -81,6 +83,7 @@ INSERT INTO runs (
 			run.ConfigurationVersionID,
 			run.WorkspaceID,
 			run.CreatedBy,
+			run.Engine,
 			run.EngineVersion,
 			run.AllowEmptyApply,
 		)
@@ -172,7 +175,7 @@ SELECT
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
-	workspaces.engine
+	runs.engine
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -405,7 +408,7 @@ SELECT
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
-	workspaces.engine
+	runs.engine
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -539,7 +542,7 @@ SELECT
     ast.apply_status_timestamps,
     rv.run_variables,
     ia::"ingress_attributes" AS ingress_attributes,
-	workspaces.engine
+	runs.engine
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)

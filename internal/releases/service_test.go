@@ -8,34 +8,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_latestCheck(t *testing.T) {
+func Test_check(t *testing.T) {
+	now := time.Now()
 	tests := []struct {
 		name          string
 		currentLatest string
 		newLatest     string
 		lastCheck     time.Time
-		wantCheck     bool
+		want          checkResult
 	}{
 		{
 			"perform check and expect newer version",
 			"1.2.3",
 			"1.2.4",
-			time.Now().Add(-time.Hour * 48),
-			true,
+			now.Add(-time.Hour * 48),
+			checkResult{before: "1.2.3", after: "1.2.4", nextCheckpoint: now.Add(time.Hour * 24)},
 		},
 		{
 			"perform check and expect same version",
 			"1.2.3",
 			"1.2.3",
-			time.Now().Add(-time.Hour * 48),
-			true,
+			now.Add(-time.Hour * 48),
+			checkResult{before: "1.2.3", after: "1.2.3", nextCheckpoint: now.Add(time.Hour * 24)},
 		},
 		{
 			"skip check because previous check performed an hour ago",
 			"",
 			"",
-			time.Now().Add(-time.Hour),
-			false,
+			now.Add(-time.Hour),
+			checkResult{skipped: true, nextCheckpoint: now.Add(time.Hour * 23)},
 		},
 	}
 	for _, tt := range tests {
@@ -43,10 +44,9 @@ func Test_latestCheck(t *testing.T) {
 			s := &Service{
 				db: &testDB{currentLatest: tt.currentLatest, lastCheck: tt.lastCheck},
 			}
-			before, after, err := s.check(context.Background(), &testEngine{latestVersion: tt.newLatest})
+			got, err := s.check(context.Background(), &testEngine{latestVersion: tt.newLatest}, now)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.currentLatest, before)
-			assert.Equal(t, tt.newLatest, after)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
