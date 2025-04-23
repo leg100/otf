@@ -181,11 +181,13 @@ func doMain(m *testing.M) (int, error) {
 	// otherwise make the latter flaky.
 	{
 		downloader := releases.NewDownloader(engine.Default, "")
-
 		terraform, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
+	}
+	{
+		downloader := releases.NewDownloader(engine.Tofu, "")
 		tofu, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)
