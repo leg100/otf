@@ -66,10 +66,10 @@ output "foo" {
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
-	svc.tfcli(t, ctx, "init", root)
-	out := svc.tfcli(t, ctx, "plan", root)
+	svc.engineCLI(t, ctx, "", "init", root)
+	out := svc.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, out, `+ foo = "bar"`)
-	out = svc.tfcli(t, ctx, "apply", root, "-auto-approve")
+	out = svc.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it

@@ -23,14 +23,14 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 
 	// create some config and run terraform init
 	configPath := newRootModule(t, svc.System.Hostname(), org.Name, t.Name())
-	svc.tfcli(t, ctx, "init", configPath)
+	svc.engineCLI(t, ctx, "", "init", configPath)
 
 	// Create user token expressly for terraform apply
 	_, token := svc.createToken(t, ctx, nil)
 
 	// Invoke terraform apply
 	e, tferr, err := goexpect.SpawnWithArgs(
-		[]string{tfpath, "-chdir=" + configPath, "apply", "-no-color"},
+		[]string{terraform, "-chdir=" + configPath, "apply", "-no-color"},
 		time.Minute,
 		goexpect.PartialMatch(true),
 		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.System.Hostname(), token))),

@@ -26,10 +26,10 @@ func TestLocal(t *testing.T) {
 	// create root module, setting otfd1 as hostname
 	root := newRootModule(t, daemon.System.Hostname(), org.Name, "local-ws")
 
-	// run terraform locally, configuring OTF as a remote backend.
-	daemon.tfcli(t, ctx, "init", root)
-	out := daemon.tfcli(t, ctx, "plan", root)
+	// run engine locally, configuring OTF as a remote backend.
+	daemon.engineCLI(t, ctx, "", "init", root)
+	out := daemon.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, out, "Plan: 1 to add, 0 to change, 0 to destroy.")
-	out = daemon.tfcli(t, ctx, "apply", root, "-auto-approve")
+	out = daemon.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, out, "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 }

@@ -225,7 +225,7 @@ templ get(props getProps) {
 							href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
 							title="Change engine version"
 						>
-							<div class="badge badge-md badge-ghost">
+							<div id="current-engine" class="badge badge-md badge-ghost">
 								{ props.ws.Engine.String() }
 							</div>
 						</a>
@@ -234,7 +234,7 @@ templ get(props getProps) {
 							href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
 							title="Change engine version"
 						>
-							<div class="badge badge-md badge-ghost">
+							<div id="current-engine-version" class="badge badge-md badge-ghost">
 								{ props.ws.EngineVersion }
 							</div>
 						</a>

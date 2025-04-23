@@ -13,10 +13,10 @@ func TestUserCLI(t *testing.T) {
 	daemon, _, _ := setup(t)
 
 	// create user via cli
-	out := daemon.otfcli(t, adminCtx, "users", "new", "bobby")
+	out := daemon.otfCLI(t, adminCtx, "users", "new", "bobby")
 	require.Equal(t, "Successfully created user bobby\n", out)
 
 	// delete user via cli
-	out = daemon.otfcli(t, adminCtx, "users", "delete", "bobby")
+	out = daemon.otfCLI(t, adminCtx, "users", "delete", "bobby")
 	require.Equal(t, "Successfully deleted user bobby\n", out)
 }

@@ -65,7 +65,7 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 		cfg.Secret = sharedSecret
 	}
 	// Unless test has specified otherwise, disable checking for latest
-	// terraform version
+	// engine version
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
 		cfg.DisableLatestChecker = internal.Bool(true)
 	}
@@ -478,16 +478,20 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 	return <-agent.Registered(), cancel
 }
 
-func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPath string, args ...string) string {
+func (s *testDaemon) engineCLI(t *testing.T, ctx context.Context, engine string, command, configPath string, args ...string) string {
 	t.Helper()
 
-	out, err := s.tfcliWithError(t, ctx, command, configPath, args...)
-	require.NoError(t, err, "tf cli failed: %s", out)
+	out, err := s.engineCLIWithError(t, ctx, engine, command, configPath, args...)
+	require.NoError(t, err, "engine cli failed: %s", out)
 	return out
 }
 
-func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, configPath string, args ...string) (string, error) {
+func (s *testDaemon) engineCLIWithError(t *testing.T, ctx context.Context, engine string, command, configPath string, args ...string) (string, error) {
 	t.Helper()
+
+	if engine == "" {
+		engine = terraform
+	}
 
 	// Create user token expressly for the terraform cli
 	user := userFromContext(t, ctx)
@@ -496,7 +500,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	cmdargs := []string{command}
 	cmdargs = append(cmdargs, args...)
 
-	cmd := exec.Command(tfpath, cmdargs...)
+	cmd := exec.Command(engine, cmdargs...)
 	cmd.Dir = configPath
 
 	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.System.Hostname(), token))
@@ -508,7 +512,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	return internal.StripAnsi(string(out)), err
 }
 
-func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) string {
+func (s *testDaemon) otfCLI(t *testing.T, ctx context.Context, args ...string) string {
 	t.Helper()
 
 	// Create user token expressly for the otf cli

@@ -33,22 +33,22 @@ func TestWritePermissionE2E(t *testing.T) {
 	})
 
 	// As engineer, run terraform init
-	_ = svc.tfcli(t, engineerCtx, "init", config)
+	_ = svc.engineCLI(t, engineerCtx, "", "init", config)
 
-	out := svc.tfcli(t, engineerCtx, "plan", config)
+	out := svc.engineCLI(t, engineerCtx, "", "plan", config)
 	require.Contains(t, out, "Plan: 1 to add, 0 to change, 0 to destroy.")
 
-	out = svc.tfcli(t, engineerCtx, "apply", config, "-auto-approve")
+	out = svc.engineCLI(t, engineerCtx, "", "apply", config, "-auto-approve")
 	require.Contains(t, out, "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 
-	out = svc.tfcli(t, engineerCtx, "destroy", config, "-auto-approve")
+	out = svc.engineCLI(t, engineerCtx, "", "destroy", config, "-auto-approve")
 	require.Contains(t, out, "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock and unlock workspace
-	svc.otfcli(t, ctx, "workspaces", "lock", "my-test-workspace", "--organization", org.Name.String())
-	svc.otfcli(t, ctx, "workspaces", "unlock", "my-test-workspace", "--organization", org.Name.String())
+	svc.otfCLI(t, ctx, "workspaces", "lock", "my-test-workspace", "--organization", org.Name.String())
+	svc.otfCLI(t, ctx, "workspaces", "unlock", "my-test-workspace", "--organization", org.Name.String())
 
 	// list workspaces
-	out = svc.otfcli(t, ctx, "workspaces", "list", "--organization", org.Name.String())
+	out = svc.otfCLI(t, ctx, "workspaces", "list", "--organization", org.Name.String())
 	require.Contains(t, out, "my-test-workspace")
 }

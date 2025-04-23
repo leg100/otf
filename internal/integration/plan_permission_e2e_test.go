@@ -36,18 +36,18 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// As engineer, run terraform init, and plan. This should succeed because
 	// the engineer has been assigned the plan role.
-	_ = svc.tfcli(t, engineerCtx, "init", configPath)
-	out := svc.tfcli(t, engineerCtx, "plan", configPath)
+	_ = svc.engineCLI(t, engineerCtx, "", "init", configPath)
+	out := svc.engineCLI(t, engineerCtx, "", "plan", configPath)
 	assert.Contains(t, out, "Plan: 1 to add, 0 to change, 0 to destroy.")
 
 	// Limited privileges should prohibit an apply
-	out, err = svc.tfcliWithError(t, engineerCtx, "apply", configPath, "-auto-approve")
+	out, err = svc.engineCLIWithError(t, engineerCtx, "", "apply", configPath, "-auto-approve")
 	if assert.Error(t, err) {
 		assert.Contains(t, string(out), "Error: Insufficient rights to apply changes")
 	}
 
 	// Limited privileges should prohibit a destroy
-	out, err = svc.tfcliWithError(t, engineerCtx, "destroy", configPath, "-auto-approve")
+	out, err = svc.engineCLIWithError(t, engineerCtx, "", "destroy", configPath, "-auto-approve")
 	if assert.Error(t, err) {
 		assert.Contains(t, string(out), "Error: Insufficient rights to apply changes")
 	}

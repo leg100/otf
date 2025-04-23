@@ -33,7 +33,7 @@ func TestTerraformLogin(t *testing.T) {
 	killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
 	e, tferr, err := goexpect.SpawnWithArgs(
-		[]string{tfpath, "login", svc.System.Hostname()},
+		[]string{terraform, "login", svc.System.Hostname()},
 		time.Minute,
 		goexpect.PartialMatch(true),
 		// goexpect.Verbose(testing.Verbose()),
@@ -100,7 +100,7 @@ func TestTerraformLogin(t *testing.T) {
 	// has authenticated successfully.
 	org := svc.createOrganization(t, ctx)
 	configPath := newRootModule(t, svc.System.Hostname(), org.Name, t.Name())
-	cmd := exec.Command(tfpath, "init")
+	cmd := exec.Command(terraform, "init")
 	cmd.Dir = configPath
 	assert.NoError(t, cmd.Run())
 }

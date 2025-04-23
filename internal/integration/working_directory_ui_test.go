@@ -55,14 +55,14 @@ resource "null_resource" "subdir" {}
 	require.NoError(t, err)
 
 	// run init in the *root* module
-	_ = daemon.tfcli(t, ctx, "init", root)
+	_ = daemon.engineCLI(t, ctx, "", "init", root)
 
 	// run plan in the *root* module
-	out := daemon.tfcli(t, ctx, "plan", root)
+	out := daemon.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, string(out), `null_resource.subdir will be created`)
 
 	// run apply in the *root* module
-	out = daemon.tfcli(t, ctx, "apply", root, "-auto-approve")
+	out = daemon.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, string(out), `null_resource.subdir: Creating...`)
 	require.Contains(t, string(out), `null_resource.subdir: Creation complete`)
 }

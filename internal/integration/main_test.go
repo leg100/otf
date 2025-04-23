@@ -39,8 +39,8 @@ var (
 	// condition.
 	expect = playwright.NewPlaywrightAssertions(assertionTimeout)
 
-	// Path to terraform binary
-	tfpath string
+	// Path to engine binaries
+	terraform, tofu string
 )
 
 func TestMain(m *testing.M) {
@@ -177,12 +177,19 @@ func doMain(m *testing.M) (int, error) {
 	defer cleanup()
 	browser = pool
 
-	// Download terraform now rather than in individual tests because it would
+	// Download engines now rather than in individual tests because it would
 	// otherwise make the latter flaky.
-	downloader := releases.NewDownloader(engine.Default, "")
-	tfpath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
-	if err != nil {
-		return 0, fmt.Errorf("downloading terraform: %w", err)
+	{
+		downloader := releases.NewDownloader(engine.Default, "")
+
+		terraform, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
+		if err != nil {
+			return 0, fmt.Errorf("downloading terraform: %w", err)
+		}
+		tofu, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
+		if err != nil {
+			return 0, fmt.Errorf("downloading tofu: %w", err)
+		}
 	}
 
 	return m.Run(), nil
