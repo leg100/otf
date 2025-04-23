@@ -17,7 +17,7 @@ import (
 )
 
 // TestIntegration_TerraformCLICancel demonstrates a user canceling a run via
-// the terraform CLI.
+// the engine's CLI.
 func TestIntegration_TerraformCLICancel(t *testing.T) {
 	integrationTest(t)
 
@@ -42,13 +42,13 @@ data "http" "wait" {
 `, srv.URL))
 	svc.engineCLI(t, ctx, "", "init", config)
 
-	out, err := os.CreateTemp(t.TempDir(), "terraform-cli-cancel.out")
+	out, err := os.CreateTemp(t.TempDir(), "cli-cancel.out")
 	require.NoError(t, err)
 
 	// Invoke terraform apply
 	_, token := svc.createToken(t, ctx, nil)
 	e, tferr, err := goexpect.SpawnWithArgs(
-		[]string{terraform, "-chdir=" + config, "apply", "-no-color"},
+		[]string{terraformPath, "-chdir=" + config, "apply", "-no-color"},
 		time.Minute,
 		goexpect.PartialMatch(true),
 		goexpect.Tee(out),
@@ -73,7 +73,7 @@ data "http" "wait" {
 		&goexpect.BExp{R: "Enter a value:"}, &goexpect.BSnd{S: "yes\n"},
 		&goexpect.BExp{R: "The remote operation was successfully cancelled."},
 	}, time.Minute)
-	// Terraform should return with exit code 0
+	// engine CLI should return with exit code 0
 	require.NoError(t, <-tferr, string(testutils.ReadFile(t, out.Name())))
 	t.Log(string(testutils.ReadFile(t, out.Name())))
 

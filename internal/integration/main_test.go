@@ -40,7 +40,7 @@ var (
 	expect = playwright.NewPlaywrightAssertions(assertionTimeout)
 
 	// Path to engine binaries
-	terraform, tofu string
+	terraformPath, tofuPath string
 )
 
 func TestMain(m *testing.M) {
@@ -161,6 +161,24 @@ func doMain(m *testing.M) (int, error) {
 	// creating that directory first.
 	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
 
+	{
+		const mirrorPath = "../../mirror"
+		if _, err := os.Stat(mirrorPath); err != nil {
+			return 0, fmt.Errorf("integration tests require mirror to be setup with ./hacks/setup_mirror.sh: %w", err)
+		}
+		// Get absolute path to terraform cli config. The config sets up terraform
+		// to use a provider filesystem mirror, which ensures tests avoid any
+		// network roundtrips to retrieve or query providers.
+		mirrorPathAbs, err := filepath.Abs(mirrorPath)
+		if err != nil {
+			return 0, fmt.Errorf("getting absolute path to mirror config: %w", err)
+		}
+		err = os.Symlink(mirrorPathAbs, path.Join(os.Getenv("HOME"), ".terraform.d", "plugins"))
+		if err != nil {
+			return 0, fmt.Errorf("getting absolute path to mirror config: %w", err)
+		}
+	}
+
 	// Create a secret with which to (1) create user session tokens and (2)
 	// for assignment to daemons so that the token passes verification
 	sharedSecret = make([]byte, 16)
@@ -181,14 +199,14 @@ func doMain(m *testing.M) (int, error) {
 	// otherwise make the latter flaky.
 	{
 		downloader := releases.NewDownloader(engine.Default, "")
-		terraform, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
+		terraformPath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
 	}
 	{
 		downloader := releases.NewDownloader(engine.Tofu, "")
-		tofu, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
+		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)
 		}

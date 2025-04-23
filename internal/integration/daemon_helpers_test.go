@@ -490,7 +490,7 @@ func (s *testDaemon) engineCLIWithError(t *testing.T, ctx context.Context, engin
 	t.Helper()
 
 	if engine == "" {
-		engine = terraform
+		engine = terraformPath
 	}
 
 	// Create user token expressly for the terraform cli

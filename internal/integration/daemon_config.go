@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/runner"
 )
@@ -95,6 +96,12 @@ func disableScheduler() configOption {
 }
 
 type runnerConfigOption func(*runner.Config)
+
+func withDefaultEngine(engine *engine.Engine) configOption {
+	return func(cfg *config) {
+		cfg.DefaultEngine = engine
+	}
+}
 
 func withEngineBinDir(dir string) runnerConfigOption {
 	return func(cfg *runner.Config) {
