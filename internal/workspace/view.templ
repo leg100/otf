@@ -455,7 +455,7 @@ templ edit(props editProps) {
 					<input class="peer" type="radio" name="execution_mode" id="agent" value="agent" checked?={ props.ws.ExecutionMode == "agent" }/>
 					<label for="agent">Agent</label>
 					<span class="description">Your plans and applies occur on OTF agents.</span>
-					<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-gray-100 p-2 gap-2">
+					<div class="col-start-2 hidden peer-checked:flex flex-col mt-2 bg-base-300 p-2 gap-2">
 						<div class="flex items-center gap-2">
 							<label class="text-md" for="agent-pool-id">Agent pool</label>
 							<div hx-get={ props.poolsURL } hx-trigger="load" hx-swap="innerHTML"></div>
@@ -469,7 +469,7 @@ templ edit(props editProps) {
 				<div class="form-checkbox">
 					<input type="radio" name="auto_apply" id="auto-apply" value="true" checked?={ props.ws.AutoApply }/>
 					<label for="auto-apply">Auto apply</label>
-					<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="bg-gray-200">-auto-approve</span> flag with <span class="bg-gray-200">terraform apply</span>.</span>
+					<span class="description">Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="font-bold">-auto-approve</span> flag with <span class="font-bold">terraform apply</span>.</span>
 				</div>
 				<div class="form-checkbox">
 					<input type="radio" name="auto_apply" id="manual-apply" value="false" checked?={ !props.ws.AutoApply }/>
@@ -491,7 +491,7 @@ templ edit(props editProps) {
 					<label for="engine-version">Version</label>
 					<input class="input w-48" type="text" name="engine_version" id="engine-version" value={ props.ws.EngineVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
 					<span class="description">
-						The engine version to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version is used.
+						The engine version to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="font-bold">latest</span>, in which case the latest version is used.
 					</span>
 				</div>
 			</fieldset>
@@ -508,7 +508,7 @@ templ edit(props editProps) {
 			<div class="form-checkbox">
 				<input class="" type="checkbox" name="global_remote_state" id="global-remote-state" checked?={ props.ws.GlobalRemoteState }/>
 				<label class="font-semibold" for="global-remote-state">Remote state sharing</label>
-				<span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+				<span class="description">Share this workspace's state with all workspaces in this organization. The <span class="font-bold font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
 			</div>
 			<div class="field">
 				<button class="btn w-40">Save changes</button>
@@ -579,17 +579,17 @@ templ editConnection(props editProps) {
 					<div class="form-checkbox">
 						<input type="radio" id="tags-regex-default" name="tags_regex" value={ props.vcsTagRegexDefault } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexDefault || props.ws.Connection.TagsRegex != "" }/>
 						<label for="tags-regex-default">Default</label>
-						<span class="description">e.g. <span class="bg-gray-200">12.33.4456</span></span>
+						<span class="description">e.g. <span class="font-bold">12.33.4456</span></span>
 					</div>
 					<div class="form-checkbox">
 						<input type="radio" id="tags-regex-prefix" name="tags_regex" value={ props.vcsTagRegexPrefix } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexPrefix }/>
 						<label for="tags-regex-prefix">Version contains a prefix</label>
-						<span class="description">e.g. <span class="bg-gray-200">v12.33.4456</span></span>
+						<span class="description">e.g. <span class="font-bold">v12.33.4456</span></span>
 					</div>
 					<div class="form-checkbox">
 						<input type="radio" id="tags-regex-suffix" name="tags_regex" value={ props.vcsTagRegexSuffix } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexSuffix }/>
 						<label for="tags-regex-suffix">Version contains a suffix</label>
-						<span class="description">e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
+						<span class="description">e.g. <span class="font-bold">12.33.4456-foo</span></span>
 					</div>
 					<div class="form-checkbox">
 						{{ isCustom := props.ws.Connection.TagsRegex != "" && props.ws.Connection.TagsRegex != props.vcsTagRegexDefault && props.ws.Connection.TagsRegex != props.vcsTagRegexPrefix && props.ws.Connection.TagsRegex != props.vcsTagRegexSuffix }}
@@ -614,7 +614,7 @@ templ editConnection(props editProps) {
 	<div class="form-checkbox">
 		<input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" checked?={ props.ws.Connection.AllowCLIApply }/>
 		<label for="allow-cli-apply">Allow apply from the CLI</label>
-		<span class="description">Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
+		<span class="description">Allow running <span class="font-bold">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes. Note: this only works with the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a>; it does not work with the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a>.</span>
 	</div>
 }
 

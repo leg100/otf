@@ -243,14 +243,14 @@ templ getAgentPool(props getAgentPoolProps) {
 								x-ref="panel"
 								x-show="showPanel"
 								x-cloak
-								class="absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black"
+								class="absolute flex flex-col w-80 mt-1 bg-base-100 overflow-x-auto border border-black"
 							>
 								<template x-for="item in filterAvailable" :key="item.id">
-									<button :id="item.id" @click="addItem(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.name"></button>
+									<button :id="item.id" @click="addItem(item)" class="text-left py-1 px-2" x-text="item.name"></button>
 								</template>
 							</div>
 						</div>
-						<div class="bg-gray-100 mt-2 p-2 flex flex-col gap-2">
+						<div class="mt-2 p-2 flex flex-col gap-2">
 							<div class="description">A workspace must be granted access before it can be assigned. To revoke access from an assigned workspace, first unassign the workspace and then revoke.</div>
 							<h4 class="font-bold text-sm">Granted</h4>
 							<div id="granted-workspaces" class="flex flex-row gap-2">
