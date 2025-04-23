@@ -115,10 +115,10 @@ module "mod" {
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
-	svc.tfcli(t, ctx, "init", root)
-	out := svc.tfcli(t, ctx, "plan", root)
+	svc.engineCLI(t, ctx, "", "init", root)
+	out := svc.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, out, "Plan: 2 to add, 0 to change, 0 to destroy.")
-	out = svc.tfcli(t, ctx, "apply", root, "-auto-approve")
+	out = svc.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, string(out), "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.")
 
 	// delete vcs provider and visit the module page; it should be no longer

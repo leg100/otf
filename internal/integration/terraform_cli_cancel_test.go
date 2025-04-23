@@ -40,7 +40,7 @@ data "http" "wait" {
 	url = "%s"
 }
 `, srv.URL))
-	svc.tfcli(t, ctx, "init", config)
+	svc.engineCLI(t, ctx, "", "init", config)
 
 	out, err := os.CreateTemp(t.TempDir(), "terraform-cli-cancel.out")
 	require.NoError(t, err)
@@ -48,7 +48,7 @@ data "http" "wait" {
 	// Invoke terraform apply
 	_, token := svc.createToken(t, ctx, nil)
 	e, tferr, err := goexpect.SpawnWithArgs(
-		[]string{tfpath, "-chdir=" + config, "apply", "-no-color"},
+		[]string{terraform, "-chdir=" + config, "apply", "-no-color"},
 		time.Minute,
 		goexpect.PartialMatch(true),
 		goexpect.Tee(out),

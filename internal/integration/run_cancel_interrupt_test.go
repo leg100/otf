@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
@@ -23,7 +23,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 	// stage a fake terraform bin that sleeps until it receives an interrupt
 	// signal
 	bins := filepath.Join(t.TempDir(), "bins")
-	dst := filepath.Join(bins, releases.DefaultTerraformVersion, "terraform")
+	dst := filepath.Join(bins, engine.Default.DefaultVersion(), "terraform")
 	err := os.MkdirAll(filepath.Dir(dst), 0o755)
 	require.NoError(t, err)
 	wd, err := os.Getwd()
@@ -50,7 +50,7 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 
 	// start an external agent (it's the only way to specify a separate bin
 	// directory currently).
-	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", withTerraformBinDir(bins))
+	agent, _ := daemon.startAgent(t, ctx, org.Name, nil, "", withEngineBinDir(bins))
 
 	// create workspace specifying that it use an external agent.
 	ws, err := daemon.Workspaces.Create(ctx, workspace.CreateOptions{

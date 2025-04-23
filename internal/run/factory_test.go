@@ -134,7 +134,7 @@ func TestFactory(t *testing.T) {
 	t.Run("get latest version", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{TerraformVersion: releases.LatestVersionString},
+			&workspace.Workspace{EngineVersion: releases.LatestVersionString},
 			&configversion.ConfigurationVersion{},
 			"1.2.3",
 		)
@@ -142,7 +142,7 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, "1.2.3", got.TerraformVersion)
+		assert.Equal(t, "1.2.3", got.EngineVersion)
 	})
 }
 
@@ -215,6 +215,6 @@ func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs
 	return vcs.Commit{}, nil
 }
 
-func (f *fakeReleasesService) GetLatest(context.Context) (string, time.Time, error) {
+func (f *fakeReleasesService) GetLatest(context.Context, releases.Engine) (string, time.Time, error) {
 	return f.latestVersion, time.Time{}, nil
 }

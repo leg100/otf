@@ -37,8 +37,8 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 
 	// by default, terraform apply should fail
 	config := newRootModule(t, daemon.System.Hostname(), ws.Organization, ws.Name)
-	daemon.tfcli(t, ctx, "init", config)
-	out, err := daemon.tfcliWithError(t, ctx, "apply", config, "-auto-approve")
+	daemon.engineCLI(t, ctx, "", "init", config)
+	out, err := daemon.engineCLIWithError(t, ctx, "", "apply", config, "-auto-approve")
 	require.Error(t, err, out)
 	assert.Contains(t, out, "Apply not allowed for workspaces with a VCS connection")
 
@@ -50,7 +50,7 @@ func TestIntegration_AllowCLIApply(t *testing.T) {
 	require.NoError(t, err)
 
 	// terraform apply should now be possible from CLI
-	daemon.tfcli(t, ctx, "init", config)
-	_, err = daemon.tfcliWithError(t, ctx, "apply", config, "-auto-approve")
+	daemon.engineCLI(t, ctx, "", "init", config)
+	_, err = daemon.engineCLIWithError(t, ctx, "", "apply", config, "-auto-approve")
 	require.NoError(t, err, out)
 }

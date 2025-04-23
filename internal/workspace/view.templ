@@ -218,16 +218,27 @@ templ get(props getProps) {
 				</div>
 				<div class="divider my-0"></div>
 				<div class="flex flex-col gap-2">
-					<h4 class="font-bold text-sm">Terraform Version</h4>
-					<a
-						class=""
-						href={ paths.EditWorkspace(props.ws.ID) + "#terraform-version-field" }
-						title="Change terraform version"
-					>
-						<div class="badge badge-md badge-ghost">
-							v{ props.ws.TerraformVersion }
-						</div>
-					</a>
+					<h4 class="font-bold text-sm">Engine</h4>
+					<div class="flex gap-2">
+						<a
+							class=""
+							href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
+							title="Change engine version"
+						>
+							<div id="current-engine" class="badge badge-md badge-ghost">
+								{ props.ws.Engine.String() }
+							</div>
+						</a>
+						<a
+							class=""
+							href={ paths.EditWorkspace(props.ws.ID) + "#engine-version-field" }
+							title="Change engine version"
+						>
+							<div id="current-engine-version" class="badge badge-md badge-ghost">
+								{ props.ws.EngineVersion }
+							</div>
+						</a>
+					</div>
 				</div>
 				if props.ws.Connection != nil {
 					<div class="divider my-0"></div>
@@ -466,13 +477,24 @@ templ edit(props editProps) {
 					<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
 				</div>
 			</fieldset>
-			<div class="field" id="terraform-version-field">
-				<label for="terraform-version">Terraform version</label>
-				<input class="input w-48" type="text" name="terraform_version" id="terraform-version" value={ props.ws.TerraformVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
-				<span class="description">
-					The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
-				</span>
-			</div>
+			<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+				<legend>Engine</legend>
+				<div class="form-checkbox">
+					<input type="radio" name="engine" id="terraform" value="terraform" checked?={ props.ws.Engine.String() == "terraform" }/>
+					<label for="terraform">Terraform</label>
+				</div>
+				<div class="form-checkbox">
+					<input type="radio" name="engine" id="tofu" value="tofu" checked?={ props.ws.Engine.String() == "tofu" }/>
+					<label for="tofu">OpenTofu</label>
+				</div>
+				<div class="field" id="engine-version-field">
+					<label for="engine-version">Version</label>
+					<input class="input w-48" type="text" name="engine_version" id="engine-version" value={ props.ws.EngineVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
+					<span class="description">
+						The engine version to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version is used.
+					</span>
+				</div>
+			</fieldset>
 			<div class="field">
 				<label for="working_directory">Working directory</label>
 				<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>

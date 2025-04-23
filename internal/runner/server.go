@@ -2,7 +2,6 @@ package runner
 
 import (
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/releases"
 )
 
 // ServerRunnerOptions are options for constructing a server runner.
@@ -37,7 +36,6 @@ func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 			logs:       opts.Logs,
 			server:     opts.Server,
 			jobs:       opts.Jobs,
-			downloader: releases.NewDownloader(opts.TerraformBinDir),
 		},
 		false,
 		*opts.Config,
@@ -51,7 +49,6 @@ func NewServerRunner(opts ServerRunnerOptions) (*Runner, error) {
 type localOperationSpawner struct {
 	config     Config
 	logger     logr.Logger
-	downloader downloader
 	runs       runClient
 	workspaces workspaceClient
 	variables  variablesClient
@@ -64,20 +61,20 @@ type localOperationSpawner struct {
 
 func (s *localOperationSpawner) newOperation(job *Job, jobToken []byte) (*operation, error) {
 	return newOperation(operationOptions{
-		logger:      s.logger,
-		Debug:       s.config.Debug,
-		Sandbox:     s.config.Sandbox,
-		PluginCache: s.config.PluginCache,
-		job:         job,
-		jobToken:    jobToken,
-		downloader:  s.downloader,
-		jobs:        s.jobs,
-		runs:        s.runs,
-		workspaces:  s.workspaces,
-		variables:   s.variables,
-		state:       s.state,
-		configs:     s.configs,
-		logs:        s.logs,
-		server:      s.server,
+		logger:       s.logger,
+		Debug:        s.config.Debug,
+		Sandbox:      s.config.Sandbox,
+		PluginCache:  s.config.PluginCache,
+		job:          job,
+		jobToken:     jobToken,
+		engineBinDir: s.config.EngineBinDir,
+		jobs:         s.jobs,
+		runs:         s.runs,
+		workspaces:   s.workspaces,
+		variables:    s.variables,
+		state:        s.state,
+		configs:      s.configs,
+		logs:         s.logs,
+		server:       s.server,
 	}), nil
 }

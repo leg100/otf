@@ -48,6 +48,6 @@ variable "foo" {
 	require.NoError(t, err)
 
 	// verify terraform init and plan run without error
-	svc.tfcli(t, ctx, "init", root)
-	svc.tfcli(t, ctx, "plan", root)
+	svc.engineCLI(t, ctx, "", "init", root)
+	svc.engineCLI(t, ctx, "", "plan", root)
 }

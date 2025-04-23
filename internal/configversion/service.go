@@ -90,11 +90,7 @@ func (s *Service) Create(ctx context.Context, workspaceID resource.TfeID, opts C
 		return nil, err
 	}
 
-	cv, err := NewConfigurationVersion(workspaceID, opts)
-	if err != nil {
-		s.Error(err, "constructing configuration version", "id", cv.ID, "subject", subject)
-		return nil, err
-	}
+	cv := NewConfigurationVersion(workspaceID, opts)
 	if err := s.db.CreateConfigurationVersion(ctx, cv); err != nil {
 		s.Error(err, "creating configuration version", "id", cv.ID, "subject", subject)
 		return nil, err

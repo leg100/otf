@@ -25,9 +25,9 @@ func TestSandbox(t *testing.T) {
 	// create terraform config
 	config := newRootModule(t, daemon.System.Hostname(), org.Name, "dev")
 	// terraform init
-	daemon.tfcli(t, ctx, "init", config)
+	daemon.engineCLI(t, ctx, "", "init", config)
 	// terraform apply
-	out := daemon.tfcli(t, ctx, "apply", config, "-auto-approve")
+	out := daemon.engineCLI(t, ctx, "", "apply", config, "-auto-approve")
 	assert.Contains(t, out, "Sandbox mode: true")
 	assert.Contains(t, out, "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 }

@@ -384,6 +384,34 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			// confirm updated description shows up
 			err = expect.Locator(page.Locator(`//textarea[@id='description' and text()='my big fat workspace']`)).ToBeVisible()
 			require.NoError(t, err)
+
+			// switch engine from terraform to tofu
+
+			// terraform should be current engine
+			err = expect.Locator(page.Locator(`input#terraform:checked`)).ToBeVisible()
+			require.NoError(t, err)
+
+			// make tofu the current engine instead
+			err = page.Locator(`input#tofu`).Click()
+			require.NoError(t, err)
+
+			// set tofu version to v2.1.0
+			err = page.Locator(`input#engine-version`).Fill(`2.1.0`)
+			require.NoError(t, err)
+
+			// submit
+			err = page.GetByRole("button").GetByText("Save changes").Click()
+			require.NoError(t, err)
+
+			// confirm updated
+			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator(`input#tofu:checked`)).ToBeVisible()
+			require.NoError(t, err)
+
+			err = expect.Locator(page.Locator(`input#engine-version`)).ToHaveValue(`2.1.0`)
+			require.NoError(t, err)
 		})
 
 		// check UI has correctly updated the workspace resource

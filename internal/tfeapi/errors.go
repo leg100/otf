@@ -9,11 +9,10 @@ import (
 )
 
 var codes = map[error]int{
-	internal.ErrResourceNotFound:        http.StatusNotFound,
-	internal.ErrAccessNotPermitted:      http.StatusForbidden,
-	internal.ErrInvalidTerraformVersion: http.StatusUnprocessableEntity,
-	internal.ErrResourceAlreadyExists:   http.StatusConflict,
-	internal.ErrConflict:                http.StatusConflict,
+	internal.ErrResourceNotFound:      http.StatusNotFound,
+	internal.ErrAccessNotPermitted:    http.StatusForbidden,
+	internal.ErrResourceAlreadyExists: http.StatusConflict,
+	internal.ErrConflict:              http.StatusConflict,
 }
 
 // lookupHTTPCode maps an OTF domain error to a http status code

@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/runner"
 	"github.com/leg100/otf/internal/tokens"
@@ -47,15 +48,18 @@ type Config struct {
 	PlanningTimeout              time.Duration
 	ApplyingTimeout              time.Duration
 	OverrideTimeoutCheckInterval time.Duration
+	DefaultEngine                *engine.Engine
 
 	tokens.GoogleIAPConfig
 }
 
+// NewConfig constructs an otfd configuration with defaults.
 func NewConfig() Config {
 	return Config{
 		RunnerConfig:  runner.NewConfig(),
 		CacheConfig:   &inmem.CacheConfig{},
 		MaxConfigSize: configversion.DefaultConfigMaxSize,
+		DefaultEngine: engine.Default,
 	}
 }
 

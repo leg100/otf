@@ -3,10 +3,12 @@ package releases
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"runtime"
 	"testing"
 
 	otfhttp "github.com/leg100/otf/internal/http"
@@ -16,20 +18,23 @@ import (
 
 func TestDownloader(t *testing.T) {
 	// setup web server
-	http.Handle("/", http.FileServer(http.Dir("testdata/releases")))
+	http.Handle("/", http.FileServer(http.Dir("testdata")))
 	srv := httptest.NewTLSServer(nil)
 	t.Cleanup(func() {
 		srv.Close()
 	})
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
+	u.Path = fmt.Sprintf("/terraform/1.2.3/terraform_1.2.3_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
 
-	dl := NewDownloader(t.TempDir())
-	dl.host = u.Host
-	dl.client = &http.Client{
-		Transport: otfhttp.InsecureTransport,
+	engine := &testEngine{
+		u: u,
 	}
 
+	dl := NewDownloader(engine, t.TempDir())
+	dl.client = &http.Client{Transport: otfhttp.InsecureTransport}
+
+	// Download bin from fake server
 	buf := new(bytes.Buffer)
 	tfpath, err := dl.Download(context.Background(), "1.2.3", buf)
 	require.NoError(t, err)
@@ -38,4 +43,14 @@ func TestDownloader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "I am a fake terraform binary\n", string(tfbin))
 	assert.Equal(t, "downloading terraform, version 1.2.3\n", buf.String())
+
+	// Request bin again. This time it should skip download.
+	buf = new(bytes.Buffer)
+	tfpath, err = dl.Download(context.Background(), "1.2.3", buf)
+	require.NoError(t, err)
+	require.FileExists(t, tfpath)
+	tfbin, err = os.ReadFile(tfpath)
+	require.NoError(t, err)
+	assert.Equal(t, "I am a fake terraform binary\n", string(tfbin))
+	assert.Equal(t, "", buf.String())
 }

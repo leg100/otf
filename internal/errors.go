@@ -42,10 +42,6 @@ var (
 
 // Resource Errors
 var (
-	// ErrInvalidTerraformVersion is returned when a terraform version string is
-	// not a semantic version string (major.minor.patch).
-	ErrInvalidTerraformVersion = errors.New("invalid terraform version")
-
 	// ErrRequiredOrg is returned when the organization option is not present
 	ErrRequiredOrg = errors.New("organization is required")
 

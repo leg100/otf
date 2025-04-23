@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -22,6 +23,7 @@ type (
 	Service struct {
 		logr.Logger
 		*authz.Authorizer
+		*factory
 
 		db          *pgdb
 		web         *webHandlers
@@ -48,6 +50,7 @@ type (
 		TeamService         *team.Service
 		UserService         *user.Service
 		ConnectionService   *connections.Service
+		DefaultEngine       *engine.Engine
 	}
 )
 
@@ -58,6 +61,7 @@ func NewService(opts Options) *Service {
 		Authorizer:  opts.Authorizer,
 		db:          db,
 		connections: opts.ConnectionService,
+		factory:     &factory{defaultEngine: opts.DefaultEngine},
 	}
 	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{
@@ -119,7 +123,7 @@ func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], f
 }
 
 func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, error) {
-	ws, err := NewWorkspace(opts)
+	ws, err := s.NewWorkspace(opts)
 	if err != nil {
 		s.Error(err, "constructing workspace")
 		return nil, err

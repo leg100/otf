@@ -13,10 +13,10 @@ func TestOrganizationCLI(t *testing.T) {
 	daemon, _, ctx := setup(t)
 
 	// create organization
-	out := daemon.otfcli(t, ctx, "organizations", "new", "acme-corp")
+	out := daemon.otfCLI(t, ctx, "organizations", "new", "acme-corp")
 	require.Equal(t, "Successfully created organization acme-corp\n", out)
 
 	// delete organization
-	out = daemon.otfcli(t, ctx, "organizations", "delete", "acme-corp")
+	out = daemon.otfCLI(t, ctx, "organizations", "delete", "acme-corp")
 	require.Equal(t, "Successfully deleted organization acme-corp\n", string(out))
 }

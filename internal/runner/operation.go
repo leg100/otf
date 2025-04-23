@@ -51,19 +51,20 @@ type (
 
 		Sandbox     bool // isolate privileged ops within sandbox
 		Debug       bool // toggle debug mode
-		PluginCache bool // toggle use of terraform's shared plugin cache
+		PluginCache bool // toggle use of engine's shared plugin cache
 
-		job           *Job
-		run           *run.Run
-		canceled      bool
-		ctx           context.Context
-		cancelfn      context.CancelFunc
-		out           io.Writer
-		terraformPath string
-		envs          []string
-		proc          *os.Process
-		downloader    downloader
-		isAgent       bool
+		job          *Job
+		run          *run.Run
+		canceled     bool
+		ctx          context.Context
+		cancelfn     context.CancelFunc
+		out          io.Writer
+		enginePath   string
+		envs         []string
+		proc         *os.Process
+		downloader   downloader
+		isAgent      bool
+		engineBinDir string
 
 		runs       runClient
 		workspaces workspaceClient
@@ -76,16 +77,15 @@ type (
 	}
 
 	operationOptions struct {
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
+		Sandbox      bool   // isolate privileged ops within sandbox
+		Debug        bool   // toggle debug mode
+		PluginCache  bool   // toggle use of engine's shared plugin cache
+		engineBinDir string // destination directory for engine binaries
 
-		logger     logr.Logger
-		job        *Job
-		jobToken   []byte
-		downloader downloader
-		isAgent    bool
+		logger   logr.Logger
+		job      *Job
+		jobToken []byte
+		isAgent  bool
 
 		runs       runClient
 		workspaces workspaceClient
@@ -105,7 +105,7 @@ type (
 		finishJob(ctx context.Context, jobID resource.TfeID, opts finishJobOptions) error
 	}
 
-	// downloader downloads terraform versions
+	// downloader downloads engine versions
 	downloader interface {
 		Download(ctx context.Context, version string, w io.Writer) (string, error)
 	}
@@ -153,34 +153,31 @@ func newOperation(opts operationOptions) *operation {
 	// runner instead authenticates remotely via its job token).
 	ctx = authz.AddSubjectToContext(ctx, opts.job)
 
-	if opts.downloader == nil {
-		opts.downloader = releases.NewDownloader(opts.TerraformBinDir)
-	}
 	envs := defaultEnvs
 	if opts.PluginCache {
 		envs = append(envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 	}
-	// make token available to terraform CLI
+	// make token available to engine CLI
 	envs = append(envs, internal.CredentialEnv(opts.server.Hostname(), opts.jobToken))
 
 	return &operation{
-		Logger:     opts.logger.WithValues("job", opts.job),
-		Sandbox:    opts.Sandbox,
-		Debug:      opts.Debug,
-		job:        opts.job,
-		downloader: opts.downloader,
-		envs:       envs,
-		ctx:        ctx,
-		cancelfn:   cancelfn,
-		runs:       opts.runs,
-		workspaces: opts.workspaces,
-		variables:  opts.variables,
-		jobs:       opts.jobs,
-		state:      opts.state,
-		configs:    opts.configs,
-		logs:       opts.logs,
-		server:     opts.server,
-		isAgent:    opts.isAgent,
+		Logger:       opts.logger.WithValues("job", opts.job),
+		Sandbox:      opts.Sandbox,
+		Debug:        opts.Debug,
+		job:          opts.job,
+		engineBinDir: opts.engineBinDir,
+		envs:         envs,
+		ctx:          ctx,
+		cancelfn:     cancelfn,
+		runs:         opts.runs,
+		workspaces:   opts.workspaces,
+		variables:    opts.variables,
+		jobs:         opts.jobs,
+		state:        opts.state,
+		configs:      opts.configs,
+		logs:         opts.logs,
+		server:       opts.server,
+		isAgent:      opts.isAgent,
 	}
 }
 
@@ -224,6 +221,7 @@ func (o *operation) do() error {
 		return err
 	}
 	o.run = run
+	o.downloader = releases.NewDownloader(o.run.Engine, o.engineBinDir)
 
 	// Get workspace in order to get working directory path
 	//
@@ -270,16 +268,16 @@ func (o *operation) do() error {
 	// compile list of steps comprising operation
 	type step func(context.Context) error
 	steps := []step{
-		o.downloadTerraform,
+		o.downloadEngine,
 		o.downloadConfig,
-		o.writeTerraformVars,
+		o.writeVars,
 		o.deleteBackendConfig,
 		o.downloadState,
 	}
 	switch run.Phase() {
 	case internal.PlanPhase:
-		steps = append(steps, o.terraformInit)
-		steps = append(steps, o.terraformPlan)
+		steps = append(steps, o.init)
+		steps = append(steps, o.plan)
 		steps = append(steps, o.convertPlanToJSON)
 		steps = append(steps, o.uploadPlan)
 		steps = append(steps, o.uploadJSONPlan)
@@ -289,8 +287,8 @@ func (o *operation) do() error {
 		// same providers are used in both phases.
 		steps = append(steps, o.downloadLockFile)
 		steps = append(steps, o.downloadPlanFile)
-		steps = append(steps, o.terraformInit)
-		steps = append(steps, o.terraformApply)
+		steps = append(steps, o.init)
+		steps = append(steps, o.apply)
 	}
 
 	// do each step
@@ -327,10 +325,10 @@ func (o *operation) cancel(force, sendSignal bool) {
 	// signal current process if there is one.
 	if sendSignal && o.proc != nil {
 		if force {
-			o.V(2).Info("sending SIGKILL to terraform process", "pid", o.proc.Pid)
+			o.V(2).Info("sending SIGKILL to engine process", "pid", o.proc.Pid)
 			o.proc.Signal(os.Kill)
 		} else {
-			o.V(2).Info("sending SIGINT to terraform process", "pid", o.proc.Pid)
+			o.V(2).Info("sending SIGINT to engine process", "pid", o.proc.Pid)
 			o.proc.Signal(os.Interrupt)
 		}
 	}
@@ -428,9 +426,9 @@ func (o *operation) addSandboxWrapper(args []string) []string {
 	return append(bargs, args[1:]...)
 }
 
-func (o *operation) downloadTerraform(ctx context.Context) error {
+func (o *operation) downloadEngine(ctx context.Context) error {
 	var err error
-	o.terraformPath, err = o.downloader.Download(ctx, o.run.TerraformVersion, o.out)
+	o.enginePath, err = o.downloader.Download(ctx, o.run.EngineVersion, o.out)
 	return err
 }
 
@@ -479,7 +477,7 @@ func (o *operation) downloadLockFile(ctx context.Context) error {
 	return o.writeFile(lockFilename, lockFile)
 }
 
-func (o *operation) writeTerraformVars(ctx context.Context) error {
+func (o *operation) writeVars(ctx context.Context) error {
 	// retrieve variables and add them to the environment
 	variables, err := o.variables.ListEffectiveVariables(o.ctx, o.run.ID)
 	if err != nil {
@@ -499,20 +497,20 @@ func (o *operation) writeTerraformVars(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) terraformInit(ctx context.Context) error {
-	return o.execute([]string{o.terraformPath, "init", "-input=false"})
+func (o *operation) init(ctx context.Context) error {
+	return o.execute([]string{o.enginePath, "init", "-input=false"})
 }
 
-func (o *operation) terraformPlan(ctx context.Context) error {
+func (o *operation) plan(ctx context.Context) error {
 	args := []string{"plan", "-input=false"}
 	if o.run.IsDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+planFilename)
-	return o.execute(append([]string{o.terraformPath}, args...))
+	return o.execute(append([]string{o.enginePath}, args...))
 }
 
-func (o *operation) terraformApply(ctx context.Context) (err error) {
+func (o *operation) apply(ctx context.Context) (err error) {
 	// prior to running an apply, capture info about local state file
 	// so we can detect changes...
 	statePath := filepath.Join(o.workdir.String(), localStateFilename)
@@ -545,13 +543,13 @@ func (o *operation) terraformApply(ctx context.Context) (err error) {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return o.execute(append([]string{o.terraformPath}, args...), sandboxIfEnabled())
+	return o.execute(append([]string{o.enginePath}, args...), sandboxIfEnabled())
 }
 
 func (o *operation) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
 	return o.execute(
-		append([]string{o.terraformPath}, args...),
+		append([]string{o.enginePath}, args...),
 		redirectStdout(jsonPlanFilename),
 	)
 }
@@ -603,7 +601,7 @@ func (o *operation) downloadPlanFile(ctx context.Context) error {
 	return o.writeFile(planFilename, plan)
 }
 
-// uploadState reads, parses, and uploads terraform state
+// uploadState reads, parses, and uploads state
 func (o *operation) uploadState(ctx context.Context) error {
 	statefile, err := o.readFile(localStateFilename)
 	if err != nil {

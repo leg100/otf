@@ -91,6 +91,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err
 	}
+	logger.V(1).Info("set engine type", "engine", cfg.DefaultEngine)
 
 	hostnameService := internal.NewHostnameService(cfg.Host)
 	hostnameService.SetWebhookHostname(cfg.WebhookHost)
@@ -217,6 +218,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		UserService:         userService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
+		DefaultEngine:       cfg.DefaultEngine,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,

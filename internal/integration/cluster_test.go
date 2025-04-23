@@ -41,19 +41,19 @@ func TestCluster(t *testing.T) {
 	root := newRootModule(t, otfd1.System.Hostname(), org.Name, "dev")
 
 	// terraform init automatically creates a workspace named dev
-	otfd1.tfcli(t, ctx, "init", root)
+	otfd1.engineCLI(t, ctx, "", "init", root)
 
 	// edit workspace to use agent
-	out := otfd1.otfcli(t, ctx, "workspaces", "edit", "dev", "--organization", org.Name.String(), "--execution-mode", "agent", "--agent-pool-id", pool.ID.String())
+	out := otfd1.otfCLI(t, ctx, "workspaces", "edit", "dev", "--organization", org.Name.String(), "--execution-mode", "agent", "--agent-pool-id", pool.ID.String())
 	assert.Equal(t, "updated workspace\n", out)
 
 	// terraform plan
-	out = otfd1.tfcli(t, ctx, "plan", root)
+	out = otfd1.engineCLI(t, ctx, "", "plan", root)
 	require.Contains(t, out, "Plan: 1 to add, 0 to change, 0 to destroy.")
 	require.Contains(t, out, "External agent: true") // confirm run was handled by external agent
 
 	// terraform apply
-	out = otfd1.tfcli(t, ctx, "apply", root, "-auto-approve")
+	out = otfd1.engineCLI(t, ctx, "", "apply", root, "-auto-approve")
 	require.Contains(t, out, "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 	require.Contains(t, out, "External agent: true") // confirm run was handled by external agent
 }

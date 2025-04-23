@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/components"
@@ -422,7 +423,8 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name              string
 		Description       string
 		ExecutionMode     ExecutionMode  `schema:"execution_mode"`
-		TerraformVersion  string         `schema:"terraform_version"`
+		Engine            *engine.Engine `schema:"engine"`
+		EngineVersion     string         `schema:"engine_version"`
 		WorkingDirectory  string         `schema:"working_directory"`
 		WorkspaceID       resource.TfeID `schema:"workspace_id,required"`
 		GlobalRemoteState bool           `schema:"global_remote_state"`
@@ -453,7 +455,8 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name:               &params.Name,
 		Description:        &params.Description,
 		ExecutionMode:      &params.ExecutionMode,
-		TerraformVersion:   &params.TerraformVersion,
+		Engine:             params.Engine,
+		EngineVersion:      &params.EngineVersion,
 		WorkingDirectory:   &params.WorkingDirectory,
 		GlobalRemoteState:  &params.GlobalRemoteState,
 		SpeculativeEnabled: &params.SpeculativeEnabled,
