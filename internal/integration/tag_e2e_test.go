@@ -38,7 +38,7 @@ resource "null_resource" "tags_e2e" {}
 	// run terraform init
 	_, token := daemon.createToken(t, ctx, nil)
 	e, tferr, err := goexpect.SpawnWithArgs(
-		[]string{terraform, "-chdir=" + root, "init", "-no-color"},
+		[]string{terraformPath, "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
 		goexpect.PartialMatch(true),
 		goexpect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.System.Hostname(), token))),

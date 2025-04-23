@@ -1,3 +1,5 @@
+# provider mirror for e2e tests
+/mirror/registry.*
 # templ watch mode generated files
 *_templ.txt
 # local node shite
