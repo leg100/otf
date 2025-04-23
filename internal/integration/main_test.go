@@ -161,21 +161,25 @@ func doMain(m *testing.M) (int, error) {
 	// creating that directory first.
 	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
 
+	// Make filesystem mirror available to tests. This is a local cache of
+	// providers that speeds up tests. It shouldn't be necessary because the squid
+	// proxy caches providers on first download, but in the case of OpenTofu,
+	// providers are hosted on github, which sends back 302s and unique URLs
+	// which are uncacheable.
+	//
+	// TODO: is squid needed anymore?
 	{
 		const mirrorPath = "../../mirror"
 		if _, err := os.Stat(mirrorPath); err != nil {
 			return 0, fmt.Errorf("integration tests require mirror to be setup with ./hacks/setup_mirror.sh: %w", err)
 		}
-		// Get absolute path to terraform cli config. The config sets up terraform
-		// to use a provider filesystem mirror, which ensures tests avoid any
-		// network roundtrips to retrieve or query providers.
 		mirrorPathAbs, err := filepath.Abs(mirrorPath)
 		if err != nil {
-			return 0, fmt.Errorf("getting absolute path to mirror config: %w", err)
+			return 0, fmt.Errorf("getting absolute path to provider mirror: %w", err)
 		}
 		err = os.Symlink(mirrorPathAbs, path.Join(os.Getenv("HOME"), ".terraform.d", "plugins"))
 		if err != nil {
-			return 0, fmt.Errorf("getting absolute path to mirror config: %w", err)
+			return 0, fmt.Errorf("symlinking provider mirror: %w", err)
 		}
 	}
 
