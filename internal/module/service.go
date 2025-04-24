@@ -240,6 +240,10 @@ func (s *Service) ListModules(ctx context.Context, opts ListOptions) ([]*Module,
 	return page, nil
 }
 
+func (s *Service) listProviders(ctx context.Context, organization organization.Name) ([]string, error) {
+	return s.db.listProviders(ctx, organization)
+}
+
 func (s *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
 	subject, err := s.Authorize(ctx, authz.GetModuleAction, &opts.Organization)
 	if err != nil {

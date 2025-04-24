@@ -40,6 +40,7 @@ type (
 		ListModules(context.Context, ListOptions) ([]*Module, error)
 		PublishModule(context.Context, PublishOptions) (*Module, error)
 		DeleteModule(ctx context.Context, id resource.TfeID) (*Module, error)
+		listProviders(context.Context, organization.Name) ([]string, error)
 	}
 
 	webAuthorizer interface {
@@ -69,6 +70,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		ListOptions
 		resource.PageOptions
+		ProviderFilterVisible bool `schema:"provider_filter_visible"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -79,11 +81,19 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	providers, err := h.client.listProviders(r.Context(), params.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	props := listProps{
-		organization:     params.Organization,
-		page:             resource.NewPage(modules, params.PageOptions, nil),
-		canPublishModule: h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
+		organization:          params.Organization,
+		page:                  resource.NewPage(modules, params.PageOptions, nil),
+		canPublishModule:      h.authorizer.CanAccess(r.Context(), authz.CreateModuleAction, params.Organization),
+		providerFilterVisible: params.ProviderFilterVisible,
+		allProviders:          providers,
+		selectedProviders:     params.Providers,
 	}
 	html.Render(list(props), w, r)
 }
