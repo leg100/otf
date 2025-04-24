@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
@@ -101,5 +102,18 @@ func wait[T any](t *testing.T, c <-chan pubsub.Event[T], cond func(pubsub.Event[
 				return
 			}
 		}
+	}
+}
+
+type engineTestSpec struct {
+	*engine.Engine
+	name string
+	path string
+}
+
+func engineTestSpecs() []engineTestSpec {
+	return []engineTestSpec{
+		{name: "Terraform", path: terraformPath, Engine: engine.Terraform},
+		{name: "OpenTofu", path: tofuPath, Engine: engine.Tofu},
 	}
 }

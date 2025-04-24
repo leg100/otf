@@ -38,6 +38,14 @@ jobs:
           GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
       - name: Install e2e dependencies
         run: go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium --with-deps
+      - name: Install tofu for provider mirror setup
+        uses: opentofu/setup-opentofu@v1
+      - name: Install terraform for provider mirror setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - name: Setup provider mirror for e2e tests
+        run: ./hack/setup_mirror.sh
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}

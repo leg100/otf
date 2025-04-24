@@ -40,7 +40,7 @@ var (
 	expect = playwright.NewPlaywrightAssertions(assertionTimeout)
 
 	// Path to engine binaries
-	terraform, tofu string
+	terraformPath, tofuPath string
 )
 
 func TestMain(m *testing.M) {
@@ -161,6 +161,28 @@ func doMain(m *testing.M) (int, error) {
 	// creating that directory first.
 	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
 
+	// Make filesystem mirror available to tests. This is a local cache of
+	// providers that speeds up tests. It shouldn't be necessary because the squid
+	// proxy caches providers on first download, but in the case of OpenTofu,
+	// providers are hosted on github, which sends back 302s and unique URLs
+	// which are uncacheable.
+	//
+	// TODO: is squid needed anymore?
+	{
+		const mirrorPath = "../../mirror"
+		if _, err := os.Stat(mirrorPath); err != nil {
+			return 0, fmt.Errorf("integration tests require mirror to be setup with ./hacks/setup_mirror.sh: %w", err)
+		}
+		mirrorPathAbs, err := filepath.Abs(mirrorPath)
+		if err != nil {
+			return 0, fmt.Errorf("getting absolute path to provider mirror: %w", err)
+		}
+		err = os.Symlink(mirrorPathAbs, path.Join(os.Getenv("HOME"), ".terraform.d", "plugins"))
+		if err != nil {
+			return 0, fmt.Errorf("symlinking provider mirror: %w", err)
+		}
+	}
+
 	// Create a secret with which to (1) create user session tokens and (2)
 	// for assignment to daemons so that the token passes verification
 	sharedSecret = make([]byte, 16)
@@ -181,14 +203,14 @@ func doMain(m *testing.M) (int, error) {
 	// otherwise make the latter flaky.
 	{
 		downloader := releases.NewDownloader(engine.Default, "")
-		terraform, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
+		terraformPath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
 	}
 	{
 		downloader := releases.NewDownloader(engine.Tofu, "")
-		tofu, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
+		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)
 		}

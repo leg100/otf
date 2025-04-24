@@ -33,9 +33,7 @@ templ Layout(props LayoutProps) {
 		<div class="my-2 mx-4">
 			<div class="flex flex-wrap items-center gap-4 pb-2 text-xl/9">
 				<div class="flex">
-					<span
-						id="content-header-title"
-					>
+					<span>
 						for i, crumb := range props.Breadcrumbs {
 							<span class={ templ.KV("font-bold", i == len(props.Breadcrumbs)-1) }>
 								if crumb.Link != "" {

@@ -22,14 +22,7 @@ import (
 func TestTerraformLogin(t *testing.T) {
 	integrationTest(t)
 
-	tests := []struct {
-		name string
-		path string
-	}{
-		{"Terraform", terraform},
-		{"OpenTofu", tofu},
-	}
-	for _, tt := range tests {
+	for _, tt := range engineTestSpecs() {
 		t.Run(tt.name, func(t *testing.T) {
 			svc, _, ctx := setup(t)
 
