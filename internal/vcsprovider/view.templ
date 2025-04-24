@@ -131,7 +131,7 @@ templ newPAT(props newPATProps) {
 		},
 	}) {
 		<div>
-			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ props.tokensURL }>personal token</a> with the <span class="bg-gray-200">{ props.scope }</span> scope.
+			Create a { internal.Title(string(props.provider.Kind)) } VCS provider with a <a class="underline" href={ props.tokensURL }>personal token</a> with the <span class="font-bold">{ props.scope }</span> scope.
 		</div>
 		@form(formProps{
 			provider: props.provider,

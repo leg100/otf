@@ -15,7 +15,7 @@ templ newWorkspaceVariable(ws *workspace.Workspace) {
 		Title:        "new variable",
 		Organization: ws.Organization,
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+			{Name: "Workspaces", Link: paths.Workspaces(ws.Organization)},
 			{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 			{Name: "new"},
 		},
@@ -111,7 +111,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 		Organization: props.ws.Organization,
 		ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 		Breadcrumbs: []components.Breadcrumb{
-			{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+			{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 			{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 		},
@@ -423,10 +423,10 @@ templ variableSetForm(props variableSetFormProps) {
 								x-ref="panel"
 								x-show="showPanel"
 								x-cloak
-								class="absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black"
+								class="absolute flex flex-col w-80 mt-1 bg-base-100 overflow-x-auto border border-black"
 							>
 								<template x-for="item in filterAvailable" :key="item.id">
-									<button @click="addItem(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.name"></button>
+									<button @click="addItem(item)" class="text-left focus:bg-base-300 hover:bg-base-300 py-1 px-2" x-text="item.name"></button>
 								</template>
 							</div>
 						</div>
