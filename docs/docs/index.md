@@ -15,6 +15,8 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
 * Module registry (provider registry coming soon)
 
+...and full support for [OpenTofu](https://opentofu.org/).
+
 <figure markdown>
 ![run page planned and finished state](images/run_page_planned_and_finished_state.png){.screenshot}
 <figcaption>Real-time streaming of a terraform plan</figcaption>
