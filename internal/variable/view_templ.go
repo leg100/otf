@@ -68,7 +68,7 @@ func newWorkspaceVariable(ws *workspace.Workspace) templ.Component {
 			Title:        "new variable",
 			Organization: ws.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(ws.Organization)},
+				{Name: "Workspaces", Link: paths.Workspaces(ws.Organization)},
 				{Name: ws.Name, Link: paths.Workspace(ws.ID)},
 				{Name: "new"},
 			},
@@ -393,7 +393,7 @@ func listWorkspaceVariables(props listWorkspaceVariablesProps) templ.Component {
 			Organization: props.ws.Organization,
 			ContentLinks: workspace.WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 				{Name: "variables", Link: paths.Variables(props.ws.ID)},
 			},
@@ -1167,7 +1167,7 @@ func variableSetForm(props variableSetFormProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" x-ref=\"workspace_select\" @keydown.escape.prevent.stop=\"close($refs.workspace_input)\" @focusin.window=\"! $refs.workspace_select.contains($event.target) &amp;&amp; close()\"><div @click.outside=\"close()\"><input type=\"hidden\" id=\"workspaces\" name=\"workspaces\" :value=\"JSON.stringify(existing)\"> <input class=\"input grow w-80\" type=\"text\" id=\"workspace-input\" x-ref=\"workspace_input\" x-model=\"search\" placeholder=\"Select workspace\" @focusin=\"open = true\" @click=\"open = true\"><div x-ref=\"panel\" x-show=\"showPanel\" x-cloak class=\"absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black\"><template x-for=\"item in filterAvailable\" :key=\"item.id\"><button @click=\"addItem(item)\" class=\"text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2\" x-text=\"item.name\"></button></template></div></div><div class=\"flex flex-row gap-2 mt-2\" id=\"existing-workspaces\"><template x-for=\"item in existing\"><div class=\"flex p-1 gap-1 bg-gray-200 group\"><span class=\"\" x-text=\"item.name\"></span> <button @click=\"deleteItem(item)\" type=\"button\" class=\"group-hover:bg-gray-400\" id=\"button-remove-tag-{ . }\" class=\"delete cross\">x</button></div></template></div></div></div></fieldset><div><button class=\"btn\" id=\"save-variable-set-button\">Save variable set</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" x-ref=\"workspace_select\" @keydown.escape.prevent.stop=\"close($refs.workspace_input)\" @focusin.window=\"! $refs.workspace_select.contains($event.target) &amp;&amp; close()\"><div @click.outside=\"close()\"><input type=\"hidden\" id=\"workspaces\" name=\"workspaces\" :value=\"JSON.stringify(existing)\"> <input class=\"input grow w-80\" type=\"text\" id=\"workspace-input\" x-ref=\"workspace_input\" x-model=\"search\" placeholder=\"Select workspace\" @focusin=\"open = true\" @click=\"open = true\"><div x-ref=\"panel\" x-show=\"showPanel\" x-cloak class=\"absolute flex flex-col w-80 mt-1 bg-base-100 overflow-x-auto border border-black\"><template x-for=\"item in filterAvailable\" :key=\"item.id\"><button @click=\"addItem(item)\" class=\"text-left focus:bg-base-300 hover:bg-base-300 py-1 px-2\" x-text=\"item.name\"></button></template></div></div><div class=\"flex flex-row gap-2 mt-2\" id=\"existing-workspaces\"><template x-for=\"item in existing\"><div class=\"flex p-1 gap-1 bg-gray-200 group\"><span class=\"\" x-text=\"item.name\"></span> <button @click=\"deleteItem(item)\" type=\"button\" class=\"group-hover:bg-gray-400\" id=\"button-remove-tag-{ . }\" class=\"delete cross\">x</button></div></template></div></div></div></fieldset><div><button class=\"btn\" id=\"save-variable-set-button\">Save variable set</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
