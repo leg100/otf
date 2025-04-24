@@ -924,7 +924,7 @@ func getAgentPool(props getAgentPoolProps) templ.Component {
 			Title:        props.pool.Name,
 			Organization: props.pool.Organization,
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "agent pools", Link: paths.AgentPools(props.pool.Organization)},
+				{Name: "Agent Pools", Link: paths.AgentPools(props.pool.Organization)},
 				{Name: props.pool.Name},
 			},
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var32), templ_7745c5c3_Buffer)

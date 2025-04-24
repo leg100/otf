@@ -1097,7 +1097,7 @@ func edit(props editProps) templ.Component {
 			Organization: props.ws.Organization,
 			ContentLinks: WorkspaceHeaderLinks(props.ws.ID, props.canUpdateWorkspace),
 			Breadcrumbs: []components.Breadcrumb{
-				{Name: "workspaces", Link: paths.Workspaces(props.ws.Organization)},
+				{Name: "Workspaces", Link: paths.Workspaces(props.ws.Organization)},
 				{Name: props.ws.Name, Link: paths.Workspace(props.ws.ID)},
 				{Name: "settings"},
 			},
