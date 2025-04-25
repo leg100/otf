@@ -82,6 +82,7 @@ FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
 AND   m.provider LIKE ANY($2::text[])
+ORDER BY m.name
 `, opts.Organization, providers)
 	return sql.CollectRows(rows, db.scanModule)
 }

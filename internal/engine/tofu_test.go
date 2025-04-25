@@ -23,6 +23,7 @@ func Test_getLatestVersion(t *testing.T) {
 			f.Close()
 
 		}),
+		github.WithDisableTLS(),
 	)
 	got, err := getLatestTofuVersion(context.Background(), internal.String(u.String()))
 	require.NoError(t, err)

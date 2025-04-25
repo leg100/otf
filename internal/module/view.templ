@@ -209,7 +209,7 @@ templ get(props getProps) {
 						</form>
 						if props.module.Connection != nil {
 							<div>
-								Source <span class="bg-gray-200" id="vcs-repo">{ props.module.Connection.Repo }</span>
+								Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo }</span>
 							</div>
 						}
 					</div>
@@ -232,7 +232,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold">Resources</h3>
 						for resource := range props.terraformModule.ManagedResources {
 							<div>
-								<span class="bg-gray-200">{ resource }</span>
+								<span class="bg-base-300">{ resource }</span>
 							</div>
 						}
 					</div>
@@ -240,7 +240,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold">Variables</h3>
 						for v := range props.terraformModule.Variables {
 							<div>
-								<span class="bg-gray-200">{ v }</span>
+								<span class="bg-base-300">{ v }</span>
 							</div>
 						}
 					</div>
@@ -248,7 +248,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold">Outputs</h3>
 						for output := range props.terraformModule.Outputs {
 							<div>
-								<span class="bg-gray-200">{ output }</span>
+								<span class="bg-base-300">{ output }</span>
 							</div>
 						}
 					</div>

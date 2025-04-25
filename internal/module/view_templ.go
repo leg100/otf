@@ -765,7 +765,7 @@ func get(props getProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if props.module.Connection != nil {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div>Source <span class=\"bg-gray-200\" id=\"vcs-repo\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div>Source <span class=\"bg-base-300\" id=\"vcs-repo\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -812,7 +812,7 @@ func get(props getProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for resource := range props.terraformModule.ManagedResources {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<div><span class=\"bg-gray-200\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<div><span class=\"bg-base-300\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -835,7 +835,7 @@ func get(props getProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for v := range props.terraformModule.Variables {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div><span class=\"bg-gray-200\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div><span class=\"bg-base-300\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -858,7 +858,7 @@ func get(props getProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for output := range props.terraformModule.Outputs {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<div><span class=\"bg-gray-200\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<div><span class=\"bg-base-300\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

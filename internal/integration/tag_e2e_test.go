@@ -99,10 +99,10 @@ resource "null_resource" "tags_e2e" {}
 		err = page.Locator(`//input[@name='tag_filter_visible']`).Click()
 		require.NoError(t, err)
 		// filter by tag foo
-		err = page.Locator(`//input[@id='filter-tag-foo']`).Click()
+		err = page.Locator(`//input[@id='filter-item-foo']`).Click()
 		require.NoError(t, err)
 		// filter by tag baz
-		err = page.Locator(`//input[@id='filter-tag-baz']`).Click()
+		err = page.Locator(`//input[@id='filter-item-baz']`).Click()
 		require.NoError(t, err)
 		// confirm workspace listing contains tagged workspace
 		err = expect.Locator(page.Locator(`//div[@id='page-results']//tr[@id='item-workspace-tagged']`)).ToBeVisible()

@@ -39,7 +39,11 @@ func (e *tofu) GetLatestVersion(ctx context.Context) (string, error) {
 func getLatestTofuVersion(ctx context.Context, url *string) (string, error) {
 	client := github.NewClient(nil)
 	if url != nil {
-		client.WithEnterpriseURLs(*url, *url)
+		var err error
+		client, err = client.WithEnterpriseURLs(*url, *url)
+		if err != nil {
+			return "", err
+		}
 	}
 	latest, _, err := client.Repositories.GetLatestRelease(ctx, "opentofu", "opentofu")
 	if err != nil {

@@ -11,11 +11,12 @@ import (
 )
 
 type fakeService struct {
-	mod      *Module
-	tarball  []byte
-	vcsprovs []*vcsprovider.VCSProvider
-	repos    []string
-	hostname string
+	mod       *Module
+	tarball   []byte
+	vcsprovs  []*vcsprovider.VCSProvider
+	repos     []string
+	hostname  string
+	providers []string
 
 	Service
 	internal.HostnameService
@@ -35,6 +36,10 @@ func (f *fakeService) DeleteModule(context.Context, resource.TfeID) (*Module, er
 
 func (f *fakeService) ListModules(context.Context, ListOptions) ([]*Module, error) {
 	return []*Module{f.mod}, nil
+}
+
+func (f *fakeService) listProviders(context.Context, organization.Name) ([]string, error) {
+	return f.providers, nil
 }
 
 func (f *fakeService) Get(context.Context, resource.TfeID) (*vcsprovider.VCSProvider, error) {
