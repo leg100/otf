@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
@@ -57,6 +58,10 @@ RETURNING module_id
 }
 
 func (db *pgdb) listModules(ctx context.Context, opts ListOptions) ([]*Module, error) {
+	providers := []string{"%"}
+	if len(opts.Providers) > 0 {
+		providers = opts.Providers
+	}
 	rows := db.Query(ctx, `
 SELECT
     m.module_id,
@@ -76,8 +81,20 @@ SELECT
 FROM modules m
 LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
-`, opts.Organization)
+AND   m.provider LIKE ANY($2::text[])
+ORDER BY m.name
+`, opts.Organization, providers)
 	return sql.CollectRows(rows, db.scanModule)
+}
+
+func (db *pgdb) listProviders(ctx context.Context, organization organization.Name) ([]string, error) {
+	rows := db.Query(ctx, `
+SELECT m.provider
+FROM modules m
+GROUP BY m.provider
+ORDER BY m.provider ASC
+`)
+	return pgx.CollectRows[string](rows, pgx.RowTo)
 }
 
 func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {

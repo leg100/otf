@@ -149,8 +149,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// retrieve all tags and create map, with each entry determining whether
-	// listing is currently filtered by the tag or not.
+	// retrieve all tags for listing in tag filter
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
 		return h.client.ListTags(r.Context(), *params.Organization, ListTagsOptions{
 			PageOptions: opts,
@@ -160,20 +159,15 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tagMap := make(map[string]bool, len(tags))
-	for _, t := range tags {
-		tagMap[t.Name] = false
-		for _, f := range params.Tags {
-			if t.Name == f {
-				tagMap[t.Name] = true
-				break
-			}
-		}
+	tagStrings := make([]string, len(tags))
+	for i, tag := range tags {
+		tagStrings[i] = tag.Name
 	}
 
 	props := listProps{
 		organization:        *params.Organization,
-		tags:                tagMap,
+		allTags:             tagStrings,
+		selectedTags:        params.Tags,
 		search:              params.Search,
 		status:              params.Status,
 		statusFilterVisible: params.StatusFilterVisible,

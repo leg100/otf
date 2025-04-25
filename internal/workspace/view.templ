@@ -40,7 +40,8 @@ type listProps struct {
 	organization        organization.Name
 	search              string
 	status              []runstatus.Status
-	tags                map[string]bool
+	allTags             []string
+	selectedTags        []string
 	canCreate           bool
 	statusFilterVisible bool
 	tagFilterVisible    bool
@@ -80,23 +81,18 @@ templ list(props listProps) {
 					/>
 				</div>
 				@runstatus.Filter(props.status, props.statusFilterVisible)
-				<div tabindex="0" class="collapse collapse-arrow bg-base-100 border border-base-content/20">
-					<input class="[min-height:1rem]" type="checkbox" name="tag_filter_visible" checked?={ props.tagFilterVisible }/>
-					<div class="collapse-title">Filter by tag</div>
-					<div class="collapse-content text-sm flex flex-wrap gap-2">
-						for name, checked := range props.tags {
-							<div>
-								<input class="checkbox checkbox-accent" id={ "filter-tag-" + name } type="checkbox" name="search[tags]" value={ name } checked?={ checked } onchange="this.form.submit()"/>
-								<label for={ "filter-tag-" + name }>
-									@tag(name, "badge-md")
-								</label>
-							</div>
-						}
-						if len(props.tags) == 0 {
-							No tags found
-						}
-					</div>
-				</div>
+				@components.Filter(components.FilterProps[string]{
+					Title:            "Filter by tag",
+					All:              props.allTags,
+					Selected:         props.selectedTags,
+					ParamName:        "search[tags]",
+					Visible:          props.tagFilterVisible,
+					VisibleParamName: "tag_filter_visible",
+					Label:            tag,
+					CheckboxClass: func(_ string) string {
+						return "checkbox-accent"
+					},
+				})
 			</div>
 		</form>
 		<div id="page-results"></div>
@@ -124,15 +120,15 @@ templ (t table) Row(ws *Workspace) {
 		<td>
 			<div class="flex flex-wrap gap-2 items-center">
 				for _, name := range ws.Tags {
-					@tag(name, "badge-sm")
+					@tag(name)
 				}
 			</div>
 		</td>
 	</tr>
 }
 
-templ tag(name string, badgeSize string) {
-	<span id={ "tag-" + name } class={ "badge badge-accent badge-soft", badgeSize, }>
+templ tag(name string) {
+	<span id={ "tag-" + name } class="badge badge-accent badge-soft badge-md">
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
@@ -263,7 +259,7 @@ templ get(props getProps) {
 					<form action={ paths.DeleteTagWorkspace(props.ws.ID) } method="POST">
 						<div class="grid grid-cols-[auto_1fr] gap-2 items-center">
 							for _, name := range props.ws.Tags {
-								@tag(name, "badge-md")
+								@tag(name)
 								<div>
 									<button
 										class="btn btn-error btn-outline btn-xs"

@@ -59,11 +59,11 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// show status filter
-		err = page.Locator(`#toggle-status-filter-visibility`).Click()
+		err = page.Locator(`//input[@name='status_filter_visible']`).Click()
 		require.NoError(t, err)
 
 		// filter by planned&finished
-		err = page.Locator(`#filter-status-planned_and_finished`).Click()
+		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Click()
 		require.NoError(t, err)
 
 		// should only show two runs
@@ -81,11 +81,11 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// show status filter
-		err = page.Locator(`#toggle-status-filter-visibility`).Click()
+		err = page.Locator(`//input[@name='status_filter_visible']`).Click()
 		require.NoError(t, err)
 
 		// filter by planned&finished
-		err = page.Locator(`#filter-status-planned_and_finished`).Click()
+		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Click()
 		require.NoError(t, err)
 
 		// should only show three runs

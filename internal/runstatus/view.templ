@@ -1,9 +1,9 @@
 package runstatus
 
 import (
+	"github.com/leg100/otf/internal/http/html/components"
 	"github.com/leg100/otf/internal/http/html/components/paths"
 	"github.com/leg100/otf/internal/resource"
-	"slices"
 	"strings"
 )
 
@@ -30,26 +30,22 @@ templ Badge(runID resource.TfeID, status Status) {
 }
 
 templ Filter(selected []Status, visible bool) {
-	<div tabindex="0" class="collapse collapse-arrow bg-base-100 border-base-content/20 border">
-		<input id="toggle-status-filter-visibility" type="checkbox" name="status_filter_visible" checked?={ visible }/>
-		<div class="collapse-title">Filter by status</div>
-		<div class="collapse-content text-sm flex flex-wrap gap-2">
-			for _, status := range All() {
-				<div>
-					<input
-						class={ "checkbox", "checkbox-" + status.String() }
-						id={ "filter-status-" + status.String() }
-						type="checkbox"
-						name="search[status]"
-						value={ string(status) }
-						checked?={ slices.Contains(selected, status) }
-						onchange="this.form.submit()"
-					/>
-					<label class={ "badge", "badge-" + status.String() } for={ "filter-status-" + status.String() }>
-						{ strings.ReplaceAll(string(status), "_", " ") }
-					</label>
-				</div>
-			}
-		</div>
-	</div>
+	@components.Filter(components.FilterProps[Status]{
+		Title:            "Filter by status",
+		All:              All(),
+		Selected:         selected,
+		ParamName:        "search[status]",
+		Visible:          visible,
+		VisibleParamName: "status_filter_visible",
+		Label:            FilterLabel,
+		CheckboxClass: func(status Status) string {
+			return "checkbox-" + string(status)
+		},
+	})
+}
+
+templ FilterLabel(status Status) {
+	<span class={ "badge", "badge-" + string(status) }>
+		{ strings.ReplaceAll(string(status), "_", " ") }
+	</span>
 }

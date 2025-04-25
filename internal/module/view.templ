@@ -95,9 +95,12 @@ templ (s repoSelector) action(repo string) {
 }
 
 type listProps struct {
-	organization     organization.Name
-	page             *resource.Page[*Module]
-	canPublishModule bool
+	organization          organization.Name
+	page                  *resource.Page[*Module]
+	canPublishModule      bool
+	providerFilterVisible bool
+	allProviders          []string
+	selectedProviders     []string
 }
 
 templ list(props listProps) {
@@ -109,8 +112,28 @@ templ list(props listProps) {
 			{Name: "Modules"},
 		},
 	}) {
+		<form action={ templ.SafeURL(components.CurrentURL(ctx)) }>
+			@components.Filter(components.FilterProps[string]{
+				Title:            "Filter by provider",
+				All:              props.allProviders,
+				Selected:         props.selectedProviders,
+				ParamName:        "search[providers]",
+				Visible:          props.providerFilterVisible,
+				VisibleParamName: "provider_filter_visible",
+				Label:            providerFilterLabel,
+				CheckboxClass: func(_ string) string {
+					return "checkbox-accent"
+				},
+			})
+		</form>
 		@components.Table(&table{}, props.page, "page-results")
 	}
+}
+
+templ providerFilterLabel(provider string) {
+	<span id={ "provider-" + provider } class="badge badge-accent badge-soft">
+		{ provider }
+	</span>
 }
 
 templ listActions(props listProps) {
@@ -125,7 +148,7 @@ type table struct{}
 
 templ (t table) Header() {
 	<th>Name</th>
-	<th>ID</th>
+	<th>Provider</th>
 	<th>Created</th>
 }
 
@@ -137,7 +160,7 @@ templ (t table) Row(module *Module) {
 			</a>
 		</td>
 		<td>
-			@components.Identifier(module.ID)
+			{ module.Provider }
 		</td>
 		<td>
 			@components.Ago(module.CreatedAt)
@@ -186,7 +209,7 @@ templ get(props getProps) {
 						</form>
 						if props.module.Connection != nil {
 							<div>
-								Source <span class="bg-gray-200" id="vcs-repo">{ props.module.Connection.Repo }</span>
+								Source <span class="bg-base-300" id="vcs-repo">{ props.module.Connection.Repo }</span>
 							</div>
 						}
 					</div>
@@ -209,7 +232,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold">Resources</h3>
 						for resource := range props.terraformModule.ManagedResources {
 							<div>
-								<span class="bg-gray-200">{ resource }</span>
+								<span class="bg-base-300">{ resource }</span>
 							</div>
 						}
 					</div>
@@ -217,7 +240,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold">Variables</h3>
 						for v := range props.terraformModule.Variables {
 							<div>
-								<span class="bg-gray-200">{ v }</span>
+								<span class="bg-base-300">{ v }</span>
 							</div>
 						}
 					</div>
@@ -225,7 +248,7 @@ templ get(props getProps) {
 						<h3 class="font-semibold">Outputs</h3>
 						for output := range props.terraformModule.Outputs {
 							<div>
-								<span class="bg-gray-200">{ output }</span>
+								<span class="bg-base-300">{ output }</span>
 							</div>
 						}
 					</div>

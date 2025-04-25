@@ -41,7 +41,8 @@ type (
 
 		*httptest.Server
 		*testdb
-		mux *http.ServeMux
+		mux        *http.ServeMux
+		disableTLS bool
 	}
 
 	TestServerOption func(*TestServer)
@@ -298,7 +299,11 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	srv.Server = httptest.NewTLSServer(srv.mux)
+	if srv.disableTLS {
+		srv.Server = httptest.NewServer(srv.mux)
+	} else {
+		srv.Server = httptest.NewTLSServer(srv.mux)
+	}
 	t.Cleanup(srv.Close)
 	srv.url = &srv.URL
 
@@ -359,6 +364,12 @@ func WithArchive(tarball []byte) TestServerOption {
 func WithHandler(path string, h http.HandlerFunc) TestServerOption {
 	return func(srv *TestServer) {
 		srv.mux.HandleFunc(path, h)
+	}
+}
+
+func WithDisableTLS() TestServerOption {
+	return func(srv *TestServer) {
+		srv.disableTLS = true
 	}
 }
 

@@ -94,6 +94,7 @@ type (
 	}
 	ListOptions struct {
 		Organization organization.Name `schema:"organization_name,required"` // filter by organization name
+		Providers    []string          `schema:"search[providers]"`          // filter by providers (OR boolean logic)
 	}
 	ModuleList struct {
 		*resource.Pagination
