@@ -4,7 +4,7 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 
 * Full Terraform CLI integration
 * Remote execution mode: plans and applies run on servers
-* Agent execution mode: plans and applies run on [agents](agents.md)
+* Agent execution mode: plans and applies run on [agents](runners.md)
 * Remote state backend: state stored in PostgreSQL
 * SSO: sign in using an identity provider via OIDC, OAuth, etc.
 * RBAC: control team access to workspaces
@@ -15,7 +15,7 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
 * Module registry (provider registry coming soon)
 
-...and full support for [OpenTofu](https://opentofu.org/).
+...and full support for [OpenTofu](engines.md).
 
 <figure markdown>
 ![run page planned and finished state](images/run_page_planned_and_finished_state.png){.screenshot}

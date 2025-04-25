@@ -1,22 +1,22 @@
-# Agents
+# Runners
 
-An agent handles the execution of runs. There are two types of agents:
+A runner handles the execution of runs. There are two types of runners:
 
-* The agent built into `otfd`, referred to as a *server agent*.
-* The separate agent process, `otf-agent`, referred to as a *pool agent*.
+* The runner built into `otfd`, referred to as a *server runner*.
+* A separate process, `otf-agent`, referred to as an *agent runner* or just an *agent*.
 
-## Server agents
+## Server runners
 
-A server agent handle runs for workspaces that are configured with the *remote* execution mode. It is built into the `otfd` process, so whenever you run `otfd` you are automatically running a server agent.
+A server runner handles runs for workspaces that are configured with the *remote* execution mode. It's built into the `otfd` process, so whenever you run `otfd` you are automatically running a server runner.
 
-## Pool agents
+## Agent runners
 
-A pool agent handles runs for workspaces that are configured with the *agent* execution mode. It is invoked as a dedicated process, `otf-agent`.
+An agent handles runs for workspaces that are configured with the *agent* execution mode. It's invoked as a dedicated process, `otf-agent`.
 
-A pool agent belongs to an *agent pool*. An agent pool is a group of `otf-agent` processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the *agent* execution mode, any available agent in that workspace's assigned agent pool is eligible to execute the run.
+An agent belongs to an *agent pool*. An agent pool is a group of `otf-agent` processes that can be used to communicate with isolated, private, or on-premises infrastructure. Each agent pool has its own set of tokens which are not shared across pools. When a workspace is configured to execute runs using the *agent* execution mode, any available agent in that workspace's assigned agent pool is eligible to execute the run.
 
 !!! note
-    Pool agents are functionally equivalent to [Terraform Cloud Agents](https://developer.hashicorp.com/terraform/cloud-docs/agents).
+    Agents are functionally equivalent to [Terraform Cloud Agents](https://developer.hashicorp.com/terraform/cloud-docs/agents).
 
 ### Walkthrough: pool agents
 

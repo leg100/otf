@@ -71,6 +71,13 @@ If developer mode were disabled, you would need to re-build the `otfd` binary an
 !!! note
     Ensure you have cloned the git repository to your local filesystem and that you have started `otfd` from the root of the repository, otherwise it will not be able to locate the static files.
 
+## `--engine-bins-dir`
+
+* System: `otfd`, `otf-agent`
+* Default: `/tmp/otf-engine-bins`
+
+Sets the directory in which engine binaries are downloaded.
+
 ## `--github-client-id`
 
 * System: `otfd`

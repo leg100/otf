@@ -56,10 +56,11 @@ nav:
     - auth/user_token.md
     - auth/org_token.md
   - Topics:
+    - engines.md
     - rbac.md
     - vcs_providers.md
     - github_app.md
-    - agents.md
+    - runners.md
     - registry.md
     - cli.md
     - notifications.md
