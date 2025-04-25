@@ -47,6 +47,13 @@ deployment, taking into consideration the [cache expiry](#-cache-expiry).
 
 Sets the number of workers that can process runs concurrently.
 
+## `--default-engine`
+
+* System: `otfd`
+* Default: `terraform`
+
+Specifies the default engine for new workspaces. Specify either `terraform` or `tofu`.
+
 ## `--dev-mode`
 
 * System: `otfd`
