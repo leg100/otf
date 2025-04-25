@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.20](https://github.com/leg100/otf/compare/v0.3.19...v0.3.20) (2025-04-25)
+
+
+### Features
+
+* add support for opentofu ([#763](https://github.com/leg100/otf/issues/763)) ([c5e4742](https://github.com/leg100/otf/commit/c5e474208efec4464bf06383cb83d2321d7d2df3))
+* **ui:** filter modules by provider ([8af8e56](https://github.com/leg100/otf/commit/8af8e56af846338177e6658bab3bb62efa33b50c))
+
+
+### Bug Fixes
+
+* **ui:** some things hard to see in dark mode ([c4aece4](https://github.com/leg100/otf/commit/c4aece40fab20939b6b7af078fb498237b3508f7))
+
+
+### Miscellaneous
+
+* bump vuln go-slug dep ([927c8b9](https://github.com/leg100/otf/commit/927c8b9a830210b771d958bce600779fd051ec35))
+* document tofu support ([9b1fe1b](https://github.com/leg100/otf/commit/9b1fe1bff09ca3930ff41f43412756a6079fd805))
+* more tofu tests ([#764](https://github.com/leg100/otf/issues/764)) ([5812449](https://github.com/leg100/otf/commit/581244958f01f0081ee433f467d75767f112f205))
+* upgrade all deps ([299c32d](https://github.com/leg100/otf/commit/299c32dfb5bae3641e43ab79c2d79806efcc1410))
+
 ## [0.3.19](https://github.com/leg100/otf/compare/v0.3.18...v0.3.19) (2025-04-16)
 
 
