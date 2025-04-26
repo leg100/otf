@@ -219,6 +219,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 		DefaultEngine:       cfg.DefaultEngine,
+		ReleasesService:     releasesService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,

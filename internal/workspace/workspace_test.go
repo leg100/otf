@@ -15,10 +15,18 @@ import (
 )
 
 func TestNewWorkspace(t *testing.T) {
-	org1 := organization.NewTestName(t)
-	agentPoolID := testutils.ParseID(t, "apool-123")
-	vcsProviderID := testutils.ParseID(t, "vcs-123")
-	factory := &factory{defaultEngine: engine.Default}
+	var (
+		org1          = organization.NewTestName(t)
+		agentPoolID   = testutils.ParseID(t, "apool-123")
+		vcsProviderID = testutils.ParseID(t, "vcs-123")
+		latestVersion = "1.9.0"
+		factory       = &factory{
+			defaultEngine: engine.Default,
+			releases: &fakeReleasesService{
+				latestVersion: latestVersion,
+			},
+		}
+	)
 
 	tests := []struct {
 		name      string
@@ -35,7 +43,7 @@ func TestNewWorkspace(t *testing.T) {
 			test: func(t *testing.T, got *Workspace) {
 				assert.Equal(t, "my-workspace", got.Name)
 				assert.Equal(t, org1, got.Organization)
-				assert.Equal(t, engine.Default.DefaultVersion(), got.EngineVersion)
+				assert.Equal(t, latestVersion, got.EngineVersion)
 			},
 		},
 		{
@@ -182,7 +190,7 @@ func TestNewWorkspace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := factory.NewWorkspace(tt.opts)
+			got, err := factory.NewWorkspace(t.Context(), tt.opts)
 			assert.True(t, errors.Is(err, tt.wantError), "got: %s", err)
 			if tt.test != nil {
 				tt.test(t, got)

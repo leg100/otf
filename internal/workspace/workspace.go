@@ -2,6 +2,7 @@
 package workspace
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -181,10 +182,15 @@ type (
 	// factory makes workspaces
 	factory struct {
 		defaultEngine *engine.Engine
+		releases      releasesClient
+	}
+
+	releasesClient interface {
+		GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error)
 	}
 )
 
-func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
+func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
 	// required options
 	if err := resource.ValidateName(opts.Name); err != nil {
 		return nil, err
@@ -200,7 +206,6 @@ func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
 		Engine:             f.defaultEngine,
-		EngineVersion:      f.defaultEngine.DefaultVersion(),
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
 	}
@@ -242,6 +247,15 @@ func (f *factory) NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 	if opts.EngineVersion != nil {
 		if err := ws.setEngineVersion(*opts.EngineVersion); err != nil {
+			return nil, err
+		}
+	} else {
+		// default to the current latest version of the engine.
+		latest, _, err := f.releases.GetLatest(ctx, ws.Engine)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving latest engine version: %w", err)
+		}
+		if err := ws.setEngineVersion(latest); err != nil {
 			return nil, err
 		}
 	}

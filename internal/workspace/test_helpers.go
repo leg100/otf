@@ -3,11 +3,13 @@ package workspace
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -19,7 +21,13 @@ func NewTestWorkspace(t *testing.T) *Workspace {
 	org := organization.NewTestName(t)
 	name := uuid.NewString()
 
-	ws, err := (&factory{defaultEngine: engine.Default}).NewWorkspace(CreateOptions{
+	factory := &factory{
+		defaultEngine: engine.Default,
+		releases: &fakeReleasesService{
+			latestVersion: "1.9.0",
+		},
+	}
+	ws, err := factory.NewWorkspace(t.Context(), CreateOptions{
 		Name:         &name,
 		Organization: &org,
 	})
@@ -126,4 +134,12 @@ type fakeTeamService struct {
 
 func (f *fakeTeamService) List(context.Context, organization.Name) ([]*team.Team, error) {
 	return f.teams, nil
+}
+
+type fakeReleasesService struct {
+	latestVersion string
+}
+
+func (f *fakeReleasesService) GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error) {
+	return f.latestVersion, time.Time{}, nil
 }

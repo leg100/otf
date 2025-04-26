@@ -487,7 +487,7 @@ templ edit(props editProps) {
 					<label for="engine-version">Version</label>
 					<input class="input w-48" type="text" name="engine_version" id="engine-version" value={ props.ws.EngineVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
 					<span class="description">
-						The engine version to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="font-bold">latest</span>, in which case the latest version is used.
+						The engine version to use for this workspace. Upon creating this workspace, unless specified otherwise, the latest version available at the time was selected. To automatically track the latest available version specify <span class="font-bold">latest</span>.
 					</span>
 				</div>
 			</fieldset>
