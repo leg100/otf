@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/runstatus"
+	"github.com/leg100/otf/internal/user"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -57,14 +60,6 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 	if err != nil {
 		return nil, err
 	}
-	// If workspace engine version uses the "latest" string then fetch the
-	// current latest version.
-	if ws.EngineVersion == releases.LatestVersionString {
-		ws.EngineVersion, _, err = f.releases.GetLatest(ctx, ws.Engine)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	// retrieve or create config: if a config version ID is specified then
 	// retrieve that; otherwise if the workspace is connected then the latest
@@ -82,7 +77,66 @@ func (f *factory) NewRun(ctx context.Context, workspaceID resource.TfeID, opts C
 		return nil, fmt.Errorf("fetching configuration: %w", err)
 	}
 
-	return newRun(ctx, org, cv, ws, opts), nil
+	run := Run{
+		ID:                     resource.NewTfeID(resource.RunKind),
+		CreatedAt:              internal.CurrentTimestamp(opts.now),
+		Refresh:                defaultRefresh,
+		Organization:           ws.Organization,
+		ConfigurationVersionID: cv.ID,
+		WorkspaceID:            ws.ID,
+		PlanOnly:               cv.Speculative,
+		ReplaceAddrs:           opts.ReplaceAddrs,
+		TargetAddrs:            opts.TargetAddrs,
+		ExecutionMode:          ws.ExecutionMode,
+		AutoApply:              ws.AutoApply,
+		IngressAttributes:      cv.IngressAttributes,
+		CostEstimationEnabled:  org.CostEstimationEnabled,
+		Source:                 opts.Source,
+		Engine:                 ws.Engine,
+		Variables:              opts.Variables,
+	}
+	// If workspace tracks the latest version then fetch it from db.
+	if ws.EngineVersion.Latest {
+		run.EngineVersion, _, err = f.releases.GetLatest(ctx, ws.Engine)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		run.EngineVersion = ws.EngineVersion.String()
+	}
+
+	run.Plan = newPhase(run.ID, internal.PlanPhase)
+	run.Apply = newPhase(run.ID, internal.ApplyPhase)
+	run.updateStatus(runstatus.Pending, opts.now)
+
+	if run.Source == "" {
+		run.Source = SourceAPI
+	}
+	if opts.TerraformVersion != nil {
+		run.EngineVersion = *opts.TerraformVersion
+	}
+	if opts.AllowEmptyApply != nil {
+		run.AllowEmptyApply = *opts.AllowEmptyApply
+	}
+	if user, _ := user.UserFromContext(ctx); user != nil {
+		run.CreatedBy = &user.Username
+	}
+	if opts.IsDestroy != nil {
+		run.IsDestroy = *opts.IsDestroy
+	}
+	if opts.Message != nil {
+		run.Message = *opts.Message
+	}
+	if opts.Refresh != nil {
+		run.Refresh = *opts.Refresh
+	}
+	if opts.AutoApply != nil {
+		run.AutoApply = *opts.AutoApply
+	}
+	if opts.PlanOnly != nil {
+		run.PlanOnly = *opts.PlanOnly
+	}
+	return &run, nil
 }
 
 // createConfigVersionFromVCS creates a config version from the vcs repo

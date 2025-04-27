@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
@@ -56,8 +57,8 @@ func TestWorkspace_Create(t *testing.T) {
 func TestGetWorkspaceHandler(t *testing.T) {
 	var (
 		bobby    = &user.User{ID: resource.NewTfeID(resource.UserKind)}
-		unlocked = NewTestWorkspace(t)
-		locked   = NewTestWorkspace(t)
+		unlocked = NewTestWorkspace(t, nil)
+		locked   = NewTestWorkspace(t, nil)
 	)
 	locked.Enlock(&bobby.ID)
 
@@ -110,9 +111,14 @@ func TestWorkspace_GetByName(t *testing.T) {
 }
 
 func TestEditWorkspaceHandler(t *testing.T) {
-	ws1 := NewTestWorkspace(t)
-	wsConnected := NewTestWorkspace(t)
-	wsConnected.Connection = &Connection{Repo: "leg100/otf"}
+	ws1 := NewTestWorkspace(t, nil)
+	vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
+	wsConnected := NewTestWorkspace(t, &CreateOptions{
+		ConnectOptions: &ConnectOptions{
+			RepoPath:      internal.String("leg100/otf"),
+			VCSProviderID: &vcsProviderID,
+		},
+	})
 
 	tests := []struct {
 		name   string

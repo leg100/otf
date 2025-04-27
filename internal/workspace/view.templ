@@ -231,7 +231,7 @@ templ get(props getProps) {
 							title="Change engine version"
 						>
 							<div id="current-engine-version" class="badge badge-md badge-ghost">
-								{ props.ws.EngineVersion }
+								{ props.ws.EngineVersion.String() }
 							</div>
 						</a>
 					</div>
@@ -376,6 +376,7 @@ type editProps struct {
 	unassigned         []*team.Team
 	roles              []authz.Role
 	vcsProvider        *vcsprovider.VCSProvider
+	engines            []engineSelectorEngine
 	unassignedTags     []string
 	canUpdateWorkspace bool
 	canDeleteWorkspace bool
@@ -473,24 +474,7 @@ templ edit(props editProps) {
 					<span class="description">Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
 				</div>
 			</fieldset>
-			<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
-				<legend>Engine</legend>
-				<div class="form-checkbox">
-					<input type="radio" name="engine" id="terraform" value="terraform" checked?={ props.ws.Engine.String() == "terraform" }/>
-					<label for="terraform">Terraform</label>
-				</div>
-				<div class="form-checkbox">
-					<input type="radio" name="engine" id="tofu" value="tofu" checked?={ props.ws.Engine.String() == "tofu" }/>
-					<label for="tofu">OpenTofu</label>
-				</div>
-				<div class="field" id="engine-version-field">
-					<label for="engine-version">Version</label>
-					<input class="input w-48" type="text" name="engine_version" id="engine-version" value={ props.ws.EngineVersion } required title="Must provide version in the format <major>.<minor>.<patch>"/>
-					<span class="description">
-						The engine version to use for this workspace. Upon creating this workspace, unless specified otherwise, the latest version available at the time was selected. To automatically track the latest available version specify <span class="font-bold">latest</span>.
-					</span>
-				</div>
-			</fieldset>
+			@engineSelector(props.engines)
 			<div class="field">
 				<label for="working_directory">Working directory</label>
 				<input class="input w-96" type="text" name="working_directory" id="working_directory" value={ props.ws.WorkingDirectory }/>
@@ -536,6 +520,48 @@ templ edit(props editProps) {
 	}
 }
 
+type engineSelectorEngine struct {
+	name    string
+	current bool
+	latest  bool
+	version string
+}
+
+templ engineSelector(props []engineSelectorEngine) {
+	<fieldset class="peer border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+		<legend>Engine</legend>
+		for _, engine := range props {
+			<div class="form-checkbox">
+				<input type="radio" name="engine" id={ engine.name } value={ engine.name } checked?={ engine.current }/>
+				<label for={ engine.name }>{ engine.name }</label>
+			</div>
+		}
+	</fieldset>
+	<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+		<legend>Engine Version</legend>
+		for _, engine := range props {
+			<div>
+				<div class="flex items-center gap-2">
+					<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-false" checked?={ !engine.latest }/>
+					<input
+						class="input w-48"
+						type="text"
+						name="specific_engine_version"
+						id="engine-specific-version"
+						required
+						title="Must provide version in the format <major>.<minor>.<patch>"
+						value={ engine.version }
+					/>
+				</div>
+				<div class="flex items-center gap-2">
+					<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-true" checked?={ engine.latest }/>
+					<label for="engine-latest">Latest</label>
+				</div>
+			</div>
+		}
+	</fieldset>
+}
+
 templ editConnection(props editProps) {
 	<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
 		<legend>VCS triggers</legend>
@@ -549,7 +575,7 @@ templ editConnection(props editProps) {
 			<label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
 			<span class="description">Supports glob patterns.</span>
 			<script src={ components.AssetPath(ctx, "/static/js/workspace_trigger_patterns.js") }></script>
-			<div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
+			<div class="hidden bg-base-200 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data={ "workspace_trigger_patterns(" + toJSON(props.ws.TriggerPatterns) + ")" }>
 				<input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)"/>
 				<div class="flex flex-col gap-2">
 					<div class="flex gap-2 items-center">
@@ -559,7 +585,7 @@ templ editConnection(props editProps) {
 					</div>
 					<template x-for="path in paths">
 						<div class="flex gap-2 items-center justify-end">
-							<span class="justify-end bg-gray-200 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
+							<span class="justify-end bg-base-300 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
 							<button @click="deletePattern(path)" type="button" class="btn btn-sm btn-error btn-outline w-40" :id="$id('delete-pattern')">Delete</button>
 						</div>
 					</template>
@@ -570,7 +596,7 @@ templ editConnection(props editProps) {
 			<input class="peer" type="radio" id="vcs-triggers-tag" name="vcs_trigger" value={ props.vcsTriggerTags } checked?={ props.ws.Connection.TagsRegex != "" }/>
 			<label for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
 			<span class="col-start-2 description">Git tags allow you to manage releases.</span>
-			<div class="col-start-2 hidden bg-gray-100 px-3 py-3 mt-2 w-full peer-checked:block">
+			<div class="col-start-2 hidden bg-base-200 px-3 py-3 mt-2 w-full peer-checked:block">
 				<div class="flex flex-col gap-2" x-data={ "{regex: " + toJSON(props.ws.Connection.TagsRegex) + "}" }>
 					<div class="form-checkbox">
 						<input type="radio" id="tags-regex-default" name="tags_regex" value={ props.vcsTagRegexDefault } checked?={ props.ws.Connection.TagsRegex == props.vcsTagRegexDefault || props.ws.Connection.TagsRegex != "" }/>

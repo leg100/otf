@@ -73,7 +73,7 @@ func (s *Service) StartLatestChecker(ctx context.Context) {
 }
 
 func (s *Service) checkAndUpdate(ctx context.Context) {
-	for _, engine := range engine.ListEngines() {
+	for _, engine := range engine.Engines() {
 		result, err := s.check(ctx, engine, time.Now())
 		if err != nil {
 			s.Error(err, "checking latest engine version", "engine", engine)

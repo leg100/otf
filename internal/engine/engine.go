@@ -84,7 +84,7 @@ func (e *Engine) set(v string) error {
 	return nil
 }
 
-func ListEngines() []*Engine {
+func Engines() []*Engine {
 	return []*Engine{
 		{engine: &terraform{}},
 		{engine: &tofu{}},

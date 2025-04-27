@@ -23,9 +23,8 @@ func TestFactory(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{},
+			workspace.NewTestWorkspace(t, nil),
 			&configversion.ConfigurationVersion{},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
@@ -36,14 +35,14 @@ func TestFactory(t *testing.T) {
 		assert.False(t, got.PlanOnly)
 		assert.True(t, got.Refresh)
 		assert.False(t, got.AutoApply)
+		assert.Equal(t, "1.9.0", got.EngineVersion)
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{},
+			workspace.NewTestWorkspace(t, nil),
 			&configversion.ConfigurationVersion{Speculative: true},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
@@ -55,9 +54,8 @@ func TestFactory(t *testing.T) {
 	t.Run("plan-only run", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{},
+			workspace.NewTestWorkspace(t, nil),
 			&configversion.ConfigurationVersion{},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{PlanOnly: internal.Bool(true)})
@@ -69,9 +67,8 @@ func TestFactory(t *testing.T) {
 	t.Run("workspace auto-apply", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{AutoApply: true},
+			workspace.NewTestWorkspace(t, &workspace.CreateOptions{AutoApply: internal.Bool(true)}),
 			&configversion.ConfigurationVersion{},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
@@ -83,9 +80,8 @@ func TestFactory(t *testing.T) {
 	t.Run("run auto-apply", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{},
+			workspace.NewTestWorkspace(t, nil),
 			&configversion.ConfigurationVersion{},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{
@@ -99,9 +95,8 @@ func TestFactory(t *testing.T) {
 	t.Run("enable cost estimation", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{CostEstimationEnabled: true},
-			&workspace.Workspace{},
+			workspace.NewTestWorkspace(t, nil),
 			&configversion.ConfigurationVersion{},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
@@ -111,16 +106,18 @@ func TestFactory(t *testing.T) {
 	})
 
 	t.Run("pull from vcs", func(t *testing.T) {
-		workspaceID := resource.NewTfeID(resource.WorkspaceKind)
+		vcsProviderID := resource.NewTfeID(resource.VCSProviderKind)
+		ws := workspace.NewTestWorkspace(t, &workspace.CreateOptions{
+			ConnectOptions: &workspace.ConnectOptions{
+				RepoPath:      internal.String(""),
+				VCSProviderID: &vcsProviderID,
+			},
+		})
 
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{
-				ID:         workspaceID,
-				Connection: &workspace.Connection{},
-			},
+			ws,
 			&configversion.ConfigurationVersion{},
-			"",
 		)
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
@@ -128,21 +125,23 @@ func TestFactory(t *testing.T) {
 
 		// fake config version service sets the config version ID to the
 		// workspace ID if it was newly created
-		assert.Equal(t, workspaceID, got.ConfigurationVersionID)
+		assert.Equal(t, ws.ID, got.ConfigurationVersionID)
 	})
 
 	t.Run("get latest version", func(t *testing.T) {
 		f := newTestFactory(
 			&organization.Organization{},
-			&workspace.Workspace{EngineVersion: releases.LatestVersionString},
+			workspace.NewTestWorkspace(t, &workspace.CreateOptions{
+				EngineVersion: &workspace.Version{Latest: true},
+			}),
 			&configversion.ConfigurationVersion{},
-			"1.2.3",
 		)
+		f.releases = &fakeReleasesService{latestVersion: "2.0.0"}
 
 		got, err := f.NewRun(ctx, resource.TfeID{}, CreateOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, "1.2.3", got.EngineVersion)
+		assert.Equal(t, "2.0.0", got.EngineVersion)
 	})
 }
 
@@ -165,13 +164,12 @@ type (
 	}
 )
 
-func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion, latestVersion string) *factory {
+func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
 	return &factory{
 		organizations: &fakeFactoryOrganizationService{org: org},
 		workspaces:    &fakeFactoryWorkspaceService{ws: ws},
 		configs:       &fakeFactoryConfigurationVersionService{cv: cv},
 		vcs:           &fakeFactoryVCSProviderService{},
-		releases:      &fakeReleasesService{latestVersion: latestVersion},
 	}
 }
 

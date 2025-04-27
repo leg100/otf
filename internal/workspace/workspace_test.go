@@ -43,7 +43,7 @@ func TestNewWorkspace(t *testing.T) {
 			test: func(t *testing.T, got *Workspace) {
 				assert.Equal(t, "my-workspace", got.Name)
 				assert.Equal(t, org1, got.Organization)
-				assert.Equal(t, latestVersion, got.EngineVersion)
+				assert.Equal(t, &Version{semver: latestVersion}, got.EngineVersion)
 			},
 		},
 		{
@@ -66,32 +66,6 @@ func TestNewWorkspace(t *testing.T) {
 				Name: internal.String("%*&^"),
 			},
 			wantError: internal.ErrInvalidName,
-		},
-		{
-			name: "specifying latest for terraform version",
-			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  &org1,
-				EngineVersion: internal.String("latest"),
-			},
-		},
-		{
-			name: "bad terraform version",
-			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  &org1,
-				EngineVersion: internal.String("1,2,0"),
-			},
-			wantError: engine.ErrInvalidVersion,
-		},
-		{
-			name: "unsupported terraform version",
-			opts: CreateOptions{
-				Name:          internal.String("my-workspace"),
-				Organization:  &org1,
-				EngineVersion: internal.String("0.14.0"),
-			},
-			wantError: ErrUnsupportedTerraformVersion,
 		},
 		{
 			name: "specifying both tags regex and trigger patterns",
@@ -217,24 +191,6 @@ func TestWorkspace_UpdateError(t *testing.T) {
 				Name: internal.String("%*&^"),
 			},
 			want: internal.ErrInvalidName,
-		},
-		{
-			name: "bad terraform version",
-			ws:   &Workspace{Name: "dev", Organization: org1},
-			opts: UpdateOptions{
-				Name:          internal.String("my-workspace"),
-				EngineVersion: internal.String("1,2,0"),
-			},
-			want: engine.ErrInvalidVersion,
-		},
-		{
-			name: "unsupported terraform version",
-			ws:   &Workspace{Name: "dev", Organization: org1},
-			opts: UpdateOptions{
-				Name:          internal.String("my-workspace"),
-				EngineVersion: internal.String("0.14.0"),
-			},
-			want: ErrUnsupportedTerraformVersion,
 		},
 		{
 			name: "specifying both tags regex and trigger patterns",

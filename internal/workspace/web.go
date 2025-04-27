@@ -372,11 +372,9 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	getTagNames := func() (names []string) {
-		for _, t := range tags {
-			names = append(names, t.Name)
-		}
-		return
+	tagNames := make([]string, len(tags))
+	for i, t := range tags {
+		tagNames[i] = t.Name
 	}
 
 	poolsURL := paths.PoolsWorkspace(workspaceID)
@@ -384,10 +382,31 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		poolsURL += "?agent_pool_id=" + workspace.AgentPoolID.String()
 	}
 
+	// Construct list of engines for template
+	engines := make([]engineSelectorEngine, 2)
+	for i, engine := range engine.Engines() {
+		engines[i].name = engine.String()
+		if engine.String() == workspace.Engine.String() {
+			engines[i].current = true
+			engines[i].latest = workspace.EngineVersion.Latest
+		}
+		if !engines[i].current || engines[i].latest {
+			latest, err := engine.GetLatestVersion(r.Context())
+			if err != nil {
+				html.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			engines[i].version = latest
+		} else {
+			engines[i].version = workspace.EngineVersion.semver
+		}
+	}
+
 	props := editProps{
 		ws:         workspace,
 		assigned:   perms,
 		unassigned: filterUnassigned(policy, teams),
+		engines:    engines,
 		roles: []authz.Role{
 			authz.WorkspaceReadRole,
 			authz.WorkspacePlanRole,
@@ -395,7 +414,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			authz.WorkspaceAdminRole,
 		},
 		vcsProvider:        provider,
-		unassignedTags:     internal.Diff(getTagNames(), workspace.Tags),
+		unassignedTags:     internal.Diff(tagNames, workspace.Tags),
 		vcsTagRegexDefault: vcsTagRegexDefault,
 		vcsTagRegexPrefix:  vcsTagRegexPrefix,
 		vcsTagRegexSuffix:  vcsTagRegexSuffix,
@@ -412,16 +431,17 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AgentPoolID       *resource.TfeID `schema:"agent_pool_id"`
-		AutoApply         bool            `schema:"auto_apply"`
-		Name              string
-		Description       string
-		ExecutionMode     ExecutionMode  `schema:"execution_mode"`
-		Engine            *engine.Engine `schema:"engine"`
-		EngineVersion     string         `schema:"engine_version"`
-		WorkingDirectory  string         `schema:"working_directory"`
-		WorkspaceID       resource.TfeID `schema:"workspace_id,required"`
-		GlobalRemoteState bool           `schema:"global_remote_state"`
+		AgentPoolID           *resource.TfeID `schema:"agent_pool_id"`
+		AutoApply             bool            `schema:"auto_apply"`
+		Name                  string
+		Description           string
+		ExecutionMode         ExecutionMode  `schema:"execution_mode"`
+		Engine                *engine.Engine `schema:"engine"`
+		LatestEngineVersion   bool           `schema:"latest_engine_version"`
+		SpecificEngineVersion *Version       `schema:"specific_engine_version"`
+		WorkingDirectory      string         `schema:"working_directory"`
+		WorkspaceID           resource.TfeID `schema:"workspace_id,required"`
+		GlobalRemoteState     bool           `schema:"global_remote_state"`
 
 		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`
@@ -450,10 +470,14 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Description:        &params.Description,
 		ExecutionMode:      &params.ExecutionMode,
 		Engine:             params.Engine,
-		EngineVersion:      &params.EngineVersion,
 		WorkingDirectory:   &params.WorkingDirectory,
 		GlobalRemoteState:  &params.GlobalRemoteState,
 		SpeculativeEnabled: &params.SpeculativeEnabled,
+	}
+	if params.LatestEngineVersion {
+		opts.EngineVersion = &Version{Latest: true}
+	} else {
+		opts.EngineVersion = params.SpecificEngineVersion
 	}
 	if ws.Connection != nil {
 		// workspace is connected, so set connection fields

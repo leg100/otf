@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"slices"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -17,7 +16,6 @@ import (
 	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
-	"github.com/leg100/otf/internal/semver"
 )
 
 const (
@@ -27,8 +25,6 @@ const (
 
 	DefaultAllowDestroyPlan = true
 )
-
-var apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 
 type (
 	// Workspace is a terraform workspace.
@@ -51,13 +47,13 @@ type (
 		StructuredRunOutputEnabled bool              `jsonapi:"attribute" json:"structured_run_output_enabled"`
 		SourceName                 string            `jsonapi:"attribute" json:"source_name"`
 		SourceURL                  string            `jsonapi:"attribute" json:"source_url"`
-		EngineVersion              string            `jsonapi:"attribute" json:"engine_version"`
 		WorkingDirectory           string            `jsonapi:"attribute" json:"working_directory"`
 		Organization               organization.Name `jsonapi:"attribute" json:"organization"`
 		LatestRun                  *LatestRun        `jsonapi:"attribute" json:"latest_run"`
 		Tags                       []string          `jsonapi:"attribute" json:"tags"`
 		Lock                       resource.ID       `json:"-"`
 		Engine                     *engine.Engine    `jsonapi:"attribute" json:"engine"`
+		EngineVersion              *Version          `jsonapi:"attribute" json:"engine_version"`
 
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
@@ -120,7 +116,7 @@ type (
 		StructuredRunOutputEnabled *bool
 		Tags                       []TagSpec
 		Engine                     *engine.Engine
-		EngineVersion              *string
+		EngineVersion              *Version
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
@@ -145,7 +141,7 @@ type (
 		QueueAllRuns               *bool
 		SpeculativeEnabled         *bool
 		StructuredRunOutputEnabled *bool
-		EngineVersion              *string
+		EngineVersion              *Version
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
@@ -246,18 +242,15 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		ws.Engine = opts.Engine
 	}
 	if opts.EngineVersion != nil {
-		if err := ws.setEngineVersion(*opts.EngineVersion); err != nil {
-			return nil, err
-		}
+		ws.EngineVersion = opts.EngineVersion
 	} else {
 		// default to the current latest version of the engine.
 		latest, _, err := f.releases.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest engine version: %w", err)
 		}
-		if err := ws.setEngineVersion(latest); err != nil {
-			return nil, err
-		}
+		// TODO: use constructor
+		ws.EngineVersion = &Version{semver: latest}
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
@@ -421,9 +414,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.Engine = opts.Engine
 	}
 	if opts.EngineVersion != nil {
-		if err := ws.setEngineVersion(*opts.EngineVersion); err != nil {
-			return nil, err
-		}
+		ws.EngineVersion = opts.EngineVersion
 		updated = true
 	}
 	if opts.WorkingDirectory != nil {
@@ -578,27 +569,6 @@ func (ws *Workspace) setExecutionModeAndAgentPoolID(m *ExecutionMode, agentPoolI
 		ws.ExecutionMode = *m
 	}
 	return true, nil
-}
-
-func (ws *Workspace) setEngineVersion(v string) error {
-	if v == releases.LatestVersionString {
-		ws.EngineVersion = v
-		return nil
-	}
-	if !semver.IsValid(v) {
-		return engine.ErrInvalidVersion
-	}
-	// only accept engine versions above the minimum requirement.
-	//
-	// NOTE: we make an exception for the specific versions posted by the go-tfe
-	// integration tests.
-	if result := semver.Compare(v, engine.MinEngineVersion); result < 0 {
-		if !slices.Contains(apiTestTerraformVersions, v) {
-			return ErrUnsupportedTerraformVersion
-		}
-	}
-	ws.EngineVersion = v
-	return nil
 }
 
 func (ws *Workspace) setTagsRegex(regex string) error {
