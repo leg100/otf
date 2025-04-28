@@ -528,38 +528,40 @@ type engineSelectorEngine struct {
 }
 
 templ engineSelector(props []engineSelectorEngine) {
-	<fieldset class="peer border border-base-content/60 px-3 py-3 flex flex-col gap-2">
-		<legend>Engine</legend>
-		for _, engine := range props {
-			<div class="form-checkbox">
-				<input type="radio" name="engine" id={ engine.name } value={ engine.name } checked?={ engine.current }/>
-				<label for={ engine.name }>{ engine.name }</label>
-			</div>
-		}
-	</fieldset>
-	<fieldset class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
-		<legend>Engine Version</legend>
-		for _, engine := range props {
-			<div>
-				<div class="flex items-center gap-2">
-					<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-false" checked?={ !engine.latest }/>
-					<input
-						class="input w-48"
-						type="text"
-						name="specific_engine_version"
-						id="engine-specific-version"
-						required
-						title="Must provide version in the format <major>.<minor>.<patch>"
-						value={ engine.version }
-					/>
+	<div>
+		<fieldset class="peer border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+			<legend>Engine</legend>
+			for _, engine := range props {
+				<div class="form-checkbox">
+					<input type="radio" name="engine" id={ engine.name } value={ engine.name } checked?={ engine.current }/>
+					<label for={ engine.name }>{ engine.name }</label>
 				</div>
-				<div class="flex items-center gap-2">
-					<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-true" checked?={ engine.latest }/>
-					<label for="engine-latest">Latest</label>
+			}
+		</fieldset>
+		for _, engine := range props {
+			<fieldset class={ "peer-has-[input[name=" + engine.name + "][check border-base-content/60 px-3 py-3 flex flex-col gap-2" }>
+				<legend>Engine Version</legend>
+				<div>
+					<div class="flex items-center gap-2">
+						<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-false" checked?={ !engine.latest }/>
+						<input
+							class="input w-48"
+							type="text"
+							name="specific_engine_version"
+							id="engine-specific-version"
+							required
+							title="Must provide version in the format <major>.<minor>.<patch>"
+							value={ engine.version }
+						/>
+					</div>
+					<div class="flex items-center gap-2">
+						<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-true" checked?={ engine.latest }/>
+						<label for="engine-latest">Latest</label>
+					</div>
 				</div>
-			</div>
+			</fieldset>
 		}
-	</fieldset>
+	</div>
 }
 
 templ editConnection(props editProps) {
