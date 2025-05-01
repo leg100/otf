@@ -53,6 +53,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/configuration-versions/{id}", a.getConfigurationVersion).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", a.listConfigurationVersions).Methods("GET")
 	r.HandleFunc("/configuration-versions/{id}/download", a.downloadConfigurationVersion).Methods("GET")
+	r.HandleFunc("configuration-versions/{id}/ingress-attributes", a.getIngressAttributes).Methods("GET")
 }
 
 func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -186,6 +187,26 @@ func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Write(resp)
+}
+
+func (a *tfe) getIngressAttributes(w http.ResponseWriter, r *http.Request) {
+	cvId, err := decode.ID("id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	cv, err := a.Get(r.Context(), id)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	if cv.IngressAttributes == nil {
+
+	}
+	ias := cv.IngressAttributes
+
+	a.Respond(w, r, a.convert(ias, ""), http.StatusOK)
 }
 
 func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
