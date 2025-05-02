@@ -201,6 +201,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 				vcsproviders: &fakeVCSProviderService{
 					providers: []*vcsprovider.VCSProvider{{}},
 				},
+				releases: &fakeReleasesService{},
 			}
 
 			q := "/?workspace_id=ws-123"

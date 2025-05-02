@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html/components"
@@ -13,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
-	"strings"
 )
 
 templ new(organization organization.Name) {
@@ -539,7 +539,7 @@ templ engineSelector(props engineSelectorProps) {
 			for _, engine := range props.engines {
 				<div class="form-checkbox">
 					<input type="radio" name="engine" id={ engine.name } value={ engine.name } x-model="current" :checked={ "isCurrent('" + engine.name + "')" }/>
-					<label for={ engine.name }>{ strings.Title(engine.name) }</label>
+					<label for={ engine.name }>{ internal.Title(engine.name) }</label>
 					<span class="description">
 						if engine.name == "tofu" {
 							Runs use the <a href="https://opentofu.org/">OpenTofu</a> engine.
