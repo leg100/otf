@@ -1,3 +1,4 @@
+// Package engine manages the CLI engine binaries that carry out run operations.
 package engine
 
 import (
@@ -33,8 +34,9 @@ var (
 type engine interface {
 	String() string
 	DefaultVersion() string
-	GetLatestVersion(context.Context) (string, error)
-	SourceURL(version string) *url.URL
+
+	sourceURL(version string) *url.URL
+	getLatestVersion(context.Context) (string, error)
 }
 
 type Engine struct {
@@ -84,7 +86,7 @@ func (e *Engine) set(v string) error {
 	return nil
 }
 
-func ListEngines() []*Engine {
+func Engines() []*Engine {
 	return []*Engine{
 		{engine: &terraform{}},
 		{engine: &tofu{}},

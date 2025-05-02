@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/team"
@@ -52,7 +51,7 @@ type (
 		UserService         *user.Service
 		ConnectionService   *connections.Service
 		DefaultEngine       *engine.Engine
-		ReleasesService     *releases.Service
+		EngineService       *engine.Service
 	}
 )
 
@@ -65,7 +64,7 @@ func NewService(opts Options) *Service {
 		connections: opts.ConnectionService,
 		factory: &factory{
 			defaultEngine: opts.DefaultEngine,
-			releases:      opts.ReleasesService,
+			engines:       opts.EngineService,
 		},
 	}
 	svc.web = newWebHandlers(&svc, opts)

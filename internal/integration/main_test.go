@@ -13,7 +13,6 @@ import (
 
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
 	"github.com/leg100/otf/internal/user"
@@ -202,14 +201,14 @@ func doMain(m *testing.M) (int, error) {
 	// Download engines now rather than in individual tests because it would
 	// otherwise make the latter flaky.
 	{
-		downloader := releases.NewDownloader(engine.Default, "")
+		downloader := engine.NewDownloader(engine.Default, "")
 		terraformPath, err = downloader.Download(context.Background(), engine.Default.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading terraform: %w", err)
 		}
 	}
 	{
-		downloader := releases.NewDownloader(engine.Tofu, "")
+		downloader := engine.NewDownloader(engine.Tofu, "")
 		tofuPath, err = downloader.Download(context.Background(), engine.Tofu.DefaultVersion(), os.Stdout)
 		if err != nil {
 			return 0, fmt.Errorf("downloading tofu: %w", err)

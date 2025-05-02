@@ -39,7 +39,7 @@ type TFEWorkspace struct {
 	SourceName                 string                   `jsonapi:"attribute" json:"source-name"`
 	SourceURL                  string                   `jsonapi:"attribute" json:"source-url"`
 	StructuredRunOutputEnabled bool                     `jsonapi:"attribute" json:"structured-run-output-enabled"`
-	TerraformVersion           string                   `jsonapi:"attribute" json:"terraform-version"`
+	TerraformVersion           *Version                 `jsonapi:"attribute" json:"terraform-version"`
 	TriggerPrefixes            []string                 `jsonapi:"attribute" json:"trigger-prefixes"`
 	TriggerPatterns            []string                 `jsonapi:"attribute" json:"trigger-patterns"`
 	VCSRepo                    *TFEVCSRepo              `jsonapi:"attribute" json:"vcs-repo"`
@@ -212,7 +212,7 @@ type TFEWorkspaceCreateOptions struct {
 
 	// The version of Terraform to use for this workspace. Upon creating a
 	// workspace, the latest version is selected unless otherwise specified.
-	TerraformVersion *string `jsonapi:"attribute" json:"terraform-version,omitempty" schema:"terraform_version"`
+	TerraformVersion *Version `jsonapi:"attribute" json:"terraform-version,omitempty" schema:"terraform_version"`
 
 	// List of repository-root-relative paths which list all locations to be
 	// tracked for changes. See FileTriggersEnabled above for more details.
@@ -300,7 +300,7 @@ type TFEWorkspaceUpdateOptions struct {
 	StructuredRunOutputEnabled *bool `jsonapi:"attribute" json:"structured-run-output-enabled,omitempty"`
 
 	// The version of Terraform to use for this workspace.
-	TerraformVersion *string `jsonapi:"attribute" json:"terraform-version,omitempty" schema:"terraform_version"`
+	TerraformVersion *Version `jsonapi:"attribute" json:"terraform-version,omitempty" schema:"terraform_version"`
 
 	// List of repository-root-relative paths which list all locations to be
 	// tracked for changes. See FileTriggersEnabled above for more details.

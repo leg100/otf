@@ -3,7 +3,6 @@
 package run
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -149,61 +148,6 @@ type (
 		WorkspaceID  *resource.TfeID    `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
-
-// newRun creates a new run with defaults.
-func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
-	run := Run{
-		ID:                     resource.NewTfeID(resource.RunKind),
-		CreatedAt:              internal.CurrentTimestamp(opts.now),
-		Refresh:                defaultRefresh,
-		Organization:           ws.Organization,
-		ConfigurationVersionID: cv.ID,
-		WorkspaceID:            ws.ID,
-		PlanOnly:               cv.Speculative,
-		ReplaceAddrs:           opts.ReplaceAddrs,
-		TargetAddrs:            opts.TargetAddrs,
-		ExecutionMode:          ws.ExecutionMode,
-		AutoApply:              ws.AutoApply,
-		IngressAttributes:      cv.IngressAttributes,
-		CostEstimationEnabled:  org.CostEstimationEnabled,
-		Source:                 opts.Source,
-		EngineVersion:          ws.EngineVersion,
-		Engine:                 ws.Engine,
-		Variables:              opts.Variables,
-	}
-	run.Plan = newPhase(run.ID, internal.PlanPhase)
-	run.Apply = newPhase(run.ID, internal.ApplyPhase)
-	run.updateStatus(runstatus.Pending, opts.now)
-
-	if run.Source == "" {
-		run.Source = SourceAPI
-	}
-	if opts.TerraformVersion != nil {
-		run.EngineVersion = *opts.TerraformVersion
-	}
-	if opts.AllowEmptyApply != nil {
-		run.AllowEmptyApply = *opts.AllowEmptyApply
-	}
-	if user, _ := user.UserFromContext(ctx); user != nil {
-		run.CreatedBy = &user.Username
-	}
-	if opts.IsDestroy != nil {
-		run.IsDestroy = *opts.IsDestroy
-	}
-	if opts.Message != nil {
-		run.Message = *opts.Message
-	}
-	if opts.Refresh != nil {
-		run.Refresh = *opts.Refresh
-	}
-	if opts.AutoApply != nil {
-		run.AutoApply = *opts.AutoApply
-	}
-	if opts.PlanOnly != nil {
-		run.PlanOnly = *opts.PlanOnly
-	}
-	return &run
-}
 
 func (r *Run) Queued() bool {
 	return r.Status == runstatus.PlanQueued || r.Status == runstatus.ApplyQueued

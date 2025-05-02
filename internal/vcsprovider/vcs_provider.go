@@ -79,7 +79,7 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 
 func (f *factory) newWithGithubCredentials(opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
-		ID:                  resource.NewTfeID("vcs"),
+		ID:                  resource.NewTfeID(resource.VCSProviderKind),
 		Name:                opts.Name,
 		CreatedAt:           internal.CurrentTimestamp(nil),
 		Organization:        opts.Organization,

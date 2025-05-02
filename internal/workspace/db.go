@@ -558,7 +558,7 @@ func scan(row pgx.CollectableRow) (*Workspace, error) {
 		StructuredRunOutputEnabled bool              `db:"structured_run_output_enabled"`
 		SourceName                 string            `db:"source_name"`
 		SourceURL                  string            `db:"source_url"`
-		EngineVersion              string            `db:"engine_version"`
+		EngineVersion              *Version          `db:"engine_version"`
 		WorkingDirectory           string            `db:"working_directory"`
 		Organization               organization.Name `db:"organization_name"`
 		LatestRunStatus            *runstatus.Status `db:"latest_run_status"`

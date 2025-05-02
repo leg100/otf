@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -17,20 +17,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestWorkspace(t *testing.T) *Workspace {
-	org := organization.NewTestName(t)
-	name := uuid.NewString()
+func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
+	if opts == nil {
+		opts = &CreateOptions{}
+	}
+	if opts.Organization == nil {
+		name := organization.NewTestName(t)
+		opts.Organization = &name
+	}
+	if opts.Name == nil {
+		opts.Name = internal.String(uuid.NewString())
+	}
 
 	factory := &factory{
 		defaultEngine: engine.Default,
-		releases: &fakeReleasesService{
+		engines: &fakeReleasesService{
 			latestVersion: "1.9.0",
 		},
 	}
-	ws, err := factory.NewWorkspace(t.Context(), CreateOptions{
-		Name:         &name,
-		Organization: &org,
-	})
+	ws, err := factory.NewWorkspace(t.Context(), *opts)
 	require.NoError(t, err)
 	return ws
 }
@@ -140,6 +145,6 @@ type fakeReleasesService struct {
 	latestVersion string
 }
 
-func (f *fakeReleasesService) GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error) {
+func (f *fakeReleasesService) GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error) {
 	return f.latestVersion, time.Time{}, nil
 }

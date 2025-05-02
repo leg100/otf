@@ -18,9 +18,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/logs"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -221,7 +221,7 @@ func (o *operation) do() error {
 		return err
 	}
 	o.run = run
-	o.downloader = releases.NewDownloader(o.run.Engine, o.engineBinDir)
+	o.downloader = engine.NewDownloader(o.run.Engine, o.engineBinDir)
 
 	// Get workspace in order to get working directory path
 	//

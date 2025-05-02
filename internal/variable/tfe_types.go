@@ -200,3 +200,7 @@ type TFEVariableSetVariableUpdateOptions struct {
 	// Whether the value is sensitive.
 	Sensitive *bool `jsonapi:"attribute" json:"sensitive,omitempty"`
 }
+
+type TFEWorkspace struct {
+	ID resource.TfeID `jsonapi:"primary,workspaces"`
+}

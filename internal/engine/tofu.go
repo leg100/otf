@@ -18,7 +18,7 @@ type tofu struct{}
 func (e *tofu) String() string         { return "tofu" }
 func (e *tofu) DefaultVersion() string { return defaultTofuVersion }
 
-func (e *tofu) SourceURL(version string) *url.URL {
+func (e *tofu) sourceURL(version string) *url.URL {
 	return &url.URL{
 		Scheme: "https",
 		Host:   "github.com",
@@ -32,7 +32,7 @@ func (e *tofu) SourceURL(version string) *url.URL {
 	}
 }
 
-func (e *tofu) GetLatestVersion(ctx context.Context) (string, error) {
+func (e *tofu) getLatestVersion(ctx context.Context) (string, error) {
 	return getLatestTofuVersion(ctx, nil)
 }
 
