@@ -16,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/ghapphandler"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
@@ -26,7 +27,6 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repohooks"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -200,12 +200,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService: vcsProviderService,
 		RepoHooksService:   repoService,
 	})
-	releasesService := releases.NewService(releases.Options{
+	engineService := engine.NewService(engine.Options{
 		Logger: logger,
 		DB:     db,
 	})
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
-		releasesService.StartLatestChecker(ctx)
+		engineService.StartLatestChecker(ctx)
 	}
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
@@ -219,7 +219,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 		DefaultEngine:       cfg.DefaultEngine,
-		ReleasesService:     releasesService,
+		EngineService:       engineService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:        logger,
@@ -253,7 +253,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Cache:                cache,
 		VCSEventSubscriber:   vcsEventBroker,
 		Signer:               signer,
-		ReleasesService:      releasesService,
+		EngineService:        engineService,
 		TokensService:        tokensService,
 	})
 	moduleService := module.NewService(module.Options{

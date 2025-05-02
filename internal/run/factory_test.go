@@ -7,8 +7,8 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/vcs"
@@ -213,6 +213,6 @@ func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs
 	return vcs.Commit{}, nil
 }
 
-func (f *fakeReleasesService) GetLatest(context.Context, releases.Engine) (string, time.Time, error) {
+func (f *fakeReleasesService) GetLatest(context.Context, *engine.Engine) (string, time.Time, error) {
 	return f.latestVersion, time.Time{}, nil
 }

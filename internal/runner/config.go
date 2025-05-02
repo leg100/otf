@@ -1,7 +1,7 @@
 package runner
 
 import (
-	"github.com/leg100/otf/internal/releases"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/spf13/pflag"
 )
 
@@ -26,6 +26,6 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	flags.BoolVar(&opts.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable runner debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&opts.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
-	flags.StringVar(&opts.EngineBinDir, "engine-bins-dir", releases.DefaultEngineBinDir, "Destination directory for engine binary downloads.")
+	flags.StringVar(&opts.EngineBinDir, "engine-bins-dir", engine.DefaultBinDir, "Destination directory for engine binary downloads.")
 	return &opts
 }

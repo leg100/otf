@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 )
@@ -178,11 +177,11 @@ type (
 	// factory makes workspaces
 	factory struct {
 		defaultEngine *engine.Engine
-		releases      releasesClient
+		engines       engineClient
 	}
 
-	releasesClient interface {
-		GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error)
+	engineClient interface {
+		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
 	}
 )
 
@@ -245,7 +244,7 @@ func (f *factory) NewWorkspace(ctx context.Context, opts CreateOptions) (*Worksp
 		ws.EngineVersion = opts.EngineVersion
 	} else {
 		// default to the current latest version of the engine.
-		latest, _, err := f.releases.GetLatest(ctx, ws.Engine)
+		latest, _, err := f.engines.GetLatest(ctx, ws.Engine)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest engine version: %w", err)
 		}

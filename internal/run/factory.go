@@ -7,8 +7,8 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
@@ -46,7 +46,7 @@ type (
 	}
 
 	factoryReleasesClient interface {
-		GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error)
+		GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error)
 	}
 )
 

@@ -1,22 +1,20 @@
-package releases
+package engine
 
 import (
 	"context"
 	"net/url"
 	"time"
-
-	"github.com/leg100/otf/internal/engine"
 )
 
 type testEngine struct {
-	engine.Engine
+	*Engine
 	u             *url.URL
 	latestVersion string
 }
 
-func (e *testEngine) SourceURL(version string) *url.URL { return e.u }
+func (e *testEngine) sourceURL(version string) *url.URL { return e.u }
 func (e *testEngine) String() string                    { return "terraform" }
-func (e *testEngine) GetLatestVersion(context.Context) (string, error) {
+func (e *testEngine) getLatestVersion(context.Context) (string, error) {
 	return e.latestVersion, nil
 }
 

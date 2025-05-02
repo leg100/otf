@@ -1,22 +1,17 @@
-// Package releases manages engine releases.
-package releases
+package engine
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 )
-
-const LatestVersionString = "latest"
 
 type (
 	Service struct {
@@ -35,13 +30,6 @@ type (
 	DB interface {
 		getLatest(ctx context.Context, engine string) (string, time.Time, error)
 		updateLatestVersion(ctx context.Context, engine, v string) error
-	}
-
-	Engine interface {
-		String() string
-		DefaultVersion() string
-		GetLatestVersion(context.Context) (string, error)
-		SourceURL(version string) *url.URL
 	}
 )
 
@@ -73,7 +61,7 @@ func (s *Service) StartLatestChecker(ctx context.Context) {
 }
 
 func (s *Service) checkAndUpdate(ctx context.Context) {
-	for _, engine := range engine.Engines() {
+	for _, engine := range Engines() {
 		result, err := s.check(ctx, engine, time.Now())
 		if err != nil {
 			s.Error(err, "checking latest engine version", "engine", engine)
@@ -113,9 +101,9 @@ func (r checkResult) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func (s *Service) check(ctx context.Context, engine Engine, now time.Time) (result checkResult, err error) {
+func (s *Service) check(ctx context.Context, engine engine, now time.Time) (result checkResult, err error) {
 	// get current latest version stored in db
-	before, checkpoint, err := s.GetLatest(ctx, engine)
+	before, checkpoint, err := s.getLatest(ctx, engine)
 	if err != nil {
 		return checkResult{}, err
 	}
@@ -129,7 +117,7 @@ func (s *Service) check(ctx context.Context, engine Engine, now time.Time) (resu
 		}, nil
 	}
 	// get latest version from engine's internet endpoint
-	after, err := engine.GetLatestVersion(ctx)
+	after, err := engine.getLatestVersion(ctx)
 	if err != nil {
 		return checkResult{}, err
 	}
@@ -148,7 +136,11 @@ func (s *Service) check(ctx context.Context, engine Engine, now time.Time) (resu
 // GetLatest returns the latest engine version and the time when it was
 // fetched; if it has not yet been fetched then the default version is returned
 // instead along with zero time.
-func (s *Service) GetLatest(ctx context.Context, engine Engine) (string, time.Time, error) {
+func (s *Service) GetLatest(ctx context.Context, engine *Engine) (string, time.Time, error) {
+	return s.getLatest(ctx, engine)
+}
+
+func (s *Service) getLatest(ctx context.Context, engine engine) (string, time.Time, error) {
 	latest, checkpoint, err := s.db.getLatest(ctx, engine.String())
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// no latest version has yet been persisted to the database so return

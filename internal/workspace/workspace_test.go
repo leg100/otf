@@ -22,7 +22,7 @@ func TestNewWorkspace(t *testing.T) {
 		latestVersion = "1.9.0"
 		factory       = &factory{
 			defaultEngine: engine.Default,
-			releases: &fakeReleasesService{
+			engines: &fakeReleasesService{
 				latestVersion: latestVersion,
 			},
 		}

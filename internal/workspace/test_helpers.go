@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -32,7 +31,7 @@ func NewTestWorkspace(t *testing.T, opts *CreateOptions) *Workspace {
 
 	factory := &factory{
 		defaultEngine: engine.Default,
-		releases: &fakeReleasesService{
+		engines: &fakeReleasesService{
 			latestVersion: "1.9.0",
 		},
 	}
@@ -146,6 +145,6 @@ type fakeReleasesService struct {
 	latestVersion string
 }
 
-func (f *fakeReleasesService) GetLatest(ctx context.Context, engine releases.Engine) (string, time.Time, error) {
+func (f *fakeReleasesService) GetLatest(ctx context.Context, engine *engine.Engine) (string, time.Time, error) {
 	return f.latestVersion, time.Time{}, nil
 }

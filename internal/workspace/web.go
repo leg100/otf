@@ -53,7 +53,7 @@ type (
 		vcsproviders         webVCSProvidersClient
 		client               webClient
 		authorizer           webAuthorizer
-		releases             releasesClient
+		releases             engineClient
 		websocketListHandler *components.WebsocketListHandler[*Workspace, ListOptions]
 	}
 
@@ -108,7 +108,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 			Populator: &table{},
 			ID:        "page-results",
 		},
-		releases: opts.ReleasesService,
+		releases: opts.EngineService,
 	}
 }
 

@@ -1,4 +1,4 @@
-package releases
+package engine
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 )
 
-var DefaultEngineBinDir = path.Join(os.TempDir(), "otf-engine-bins")
+var DefaultBinDir = path.Join(os.TempDir(), "otf-engine-bins")
 
 // downloader downloads engine binaries
 type downloader struct {
@@ -23,7 +23,8 @@ type downloader struct {
 
 type engineSource interface {
 	String() string
-	SourceURL(version string) *url.URL
+
+	sourceURL(version string) *url.URL
 }
 
 // NewDownloader constructs a terraform downloader, with destdir set as the
@@ -31,7 +32,7 @@ type engineSource interface {
 // to use a default.
 func NewDownloader(engine engineSource, destdir string) *downloader {
 	if destdir == "" {
-		destdir = DefaultEngineBinDir
+		destdir = DefaultBinDir
 	}
 
 	mu := make(chan struct{}, 1)
@@ -69,7 +70,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 	err := (&download{
 		Writer:  w,
 		version: version,
-		src:     d.engine.SourceURL(version).String(),
+		src:     d.engine.sourceURL(version).String(),
 		dest:    d.dest(version),
 		binary:  d.engine.String(),
 		client:  d.client,
