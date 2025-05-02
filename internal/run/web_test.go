@@ -57,7 +57,7 @@ func TestListRunsHandler(t *testing.T) {
 }
 
 func TestWeb_GetHandler(t *testing.T) {
-	ws1 := workspace.NewTestWorkspace(t)
+	ws1 := workspace.NewTestWorkspace(t, nil)
 	run1 := newTestRun(t, context.Background(), CreateOptions{})
 	h := newTestWebHandlers(t,
 		withWorkspace(ws1),

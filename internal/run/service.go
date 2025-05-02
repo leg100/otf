@@ -10,10 +10,10 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
@@ -58,7 +58,7 @@ type (
 		WorkspaceService     *workspace.Service
 		OrganizationService  *organization.Service
 		ConfigVersionService *configversion.Service
-		ReleasesService      *releases.Service
+		EngineService        *engine.Service
 		VCSProviderService   *vcsprovider.Service
 		TokensService        *tokens.Service
 		LogsService          *logs.Service
@@ -87,7 +87,7 @@ func NewService(opts Options) *Service {
 		workspaces:    opts.WorkspaceService,
 		configs:       opts.ConfigVersionService,
 		vcs:           opts.VCSProviderService,
-		releases:      opts.ReleasesService,
+		releases:      opts.EngineService,
 	}
 	svc.web = newWebHandlers(&svc, opts)
 	svc.tfeapi = &tfe{

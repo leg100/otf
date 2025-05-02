@@ -7,11 +7,8 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/user"
-	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -252,7 +249,9 @@ func TestRun_StatusReport(t *testing.T) {
 			return now.Add(time.Duration(seconds) * -time.Second)
 		}
 		createRun = func(created time.Time) *Run {
-			return newRun(context.Background(), &organization.Organization{}, &configversion.ConfigurationVersion{}, &workspace.Workspace{}, CreateOptions{now: &created})
+			return newTestRun(t, t.Context(), CreateOptions{
+				now: &created,
+			})
 		}
 	)
 

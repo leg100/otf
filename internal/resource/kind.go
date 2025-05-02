@@ -26,6 +26,7 @@ const (
 	StateVersionOutputKind        Kind = "wsout"
 	VariableSetKind               Kind = "varset"
 	VariableKind                  Kind = "var"
+	VCSProviderKind               Kind = "vcs"
 
 	OrganizationTokenKind Kind = "ot"
 	UserTokenKind         Kind = "ut"
