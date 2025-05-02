@@ -3,6 +3,8 @@
 package tfeapi
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"path"
@@ -19,12 +21,19 @@ const (
 	ModuleV1Prefix = "/v1/modules/"
 )
 
+// errUnmarshal wraps errors resulting from a failure to unmarshal request
+// parameters.
+var errUnmarshal = errors.New("error unmarshalling request parameters")
+
 func Unmarshal(r io.Reader, v any) error {
 	b, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
-	return jsonapi.Unmarshal(b, v)
+	if err := jsonapi.Unmarshal(b, v); err != nil {
+		return fmt.Errorf("%w: %w", errUnmarshal, err)
+	}
+	return nil
 }
 
 type Handlers struct{}

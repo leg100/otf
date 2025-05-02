@@ -13,6 +13,7 @@ var codes = map[error]int{
 	internal.ErrAccessNotPermitted:    http.StatusForbidden,
 	internal.ErrResourceAlreadyExists: http.StatusConflict,
 	internal.ErrConflict:              http.StatusConflict,
+	errUnmarshal:                      http.StatusUnprocessableEntity,
 }
 
 // lookupHTTPCode maps an OTF domain error to a http status code
