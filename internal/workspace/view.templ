@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcsprovider"
+	"strings"
 )
 
 templ new(organization organization.Name) {
@@ -376,7 +377,7 @@ type editProps struct {
 	unassigned         []*team.Team
 	roles              []authz.Role
 	vcsProvider        *vcsprovider.VCSProvider
-	engines            []engineSelectorEngine
+	engines            engineSelectorProps
 	unassignedTags     []string
 	canUpdateWorkspace bool
 	canDeleteWorkspace bool
@@ -520,48 +521,71 @@ templ edit(props editProps) {
 	}
 }
 
+type engineSelectorProps struct {
+	engines []engineSelectorEngine
+	current string
+}
+
 type engineSelectorEngine struct {
 	name    string
-	current bool
 	latest  bool
 	version string
 }
 
-templ engineSelector(props []engineSelectorEngine) {
-	<div>
-		<fieldset class="peer border border-base-content/60 px-3 py-3 flex flex-col gap-2">
+templ engineSelector(props engineSelectorProps) {
+	<div class="flex flex-col gap-5" x-data={ "{current: '" + props.current + "', isCurrent(engine){ return engine == this.current }}" }>
+		<fieldset id="engine-selector" class="border border-base-content/60 px-3 py-3 flex flex-col gap-2">
 			<legend>Engine</legend>
-			for _, engine := range props {
+			for _, engine := range props.engines {
 				<div class="form-checkbox">
-					<input type="radio" name="engine" id={ engine.name } value={ engine.name } checked?={ engine.current }/>
-					<label for={ engine.name }>{ engine.name }</label>
+					<input type="radio" name="engine" id={ engine.name } value={ engine.name } x-model="current" :checked={ "isCurrent('" + engine.name + "')" }/>
+					<label for={ engine.name }>{ strings.Title(engine.name) }</label>
+					<span class="description">
+						if engine.name == "tofu" {
+							Runs use the <a href="https://opentofu.org/">OpenTofu</a> engine.
+						}
+						if engine.name == "terraform" {
+							Runs use the <a href="https://developer.hashicorp.com/terraform">Hashicorp Terraform</a> engine.
+						}
+					</span>
 				</div>
 			}
 		</fieldset>
-		for _, engine := range props {
-			<fieldset class={ "peer-has-[input[name=" + engine.name + "][check border-base-content/60 px-3 py-3 flex flex-col gap-2" }>
-				<legend>Engine Version</legend>
-				<div>
-					<div class="flex items-center gap-2">
-						<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-false" checked?={ !engine.latest }/>
-						<input
-							class="input w-48"
-							type="text"
-							name="specific_engine_version"
-							id="engine-specific-version"
-							required
-							title="Must provide version in the format <major>.<minor>.<patch>"
-							value={ engine.version }
-						/>
-					</div>
-					<div class="flex items-center gap-2">
-						<input type="radio" name={ engine.name + "_latest_engine_version" } id="engine-version-latest-true" checked?={ engine.latest }/>
-						<label for="engine-latest">Latest</label>
-					</div>
-				</div>
-			</fieldset>
+		for _, engine := range props.engines {
+			<!-- show engine version selector relevant to the currently selected engine -->
+			<template x-if={ "isCurrent('" + engine.name + "')" }>
+				@engineVersionSelector(engine)
+			</template>
 		}
 	</div>
+}
+
+templ engineVersionSelector(props engineSelectorEngine) {
+	<fieldset id="engine-version-selector" class={ "border border-base-content/60 px-3 py-3 flex flex-col gap-2" }>
+		<legend>Engine Version</legend>
+		<div class="form-checkbox">
+			<input type="radio" name="latest_engine_version" id="engine-version-latest-false" value="false" checked?={ !props.latest }/>
+			<input
+				class="input w-48"
+				type="text"
+				name="specific_engine_version"
+				id="engine-specific-version"
+				required
+				title="Must provide version in the format <major>.<minor>.<patch>"
+				value={ props.version }
+			/>
+			<span class="description">
+				Runs use a user-specified engine version.
+			</span>
+		</div>
+		<div class="form-checkbox">
+			<input type="radio" name="latest_engine_version" id="engine-version-latest-true" value="true" checked?={ props.latest }/>
+			<label for="engine-version-latest-true">Latest</label>
+			<span class="description">
+				Runs use the latest available engine version at the time the run is created. (OTF checks daily for new versions).
+			</span>
+		</div>
+	</fieldset>
 }
 
 templ editConnection(props editProps) {

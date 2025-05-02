@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/testutils"
@@ -385,39 +386,68 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			err = expect.Locator(page.Locator(`//textarea[@id='description' and text()='my big fat workspace']`)).ToBeVisible()
 			require.NoError(t, err)
 
-			// switch engine from terraform to tofu
-
-			// terraform should be current engine
-			err = expect.Locator(page.Locator(`input#terraform:checked`)).ToBeVisible()
-			require.NoError(t, err)
-
-			// make tofu the current engine instead
-			err = page.Locator(`input#tofu`).Click()
-			require.NoError(t, err)
-
-			// set tofu version to v2.1.0
-			err = page.Locator(`input#engine-version`).Fill(`2.1.0`)
-			require.NoError(t, err)
-
-			// submit
-			err = page.GetByRole("button").GetByText("Save changes").Click()
-			require.NoError(t, err)
-
-			// confirm updated
-			err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated workspace")
-			require.NoError(t, err)
-
-			err = expect.Locator(page.Locator(`input#tofu:checked`)).ToBeVisible()
-			require.NoError(t, err)
-
-			err = expect.Locator(page.Locator(`input#engine-version`)).ToHaveValue(`2.1.0`)
-			require.NoError(t, err)
 		})
 
-		// check UI has correctly updated the workspace resource
-		ws, err := daemon.Workspaces.GetByName(ctx, org.Name, ws1.Name)
-		require.NoError(t, err)
-		require.Equal(t, "my big fat workspace", ws.Description)
+		t.Run("engine settings", func(t *testing.T) {
+			// create workspace on which edit engine settings
+			ws := daemon.createWorkspace(t, ctx, org)
+
+			browser.New(t, ctx, func(page playwright.Page) {
+				// go to workspace settings
+				_, err := page.Goto(workspaceURL(daemon.System.Hostname(), org.Name, ws.Name))
+				require.NoError(t, err)
+				err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-settings']/a`).Click()
+				require.NoError(t, err)
+
+				// switch engine from terraform to tofu
+
+				// terraform should be current engine
+				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='terraform']`)).ToBeChecked()
+				require.NoError(t, err)
+
+				// make tofu the current engine instead
+				err = page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`).Click()
+				require.NoError(t, err)
+
+				// submit
+				err = page.GetByRole("button").GetByText("Save changes").Click()
+				require.NoError(t, err)
+
+				// confirm tofu is now current engine
+				err = expect.Locator(page.Locator(`//*[@id='engine-selector']//input[@id='tofu']`)).ToBeChecked()
+				require.NoError(t, err)
+
+				// confirm tofu version is the default version (integration test
+				// disables the latest version checker, so the latest version
+				// defaults to the default version)
+				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(engine.Tofu.DefaultVersion())
+				require.NoError(t, err)
+
+				// switch tofu version to v2.1.0
+				err = page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`).Fill(`2.1.0`)
+				require.NoError(t, err)
+
+				// submit
+				err = page.GetByRole("button").GetByText("Save changes").Click()
+				require.NoError(t, err)
+
+				// expect tofu version to have been updated
+				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-specific-version']`)).ToHaveValue(`2.1.0`)
+				require.NoError(t, err)
+
+				// switch tofu version to track latest
+				err = page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`).Click()
+				require.NoError(t, err)
+
+				// submit
+				err = page.GetByRole("button").GetByText("Save changes").Click()
+				require.NoError(t, err)
+
+				// expect tofu version to now track latest
+				err = expect.Locator(page.Locator(`//*[@id='engine-version-selector']//input[@id='engine-version-latest-true']`)).ToBeChecked()
+				require.NoError(t, err)
+			})
+		})
 	})
 
 	t.Run("workspace locking", func(t *testing.T) {

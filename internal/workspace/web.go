@@ -53,6 +53,7 @@ type (
 		vcsproviders         webVCSProvidersClient
 		client               webClient
 		authorizer           webAuthorizer
+		releases             releasesClient
 		websocketListHandler *components.WebsocketListHandler[*Workspace, ListOptions]
 	}
 
@@ -107,6 +108,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 			Populator: &table{},
 			ID:        "page-results",
 		},
+		releases: opts.ReleasesService,
 	}
 }
 
@@ -383,22 +385,27 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Construct list of engines for template
-	engines := make([]engineSelectorEngine, 2)
+	engineSelectorProps := engineSelectorProps{
+		engines: make([]engineSelectorEngine, 2),
+	}
 	for i, engine := range engine.Engines() {
-		engines[i].name = engine.String()
+		engineSelectorProps.engines[i].name = engine.String()
 		if engine.String() == workspace.Engine.String() {
-			engines[i].current = true
-			engines[i].latest = workspace.EngineVersion.Latest
+			engineSelectorProps.current = engine.String()
+			engineSelectorProps.engines[i].latest = workspace.EngineVersion.Latest
 		}
-		if !engines[i].current || engines[i].latest {
-			latest, err := engine.GetLatestVersion(r.Context())
+		// Offer the user the latest available version for an engine if:
+		// (a): it's not the current engine
+		// (b): it's currently set to track the latest version.
+		if engineSelectorProps.current != engine.String() || engineSelectorProps.engines[i].latest {
+			latest, _, err := h.releases.GetLatest(r.Context(), engine)
 			if err != nil {
 				html.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			engines[i].version = latest
+			engineSelectorProps.engines[i].version = latest
 		} else {
-			engines[i].version = workspace.EngineVersion.semver
+			engineSelectorProps.engines[i].version = workspace.EngineVersion.semver
 		}
 	}
 
@@ -406,7 +413,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		ws:         workspace,
 		assigned:   perms,
 		unassigned: filterUnassigned(policy, teams),
-		engines:    engines,
+		engines:    engineSelectorProps,
 		roles: []authz.Role{
 			authz.WorkspaceReadRole,
 			authz.WorkspacePlanRole,
