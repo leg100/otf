@@ -137,13 +137,13 @@ tunnel:
 .PHONY: paths
 paths:
 	go generate ./internal/http/html/paths
-	goimports -w ./internal/http/html/paths
-	goimports -w ./internal/http/html/components/paths
+	go run golang.org/x/tools/cmd/goimports -w ./internal/http/html/paths
+	go run golang.org/x/tools/cmd/goimports -w ./internal/http/html/components/paths
 
 # Re-generate RBAC action strings
 .PHONY: actions
 actions:
-	stringer -type Action ./internal/authz
+	go run golang.org/x/tools/cmd/stringer -type Action ./internal/authz
 
 # Install staticcheck linter
 .PHONY: install-linter
@@ -193,3 +193,12 @@ live/sync_assets:
 # the remaining processes, so it's important it is placed first.
 live:
 	make -j live/tailwind live/sync_assets live/templ
+
+install-templ:
+	go install github.com/a-h/templ/cmd/templ@latest
+
+generate-templates: install-templ
+	templ generate
+
+check-no-diff: paths actions generate-templates
+	git diff --exit-code
