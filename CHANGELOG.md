@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.21](https://github.com/leg100/otf/compare/v0.3.20...v0.3.21) (2025-05-04)
+
+
+### Features
+
+* new workspace now uses latest engine version ([bd40d22](https://github.com/leg100/otf/commit/bd40d22198f853171afcb2811bbeb22f727417ce))
+
+
+### Miscellaneous
+
+* remove working comments ([a51716e](https://github.com/leg100/otf/commit/a51716e2cbda281f5433963f8b54692f4f49c9cf))
+* upgrade templ ([21a105e](https://github.com/leg100/otf/commit/21a105ec1c6027d10d8be81531f1463acc3fe3f2))
+
 ## [0.3.20](https://github.com/leg100/otf/compare/v0.3.19...v0.3.20) (2025-04-25)
 
 
