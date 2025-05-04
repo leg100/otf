@@ -22,7 +22,7 @@ jobs:
       - name: Check no diff
         run: make check-no-diff
       - name: Lint check
-        run: make install-linter lint
+        run: make lint
       - name: Vet check
         run: make vet
       - name: Add hosts to /etc/hosts

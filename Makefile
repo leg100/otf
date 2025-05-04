@@ -77,10 +77,15 @@ compose-rm:
 postgres:
 	docker compose up -d postgres
 
+# Install staticcheck linter
+.PHONY: install-linter
+install-linter:
+	go get -tool honnef.co/go/tools/cmd/staticcheck@2025.1.1
+
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
-lint:
-	staticcheck ./...
+lint: install-linter
+	go tool staticcheck ./...
 
 # Run go fmt against code
 .PHONY: fmt
@@ -133,22 +138,25 @@ doc-screenshots: # update documentation screenshots
 tunnel:
 	cloudflared tunnel run otf
 
+.PHONY: install-goimports
+install-goimports:
+	go get -tool golang.org/x/tools/cmd/goimports@v0.32.0
+
 # Generate path helpers
 .PHONY: paths
-paths:
+paths: install-goimports
 	go generate ./internal/http/html/paths
-	go run golang.org/x/tools/cmd/goimports -w ./internal/http/html/paths
-	go run golang.org/x/tools/cmd/goimports -w ./internal/http/html/components/paths
+	go tool goimports -w ./internal/http/html/paths
+	go tool goimports -w ./internal/http/html/components/paths
+
+.PHONY: install-stringer
+install-stringer:
+	go get -tool golang.org/x/tools/cmd/stringer@v0.32.0
 
 # Re-generate RBAC action strings
 .PHONY: actions
-actions:
-	go run golang.org/x/tools/cmd/stringer -type Action ./internal/authz
-
-# Install staticcheck linter
-.PHONY: install-linter
-install-linter:
-	go install honnef.co/go/tools/cmd/staticcheck@latest
+actions: install-stringer
+	go tool stringer -type Action ./internal/authz
 
 .PHONY: debug
 debug:
@@ -158,21 +166,23 @@ debug:
 connect:
 	dlv connect 127.0.0.1:4300 .
 
-.PHONY: playwright-deps-ubuntu
-playwright-deps-ubuntu:
-	go get -u github.com/playwright-community/playwright-go@latest
-	go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium --with-deps
+.PHONY: install-playwright
+install-playwright:
+	go get -tool github.com/playwright-community/playwright-go/cmd/playwright@v0.5101.0
 
-.PHONY: playwright-deps-arch
-playwright-deps-arch:
-	go get -u github.com/playwright-community/playwright-go@latest
-	go run github.com/playwright-community/playwright-go/cmd/playwright@latest install chromium
+.PHONY: playwright-ubuntu
+install-playwright-ubuntu: install-playwright
+	go tool playwright install chromium --with-deps
+
+.PHONY: playwright-arch
+install-playwright-arch: install-playwright
+	go tool playwright install chromium
 
 # run templ generation in watch mode to detect all .templ files and
 # re-create _templ.txt files on change, then send reload event to browser.
 # Default url: http://localhost:7331
-live/templ:
-	templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
+live/templ: install-templ
+	go tool templ generate --watch --proxy="https://localhost:8080" --open-browser=false --cmd="go run ./cmd/otfd/main.go"
 
 # run tailwindcss to generate the styles.css bundle in watch mode.
 live/tailwind:
@@ -195,10 +205,10 @@ live:
 	make -j live/tailwind live/sync_assets live/templ
 
 install-templ:
-	go install github.com/a-h/templ/cmd/templ@latest
+	go get -tool github.com/a-h/templ/cmd/templ@v0.3.865
 
 generate-templates: install-templ
-	templ generate
+	go tool templ generate
 
 check-no-diff: paths actions generate-templates
 	git diff --exit-code
