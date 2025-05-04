@@ -1,0 +1,25 @@
+package components
+
+import (
+	"errors"
+	"github.com/leg100/otf/internal/authz"
+)
+
+// Avatar returns the current user's avatar.
+templ Avatar() {
+	{{
+	subject, err := authz.SubjectFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	user, ok := subject.(interface {
+		Avatar() string
+	})
+	if !ok {
+		return errors.New("not a user")
+	}
+	}}
+	<div class="bg-base-300 p-[0.5]">
+		<img src={ "data:image/png;base64, " + user.Avatar() }/>
+	</div>
+}

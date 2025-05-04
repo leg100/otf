@@ -32,8 +32,12 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/teams/{team_id}/relationships/users", a.removeTeamMembers).Methods("DELETE")
 }
 
+type apiCreateUserOptions struct {
+	Username string `json:"username"`
+}
+
 func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
-	var opts CreateUserOptions
+	var opts apiCreateUserOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 		tfeapi.Error(w, err)
 		return

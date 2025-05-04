@@ -15,7 +15,7 @@ type client struct {
 
 // Create creates a user via HTTP/JSONAPI. Options are ignored.
 func (c *client) Create(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
-	req, err := c.NewRequest("POST", "admin/users", &CreateUserOptions{
+	req, err := c.NewRequest("POST", "admin/users", &apiCreateUserOptions{
 		Username: username,
 	})
 	if err != nil {

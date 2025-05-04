@@ -106,33 +106,34 @@ func _() {
 	_ = x[DownloadConfigurationVersionAction-95]
 	_ = x[DeleteConfigurationVersionAction-96]
 	_ = x[CreateUserAction-97]
-	_ = x[ListUsersAction-98]
-	_ = x[GetUserAction-99]
-	_ = x[DeleteUserAction-100]
-	_ = x[CreateTeamAction-101]
-	_ = x[UpdateTeamAction-102]
-	_ = x[GetTeamAction-103]
-	_ = x[ListTeamsAction-104]
-	_ = x[DeleteTeamAction-105]
-	_ = x[AddTeamMembershipAction-106]
-	_ = x[RemoveTeamMembershipAction-107]
-	_ = x[CreateNotificationConfigurationAction-108]
-	_ = x[UpdateNotificationConfigurationAction-109]
-	_ = x[ListNotificationConfigurationsAction-110]
-	_ = x[GetNotificationConfigurationAction-111]
-	_ = x[DeleteNotificationConfigurationAction-112]
-	_ = x[CreateGithubAppAction-113]
-	_ = x[UpdateGithubAppAction-114]
-	_ = x[GetGithubAppAction-115]
-	_ = x[ListGithubAppsAction-116]
-	_ = x[DeleteGithubAppAction-117]
-	_ = x[CreateGithubAppInstallAction-118]
-	_ = x[DeleteGithubAppInstallAction-119]
+	_ = x[UpdateAvatarAction-98]
+	_ = x[ListUsersAction-99]
+	_ = x[GetUserAction-100]
+	_ = x[DeleteUserAction-101]
+	_ = x[CreateTeamAction-102]
+	_ = x[UpdateTeamAction-103]
+	_ = x[GetTeamAction-104]
+	_ = x[ListTeamsAction-105]
+	_ = x[DeleteTeamAction-106]
+	_ = x[AddTeamMembershipAction-107]
+	_ = x[RemoveTeamMembershipAction-108]
+	_ = x[CreateNotificationConfigurationAction-109]
+	_ = x[UpdateNotificationConfigurationAction-110]
+	_ = x[ListNotificationConfigurationsAction-111]
+	_ = x[GetNotificationConfigurationAction-112]
+	_ = x[DeleteNotificationConfigurationAction-113]
+	_ = x[CreateGithubAppAction-114]
+	_ = x[UpdateGithubAppAction-115]
+	_ = x[GetGithubAppAction-116]
+	_ = x[ListGithubAppsAction-117]
+	_ = x[DeleteGithubAppAction-118]
+	_ = x[CreateGithubAppInstallAction-119]
+	_ = x[DeleteGithubAppInstallAction-120]
 }
 
-const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionListOrganizationsActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentPoolActionUpdateAgentPoolActionListAgentPoolsActionGetAgentPoolActionDeleteAgentPoolActionCreateAgentTokenActionListAgentTokensActionGetAgentTokenActionDeleteAgentTokenActionListRunnersActionWatchRunnersActionCreateOrganizationTokenActionDeleteOrganizationTokenActionCreateRunTokenActionCreateTeamTokenActionGetTeamTokenActionDeleteTeamTokenActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionDeleteModuleVersionActionCreateWorkspaceVariableActionUpdateWorkspaceVariableActionListWorkspaceVariablesActionGetWorkspaceVariableActionDeleteWorkspaceVariableActionCreateVariableSetActionUpdateVariableSetActionListVariableSetsActionGetVariableSetActionDeleteVariableSetActionCreateVariableSetVariableActionUpdateVariableSetVariableActionGetVariableSetVariableActionDeleteVariableSetVariableActionAddVariableToSetActionRemoveVariableFromSetActionApplyVariableSetToWorkspacesActionDeleteVariableSetFromWorkspacesActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionForceCancelRunActionEnqueuePlanActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionListTagsActionDeleteTagsActionTagWorkspacesActionAddTagsActionRemoveTagsActionListWorkspaceTagsLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDeleteStateVersionActionRollbackStateVersionActionUploadStateActionDownloadStateActionGetStateVersionOutputActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionCreateUserActionListUsersActionGetUserActionDeleteUserActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsActionDeleteTeamActionAddTeamMembershipActionRemoveTeamMembershipActionCreateNotificationConfigurationActionUpdateNotificationConfigurationActionListNotificationConfigurationsActionGetNotificationConfigurationActionDeleteNotificationConfigurationActionCreateGithubAppActionUpdateGithubAppActionGetGithubAppActionListGithubAppsActionDeleteGithubAppActionCreateGithubAppInstallActionDeleteGithubAppInstallAction"
+const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionListOrganizationsActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentPoolActionUpdateAgentPoolActionListAgentPoolsActionGetAgentPoolActionDeleteAgentPoolActionCreateAgentTokenActionListAgentTokensActionGetAgentTokenActionDeleteAgentTokenActionListRunnersActionWatchRunnersActionCreateOrganizationTokenActionDeleteOrganizationTokenActionCreateRunTokenActionCreateTeamTokenActionGetTeamTokenActionDeleteTeamTokenActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionDeleteModuleVersionActionCreateWorkspaceVariableActionUpdateWorkspaceVariableActionListWorkspaceVariablesActionGetWorkspaceVariableActionDeleteWorkspaceVariableActionCreateVariableSetActionUpdateVariableSetActionListVariableSetsActionGetVariableSetActionDeleteVariableSetActionCreateVariableSetVariableActionUpdateVariableSetVariableActionGetVariableSetVariableActionDeleteVariableSetVariableActionAddVariableToSetActionRemoveVariableFromSetActionApplyVariableSetToWorkspacesActionDeleteVariableSetFromWorkspacesActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionForceCancelRunActionEnqueuePlanActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionListTagsActionDeleteTagsActionTagWorkspacesActionAddTagsActionRemoveTagsActionListWorkspaceTagsLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDeleteStateVersionActionRollbackStateVersionActionUploadStateActionDownloadStateActionGetStateVersionOutputActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionCreateUserActionUpdateAvatarActionListUsersActionGetUserActionDeleteUserActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsActionDeleteTeamActionAddTeamMembershipActionRemoveTeamMembershipActionCreateNotificationConfigurationActionUpdateNotificationConfigurationActionListNotificationConfigurationsActionGetNotificationConfigurationActionDeleteNotificationConfigurationActionCreateGithubAppActionUpdateGithubAppActionGetGithubAppActionListGithubAppsActionDeleteGithubAppActionCreateGithubAppInstallActionDeleteGithubAppInstallAction"
 
-var _Action_index = [...]uint16{0, 11, 35, 59, 80, 103, 124, 148, 171, 191, 213, 236, 257, 278, 298, 316, 337, 359, 380, 399, 421, 438, 456, 485, 514, 534, 555, 573, 594, 612, 637, 655, 672, 687, 705, 730, 759, 788, 816, 842, 871, 894, 917, 939, 959, 982, 1013, 1044, 1072, 1103, 1125, 1152, 1186, 1223, 1235, 1249, 1263, 1278, 1294, 1309, 1324, 1344, 1361, 1375, 1389, 1406, 1426, 1443, 1463, 1483, 1501, 1522, 1543, 1571, 1601, 1622, 1636, 1652, 1671, 1684, 1700, 1717, 1736, 1757, 1783, 1807, 1830, 1851, 1875, 1901, 1918, 1937, 1964, 1996, 2027, 2056, 2090, 2122, 2138, 2153, 2166, 2182, 2198, 2214, 2227, 2242, 2258, 2281, 2307, 2344, 2381, 2417, 2451, 2488, 2509, 2530, 2548, 2568, 2589, 2617, 2645}
+var _Action_index = [...]uint16{0, 11, 35, 59, 80, 103, 124, 148, 171, 191, 213, 236, 257, 278, 298, 316, 337, 359, 380, 399, 421, 438, 456, 485, 514, 534, 555, 573, 594, 612, 637, 655, 672, 687, 705, 730, 759, 788, 816, 842, 871, 894, 917, 939, 959, 982, 1013, 1044, 1072, 1103, 1125, 1152, 1186, 1223, 1235, 1249, 1263, 1278, 1294, 1309, 1324, 1344, 1361, 1375, 1389, 1406, 1426, 1443, 1463, 1483, 1501, 1522, 1543, 1571, 1601, 1622, 1636, 1652, 1671, 1684, 1700, 1717, 1736, 1757, 1783, 1807, 1830, 1851, 1875, 1901, 1918, 1937, 1964, 1996, 2027, 2056, 2090, 2122, 2138, 2156, 2171, 2184, 2200, 2216, 2232, 2245, 2260, 2276, 2299, 2325, 2362, 2399, 2435, 2469, 2506, 2527, 2548, 2566, 2586, 2607, 2635, 2663}
 
 func (i Action) String() string {
 	if i < 0 || i >= Action(len(_Action_index)-1) {

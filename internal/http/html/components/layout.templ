@@ -166,7 +166,13 @@ templ navbar(organization resource.ID) {
 					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Admin() }>site</a>
 				</div>
 				<div class="">
-					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Profile() }>profile</a>
+					<a class="btn btn-ghost btn-sm font-normal" href={ paths.Profile() }>
+						<div class="avatar">
+							<div class="size-6 rounded-md">
+								@Avatar()
+							</div>
+						</div>
+					</a>
 				</div>
 			}
 			@themeChooser()

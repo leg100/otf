@@ -47,10 +47,6 @@ type (
 
 	NewUserOption func(*User)
 
-	CreateUserOptions struct {
-		Username string `json:"username"`
-	}
-
 	UserSpec struct {
 		UserID                *resource.TfeID
 		Username              *Username
@@ -82,6 +78,10 @@ func WithTeams(memberships ...*team.Team) NewUserOption {
 }
 
 func (u *User) String() string { return u.Username.String() }
+
+func (u *User) Avatar() string {
+	return avatar(u.Username.String())
+}
 
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID resource.TfeID) bool {

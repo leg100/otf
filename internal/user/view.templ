@@ -34,18 +34,21 @@ templ profile() {
 		Breadcrumbs: []components.Breadcrumb{
 			{Name: "Profile"},
 		},
-		ContentActions: profileActions(),
 	}) {
-		<div class="flex flex-col gap-4">
-			<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ components.CurrentUsername(ctx) }</span></p>
+		<div class="flex flex-col">
+			<div class="flex flex-col gap-3">
+				<p id="logged-in-msg">You are logged in as <span class="badge badge-primary badge-soft">{ components.CurrentUsername(ctx) }</span></p>
+				<form action={ paths.Logout() } method="POST">
+					<button class="btn" id="logout">logout</button>
+				</form>
+			</div>
+			<div class="divider"></div>k
+			<div class="flex flex-col gap-3">
+				<h3 class="font-bold">Avatar</h3>
+				@components.Avatar()
+			</div>
 		</div>
 	}
-}
-
-templ profileActions() {
-	<form action={ paths.Logout() } method="POST">
-		<button class="btn" id="logout">logout</button>
-	</form>
 }
 
 type userListProps struct {

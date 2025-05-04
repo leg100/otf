@@ -148,6 +148,31 @@ func (a *Service) Create(ctx context.Context, username string, opts ...NewUserOp
 	return user, nil
 }
 
+//func (a *Service) UpdateAvatar(ctx context.Context, username Username, avatar []byte) (*User, error) {
+//	subject, err := a.Authorize(ctx, authz.UpdateAvatarAction, resource.SiteID)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	var user *User
+//	err = a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+//		if err := a.db.updateAvatar(ctx, username, avatar); err != nil {
+//			return err
+//		}
+//		user, err = a.db.getUser(ctx, UserSpec{Username: &username})
+//		if err != nil {
+//			return err
+//		}
+//		return nil
+//	})
+//	if err != nil {
+//		a.Error(err, "updating user avatar", "username", username, "subject", subject)
+//		return nil, err
+//	}
+//	a.V(2).Info("updated user avatar", "username", username, "subject", subject)
+//	return user, nil
+//}
+
 func (a *Service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	subject, err := a.Authorize(ctx, authz.GetUserAction, resource.SiteID)
 	if err != nil {
