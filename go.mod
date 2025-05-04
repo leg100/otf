@@ -5,7 +5,7 @@ go 1.24
 require (
 	cloud.google.com/go/pubsub v1.49.0
 	github.com/DataDog/jsonapi v0.12.0
-	github.com/a-h/templ v0.3.857
+	github.com/a-h/templ v0.3.865
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0

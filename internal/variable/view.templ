@@ -116,7 +116,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 		},
 	}) {
-		<span class="text-lg my-2">Workspace Variables ({ strconv.Itoa(len(props.workspaceTableProps.Variables())) })</span>
+		<span class="text-lg my-2">Workspace Variables ({ len(props.workspaceTableProps.Variables())) }</span>
 		@components.UnpaginatedTable(
 			&table{
 				props: props.workspaceTableProps,
@@ -129,7 +129,7 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 				<button class="btn">Add variable</button>
 			</form>
 		}
-		<span class="text-lg mt-4">Variable Sets ({ strconv.Itoa(len(props.setTablesProps)) })</span>
+		<span class="text-lg mt-4">Variable Sets ({ len(props.setTablesProps)) }</span>
 		for i, setProps := range props.setTablesProps {
 			<div id={ "variable-set-" + setProps.set.Name } class="flex flex-col gap-2">
 				@components.UnpaginatedTable(
@@ -201,7 +201,7 @@ templ (t listVariableSetsTable) Row(vs *VariableSet) {
 			if vs.Global {
 				global
 			} else {
-				{ strconv.Itoa(len(vs.Workspaces)) } workspaces
+				{ len(vs.Workspaces) } workspaces
 			}
 		</td>
 	</tr>
