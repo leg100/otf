@@ -314,7 +314,7 @@ templ runningTime(tsk task) {
 			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())) }
 			x-text="formatDuration(elapsed)"
 		>
-			{ strconv.Itoa(int(elapsed)) }
+			{ int(elapsed) }
 		</span>
 	} else {
 		<span id={ "running-time-" + tsk.String() }></span>
@@ -346,7 +346,7 @@ templ periodReport(run *Run) {
 
 templ resourceReport(report *Report) {
 	<div class="font-mono text-md" id="resource-summary">
-		<span class="text-green-700">+{ strconv.Itoa(report.Additions) }</span><span class="text-blue-700">~{ strconv.Itoa(report.Changes) }</span><span class="text-red-700">-{ strconv.Itoa(report.Destructions) }</span>
+		<span class="text-green-700">+{ report.Additions }</span><span class="text-blue-700">~{ report.Changes }</span><span class="text-red-700">-{ report.Destructions }</span>
 	</div>
 }
 
