@@ -20,7 +20,7 @@ An agent belongs to an *agent pool*. An agent pool is a group of `otf-agent` pro
 
 ### Walkthrough: pool agents
 
-First, create an agent pool in your organization. Go to the organization main menu and select **agent pools**.
+First, create an agent pool in your organization. Go to the organization main menu and select **Agent Pools**.
 
 ![organization main menu](images/organization_main_menu.png){.screenshot}
 

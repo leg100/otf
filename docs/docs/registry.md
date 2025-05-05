@@ -6,8 +6,6 @@ OTF includes a registry of terraform modules. You can publish modules to the reg
 
 To publish a module, go to the organization main menu, select **modules** and click **publish**
 
-![organization main menu](images/organization_main_menu.png){.screenshot}
-
 ![modules list](images/modules_list.png){.screenshot}
 
 You then need to select a VCS provider. If none are visible you need to first create a [provider](vcs_providers.md).
