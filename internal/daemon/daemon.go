@@ -85,7 +85,7 @@ type (
 // migrates it to the latest schema. Close() should be called to close this
 // connection.
 func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
-	if cfg.DevMode {
+	if internal.DevMode {
 		logger.Info("enabled developer mode")
 	}
 	if err := cfg.Valid(); err != nil {

@@ -54,23 +54,6 @@ Sets the number of workers that can process runs concurrently.
 
 Specifies the default engine for new workspaces. Specify either `terraform` or `tofu`.
 
-## `--dev-mode`
-
-* System: `otfd`
-* Default: `false`
-
-Enables developer mode:
-
-1. Static files are loaded from disk rather than from those embedded within the `otfd` binary.
-2. Enables [livereload](https://github.com/livereload/livereload-js).
-
-This means you can make changes to CSS, templates, etc, and you automatically see the changes in the browser in real-time.
-
-If developer mode were disabled, you would need to re-build the `otfd` binary and then manually reload the page in your browser.
-
-!!! note
-    Ensure you have cloned the git repository to your local filesystem and that you have started `otfd` from the root of the repository, otherwise it will not be able to locate the static files.
-
 ## `--engine-bins-dir`
 
 * System: `otfd`, `otf-agent`

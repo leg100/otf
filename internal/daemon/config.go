@@ -37,7 +37,6 @@ type Config struct {
 	SSL                          bool
 	CertFile, KeyFile            string
 	EnableRequestLogging         bool
-	DevMode                      bool
 	DisableScheduler             bool
 	DisableRunner                bool
 	RestrictOrganizationCreation bool
