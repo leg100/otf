@@ -96,7 +96,7 @@ output "foo" {
 		require.NoError(t, err)
 
 		// confirm value is hidden (because it is sensitive)
-		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr/td[2]/span[text()="hidden"]`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr/td[3]/span[text()="hidden"]`)).ToBeVisible()
 		require.NoError(t, err)
 		// edit variable again
 		err = page.Locator(`//tr[@id='item-variable-foo']//button[@id='edit-button']`).Click()

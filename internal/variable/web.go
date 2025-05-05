@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/authz"
@@ -153,12 +154,12 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := h.variables.ListWorkspaceVariables(r.Context(), workspaceID)
+	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.workspaces.Get(r.Context(), workspaceID)
+	variables, err := h.variables.ListWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -169,22 +170,51 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	merged := mergeVariables(sets, variables, nil)
-	variableSetTables := make([]setTableProps, len(sets))
-	for i := range sets {
-		variableSetTables[i] = setTableProps{
-			set:    sets[i],
-			merged: merged,
-			// hide delete button for set variables
-			canDeleteVariable: false,
+
+	// TODO: hide delete button for set variables
+	var rows []variableRow
+	for _, wv := range variables {
+		rows = append(rows, variableRow{Variable: wv})
+	}
+	for _, set := range sets {
+		for _, sv := range set.Variables {
+			rows = append(rows, variableRow{
+				Variable: sv,
+				set:      set,
+				overwritten: !slices.ContainsFunc(merged, func(v *Variable) bool {
+					return v.ID == sv.ID
+				}),
+			})
 		}
 	}
+	slices.SortFunc(rows, func(a, b variableRow) int {
+		switch {
+		case a.Key > b.Key:
+			return 1
+		case a.Key < b.Key:
+			return -1
+		default:
+			// key is equal; if variable belongs to a set then it comes
+			// afterwards.
+			if a.set != nil && b.set == nil {
+				return 1
+			} else if a.set == nil && b.set != nil {
+				return -1
+			} else {
+				// both belong to set; sort by set's name
+				if a.set.Name > b.set.Name {
+					return 1
+				} else if a.set.Name < b.set.Name {
+					return -1
+				}
+			}
+			return 0
+		}
+	})
+
 	props := listWorkspaceVariablesProps{
-		ws: ws,
-		workspaceTableProps: workspaceTableProps{
-			variables:         variables,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
-		},
-		setTablesProps:     variableSetTables,
+		ws:                 ws,
+		rows:               rows,
 		canCreateVariable:  h.authorizer.CanAccess(r.Context(), authz.CreateWorkspaceVariableAction, ws.ID),
 		canDeleteVariable:  h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, ws.ID),
 		canUpdateWorkspace: h.authorizer.CanAccess(r.Context(), authz.UpdateWorkspaceAction, ws.ID),
@@ -375,15 +405,20 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	rows := make([]variableRow, len(set.Variables))
+	for i, sv := range set.Variables {
+		rows[i] = variableRow{
+			Variable: sv,
+			set:      set,
+		}
+	}
 
 	props := editVariableSetProps{
 		set:                 set,
+		rows:                rows,
 		availableWorkspaces: availableWorkspaces,
 		existingWorkspaces:  existingWorkspaces,
-		variableTable: setTableProps{
-			set:               set,
-			canDeleteVariable: h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, set.Organization),
-		},
+		canDeleteVariable:   h.authorizer.CanAccess(r.Context(), authz.DeleteWorkspaceVariableAction, set.Organization),
 	}
 	html.Render(editVariableSet(props), w, r)
 }

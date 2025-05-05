@@ -168,29 +168,21 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		err = page.Locator(`//ul[@id='workspace-submenu']//li[@id='menu-item-variables']/a`).Click()
 		require.NoError(t, err)
 
-		// page should list 2 variable sets, one global, one
-		// workspace-scoped
-		err = expect.Locator(page.Locator(`//span[text()='Variable Sets (2)']`)).ToBeVisible()
-		require.NoError(t, err)
-
-		err = expect.Locator(page.Locator(`//*[@id='item-variable-set-global-1']`)).ToBeVisible()
-		require.NoError(t, err)
-
-		err = expect.Locator(page.Locator(`//*[@id='item-variable-set-workspace-scoped-1']`)).ToBeVisible()
-		require.NoError(t, err)
-
 		// both sets define a variable named 'foo', but the workspace-scoped
 		// set takes precedence over the global set, so the latter's
 		// variable should be tagged as 'overridden', and the variable name
 		// should be struck-through
-		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/s[text()='foo']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[1]/td[1]`)).ToHaveText(`global-1`)
 		require.NoError(t, err)
-
-		err = expect.Locator(page.Locator(`//div[@id='variable-set-global-1']/div[@id='variable-set-variables-table']//td[1]/span`)).ToHaveText("overwritten")
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[1]/td[2]/s`)).ToHaveText(`foo`)
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[1]/td[2]/span`)).ToHaveText("overwritten")
 		require.NoError(t, err)
 
 		// whereas the workspace-scoped set should not be overwritten.
-		err = expect.Locator(page.Locator(`//*[@id='variable-set-workspace-scoped-1']//td[1][text()='foo']`)).ToBeVisible()
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[2]/td[1]`)).ToHaveText(`workspace-scoped-1`)
+		require.NoError(t, err)
+		err = expect.Locator(page.Locator(`//*[@id='variables-table']//tbody/tr[2]/td[2]`)).ToHaveText(`foo`)
 		require.NoError(t, err)
 	})
 }

@@ -70,22 +70,21 @@ templ newVSV(vs *VariableSet) {
 }
 
 type listWorkspaceVariablesProps struct {
-	ws                  *workspace.Workspace
-	workspaceTableProps workspaceTableProps
-	setTablesProps      []setTableProps
-	canCreateVariable   bool
-	canDeleteVariable   bool
-	canUpdateWorkspace  bool
+	ws                 *workspace.Workspace
+	rows               []variableRow
+	canCreateVariable  bool
+	canDeleteVariable  bool
+	canUpdateWorkspace bool
 }
 
-type workspaceTableProps struct {
-	variables         []*Variable
-	canDeleteVariable bool
+type variableRow struct {
+	*Variable
+
+	set         *VariableSet // non-nil if variable belongs to set
+	overwritten bool
 }
 
-func (p workspaceTableProps) Variables() []*Variable {
-	return p.variables
-}
+type workspaceTableProps struct{}
 
 func (workspaceTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
 	return paths.EditVariable(variableID)
@@ -95,13 +94,14 @@ func (workspaceTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
 	return paths.DeleteVariable(variableID)
 }
 
-func (w workspaceTableProps) IsOverwritten(v *Variable) bool {
-	// a workspace variable can never be overwritten
-	return false
+func (workspaceTableProps) ShowEditButton(row variableRow) bool {
+	// hide edit button for variable belonging to sets - users can only edit set variables on the relevant variable set page.
+	return row.set == nil
 }
 
-func (w workspaceTableProps) CanDeleteVariable() bool {
-	return w.canDeleteVariable
+func (workspaceTableProps) ShowDeleteButton(row variableRow) bool {
+	// hide delete button for variable belonging to sets - users can only delete set variables on the relevant variable set page.
+	return row.set == nil
 }
 
 templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
@@ -115,36 +115,19 @@ templ listWorkspaceVariables(props listWorkspaceVariablesProps) {
 			{Name: "variables", Link: paths.Variables(props.ws.ID)},
 		},
 	}) {
-		<span class="text-lg my-2">Workspace Variables ({ len(props.workspaceTableProps.Variables()) })</span>
 		@components.UnpaginatedTable(
 			&table{
-				props: props.workspaceTableProps,
+				props:                 workspaceTableProps{},
+				canDeleteVariable:     props.canCreateVariable,
+				showVariableSetColumn: true,
 			},
-			props.workspaceTableProps.variables,
+			props.rows,
 			"variables-table",
 		)
 		if props.canCreateVariable {
 			<form class="mt-2" action={ paths.NewVariable(props.ws.ID) } method="GET">
 				<button class="btn">Add variable</button>
 			</form>
-		}
-		<span class="text-lg mt-4">Variable Sets ({ len(props.setTablesProps) })</span>
-		for i, setProps := range props.setTablesProps {
-			<div id={ "variable-set-" + setProps.set.Name } class="flex flex-col gap-2">
-				@components.UnpaginatedTable(
-					&listVariableSetsTable{},
-					[]*VariableSet{setProps.set},
-					"variable-set-info",
-				)
-				@components.UnpaginatedTable(
-					&table{props: setProps},
-					setProps.Variables(),
-					"variable-set-variables-table",
-				)
-			</div>
-			if i < len(props.setTablesProps) - 1 {
-				<div class="divider"></div>
-			}
 		}
 	}
 }
@@ -233,9 +216,10 @@ templ editWorkspaceVariable(props editWorkspaceVariableProps) {
 
 type editVariableSetProps struct {
 	set                 *VariableSet
+	rows                []variableRow
 	availableWorkspaces []workspaceInfo
 	existingWorkspaces  []workspaceInfo
-	variableTable       setTableProps
+	canDeleteVariable   bool
 }
 
 templ editVariableSet(props editVariableSetProps) {
@@ -260,9 +244,10 @@ templ editVariableSet(props editVariableSetProps) {
 		<h3 class="text-xl">Variables</h3>
 		@components.UnpaginatedTable(
 			&table{
-				props: props.variableTable,
+				props:             setTableProps{},
+				canDeleteVariable: props.canDeleteVariable,
 			},
-			props.set.Variables,
+			props.rows,
 			"variables-table",
 		)
 		<form class="mt-2" action={ paths.NewVariableSetVariable(props.set.ID) } method="GET">
@@ -449,15 +434,7 @@ templ variableSetForm(props variableSetFormProps) {
 	</form>
 }
 
-type setTableProps struct {
-	set               *VariableSet
-	merged            []*Variable
-	canDeleteVariable bool
-}
-
-func (p setTableProps) Variables() []*Variable {
-	return p.set.Variables
-}
+type setTableProps struct{}
 
 func (setTableProps) EditPath(variableID resource.TfeID) templ.SafeURL {
 	return paths.EditVariableSetVariable(variableID)
@@ -467,44 +444,56 @@ func (setTableProps) DeletePath(variableID resource.TfeID) templ.SafeURL {
 	return paths.DeleteVariableSetVariable(variableID)
 }
 
-func (w setTableProps) IsOverwritten(v *Variable) bool {
-	if w.merged == nil {
-		return false
-	}
-	return !v.Matches(w.merged)
+func (setTableProps) ShowEditButton(row variableRow) bool {
+	return true
 }
 
-func (w setTableProps) CanDeleteVariable() bool {
-	return w.canDeleteVariable
+func (setTableProps) ShowDeleteButton(row variableRow) bool {
+	return true
 }
 
 type tableProps interface {
-	Variables() []*Variable
 	EditPath(variableID resource.TfeID) templ.SafeURL
 	DeletePath(variableID resource.TfeID) templ.SafeURL
-	IsOverwritten(v *Variable) bool
-	CanDeleteVariable() bool
+	ShowEditButton(row variableRow) bool
+	ShowDeleteButton(row variableRow) bool
 }
 
 type table struct {
-	props tableProps
+	props                 tableProps
+	canDeleteVariable     bool
+	showVariableSetColumn bool
 }
 
 // table of variables
 templ (t table) Header() {
-	<th class="w-[25%]">Key</th>
-	<th class="w-[50%]">Value</th>
-	<th class="w-[15%]">Category</th>
-	<th class="w-[10%]">Actions</th>
+	if t.showVariableSetColumn {
+		<th>Set</th>
+	}
+	<th>Key</th>
+	<th>Value</th>
+	<th>Category</th>
+	<th>Actions</th>
 }
 
-templ (t table) Row(v *Variable) {
+templ (t table) Row(v variableRow) {
 	<tr id={ "item-variable-" + v.Key } x-data={ components.BlockLink(t.props.EditPath(v.ID)) }>
+		if t.showVariableSetColumn {
+			<td class="">
+				if v.set != nil {
+					<a class="link" href={ paths.EditVariableSet(v.set.ID) }>
+						{ v.set.Name }
+					</a>
+				} else {
+					-
+				}
+			</td>
+		}
 		<td class="flex flex-row gap-2">
-			if t.props.IsOverwritten(v) {
-				<span class="badge badge-warning badge-sm">overwritten</span>
+			if v.overwritten {
+				<span title="Variable has been overwritten by a workspace variable with higher precedence" class="badge badge-warning badge-sm">overwritten</span>
 			}
-			@components.Strikethrough(t.props.IsOverwritten(v)) {
+			@components.Strikethrough(v.overwritten) {
 				{ v.Key }
 			}
 		</td>
@@ -517,11 +506,13 @@ templ (t table) Row(v *Variable) {
 		</td>
 		<td>{ string(v.Category) }</td>
 		<td class="flex gap-2 text-right">
-			<form action={ t.props.EditPath(v.ID) } method="GET">
-				@components.EditButton()
-			</form>
-			if t.props.CanDeleteVariable() {
-				<form action={ t.props.DeletePath(v.ID) } method="POST">
+			if t.props.ShowEditButton(v) {
+				<form title="Edit variable" action={ t.props.EditPath(v.ID) } method="GET">
+					@components.EditButton()
+				</form>
+			}
+			if t.props.ShowDeleteButton(v) && t.canDeleteVariable {
+				<form title="Delete variable" action={ t.props.DeletePath(v.ID) } method="POST">
 					@components.DeleteButton()
 				</form>
 			}
