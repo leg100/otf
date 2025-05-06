@@ -4,5 +4,5 @@ import "github.com/leg100/otf/internal/sql"
 
 type fakeListener struct{}
 
-func (f *fakeListener) RegisterFunc(table string, ff sql.ForwardFunc) {
+func (f *fakeListener) RegisterFunc(table string, ff sql.TableFunc) {
 }

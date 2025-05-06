@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -45,22 +45,21 @@ type Broker[T any] struct {
 	table  string
 }
 
-// GetterFunc retrieves the type T using its unique id.
-type GetterFunc[T any] func(ctx context.Context, id resource.TfeID, action sql.Action) (T, error)
+// GetterFunc converts a database record into a go type
+type GetterFunc[T any] func(record json.RawMessage) (T, error)
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {
-	RegisterFunc(table string, ff sql.ForwardFunc)
+	RegisterTable(table string, ff sql.TableFunc)
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table string, getter GetterFunc[T]) *Broker[T] {
+func NewBroker[T any](logger logr.Logger, listener databaseListener, table string) *Broker[T] {
 	b := &Broker[T]{
 		Logger: logger.WithValues("component", "broker"),
 		subs:   make(map[chan Event[T]]struct{}),
-		getter: getter,
 		table:  table,
 	}
-	listener.RegisterFunc(table, b.forward)
+	listener.RegisterTable(table, b.forward)
 	return b
 }
 
@@ -97,20 +96,12 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 
 // forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
-func (b *Broker[T]) forward(ctx context.Context, rowID string, action sql.Action) {
-	id, err := resource.ParseTfeID(rowID)
-	if err != nil {
-		b.Error(err, "parsing ID for database event", "table", b.table, "id", rowID, "action", action)
-		return
-	}
-
+func (b *Broker[T]) forward(action sql.Action, record json.RawMessage) {
 	var event Event[T]
-	payload, err := b.getter(ctx, id, action)
-	if err != nil {
-		b.Error(err, "retrieving type for database event", "table", b.table, "id", rowID, "action", action)
+	if err := json.Unmarshal(record, event.Payload); err != nil {
+		b.Error(err, "retrieving type for database event", "table", b.table, "action", action)
 		return
 	}
-	event.Payload = payload
 	switch action {
 	case sql.InsertAction:
 		event.Type = CreatedEvent
