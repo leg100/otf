@@ -344,49 +344,6 @@ func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func())
 	return s.broker.Subscribe(ctx)
 }
 
-// watchWithOptions provides authenticated access to a stream of run events,
-// with the option to filter events.
-func (s *Service) watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error) {
-	var err error
-	if opts.WorkspaceID != nil {
-		// caller must have workspace-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, opts.WorkspaceID)
-	} else if opts.Organization != nil {
-		// caller must have organization-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, opts.Organization)
-	} else {
-		// caller must have site-level read permissions
-		_, err = s.Authorize(ctx, authz.WatchAction, resource.SiteID)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	sub, _ := s.broker.Subscribe(ctx)
-	// relay is returned to the caller to which filtered run events are sent
-	relay := make(chan pubsub.Event[*Run])
-	go func() {
-		// relay events
-		for event := range sub {
-			// apply workspace filter
-			if opts.WorkspaceID != nil {
-				if event.Payload.WorkspaceID != *opts.WorkspaceID {
-					continue
-				}
-			}
-			// apply organization filter
-			if opts.Organization != nil {
-				if event.Payload.Organization != *opts.Organization {
-					continue
-				}
-			}
-			relay <- event
-		}
-		close(relay)
-	}()
-	return relay, nil
-}
-
 // Apply enqueues an apply for the run.
 func (s *Service) Apply(ctx context.Context, runID resource.TfeID) error {
 	subject, err := s.Authorize(ctx, authz.ApplyRunAction, runID)

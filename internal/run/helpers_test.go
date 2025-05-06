@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -23,14 +22,6 @@ func newTestRun(t *testing.T, ctx context.Context, opts CreateOptions) *Run {
 	run, err := factory.NewRun(ctx, ws.ID, opts)
 	require.NoError(t, err)
 	return run
-}
-
-type fakeSubService struct {
-	ch chan pubsub.Event[*Run]
-}
-
-func (f *fakeSubService) Subscribe(context.Context) (<-chan pubsub.Event[*Run], func()) {
-	return f.ch, nil
 }
 
 type (

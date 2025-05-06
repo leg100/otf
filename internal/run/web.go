@@ -1,7 +1,6 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"net/http"
 
@@ -39,8 +38,6 @@ type (
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
 		Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func())
-
-		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
 	}
 
 	webLogsClient interface {
@@ -81,7 +78,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
@@ -339,82 +335,6 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
-}
-
-func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID resource.TfeID  `schema:"workspace_id,required"`
-		Latest      bool            `schema:"latest"`
-		RunID       *resource.TfeID `schema:"run_id"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	events, err := h.runs.watchWithOptions(r.Context(), WatchOptions{
-		WorkspaceID: &params.WorkspaceID,
-	})
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
-	rc := http.NewResponseController(w)
-	rc.Flush()
-
-	for {
-		select {
-		case <-r.Context().Done():
-			return
-		case event, ok := <-events:
-			if !ok {
-				return
-			}
-			// Handle query parameters which filter run events:
-			// - 'latest' specifies that the client is only interest in events
-			// relating to the latest run for the workspace
-			// - 'run-id' (mutually exclusive with 'latest') - specifies
-			// that the client is only interested in events relating to that
-			// run.
-			// - otherwise, if neither of those parameters are specified
-			// then events for all runs are relayed.
-			if params.Latest && !event.Payload.Latest {
-				// skip: run is not the latest run for a workspace
-				continue
-			} else if params.RunID != nil && *params.RunID != event.Payload.ID {
-				// skip: event is for a run which does not match the
-				// filter
-				continue
-			}
-
-			//
-			// render HTML snippet and send as payload in SSE events
-			//
-			itemHTML := new(bytes.Buffer)
-			if err := eventView(event.Payload).Render(r.Context(), itemHTML); err != nil {
-				h.logger.Error(err, "rendering template for run item")
-				continue
-			}
-			if event.Type == pubsub.CreatedEvent {
-				// newly created run is sent with "created" event type
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
-			} else {
-				// updated run events target existing run items in page
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+event.Payload.ID.String()), false)
-			}
-			if params.Latest {
-				// also write a 'latest-run' event if the caller has requested
-				// the latest run for the workspace
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "latest-run", false)
-			}
-			rc.Flush()
-		}
-	}
 }
 
 func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
