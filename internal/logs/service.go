@@ -76,10 +76,10 @@ func (s *Service) AddHandlers(r *mux.Router) {
 func (s *Service) GetLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
 	logs, err := s.db.getLogs(ctx, runID, phase)
 	if err != nil {
-		s.Error(err, "reading all logs", "run_id", runID, "phase", phase)
+		s.Error(err, "retrieving logs", "run_id", runID, "phase", phase)
 		return nil, err
 	}
-	s.V(9).Info("read all logs", "run_id", runID, "phase", phase)
+	s.V(9).Info("retreived logs", "run_id", runID, "phase", phase)
 	return logs, nil
 }
 
@@ -111,10 +111,10 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		return err
 	}
 	if err := s.db.put(ctx, chunk); err != nil {
-		s.Error(err, "writing logs", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+		s.Error(err, "writing log chunk", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
-	s.V(3).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+	s.V(3).Info("written log chunk", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 
 	return nil
 }
