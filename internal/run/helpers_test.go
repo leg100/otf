@@ -93,6 +93,6 @@ func (f *fakeWebServices) Apply(ctx context.Context, runID resource.TfeID) error
 	return nil
 }
 
-func (f *fakeWebLogsService) GetAllLogs(context.Context, resource.TfeID, internal.PhaseType) ([]byte, error) {
+func (f *fakeWebLogsService) GetLogs(context.Context, resource.TfeID, internal.PhaseType) ([]byte, error) {
 	return nil, nil
 }

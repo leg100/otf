@@ -44,7 +44,7 @@ type (
 	}
 
 	webLogsClient interface {
-		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		GetLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
 	}
 
 	webWorkspaceClient interface {
@@ -195,12 +195,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.logs.GetLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.logs.GetLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return

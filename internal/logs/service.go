@@ -15,20 +15,13 @@ import (
 type (
 	Service struct {
 		logr.Logger
-		authz.Interface
+		*authz.Authorizer
 
 		api    *api
 		web    *webHandlers
 		broker pubsub.SubscriptionService[Chunk]
 		db     *pgdb
-
-		chunkproxy
-	}
-
-	chunkproxy interface {
-		Start(ctx context.Context) error
-		get(ctx context.Context, opts GetChunkOptions) (Chunk, error)
-		put(ctx context.Context, chunk Chunk) error
+		tailer *tailer
 	}
 
 	Options struct {
@@ -45,9 +38,9 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger:    opts.Logger,
-		Interface: opts.Authorizer,
-		db:        db,
+		Logger:     opts.Logger,
+		Authorizer: opts.Authorizer,
+		db:         db,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,
@@ -68,11 +61,9 @@ func NewService(opts Options) *Service {
 			return db.getChunk(ctx, chunkID)
 		},
 	)
-	svc.chunkproxy = &proxy{
-		Logger: opts.Logger,
-		cache:  opts.Cache,
-		db:     db,
+	svc.tailer = &tailer{
 		broker: svc.broker,
+		client: &svc,
 	}
 	return &svc
 }
@@ -82,12 +73,8 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], func()) {
-	return s.broker.Subscribe(ctx)
-}
-
-func (s *Service) GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
-	logs, err := s.db.getAllLogs(ctx, runID, phase)
+func (s *Service) GetLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
+	logs, err := s.db.getLogs(ctx, runID, phase)
 	if err != nil {
 		s.Error(err, "reading all logs", "run_id", runID, "phase", phase)
 		return nil, err
@@ -100,13 +87,15 @@ func (s *Service) GetAllLogs(ctx context.Context, runID resource.TfeID, phase in
 //
 // NOTE: unauthenticated - access granted only via signed URL
 func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
-	logs, err := s.chunkproxy.get(ctx, opts)
+	logs, err := s.db.getLogs(ctx, opts.RunID, opts.Phase)
 	if err != nil {
-		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
+		s.Error(err, "retrieving log chunk", "id", opts.RunID, "offset", opts.Offset)
 		return Chunk{}, err
 	}
-	s.V(9).Info("read logs", "id", opts.RunID, "offset", opts.Offset)
-	return logs, nil
+	s.V(9).Info("retrieved log chunk", "id", opts.RunID, "offset", opts.Offset)
+	chunk := Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: logs}
+	// Cut chunk down to requested size.
+	return chunk.Cut(opts), nil
 }
 
 // PutChunk writes a chunk of logs for a phase
@@ -121,7 +110,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		s.Error(err, "creating log chunk", "run_id", opts, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
-	if err := s.put(ctx, chunk); err != nil {
+	if err := s.db.put(ctx, chunk); err != nil {
 		s.Error(err, "writing logs", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
@@ -137,53 +126,15 @@ func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk,
 	if err != nil {
 		return nil, err
 	}
-
-	// Subscribe first and only then retrieve from DB, guaranteeing that we
-	// won't miss any updates
-	sub, _ := s.broker.Subscribe(ctx)
-
-	chunk, err := s.chunkproxy.get(ctx, opts)
+	tail, err := s.tailer.Tail(ctx, opts)
 	if err != nil {
 		s.Error(err, "tailing logs", "id", opts.RunID, "offset", opts.Offset, "subject", subject)
 		return nil, err
 	}
-	opts.Offset += len(chunk.Data)
-
-	// relay is the chan returned to the caller on which chunks are relayed to.
-	relay := make(chan Chunk)
-	go func() {
-		// send existing chunk
-		if len(chunk.Data) > 0 {
-			relay <- chunk
-		}
-
-		// relay chunks from subscription
-		for ev := range sub {
-			chunk := ev.Payload
-			if opts.RunID != chunk.RunID || opts.Phase != chunk.Phase {
-				// skip logs for different run/phase
-				continue
-			}
-			if chunk.Offset < opts.Offset {
-				// chunk has overlapping offset
-				if chunk.Offset+len(chunk.Data) <= opts.Offset {
-					// skip entirely overlapping chunk
-					continue
-				}
-				// remove overlapping portion of chunk
-				chunk = chunk.Cut(GetChunkOptions{Offset: opts.Offset})
-			}
-			if len(chunk.Data) == 0 {
-				// don't send empty chunks
-				continue
-			}
-			relay <- chunk
-			if chunk.IsEnd() {
-				break
-			}
-		}
-		close(relay)
-	}()
 	s.V(9).Info("tailing logs", "id", opts.RunID, "phase", opts.Phase, "subject", subject)
-	return relay, nil
+	return tail, nil
+}
+
+func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], func()) {
+	return s.broker.Subscribe(ctx)
 }

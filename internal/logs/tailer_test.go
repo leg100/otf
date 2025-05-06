@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/testutils"
@@ -17,11 +16,9 @@ func TestTail(t *testing.T) {
 
 	t.Run("receive chunk event", func(t *testing.T) {
 		sub := make(chan pubsub.Event[Chunk])
-		app := &Service{
-			chunkproxy: &fakeTailProxy{},
-			broker:     &fakeSubService{stream: sub},
-			Logger:     logr.Discard(),
-			Interface:  &fakeAuthorizer{},
+		app := &tailer{
+			client: &fakeTailerClient{},
+			broker: &fakeSubService{stream: sub},
 		}
 
 		stream, err := app.Tail(ctx, GetChunkOptions{
@@ -46,15 +43,15 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		svc := &Service{
-			chunkproxy: &fakeTailProxy{chunk: want},
+		tailer := &tailer{
 			broker: &fakeSubService{
 				stream: make(chan pubsub.Event[Chunk]),
 			},
-			Logger:    logr.Discard(),
-			Interface: &fakeAuthorizer{},
+			client: &fakeTailerClient{
+				chunk: want,
+			},
 		}
-		stream, err := svc.Tail(ctx, GetChunkOptions{
+		stream, err := tailer.Tail(ctx, GetChunkOptions{
 			RunID: testutils.ParseID(t, "run-123"),
 			Phase: internal.PlanPhase,
 		})
@@ -70,11 +67,9 @@ func TestTail(t *testing.T) {
 			Data:  []byte("\x02hello"),
 		}
 		sub := make(chan pubsub.Event[Chunk])
-		svc := &Service{
-			chunkproxy: &fakeTailProxy{chunk: want},
-			broker:     &fakeSubService{stream: sub},
-			Logger:     logr.Discard(),
-			Interface:  &fakeAuthorizer{},
+		svc := &tailer{
+			broker: &fakeSubService{stream: sub},
+			client: &fakeTailerClient{chunk: want},
 		}
 
 		stream, err := svc.Tail(ctx, GetChunkOptions{
@@ -113,11 +108,9 @@ func TestTail(t *testing.T) {
 			Data:  []byte("\x02hello"),
 		}
 		sub := make(chan pubsub.Event[Chunk])
-		svc := &Service{
-			chunkproxy: &fakeTailProxy{chunk: want},
-			broker:     &fakeSubService{stream: sub},
-			Logger:     logr.Discard(),
-			Interface:  &fakeAuthorizer{},
+		svc := &tailer{
+			broker: &fakeSubService{stream: sub},
+			client: &fakeTailerClient{chunk: want},
 		}
 
 		stream, err := svc.Tail(ctx, GetChunkOptions{
@@ -152,11 +145,9 @@ func TestTail(t *testing.T) {
 
 	t.Run("ignore chunk for other run", func(t *testing.T) {
 		sub := make(chan pubsub.Event[Chunk])
-		svc := &Service{
-			chunkproxy: &fakeTailProxy{},
-			broker:     &fakeSubService{stream: sub},
-			Logger:     logr.Discard(),
-			Interface:  &fakeAuthorizer{},
+		svc := &tailer{
+			broker: &fakeSubService{stream: sub},
+			client: &fakeTailerClient{},
 		}
 
 		stream, err := svc.Tail(ctx, GetChunkOptions{
@@ -184,4 +175,12 @@ func TestTail(t *testing.T) {
 		// chunk for other run is skipped but chunk for this run is received
 		assert.Equal(t, want, <-stream)
 	})
+}
+
+type fakeTailerClient struct {
+	chunk Chunk
+}
+
+func (f *fakeTailerClient) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+	return f.chunk, nil
 }
