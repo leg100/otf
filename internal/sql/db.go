@@ -2,6 +2,8 @@ package sql
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -130,6 +132,44 @@ func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.Command
 		return pgconn.CommandTag{}, internal.ErrResourceNotFound
 	}
 	return cmdTag, nil
+}
+
+func (db *DB) Notify(ctx context.Context, table string, obj any, sql string, args ...any) (pgconn.CommandTag, error) {
+	cmd, err := db.Exec(ctx, sql, args...)
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	action, err := execAction(cmd)
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	payload, err := json.Marshal(obj)
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	event := event{
+		Table:  table,
+		Action: action,
+		Record: payload,
+	}
+	marshaledEvent, err := json.Marshal(event)
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	return db.Conn(ctx).Exec(ctx, "NOTIFY events, ", marshaledEvent)
+}
+
+func execAction(tag pgconn.CommandTag) (Action, error) {
+	switch {
+	case tag.Insert():
+		return InsertAction, nil
+	case tag.Update():
+		return UpdateAction, nil
+	case tag.Delete():
+		return DeleteAction, nil
+	default:
+		return "", errors.New("unknown action")
+	}
 }
 
 // Int is a convenience wrapper for executing a query that returns a single
