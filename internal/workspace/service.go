@@ -29,7 +29,7 @@ type (
 		web         *webHandlers
 		tfeapi      *tfe
 		api         *api
-		broker      *pubsub.Broker[*Workspace]
+		broker      *pubsub.Broker[*Event]
 		connections *connections.Service
 
 		beforeCreateHooks []func(context.Context, *Workspace) error
@@ -77,16 +77,10 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	svc.broker = pubsub.NewBroker(
+	svc.broker = pubsub.NewBroker[*Event](
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Workspace, error) {
-			if action == sql.DeleteAction {
-				return &Workspace{ID: id}, nil
-			}
-			return db.get(ctx, id)
-		},
 	)
 	// Fetch workspace when API calls request workspace be included in the
 	// response
@@ -122,7 +116,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
 	return s.broker.Subscribe(ctx)
 }
 

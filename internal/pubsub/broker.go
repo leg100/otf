@@ -35,13 +35,14 @@ func init() {
 // subscription has been terminated by the broker.
 var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 
-// Broker allows clients to subscribe to OTF events.
-type Broker[T any] struct {
+// Broker provides subscriptions to database events: whenever a database row is
+// inserted, updated, or deleted, an event is generated:
+type Broker[Raw, Resource any] struct {
 	logr.Logger
 
-	subs   map[chan Event[T]]struct{} // subscriptions
-	mu     sync.Mutex                 // sync access to map
-	getter GetterFunc[T]
+	subs   map[chan Event[Raw]]struct{} // subscriptions
+	mu     sync.Mutex                   // sync access to map
+	getter GetterFunc[Raw]
 	table  string
 }
 
@@ -53,10 +54,10 @@ type databaseListener interface {
 	RegisterTable(table string, ff sql.TableFunc)
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table string) *Broker[T] {
-	b := &Broker[T]{
+func NewBroker[Raw, Resource any](logger logr.Logger, listener databaseListener, table string) *Broker[Raw, Resource] {
+	b := &Broker[Raw, Resource]{
 		Logger: logger.WithValues("component", "broker"),
-		subs:   make(map[chan Event[T]]struct{}),
+		subs:   make(map[chan Event[Raw]]struct{}),
 		table:  table,
 	}
 	listener.RegisterTable(table, b.forward)
@@ -66,11 +67,11 @@ func NewBroker[T any](logger logr.Logger, listener databaseListener, table strin
 // Subscribe subscribes the caller to a stream of events. The caller can close
 // the subscription by either canceling the context or calling the returned
 // unsubscribe function.
-func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func()) {
+func (b *Broker[Raw, Resource]) Subscribe(ctx context.Context) (<-chan Event[Raw], func()) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	sub := make(chan Event[T], subBufferSize)
+	sub := make(chan Event[Raw], subBufferSize)
 	b.subs[sub] = struct{}{}
 
 	// when the context is canceled remove the subscriber
@@ -82,7 +83,7 @@ func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func()) {
 	return sub, func() { b.unsubscribe(sub) }
 }
 
-func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
+func (b *Broker[Raw, Resource]) unsubscribe(sub chan Event[Raw]) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

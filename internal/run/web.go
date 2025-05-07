@@ -346,12 +346,12 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if websocket.IsWebSocketUpgrade(r) {
-		websocketHandler := components.WebsocketGetHandler[*Run]{
+		websocketHandler := components.WebsocketGetHandler[*Run, *Event]{
 			Logger:    h.logger,
 			Client:    h.runs,
 			Component: eventView,
 		}
-		websocketHandler.Handler(w, r, &params.RunID, func(run *Run) bool {
+		websocketHandler.Handler(w, r, &params.RunID, func(run *Event) bool {
 			return run.ID == params.RunID
 		})
 		return
