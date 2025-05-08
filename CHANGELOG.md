@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.22](https://github.com/leg100/otf/compare/v0.3.21...v0.3.22) (2025-05-06)
+
+
+### Miscellaneous
+
+* check for differences in CI ([c634586](https://github.com/leg100/otf/commit/c63458677a0942b86963c739709bfeb94d55a568))
+* **docs:** remove redundant flag --dev-mode ([ac1d401](https://github.com/leg100/otf/commit/ac1d40159b1a0b5a821d3d12952b1456ba3eea7e))
+* **docs:** tweak a couple of pages ([2904f91](https://github.com/leg100/otf/commit/2904f910571729b4d844201febbec7a39ab21c93))
+* remove unused watch func ([5bc63b2](https://github.com/leg100/otf/commit/5bc63b2f8d3aa152299ebde321ba8c2430af0207))
+* use go tool for templ ([403974f](https://github.com/leg100/otf/commit/403974f5e7cb3d5a44b90b1b104ed76e9693667e))
+
 ## [0.3.21](https://github.com/leg100/otf/compare/v0.3.20...v0.3.21) (2025-05-04)
 
 
