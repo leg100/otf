@@ -134,29 +134,38 @@ func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.Command
 	return cmdTag, nil
 }
 
-func (db *DB) Notify(ctx context.Context, table string, obj any, sql string, args ...any) (pgconn.CommandTag, error) {
-	cmd, err := db.Exec(ctx, sql, args...)
-	if err != nil {
-		return pgconn.CommandTag{}, err
-	}
-	action, err := execAction(cmd)
-	if err != nil {
-		return pgconn.CommandTag{}, err
-	}
+func (db *DB) ExecAndPublishEvent(ctx context.Context, table string, obj any, sql string, args ...any) (pgconn.CommandTag, error) {
 	payload, err := json.Marshal(obj)
 	if err != nil {
 		return pgconn.CommandTag{}, err
 	}
-	event := event{
-		Table:  table,
-		Action: action,
-		Record: payload,
-	}
-	marshaledEvent, err := json.Marshal(event)
-	if err != nil {
-		return pgconn.CommandTag{}, err
-	}
-	return db.Conn(ctx).Exec(ctx, "NOTIFY events, ", marshaledEvent)
+	var cmd pgconn.CommandTag
+	err = db.Tx(ctx, func(ctx context.Context, _ Connection) error {
+		cmd, err = db.Exec(ctx, sql, args...)
+		if err != nil {
+			return err
+		}
+		action, err := execAction(cmd)
+		if err != nil {
+			return err
+		}
+		_, err = db.Conn(ctx).Exec(ctx, `
+	INSERT INTO events (
+		table,
+		action,
+		payload
+	) VALUES (
+		@table,
+		@action,
+		@payload
+	)`, pgx.NamedArgs{
+			"table":   table,
+			"action":  action,
+			"payload": payload,
+		})
+		return err
+	})
+	return cmd, err
 }
 
 func execAction(tag pgconn.CommandTag) (Action, error) {

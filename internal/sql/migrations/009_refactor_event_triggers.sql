@@ -1,42 +1,35 @@
-CREATE OR REPLACE FUNCTION runs_notify_event() RETURNS trigger
+CREATE TABLE event_actions (
+	action TEXT NOT NULL,
+);
+
+INSERT INTO event_actions (action) VALUES (
+	'INSERT',
+	'UPDATE',
+	'DELETE'
+);
+
+CREATE TABLE events (
+	id SERIAL PRIMARY KEY,
+	action TEXT NOT NULL,
+	table TEXT NOT NULL,
+	payload BYTEA NOT NULL,
+	FOREIGN KEY (action) REFERENCES event_actions(action)
+);
+
+CREATE FUNCTION events_notify_event() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-DECLARE
-    record RECORD;
-    notification JSON;
+-- DECLARE
 BEGIN
-    IF (TG_OP = 'DELETE') THEN
-        record = OLD;
-    ELSE
-        record = NEW;
-    END IF;
-    notification = json_build_object(
-                      'table',TG_TABLE_NAME,
-                      'action', TG_OP,
-                      'record', to_json(record));
-    PERFORM pg_notify('events', notification::text);
+    PERFORM pg_notify('events', ''::text);
     RETURN NULL;
 END;
 $$;
 
+CREATE TRIGGER notify_event AFTER INSERT ON events FOR EACH ROW EXECUTE FUNCTION events_notify_event();
+
 ---- create above / drop below ----
-CREATE OR REPLACE FUNCTION runs_notify_event() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    record RECORD;
-    notification JSON;
-BEGIN
-    IF (TG_OP = 'DELETE') THEN
-        record = OLD;
-    ELSE
-        record = NEW;
-    END IF;
-    notification = json_build_object(
-                      'table',TG_TABLE_NAME,
-                      'action', TG_OP,
-                      'id', record.run_id);
-    PERFORM pg_notify('events', notification::text);
-    RETURN NULL;
-END;
-$$;
+DROP TRIGGER notify_event ON events;
+DROP FUNCTION events_notify_event;
+DROP TABLE events;
+DROP TABLE event_actions;

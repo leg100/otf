@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -33,31 +31,20 @@ type (
 	Listener struct {
 		logr.Logger
 
-		channel     string        // postgres notification channel name
-		pool        pool          // pool from which to acquire a dedicated connection to postgres
-		islistening chan struct{} // semaphore that's closed once broker is listening
-
+		db         *DB                  // pool from which to acquire a dedicated connection to postgres
 		mu         sync.Mutex           // sync access to maps
 		forwarders map[string]TableFunc // maps table name to getter
 	}
 
 	// TableFunc is capable of converting a database row into a go type
 	TableFunc func(action Action, record json.RawMessage)
-
-	// database connection pool
-	pool interface {
-		Acquire(ctx context.Context) (*pgxpool.Conn, error)
-		Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	}
 )
 
-func NewListener(logger logr.Logger, db pool) *Listener {
+func NewListener(logger logr.Logger, db *DB) *Listener {
 	return &Listener{
-		Logger:      logger.WithValues("component", "listener"),
-		pool:        db,
-		islistening: make(chan struct{}),
-		channel:     defaultChannel,
-		forwarders:  make(map[string]TableFunc),
+		Logger:     logger.WithValues("component", "listener"),
+		db:         db,
+		forwarders: make(map[string]TableFunc),
 	}
 }
 
@@ -69,63 +56,38 @@ func (b *Listener) RegisterTable(table string, getter TableFunc) {
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
-// local pubsub broker. The listening channel is closed once the broker has
+// local pubsub broker. The islistening channel is closed once the broker has
 // started listening; from this point onwards published messages will be
 // forwarded.
 func (b *Listener) Start(ctx context.Context) error {
-	conn, err := b.pool.Acquire(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to acquire postgres connection: %w", err)
-	}
-	defer conn.Release()
-
-	if _, err := conn.Exec(ctx, "listen "+b.channel); err != nil {
-		return err
-	}
-	b.V(2).Info("listening for events")
-	close(b.islistening) // close semaphore to indicate broker is now listening
-
+	// Poll for new events every second.
+	ticker := time.NewTicker(time.Second)
 	for {
-		notification, err := conn.Conn().WaitForNotification(ctx)
+		// retrieve any rows from outbox not already retrieved.
+		rows := b.db.Query(ctx, "DELETE FROM events RETURNING *")
+		events, err := pgx.CollectRows[event](rows, pgx.RowToStructByName)
 		if err != nil {
-			select {
-			case <-ctx.Done():
-				// parent has decided to shutdown so exit without error
-				return nil
-			default:
-				b.Error(err, "waiting for postgres notification")
-				return err
+			return err
+		}
+		for _, event := range events {
+			forwarder, ok := b.forwarders[string(event.Table)]
+			if !ok {
+				b.Error(nil, "no getter found for table: %s", event.Table)
+				continue
 			}
+			forwarder(event.Action, event.Payload)
 		}
-		var event event
-		if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
-			b.Error(err, "unmarshaling postgres notification")
-			continue
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return nil
 		}
-		forwarder, ok := b.forwarders[string(event.Table)]
-		if !ok {
-			b.Error(nil, "no getter found for table: %s", event.Table)
-			continue
-		}
-		forwarder(event.Action, event.Record)
 	}
-}
-
-func (b *Listener) Started() <-chan struct{} {
-	return b.islistening
 }
 
 // event is a postgres notification triggered by a database change.
 type event struct {
-	Table  string          `json:"table"`  // pg table associated with change
-	Action Action          `json:"action"` // INSERT/UPDATE/DELETE
-	Record json.RawMessage `json:"record"` // the changed row
-}
-
-func (v *event) LogValue() slog.Value {
-	attrs := []slog.Attr{
-		slog.String("action", string(v.Action)),
-		slog.String("table", v.Table),
-	}
-	return slog.GroupValue(attrs...)
+	Table   string          `json:"table"`   // pg table associated with change
+	Action  Action          `json:"action"`  // INSERT/UPDATE/DELETE
+	Payload json.RawMessage `json:"payload"` // the changed resource
 }
