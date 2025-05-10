@@ -29,7 +29,7 @@ type (
 		web         *webHandlers
 		tfeapi      *tfe
 		api         *api
-		broker      *pubsub.Broker[*Event]
+		broker      *pubsub.Broker[*Workspace]
 		connections *connections.Service
 
 		beforeCreateHooks []func(context.Context, *Workspace) error
@@ -77,7 +77,7 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	svc.broker = pubsub.NewBroker[*Event](
+	svc.broker = pubsub.NewBroker[*Workspace](
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
@@ -116,7 +116,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
