@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -556,14 +555,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		}
 	}
 
-	// Wait for database events listener start listening; otherwise some tests may fail
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timed out waiting for database events listener to start")
-	case <-d.listener.Started():
-	}
 	// Wait for runner to register; otherwise some tests may fail
 	if !d.DisableRunner {
 		select {

@@ -78,38 +78,20 @@ func NewService(opts ServiceOptions) *Service {
 		Responder: opts.Responder,
 	}
 	svc.web = newWebHandlers(svc, opts)
-	svc.poolBroker = pubsub.NewBroker(
+	svc.poolBroker = pubsub.NewBroker[*Pool](
 		opts.Logger,
 		opts.Listener,
 		"agent_pools",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Pool, error) {
-			if action == sql.DeleteAction {
-				return &Pool{ID: id}, nil
-			}
-			return svc.db.getPool(ctx, id)
-		},
 	)
-	svc.runnerBroker = pubsub.NewBroker(
+	svc.runnerBroker = pubsub.NewBroker[*RunnerMeta](
 		opts.Logger,
 		opts.Listener,
 		"runners",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*RunnerMeta, error) {
-			if action == sql.DeleteAction {
-				return &RunnerMeta{ID: id}, nil
-			}
-			return svc.db.get(ctx, id)
-		},
 	)
-	svc.jobBroker = pubsub.NewBroker(
+	svc.jobBroker = pubsub.NewBroker[*Job](
 		opts.Logger,
 		opts.Listener,
 		"jobs",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Job, error) {
-			if action == sql.DeleteAction {
-				return &Job{ID: id}, nil
-			}
-			return svc.db.getJob(ctx, id)
-		},
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID

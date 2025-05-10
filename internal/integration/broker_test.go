@@ -14,20 +14,18 @@ func TestBroker(t *testing.T) {
 
 	// simulate a cluster of two otfd nodes sharing a database
 	db := withDatabase(sql.NewTestDB(t))
-	// skip creating orgs which would otherwise send creation events
-	skipOrg := skipDefaultOrganization()
-	local, _, ctx := setup(t, db, skipOrg)
-	remote, _, _ := setup(t, db, skipOrg)
+	local, org, ctx := setup(t, db)
+	remote, _, _ := setup(t, db)
 
 	// setup subscriptions
-	localSub, localUnsub := local.Organizations.WatchOrganizations(ctx)
+	localSub, localUnsub := local.Workspaces.Watch(ctx)
 	defer localUnsub()
-	remoteSub, remoteUnsub := remote.Organizations.WatchOrganizations(ctx)
+	remoteSub, remoteUnsub := remote.Workspaces.Watch(ctx)
 	defer remoteUnsub()
 
-	// create an org which should trigger an event
-	org := local.createOrganization(t, ctx)
-	want := pubsub.NewCreatedEvent(org)
+	// create a workspace which should trigger an event
+	ws := local.createWorkspace(t, ctx, org)
+	want := pubsub.NewCreatedEvent(ws)
 
 	// receive event on local broker
 	assert.Equal(t, want, <-localSub)
