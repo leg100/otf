@@ -26,6 +26,9 @@
   label {
     @apply cursor-pointer;
   }
+  #content-header-title a {
+    @apply text-blue-600
+  }
   .field {
     @apply flex flex-col gap-0.5;
   }

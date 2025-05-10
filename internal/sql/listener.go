@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	defaultChannel = "events"
-
 	InsertAction = "INSERT"
 	UpdateAction = "UPDATE"
 	DeleteAction = "DELETE"
@@ -63,7 +61,6 @@ func (b *Listener) Start(ctx context.Context) error {
 	// Poll for new events every second.
 	ticker := time.NewTicker(time.Second)
 	for {
-		// retrieve any rows from outbox not already retrieved.
 		rows := b.db.Query(ctx, "DELETE FROM events RETURNING *")
 		events, err := pgx.CollectRows[event](rows, pgx.RowToStructByName)
 		if err != nil {
@@ -85,7 +82,7 @@ func (b *Listener) Start(ctx context.Context) error {
 	}
 }
 
-// event is a postgres notification triggered by a database change.
+// event is the insertion/update/deletion of a database row.
 type event struct {
 	Table   string          `json:"table"`   // pg table associated with change
 	Action  Action          `json:"action"`  // INSERT/UPDATE/DELETE

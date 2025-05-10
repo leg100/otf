@@ -17,23 +17,18 @@ import (
 
 // WebsocketGetHandler handles dynamically retrieving and updating a resource
 // via a websocket.
-type WebsocketGetHandler[Resource any, ResourceEvent Identifiable] struct {
+type WebsocketGetHandler[Resource any] struct {
 	Logger    logr.Logger
-	Client    websocketGetHandlerClient[Resource, ResourceEvent]
+	Client    websocketGetHandlerClient[Resource]
 	Component func(Resource) templ.Component
 }
 
-type Identifiable interface {
-	GetID() resource.TfeID
-}
-
-type websocketGetHandlerClient[Resource any, ResourceEvent Identifiable] interface {
-	Watch(ctx context.Context) (<-chan pubsub.Event[ResourceEvent], func())
+type websocketGetHandlerClient[Resource any] interface {
+	Watch(ctx context.Context) (<-chan pubsub.Event[Resource], func())
 	Get(ctx context.Context, id resource.TfeID) (Resource, error)
-	LookupEvent(ctx context.Context, event ResourceEvent) (Resource, error)
 }
 
-func (h *WebsocketGetHandler[Resource, ResourceEvent]) Handler(w http.ResponseWriter, r *http.Request, initialID *resource.TfeID, condition func(ResourceEvent) bool) {
+func (h *WebsocketGetHandler[Resource]) Handler(w http.ResponseWriter, r *http.Request, initialID *resource.TfeID, condition func(resource Resource) bool) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		h.Logger.Error(err, "upgrading websocket connection")

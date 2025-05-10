@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -35,29 +36,27 @@ func init() {
 // subscription has been terminated by the broker.
 var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 
-// Broker provides subscriptions to database events: whenever a database row is
-// inserted, updated, or deleted, an event is generated:
-type Broker[Raw, Resource any] struct {
+// Broker allows clients to subscribe to OTF events.
+type Broker[T any] struct {
 	logr.Logger
 
-	subs   map[chan Event[Raw]]struct{} // subscriptions
-	mu     sync.Mutex                   // sync access to map
-	getter GetterFunc[Raw]
-	table  string
+	subs  map[chan Event[T]]struct{} // subscriptions
+	mu    sync.Mutex                 // sync access to map
+	table string
 }
 
-// GetterFunc converts a database record into a go type
-type GetterFunc[T any] func(record json.RawMessage) (T, error)
+// GetterFunc retrieves the type T using its unique id.
+type GetterFunc[T any] func(ctx context.Context, id resource.TfeID, action sql.Action) (T, error)
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {
 	RegisterTable(table string, ff sql.TableFunc)
 }
 
-func NewBroker[Raw, Resource any](logger logr.Logger, listener databaseListener, table string) *Broker[Raw, Resource] {
-	b := &Broker[Raw, Resource]{
+func NewBroker[T any](logger logr.Logger, listener databaseListener, table string) *Broker[T] {
+	b := &Broker[T]{
 		Logger: logger.WithValues("component", "broker"),
-		subs:   make(map[chan Event[Raw]]struct{}),
+		subs:   make(map[chan Event[T]]struct{}),
 		table:  table,
 	}
 	listener.RegisterTable(table, b.forward)
@@ -67,11 +66,11 @@ func NewBroker[Raw, Resource any](logger logr.Logger, listener databaseListener,
 // Subscribe subscribes the caller to a stream of events. The caller can close
 // the subscription by either canceling the context or calling the returned
 // unsubscribe function.
-func (b *Broker[Raw, Resource]) Subscribe(ctx context.Context) (<-chan Event[Raw], func()) {
+func (b *Broker[T]) Subscribe(ctx context.Context) (<-chan Event[T], func()) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	sub := make(chan Event[Raw], subBufferSize)
+	sub := make(chan Event[T], subBufferSize)
 	b.subs[sub] = struct{}{}
 
 	// when the context is canceled remove the subscriber
@@ -83,7 +82,7 @@ func (b *Broker[Raw, Resource]) Subscribe(ctx context.Context) (<-chan Event[Raw
 	return sub, func() { b.unsubscribe(sub) }
 }
 
-func (b *Broker[Raw, Resource]) unsubscribe(sub chan Event[Raw]) {
+func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -97,10 +96,10 @@ func (b *Broker[Raw, Resource]) unsubscribe(sub chan Event[Raw]) {
 
 // forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
-func (b *Broker[T]) forward(action sql.Action, record json.RawMessage) {
+func (b *Broker[T]) forward(action sql.Action, payload json.RawMessage) {
 	var event Event[T]
-	if err := json.Unmarshal(record, event.Payload); err != nil {
-		b.Error(err, "retrieving type for database event", "table", b.table, "action", action)
+	if err := json.Unmarshal(payload, &event.Payload); err != nil {
+		b.Error(err, "unmarshaling event", "table", b.table, "action", action)
 		return
 	}
 	switch action {

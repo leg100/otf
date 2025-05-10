@@ -46,7 +46,7 @@ type (
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
 		afterEnqueueApplyHooks []func(context.Context, *Run) error
-		broker                 pubsub.SubscriptionService[*Event]
+		broker                 pubsub.SubscriptionService[*Run]
 
 		*factory
 	}
@@ -109,7 +109,7 @@ func NewService(opts Options) *Service {
 		vcs:        opts.VCSProviderService,
 		runs:       &svc,
 	}
-	svc.broker = pubsub.NewBroker[*Event](
+	svc.broker = pubsub.NewBroker[*Run](
 		opts.Logger,
 		opts.Listener,
 		"runs",
