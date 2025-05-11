@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"sync"
 	"time"
 
@@ -46,11 +47,11 @@ func NewListener(logger logr.Logger, db *DB) *Listener {
 	}
 }
 
-func (b *Listener) RegisterTable(table string, getter TableFunc) {
+func (b *Listener) RegisterType(typ reflect.Type, getter TableFunc) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.forwarders[table] = getter
+	b.forwarders[typ.String()] = getter
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
@@ -67,9 +68,9 @@ func (b *Listener) Start(ctx context.Context) error {
 			return err
 		}
 		for _, event := range events {
-			forwarder, ok := b.forwarders[string(event.Table)]
+			forwarder, ok := b.forwarders[event.Type]
 			if !ok {
-				b.Error(nil, "no getter found for table: %s", event.Table)
+				b.Error(nil, "no getter found for table: %s", event.Type)
 				continue
 			}
 			forwarder(event.Action, event.Payload)
@@ -84,7 +85,7 @@ func (b *Listener) Start(ctx context.Context) error {
 
 // event is the insertion/update/deletion of a database row.
 type event struct {
-	Table   string          `json:"table"`   // pg table associated with change
+	Type    string          `json:"type"`    // pg table associated with change
 	Action  Action          `json:"action"`  // INSERT/UPDATE/DELETE
 	Payload json.RawMessage `json:"payload"` // the changed resource
 }

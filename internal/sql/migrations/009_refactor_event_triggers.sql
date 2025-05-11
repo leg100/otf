@@ -11,7 +11,7 @@ INSERT INTO event_actions (action) VALUES
 CREATE TABLE events (
 	id SERIAL PRIMARY KEY,
 	action TEXT NOT NULL,
-	_table TEXT NOT NULL,
+	type TEXT NOT NULL,
 	payload BYTEA NOT NULL,
 	FOREIGN KEY (action) REFERENCES event_actions(action)
 );

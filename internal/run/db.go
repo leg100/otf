@@ -27,7 +27,7 @@ type pgdb struct {
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
-		_, err := db.Exec(ctx, `
+		_, err := db.ExecAndPublishEvent(ctx, run, `
 INSERT INTO runs (
     run_id,
     created_at,
@@ -88,7 +88,7 @@ INSERT INTO runs (
 			run.AllowEmptyApply,
 		)
 		for _, v := range run.Variables {
-			_, err := db.Exec(ctx, `INSERT INTO run_variables ( run_id, key, value) VALUES ( $1, $2, $3)`,
+			_, err := db.Exec(ctx, `INSERT INTO run_variables (run_id, key, value) VALUES ( $1, $2, $3)`,
 				run.ID,
 				v.Key,
 				v.Value,

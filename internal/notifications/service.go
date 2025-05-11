@@ -46,7 +46,6 @@ func NewService(opts Options) *Service {
 	svc.broker = pubsub.NewBroker[*Config](
 		opts.Logger,
 		opts.Listener,
-		"notification_configurations",
 	)
 	return &svc
 }

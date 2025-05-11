@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -40,26 +40,21 @@ var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 type Broker[T any] struct {
 	logr.Logger
 
-	subs  map[chan Event[T]]struct{} // subscriptions
-	mu    sync.Mutex                 // sync access to map
-	table string
+	subs map[chan Event[T]]struct{} // subscriptions
+	mu   sync.Mutex                 // sync access to map
 }
-
-// GetterFunc retrieves the type T using its unique id.
-type GetterFunc[T any] func(ctx context.Context, id resource.TfeID, action sql.Action) (T, error)
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {
-	RegisterTable(table string, ff sql.TableFunc)
+	RegisterType(typ reflect.Type, ff sql.TableFunc)
 }
 
-func NewBroker[T any](logger logr.Logger, listener databaseListener, table string) *Broker[T] {
+func NewBroker[T any](logger logr.Logger, listener databaseListener) *Broker[T] {
 	b := &Broker[T]{
 		Logger: logger.WithValues("component", "broker"),
 		subs:   make(map[chan Event[T]]struct{}),
-		table:  table,
 	}
-	listener.RegisterTable(table, b.forward)
+	listener.RegisterType(reflect.TypeOf(*new(T)), b.forward)
 	return b
 }
 
@@ -99,7 +94,7 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 func (b *Broker[T]) forward(action sql.Action, payload json.RawMessage) {
 	var event Event[T]
 	if err := json.Unmarshal(payload, &event.Payload); err != nil {
-		b.Error(err, "unmarshaling event", "table", b.table, "action", action)
+		b.Error(err, "unmarshaling event", "kind", *new(T), "action", action)
 		return
 	}
 	switch action {

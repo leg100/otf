@@ -80,7 +80,6 @@ func NewService(opts Options) *Service {
 	svc.broker = pubsub.NewBroker[*Workspace](
 		opts.Logger,
 		opts.Listener,
-		"workspaces",
 	)
 	// Fetch workspace when API calls request workspace be included in the
 	// response

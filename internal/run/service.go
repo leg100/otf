@@ -112,7 +112,6 @@ func NewService(opts Options) *Service {
 	svc.broker = pubsub.NewBroker[*Run](
 		opts.Logger,
 		opts.Listener,
-		"runs",
 	)
 
 	// Fetch related resources when API requests their inclusion

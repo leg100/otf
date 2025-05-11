@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -134,7 +135,18 @@ func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.Command
 	return cmdTag, nil
 }
 
-func (db *DB) ExecAndPublishEvent(ctx context.Context, table string, obj any, sql string, args ...any) (pgconn.CommandTag, error) {
+func (db *DB) ExecAndPublishEvent(ctx context.Context, obj any, sql string, args ...any) (pgconn.CommandTag, error) {
+	var action string
+	switch {
+	case strings.HasPrefix(sql, InsertAction):
+		action = InsertAction
+	case strings.HasPrefix(sql, UpdateAction):
+		action = UpdateAction
+	case strings.HasPrefix(sql, DeleteAction):
+		action = DeleteAction
+	default:
+		return pgconn.CommandTag{}, errors.New("unknown action")
+	}
 	payload, err := json.Marshal(obj)
 	if err != nil {
 		return pgconn.CommandTag{}, err
@@ -145,40 +157,23 @@ func (db *DB) ExecAndPublishEvent(ctx context.Context, table string, obj any, sq
 		if err != nil {
 			return err
 		}
-		action, err := execAction(cmd)
-		if err != nil {
-			return err
-		}
 		_, err = db.Conn(ctx).Exec(ctx, `
 	INSERT INTO events (
-		table,
+		type,
 		action,
 		payload
 	) VALUES (
-		@table,
+		@type,
 		@action,
 		@payload
 	)`, pgx.NamedArgs{
-			"table":   table,
+			"type":    reflect.TypeOf(obj).String(),
 			"action":  action,
 			"payload": payload,
 		})
 		return err
 	})
 	return cmd, err
-}
-
-func execAction(tag pgconn.CommandTag) (Action, error) {
-	switch {
-	case tag.Insert():
-		return InsertAction, nil
-	case tag.Update():
-		return UpdateAction, nil
-	case tag.Delete():
-		return DeleteAction, nil
-	default:
-		return "", errors.New("unknown action")
-	}
 }
 
 // Int is a convenience wrapper for executing a query that returns a single

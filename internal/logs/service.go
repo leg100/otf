@@ -60,7 +60,6 @@ func NewService(opts Options) *Service {
 	svc.broker = pubsub.NewBroker[Chunk](
 		opts.Logger,
 		opts.Listener,
-		"logs",
 	)
 	svc.chunkproxy = &proxy{
 		Logger: opts.Logger,

@@ -81,17 +81,14 @@ func NewService(opts ServiceOptions) *Service {
 	svc.poolBroker = pubsub.NewBroker[*Pool](
 		opts.Logger,
 		opts.Listener,
-		"agent_pools",
 	)
 	svc.runnerBroker = pubsub.NewBroker[*RunnerMeta](
 		opts.Logger,
 		opts.Listener,
-		"runners",
 	)
 	svc.jobBroker = pubsub.NewBroker[*Job](
 		opts.Logger,
 		opts.Listener,
-		"jobs",
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
