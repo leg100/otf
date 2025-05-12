@@ -74,7 +74,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		// github app vcs provider does not require a repohook to be created
 		if provider.GithubApp == nil {
 			_, err := s.repohooks.CreateRepohook(ctx, repohooks.CreateRepohookOptions{
@@ -98,7 +98,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 
 // Disconnect resource from repo
 func (s *Service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	return s.db.Tx(ctx, func(ctx context.Context) error {
 		if err := s.db.deleteConnection(ctx, opts); err != nil {
 			return err
 		}

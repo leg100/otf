@@ -27,7 +27,7 @@ type pgdb struct {
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 	return db.Tx(ctx, func(ctx context.Context) error {
-		_, err := db.ExecAndPublishEvent(ctx, run, `
+		_, err := db.Exec(ctx, `
 INSERT INTO runs (
     run_id,
     created_at,

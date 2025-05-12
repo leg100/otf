@@ -132,7 +132,7 @@ WHERE variable_set_id = $4
 		}
 		// lazily delete all variable set workspaces, and then add them again,
 		// regardless of whether there are any changes
-		return pdb.Lock(ctx, "variable_set_workspaces", func(ctx context.Context, _ sql.Connection) error {
+		return pdb.Lock(ctx, "variable_set_workspaces", func(ctx context.Context) error {
 			if err := pdb.deleteAllVariableSetWorkspaces(ctx, set.ID); err != nil {
 				if !errors.Is(err, internal.ErrResourceNotFound) {
 					return err

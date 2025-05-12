@@ -34,7 +34,7 @@ WHERE t.organization_name = $1
 func (db *pgdb) deleteTags(ctx context.Context, organization organization.Name, tagIDs []resource.TfeID) error {
 	err := db.Tx(ctx, func(ctx context.Context) error {
 		for _, tid := range tagIDs {
-			_, err := conn.Exec(ctx, `
+			_, err := db.Conn(ctx).Exec(ctx, `
 DELETE
 FROM tags
 WHERE tag_id            = $1

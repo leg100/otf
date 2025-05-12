@@ -131,7 +131,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		for _, hook := range s.beforeCreateHooks {
 			if err := hook(ctx, ws); err != nil {
 				return err

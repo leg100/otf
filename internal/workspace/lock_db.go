@@ -13,7 +13,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togg
 		ctx,
 		db.DB,
 		func(ctx context.Context) (*Workspace, error) {
-			return db.forUpdate(ctx, conn, workspaceID)
+			return db.forUpdate(ctx, workspaceID)
 		},
 		func(ctx context.Context, ws *Workspace) error {
 			return togglefn(ws)

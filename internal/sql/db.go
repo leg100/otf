@@ -224,7 +224,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	})
 }
 
-func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, Connection) error) error {
+func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -238,7 +238,7 @@ func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, C
 		if _, err := tx.Exec(ctx, sql); err != nil {
 			return err
 		}
-		return fn(ctx, tx)
+		return fn(ctx)
 	})
 }
 

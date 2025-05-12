@@ -17,15 +17,7 @@ func cacheKey(cvID resource.TfeID) string {
 //
 // NOTE: unauthenticated - access granted only via signed URL
 func (s *Service) UploadConfig(ctx context.Context, cvID resource.TfeID, config []byte) error {
-	err := s.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
-		// upload config and set status depending on success
-		status, err := uploader.Upload(ctx, config)
-		if err != nil {
-			return err
-		}
-		cv.Status = status
-		return cv.Upload(ctx, config, uploader)
-	})
+	err := s.db.UploadConfigurationVersion(ctx, cvID, config)
 	if err != nil {
 		s.Error(err, "uploading configuration")
 		return err

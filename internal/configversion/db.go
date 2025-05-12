@@ -111,52 +111,18 @@ INSERT INTO ingress_attributes (
 	})
 }
 
-func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.TfeID, fn func(*ConfigurationVersion, ConfigUploader) error) error {
-	return sql.Updater(
-		ctx,
-		db.DB,
-		func(ctx context.Context) (*ConfigurationVersion, error) {
-			row := db.Query(ctx, `
-	SELECT
-		cv.configuration_version_id,
-		cv.created_at,
-		cv.auto_queue_runs,
-		cv.source,
-		cv.speculative,
-		cv.status,
-		cv.workspace_id,
-		(
-			SELECT array_agg(cst.*)::configuration_version_status_timestamps[]
-			FROM configuration_version_status_timestamps cst
-			WHERE cst.configuration_version_id = cv.configuration_version_id
-			GROUP BY cst.configuration_version_id
-		) AS status_timestamps,
-		ia::ingress_attributes AS ingress_attributes
-	FROM configuration_versions cv
-	JOIN workspaces USING (workspace_id)
-	LEFT JOIN ingress_attributes ia USING(configuration_version_id)
-	WHERE cv.configuration_version_id = $1
-	FOR UPDATE OF cv
-	`, id)
-			return sql.CollectOneRow(row, db.scan)
-		},
-		func(ctx context.Context, cv *ConfigurationVersion) error {
-			return nil
-		},
-		func(ctx context.Context, config *ConfigurationVersion) error {
-			// TODO: add status timestamp
-			_, err := db.Conn(ctx).Exec(ctx, `
+func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.TfeID, config []byte) error {
+	_, err := db.Conn(ctx).Exec(ctx, `
 UPDATE configuration_versions
 SET
-    config = $1,
+    config = @config,
     status = 'uploaded'
-WHERE configuration_version_id = $2
-`, config, u.id)
-			if err != nil {
-				return ConfigurationErrored, err
-			}
-			return nil
-		})
+WHERE configuration_version_id = @id
+`, pgx.NamedArgs{
+		"config": config,
+		"id":     id,
+	})
+	return err
 }
 
 func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID resource.TfeID, opts ListOptions) (*resource.Page[*ConfigurationVersion], error) {
