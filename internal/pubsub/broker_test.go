@@ -5,14 +5,12 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 type foo struct {
-	id resource.TfeID
+	Bar string
 }
 
 func TestBroker_Subscribe(t *testing.T) {
@@ -46,10 +44,10 @@ func TestBroker_forward(t *testing.T) {
 	sub, unsub := broker.Subscribe(ctx)
 	defer unsub()
 
-	broker.forward("foo-bar", sql.InsertAction)
+	broker.forward(sql.InsertAction, []byte(`{"bar": "baz"}`))
 	want := Event[*foo]{
 		Type:    CreatedEvent,
-		Payload: &foo{id: testutils.ParseID(t, "foo-bar")},
+		Payload: &foo{Bar: "baz"},
 	}
 	assert.Equal(t, want, <-sub)
 }
@@ -63,8 +61,8 @@ func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 
 	// deliberating publish more than subBufferSize events to trigger broker to
 	// unsubscribe the sub
-	for i := 0; i < subBufferSize+1; i++ {
-		broker.forward("foo-123", sql.InsertAction)
+	for range subBufferSize + 1 {
+		broker.forward(sql.InsertAction, []byte(`{"bar": "baz"}`))
 	}
 	assert.Equal(t, 0, len(broker.subs))
 }
