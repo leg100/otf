@@ -12,13 +12,13 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID resource.TfeID, togg
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Workspace, error) {
+		func(ctx context.Context) (*Workspace, error) {
 			return db.forUpdate(ctx, conn, workspaceID)
 		},
 		func(ctx context.Context, ws *Workspace) error {
 			return togglefn(ws)
 		},
-		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
+		func(ctx context.Context, ws *Workspace) error {
 			var (
 				runID, username resource.ID
 			)

@@ -257,7 +257,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts U
 
 	// update the workspace and optionally connect/disconnect to/from vcs repo.
 	var updated *Workspace
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		var connect *bool
 		updated, err = s.db.update(ctx, workspaceID, func(ctx context.Context, ws *Workspace) (err error) {
 			for _, hook := range s.beforeUpdateHooks {

@@ -40,7 +40,7 @@ func TestTx(t *testing.T) {
 	// retain reference to old context for testing below.
 	oldContext := ctx
 
-	err := daemon.DB.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	err := daemon.DB.Tx(ctx, func(ctx context.Context) error {
 		// insert org using tx
 		org := daemon.createOrganization(t, ctx)
 
@@ -48,7 +48,7 @@ func TestTx(t *testing.T) {
 		_, err := daemon.Organizations.Get(ctx, org.Name)
 		assert.NoError(t, err)
 
-		err = daemon.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+		err = daemon.Tx(ctx, func(ctx context.Context) error {
 			// query org just created using child tx conn
 			_, err := daemon.Organizations.Get(ctx, org.Name)
 			return err

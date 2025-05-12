@@ -152,7 +152,7 @@ func (db *DB) ExecAndPublishEvent(ctx context.Context, obj any, sql string, args
 		return pgconn.CommandTag{}, err
 	}
 	var cmd pgconn.CommandTag
-	err = db.Tx(ctx, func(ctx context.Context, _ Connection) error {
+	err = db.Tx(ctx, func(ctx context.Context) error {
 		cmd, err = db.Exec(ctx, sql, args...)
 		if err != nil {
 			return err
@@ -185,7 +185,7 @@ func (db *DB) Int(ctx context.Context, sql string, args ...any) (int64, error) {
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(context.Context, Connection) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(context.Context) error) error {
 	var conn Connection = db.Pool
 
 	// Use connection from context if found
@@ -195,7 +195,7 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, Connection)
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
-		return callback(ctx, tx)
+		return callback(ctx)
 	})
 }
 

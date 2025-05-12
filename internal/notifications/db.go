@@ -57,7 +57,7 @@ func (db *pgdb) update(ctx context.Context, id resource.TfeID, updateFunc func(c
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Config, error) {
+		func(ctx context.Context) (*Config, error) {
 			rows := db.Query(ctx, `
 SELECT notification_configuration_id, created_at, updated_at, name, url, triggers, destination_type, workspace_id, enabled
 FROM notification_configurations
@@ -67,7 +67,7 @@ FOR UPDATE
 			return sql.CollectOneRow(rows, scanConfig)
 		},
 		updateFunc,
-		func(ctx context.Context, conn sql.Connection, nc *Config) error {
+		func(ctx context.Context, nc *Config) error {
 			_, err := db.Exec(ctx, `
 UPDATE notification_configurations
 SET

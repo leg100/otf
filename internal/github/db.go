@@ -42,7 +42,7 @@ func (db *pgdb) get(ctx context.Context) (*App, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context) error {
-	return db.Lock(ctx, "github_apps", func(ctx context.Context, conn sql.Connection) error {
+	return db.Lock(ctx, "github_apps", func(ctx context.Context) error {
 		rows := db.Query(ctx, `SELECT * FROM github_apps`)
 		result, err := sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[App])
 		if err != nil {

@@ -2,27 +2,7 @@ package configversion
 
 import (
 	"context"
-
-	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql"
 )
-
-type cvUploader struct {
-	conn sql.Connection
-	id   resource.TfeID
-}
-
-func (u *cvUploader) SetErrored(ctx context.Context) error {
-	// TODO: add status timestamp
-	_, err := u.conn.Exec(ctx, `
-UPDATE configuration_versions
-SET
-    status = 'errored'
-WHERE configuration_version_id = $1
-RETURNING configuration_version_id
-`, u.id)
-	return err
-}
 
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
 	// TODO: add status timestamp

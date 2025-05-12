@@ -103,7 +103,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Organization
 	if err != nil {
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		if err := s.db.create(ctx, org); err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func (s *Service) Delete(ctx context.Context, name Name) error {
 		return err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		org, err := s.db.get(ctx, name)
 		if err != nil {
 			return err
