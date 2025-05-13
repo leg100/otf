@@ -112,7 +112,7 @@ INSERT INTO ingress_attributes (
 }
 
 func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id resource.TfeID, config []byte) error {
-	_, err := db.Conn(ctx).Exec(ctx, `
+	_, err := db.Exec(ctx, `
 UPDATE configuration_versions
 SET
     config = @config,

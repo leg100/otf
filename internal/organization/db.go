@@ -46,7 +46,7 @@ func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, 
 		ctx,
 		db.DB,
 		func(ctx context.Context) (*Organization, error) {
-			row, _ := db.Conn(ctx).Query(ctx, `
+			row := db.Query(ctx, `
 SELECT *
 FROM organizations
 WHERE name = $1
@@ -56,7 +56,7 @@ FOR UPDATE`,
 		},
 		fn,
 		func(ctx context.Context, org *Organization) error {
-			_, err := db.Conn(ctx).Exec(ctx, `
+			_, err := db.Exec(ctx, `
 UPDATE organizations
 SET
 	name = $1,

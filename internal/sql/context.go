@@ -11,11 +11,11 @@ const (
 
 type ctxKey int
 
-func newContext(ctx context.Context, conn genericConnection) context.Context {
+func newContext(ctx context.Context, conn connection) context.Context {
 	return context.WithValue(ctx, connCtxKey, conn)
 }
 
-func fromContext(ctx context.Context) (genericConnection, bool) {
-	conn, ok := ctx.Value(connCtxKey).(genericConnection)
+func fromContext(ctx context.Context) (connection, bool) {
+	conn, ok := ctx.Value(connCtxKey).(connection)
 	return conn, ok
 }
