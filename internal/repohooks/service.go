@@ -96,7 +96,7 @@ func (s *Service) CreateRepohook(ctx context.Context, opts CreateRepohookOptions
 	}
 	// lock repohooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err = s.db.Lock(ctx, "repohooks", func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Lock(ctx, "repohooks", func(ctx context.Context) error {
 		hook, err = s.db.getOrCreateHook(ctx, hook)
 		if err != nil {
 			return fmt.Errorf("getting or creating webhook: %w", err)

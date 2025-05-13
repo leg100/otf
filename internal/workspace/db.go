@@ -127,11 +127,11 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Workspace, error) {
-			return db.forUpdate(ctx, conn, workspaceID)
+		func(ctx context.Context) (*Workspace, error) {
+			return db.forUpdate(ctx, workspaceID)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, ws *Workspace) error {
+		func(ctx context.Context, ws *Workspace) error {
 			var (
 				allowCLIApply bool
 				branch        string
@@ -192,8 +192,8 @@ func (db *pgdb) update(ctx context.Context, workspaceID resource.TfeID, fn func(
 	)
 }
 
-func (db *pgdb) forUpdate(ctx context.Context, conn sql.Connection, workspaceID resource.TfeID) (*Workspace, error) {
-	row, _ := conn.Query(ctx, `
+func (db *pgdb) forUpdate(ctx context.Context, workspaceID resource.TfeID) (*Workspace, error) {
+	row, _ := db.Conn(ctx).Query(ctx, `
 SELECT
     w.workspace_id, w.created_at, w.updated_at, w.allow_destroy_plan, w.auto_apply, w.can_queue_destroy_plan, w.description, w.environment, w.execution_mode, w.global_remote_state, w.migration_environment, w.name, w.queue_all_runs, w.speculative_enabled, w.source_name, w.source_url, w.structured_run_output_enabled, w.engine_version, w.trigger_prefixes, w.working_directory, w.lock_run_id, w.latest_run_id, w.organization_name, w.branch, w.current_state_version_id, w.trigger_patterns, w.vcs_tags_regex, w.allow_cli_apply, w.agent_pool_id, w.lock_username, w.engine,
     (

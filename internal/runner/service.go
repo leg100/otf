@@ -658,7 +658,7 @@ func (s *Service) updateAgentPool(ctx context.Context, poolID resource.TfeID, op
 		subject       authz.Subject
 		before, after Pool
 	)
-	err := s.db.Lock(ctx, "agent_pools, agent_pool_allowed_workspaces", func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Lock(ctx, "agent_pools, agent_pool_allowed_workspaces", func(ctx context.Context) (err error) {
 		pool, err := s.db.getPool(ctx, poolID)
 		if err != nil {
 			return err

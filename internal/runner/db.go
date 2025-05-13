@@ -61,7 +61,7 @@ func (db *db) update(ctx context.Context, runnerID resource.TfeID, fn func(conte
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*RunnerMeta, error) {
+		func(ctx context.Context) (*RunnerMeta, error) {
 			rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
@@ -79,7 +79,7 @@ FOR UPDATE OF a
 			return sql.CollectOneRow(rows, scanRunner)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, agent *RunnerMeta) error {
+		func(ctx context.Context, agent *RunnerMeta) error {
 			_, err := db.Exec(ctx, `
 UPDATE runners
 SET status = @status,
@@ -301,7 +301,7 @@ func (db *db) updateJob(ctx context.Context, jobID resource.TfeID, fn func(conte
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Job, error) {
+		func(ctx context.Context) (*Job, error) {
 			rows := db.Query(ctx, `
 SELECT
     j.job_id,
@@ -322,7 +322,7 @@ FOR UPDATE OF j
 			return sql.CollectOneRow(rows, scanJob)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, job *Job) error {
+		func(ctx context.Context, job *Job) error {
 			_, err := db.Exec(ctx, `
 UPDATE jobs
 SET status   = $1,
@@ -345,7 +345,7 @@ func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.Tfe
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Job, error) {
+		func(ctx context.Context) (*Job, error) {
 			rows := db.Query(ctx, `
 SELECT
     j.job_id,
@@ -367,7 +367,7 @@ FOR UPDATE OF j
 			return sql.CollectOneRow(rows, scanJob)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, job *Job) error {
+		func(ctx context.Context, job *Job) error {
 			_, err := db.Exec(ctx, `
 UPDATE jobs
 SET status   = $1,
@@ -490,7 +490,7 @@ func scanAgentToken(row pgx.CollectableRow) (*agentToken, error) {
 // agent pools
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
-	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	err := db.Tx(ctx, func(ctx context.Context) error {
 		_, err := db.Exec(ctx, `
 INSERT INTO agent_pools (
     agent_pool_id,

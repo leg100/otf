@@ -205,7 +205,7 @@ func (a *Service) Rollback(ctx context.Context, versionID resource.TfeID) (*Vers
 
 func (a *Service) Upload(ctx context.Context, svID resource.TfeID, state []byte) error {
 	var sv *Version
-	err := a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err := a.db.Tx(ctx, func(ctx context.Context) error {
 		var err error
 		sv, err = a.db.getVersionForUpdate(ctx, svID)
 		if err != nil {

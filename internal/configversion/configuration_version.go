@@ -2,7 +2,6 @@
 package configversion
 
 import (
-	"context"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -53,15 +52,6 @@ type (
 		ConfigurationVersionID resource.TfeID `db:"-"`
 		Status                 ConfigurationStatus
 		Timestamp              time.Time
-	}
-
-	// ConfigUploader uploads a config
-	ConfigUploader interface {
-		// Upload uploads the config tarball and returns a status indicating success
-		// or failure.
-		Upload(ctx context.Context, config []byte) (ConfigurationStatus, error)
-		// SetErrored sets the config version status to 'errored' in the store.
-		SetErrored(ctx context.Context) error
 	}
 
 	// ConfigurationVersionGetOptions are options for retrieving a single config
@@ -137,18 +127,6 @@ func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (tim
 		}
 	}
 	return time.Time{}, internal.ErrStatusTimestampNotFound
-}
-
-// Upload saves the config to the db and updates status accordingly.
-func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
-	// upload config and set status depending on success
-	status, err := uploader.Upload(ctx, config)
-	if err != nil {
-		return err
-	}
-	cv.Status = status
-
-	return nil
 }
 
 func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {

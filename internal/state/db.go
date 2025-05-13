@@ -30,7 +30,7 @@ type (
 )
 
 func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
-	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return db.Tx(ctx, func(ctx context.Context) error {
 		_, err := db.Exec(ctx, `
 INSERT INTO state_versions (
     state_version_id,
@@ -62,7 +62,7 @@ INSERT INTO state_versions (
 }
 
 func (db *pgdb) createOutputs(ctx context.Context, outputs []*Output) error {
-	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return db.Tx(ctx, func(ctx context.Context) error {
 		for _, svo := range outputs {
 			_, err := db.Exec(ctx, `
 INSERT INTO state_version_outputs (

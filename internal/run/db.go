@@ -26,7 +26,7 @@ type pgdb struct {
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
-	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return db.Tx(ctx, func(ctx context.Context) error {
 		_, err := db.Exec(ctx, `
 INSERT INTO runs (
     run_id,
@@ -138,7 +138,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID resource.TfeID, fn func(
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Run, error) {
+		func(ctx context.Context) (*Run, error) {
 			row := db.Query(ctx, `
 SELECT
     runs.run_id,
@@ -227,7 +227,7 @@ FOR UPDATE OF runs, plans, applies
 			return run, nil
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, run *Run) error {
+		func(ctx context.Context, run *Run) error {
 			if run.Status != runStatus {
 				_, err := db.Exec(ctx, `
 UPDATE runs

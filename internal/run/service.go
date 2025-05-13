@@ -234,7 +234,7 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 
 // EnqueuePlan enqueues a plan for the run.
 func (s *Service) EnqueuePlan(ctx context.Context, runID resource.TfeID) (run *Run, err error) {
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueuePlan()
 		})
@@ -318,7 +318,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase i
 		}
 	}
 	var run *Run
-	err := s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Tx(ctx, func(ctx context.Context) (err error) {
 		var autoapply bool
 		run, err = s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			autoapply, err = run.Finish(phase, opts)
@@ -350,7 +350,7 @@ func (s *Service) Apply(ctx context.Context, runID resource.TfeID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	return s.db.Tx(ctx, func(ctx context.Context) error {
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) error {
 			return run.EnqueueApply()
 		})
@@ -400,7 +400,7 @@ func (s *Service) Cancel(ctx context.Context, runID resource.TfeID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	return s.db.Tx(ctx, func(ctx context.Context) error {
 		_, isUser := subject.(*user.User)
 
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
@@ -436,7 +436,7 @@ func (s *Service) ForceCancel(ctx context.Context, runID resource.TfeID) error {
 	if err != nil {
 		return err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	return s.db.Tx(ctx, func(ctx context.Context) error {
 		run, err := s.db.UpdateStatus(ctx, runID, func(ctx context.Context, run *Run) (err error) {
 			return run.Cancel(true, true)
 		})

@@ -141,7 +141,7 @@ func (db *DB) Int(ctx context.Context, sql string, args ...any) (int64, error) {
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(context.Context, Connection) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(context.Context) error) error {
 	var conn Connection = db.Pool
 
 	// Use connection from context if found
@@ -151,7 +151,7 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, Connection)
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		ctx = newContext(ctx, tx)
-		return callback(ctx, tx)
+		return callback(ctx)
 	})
 }
 
@@ -180,7 +180,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 	})
 }
 
-func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, Connection) error) error {
+func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context) error) error {
 	var conn genericConnection = db.Pool
 
 	// Use connection from context if found
@@ -194,7 +194,7 @@ func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, C
 		if _, err := tx.Exec(ctx, sql); err != nil {
 			return err
 		}
-		return fn(ctx, tx)
+		return fn(ctx)
 	})
 }
 

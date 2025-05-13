@@ -21,7 +21,7 @@ type pgdb struct {
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
-	return db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return db.Tx(ctx, func(ctx context.Context) error {
 		_, err := db.Exec(ctx, `
 INSERT INTO users (
     user_id,
@@ -233,7 +233,7 @@ WHERE username = $1
 // is returned.
 func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promoted []string, demoted []string, err error) {
 	var resetted, updated []string
-	err = db.Tx(ctx, func(ctx context.Context, conn sql.Connection) (err error) {
+	err = db.Tx(ctx, func(ctx context.Context) (err error) {
 		// First demote any existing site admins...
 		rows := db.Query(ctx, `
 UPDATE users

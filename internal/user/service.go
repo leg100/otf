@@ -240,7 +240,7 @@ func (a *Service) AddTeamMembership(ctx context.Context, teamID resource.TfeID, 
 		return err
 	}
 
-	err = a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = a.db.Tx(ctx, func(ctx context.Context) error {
 		// Check each username: if user does not exist then create user.
 		for _, username := range usernames {
 			_, err := a.db.getUser(ctx, UserSpec{Username: &username})
