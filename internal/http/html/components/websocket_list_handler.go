@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,11 +17,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/sync/errgroup"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
 
 // WebsocketListHandler handles dynamically updating lists of resources via
 // a websocket.
@@ -36,31 +30,6 @@ type WebsocketListHandler[Resource any, Options any] struct {
 type websocketListHandlerClient[Resource any, Options any] interface {
 	Watch(ctx context.Context) (<-chan pubsub.Event[Resource], func())
 	List(ctx context.Context, opts Options) (*resource.Page[Resource], error)
-}
-
-func SetAllowedOrigins(origins string) {
-	sl := strings.Split(strings.ToLower(origins), ",")
-	sm := map[string]bool{}
-	for _, o := range sl {
-		o = strings.TrimPrefix(o, "https://")
-		o = strings.TrimPrefix(o, "http://")
-		sm[o] = true
-	}
-	if len(sm) > 0 {
-		upgrader.CheckOrigin = func(r *http.Request) bool {
-			origins := r.Header["Origin"]
-			if len(origins) == 0 {
-				return true
-			}
-			u, err := url.Parse(origins[0])
-			if err != nil {
-				return false
-			}
-			origin := strings.ToLower(u.Host)
-			_, ok := sm[origin]
-			return ok
-		}
-	}
 }
 
 func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter, r *http.Request) {
