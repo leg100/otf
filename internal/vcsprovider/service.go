@@ -226,7 +226,7 @@ func (a *Service) Delete(ctx context.Context, id resource.TfeID) (*VCSProvider, 
 		provider *VCSProvider
 		subject  authz.Subject
 	)
-	err := a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
+	err := a.db.Tx(ctx, func(ctx context.Context) (err error) {
 		// retrieve vcs provider first in order to get organization for authorization
 		provider, err = a.db.get(ctx, id)
 		if err != nil {
