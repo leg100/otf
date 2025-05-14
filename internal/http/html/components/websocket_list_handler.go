@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-
 	"sync"
 	"time"
 
@@ -18,11 +17,6 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/sync/errgroup"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
 
 // WebsocketListHandler handles dynamically updating lists of resources via
 // a websocket.

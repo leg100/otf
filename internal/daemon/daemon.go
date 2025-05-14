@@ -434,6 +434,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		EnableRequestLogging: d.EnableRequestLogging,
 		Middleware:           []mux.MiddlewareFunc{d.Tokens.Middleware()},
 		Handlers:             d.handlers,
+		AllowedOrigins:       d.AllowedOrigins,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
