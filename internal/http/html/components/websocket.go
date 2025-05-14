@@ -14,6 +14,9 @@ var upgrader = websocket.Upgrader{
 }
 
 func SetAllowedOrigins(origins string) {
+	if len(origins) == 0 {
+		return
+	}
 	sl := strings.Split(strings.ToLower(origins), ",")
 	sm := map[string]bool{}
 	for _, o := range sl {
