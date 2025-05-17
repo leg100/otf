@@ -19,6 +19,7 @@ const (
 	ServiceProviderBitbucketServer TFEServiceProviderType = "bitbucket_server"
 	// Bitbucket Server v5.3.0 and below
 	ServiceProviderBitbucketServerLegacy TFEServiceProviderType = "bitbucket_server_legacy"
+	ServiceProviderForgejo               TFEServiceProviderType = "forgejo"
 	ServiceProviderGithub                TFEServiceProviderType = "github"
 	ServiceProviderGithubEE              TFEServiceProviderType = "github_enterprise"
 	ServiceProviderGitlab                TFEServiceProviderType = "gitlab_hosted"

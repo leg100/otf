@@ -1,0 +1,1 @@
+INSERT INTO vcs_kinds VALUES ('forgejo') ON CONFLICT DO NOTHING;

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/organization"
@@ -37,6 +38,7 @@ type (
 	factory struct {
 		githubapps *github.Service
 
+		forgejoHostname     string
 		githubHostname      string
 		gitlabHostname      string
 		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
@@ -95,6 +97,8 @@ func (f *factory) newWithGithubCredentials(opts CreateOptions, creds *github.Ins
 			provider.Hostname = f.githubHostname
 		case vcs.GitlabKind:
 			provider.Hostname = f.gitlabHostname
+		case vcs.ForgejoKind:
+			provider.Hostname = f.forgejoHostname
 		default:
 			return nil, errors.New("no hostname found for vcs kind")
 		}
@@ -146,6 +150,8 @@ func (t *VCSProvider) NewClient() (vcs.Client, error) {
 			return github.NewTokenClient(opts)
 		case vcs.GitlabKind:
 			return gitlab.NewTokenClient(opts)
+		case vcs.ForgejoKind:
+			return forgejo.NewTokenClient(opts)
 		default:
 			return nil, fmt.Errorf("unknown kind: %s", t.Kind)
 		}
