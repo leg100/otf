@@ -14,6 +14,11 @@ import (
 	"github.com/leg100/otf/internal/resource"
 )
 
+const (
+	EventLogChunk    string = "log_update"
+	EventLogFinished string = "log_finished"
+)
+
 type (
 	webHandlers struct {
 		logr.Logger
@@ -68,7 +73,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				pubsub.WriteSSEEvent(w, []byte("no more logs"), pubsub.EventLogFinished, false)
+				pubsub.WriteSSEEvent(w, []byte("no more logs"), EventLogFinished, false)
 				return
 			}
 			html := chunk.ToHTML()
@@ -87,7 +92,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling data")
 				continue
 			}
-			pubsub.WriteSSEEvent(w, js, pubsub.EventLogChunk, false)
+			pubsub.WriteSSEEvent(w, js, EventLogChunk, false)
 			rc.Flush()
 		case <-r.Context().Done():
 			return

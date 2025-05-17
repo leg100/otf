@@ -37,17 +37,17 @@ type (
 		pool        pool          // pool from which to acquire a dedicated connection to postgres
 		islistening chan struct{} // semaphore that's closed once broker is listening
 
-		mu         sync.Mutex             // sync access to maps
-		forwarders map[string]ForwardFunc // maps table name to getter
+		mu         sync.Mutex           // sync access to maps
+		forwarders map[string]TableFunc // maps table name to getter
 	}
 
-	// ForwardFunc handles forwarding the id and action onto subscribers.
-	ForwardFunc func(ctx context.Context, id string, action Action)
+	// TableFunc is capable of converting a database row into a go type
+	TableFunc func(action Action, record json.RawMessage)
 
 	// database connection pool
 	pool interface {
 		Acquire(ctx context.Context) (*pgxpool.Conn, error)
-		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+		Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	}
 )
 
@@ -57,13 +57,11 @@ func NewListener(logger logr.Logger, db pool) *Listener {
 		pool:        db,
 		islistening: make(chan struct{}),
 		channel:     defaultChannel,
-		forwarders:  make(map[string]ForwardFunc),
+		forwarders:  make(map[string]TableFunc),
 	}
 }
 
-// RegisterFunc registers a function that is capable of converting database
-// events for the given table into an OTF event.
-func (b *Listener) RegisterFunc(table string, getter ForwardFunc) {
+func (b *Listener) RegisterTable(table string, getter TableFunc) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -109,7 +107,7 @@ func (b *Listener) Start(ctx context.Context) error {
 			b.Error(nil, "no getter found for table: %s", event.Table)
 			continue
 		}
-		forwarder(ctx, event.ID, event.Action)
+		forwarder(event.Action, event.Record)
 	}
 }
 
@@ -119,14 +117,13 @@ func (b *Listener) Started() <-chan struct{} {
 
 // event is a postgres notification triggered by a database change.
 type event struct {
-	Table  string `json:"table"`  // pg table associated with change
-	Action Action `json:"action"` // INSERT/UPDATE/DELETE
-	ID     string `json:"id"`     // ID of changed row
+	Table  string          `json:"table"`  // pg table associated with change
+	Action Action          `json:"action"` // INSERT/UPDATE/DELETE
+	Record json.RawMessage `json:"record"` // the changed row
 }
 
 func (v *event) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
 		slog.String("action", string(v.Action)),
 		slog.String("table", v.Table),
 	}

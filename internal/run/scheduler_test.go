@@ -18,7 +18,7 @@ func TestScheduler_schedule(t *testing.T) {
 	wsID := resource.NewTfeID(resource.WorkspaceKind)
 
 	t.Run("enqueue plan for pending plan-only run but don't add to workspace queue", func(t *testing.T) {
-		run := &Run{Status: runstatus.Pending, PlanOnly: true, ID: resource.NewTfeID(resource.RunKind)}
+		run := &runInfo{Status: runstatus.Pending, PlanOnly: true, ID: resource.NewTfeID(resource.RunKind)}
 		runClient := &fakeSchedulerRunClient{}
 		s := &scheduler{
 			runs:       runClient,
@@ -34,7 +34,7 @@ func TestScheduler_schedule(t *testing.T) {
 	})
 
 	t.Run("ignore running plan-only run", func(t *testing.T) {
-		run := &Run{Status: runstatus.Planning, PlanOnly: true, ID: resource.NewTfeID(resource.RunKind)}
+		run := &runInfo{Status: runstatus.Planning, PlanOnly: true, ID: resource.NewTfeID(resource.RunKind)}
 		runClient := &fakeSchedulerRunClient{}
 		s := &scheduler{
 			runs:       runClient,
@@ -55,9 +55,9 @@ func TestScheduler_schedule(t *testing.T) {
 			workspaces: &fakeSchedulerWorkspaceClient{},
 			queues:     make(map[resource.TfeID]queue),
 		}
-		run1 := &Run{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
-		run2 := &Run{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
-		run3 := &Run{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
+		run1 := &runInfo{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
+		run2 := &runInfo{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
+		run3 := &runInfo{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
 
 		err := s.schedule(ctx, wsID, run1)
 		require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestScheduler_schedule(t *testing.T) {
 			workspaces: &fakeSchedulerWorkspaceClient{},
 			queues:     make(map[resource.TfeID]queue),
 		}
-		run1 := &Run{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
+		run1 := &runInfo{Status: runstatus.Pending, ID: resource.NewTfeID(resource.RunKind)}
 
 		// Should not propagate error
 		err := s.schedule(ctx, wsID, run1)
@@ -101,7 +101,7 @@ func TestScheduler_schedule(t *testing.T) {
 			},
 		}
 
-		err := s.schedule(ctx, wsID, &Run{Status: runstatus.Applied, ID: runID})
+		err := s.schedule(ctx, wsID, &runInfo{Status: runstatus.Applied, ID: runID})
 		require.NoError(t, err)
 
 		assert.Nil(t, s.queues[wsID].current)
@@ -116,7 +116,7 @@ func TestScheduler_process(t *testing.T) {
 	tests := []struct {
 		name        string
 		q           queue
-		run         *Run
+		run         *runInfo
 		want        queue
 		enqueuePlan bool
 		unlock      bool
@@ -132,7 +132,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"make pending run current and request enqueue plan",
 			queue{},
-			&Run{ID: runID1, Status: runstatus.Pending},
+			&runInfo{ID: runID1, Status: runstatus.Pending},
 			queue{current: &runID1},
 			true,
 			false,
@@ -140,7 +140,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"make plan_enqueued run current and do not request enqueue plan",
 			queue{},
-			&Run{ID: runID1, Status: runstatus.PlanQueued},
+			&runInfo{ID: runID1, Status: runstatus.PlanQueued},
 			queue{current: &runID1},
 			false,
 			false,
@@ -156,7 +156,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"remove finished run from current and unlock queue",
 			queue{current: &runID1},
-			&Run{ID: runID1, Status: runstatus.Applied},
+			&runInfo{ID: runID1, Status: runstatus.Applied},
 			queue{},
 			false,
 			true,
@@ -164,7 +164,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"remove finished run from backlog",
 			queue{backlog: []resource.TfeID{runID1}},
-			&Run{ID: runID1, Status: runstatus.Applied},
+			&runInfo{ID: runID1, Status: runstatus.Applied},
 			queue{},
 			false,
 			false,
@@ -172,7 +172,7 @@ func TestScheduler_process(t *testing.T) {
 		{
 			"remove finished run from current and make backlogged run current and request enqueue plan",
 			queue{current: &runID1, backlog: []resource.TfeID{runID2}},
-			&Run{ID: runID1, Status: runstatus.Applied},
+			&runInfo{ID: runID1, Status: runstatus.Applied},
 			queue{current: &runID2},
 			true,
 			false,

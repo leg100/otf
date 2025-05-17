@@ -26,9 +26,10 @@ type allocator struct {
 }
 
 type allocatorClient interface {
-	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerMeta], func())
-	WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func())
+	WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func())
+	WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func())
 
+	getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error)
 	listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
 
@@ -70,17 +71,24 @@ func (a *allocator) Start(ctx context.Context) error {
 			}
 			switch event.Type {
 			case pubsub.CreatedEvent:
-				a.addRunner(event.Payload)
+				runner, err := a.client.getRunner(ctx, event.Payload.ID)
+				if err != nil {
+					return err
+				}
+				a.addRunner(runner)
 			case pubsub.UpdatedEvent:
 				switch event.Payload.Status {
 				case RunnerExited, RunnerErrored:
 					// Delete runners in terminal state.
-					a.deleteRunner(event.Payload)
+					a.deleteRunner(event.Payload.ID)
 				default:
-					a.runners[event.Payload.ID] = event.Payload
+					// Update runner status
+					runner := a.runners[event.Payload.ID]
+					runner.Status = event.Payload.Status
+					a.runners[event.Payload.ID] = runner
 				}
 			case pubsub.DeletedEvent:
-				a.deleteRunner(event.Payload)
+				a.deleteRunner(event.Payload.ID)
 			}
 		case event, open := <-jobsSub:
 			if !open {
@@ -98,7 +106,10 @@ func (a *allocator) Start(ctx context.Context) error {
 				}
 				delete(a.jobs, event.Payload.ID)
 			default:
-				a.jobs[event.Payload.ID] = event.Payload
+				// Update job status
+				job := a.jobs[event.Payload.ID]
+				job.Status = event.Payload.Status
+				a.jobs[event.Payload.ID] = job
 			}
 		}
 		for _, job := range a.jobs {
@@ -245,10 +256,10 @@ func (a *allocator) addRunner(runner *RunnerMeta) {
 	currentJobsMetric.WithLabelValues(runner.ID.String()).Set(float64(runner.CurrentJobs))
 }
 
-func (a *allocator) deleteRunner(runner *RunnerMeta) {
-	delete(a.runners, runner.ID)
-	delete(a.currentJobs, runner.ID)
-	currentJobsMetric.DeleteLabelValues(runner.ID.String())
+func (a *allocator) deleteRunner(runnerID resource.TfeID) {
+	delete(a.runners, runnerID)
+	delete(a.currentJobs, runnerID)
+	currentJobsMetric.DeleteLabelValues(runnerID.String())
 }
 
 func (a *allocator) incrementCurrentJobs(runnerID resource.TfeID) {

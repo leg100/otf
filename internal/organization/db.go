@@ -135,11 +135,6 @@ func (db *pgdb) get(ctx context.Context, name Name) (*Organization, error) {
 	return sql.CollectOneRow(row, db.scan)
 }
 
-func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, error) {
-	row := db.Query(ctx, ` SELECT * FROM organizations WHERE organization_id = $1 `, id)
-	return sql.CollectOneRow(row, db.scan)
-}
-
 func (db *pgdb) delete(ctx context.Context, name Name) error {
 	_, err := db.Exec(ctx, ` DELETE FROM organizations WHERE name = $1 `, name)
 	return err

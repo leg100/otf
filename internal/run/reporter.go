@@ -51,7 +51,8 @@ type (
 	}
 
 	reporterRunClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*Run], func())
+		Watch(context.Context) (<-chan pubsub.Event[*Event], func())
+		Get(context.Context, resource.TfeID) (*Run, error)
 	}
 )
 
@@ -76,13 +77,13 @@ func (r *Reporter) Start(ctx context.Context) error {
 	return pubsub.ErrSubscriptionTerminated
 }
 
-func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
+func (r *Reporter) handleRun(ctx context.Context, event *Event) error {
 	// Skip runs triggered via the UI or API
-	if run.Source == SourceUI || run.Source == SourceAPI {
+	if event.Source == SourceUI || event.Source == SourceAPI {
 		return nil
 	}
 
-	cv, err := r.Configs.Get(ctx, run.ConfigurationVersionID)
+	cv, err := r.Configs.Get(ctx, event.ConfigurationVersionID)
 	if err != nil {
 		return fmt.Errorf("retrieving config: %w", err)
 	}
@@ -92,7 +93,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	ws, err := r.Workspaces.Get(ctx, run.WorkspaceID)
+	ws, err := r.Workspaces.Get(ctx, event.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("retrieving workspace: %w", err)
 	}
@@ -105,12 +106,17 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return fmt.Errorf("retrieving vcs client: %w", err)
 	}
 
+	run, err := r.Runs.Get(ctx, event.ID)
+	if err != nil {
+		return fmt.Errorf("retrieving run: %w", err)
+	}
+
 	// Report the status and description of the run state
 	var (
 		status      vcs.Status
 		description string
 	)
-	switch run.Status {
+	switch event.Status {
 	case runstatus.Pending, runstatus.PlanQueued, runstatus.ApplyQueued, runstatus.Planning, runstatus.Applying, runstatus.Planned, runstatus.Confirmed:
 		status = vcs.PendingStatus
 	case runstatus.PlannedAndFinished:
@@ -125,17 +131,17 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		}
 	case runstatus.Errored, runstatus.Canceled, runstatus.ForceCanceled, runstatus.Discarded:
 		status = vcs.ErrorStatus
-		description = run.Status.String()
+		description = event.Status.String()
 	default:
-		return fmt.Errorf("unknown run status: %s", run.Status)
+		return fmt.Errorf("unknown run status: %s", event.Status)
 	}
 
 	// Check status cache. If there is a hit for the same run and status then
 	// skip setting the status again.
-	if lastStatus, ok := r.Cache[run.ID]; ok && lastStatus == status {
+	if lastStatus, ok := r.Cache[event.ID]; ok && lastStatus == status {
 		r.V(8).Info("skipped setting duplicate run status on vcs",
-			"run_id", run.ID,
-			"run_status", run.Status,
+			"run_id", event.ID,
+			"run_status", event.Status,
 			"vcs_status", status,
 		)
 		return nil
@@ -147,7 +153,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
-		TargetURL:   r.URL(paths.Run(run.ID)),
+		TargetURL:   r.URL(paths.Run(event.ID)),
 	})
 	if err != nil {
 		return err
@@ -156,9 +162,9 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 	// Update status cache. If the run is complete then remove the run from the
 	// cache because no further status updates are expected.
 	if run.Done() {
-		delete(r.Cache, run.ID)
+		delete(r.Cache, event.ID)
 	} else {
-		r.Cache[run.ID] = status
+		r.Cache[event.ID] = status
 	}
 
 	return nil

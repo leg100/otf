@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -42,7 +43,8 @@ type (
 	}
 
 	notifierRunClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
+		Watch(context.Context) (<-chan pubsub.Event[*run.Event], func())
+		Get(context.Context, resource.TfeID) (*run.Run, error)
 	}
 
 	notifierNotificationClient interface {
@@ -87,7 +89,7 @@ func (s *Notifier) Start(ctx context.Context) error {
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if err := s.handleRun(ctx, event.Payload); err != nil {
+			if err := s.handleRunEvent(ctx, event.Payload); err != nil {
 				s.Error(err, "handling event", "event", event.Type)
 			}
 		case event, ok := <-subConfigs:
@@ -117,8 +119,8 @@ func (s *Notifier) handleConfig(ctx context.Context, event pubsub.Event[*Config]
 	}
 }
 
-func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
-	if r.Queued() {
+func (s *Notifier) handleRunEvent(ctx context.Context, runEvent *run.Event) error {
+	if runstatus.Queued(runEvent.Status) {
 		// ignore queued events
 		return nil
 	}
@@ -128,7 +130,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 
 	var ws *workspace.Workspace
 	for _, cfg := range s.configs {
-		if cfg.WorkspaceID != r.WorkspaceID {
+		if cfg.WorkspaceID != runEvent.WorkspaceID {
 			// skip configs for other workspaces
 			continue
 		}
@@ -140,7 +142,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// skip config with no triggers
 			continue
 		}
-		trigger, matches := cfg.matchTrigger(r)
+		trigger, matches := cfg.matchTrigger(runEvent.Status)
 		if !matches {
 			// skip config with no matching trigger
 			continue
@@ -153,10 +155,14 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 		// (b) add workspace info to run itself
 		if ws == nil {
 			var err error
-			ws, err = s.workspaces.Get(ctx, r.WorkspaceID)
+			ws, err = s.workspaces.Get(ctx, runEvent.WorkspaceID)
 			if err != nil {
 				return err
 			}
+		}
+		run, err := s.runs.Get(ctx, runEvent.ID)
+		if err != nil {
+			return err
 		}
 		client, ok := s.clients[*cfg.URL]
 		if !ok {
@@ -164,7 +170,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 			return fmt.Errorf("client not found for url: %s", *cfg.URL)
 		}
 		msg := &notification{
-			run:       r,
+			run:       run,
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,

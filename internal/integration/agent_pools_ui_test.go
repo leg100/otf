@@ -175,7 +175,7 @@ func TestAgentPoolsUI(t *testing.T) {
 
 		// shut agent down and wait for it to exit
 		shutdownAgent()
-		wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerMeta]) bool {
+		wait(t, runnersSub, func(event pubsub.Event[*runner.RunnerEvent]) bool {
 			return event.Payload.Status == runner.RunnerExited
 		})
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
@@ -16,18 +17,17 @@ type (
 	fakeCacheDB struct {
 		configs []*Config
 	}
-	fakeWorkspaceService struct {
-		workspace.Service
-	}
-	fakeHostnameService struct {
+	fakeWorkspaceService struct{}
+	fakeRunService       struct{}
+	fakeHostnameService  struct {
 		*internal.HostnameService
 	}
 	// fakeFactory makes fake clients
 	fakeFactory struct {
-		published chan *run.Run
+		published chan *notification
 	}
 	fakeClient struct {
-		published chan *run.Run
+		published chan *notification
 	}
 )
 
@@ -55,22 +55,30 @@ func newTestConfig(t *testing.T, workspaceID resource.TfeID, dst Destination, ur
 	return cfg
 }
 
-func (db *fakeCacheDB) listAll(context.Context) ([]*Config, error) {
-	return db.configs, nil
+func (f *fakeCacheDB) listAll(context.Context) ([]*Config, error) {
+	return f.configs, nil
 }
 
-func (db *fakeWorkspaceService) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeWorkspaceService) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return nil, nil
 }
 
-func (db *fakeHostnameService) Hostname() string { return "" }
+func (f *fakeRunService) Get(ctx context.Context, id resource.TfeID) (*run.Run, error) {
+	return &run.Run{ID: id}, nil
+}
+
+func (f *fakeRunService) Watch(ctx context.Context) (<-chan pubsub.Event[*run.Event], func()) {
+	return nil, nil
+}
+
+func (*fakeHostnameService) Hostname() string { return "" }
 
 func (f *fakeFactory) newClient(cfg *Config) (client, error) {
 	return &fakeClient{f.published}, nil
 }
 
 func (f *fakeClient) Publish(ctx context.Context, n *notification) error {
-	f.published <- n.run
+	f.published <- n
 	return nil
 }
 

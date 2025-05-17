@@ -46,3 +46,23 @@ func All() []Status {
 		Planning,
 	}
 }
+
+// Done determines whether status is an end state, e.g. applied, discarded, etc.
+func Done(status Status) bool {
+	switch status {
+	case Applied, PlannedAndFinished, Discarded, Canceled, ForceCanceled, Errored:
+		return true
+	default:
+		return false
+	}
+}
+
+// Queued determines whether status is a queued state.
+func Queued(status Status) bool {
+	switch status {
+	case PlanQueued, ApplyQueued:
+		return true
+	default:
+		return false
+	}
+}

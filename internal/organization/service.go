@@ -72,16 +72,10 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	svc.broker = pubsub.NewBroker(
+	svc.broker = pubsub.NewBroker[*Organization](
 		opts.Logger,
 		opts.Listener,
 		"organizations",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Organization, error) {
-			if action == sql.DeleteAction {
-				return &Organization{ID: id}, nil
-			}
-			return svc.db.getByID(ctx, id)
-		},
 	)
 	// Fetch organization when API calls request organization be included in the
 	// response

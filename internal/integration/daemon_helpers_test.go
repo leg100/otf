@@ -42,7 +42,7 @@ type (
 		// stub github server for test to use.
 		*github.TestServer
 		// run subscription for tests to check on run events
-		runEvents <-chan pubsub.Event[*run.Run]
+		runEvents <-chan pubsub.Event[*run.Event]
 	}
 )
 
@@ -199,9 +199,9 @@ func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.TfeID, status ru
 	for event := range s.runEvents {
 		if event.Payload.ID == runID {
 			if event.Payload.Status == status {
-				return event.Payload
+				return s.getRun(t, t.Context(), runID)
 			}
-			if event.Payload.Done() && event.Payload.Status != status {
+			if runstatus.Done(event.Payload.Status) && event.Payload.Status != status {
 				t.Fatalf("expected run status %s but run finished with status %s", status, event.Payload.Status)
 			}
 		}

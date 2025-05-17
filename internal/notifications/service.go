@@ -43,16 +43,10 @@ func NewService(opts Options) *Service {
 		Responder: opts.Responder,
 	}
 	// Register with broker so that it can relay run events
-	svc.broker = pubsub.NewBroker(
+	svc.broker = pubsub.NewBroker[*Config](
 		opts.Logger,
 		opts.Listener,
 		"notification_configurations",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Config, error) {
-			if action == sql.DeleteAction {
-				return &Config{ID: id}, nil
-			}
-			return svc.db.get(ctx, id)
-		},
 	)
 	return &svc
 }

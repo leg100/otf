@@ -52,7 +52,7 @@ func (mc *MetricsCollector) bootstrap(runs ...*Run) {
 	}
 }
 
-func (mc *MetricsCollector) update(event pubsub.Event[*Run]) {
+func (mc *MetricsCollector) update(event pubsub.Event[*Event]) {
 	if event.Type == pubsub.DeletedEvent {
 		// Run has been deleted, so lookup its last status and decrement
 		// the tally.
