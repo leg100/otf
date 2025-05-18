@@ -683,7 +683,7 @@ func editVariableSet(props editVariableSetProps) templ.Component {
 			templ_7745c5c3_Err = variableSetForm(variableSetFormProps{
 				set:                 props.set,
 				edit:                true,
-				action:              paths.EditVariableSet(props.set.ID),
+				action:              paths.UpdateVariableSet(props.set.ID),
 				availableWorkspaces: props.availableWorkspaces,
 				existingWorkspaces:  props.existingWorkspaces,
 			}).Render(ctx, templ_7745c5c3_Buffer)
