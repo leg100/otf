@@ -20,16 +20,16 @@ func TestNotifier_handleRun(t *testing.T) {
 	ws1 := testutils.ParseID(t, "ws-matching")
 	ws2 := testutils.ParseID(t, "ws-zzz")
 
-	queuedRunEvent := &run.Event{
+	queuedRunEvent := pubsub.Event[*run.Event]{Payload: &run.Event{
 		Status:      runstatus.PlanQueued,
 		WorkspaceID: ws1,
-	}
+	}}
 	planningRunID := resource.NewTfeID(resource.RunKind)
-	planningRunEvent := &run.Event{
+	planningRunEvent := pubsub.Event[*run.Event]{Payload: &run.Event{
 		ID:          planningRunID,
 		Status:      runstatus.Planning,
 		WorkspaceID: ws1,
-	}
+	}}
 	disabledConfig := &Config{
 		URL:         internal.String(""),
 		WorkspaceID: ws1,
@@ -61,7 +61,7 @@ func TestNotifier_handleRun(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		event *run.Event
+		event pubsub.Event[*run.Event]
 		cfg   *Config
 		want  *notification
 	}{
@@ -71,7 +71,7 @@ func TestNotifier_handleRun(t *testing.T) {
 		{"enabled but no triggers", planningRunEvent, configWithNoTriggers, nil},
 		{"enabled but mis-matching triggers", planningRunEvent, configWithDifferentTriggers, nil},
 		{"matching trigger", planningRunEvent, enabledConfig, &notification{
-			run:     &run.Run{ID: planningRunID},
+			event:   planningRunEvent,
 			trigger: TriggerPlanning,
 			config:  enabledConfig,
 		}},
@@ -104,11 +104,11 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 	ctx := context.Background()
 	ws1 := testutils.ParseID(t, "ws-123")
 
-	planningRunEvent := &run.Event{
+	planningRunEvent := pubsub.Event[*run.Event]{Payload: &run.Event{
 		ID:          resource.NewTfeID(resource.RunKind),
 		Status:      runstatus.Planning,
 		WorkspaceID: ws1,
-	}
+	}}
 	config1 := newTestConfig(t, ws1, DestinationGCPPubSub, "", TriggerPlanning)
 	config2 := newTestConfig(t, ws1, DestinationSlack, "", TriggerPlanning)
 
@@ -131,7 +131,7 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 
 	// One notification for gcp pub sub
 	want := &notification{
-		run:     &run.Run{ID: planningRunEvent.ID},
+		event:   planningRunEvent,
 		config:  config1,
 		trigger: TriggerPlanning,
 	}
@@ -139,7 +139,7 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 
 	// One notification for slack
 	want = &notification{
-		run:     &run.Run{ID: planningRunEvent.ID},
+		event:   planningRunEvent,
 		config:  config2,
 		trigger: TriggerPlanning,
 	}

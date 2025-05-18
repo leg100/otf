@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -120,12 +121,14 @@ type event struct {
 	Table  string          `json:"table"`  // pg table associated with change
 	Action Action          `json:"action"` // INSERT/UPDATE/DELETE
 	Record json.RawMessage `json:"record"` // the changed row
+	Time   time.Time       `json:"time"`   // time at which event occured
 }
 
 func (v *event) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("action", string(v.Action)),
 		slog.String("table", v.Table),
+		slog.Time("time", v.Time),
 	}
 	return slog.GroupValue(attrs...)
 }

@@ -1,6 +1,9 @@
 package pubsub
 
-import "log/slog"
+import (
+	"log/slog"
+	"time"
+)
 
 const (
 	CreatedEvent EventType = "created"
@@ -16,6 +19,7 @@ type (
 	Event[T any] struct {
 		Type    EventType
 		Payload T
+		Time    time.Time
 	}
 )
 

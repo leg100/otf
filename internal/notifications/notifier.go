@@ -89,7 +89,7 @@ func (s *Notifier) Start(ctx context.Context) error {
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if err := s.handleRunEvent(ctx, event.Payload); err != nil {
+			if err := s.handleRunEvent(ctx, event); err != nil {
 				s.Error(err, "handling event", "event", event.Type)
 			}
 		case event, ok := <-subConfigs:
@@ -119,8 +119,8 @@ func (s *Notifier) handleConfigEvent(event pubsub.Event[*Config]) error {
 	}
 }
 
-func (s *Notifier) handleRunEvent(ctx context.Context, runEvent *run.Event) error {
-	if runstatus.Queued(runEvent.Status) {
+func (s *Notifier) handleRunEvent(ctx context.Context, event pubsub.Event[*run.Event]) error {
+	if runstatus.Queued(event.Payload.Status) {
 		// ignore queued events
 		return nil
 	}
@@ -130,7 +130,7 @@ func (s *Notifier) handleRunEvent(ctx context.Context, runEvent *run.Event) erro
 
 	var ws *workspace.Workspace
 	for _, cfg := range s.configs {
-		if cfg.WorkspaceID != runEvent.WorkspaceID {
+		if cfg.WorkspaceID != event.Payload.WorkspaceID {
 			// skip configs for other workspaces
 			continue
 		}
@@ -142,7 +142,7 @@ func (s *Notifier) handleRunEvent(ctx context.Context, runEvent *run.Event) erro
 			// skip config with no triggers
 			continue
 		}
-		trigger, matches := cfg.matchTrigger(runEvent.Status)
+		trigger, matches := cfg.matchTrigger(event.Payload.Status)
 		if !matches {
 			// skip config with no matching trigger
 			continue
@@ -155,14 +155,10 @@ func (s *Notifier) handleRunEvent(ctx context.Context, runEvent *run.Event) erro
 		// (b) add workspace info to run itself
 		if ws == nil {
 			var err error
-			ws, err = s.workspaces.Get(ctx, runEvent.WorkspaceID)
+			ws, err = s.workspaces.Get(ctx, event.Payload.WorkspaceID)
 			if err != nil {
 				return err
 			}
-		}
-		run, err := s.runs.Get(ctx, runEvent.ID)
-		if err != nil {
-			return err
 		}
 		client, ok := s.clients[*cfg.URL]
 		if !ok {
@@ -170,7 +166,7 @@ func (s *Notifier) handleRunEvent(ctx context.Context, runEvent *run.Event) erro
 			return fmt.Errorf("client not found for url: %s", *cfg.URL)
 		}
 		msg := &notification{
-			run:       run,
+			event:     event,
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,
