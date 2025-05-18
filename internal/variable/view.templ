@@ -416,7 +416,7 @@ templ variableSetForm(props variableSetFormProps) {
 						</div>
 						<div class="flex flex-row gap-2 mt-2" id="existing-workspaces">
 							<template x-for="item in existing">
-								<div class="flex p-1 gap-1 bg-gray-200 group">
+								<div class="flex p-1 gap-1 bg-base-300 group">
 									<span class="" x-text="item.name"></span>
 									<button @click="deleteItem(item)" type="button" class="group-hover:bg-gray-400" id="button-remove-tag-{ . }" class="delete cross">x</button>
 								</div>
@@ -499,7 +499,7 @@ templ (t table) Row(v variableRow) {
 		</td>
 		<td>
 			if v.Sensitive {
-				<span class="bg-gray-200">hidden</span>
+				<span class="badge badge-soft">hidden</span>
 			} else {
 				{ v.Value }
 			}
