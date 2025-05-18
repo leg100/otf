@@ -71,7 +71,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION agents_notify_event() RETURNS trigger
+CREATE OR REPLACE FUNCTION runners_notify_event() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -86,7 +86,7 @@ BEGIN
     notification = json_build_object(
                       'table',TG_TABLE_NAME,
                       'action', TG_OP,
-                      'id', record.agent_id);
+                      'id', record.runner_id);
     PERFORM pg_notify('events', notification::text);
     RETURN NULL;
 END;
@@ -220,7 +220,7 @@ END;
 $$;
 
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON agent_pools FOR EACH ROW EXECUTE FUNCTION agent_pools_notify_event();
-CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION agents_notify_event();
+CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION runners_notify_event();
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION jobs_notify_event();
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON logs FOR EACH ROW EXECUTE FUNCTION logs_notify_event();
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON notification_configurations FOR EACH ROW EXECUTE FUNCTION notification_configurations_notify_event();
