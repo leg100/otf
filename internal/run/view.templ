@@ -212,19 +212,19 @@ templ get(props getProps) {
 		<div class="flex gap-4 text-sm">
 			<div class="flex gap-1 items-center">
 				<span>Engine</span>
-				<span class="badge badge-soft badge-neutral">
+				<span class="badge badge-soft">
 					{ props.run.Engine.String() }
 				</span>
 			</div>
 			<div class="flex gap-1 items-center">
 				<span>Engine version</span>
-				<span class="badge badge-soft badge-neutral">
+				<span class="badge badge-soft">
 					{ props.run.EngineVersion }
 				</span>
 			</div>
 			<div class="flex gap-1 items-center" id="elapsed-time">
 				Elapsed time
-				<span id={ "running-time-" + props.run.ID.String() }></span>
+				<span class="badge badge-soft" id={ "running-time-" + props.run.ID.String() }></span>
 			</div>
 		</div>
 		<div id="period-report"></div>
@@ -310,7 +310,7 @@ templ runningTime(tsk task) {
 		{{ elapsed := tsk.ElapsedTime(time.Now()) }}
 		<span
 			id={ "running-time-" + tsk.String() }
-			class="badge badge-soft badge-neutral"
+			class="badge badge-soft"
 			x-data={ fmt.Sprintf("running_time(Date.parse('%s'), %d, %s)", tsk.StartedAt(), elapsed.Milliseconds(), boolString(tsk.Done())) }
 			x-text="formatDuration(elapsed)"
 		>
@@ -330,10 +330,10 @@ templ periodReport(run *Run) {
 				class={ "inline-block", "h-full",  "bg-" + period.Status.String() }
 			></div>
 		}
-		<div class="absolute bg-white ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden z-10">
+		<div class="absolute bg-base-300 ml-2 mt-1 p-1 border border-black max-w-[66%] group-hover:block hidden z-10">
 			<ul class="flex gap-4 flex-wrap text-sm">
 				for _, period := range report.Periods {
-					<li>
+					<li class="flex gap-1 items-center">
 						<div class={ "h-3", "w-3", "inline-block", "border", "border-black", "align-middle", "bg-" + period.Status.String() }></div>
 						<span>{ period.Status.String() }</span>
 						<span>({ period.Period.String() })</span>
