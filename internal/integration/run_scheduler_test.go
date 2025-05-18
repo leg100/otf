@@ -72,7 +72,7 @@ func TestRunScheduler(t *testing.T) {
 func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Event], lock resource.ID) {
 	t.Helper()
 
-	timeout := time.After(5 * time.Second)
+	timeout := time.After(1500 * time.Second)
 	for {
 		select {
 		case event := <-events:

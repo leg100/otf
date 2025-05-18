@@ -163,11 +163,11 @@ func TestClusterLogs(t *testing.T) {
 	got := <-sub
 	assert.Equal(t, run.ID, got.RunID)
 	assert.Equal(t, internal.PlanPhase, got.Phase)
-	assert.Equal(t, []byte("\x02hello"), got.Data)
+	assert.Equal(t, []byte("\x02hello"), []byte(got.Data))
 
 	got = <-sub
 	assert.Equal(t, run.ID, got.RunID)
 	assert.Equal(t, internal.PlanPhase, got.Phase)
-	assert.Equal(t, []byte(" world\x03"), got.Data)
+	assert.Equal(t, []byte(" world\x03"), []byte(got.Data))
 	assert.Equal(t, 6, got.Offset)
 }

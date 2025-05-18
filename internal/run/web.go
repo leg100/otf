@@ -434,12 +434,30 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case event := <-workspacesSub:
+			if event.Payload.ID != workspaceID {
+				// Event is for a different workspace, so skip.
+				continue
+			}
+			if event.Payload.LatestRunID == nil {
+				// Workspace doesn't have a latest run, so nothing to send to
+				// client
+				continue
+			}
 			if event.Payload.LatestRunID == latestRunID {
+				// Workspace's latest run hasn't changed so nothing new to send
+				// to client.
 				continue
 			}
 			latestRunID = event.Payload.LatestRunID
 		case event := <-runsSub:
-			if latestRunID == nil || event.Payload.ID != *latestRunID {
+			if latestRunID == nil {
+				// Workspace doesn't have a latest run, so nothing to send to
+				// client
+				continue
+			}
+			if event.Payload.ID != *latestRunID {
+				// Event is for a run different than the workspace's latest run,
+				// so ignore.
 				continue
 			}
 		case <-r.Context().Done():

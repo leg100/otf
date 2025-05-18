@@ -16,16 +16,16 @@ type Event struct {
 
 func (e Event) GetID() resource.TfeID { return e.ID }
 
-func (e *Event) Locked() bool {
+func (e Event) Locked() bool {
 	return e.LockUsername != nil || e.LockRunID != nil
 }
 
-func (e *Event) Lock() resource.ID {
+func (e Event) Lock() resource.ID {
 	if e.LockUsername != nil {
-		return e.LockUsername
+		return *e.LockUsername
 	}
 	if e.LockRunID != nil {
-		return e.LockRunID
+		return *e.LockRunID
 	}
 	return nil
 }
