@@ -144,11 +144,21 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 	workspaces = workspaces[:n]
 
-	// fetch tarball
 	client, err := s.vcs.GetVCSClient(ctx, event.VCSProviderID)
 	if err != nil {
 		return err
 	}
+
+	// populate the list of changed files if needed; some providers do not
+	// include it in the webhook payload
+	if event.Type == vcs.EventTypePull && event.Paths == nil {
+		event.Paths, err = client.ListPullRequestFiles(ctx, event.RepoPath, event.PullRequestNumber)
+		if err != nil {
+			return err
+		}
+	}
+
+	// fetch tarball
 	tarball, _, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: event.RepoPath,
 		Ref:  &event.CommitSHA,
