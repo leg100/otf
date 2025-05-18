@@ -64,16 +64,16 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		cv3 := daemon.createAndUploadConfigurationVersion(t, ctx, workspaces[2], nil)
 		// A 'planned' run.
 		ws1run1planned := daemon.createRun(t, ctx, workspaces[0], cv1, nil)
-		_ = daemon.waitRunStatus(t, ws1run1planned.ID, runstatus.Planned)
+		_ = daemon.waitRunStatus(t, ctx, ws1run1planned.ID, runstatus.Planned)
 		// A 'planned' run.
 		ws2run1planned := daemon.createRun(t, ctx, workspaces[1], cv2, nil)
-		_ = daemon.waitRunStatus(t, ws2run1planned.ID, runstatus.Planned)
+		_ = daemon.waitRunStatus(t, ctx, ws2run1planned.ID, runstatus.Planned)
 		// An 'applied' run.
 		ws3run1applied := daemon.createRun(t, ctx, workspaces[2], cv3, nil)
-		_ = daemon.waitRunStatus(t, ws3run1applied.ID, runstatus.Planned)
+		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
 		err := daemon.Runs.Apply(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
-		_ = daemon.waitRunStatus(t, ws3run1applied.ID, runstatus.Applied)
+		_ = daemon.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
 
 		// navigate through different pages and back
 		browser.New(t, ctx, func(page playwright.Page) {

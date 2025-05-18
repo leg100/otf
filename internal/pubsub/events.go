@@ -1,5 +1,7 @@
 package pubsub
 
+import "log/slog"
+
 const (
 	CreatedEvent EventType = "created"
 	UpdatedEvent EventType = "updated"
@@ -27,4 +29,12 @@ func NewUpdatedEvent[T any](payload T) Event[T] {
 
 func NewDeletedEvent[T any](payload T) Event[T] {
 	return Event[T]{Type: DeletedEvent, Payload: payload}
+}
+
+func (e Event[T]) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("type", string(e.Type)),
+		slog.Any("payload", e.Payload),
+	}
+	return slog.GroupValue(attrs...)
 }

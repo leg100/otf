@@ -72,6 +72,10 @@ func (f *fakeService) reallocateJob(ctx context.Context, jobID resource.TfeID, a
 	return f.job, nil
 }
 
+func (f *fakeService) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+	return f.job, nil
+}
+
 func (f *fakeService) WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func()) {
 	return nil, nil
 }

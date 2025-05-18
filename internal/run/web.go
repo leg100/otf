@@ -428,7 +428,7 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	if ws.LatestRun != nil {
 		latestRunID = &ws.LatestRun.ID
 		if err := conn.Send(*latestRunID); err != nil {
-			h.logger.Error(err, "sending websocket message")
+			h.logger.Error(err, "sending websocket message for latest run")
 		}
 	}
 	for {

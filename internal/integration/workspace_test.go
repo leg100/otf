@@ -417,16 +417,16 @@ func TestWorkspace(t *testing.T) {
 		cv3 := svc.createAndUploadConfigurationVersion(t, ctx, ws3, nil)
 
 		ws1run1planned := svc.createRun(t, ctx, ws1, cv1, nil)
-		_ = svc.waitRunStatus(t, ws1run1planned.ID, runstatus.Planned)
+		_ = svc.waitRunStatus(t, ctx, ws1run1planned.ID, runstatus.Planned)
 
 		ws2run1planned := svc.createRun(t, ctx, ws2, cv2, nil)
-		_ = svc.waitRunStatus(t, ws2run1planned.ID, runstatus.Planned)
+		_ = svc.waitRunStatus(t, ctx, ws2run1planned.ID, runstatus.Planned)
 
 		ws3run1applied := svc.createRun(t, ctx, ws3, cv3, nil)
-		_ = svc.waitRunStatus(t, ws3run1applied.ID, runstatus.Planned)
+		_ = svc.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
 		err := svc.Runs.Apply(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
-		_ = svc.waitRunStatus(t, ws3run1applied.ID, runstatus.Applied)
+		_ = svc.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
 
 		tests := []struct {
 			name     string

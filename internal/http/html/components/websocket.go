@@ -22,7 +22,6 @@ var upgrader = websocket.Upgrader{
 // sent from the server to the client.
 type Websocket[Resource any] struct {
 	*websocket.Conn
-	w         http.ResponseWriter
 	r         *http.Request
 	client    websocketClient[Resource]
 	component func(Resource) templ.Component
@@ -46,7 +45,6 @@ func NewWebsocket[Resource any](
 		Conn:      conn,
 		client:    client,
 		component: component,
-		w:         w,
 		r:         r,
 	}, nil
 }
@@ -65,7 +63,7 @@ func (s *Websocket[Resource]) Send(id resource.TfeID) error {
 	}
 	defer w.Close()
 
-	if err := html.RenderSnippet(s.component(resource), s.w, s.r); err != nil {
+	if err := html.RenderSnippet(s.component(resource), w, s.r); err != nil {
 		return fmt.Errorf("rendering html: %w", err)
 	}
 	return nil

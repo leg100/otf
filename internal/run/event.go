@@ -19,7 +19,6 @@ type Event struct {
 	RefreshOnly            bool             `json:"refresh_only"`
 	ReplaceAddrs           []string         `json:"replace_addrs"`
 	TargetAddrs            []string         `json:"target_addrs"`
-	Lockfile               []byte           `json:"lock_file"`
 	Status                 runstatus.Status `json:"status"`
 	WorkspaceID            resource.TfeID   `json:"workspace_id"`
 	ConfigurationVersionID resource.TfeID   `json:"configuration_version_id"`

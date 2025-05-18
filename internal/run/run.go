@@ -42,6 +42,7 @@ type (
 	Run struct {
 		ID                     resource.TfeID          `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
+		UpdatedAt              time.Time               `jsonapi:"attribute" json:"updated_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
 		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
 		Message                string                  `jsonapi:"attribute" json:"message"`

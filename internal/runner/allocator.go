@@ -32,6 +32,7 @@ type allocatorClient interface {
 	getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error)
 	listRunners(ctx context.Context, opts ListOptions) ([]*RunnerMeta, error)
 	listJobs(ctx context.Context) ([]*Job, error)
+	getJob(ctx context.Context, jobID resource.TfeID) (*Job, error)
 
 	allocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
 	reallocateJob(ctx context.Context, jobID, runnerID resource.TfeID) (*Job, error)
@@ -105,8 +106,13 @@ func (a *allocator) Start(ctx context.Context) error {
 					}
 				}
 				delete(a.jobs, event.Payload.ID)
-			default:
-				// Update job status
+			case pubsub.CreatedEvent:
+				job, err := a.client.getJob(ctx, event.Payload.ID)
+				if err != nil {
+					return err
+				}
+				a.jobs[event.Payload.ID] = job
+			case pubsub.UpdatedEvent:
 				job := a.jobs[event.Payload.ID]
 				job.Status = event.Payload.Status
 				a.jobs[event.Payload.ID] = job

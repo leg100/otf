@@ -1,7 +1,9 @@
 package logs
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 
 	term2html "github.com/buildkite/terminal-to-html"
@@ -17,12 +19,12 @@ const (
 type (
 	// Chunk is a section of logs for a phase.
 	Chunk struct {
-		ID resource.TfeID `json:"id"` // Uniquely identifies the chunk.
+		ID resource.TfeID `json:"chunk_id"` // Uniquely identifies the chunk.
 
-		RunID  resource.TfeID     `json:"run_id"` // ID of run that generated the chunk
-		Phase  internal.PhaseType `json:"phase"`  // Phase that generated the chunk
-		Offset int                `json:"offset"` // Position within logs.
-		Data   []byte             `json:"data"`   // The log data
+		RunID  resource.TfeID     `json:"run_id"`  // ID of run that generated the chunk
+		Phase  internal.PhaseType `json:"phase"`   // Phase that generated the chunk
+		Offset int                `json:"_offset"` // Position within logs.
+		Data   PostgresHex        `json:"chunk"`   // The log data
 	}
 
 	PutChunkOptions struct {
@@ -43,6 +45,25 @@ type (
 		PutChunk(ctx context.Context, opts PutChunkOptions) error
 	}
 )
+
+// PostgresHex is a hex encoded byte array originating from Postgres.
+type PostgresHex []byte
+
+// UnmarshalJSON unmarshals the overly escaped hex encoded byte array.
+func (h *PostgresHex) UnmarshalJSON(data []byte) error {
+	// Trim double quotes from either end
+	data = bytes.Trim(data, `"`)
+	// Trim escaped hex escape code
+	data = bytes.TrimPrefix(data, []byte(`\\x`))
+	// Decode hex
+	dst := make([]byte, hex.DecodedLen(len(data)))
+	_, err := hex.Decode(dst, data)
+	if err != nil {
+		return err
+	}
+	*h = PostgresHex(dst)
+	return nil
+}
 
 func newChunk(opts PutChunkOptions) (Chunk, error) {
 	if len(opts.Data) == 0 {
@@ -99,7 +120,7 @@ func (c Chunk) ToHTML() string {
 	}
 
 	// convert ANSI escape sequences to HTML
-	html := term2html.Render(c.Data)
+	html := term2html.Render([]byte(c.Data))
 
 	return string(html)
 }

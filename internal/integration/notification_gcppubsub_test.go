@@ -106,7 +106,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		assert.Equal(t, want, g.Attributes)
 	}
 	// check everything matched
-	for _, want := range matches {
-		assert.True(t, want)
+	for status, want := range matches {
+		assert.True(t, want, "status %s not received", status)
 	}
 }

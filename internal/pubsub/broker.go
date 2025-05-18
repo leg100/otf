@@ -95,7 +95,7 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 func (b *Broker[T]) forward(action sql.Action, record json.RawMessage) {
 	var event Event[T]
 	if err := json.Unmarshal(record, &event.Payload); err != nil {
-		b.Error(err, "retrieving type for database event", "table", b.table, "action", action)
+		b.Error(err, "unmarshaling event from database record", "table", b.table, "action", action, "record", string(record))
 		return
 	}
 	switch action {

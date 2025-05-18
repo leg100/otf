@@ -21,20 +21,20 @@ type (
 	// Pool is a group of remote runners sharing one or more tokens, assigned to
 	// an organization or particular workspaces within the organization.
 	Pool struct {
-		ID        resource.TfeID `db:"agent_pool_id"`
+		ID        resource.TfeID `json:"agent_pool_id" db:"agent_pool_id"`
 		Name      string
-		CreatedAt time.Time `db:"created_at"`
+		CreatedAt time.Time `json:"created_at" db:"created_at"`
 		// Pool belongs to an organization with this name.
-		Organization organization.Name `db:"organization_name"`
+		Organization organization.Name `json:"organization_name" db:"organization_name"`
 		// Whether pool of agents is accessible to all workspaces in organization
 		// (true) or only those specified in AllowedWorkspaces (false).
-		OrganizationScoped bool `db:"organization_scoped"`
+		OrganizationScoped bool `json:"organization_scoped" db:"organization_scoped"`
 		// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
 		// is true.
-		AllowedWorkspaces []resource.TfeID `db:"allowed_workspace_ids"`
+		AllowedWorkspaces []resource.TfeID `json:"allowed_workspace_ids" db:"allowed_workspace_ids"`
 		// IDs of workspaces assigned to the pool. Note: this is a subset of
 		// AllowedWorkspaces.
-		AssignedWorkspaces []resource.TfeID `db:"workspace_ids"`
+		AssignedWorkspaces []resource.TfeID `json:"workspace_ids" db:"workspace_ids"`
 	}
 
 	CreateAgentPoolOptions struct {

@@ -96,14 +96,14 @@ func (s *Notifier) Start(ctx context.Context) error {
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if err := s.handleConfig(ctx, event); err != nil {
+			if err := s.handleConfigEvent(event); err != nil {
 				s.Error(err, "handling event", "event", event.Type)
 			}
 		}
 	}
 }
 
-func (s *Notifier) handleConfig(ctx context.Context, event pubsub.Event[*Config]) error {
+func (s *Notifier) handleConfigEvent(event pubsub.Event[*Config]) error {
 	switch event.Type {
 	case pubsub.CreatedEvent:
 		return s.add(event.Payload)

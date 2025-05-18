@@ -43,12 +43,12 @@ func TestRemoteStateSharing(t *testing.T) {
 	producerRun := daemon.createRun(t, ctx, producer, producerCV, nil)
 
 	// Wait for run to reach planned state before applying
-	planned := daemon.waitRunStatus(t, producerRun.ID, runstatus.Planned)
+	planned := daemon.waitRunStatus(t, ctx, producerRun.ID, runstatus.Planned)
 	err = daemon.Runs.Apply(ctx, planned.ID)
 	require.NoError(t, err)
 
 	// Wait for run to be applied
-	daemon.waitRunStatus(t, producerRun.ID, runstatus.Applied)
+	daemon.waitRunStatus(t, ctx, producerRun.ID, runstatus.Applied)
 
 	// consume state in a run in the consumer workspace from the producer
 	// workspace.
@@ -80,10 +80,10 @@ output "remote_foo" {
 
 	// create run and apply
 	consumerRun := daemon.createRun(t, ctx, consumer, consumerCV, nil)
-	planned = daemon.waitRunStatus(t, consumerRun.ID, runstatus.Planned)
+	planned = daemon.waitRunStatus(t, ctx, consumerRun.ID, runstatus.Planned)
 	err = daemon.Runs.Apply(ctx, planned.ID)
 	require.NoError(t, err)
-	daemon.waitRunStatus(t, consumerRun.ID, runstatus.Applied)
+	daemon.waitRunStatus(t, ctx, consumerRun.ID, runstatus.Applied)
 
 	got := daemon.getCurrentState(t, ctx, consumer.ID)
 	if assert.Contains(t, got.Outputs, "remote_foo", got.Outputs) {

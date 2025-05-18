@@ -193,13 +193,13 @@ func (s *testDaemon) getRun(t *testing.T, ctx context.Context, runID resource.Tf
 	return run
 }
 
-func (s *testDaemon) waitRunStatus(t *testing.T, runID resource.TfeID, status runstatus.Status) *run.Run {
+func (s *testDaemon) waitRunStatus(t *testing.T, ctx context.Context, runID resource.TfeID, status runstatus.Status) *run.Run {
 	t.Helper()
 
 	for event := range s.runEvents {
 		if event.Payload.ID == runID {
 			if event.Payload.Status == status {
-				return s.getRun(t, t.Context(), runID)
+				return s.getRun(t, ctx, runID)
 			}
 			if runstatus.Done(event.Payload.Status) && event.Payload.Status != status {
 				t.Fatalf("expected run status %s but run finished with status %s", status, event.Payload.Status)

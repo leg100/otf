@@ -585,7 +585,7 @@ FROM agent_pools ap
 WHERE ap.agent_pool_id = $1
 GROUP BY ap.agent_pool_id
 `, poolID)
-	return sql.CollectOneRow(rows, pgx.RowTo[*Pool])
+	return sql.CollectOneRow[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
 func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.TfeID) (*Pool, error) {
@@ -606,7 +606,7 @@ JOIN agent_tokens at USING (agent_pool_id)
 WHERE at.agent_token_id = $1
 GROUP BY ap.agent_pool_id
 `, tokenID)
-	return sql.CollectOneRow(rows, pgx.RowTo[*Pool])
+	return sql.CollectOneRow[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
 func (db *db) listPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
@@ -642,7 +642,7 @@ ORDER BY ap.created_at DESC
 		opts.AllowedWorkspaceName,
 		opts.AllowedWorkspaceID,
 	)
-	return sql.CollectRows(rows, pgx.RowTo[*Pool])
+	return sql.CollectRows[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
 func (db *db) deleteAgentPool(ctx context.Context, poolID resource.TfeID) error {
