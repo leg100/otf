@@ -47,6 +47,18 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 		err = expect.Locator(page.GetByRole("alert")).ToHaveText("added variable set: global-1")
 		require.NoError(t, err)
 
+		// edit description
+		err = page.Locator("textarea#description").Fill("this is my newly updated global variable set")
+		require.NoError(t, err)
+
+		// submit form
+		err = page.Locator(`//button[@id='save-variable-set-button']`).Click()
+		require.NoError(t, err)
+
+		// confirm variable set updated
+		err = expect.Locator(page.GetByRole("alert")).ToHaveText("updated variable set: global-1")
+		require.NoError(t, err)
+
 		// add a variable
 		err = page.Locator(`//button[@id='add-variable-button']`).Click()
 		require.NoError(t, err)
