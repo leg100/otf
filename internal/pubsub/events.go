@@ -23,18 +23,6 @@ type (
 	}
 )
 
-func NewCreatedEvent[T any](payload T) Event[T] {
-	return Event[T]{Type: CreatedEvent, Payload: payload}
-}
-
-func NewUpdatedEvent[T any](payload T) Event[T] {
-	return Event[T]{Type: UpdatedEvent, Payload: payload}
-}
-
-func NewDeletedEvent[T any](payload T) Event[T] {
-	return Event[T]{Type: DeletedEvent, Payload: payload}
-}
-
 func (e Event[T]) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("type", string(e.Type)),

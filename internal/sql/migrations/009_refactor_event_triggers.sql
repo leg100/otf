@@ -20,12 +20,6 @@ BEGIN
 END;
 $$;
 
--- ALTER TABLE runs ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE;
--- UPDATE runs
--- SET updated_at = runs.created_at;
--- FROM run_status_timestamps rst
--- WHERE rst.run_id = runs.run_id
-
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON agent_pools FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON runners FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
 CREATE OR REPLACE TRIGGER notify_event AFTER INSERT OR DELETE OR UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION build_and_send_event();
@@ -47,8 +41,6 @@ DROP TRIGGER notify_workspace_event ON runs;
 DROP FUNCTION workspace_run_notify_event;
 
 ---- create above / drop below ----
-
--- ALTER TABLE runs DROP COLUMN updated_at;
 
 CREATE OR REPLACE FUNCTION agent_pools_notify_event() RETURNS trigger
     LANGUAGE plpgsql

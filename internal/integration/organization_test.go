@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,14 +16,10 @@ func TestIntegration_Organization(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc, _, ctx := setup(t, skipDefaultOrganization())
-		sub, unsub := svc.Organizations.WatchOrganizations(ctx)
-		defer unsub()
 		org, err := svc.Organizations.Create(ctx, organization.CreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
-		// confirm creation triggers an event.
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := svc.Organizations.Create(ctx, organization.CreateOptions{
@@ -50,11 +45,7 @@ func TestIntegration_Organization(t *testing.T) {
 
 	t.Run("update name", func(t *testing.T) {
 		daemon, _, ctx := setup(t, skipDefaultOrganization())
-		sub, unsub := daemon.Organizations.WatchOrganizations(ctx)
-		defer unsub()
-
 		org := daemon.createOrganization(t, ctx)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		want := organization.NewTestName(t)
 		updated, err := daemon.Organizations.Update(ctx, org.Name, organization.UpdateOptions{
@@ -63,7 +54,6 @@ func TestIntegration_Organization(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, want, updated.Name)
-		assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
@@ -130,15 +120,11 @@ func TestIntegration_Organization(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		daemon, _, ctx := setup(t, skipDefaultOrganization())
-		sub, unsub := daemon.Organizations.WatchOrganizations(ctx)
-		defer unsub()
 
 		org := daemon.createOrganization(t, ctx)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		err := daemon.Organizations.Delete(ctx, org.Name)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-sub)
 
 		_, err = daemon.Organizations.Get(ctx, org.Name)
 		require.ErrorIs(t, err, internal.ErrResourceNotFound)

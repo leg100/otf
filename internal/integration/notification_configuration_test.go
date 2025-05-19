@@ -26,7 +26,9 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 			URL:             internal.String("http://example.com"),
 		})
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+		event := <-sub
+		assert.Equal(t, pubsub.CreatedEvent, event.Type)
+		assert.Equal(t, nc.ID, event.Payload.ID)
 	})
 
 	t.Run("update", func(t *testing.T) {
@@ -90,11 +92,17 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		sub, unsub := svc.Notifications.Watch(ctx)
 		defer unsub()
 		nc := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+
+		// dismiss created event
+		<-sub
 
 		err := svc.Notifications.Delete(ctx, nc.ID)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
+
+		// should receive deleted event
+		event := <-sub
+		assert.Equal(t, pubsub.DeletedEvent, event.Type)
+		assert.Equal(t, nc.ID, event.Payload.ID)
 
 		_, err = svc.Notifications.Get(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
@@ -111,15 +119,23 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		ws := svc.createWorkspace(t, ctx, org)
 
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-sub)
+		// dismiss created event
+		<-sub
 
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-sub)
+		// dismiss created event
+		<-sub
 
 		_, err := svc.Workspaces.Delete(ctx, ws.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-sub)
+		// should receive deleted events
+		event := <-sub
+		assert.Equal(t, pubsub.DeletedEvent, event.Type)
+		assert.Equal(t, nc1.ID, event.Payload.ID)
+
+		event = <-sub
+		assert.Equal(t, pubsub.DeletedEvent, event.Type)
+		assert.Equal(t, nc2.ID, event.Payload.ID)
 	})
 }

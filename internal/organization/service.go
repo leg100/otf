@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -28,7 +27,6 @@ type (
 		tfeapi       *tfe
 		api          *api
 		tokenFactory *tokenFactory
-		broker       *pubsub.Broker[*Organization]
 
 		afterCreateHooks  []func(context.Context, *Organization) error
 		beforeDeleteHooks []func(context.Context, *Organization) error
@@ -72,11 +70,6 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	svc.broker = pubsub.NewBroker[*Organization](
-		opts.Logger,
-		opts.Listener,
-		"organizations",
-	)
 	// Fetch organization when API calls request organization be included in the
 	// response
 	opts.Responder.Register(tfeapi.IncludeOrganization, svc.tfeapi.include)
@@ -92,10 +85,6 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.tfeapi.addHandlers(r)
 	s.api.addHandlers(r)
-}
-
-func (s *Service) WatchOrganizations(ctx context.Context) (<-chan pubsub.Event[*Organization], func()) {
-	return s.broker.Subscribe(ctx)
 }
 
 // Create creates an organization. Only users can create
