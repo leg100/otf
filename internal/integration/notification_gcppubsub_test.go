@@ -113,8 +113,13 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		// check time is valid
 		assert.True(t, notification.RunUpdatedAt.After(started),
 			"time is invalid: %s", notification.RunUpdatedAt.String())
+
+		// check notification includes valid info
+		assert.Equal(t, run.ID, payload.RunID)
+		assert.Equal(t, run.Organization, payload.OrganizationName)
+		assert.Equal(t, ws.Name, payload.WorkspaceName)
 	}
-	// check everything matched
+	// check statuses were all received
 	for status, want := range matches {
 		assert.True(t, want, "status %s not received", status)
 	}
