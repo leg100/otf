@@ -55,30 +55,30 @@ func TestMetricsCollector_update(t *testing.T) {
 	mc := &MetricsCollector{}
 	mc.bootstrap()
 
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-1"), Status: runstatus.Pending},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-1"), Status: runstatus.Pending},
 	})
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Pending},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Pending},
 	})
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Planning},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-2"), Status: runstatus.Planning},
 	})
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Pending},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Pending},
 	})
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Planning},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Planning},
 	})
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Applied},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-3"), Status: runstatus.Applied},
 	})
-	mc.update(pubsub.Event[*Run]{
-		Payload: &Run{ID: testutils.ParseID(t, "run-4"), Status: runstatus.Pending},
+	mc.update(pubsub.Event[*Event]{
+		Payload: &Event{ID: testutils.ParseID(t, "run-4"), Status: runstatus.Pending},
 	})
-	mc.update(pubsub.Event[*Run]{
+	mc.update(pubsub.Event[*Event]{
 		Type:    pubsub.DeletedEvent,
-		Payload: &Run{ID: testutils.ParseID(t, "run-4")},
+		Payload: &Event{ID: testutils.ParseID(t, "run-4")},
 	})
 
 	assert.Len(t, mc.currentStatuses, 3)

@@ -32,8 +32,8 @@ type (
 		api          *api
 		web          *webHandlers
 		poolBroker   pubsub.SubscriptionService[*Pool]
-		runnerBroker pubsub.SubscriptionService[*RunnerMeta]
-		jobBroker    pubsub.SubscriptionService[*Job]
+		runnerBroker pubsub.SubscriptionService[*RunnerEvent]
+		jobBroker    pubsub.SubscriptionService[*JobEvent]
 		phases       phaseClient
 
 		db *db
@@ -78,38 +78,20 @@ func NewService(opts ServiceOptions) *Service {
 		Responder: opts.Responder,
 	}
 	svc.web = newWebHandlers(svc, opts)
-	svc.poolBroker = pubsub.NewBroker(
+	svc.poolBroker = pubsub.NewBroker[*Pool](
 		opts.Logger,
 		opts.Listener,
 		"agent_pools",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Pool, error) {
-			if action == sql.DeleteAction {
-				return &Pool{ID: id}, nil
-			}
-			return svc.db.getPool(ctx, id)
-		},
 	)
-	svc.runnerBroker = pubsub.NewBroker(
+	svc.runnerBroker = pubsub.NewBroker[*RunnerEvent](
 		opts.Logger,
 		opts.Listener,
 		"runners",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*RunnerMeta, error) {
-			if action == sql.DeleteAction {
-				return &RunnerMeta{ID: id}, nil
-			}
-			return svc.db.get(ctx, id)
-		},
 	)
-	svc.jobBroker = pubsub.NewBroker(
+	svc.jobBroker = pubsub.NewBroker[*JobEvent](
 		opts.Logger,
 		opts.Listener,
 		"jobs",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Job, error) {
-			if action == sql.DeleteAction {
-				return &Job{ID: id}, nil
-			}
-			return svc.db.getJob(ctx, id)
-		},
 	)
 	// Register with auth middleware the agent token kind and a means of
 	// retrieving the appropriate runner corresponding to the agent token ID
@@ -179,15 +161,15 @@ func (s *Service) WatchAgentPools(ctx context.Context) (<-chan pubsub.Event[*Poo
 	return s.poolBroker.Subscribe(ctx)
 }
 
-func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*RunnerMeta], func()) {
+func (s *Service) WatchRunners(ctx context.Context) (<-chan pubsub.Event[*RunnerEvent], func()) {
 	return s.runnerBroker.Subscribe(ctx)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*RunnerMeta], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*RunnerEvent], func()) {
 	return s.WatchRunners(ctx)
 }
 
-func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*Job], func()) {
+func (s *Service) WatchJobs(ctx context.Context) (<-chan pubsub.Event[*JobEvent], func()) {
 	return s.jobBroker.Subscribe(ctx)
 }
 
@@ -351,6 +333,9 @@ func (s *Service) cancelJob(ctx context.Context, run *otfrun.Run) error {
 //
 // getJobs is intended to be called by an runner in order to retrieve jobs to
 // execute and jobs to cancel.
+//
+// TODO: rename to reflect the fact this routine *waits* for a job if there
+// isn't immediately an available job.
 func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job, error) {
 	// only these subjects may call this endpoint:
 	// (a) a runner with an ID matching runnerID
@@ -373,17 +358,24 @@ func (s *Service) getJobs(ctx context.Context, runnerID resource.TfeID) ([]*Job,
 
 	// wait for a job matching criteria to arrive:
 	for event := range sub {
-		job := event.Payload
-		if job.RunnerID == nil || *job.RunnerID != runnerID {
+		if event.Payload.RunnerID == nil || *event.Payload.RunnerID != runnerID {
 			continue
 		}
-		switch job.Status {
+		var match bool
+		switch event.Payload.Status {
 		case JobAllocated:
-			return []*Job{job}, nil
+			match = true
 		case JobRunning:
-			if job.Signaled != nil {
-				return []*Job{job}, nil
+			if event.Payload.Signaled != nil {
+				match = true
 			}
+		}
+		if match {
+			job, err := s.getJob(ctx, event.Payload.ID)
+			if err != nil {
+				return nil, fmt.Errorf("retrieving job: %w", err)
+			}
+			return []*Job{job}, nil
 		}
 	}
 	return nil, nil

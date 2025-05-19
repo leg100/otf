@@ -20,19 +20,19 @@ import (
 
 // WebsocketListHandler handles dynamically updating lists of resources via
 // a websocket.
-type WebsocketListHandler[Resource any, Options any] struct {
+type WebsocketListHandler[Resource, ResourceEvent, Options any] struct {
 	logr.Logger
-	Client    websocketListHandlerClient[Resource, Options]
+	Client    websocketListHandlerClient[Resource, ResourceEvent, Options]
 	Populator TablePopulator[Resource]
 	ID        string
 }
 
-type websocketListHandlerClient[Resource any, Options any] interface {
-	Watch(ctx context.Context) (<-chan pubsub.Event[Resource], func())
+type websocketListHandlerClient[Resource, ResourceEvent, Options any] interface {
+	Watch(ctx context.Context) (<-chan pubsub.Event[ResourceEvent], func())
 	List(ctx context.Context, opts Options) (*resource.Page[Resource], error)
 }
 
-func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter, r *http.Request) {
+func (h *WebsocketListHandler[Resource, ResourceEvent, Options]) Handler(w http.ResponseWriter, r *http.Request) {
 	var opts Options
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -127,10 +127,7 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 	g.Go(func() error {
 		for {
 			_, p, err := conn.ReadMessage()
-			closeError := &websocket.CloseError{}
-			if errors.As(err, &closeError) {
-				return nil
-			} else if err != nil {
+			if err != nil {
 				return fmt.Errorf("reading websocket message: %w", err)
 			}
 
@@ -153,6 +150,10 @@ func (h *WebsocketListHandler[Resource, Options]) Handler(w http.ResponseWriter,
 		}
 	})
 	if err := g.Wait(); err != nil {
-		h.Error(err, "handling websocket connection")
+		// Don't log errors resulting from the client closing the connection.
+		closeError := &websocket.CloseError{}
+		if !errors.As(err, &closeError) {
+			h.Error(err, "terminated websocket connection")
+		}
 	}
 }

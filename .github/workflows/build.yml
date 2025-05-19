@@ -57,7 +57,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-screenshots
-          path: internal/integration/screenshots/**/*.png
+          path: |
+            internal/integration/screenshots/*.png
+            internal/integration/screenshots/**/*.png
   release-please:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'

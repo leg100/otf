@@ -58,7 +58,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// wait for run to reach planned status
-		planned := daemon.waitRunStatus(t, testutils.ParseID(t, created.ID), runstatus.Planned)
+		planned := daemon.waitRunStatus(t, ctx, testutils.ParseID(t, created.ID), runstatus.Planned)
 
 		// run should have planned two resources (defined in the config from the
 		// github repo)

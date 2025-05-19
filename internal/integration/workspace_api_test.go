@@ -102,7 +102,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	run, err := daemon.Runs.Create(ctx, testutils.ParseID(t, ws.ID), otfrun.CreateOptions{})
 	require.NoError(t, err)
 
-	run = daemon.waitRunStatus(t, run.ID, runstatus.Planned)
+	run = daemon.waitRunStatus(t, ctx, run.ID, runstatus.Planned)
 	// status matches, now check whether reports match as well
 	assert.Equal(t, &otfrun.Report{Additions: 2}, run.Plan.ResourceReport)
 }

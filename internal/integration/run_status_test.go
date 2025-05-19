@@ -92,7 +92,7 @@ output "cat_name" { value = random_pet.cat.id }
 
 			// create run and wait for it to reach wanted status
 			created := daemon.createRun(t, ctx, ws, cv, nil)
-			updated := daemon.waitRunStatus(t, created.ID, step.wantStatus)
+			updated := daemon.waitRunStatus(t, ctx, created.ID, step.wantStatus)
 			// status matches, now check whether reports match as well
 			assert.Equal(t, &step.wantResourceReport, updated.Plan.ResourceReport)
 			assert.Equal(t, &step.wantOutputReport, updated.Plan.OutputReport)

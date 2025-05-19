@@ -42,6 +42,7 @@ type (
 	Run struct {
 		ID                     resource.TfeID          `jsonapi:"primary,runs"`
 		CreatedAt              time.Time               `jsonapi:"attribute" json:"created_at"`
+		UpdatedAt              time.Time               `jsonapi:"attribute" json:"updated_at"`
 		IsDestroy              bool                    `jsonapi:"attribute" json:"is_destroy"`
 		CancelSignaledAt       *time.Time              `jsonapi:"attribute" json:"cancel_signaled_at"`
 		Message                string                  `jsonapi:"attribute" json:"message"`
@@ -150,7 +151,7 @@ type (
 )
 
 func (r *Run) Queued() bool {
-	return r.Status == runstatus.PlanQueued || r.Status == runstatus.ApplyQueued
+	return runstatus.Queued(r.Status)
 }
 
 func (r *Run) HasChanges() bool {
@@ -374,12 +375,7 @@ func (r *Run) StartedAt() time.Time {
 // Done determines whether run has reached an end state, e.g. applied,
 // discarded, etc.
 func (r *Run) Done() bool {
-	switch r.Status {
-	case runstatus.Applied, runstatus.PlannedAndFinished, runstatus.Discarded, runstatus.Canceled, runstatus.ForceCanceled, runstatus.Errored:
-		return true
-	default:
-		return false
-	}
+	return runstatus.Done(r.Status)
 }
 
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest

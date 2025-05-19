@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -38,16 +39,16 @@ type (
 		islistening chan struct{} // semaphore that's closed once broker is listening
 
 		mu         sync.Mutex             // sync access to maps
-		forwarders map[string]ForwardFunc // maps table name to getter
+		forwarders map[string]ForwardFunc // maps table name to event forwarder
 	}
 
-	// ForwardFunc handles forwarding the id and action onto subscribers.
-	ForwardFunc func(ctx context.Context, id string, action Action)
+	// ForwardFunc forwards an event to a client
+	ForwardFunc func(event Event)
 
 	// database connection pool
 	pool interface {
 		Acquire(ctx context.Context) (*pgxpool.Conn, error)
-		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+		Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	}
 )
 
@@ -61,13 +62,13 @@ func NewListener(logger logr.Logger, db pool) *Listener {
 	}
 }
 
-// RegisterFunc registers a function that is capable of converting database
-// events for the given table into an OTF event.
-func (b *Listener) RegisterFunc(table string, getter ForwardFunc) {
+// RegisterTable maps a table to an event forwarding function: the function
+// henceforth is called with events triggered on the table.
+func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.forwarders[table] = getter
+	b.forwarders[table] = forwarder
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
@@ -99,7 +100,7 @@ func (b *Listener) Start(ctx context.Context) error {
 				return err
 			}
 		}
-		var event event
+		var event Event
 		if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
 			b.Error(err, "unmarshaling postgres notification")
 			continue
@@ -109,7 +110,7 @@ func (b *Listener) Start(ctx context.Context) error {
 			b.Error(nil, "no getter found for table: %s", event.Table)
 			continue
 		}
-		forwarder(ctx, event.ID, event.Action)
+		forwarder(event)
 	}
 }
 
@@ -117,18 +118,19 @@ func (b *Listener) Started() <-chan struct{} {
 	return b.islistening
 }
 
-// event is a postgres notification triggered by a database change.
-type event struct {
-	Table  string `json:"table"`  // pg table associated with change
-	Action Action `json:"action"` // INSERT/UPDATE/DELETE
-	ID     string `json:"id"`     // ID of changed row
+// Event is a postgres event triggered by a database change.
+type Event struct {
+	Table  string          `json:"table"`  // pg table associated with change
+	Action Action          `json:"action"` // INSERT/UPDATE/DELETE
+	Record json.RawMessage `json:"record"` // the changed row
+	Time   time.Time       `json:"time"`   // time at which event occured
 }
 
-func (v *event) LogValue() slog.Value {
+func (v *Event) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("id", v.ID),
 		slog.String("action", string(v.Action)),
 		slog.String("table", v.Table),
+		slog.Time("time", v.Time),
 	}
 	return slog.GroupValue(attrs...)
 }

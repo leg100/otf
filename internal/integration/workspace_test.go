@@ -43,7 +43,8 @@ func TestWorkspace(t *testing.T) {
 		})
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+			event := <-sub
+			assert.Equal(t, pubsub.CreatedEvent, event.Type)
 		})
 	})
 
@@ -134,14 +135,16 @@ func TestWorkspace(t *testing.T) {
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+		event := <-sub
+		assert.Equal(t, pubsub.CreatedEvent, event.Type)
 
 		got, err := daemon.Workspaces.Update(ctx, ws.ID, workspace.UpdateOptions{
 			Description: internal.String("updated description"),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, "updated description", got.Description)
-		assert.Equal(t, pubsub.NewUpdatedEvent(got), <-sub)
+		event = <-sub
+		assert.Equal(t, pubsub.UpdatedEvent, event.Type)
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
@@ -417,16 +420,16 @@ func TestWorkspace(t *testing.T) {
 		cv3 := svc.createAndUploadConfigurationVersion(t, ctx, ws3, nil)
 
 		ws1run1planned := svc.createRun(t, ctx, ws1, cv1, nil)
-		_ = svc.waitRunStatus(t, ws1run1planned.ID, runstatus.Planned)
+		_ = svc.waitRunStatus(t, ctx, ws1run1planned.ID, runstatus.Planned)
 
 		ws2run1planned := svc.createRun(t, ctx, ws2, cv2, nil)
-		_ = svc.waitRunStatus(t, ws2run1planned.ID, runstatus.Planned)
+		_ = svc.waitRunStatus(t, ctx, ws2run1planned.ID, runstatus.Planned)
 
 		ws3run1applied := svc.createRun(t, ctx, ws3, cv3, nil)
-		_ = svc.waitRunStatus(t, ws3run1applied.ID, runstatus.Planned)
+		_ = svc.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Planned)
 		err := svc.Runs.Apply(ctx, ws3run1applied.ID)
 		require.NoError(t, err)
-		_ = svc.waitRunStatus(t, ws3run1applied.ID, runstatus.Applied)
+		_ = svc.waitRunStatus(t, ctx, ws3run1applied.ID, runstatus.Applied)
 
 		tests := []struct {
 			name     string
@@ -498,11 +501,13 @@ func TestWorkspace(t *testing.T) {
 		defer unsub()
 
 		ws := daemon.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+		event := <-sub
+		assert.Equal(t, pubsub.CreatedEvent, event.Type)
 
 		_, err := daemon.Workspaces.Delete(ctx, ws.ID)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
+		event = <-sub
+		assert.Equal(t, pubsub.DeletedEvent, event.Type)
 
 		results, err := daemon.Workspaces.List(ctx, workspace.ListOptions{Organization: &ws.Organization})
 		require.NoError(t, err)

@@ -46,7 +46,7 @@ type (
 		afterForceCancelHooks  []func(context.Context, *Run) error
 		afterEnqueuePlanHooks  []func(context.Context, *Run) error
 		afterEnqueueApplyHooks []func(context.Context, *Run) error
-		broker                 pubsub.SubscriptionService[*Run]
+		broker                 pubsub.SubscriptionService[*Event]
 
 		*factory
 	}
@@ -109,16 +109,10 @@ func NewService(opts Options) *Service {
 		vcs:        opts.VCSProviderService,
 		runs:       &svc,
 	}
-	svc.broker = pubsub.NewBroker(
+	svc.broker = pubsub.NewBroker[*Event](
 		opts.Logger,
 		opts.Listener,
 		"runs",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Run, error) {
-			if action == sql.DeleteAction {
-				return &Run{ID: id}, nil
-			}
-			return db.get(ctx, id)
-		},
 	)
 
 	// Fetch related resources when API requests their inclusion
@@ -340,7 +334,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID resource.TfeID, phase i
 	return run, nil
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
 	return s.broker.Subscribe(ctx)
 }
 

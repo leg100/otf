@@ -30,7 +30,7 @@ type webHandlers struct {
 	workspaces           *workspacepkg.Service
 	logger               logr.Logger
 	authorizer           authz.Interface
-	websocketListHandler *components.WebsocketListHandler[*RunnerMeta, ListOptions]
+	websocketListHandler *components.WebsocketListHandler[*RunnerMeta, *RunnerEvent, ListOptions]
 }
 
 // webClient gives web handlers access to the agents service endpoints
@@ -77,7 +77,7 @@ func newWebHandlers(svc *Service, opts ServiceOptions) *webHandlers {
 		logger:     opts.Logger,
 		svc:        svc,
 		workspaces: opts.WorkspaceService,
-		websocketListHandler: &components.WebsocketListHandler[*RunnerMeta, ListOptions]{
+		websocketListHandler: &components.WebsocketListHandler[*RunnerMeta, *RunnerEvent, ListOptions]{
 			Logger:    opts.Logger,
 			Client:    svc,
 			Populator: table{},

@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/engine"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/team"
 	"github.com/leg100/otf/internal/vcs"
@@ -68,6 +69,10 @@ func (f *FakeService) Get(context.Context, resource.TfeID) (*Workspace, error) {
 
 func (f *FakeService) GetByName(context.Context, organization.Name, string) (*Workspace, error) {
 	return f.Workspaces[0], nil
+}
+
+func (f *FakeService) Watch(context.Context) (<-chan pubsub.Event[*Event], func()) {
+	return nil, nil
 }
 
 func (f *FakeService) Delete(context.Context, resource.TfeID) (*Workspace, error) {
