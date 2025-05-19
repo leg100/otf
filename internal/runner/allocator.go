@@ -80,11 +80,15 @@ func (a *allocator) Start(ctx context.Context) error {
 			case pubsub.UpdatedEvent:
 				switch event.Payload.Status {
 				case RunnerExited, RunnerErrored:
-					// Delete runners in terminal state.
+					// Delete runners in a terminal state.
 					a.deleteRunner(event.Payload.ID)
 				default:
 					// Update runner status
-					runner := a.runners[event.Payload.ID]
+					runner, ok := a.runners[event.Payload.ID]
+					if !ok {
+						// No runner could be found; ignore
+						continue
+					}
 					runner.Status = event.Payload.Status
 					a.runners[event.Payload.ID] = runner
 				}
@@ -252,7 +256,7 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 }
 
 func (a *allocator) addRunner(runner *RunnerMeta) {
-	// don't add runners in terminal state (exited, errored)
+	// don't add runners in a terminal state (exited, errored)
 	switch runner.Status {
 	case RunnerExited, RunnerErrored:
 		return

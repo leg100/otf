@@ -63,7 +63,7 @@ FROM notification_configurations
 WHERE notification_configuration_id = $1
 FOR UPDATE
 `, id)
-			return sql.CollectOneRow(rows, pgx.RowTo[*Config])
+			return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Config])
 		},
 		updateFunc,
 		func(ctx context.Context, nc *Config) error {
@@ -98,7 +98,7 @@ SELECT *
 FROM notification_configurations
 WHERE workspace_id = $1
 `, workspaceID)
-	return sql.CollectRows(rows, pgx.RowTo[*Config])
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Config])
 }
 
 func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
@@ -106,7 +106,7 @@ func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
 SELECT *
 FROM notification_configurations
 `)
-	return sql.CollectRows(rows, pgx.RowTo[*Config])
+	return sql.CollectRows(rows, pgx.RowToAddrOfStructByName[Config])
 }
 
 func (db *pgdb) get(ctx context.Context, id resource.TfeID) (*Config, error) {
@@ -115,7 +115,7 @@ SELECT *
 FROM notification_configurations
 WHERE notification_configuration_id = $1
 `, id)
-	return sql.CollectOneRow(rows, pgx.RowTo[*Config])
+	return sql.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Config])
 }
 
 func (db *pgdb) delete(ctx context.Context, id resource.TfeID) error {

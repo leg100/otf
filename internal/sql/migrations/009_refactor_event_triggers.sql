@@ -14,6 +14,7 @@ BEGIN
     notification = json_build_object(
                       'table',TG_TABLE_NAME,
                       'action', TG_OP,
+                      'time', current_timestamp,
                       'record', record);
     PERFORM pg_notify('events', notification::text);
     RETURN NULL;
@@ -57,7 +58,6 @@ BEGIN
     notification = json_build_object(
                       'table',TG_TABLE_NAME,
                       'action', TG_OP,
-                      'time', current_timestamp,
                       'id', record.agent_pool_id);
     PERFORM pg_notify('events', notification::text);
     RETURN NULL;

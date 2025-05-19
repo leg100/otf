@@ -44,7 +44,7 @@ func TestBroker_forward(t *testing.T) {
 	sub, unsub := broker.Subscribe(ctx)
 	defer unsub()
 
-	broker.forward(sql.InsertAction, []byte(`{"bar": "baz"}`))
+	broker.forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
 	want := Event[*foo]{
 		Type:    CreatedEvent,
 		Payload: &foo{Bar: "baz"},
@@ -62,7 +62,7 @@ func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
 	// deliberating publish more than subBufferSize events to trigger broker to
 	// unsubscribe the sub
 	for range subBufferSize + 1 {
-		broker.forward(sql.InsertAction, []byte(`{"bar": "baz"}`))
+		broker.forward(sql.Event{Action: sql.InsertAction, Record: []byte(`{"bar": "baz"}`)})
 	}
 	assert.Equal(t, 0, len(broker.subs))
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"runtime"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/uuid"
@@ -24,6 +25,8 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		t.Skip("gcp pubsub emulator only runs on amd64")
 	}
 	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
+
+	started := time.Now()
 
 	integrationTest(t)
 	ctx := context.Background()
@@ -91,11 +94,13 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		var payload notifications.GenericPayload
 		err = json.Unmarshal(g.Data, &payload)
 		require.NoError(t, err)
-		status := payload.Notifications[0].RunStatus
-		if _, ok := matches[status]; ok {
+
+		notification := payload.Notifications[0]
+		if _, ok := matches[notification.RunStatus]; ok {
 			assert.Equal(t, run.ID, payload.RunID)
-			matches[status] = true
+			matches[notification.RunStatus] = true
 		}
+
 		// check attributes include workspace metadata
 		want := map[string]string{
 			"otf.ninja/v1/workspace.name": ws.Name,
@@ -104,6 +109,10 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 			"otf.ninja/v1/tags/bar":       "true",
 		}
 		assert.Equal(t, want, g.Attributes)
+
+		// check time is valid
+		assert.True(t, notification.RunUpdatedAt.After(started),
+			"time is invalid: %s", notification.RunUpdatedAt.String())
 	}
 	// check everything matched
 	for status, want := range matches {

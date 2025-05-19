@@ -46,7 +46,7 @@ type Broker[T any] struct {
 
 // databaseListener is the upstream database events listener
 type databaseListener interface {
-	RegisterTable(table string, ff sql.TableFunc)
+	RegisterTable(table string, ff sql.ForwardFunc)
 }
 
 func NewBroker[T any](logger logr.Logger, listener databaseListener, table string) *Broker[T] {
@@ -92,13 +92,15 @@ func (b *Broker[T]) unsubscribe(sub chan Event[T]) {
 
 // forward retrieves the type T uniquely identified by id and forwards it onto
 // subscribers as an event together with the action.
-func (b *Broker[T]) forward(action sql.Action, record json.RawMessage) {
-	var event Event[T]
-	if err := json.Unmarshal(record, &event.Payload); err != nil {
-		b.Error(err, "unmarshaling event from database record", "table", b.table, "action", action, "record", string(record))
+func (b *Broker[T]) forward(sqlEvent sql.Event) {
+	event := Event[T]{
+		Time: sqlEvent.Time,
+	}
+	if err := json.Unmarshal(sqlEvent.Record, &event.Payload); err != nil {
+		b.Error(err, "unmarshaling event from database record", "table", b.table, "action", sqlEvent.Action, "record", string(sqlEvent.Record))
 		return
 	}
-	switch action {
+	switch sqlEvent.Action {
 	case sql.InsertAction:
 		event.Type = CreatedEvent
 	case sql.UpdateAction:
@@ -106,7 +108,7 @@ func (b *Broker[T]) forward(action sql.Action, record json.RawMessage) {
 	case sql.DeleteAction:
 		event.Type = DeletedEvent
 	default:
-		b.Error(nil, "unknown action", "action", action)
+		b.Error(nil, "unknown action", "action", sqlEvent.Action)
 		return
 	}
 

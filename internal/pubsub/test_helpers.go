@@ -6,5 +6,5 @@ import (
 
 type fakeListener struct{}
 
-func (f *fakeListener) RegisterTable(table string, ff sql.TableFunc) {
+func (f *fakeListener) RegisterTable(table string, ff sql.ForwardFunc) {
 }
