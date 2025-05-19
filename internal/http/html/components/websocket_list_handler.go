@@ -127,10 +127,7 @@ func (h *WebsocketListHandler[Resource, ResourceEvent, Options]) Handler(w http.
 	g.Go(func() error {
 		for {
 			_, p, err := conn.ReadMessage()
-			closeError := &websocket.CloseError{}
-			if errors.As(err, &closeError) {
-				return nil
-			} else if err != nil {
+			if err != nil {
 				return fmt.Errorf("reading websocket message: %w", err)
 			}
 
@@ -153,6 +150,10 @@ func (h *WebsocketListHandler[Resource, ResourceEvent, Options]) Handler(w http.
 		}
 	})
 	if err := g.Wait(); err != nil {
-		h.Error(err, "handling websocket connection")
+		// Don't log errors resulting from the client closing the connection.
+		closeError := &websocket.CloseError{}
+		if !errors.As(err, &closeError) {
+			h.Error(err, "terminated websocket connection")
+		}
 	}
 }
