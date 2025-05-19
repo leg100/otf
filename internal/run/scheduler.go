@@ -50,10 +50,12 @@ type (
 		RunClient       schedulerRunClient
 	}
 
-	runInfo struct {
-		ID       resource.TfeID
-		Status   runstatus.Status
-		PlanOnly bool
+	// schedulerRun is a summary of a run, with only the fields the scheduler is
+	// interested in.
+	schedulerRun struct {
+		id       resource.TfeID
+		status   runstatus.Status
+		planOnly bool
 	}
 )
 
@@ -93,8 +95,12 @@ func (s *scheduler) Start(ctx context.Context) error {
 	// Populate queues with existing runs and make scheduling decisions
 	s.queues = make(map[resource.TfeID]queue)
 	for _, run := range runs {
-		info := runInfo{ID: run.ID, Status: run.Status}
-		if err := s.schedule(ctx, run.WorkspaceID, &info); err != nil {
+		srun := schedulerRun{
+			id:       run.ID,
+			status:   run.Status,
+			planOnly: run.PlanOnly,
+		}
+		if err := s.schedule(ctx, run.WorkspaceID, &srun); err != nil {
 			return err
 		}
 	}
@@ -112,8 +118,12 @@ func (s *scheduler) Start(ctx context.Context) error {
 				// queue is deleted along with any runs.
 				continue
 			}
-			info := runInfo{ID: event.Payload.ID, Status: event.Payload.Status}
-			if err := s.schedule(ctx, event.Payload.WorkspaceID, &info); err != nil {
+			srun := schedulerRun{
+				id:       event.Payload.ID,
+				status:   event.Payload.Status,
+				planOnly: event.Payload.PlanOnly,
+			}
+			if err := s.schedule(ctx, event.Payload.WorkspaceID, &srun); err != nil {
 				return err
 			}
 		case event, ok := <-subWorkspaces:
@@ -136,11 +146,11 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 }
 
-func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, runEvent *runInfo) error {
-	if runEvent != nil && runEvent.PlanOnly {
-		if runEvent.Status == runstatus.Pending {
+func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, runEvent *schedulerRun) error {
+	if runEvent != nil && runEvent.planOnly {
+		if runEvent.status == runstatus.Pending {
 			// Enqueue plan immediately for pending plan-only runs
-			if _, err := s.runs.EnqueuePlan(ctx, runEvent.ID); err != nil {
+			if _, err := s.runs.EnqueuePlan(ctx, runEvent.id); err != nil {
 				return err
 			}
 		}
@@ -164,7 +174,7 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 		}
 	}
 	if unlock {
-		_, err := s.workspaces.Unlock(ctx, workspaceID, &runEvent.ID, false)
+		_, err := s.workspaces.Unlock(ctx, workspaceID, &runEvent.id, false)
 		if errors.Is(err, internal.ErrResourceNotFound) {
 			// Workspace not found error can occur when a workspace is deleted
 			// very soon after a run has completed (a quite possible scenario
@@ -189,28 +199,28 @@ func (s *scheduler) schedule(ctx context.Context, workspaceID resource.TfeID, ru
 // plan should be enqueued for a run. If run is non-nil then it is added/removed
 // from the queue accordingly. Unlock is true if the workspace should be
 // unlocked.
-func (q queue) process(run *runInfo) (qq queue, enqueuePlan bool, unlock bool) {
+func (q queue) process(run *schedulerRun) (qq queue, enqueuePlan bool, unlock bool) {
 	if run != nil {
-		if q.current != nil && *q.current == run.ID {
-			if runstatus.Done(run.Status) {
+		if q.current != nil && *q.current == run.id {
+			if runstatus.Done(run.status) {
 				q.current = nil
 				// Workspace can be unlocked unless another run below is made
 				// the current run.
 				unlock = true
 			}
 		} else {
-			if q.current == nil && run.Status != runstatus.Pending && !runstatus.Done(run.Status) {
+			if q.current == nil && run.status != runstatus.Pending && !runstatus.Done(run.status) {
 				// This condition handles the scenario where the scheduler has
 				// only been started up and the scheduler has not yet set the
 				// current run and there is an existing scheduled run that is
 				// not yet done.
-				q.current = &run.ID
+				q.current = &run.id
 				return q, false, false
 			}
 			var found bool
 			for i, id := range q.backlog {
-				if run.ID == id {
-					if runstatus.Done(run.Status) {
+				if run.id == id {
+					if runstatus.Done(run.status) {
 						// remove run from backlog
 						q.backlog = append(q.backlog[:i], q.backlog[i+1:]...)
 						return q, false, false
@@ -221,7 +231,7 @@ func (q queue) process(run *runInfo) (qq queue, enqueuePlan bool, unlock bool) {
 			}
 			// add to backlog if not already in backlog
 			if !found {
-				q.backlog = append(q.backlog, run.ID)
+				q.backlog = append(q.backlog, run.id)
 			}
 		}
 	}
