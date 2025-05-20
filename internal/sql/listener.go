@@ -107,7 +107,7 @@ func (b *Listener) Start(ctx context.Context) error {
 		}
 		forwarder, ok := b.forwarders[string(event.Table)]
 		if !ok {
-			b.Error(nil, "no getter found for table: %s", event.Table)
+			b.Error(nil, "no event forwarder found", "table", event.Table)
 			continue
 		}
 		forwarder(event)

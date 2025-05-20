@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/workspace"
@@ -76,12 +77,15 @@ func TestRunError(t *testing.T) {
 			err = daemon.Configs.UploadConfig(ctx, cv.ID, tarball)
 			require.NoError(t, err)
 
-			// watch log events
-			logsSub, logsUnsub := daemon.Logs.WatchLogs(ctx)
-			defer logsUnsub()
-
 			// create run
-			_ = daemon.createRun(t, ctx, ws, cv, nil)
+			run := daemon.createRun(t, ctx, ws, cv, nil)
+
+			// tail run logs
+			logs, err := daemon.Logs.Tail(ctx, logs.TailOptions{
+				RunID: run.ID,
+				Phase: internal.PlanPhase,
+			})
+			require.NoError(t, err)
 
 			// wait for the run to report an error status and for the logs to contain
 			// the error message.
@@ -93,8 +97,8 @@ func TestRunError(t *testing.T) {
 			require.NoError(t, err)
 			for {
 				select {
-				case event := <-logsSub:
-					if errorRegex.Match(event.Payload.Data) {
+				case chunk := <-logs:
+					if errorRegex.Match(chunk.Data) {
 						gotErrorLogs = true
 					}
 				case event := <-daemon.runEvents:

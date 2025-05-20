@@ -462,11 +462,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: d.listener,
 		},
 		{
-			Name:   "proxy",
-			Logger: d.Logger,
-			System: d.Logs,
-		},
-		{
 			Name:   "reporter",
 			Logger: d.Logger,
 			DB:     d.DB,

@@ -42,7 +42,7 @@ type (
 	}
 
 	webLogsClient interface {
-		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		GetChunk(ctx context.Context, opts logs.GetChunkOptions) (logs.Chunk, error)
 	}
 
 	webWorkspaceClient interface {
@@ -193,12 +193,18 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.logs.GetChunk(r.Context(), logs.GetChunkOptions{
+		RunID: run.ID,
+		Phase: internal.PlanPhase,
+	})
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.logs.GetChunk(r.Context(), logs.GetChunkOptions{
+		RunID: run.ID,
+		Phase: internal.ApplyPhase,
+	})
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -207,8 +213,8 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	props := getProps{
 		run:       run,
 		ws:        ws,
-		planLogs:  logs.Chunk{Data: planLogs},
-		applyLogs: logs.Chunk{Data: applyLogs},
+		planLogs:  logs.Chunk{Data: planLogs.Data},
+		applyLogs: logs.Chunk{Data: applyLogs.Data},
 	}
 	html.Render(get(props), w, r)
 }
