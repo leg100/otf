@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
 
@@ -53,7 +52,7 @@ func NewService(opts Options) *Service {
 	svc.broker = pubsub.NewBroker[Chunk](
 		opts.Logger,
 		opts.Listener,
-		"logs",
+		"chunks",
 	)
 	svc.tailer = &tailer{
 		broker: svc.broker,
@@ -67,32 +66,18 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *Service) GetLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
-	logs, err := s.db.getLogs(ctx, runID, phase)
-	if err != nil {
-		s.Error(err, "retrieving logs", "run_id", runID, "phase", phase)
-		return nil, err
-	}
-	s.V(9).Info("retreived logs", "run_id", runID, "phase", phase)
-	return logs, nil
-}
-
-// GetChunk reads a chunk of logs for a phase.
-//
-// NOTE: unauthenticated - access granted only via signed URL
+// GetChunk retrieves a chunk of logs for a run phase.
 func (s *Service) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
-	logs, err := s.db.getLogs(ctx, opts.RunID, opts.Phase)
+	chunk, err := s.db.getChunk(ctx, opts)
 	if err != nil {
-		s.Error(err, "retrieving log chunk", "id", opts.RunID, "offset", opts.Offset)
+		s.Error(err, "retrieving log chunk", "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset, "limit", opts.Limit)
 		return Chunk{}, err
 	}
-	s.V(9).Info("retrieved log chunk", "id", opts.RunID, "offset", opts.Offset)
-	chunk := Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: logs}
-	// Cut chunk down to requested size.
-	return chunk.Cut(opts), nil
+	s.V(9).Info("retrieved log chunk", "chunk", chunk)
+	return chunk, nil
 }
 
-// PutChunk writes a chunk of logs for a phase
+// PutChunk writes a chunk of logs for a run phase
 func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 	_, err := s.Authorize(ctx, authz.PutChunkAction, opts.RunID)
 	if err != nil {
@@ -104,11 +89,11 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 		s.Error(err, "creating log chunk", "run_id", opts, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
-	if err := s.db.put(ctx, chunk); err != nil {
-		s.Error(err, "writing log chunk", "chunk_id", chunk.ID, "run_id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+	if err := s.db.putChunk(ctx, chunk); err != nil {
+		s.Error(err, "writing log chunk", "chunk", chunk)
 		return err
 	}
-	s.V(3).Info("written log chunk", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+	s.V(3).Info("written log chunk", "chunk", chunk)
 
 	return nil
 }

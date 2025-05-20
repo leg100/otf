@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 
 	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/leg100/otf/internal"
@@ -19,6 +20,7 @@ const (
 type (
 	// Chunk is a section of logs for a phase.
 	Chunk struct {
+		// TODO: this is better set as a monotonic serial rather than a TFE ID.
 		ID resource.TfeID `json:"chunk_id"` // Uniquely identifies the chunk.
 
 		RunID  resource.TfeID     `json:"run_id"`  // ID of run that generated the chunk
@@ -123,4 +125,14 @@ func (c Chunk) ToHTML() string {
 	html := term2html.Render([]byte(c.Data))
 
 	return string(html)
+}
+
+func (c Chunk) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("run_id", c.RunID.String()),
+		slog.String("phase", string(c.Phase)),
+		slog.Int("offset", c.Offset),
+		slog.Int("size", len(c.Data)),
+	}
+	return slog.GroupValue(attrs...)
 }

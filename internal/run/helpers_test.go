@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/authz"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -84,6 +85,6 @@ func (f *fakeWebServices) Apply(ctx context.Context, runID resource.TfeID) error
 	return nil
 }
 
-func (f *fakeWebLogsService) GetLogs(context.Context, resource.TfeID, internal.PhaseType) ([]byte, error) {
-	return nil, nil
+func (f *fakeWebLogsService) GetChunk(context.Context, logs.GetChunkOptions) (logs.Chunk, error) {
+	return logs.Chunk{}, nil
 }
