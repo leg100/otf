@@ -40,6 +40,6 @@ type fakeTailService struct {
 	chunks chan Chunk
 }
 
-func (f *fakeTailService) Tail(context.Context, GetChunkOptions) (<-chan Chunk, error) {
+func (f *fakeTailService) Tail(context.Context, TailOptions) (<-chan Chunk, error) {
 	return f.chunks, nil
 }

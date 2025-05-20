@@ -43,6 +43,12 @@ type (
 		Offset int                `schema:"offset"` // position in overall data to seek from.
 	}
 
+	TailOptions struct {
+		RunID  resource.TfeID     `schema:"run_id,required"`
+		Phase  internal.PhaseType `schema:"phase,required"`
+		Offset int                `schema:"offset"` // position in overall data to seek from.
+	}
+
 	PutChunkService interface {
 		PutChunk(ctx context.Context, opts PutChunkOptions) error
 	}

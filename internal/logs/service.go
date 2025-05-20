@@ -18,7 +18,6 @@ type (
 
 		api    *api
 		web    *webHandlers
-		broker pubsub.SubscriptionService[Chunk]
 		db     *pgdb
 		tailer *tailer
 	}
@@ -49,13 +48,12 @@ func NewService(opts Options) *Service {
 		Logger: opts.Logger,
 		svc:    &svc,
 	}
-	svc.broker = pubsub.NewBroker[Chunk](
-		opts.Logger,
-		opts.Listener,
-		"chunks",
-	)
 	svc.tailer = &tailer{
-		broker: svc.broker,
+		broker: pubsub.NewBroker[Chunk](
+			opts.Logger,
+			opts.Listener,
+			"chunks",
+		),
 		client: &svc,
 	}
 	return &svc
@@ -100,7 +98,7 @@ func (s *Service) PutChunk(ctx context.Context, opts PutChunkOptions) error {
 
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
+func (s *Service) Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
 	subject, err := s.Authorize(ctx, authz.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err
@@ -112,8 +110,4 @@ func (s *Service) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk,
 	}
 	s.V(9).Info("tailing logs", "id", opts.RunID, "phase", opts.Phase, "subject", subject)
 	return tail, nil
-}
-
-func (s *Service) WatchLogs(ctx context.Context) (<-chan pubsub.Event[Chunk], func()) {
-	return s.broker.Subscribe(ctx)
 }

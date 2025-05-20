@@ -137,7 +137,7 @@ func TestClusterLogs(t *testing.T) {
 	run := local.createRun(t, ctx, nil, nil, nil)
 
 	// follow run's plan logs on remote node
-	sub, err := remote.Logs.Tail(ctx, logs.GetChunkOptions{
+	sub, err := remote.Logs.Tail(ctx, logs.TailOptions{
 		RunID: run.ID,
 		Phase: internal.PlanPhase,
 	})

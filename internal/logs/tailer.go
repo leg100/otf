@@ -15,12 +15,16 @@ type tailer struct {
 	broker pubsub.SubscriptionService[Chunk]
 }
 
-func (t *tailer) Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
+func (t *tailer) Tail(ctx context.Context, opts TailOptions) (<-chan Chunk, error) {
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
 	sub, _ := t.broker.Subscribe(ctx)
 
-	chunk, err := t.client.GetChunk(ctx, opts)
+	chunk, err := t.client.GetChunk(ctx, GetChunkOptions{
+		RunID:  opts.RunID,
+		Phase:  opts.Phase,
+		Offset: opts.Offset,
+	})
 	if err != nil {
 		return nil, err
 	}
