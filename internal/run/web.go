@@ -348,7 +348,7 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
-	conn, err := components.NewWebsocket(w, r, h.runs, eventView)
+	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, eventView)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return
@@ -357,8 +357,8 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 
 	sub, _ := h.runs.Watch(r.Context())
 
-	if err := conn.Send(runID); err != nil {
-		h.logger.Error(err, "sending websocket message")
+	if !conn.Send(runID) {
+		return
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -387,8 +387,8 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	done:
-		if err := conn.Send(runID); err != nil {
-			h.logger.Error(err, "sending websocket message")
+		if !conn.Send(runID) {
+			return
 		}
 		// Wait before sending anything more to client to avoid sending too many
 		// messages.
@@ -409,7 +409,7 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
-	conn, err := components.NewWebsocket(w, r, h.runs, latestRunSingleTable)
+	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, latestRunSingleTable)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return
@@ -427,8 +427,8 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	var latestRunID *resource.TfeID
 	if ws.LatestRun != nil {
 		latestRunID = &ws.LatestRun.ID
-		if err := conn.Send(*latestRunID); err != nil {
-			h.logger.Error(err, "sending websocket message for latest run")
+		if !conn.Send(*latestRunID) {
+			return
 		}
 	}
 	for {
@@ -463,8 +463,8 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
-		if err := conn.Send(*latestRunID); err != nil {
-			h.logger.Error(err, "sending websocket message")
+		if !conn.Send(*latestRunID) {
+			return
 		}
 	}
 }
