@@ -1,9 +1,9 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -38,9 +38,7 @@ type (
 		ForceCancel(ctx context.Context, runID resource.TfeID) error
 		Apply(ctx context.Context, runID resource.TfeID) error
 		Discard(ctx context.Context, runID resource.TfeID) error
-		Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func())
-
-		watchWithOptions(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event[*Run], error)
+		Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func())
 	}
 
 	webLogsClient interface {
@@ -49,6 +47,7 @@ type (
 
 	webWorkspaceClient interface {
 		Get(ctx context.Context, workspaceID resource.TfeID) (*workspace.Workspace, error)
+		Watch(ctx context.Context) (<-chan pubsub.Event[*workspace.Event], func())
 	}
 
 	webAuthorizer interface {
@@ -81,7 +80,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/watch", h.watchRun).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
@@ -114,7 +112,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*Run, ListOptions]{
+		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
 			Logger:    h.logger,
 			Client:    h.runs,
 			Populator: table{workspaceClient: h.workspaces},
@@ -128,7 +126,7 @@ func (h *webHandlers) listByOrganization(w http.ResponseWriter, r *http.Request)
 
 func (h *webHandlers) listByWorkspace(w http.ResponseWriter, r *http.Request) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h := &components.WebsocketListHandler[*Run, ListOptions]{
+		h := &components.WebsocketListHandler[*Run, *Event, ListOptions]{
 			Logger:    h.logger,
 			Client:    h.runs,
 			Populator: table{},
@@ -341,112 +339,87 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
-func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID resource.TfeID  `schema:"workspace_id,required"`
-		Latest      bool            `schema:"latest"`
-		RunID       *resource.TfeID `schema:"run_id"`
-	}
-	if err := decode.All(&params, r); err != nil {
+func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.ID("run_id", r)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	events, err := h.runs.watchWithOptions(r.Context(), WatchOptions{
-		WorkspaceID: &params.WorkspaceID,
-	})
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
+	conn, err := components.NewWebsocket(w, r, h.runs, eventView)
+	if err != nil {
+		h.logger.Error(err, "upgrading websocket connection")
+		return
+	}
+	defer conn.Close()
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
-	rc := http.NewResponseController(w)
-	rc.Flush()
+	sub, _ := h.runs.Watch(r.Context())
 
+	if err := conn.Send(runID); err != nil {
+		h.logger.Error(err, "sending websocket message")
+	}
+
+	ticker := time.NewTicker(time.Second)
 	for {
 		select {
-		case <-r.Context().Done():
-			return
-		case event, ok := <-events:
-			if !ok {
+		case event := <-sub:
+			if event.Type == pubsub.DeletedEvent {
+				// TODO: run has been deleted: user should be alerted and
+				// client should not reconnect.
 				return
 			}
-			// Handle query parameters which filter run events:
-			// - 'latest' specifies that the client is only interest in events
-			// relating to the latest run for the workspace
-			// - 'run-id' (mutually exclusive with 'latest') - specifies
-			// that the client is only interested in events relating to that
-			// run.
-			// - otherwise, if neither of those parameters are specified
-			// then events for all runs are relayed.
-			if params.Latest && !event.Payload.Latest {
-				// skip: run is not the latest run for a workspace
-				continue
-			} else if params.RunID != nil && *params.RunID != event.Payload.ID {
-				// skip: event is for a run which does not match the
-				// filter
+			if event.Payload.ID != runID {
 				continue
 			}
-
-			//
-			// render HTML snippet and send as payload in SSE events
-			//
-			itemHTML := new(bytes.Buffer)
-			if err := eventView(event.Payload).Render(r.Context(), itemHTML); err != nil {
-				h.logger.Error(err, "rendering template for run item")
-				continue
-			}
-			if event.Type == pubsub.CreatedEvent {
-				// newly created run is sent with "created" event type
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
-			} else {
-				// updated run events target existing run items in page
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+event.Payload.ID.String()), false)
-			}
-			if params.Latest {
-				// also write a 'latest-run' event if the caller has requested
-				// the latest run for the workspace
-				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "latest-run", false)
-			}
-			rc.Flush()
+		case <-r.Context().Done():
+			return
 		}
-	}
-}
-
-func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		RunID resource.TfeID `schema:"run_id"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	if websocket.IsWebSocketUpgrade(r) {
-		websocketHandler := components.WebsocketGetHandler[*Run]{
-			Logger:    h.logger,
-			Client:    h.runs,
-			Component: eventView,
+		// all further run events currently waiting on the subscription
+		// channel are rendered redundant because the websocket client
+		// retrieves the latest version of the run before sending it.
+		for {
+			select {
+			case <-sub:
+			default:
+				goto done
+			}
 		}
-		websocketHandler.Handler(w, r, &params.RunID, func(run *Run) bool {
-			return run.ID == params.RunID
-		})
-		return
+	done:
+		if err := conn.Send(runID); err != nil {
+			h.logger.Error(err, "sending websocket message")
+		}
+		// Wait before sending anything more to client to avoid sending too many
+		// messages.
+		select {
+		case <-ticker.C:
+		case <-r.Context().Done():
+			return
+		}
 	}
 }
 
 func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID resource.TfeID `schema:"workspace_id"`
-	}
-	if err := decode.All(&params, r); err != nil {
+	workspaceID, err := decode.ID("workspace_id", r)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := h.workspaces.Get(r.Context(), params.WorkspaceID)
+	if !websocket.IsWebSocketUpgrade(r) {
+		return
+	}
+	conn, err := components.NewWebsocket(w, r, h.runs, latestRunSingleTable)
+	if err != nil {
+		h.logger.Error(err, "upgrading websocket connection")
+		return
+	}
+	defer conn.Close()
+	// Setup event subscriptions first then retrieve workspace to ensure we
+	// don't miss anything.
+	workspacesSub, _ := h.workspaces.Watch(r.Context())
+	runsSub, _ := h.runs.Watch(r.Context())
+	ws, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -454,16 +427,44 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	var latestRunID *resource.TfeID
 	if ws.LatestRun != nil {
 		latestRunID = &ws.LatestRun.ID
-	}
-	if websocket.IsWebSocketUpgrade(r) {
-		websocketHandler := components.WebsocketGetHandler[*Run]{
-			Logger:    h.logger,
-			Client:    h.runs,
-			Component: latestRunSingleTable,
+		if err := conn.Send(*latestRunID); err != nil {
+			h.logger.Error(err, "sending websocket message for latest run")
 		}
-		websocketHandler.Handler(w, r, latestRunID, func(run *Run) bool {
-			return run.WorkspaceID == params.WorkspaceID && run.Latest
-		})
-		return
+	}
+	for {
+		select {
+		case event := <-workspacesSub:
+			if event.Payload.ID != workspaceID {
+				// Event is for a different workspace, so skip.
+				continue
+			}
+			if event.Payload.LatestRunID == nil {
+				// Workspace doesn't have a latest run, so nothing to send to
+				// client
+				continue
+			}
+			if event.Payload.LatestRunID == latestRunID {
+				// Workspace's latest run hasn't changed so nothing new to send
+				// to client.
+				continue
+			}
+			latestRunID = event.Payload.LatestRunID
+		case event := <-runsSub:
+			if latestRunID == nil {
+				// Workspace doesn't have a latest run, so nothing to send to
+				// client
+				continue
+			}
+			if event.Payload.ID != *latestRunID {
+				// Event is for a run different than the workspace's latest run,
+				// so ignore.
+				continue
+			}
+		case <-r.Context().Done():
+			return
+		}
+		if err := conn.Send(*latestRunID); err != nil {
+			h.logger.Error(err, "sending websocket message")
+		}
 	}
 }

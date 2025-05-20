@@ -18,7 +18,7 @@ type pgdb struct {
 }
 
 func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID resource.TfeID, v *Variable) error {
-	return pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return pdb.Tx(ctx, func(ctx context.Context) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ INSERT INTO variable_sets (
 }
 
 func (pdb *pgdb) updateVariableSet(ctx context.Context, set *VariableSet) error {
-	return pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return pdb.Tx(ctx, func(ctx context.Context) error {
 		_, err := pdb.Exec(ctx, `
 UPDATE variable_sets
 SET
@@ -132,7 +132,7 @@ WHERE variable_set_id = $4
 		}
 		// lazily delete all variable set workspaces, and then add them again,
 		// regardless of whether there are any changes
-		return pdb.Lock(ctx, "variable_set_workspaces", func(ctx context.Context, _ sql.Connection) error {
+		return pdb.Lock(ctx, "variable_set_workspaces", func(ctx context.Context) error {
 			if err := pdb.deleteAllVariableSetWorkspaces(ctx, set.ID); err != nil {
 				if !errors.Is(err, internal.ErrResourceNotFound) {
 					return err
@@ -289,7 +289,7 @@ func scanVariableSet(row pgx.CollectableRow) (*VariableSet, error) {
 }
 
 func (pdb *pgdb) addVariableToSet(ctx context.Context, setID resource.TfeID, v *Variable) error {
-	return pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	return pdb.Tx(ctx, func(ctx context.Context) error {
 		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
 		}
@@ -309,7 +309,7 @@ INSERT INTO variable_set_variables (
 }
 
 func (pdb *pgdb) createVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
-	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	err := pdb.Tx(ctx, func(ctx context.Context) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Exec(ctx, `
 INSERT INTO variable_set_workspaces (
@@ -339,7 +339,7 @@ WHERE variable_set_id = $1
 }
 
 func (pdb *pgdb) deleteVariableSetWorkspaces(ctx context.Context, setID resource.TfeID, workspaceIDs []resource.TfeID) error {
-	err := pdb.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	err := pdb.Tx(ctx, func(ctx context.Context) error {
 		for _, wid := range workspaceIDs {
 			_, err := pdb.Exec(ctx, `
 DELETE

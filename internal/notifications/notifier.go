@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/runstatus"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -42,7 +43,8 @@ type (
 	}
 
 	notifierRunClient interface {
-		Watch(context.Context) (<-chan pubsub.Event[*run.Run], func())
+		Watch(context.Context) (<-chan pubsub.Event[*run.Event], func())
+		Get(context.Context, resource.TfeID) (*run.Run, error)
 	}
 
 	notifierNotificationClient interface {
@@ -87,21 +89,21 @@ func (s *Notifier) Start(ctx context.Context) error {
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if err := s.handleRun(ctx, event.Payload); err != nil {
+			if err := s.handleRunEvent(ctx, event); err != nil {
 				s.Error(err, "handling event", "event", event.Type)
 			}
 		case event, ok := <-subConfigs:
 			if !ok {
 				return pubsub.ErrSubscriptionTerminated
 			}
-			if err := s.handleConfig(ctx, event); err != nil {
+			if err := s.handleConfigEvent(event); err != nil {
 				s.Error(err, "handling event", "event", event.Type)
 			}
 		}
 	}
 }
 
-func (s *Notifier) handleConfig(ctx context.Context, event pubsub.Event[*Config]) error {
+func (s *Notifier) handleConfigEvent(event pubsub.Event[*Config]) error {
 	switch event.Type {
 	case pubsub.CreatedEvent:
 		return s.add(event.Payload)
@@ -117,8 +119,8 @@ func (s *Notifier) handleConfig(ctx context.Context, event pubsub.Event[*Config]
 	}
 }
 
-func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
-	if r.Queued() {
+func (s *Notifier) handleRunEvent(ctx context.Context, event pubsub.Event[*run.Event]) error {
+	if runstatus.Queued(event.Payload.Status) {
 		// ignore queued events
 		return nil
 	}
@@ -128,7 +130,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 
 	var ws *workspace.Workspace
 	for _, cfg := range s.configs {
-		if cfg.WorkspaceID != r.WorkspaceID {
+		if cfg.WorkspaceID != event.Payload.WorkspaceID {
 			// skip configs for other workspaces
 			continue
 		}
@@ -140,7 +142,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// skip config with no triggers
 			continue
 		}
-		trigger, matches := cfg.matchTrigger(r)
+		trigger, matches := cfg.matchTrigger(event.Payload.Status)
 		if !matches {
 			// skip config with no matching trigger
 			continue
@@ -153,7 +155,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 		// (b) add workspace info to run itself
 		if ws == nil {
 			var err error
-			ws, err = s.workspaces.Get(ctx, r.WorkspaceID)
+			ws, err = s.workspaces.Get(ctx, event.Payload.WorkspaceID)
 			if err != nil {
 				return err
 			}
@@ -164,7 +166,7 @@ func (s *Notifier) handleRun(ctx context.Context, r *run.Run) error {
 			return fmt.Errorf("client not found for url: %s", *cfg.URL)
 		}
 		msg := &notification{
-			run:       r,
+			event:     event,
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,

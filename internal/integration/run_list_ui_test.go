@@ -38,10 +38,10 @@ func TestIntegration_RunListUI(t *testing.T) {
 	// create run, and apply
 	run1 := daemon.createRun(t, ctx, ws1, cv1, nil)
 	{
-		_ = daemon.waitRunStatus(t, run1.ID, runstatus.Planned)
+		_ = daemon.waitRunStatus(t, ctx, run1.ID, runstatus.Planned)
 		err := daemon.Runs.Apply(ctx, run1.ID)
 		require.NoError(t, err)
-		_ = daemon.waitRunStatus(t, run1.ID, runstatus.Applied)
+		_ = daemon.waitRunStatus(t, ctx, run1.ID, runstatus.Applied)
 	}
 	// create two runs, which should reached planned&finished state.
 	_ = daemon.createRun(t, ctx, ws1, cv2, nil)

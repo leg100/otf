@@ -118,6 +118,20 @@ It is highly advisable to set this flag in a production deployment.
 
 Sets the hostname that VCS providers can use to access the OTF webhooks.
 
+## `--allowed-origins`
+
+* System: `otfd`
+* Default: ""
+
+Specifies a comma-separated list of hostnames which are checked
+against the Origin: header for websocket upgrades.
+
+By default, websocket upgrade requests are validated by comparing the
+Origin: and Host: headers.  This works for direct connections, but can fail
+in reverse proxy configurations.
+
+This parameter provides a list of valid hostnames to check Origin: against.
+
 ## `--log-format`
 
 * System: `otfd`, `otf-agent`

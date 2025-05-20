@@ -72,11 +72,19 @@ func (f *fakeService) reallocateJob(ctx context.Context, jobID resource.TfeID, a
 	return f.job, nil
 }
 
-func (f *fakeService) WatchJobs(context.Context) (<-chan pubsub.Event[*Job], func()) {
+func (f *fakeService) getJob(ctx context.Context, jobID resource.TfeID) (*Job, error) {
+	return f.job, nil
+}
+
+func (f *fakeService) WatchJobs(context.Context) (<-chan pubsub.Event[*JobEvent], func()) {
 	return nil, nil
 }
 
-func (f *fakeService) WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerMeta], func()) {
+func (f *fakeService) WatchRunners(context.Context) (<-chan pubsub.Event[*RunnerEvent], func()) {
+	return nil, nil
+}
+
+func (f *fakeService) getRunner(ctx context.Context, runnerID resource.TfeID) (*RunnerMeta, error) {
 	return nil, nil
 }
 

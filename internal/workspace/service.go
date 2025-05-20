@@ -29,7 +29,7 @@ type (
 		web         *webHandlers
 		tfeapi      *tfe
 		api         *api
-		broker      *pubsub.Broker[*Workspace]
+		broker      *pubsub.Broker[*Event]
 		connections *connections.Service
 
 		beforeCreateHooks []func(context.Context, *Workspace) error
@@ -77,16 +77,10 @@ func NewService(opts Options) *Service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	svc.broker = pubsub.NewBroker(
+	svc.broker = pubsub.NewBroker[*Event](
 		opts.Logger,
 		opts.Listener,
 		"workspaces",
-		func(ctx context.Context, id resource.TfeID, action sql.Action) (*Workspace, error) {
-			if action == sql.DeleteAction {
-				return &Workspace{ID: id}, nil
-			}
-			return db.get(ctx, id)
-		},
 	)
 	// Fetch workspace when API calls request workspace be included in the
 	// response
@@ -122,7 +116,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Workspace], func()) {
+func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Event], func()) {
 	return s.broker.Subscribe(ctx)
 }
 
@@ -138,7 +132,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) (*Workspace, e
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		for _, hook := range s.beforeCreateHooks {
 			if err := hook(ctx, ws); err != nil {
 				return err
@@ -264,7 +258,7 @@ func (s *Service) Update(ctx context.Context, workspaceID resource.TfeID, opts U
 
 	// update the workspace and optionally connect/disconnect to/from vcs repo.
 	var updated *Workspace
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		var connect *bool
 		updated, err = s.db.update(ctx, workspaceID, func(ctx context.Context, ws *Workspace) (err error) {
 			for _, hook := range s.beforeUpdateHooks {

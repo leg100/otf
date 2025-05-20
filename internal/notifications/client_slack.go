@@ -48,7 +48,7 @@ func (c *slackClient) Publish(ctx context.Context, n *notification) error {
 				Type: "section",
 				Text: &slackBlock{
 					Type: "mrkdwn",
-					Text: fmt.Sprintf("*run %s*", strings.ReplaceAll(string(n.run.Status), "_", " ")),
+					Text: fmt.Sprintf("*run %s*", strings.ReplaceAll(string(n.event.Payload.Status), "_", " ")),
 				},
 			},
 		},

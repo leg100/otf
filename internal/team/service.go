@@ -119,7 +119,7 @@ func (a *Service) Create(ctx context.Context, organization organization.Name, op
 		return nil, err
 	}
 
-	err = a.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = a.db.Tx(ctx, func(ctx context.Context) error {
 		if err := a.db.createTeam(ctx, team); err != nil {
 			return err
 		}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/runstatus"
 )
 
@@ -40,16 +39,15 @@ var (
 type (
 	// Config represents a Notification Configuration.
 	Config struct {
-		ID              resource.TfeID `db:"notification_configuration_id"`
-		CreatedAt       time.Time      `db:"created_at"`
-		UpdatedAt       time.Time      `db:"updated_at"`
-		DestinationType Destination    `db:"destination_type"`
+		ID              resource.TfeID `json:"notification_configuration_id" db:"notification_configuration_id"`
+		CreatedAt       time.Time      `json:"created_at" db:"created_at"`
+		UpdatedAt       time.Time      `json:"updated_at" db:"updated_at"`
+		DestinationType Destination    `json:"destination_type" db:"destination_type"`
 		Enabled         bool
 		Name            string
-		Token           string `db:"-"`
 		Triggers        []Trigger
 		URL             *string
-		WorkspaceID     resource.TfeID `db:"workspace_id"`
+		WorkspaceID     resource.TfeID `json:"workspace_id" db:"workspace_id"`
 	}
 
 	// Trigger is the event triggering a notification
@@ -176,9 +174,9 @@ func (c *Config) update(opts UpdateConfigOptions) error {
 }
 
 // matchTrigger determines whether the config has a trigger that matches the
-// given run state
-func (c *Config) matchTrigger(r *run.Run) (Trigger, bool) {
-	switch r.Status {
+// given run status
+func (c *Config) matchTrigger(status runstatus.Status) (Trigger, bool) {
+	switch status {
 	case runstatus.Pending:
 		return TriggerCreated, c.hasTrigger(TriggerCreated)
 	case runstatus.Planning:
@@ -190,7 +188,7 @@ func (c *Config) matchTrigger(r *run.Run) (Trigger, bool) {
 	case runstatus.Errored:
 		return TriggerErrored, c.hasTrigger(TriggerErrored)
 	}
-	if r.Done() {
+	if runstatus.Done(status) {
 		return TriggerCompleted, c.hasTrigger(TriggerCompleted)
 	}
 	return "", false

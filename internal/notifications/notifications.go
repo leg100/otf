@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -14,8 +15,8 @@ import (
 // notification furnishes information for sending a notification to a third
 // party.
 type notification struct {
+	event     pubsub.Event[*run.Event]
 	workspace *workspace.Workspace
-	run       *run.Run
 	trigger   Trigger
 	config    *Config
 	hostname  string
@@ -23,7 +24,7 @@ type notification struct {
 
 func (n *notification) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("run", n.run.ID.String()),
+		slog.Time("time", n.event.Time),
 		slog.String("workspace_id", n.workspace.ID.String()),
 		slog.String("trigger", string(n.trigger)),
 		slog.String("destination", string(n.config.DestinationType)),
@@ -34,30 +35,26 @@ func (n *notification) LogValue() slog.Value {
 // genericPayload converts a notification into a format suitable for the generic
 // and GCP-pubsub destination types.
 func (n *notification) genericPayload() (*GenericPayload, error) {
-	runUpdatedAt, err := n.run.StatusTimestamp(n.run.Status)
-	if err != nil {
-		return nil, err
-	}
 	return &GenericPayload{
 		PayloadVersion:              1,
 		NotificationConfigurationID: n.config.ID,
 		RunURL:                      n.runURL(),
-		RunID:                       n.run.ID,
-		RunCreatedAt:                n.run.CreatedAt,
+		RunID:                       n.event.Payload.ID,
+		RunCreatedAt:                n.event.Payload.CreatedAt,
 		WorkspaceID:                 n.workspace.ID,
 		WorkspaceName:               n.workspace.Name,
 		OrganizationName:            n.workspace.Organization,
 		Notifications: []genericNotificationPayload{
 			{
 				Trigger:      n.trigger,
-				RunStatus:    n.run.Status,
-				RunUpdatedAt: runUpdatedAt,
+				RunStatus:    n.event.Payload.Status,
+				RunUpdatedAt: n.event.Time,
 			},
 		},
 	}, nil
 }
 
 func (n *notification) runURL() string {
-	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID)}
+	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.event.Payload.ID)}
 	return u.String()
 }

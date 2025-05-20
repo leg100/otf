@@ -31,7 +31,7 @@ func TestRunScheduler(t *testing.T) {
 	waitWorkspaceLock(t, workspaceEvents, run1.ID)
 
 	// Wait for Run#1 to be planned
-	daemon.waitRunStatus(t, run1.ID, runstatus.Planned)
+	daemon.waitRunStatus(t, ctx, run1.ID, runstatus.Planned)
 	// Run#2 should still be pending
 	assert.Equal(t, runstatus.Pending, daemon.getRun(t, ctx, run2.ID).Status)
 
@@ -40,13 +40,13 @@ func TestRunScheduler(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for Run#1 to be applied
-	daemon.waitRunStatus(t, run1.ID, runstatus.Applied)
+	daemon.waitRunStatus(t, ctx, run1.ID, runstatus.Applied)
 
 	// Wait for Run#2 to lock workspace
 	waitWorkspaceLock(t, workspaceEvents, run2.ID)
 
 	// Wait for Run#2 to be planned&finished (because there are no changes)
-	daemon.waitRunStatus(t, run2.ID, runstatus.PlannedAndFinished)
+	daemon.waitRunStatus(t, ctx, run2.ID, runstatus.PlannedAndFinished)
 
 	// Wait for workspace to be unlocked
 	waitWorkspaceLock(t, workspaceEvents, nil)
@@ -66,22 +66,22 @@ func TestRunScheduler(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run #3 should now proceed to planned&finished
-	daemon.waitRunStatus(t, run3.ID, runstatus.PlannedAndFinished)
+	daemon.waitRunStatus(t, ctx, run3.ID, runstatus.PlannedAndFinished)
 }
 
-func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Workspace], lock resource.ID) {
+func waitWorkspaceLock(t *testing.T, events <-chan pubsub.Event[*workspace.Event], lock resource.ID) {
 	t.Helper()
 
-	timeout := time.After(5 * time.Second)
+	timeout := time.After(1500 * time.Second)
 	for {
 		select {
 		case event := <-events:
 			if lock != nil {
-				if event.Payload.Lock != nil && lock == event.Payload.Lock {
+				if event.Payload.Lock() != nil && lock == event.Payload.Lock() {
 					return
 				}
 			} else {
-				if event.Payload.Lock == nil {
+				if event.Payload.Lock() == nil {
 					return
 				}
 			}

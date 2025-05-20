@@ -50,16 +50,10 @@ func NewService(opts Options) *Service {
 		Logger: opts.Logger,
 		svc:    &svc,
 	}
-	svc.broker = pubsub.NewBroker(
+	svc.broker = pubsub.NewBroker[Chunk](
 		opts.Logger,
 		opts.Listener,
 		"logs",
-		func(ctx context.Context, chunkID resource.TfeID, action sql.Action) (Chunk, error) {
-			if action == sql.DeleteAction {
-				return Chunk{ID: chunkID}, nil
-			}
-			return db.getChunk(ctx, chunkID)
-		},
 	)
 	svc.tailer = &tailer{
 		broker: svc.broker,

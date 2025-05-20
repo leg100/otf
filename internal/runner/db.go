@@ -61,7 +61,7 @@ func (db *db) update(ctx context.Context, runnerID resource.TfeID, fn func(conte
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*RunnerMeta, error) {
+		func(ctx context.Context) (*RunnerMeta, error) {
 			rows := db.Query(ctx, `
 SELECT
     a.runner_id, a.name, a.version, a.max_jobs, a.ip_address, a.last_ping_at, a.last_status_at, a.status,
@@ -79,7 +79,7 @@ FOR UPDATE OF a
 			return sql.CollectOneRow(rows, scanRunner)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, agent *RunnerMeta) error {
+		func(ctx context.Context, agent *RunnerMeta) error {
 			_, err := db.Exec(ctx, `
 UPDATE runners
 SET status = @status,
@@ -160,7 +160,7 @@ func scanRunner(row pgx.CollectableRow) (*RunnerMeta, error) {
 		LastPingAt   time.Time      `db:"last_ping_at"`
 		LastStatusAt time.Time      `db:"last_status_at"`
 		IPAddress    netip.Addr     `db:"ip_address"`
-		PoolModel    *poolModel     `db:"agent_pool"`
+		PoolModel    *Pool          `db:"agent_pool"`
 		Name         string
 		Version      string
 		Status       RunnerStatus
@@ -181,7 +181,7 @@ func scanRunner(row pgx.CollectableRow) (*RunnerMeta, error) {
 		Status:       m.Status,
 	}
 	if m.PoolModel != nil {
-		meta.AgentPool = m.PoolModel.toPool()
+		meta.AgentPool = m.PoolModel
 	}
 	return meta, nil
 }
@@ -301,7 +301,7 @@ func (db *db) updateJob(ctx context.Context, jobID resource.TfeID, fn func(conte
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Job, error) {
+		func(ctx context.Context) (*Job, error) {
 			rows := db.Query(ctx, `
 SELECT
     j.job_id,
@@ -322,7 +322,7 @@ FOR UPDATE OF j
 			return sql.CollectOneRow(rows, scanJob)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, job *Job) error {
+		func(ctx context.Context, job *Job) error {
 			_, err := db.Exec(ctx, `
 UPDATE jobs
 SET status   = $1,
@@ -345,7 +345,7 @@ func (db *db) updateUnfinishedJobByRunID(ctx context.Context, runID resource.Tfe
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Job, error) {
+		func(ctx context.Context) (*Job, error) {
 			rows := db.Query(ctx, `
 SELECT
     j.job_id,
@@ -367,7 +367,7 @@ FOR UPDATE OF j
 			return sql.CollectOneRow(rows, scanJob)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, job *Job) error {
+		func(ctx context.Context, job *Job) error {
 			_, err := db.Exec(ctx, `
 UPDATE jobs
 SET status   = $1,
@@ -490,7 +490,7 @@ func scanAgentToken(row pgx.CollectableRow) (*agentToken, error) {
 // agent pools
 
 func (db *db) createPool(ctx context.Context, pool *Pool) error {
-	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	err := db.Tx(ctx, func(ctx context.Context) error {
 		_, err := db.Exec(ctx, `
 INSERT INTO agent_pools (
     agent_pool_id,
@@ -538,7 +538,6 @@ UPDATE agent_pools
 SET name = $1,
     organization_scoped = $2
 WHERE agent_pool_id = $3
-RETURNING agent_pool_id, name, created_at, organization_name, organization_scoped
 `,
 		pool.Name,
 		pool.OrganizationScoped,
@@ -586,7 +585,7 @@ FROM agent_pools ap
 WHERE ap.agent_pool_id = $1
 GROUP BY ap.agent_pool_id
 `, poolID)
-	return sql.CollectOneRow(rows, scanAgentPool)
+	return sql.CollectOneRow[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
 func (db *db) getPoolByTokenID(ctx context.Context, tokenID resource.TfeID) (*Pool, error) {
@@ -607,7 +606,7 @@ JOIN agent_tokens at USING (agent_pool_id)
 WHERE at.agent_token_id = $1
 GROUP BY ap.agent_pool_id
 `, tokenID)
-	return sql.CollectOneRow(rows, scanAgentPool)
+	return sql.CollectOneRow[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
 func (db *db) listPoolsByOrganization(ctx context.Context, organization organization.Name, opts listPoolOptions) ([]*Pool, error) {
@@ -643,7 +642,7 @@ ORDER BY ap.created_at DESC
 		opts.AllowedWorkspaceName,
 		opts.AllowedWorkspaceID,
 	)
-	return sql.CollectRows(rows, scanAgentPool)
+	return sql.CollectRows[*Pool](rows, pgx.RowToAddrOfStructByName)
 }
 
 func (db *db) deleteAgentPool(ctx context.Context, poolID resource.TfeID) error {
@@ -651,44 +650,6 @@ func (db *db) deleteAgentPool(ctx context.Context, poolID resource.TfeID) error 
 DELETE
 FROM agent_pools
 WHERE agent_pool_id = $1
-RETURNING agent_pool_id, name, created_at, organization_name, organization_scoped
 `, poolID)
 	return err
-}
-
-type poolModel struct {
-	ID        resource.TfeID `db:"agent_pool_id"`
-	Name      string
-	CreatedAt time.Time `db:"created_at"`
-	// Pool belongs to an organization with this name.
-	Organization organization.Name `db:"organization_name"`
-	// Whether pool of agents is accessible to all workspaces in organization
-	// (true) or only those specified in AllowedWorkspaces (false).
-	OrganizationScoped bool `db:"organization_scoped"`
-	// IDs of workspaces allowed to access pool. Ignored if OrganizationScoped
-	// is true.
-	AllowedWorkspaces []resource.TfeID `db:"allowed_workspace_ids"`
-	// IDs of workspaces assigned to the pool. Note: this is a subset of
-	// AllowedWorkspaces.
-	AssignedWorkspaces []resource.TfeID `db:"workspace_ids"`
-}
-
-func (m poolModel) toPool() *Pool {
-	return &Pool{
-		ID:                 m.ID,
-		Name:               m.Name,
-		CreatedAt:          m.CreatedAt,
-		Organization:       m.Organization,
-		OrganizationScoped: m.OrganizationScoped,
-		AllowedWorkspaces:  m.AllowedWorkspaces,
-		AssignedWorkspaces: m.AssignedWorkspaces,
-	}
-}
-
-func scanAgentPool(row pgx.CollectableRow) (*Pool, error) {
-	m, err := pgx.RowToAddrOfStructByName[poolModel](row)
-	if err != nil {
-		return nil, err
-	}
-	return m.toPool(), nil
 }

@@ -8,8 +8,14 @@ import (
 // GetOutboundIP gets the preferred outbound IP address of this machine.
 //
 // Credit to: https://stackoverflow.com/a/37382208
+// Updated for ipv6 by @infinoid
 func GetOutboundIP() (netip.Addr, error) {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+	// try ipv6
+	conn, err := net.Dial("udp", "[2001:4860:4860::8888]:80")
+	if err != nil {
+		// try ipv4
+		conn, err = net.Dial("udp", "8.8.8.8:80")
+	}
 	if err != nil {
 		return netip.Addr{}, nil
 	}

@@ -39,30 +39,6 @@ INSERT INTO logs (
 	return err
 }
 
-func (db *pgdb) getChunk(ctx context.Context, chunkID resource.TfeID) (Chunk, error) {
-	rows := db.Query(ctx, `
-SELECT
-    chunk_id,
-    run_id,
-    phase,
-    chunk,
-    _offset AS offset
-FROM logs
-WHERE chunk_id = $1
-`, chunkID)
-	return sql.CollectOneRow(rows, func(row pgx.CollectableRow) (Chunk, error) {
-		var chunk Chunk
-		err := row.Scan(
-			&chunk.ID,
-			&chunk.RunID,
-			&chunk.Phase,
-			&chunk.Data,
-			&chunk.Offset,
-		)
-		return chunk, err
-	})
-}
-
 func (db *pgdb) getLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error) {
 	rows := db.Query(ctx, `
 SELECT

@@ -54,7 +54,7 @@ type (
 		client               webClient
 		authorizer           webAuthorizer
 		releases             engineClient
-		websocketListHandler *components.WebsocketListHandler[*Workspace, ListOptions]
+		websocketListHandler *components.WebsocketListHandler[*Workspace, *Event, ListOptions]
 	}
 
 	webTeamClient interface {
@@ -102,7 +102,7 @@ func newWebHandlers(service *Service, opts Options) *webHandlers {
 		uiHelpers: &uiHelpers{
 			authorizer: opts.Authorizer,
 		},
-		websocketListHandler: &components.WebsocketListHandler[*Workspace, ListOptions]{
+		websocketListHandler: &components.WebsocketListHandler[*Workspace, *Event, ListOptions]{
 			Logger:    opts.Logger,
 			Client:    service,
 			Populator: &table{},

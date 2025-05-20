@@ -10,5 +10,6 @@ import (
 func TestGetOutboundIP(t *testing.T) {
 	got, err := GetOutboundIP()
 	require.NoError(t, err)
-	assert.Regexp(t, `\d+\.\d+\.\d+\.\d+`, got.String())
+	assert.True(t, got.IsValid())
+	assert.False(t, got.IsUnspecified())
 }

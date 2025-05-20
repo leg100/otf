@@ -82,6 +82,6 @@ data "http" "wait" {
 		if r.Status == runstatus.Canceled {
 			break
 		}
-		require.False(t, r.Done(), "run unexpectedly finished with status %s", r.Status)
+		require.False(t, runstatus.Done(r.Status), "run unexpectedly finished with status %s", r.Status)
 	}
 }

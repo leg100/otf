@@ -96,7 +96,7 @@ func (s *Service) CreateWorkspaceVariable(ctx context.Context, workspaceID resou
 	}
 
 	var v *Variable
-	err = s.db.Lock(ctx, "variables", func(ctx context.Context, _ sql.Connection) (err error) {
+	err = s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
 		workspaceVars, err := s.ListWorkspaceVariables(ctx, workspaceID)
 		if err != nil {
 			return err
@@ -128,7 +128,7 @@ func (s *Service) UpdateWorkspaceVariable(ctx context.Context, variableID resour
 		before  *WorkspaceVariable
 		after   WorkspaceVariable
 	)
-	err := s.db.Lock(ctx, "variables", func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
 		before, err = s.db.getWorkspaceVariable(ctx, variableID)
 		if err != nil {
 			return err
@@ -203,7 +203,7 @@ func (s *Service) DeleteWorkspaceVariable(ctx context.Context, variableID resour
 		subject authz.Subject
 		wv      *WorkspaceVariable
 	)
-	err := s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Tx(ctx, func(ctx context.Context) (err error) {
 		wv, err = s.db.deleteWorkspaceVariable(ctx, variableID)
 		if err != nil {
 			return err
@@ -236,7 +236,7 @@ func (s *Service) createVariableSet(ctx context.Context, organization organizati
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ sql.Connection) error {
+	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		if err := s.db.createVariableSet(ctx, set); err != nil {
 			return err
 		}
@@ -261,7 +261,7 @@ func (s *Service) updateVariableSet(ctx context.Context, setID resource.TfeID, o
 		before  *VariableSet
 		after   VariableSet
 	)
-	err := s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Lock(ctx, "variables, variable_sets", func(ctx context.Context) (err error) {
 		before, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
 			return fmt.Errorf("retrieving variable set: %w", err)
@@ -387,7 +387,7 @@ func (s *Service) createVariableSetVariable(ctx context.Context, setID resource.
 		set     *VariableSet
 		v       *Variable
 	)
-	err := s.db.Lock(ctx, "variables", func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
 		set, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
 			return err
@@ -430,7 +430,7 @@ func (s *Service) updateVariableSetVariable(ctx context.Context, variableID reso
 		before  Variable
 		after   *Variable
 	)
-	err := s.db.Lock(ctx, "variables", func(ctx context.Context, _ sql.Connection) (err error) {
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context) (err error) {
 		set, err = s.db.getVariableSetByVariableID(ctx, variableID)
 		if err != nil {
 			return err

@@ -1,12 +1,11 @@
 package pubsub
 
-const (
-	EventError       EventType = "error"
-	EventInfo        EventType = "info"
-	EventLogChunk    EventType = "log_update"
-	EventLogFinished EventType = "log_finished"
-	EventVCS         EventType = "vcs_event"
+import (
+	"log/slog"
+	"time"
+)
 
+const (
 	CreatedEvent EventType = "created"
 	UpdatedEvent EventType = "updated"
 	DeletedEvent EventType = "deleted"
@@ -20,17 +19,14 @@ type (
 	Event[T any] struct {
 		Type    EventType
 		Payload T
+		Time    time.Time
 	}
 )
 
-func NewCreatedEvent[T any](payload T) Event[T] {
-	return Event[T]{Type: CreatedEvent, Payload: payload}
-}
-
-func NewUpdatedEvent[T any](payload T) Event[T] {
-	return Event[T]{Type: UpdatedEvent, Payload: payload}
-}
-
-func NewDeletedEvent[T any](payload T) Event[T] {
-	return Event[T]{Type: DeletedEvent, Payload: payload}
+func (e Event[T]) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("type", string(e.Type)),
+		slog.Any("payload", e.Payload),
+	}
+	return slog.GroupValue(attrs...)
 }

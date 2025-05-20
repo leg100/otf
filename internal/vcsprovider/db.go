@@ -20,7 +20,7 @@ type pgdb struct {
 }
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	err := db.Tx(ctx, func(ctx context.Context, conn sql.Connection) error {
+	err := db.Tx(ctx, func(ctx context.Context) error {
 		args := pgx.NamedArgs{
 			"id":           provider.ID,
 			"created_at":   provider.CreatedAt,
@@ -87,7 +87,7 @@ func (db *pgdb) update(ctx context.Context, id resource.TfeID, fn func(context.C
 	_, err := sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*VCSProvider, error) {
+		func(ctx context.Context) (*VCSProvider, error) {
 			rows := db.Query(ctx, `
 SELECT
     v.vcs_provider_id, v.token, v.created_at, v.name, v.vcs_kind, v.organization_name, v.github_app_id,
@@ -101,7 +101,7 @@ FOR UPDATE OF v
 			return sql.CollectOneRow(rows, db.scan)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, provider *VCSProvider) error {
+		func(ctx context.Context, provider *VCSProvider) error {
 			_, err := db.Exec(ctx, `
 UPDATE vcs_providers
 SET name = $1, token = $2

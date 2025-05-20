@@ -19,17 +19,17 @@ func TestReporter_HandleRun(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name string
-		run  *Run
-		ws   *workspace.Workspace
-		cv   *configversion.ConfigurationVersion
+		name  string
+		event *Event
+		ws    *workspace.Workspace
+		cv    *configversion.ConfigurationVersion
 		// expect the given status options to be set. If nil then expect no
 		// status options to be set.
 		want *vcs.SetStatusOptions
 	}{
 		{
-			name: "set pending status",
-			run:  &Run{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending},
+			name:  "set pending status",
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
 				Connection: &workspace.Connection{},
@@ -49,35 +49,36 @@ func TestReporter_HandleRun(t *testing.T) {
 			},
 		},
 		{
-			name: "skip run with config not from a VCS repo",
-			run:  &Run{ID: testutils.ParseID(t, "run-123")},
+			name:  "skip run with config not from a VCS repo",
+			event: &Event{ID: testutils.ParseID(t, "run-123")},
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: nil,
 			},
 			want: nil,
 		},
 		{
-			name: "skip UI-triggered run",
-			run:  &Run{ID: testutils.ParseID(t, "run-123"), Source: SourceUI},
-			want: nil,
+			name:  "skip UI-triggered run",
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: SourceUI},
+			want:  nil,
 		},
 		{
-			name: "skip API-triggered run",
-			run:  &Run{ID: testutils.ParseID(t, "run-123"), Source: SourceAPI},
-			want: nil,
+			name:  "skip API-triggered run",
+			event: &Event{ID: testutils.ParseID(t, "run-123"), Source: SourceAPI},
+			want:  nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := make(chan vcs.SetStatusOptions, 1)
 			reporter := &Reporter{
-				Workspaces:      &fakeReporterWorkspaceService{ws: tt.ws},
+				Workspaces:      &fakeReporterWorkspaceClient{ws: tt.ws},
+				Runs:            &fakeReporterRunClient{event: tt.event},
 				Configs:         &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCS:             &fakeReporterVCSProviderService{got: got},
 				HostnameService: internal.NewHostnameService("otf-host.org"),
 				Cache:           make(map[resource.TfeID]vcs.Status),
 			}
-			err := reporter.handleRun(ctx, tt.run)
+			err := reporter.handleRun(ctx, tt.event)
 			require.NoError(t, err)
 
 			if tt.want == nil {
@@ -94,7 +95,7 @@ func TestReporter_HandleRun(t *testing.T) {
 func TestReporter_DontSetStatusTwice(t *testing.T) {
 	ctx := context.Background()
 
-	run := &Run{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending}
+	event := &Event{ID: testutils.ParseID(t, "run-123"), Status: runstatus.Pending}
 	ws := &workspace.Workspace{
 		Name:       "dev",
 		Connection: &workspace.Connection{},
@@ -108,15 +109,16 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 
 	got := make(chan vcs.SetStatusOptions, 1)
 	reporter := &Reporter{
-		Workspaces:      &fakeReporterWorkspaceService{ws: ws},
+		Workspaces:      &fakeReporterWorkspaceClient{ws: ws},
 		Configs:         &fakeReporterConfigurationVersionService{cv: cv},
 		VCS:             &fakeReporterVCSProviderService{got: got},
+		Runs:            &fakeReporterRunClient{event: event},
 		HostnameService: internal.NewHostnameService("otf-host.org"),
 		Cache:           make(map[resource.TfeID]vcs.Status),
 	}
 
 	// handle run the first time and expect status to be set
-	err := reporter.handleRun(ctx, run)
+	err := reporter.handleRun(ctx, event)
 	require.NoError(t, err)
 
 	want := vcs.SetStatusOptions{
@@ -130,7 +132,7 @@ func TestReporter_DontSetStatusTwice(t *testing.T) {
 
 	// handle run the second time with the same status and expect status to
 	// *not* be set
-	err = reporter.handleRun(ctx, run)
+	err = reporter.handleRun(ctx, event)
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(got))
 }
@@ -145,14 +147,24 @@ func (f *fakeReporterConfigurationVersionService) Get(context.Context, resource.
 	return f.cv, nil
 }
 
-type fakeReporterWorkspaceService struct {
+type fakeReporterWorkspaceClient struct {
 	workspace.Service
 
 	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceService) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
+func (f *fakeReporterWorkspaceClient) Get(context.Context, resource.TfeID) (*workspace.Workspace, error) {
 	return f.ws, nil
+}
+
+type fakeReporterRunClient struct {
+	reporterRunClient
+
+	event *Event
+}
+
+func (f *fakeReporterRunClient) Get(context.Context, resource.TfeID) (*Run, error) {
+	return &Run{ID: f.event.ID, Status: f.event.Status}, nil
 }
 
 type fakeReporterVCSProviderService struct {

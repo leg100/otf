@@ -27,21 +27,21 @@ import (
 func Updater[T any](
 	ctx context.Context,
 	db *DB,
-	getForUpdate func(context.Context, Connection) (T, error),
+	getForUpdate func(context.Context) (T, error),
 	update func(context.Context, T) error,
-	updateDB func(context.Context, Connection, T) error,
+	updateDB func(context.Context, T) error,
 ) (T, error) {
 	var row T
-	err := db.Tx(ctx, func(ctx context.Context, conn Connection) error {
+	err := db.Tx(ctx, func(ctx context.Context) error {
 		var err error
-		row, err = getForUpdate(ctx, conn)
+		row, err = getForUpdate(ctx)
 		if err != nil {
 			return fmt.Errorf("finding row for update: %w", err)
 		}
 		if err := update(ctx, row); err != nil {
 			return err
 		}
-		if err := updateDB(ctx, conn, row); err != nil {
+		if err := updateDB(ctx, row); err != nil {
 			return fmt.Errorf("updating row: %w", err)
 		}
 		return nil

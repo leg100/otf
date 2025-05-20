@@ -71,7 +71,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID resource.ID, fn func(cont
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Team, error) {
+		func(ctx context.Context) (*Team, error) {
 			rows := db.Query(ctx, `
 SELECT team_id, name, created_at, permission_manage_workspaces, permission_manage_vcs, permission_manage_modules, organization_name, sso_team_id, visibility, permission_manage_policies, permission_manage_policy_overrides, permission_manage_providers
 FROM teams t
@@ -81,7 +81,7 @@ FOR UPDATE OF t
 			return sql.CollectOneRow(rows, scan)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, team *Team) error {
+		func(ctx context.Context, team *Team) error {
 			_, err := db.Exec(ctx, `
 UPDATE teams
 SET

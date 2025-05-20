@@ -85,5 +85,5 @@ func TestIntegration_RunCancelInterrupt(t *testing.T) {
 
 	// canceling the job should result in the run then entering the canceled
 	// state.
-	daemon.waitRunStatus(t, r.ID, runstatus.Canceled)
+	daemon.waitRunStatus(t, ctx, r.ID, runstatus.Canceled)
 }

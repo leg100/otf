@@ -37,7 +37,7 @@ require (
 	github.com/lestrrat-go/jwx/v2 v2.1.5
 	github.com/mitchellh/iochan v1.0.0
 	github.com/pkg/errors v0.9.1
-	github.com/playwright-community/playwright-go v0.5101.0
+	github.com/playwright-community/playwright-go v0.5200.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/sdassow/atomic v0.0.1
 	github.com/spf13/cobra v1.9.1

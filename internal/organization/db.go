@@ -45,8 +45,8 @@ func (db *pgdb) update(ctx context.Context, name Name, fn func(context.Context, 
 	return sql.Updater(
 		ctx,
 		db.DB,
-		func(ctx context.Context, conn sql.Connection) (*Organization, error) {
-			row, _ := conn.Query(ctx, `
+		func(ctx context.Context) (*Organization, error) {
+			row := db.Query(ctx, `
 SELECT *
 FROM organizations
 WHERE name = $1
@@ -55,8 +55,8 @@ FOR UPDATE`,
 			return sql.CollectOneRow(row, db.scan)
 		},
 		fn,
-		func(ctx context.Context, conn sql.Connection, org *Organization) error {
-			_, err := conn.Exec(ctx, `
+		func(ctx context.Context, org *Organization) error {
+			_, err := db.Exec(ctx, `
 UPDATE organizations
 SET
 	name = $1,
@@ -132,11 +132,6 @@ WHERE name LIKE ANY($1::text[])
 
 func (db *pgdb) get(ctx context.Context, name Name) (*Organization, error) {
 	row := db.Query(ctx, ` SELECT * FROM organizations WHERE name = $1 `, name)
-	return sql.CollectOneRow(row, db.scan)
-}
-
-func (db *pgdb) getByID(ctx context.Context, id resource.TfeID) (*Organization, error) {
-	row := db.Query(ctx, ` SELECT * FROM organizations WHERE organization_id = $1 `, id)
 	return sql.CollectOneRow(row, db.scan)
 }
 

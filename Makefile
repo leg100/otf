@@ -168,7 +168,7 @@ connect:
 
 .PHONY: install-playwright
 install-playwright:
-	go get -tool github.com/playwright-community/playwright-go/cmd/playwright@v0.5101.0
+	go get -tool github.com/playwright-community/playwright-go/cmd/playwright@v0.5200.0
 
 .PHONY: playwright-ubuntu
 install-playwright-ubuntu: install-playwright

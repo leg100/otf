@@ -52,7 +52,7 @@ data "http" "wait" {
 
 	// create run and wait for it to enter canceled state
 	run := svc.createRun(t, ctx, ws, cv, nil)
-	run = svc.waitRunStatus(t, run.ID, runstatus.Canceled)
+	run = svc.waitRunStatus(t, ctx, run.ID, runstatus.Canceled)
 
 	// run should have reached planning state before being timed out and being
 	// forced into a canceled state.

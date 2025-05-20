@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf/internal"
 	otfapi "github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +32,6 @@ type (
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization Name) (*OrganizationToken, error)
 		DeleteToken(ctx context.Context, organization Name) error
-		WatchOrganizations(context.Context) (<-chan pubsub.Event[*Organization], func())
 		getOrganizationTokenByID(ctx context.Context, tokenID resource.TfeID) (*OrganizationToken, error)
 	}
 )
