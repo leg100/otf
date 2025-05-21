@@ -18,8 +18,9 @@ import (
 
 func TestDownloader(t *testing.T) {
 	// setup web server
-	http.Handle("/", http.FileServer(http.Dir("testdata")))
-	srv := httptest.NewTLSServer(nil)
+	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.Dir("testdata")))
+	srv := httptest.NewTLSServer(mux)
 	t.Cleanup(func() {
 		srv.Close()
 	})
