@@ -52,7 +52,7 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           OTF_INTEGRATION_TEST_ENABLE_LOGGER: true
-        run: go test ./internal/integration -v -failfast -count 10 -run TestIntegration_RunListUI
+        run: go test ./internal/integration -v -failfast -count 100 -run TestIntegration_RunListUI
       - name: Archive browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
