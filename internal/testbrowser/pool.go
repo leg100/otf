@@ -119,6 +119,24 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 		require.NoError(t, err)
 	}()
 
+	// In the event of a failure take a screenshot for debugging purposes.
+	defer func() {
+		if t.Failed() {
+			fname := fmt.Sprintf("%s_failure.png", t.Name())
+			path := filepath.Join("screenshots", fname)
+
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Logf("failed to make screenshots directory: %s", err.Error())
+				return
+			}
+
+			_, err = page.Screenshot(playwright.PageScreenshotOptions{Path: &path})
+			if err != nil {
+				t.Logf("failed to take screenshot: %s", err.Error())
+			}
+		}
+	}()
+
 	// Click OK on any browser javascript dialog boxes that pop up
 	page.OnDialog(func(dialog playwright.Dialog) {
 		dialog.Accept()
@@ -147,15 +165,4 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 
 	fn(page)
 
-	// In the event of a failure take a screenshot for debugging purposes.
-	if t.Failed() {
-		fname := fmt.Sprintf("%s_failure.png", t.Name())
-		path := filepath.Join("screenshots", fname)
-
-		err := os.MkdirAll(filepath.Dir(path), 0o755)
-		require.NoError(t, err)
-
-		_, err = page.Screenshot(playwright.PageScreenshotOptions{Path: &path})
-		require.NoError(t, err)
-	}
 }

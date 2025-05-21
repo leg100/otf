@@ -42,7 +42,7 @@ type (
 	}
 
 	webLogsClient interface {
-		GetAllLogs(ctx context.Context, runID resource.TfeID, phase internal.PhaseType) ([]byte, error)
+		GetChunk(ctx context.Context, opts logs.GetChunkOptions) (logs.Chunk, error)
 	}
 
 	webWorkspaceClient interface {
@@ -193,12 +193,18 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.logs.GetChunk(r.Context(), logs.GetChunkOptions{
+		RunID: run.ID,
+		Phase: internal.PlanPhase,
+	})
 	if err != nil {
 		html.Error(w, "retrieving plan logs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.logs.GetAllLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.logs.GetChunk(r.Context(), logs.GetChunkOptions{
+		RunID: run.ID,
+		Phase: internal.ApplyPhase,
+	})
 	if err != nil {
 		html.Error(w, "retrieving apply logs: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -207,8 +213,8 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	props := getProps{
 		run:       run,
 		ws:        ws,
-		planLogs:  logs.Chunk{Data: planLogs},
-		applyLogs: logs.Chunk{Data: applyLogs},
+		planLogs:  logs.Chunk{Data: planLogs.Data},
+		applyLogs: logs.Chunk{Data: applyLogs.Data},
 	}
 	html.Render(get(props), w, r)
 }
@@ -348,7 +354,7 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
-	conn, err := components.NewWebsocket(w, r, h.runs, eventView)
+	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, eventView)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return
@@ -357,8 +363,8 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 
 	sub, _ := h.runs.Watch(r.Context())
 
-	if err := conn.Send(runID); err != nil {
-		h.logger.Error(err, "sending websocket message")
+	if !conn.Send(runID) {
+		return
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -387,8 +393,8 @@ func (h *webHandlers) watchRun(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	done:
-		if err := conn.Send(runID); err != nil {
-			h.logger.Error(err, "sending websocket message")
+		if !conn.Send(runID) {
+			return
 		}
 		// Wait before sending anything more to client to avoid sending too many
 		// messages.
@@ -409,7 +415,7 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	if !websocket.IsWebSocketUpgrade(r) {
 		return
 	}
-	conn, err := components.NewWebsocket(w, r, h.runs, latestRunSingleTable)
+	conn, err := components.NewWebsocket(h.logger, w, r, h.runs, latestRunSingleTable)
 	if err != nil {
 		h.logger.Error(err, "upgrading websocket connection")
 		return
@@ -427,8 +433,8 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 	var latestRunID *resource.TfeID
 	if ws.LatestRun != nil {
 		latestRunID = &ws.LatestRun.ID
-		if err := conn.Send(*latestRunID); err != nil {
-			h.logger.Error(err, "sending websocket message for latest run")
+		if !conn.Send(*latestRunID) {
+			return
 		}
 	}
 	for {
@@ -463,8 +469,8 @@ func (h *webHandlers) watchLatest(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
-		if err := conn.Send(*latestRunID); err != nil {
-			h.logger.Error(err, "sending websocket message")
+		if !conn.Send(*latestRunID) {
+			return
 		}
 	}
 }

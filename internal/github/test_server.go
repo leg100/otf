@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -299,10 +300,12 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		w.WriteHeader(http.StatusNotFound)
 	})
 
+	srv.Server = httptest.NewUnstartedServer(srv.mux)
+	srv.Server.Config.ErrorLog = log.New(io.Discard, "", 0)
 	if srv.disableTLS {
-		srv.Server = httptest.NewServer(srv.mux)
+		srv.Server.Start()
 	} else {
-		srv.Server = httptest.NewTLSServer(srv.mux)
+		srv.Server.StartTLS()
 	}
 	t.Cleanup(srv.Close)
 	srv.url = &srv.URL

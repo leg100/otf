@@ -2,12 +2,15 @@ package components
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/a-h/templ"
+	"github.com/go-logr/logr"
 	"github.com/gorilla/websocket"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
@@ -25,6 +28,7 @@ type Websocket[Resource any] struct {
 	r         *http.Request
 	client    websocketClient[Resource]
 	component func(Resource) templ.Component
+	logger    logr.Logger
 }
 
 type websocketClient[Resource any] interface {
@@ -32,6 +36,7 @@ type websocketClient[Resource any] interface {
 }
 
 func NewWebsocket[Resource any](
+	logger logr.Logger,
 	w http.ResponseWriter,
 	r *http.Request,
 	client websocketClient[Resource],
@@ -46,12 +51,26 @@ func NewWebsocket[Resource any](
 		client:    client,
 		component: component,
 		r:         r,
+		logger:    logger,
 	}, nil
 }
 
 // Send an HTML fragment to the client rendered from a template populated with a
-// resource corresponding to the given id.
-func (s *Websocket[Resource]) Send(id resource.TfeID) error {
+// resource corresponding to the given id. True is returned if it succeeded,
+// otherwise it returns false, in which case the connection should be closed.
+func (s *Websocket[Resource]) Send(id resource.TfeID) bool {
+	if err := s.doSend(id); err != nil {
+		// Ignore errors to do with the client closing the connection.
+		var opError *net.OpError
+		if !errors.As(err, &opError) {
+			s.logger.Error(err, "sending websocket message", "resource_id", id)
+		}
+		return false
+	}
+	return true
+}
+
+func (s *Websocket[Resource]) doSend(id resource.TfeID) error {
 	resource, err := s.client.Get(s.r.Context(), id)
 	if err != nil {
 		return fmt.Errorf("fetching resource: %w", err)

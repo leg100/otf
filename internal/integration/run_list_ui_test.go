@@ -88,7 +88,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Click()
 		require.NoError(t, err)
 
-		// should only show three runs
+		// should only show two runs
 		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-2 of 2")
 		require.NoError(t, err)
 	})

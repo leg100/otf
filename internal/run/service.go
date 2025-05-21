@@ -532,11 +532,14 @@ func (s *Service) createPlanReports(ctx context.Context, runID resource.TfeID) (
 }
 
 func (s *Service) createApplyReport(ctx context.Context, runID resource.TfeID) (Report, error) {
-	logs, err := s.logs.GetAllLogs(ctx, runID, internal.ApplyPhase)
+	logs, err := s.logs.GetChunk(ctx, logs.GetChunkOptions{
+		RunID: runID,
+		Phase: internal.ApplyPhase,
+	})
 	if err != nil {
 		return Report{}, err
 	}
-	report, err := ParseApplyOutput(string(logs))
+	report, err := ParseApplyOutput(string(logs.Data))
 	if err != nil {
 		return Report{}, err
 	}

@@ -124,3 +124,8 @@ if [[ "$#" -eq 0 ]]; then
 fi
 # run tests
 go test -v -run ${@:-$all} -timeout 600s
+
+# if tests fail then spit out otfd logs
+if [[ $? -ne 0 ]]; then
+	docker compose logs otfd
+fi

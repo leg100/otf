@@ -52,7 +52,7 @@ Rails-style path helpers are generated using `go generate`. The path specificati
 
 ## Web development
 
-If you're making changes to web templates then you may want to enable developer mode: set the environment variable `DEV_MODE`. Once enabled you will be able to see changes without restarting `otfd`.
+If you're making changes to web templates then you may want to enable developer mode: set the environment variable `DEV_MODE=1`. Once enabled you will be able to see changes without restarting `otfd`.
 
 OTF uses [Tailwind CSS](https://tailwindcss.com/) to generate CSS classes. Run the following make task to generate the CSS:
 
