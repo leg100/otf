@@ -40,7 +40,7 @@ tailwind-watch:
 
 .PHONY: test
 test:
-	go test ./...
+	OTF_INTEGRATION_TEST_ENABLE_LOGGER=true go test ./... -v -parallel 1 -failfast -count 10
 
 .PHONY: build
 build:
