@@ -44,6 +44,10 @@ templ list(props listProps) {
 			} else {
 				<span>Alternatively, <a class="underline" href={ paths.NewGithubApp() }>create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
 			}
+			<form action={ paths.NewVCSProvider(props.organization) } method="GET">
+				<button class="btn">New Forgejo VCS Provider (Personal Token)</button>
+				<input type="hidden" name="kind" id="kind" value="forgejo"/>
+			</form>
 		</div>
 		<div id="content-list">
 			@components.Table(

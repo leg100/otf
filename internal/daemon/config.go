@@ -26,6 +26,7 @@ type Config struct {
 	GitlabHostname               string
 	GitlabClientID               string
 	GitlabClientSecret           string
+	ForgejoHostname              string // TODO: forgejo is often self-hosted, and there may be more than one of them.  this should be a per-VCS setting
 	OIDC                         authenticator.OIDCConfig
 	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
 	SiteToken                    string
