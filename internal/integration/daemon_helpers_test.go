@@ -475,7 +475,9 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, org organizat
 		cancel() // terminate agent
 		<-done   // don't exit test until agent fully terminated
 	})
-	return <-agent.Registered(), cancel
+	// Wait for agent to register itself
+	<-agent.Started()
+	return agent.RunnerMeta, cancel
 }
 
 func (s *testDaemon) engineCLI(t *testing.T, ctx context.Context, engine string, command, configPath string, args ...string) string {

@@ -77,7 +77,7 @@ type (
 
 	runnerDaemon interface {
 		Start(context.Context) error
-		Registered() <-chan *runner.RunnerMeta
+		Started() <-chan struct{}
 	}
 )
 
@@ -455,7 +455,12 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())
 	d.V(0).Info("set webhook hostname", "webhook_hostname", d.System.WebhookHostname())
 
+	// Start subsystems. Subsystems are started in order.
 	subsystems := []*Subsystem{
+		// The listener is started first because it is responsible for listening
+		// for database events, and other subsystems rely on it to be listening
+		// before they start, such as the runner (which generates a new runner
+		// event), and the allocator (which receives the new runner event).
 		{
 			Name:   "listener",
 			Logger: d.Logger,
@@ -550,22 +555,17 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		if err := ss.Start(ctx, g); err != nil {
 			return err
 		}
-	}
-
-	// Wait for database events listener start listening; otherwise some tests may fail
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timed out waiting for database events listener to start")
-	case <-d.listener.Started():
-	}
-	// Wait for runner to register; otherwise some tests may fail
-	if !d.DisableRunner {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-d.runner.Registered():
+		// Wait for subsystem to finish starting up if it exposes the ability to
+		// do so.
+		wait, ok := ss.System.(interface{ Started() <-chan struct{} })
+		if ok {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Second * 10):
+				return fmt.Errorf("timed out waiting for subsystem to start: %s", ss.Name)
+			case <-wait.Started():
+			}
 		}
 	}
 
