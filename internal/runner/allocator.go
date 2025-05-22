@@ -86,8 +86,10 @@ func (a *allocator) Start(ctx context.Context) error {
 					// Update runner status
 					runner, ok := a.runners[event.Payload.ID]
 					if !ok {
-						// No runner could be found; ignore
-						continue
+						// Should never happen, but return an error, which
+						// restarts the allocator, and it can re-seed with
+						// existing runners.
+						return fmt.Errorf("existing runner not found: %s", event.Payload.ID)
 					}
 					runner.Status = event.Payload.Status
 					a.runners[event.Payload.ID] = runner
