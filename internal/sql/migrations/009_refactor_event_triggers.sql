@@ -1,22 +1,30 @@
--- Migrate from sending events containing only the id of a changed row, to instead sending the JSON encoded record of the row.
+-- Migrate from sending events containing info about a changed row, to instead inserting events to a table.
+CREATE TABLE events (
+	id SERIAL,
+	action TEXT NOT NULL,
+	_table TEXT NOT NULL,
+	record JSON NOT NULL,
+	time TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX events_time_idx ON events (time);
+
 CREATE OR REPLACE FUNCTION build_and_send_event() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 DECLARE
     record RECORD;
-    notification JSON;
+	id INT;
 BEGIN
     IF (TG_OP = 'DELETE') THEN
         record = OLD;
     ELSE
         record = NEW;
     END IF;
-    notification = json_build_object(
-                      'table',TG_TABLE_NAME,
-                      'action', TG_OP,
-                      'time', current_timestamp,
-                      'record', record);
-    PERFORM pg_notify('events', notification::text);
+	INSERT INTO events (action, _table, record, time)
+	VALUES (TG_OP, TG_TABLE_NAME, to_json(record), current_timestamp)
+	RETURNING events.id INTO id;
+	PERFORM pg_notify('events', id::text);
     RETURN NULL;
 END;
 $$;
@@ -42,6 +50,7 @@ DROP TRIGGER notify_workspace_event ON runs;
 DROP FUNCTION workspace_run_notify_event;
 
 ---- create above / drop below ----
+DROP TABLE events;
 
 CREATE OR REPLACE FUNCTION agent_pools_notify_event() RETURNS trigger
     LANGUAGE plpgsql
