@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -44,10 +45,9 @@ type (
 
 func NewListener(logger logr.Logger, conn *DB) *Listener {
 	return &Listener{
-		Logger:      logger.WithValues("component", "listener"),
-		conn:        conn,
-		islistening: make(chan struct{}),
-		forwarders:  make(map[string]ForwardFunc),
+		Logger:     logger.WithValues("component", "listener"),
+		conn:       conn,
+		forwarders: make(map[string]ForwardFunc),
 	}
 }
 
@@ -65,6 +65,8 @@ func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
 // started listening; from this point onwards published messages will be
 // forwarded.
 func (b *Listener) Start(ctx context.Context) error {
+	b.islistening = make(chan struct{})
+
 	conn, err := b.conn.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -77,50 +79,58 @@ func (b *Listener) Start(ctx context.Context) error {
 	b.V(2).Info("listening for events")
 	close(b.islistening) // close semaphore to indicate broker is now listening
 
-	// launch cleanup routine to expunge events after a certain time period
-	go b.cleanup(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 
-	for {
-		notification, err := conn.Conn().WaitForNotification(ctx)
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				// parent has decided to shutdown so exit without error
-				return nil
-			default:
-				b.Error(err, "waiting for postgres notification")
-				return err
+	// cleanup old events
+	g.Go(func() error {
+		return b.cleanup(ctx)
+	})
+
+	// check for new events
+	g.Go(func() error {
+		for {
+			notification, err := conn.Conn().WaitForNotification(ctx)
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					// parent has decided to shutdown so exit without error
+					return nil
+				default:
+					b.Error(err, "waiting for postgres notification")
+					return err
+				}
 			}
-		}
-		row := b.conn.Query(ctx, `
+			row := b.conn.Query(ctx, `
 SELECT *
 FROM events
 WHERE id = $1
 `, notification.Payload)
-		event, err := pgx.CollectOneRow(row, pgx.RowToStructByName[Event])
-		if err != nil {
-			return err
+			event, err := pgx.CollectOneRow(row, pgx.RowToStructByName[Event])
+			if err != nil {
+				return fmt.Errorf("retrieving events: %w", err)
+			}
+			if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
+				b.Error(err, "unmarshaling postgres event")
+				continue
+			}
+			forwarder, ok := b.forwarders[string(event.Table)]
+			if !ok {
+				b.Error(nil, "no event forwarder found", "table", event.Table)
+				continue
+			}
+			forwarder(event)
 		}
-		if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
-			b.Error(err, "unmarshaling postgres event")
-			continue
-		}
-		forwarder, ok := b.forwarders[string(event.Table)]
-		if !ok {
-			b.Error(nil, "no event forwarder found", "table", event.Table)
-			continue
-		}
-		forwarder(event)
-	}
+	})
+	return g.Wait()
 }
 
 func (b *Listener) cleanup(ctx context.Context) error {
 	ticker := time.NewTicker(time.Minute)
 	for {
 		// delete events older than one minute
-		_, err := b.conn.Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - '1 minute')`)
+		_, err := b.conn.conn(ctx).Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - interval '1 minute')`)
 		if err != nil {
-			return err
+			return fmt.Errorf("cleaning up old events: %w", err)
 		}
 		select {
 		case <-ctx.Done():
