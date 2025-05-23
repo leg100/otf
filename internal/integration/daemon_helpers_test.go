@@ -73,6 +73,8 @@ func setup(t *testing.T, opts ...configOption) (*testDaemon, *organization.Organ
 	// stub TLS servers with self-certified certs.
 	cfg.SkipTLSVerification = true
 
+	cfg.EnableRequestLogging = true
+
 	//daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"
