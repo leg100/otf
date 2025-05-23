@@ -124,7 +124,12 @@ AND   phase  = @phase
 		// Don't consider no logs an error because logs may not have been
 		// uploaded yet.
 		if errors.Is(err, internal.ErrResourceNotFound) {
-			return Chunk{}, nil
+			chunk := Chunk{
+				RunID:  opts.RunID,
+				Phase:  opts.Phase,
+				Offset: opts.Offset,
+			}
+			return chunk, nil
 		}
 		return Chunk{}, err
 	}

@@ -10,13 +10,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
-	defaultChannel = "events"
-
 	InsertAction = "INSERT"
 	UpdateAction = "UPDATE"
 	DeleteAction = "DELETE"
@@ -34,8 +32,7 @@ type (
 	Listener struct {
 		logr.Logger
 
-		channel     string        // postgres notification channel name
-		pool        pool          // pool from which to acquire a dedicated connection to postgres
+		conn        *DB           // pool from which to acquire a dedicated connection to postgres
 		islistening chan struct{} // semaphore that's closed once broker is listening
 
 		mu         sync.Mutex             // sync access to maps
@@ -44,21 +41,13 @@ type (
 
 	// ForwardFunc forwards an event to a client
 	ForwardFunc func(event Event)
-
-	// database connection pool
-	pool interface {
-		Acquire(ctx context.Context) (*pgxpool.Conn, error)
-		Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	}
 )
 
-func NewListener(logger logr.Logger, db pool) *Listener {
+func NewListener(logger logr.Logger, conn *DB) *Listener {
 	return &Listener{
-		Logger:      logger.WithValues("component", "listener"),
-		pool:        db,
-		islistening: make(chan struct{}),
-		channel:     defaultChannel,
-		forwarders:  make(map[string]ForwardFunc),
+		Logger:     logger.WithValues("component", "listener"),
+		conn:       conn,
+		forwarders: make(map[string]ForwardFunc),
 	}
 }
 
@@ -76,57 +65,92 @@ func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
 // started listening; from this point onwards published messages will be
 // forwarded.
 func (b *Listener) Start(ctx context.Context) error {
-	conn, err := b.pool.Acquire(ctx)
+	b.islistening = make(chan struct{})
+
+	conn, err := b.conn.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
 	}
 	defer conn.Release()
 
-	if _, err := conn.Exec(ctx, "listen "+b.channel); err != nil {
+	if _, err := conn.Exec(ctx, "LISTEN events"); err != nil {
 		return err
 	}
 	b.V(2).Info("listening for events")
 	close(b.islistening) // close semaphore to indicate broker is now listening
 
-	for {
-		notification, err := conn.Conn().WaitForNotification(ctx)
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				// parent has decided to shutdown so exit without error
-				return nil
-			default:
-				b.Error(err, "waiting for postgres notification")
-				return err
+	g, ctx := errgroup.WithContext(ctx)
+
+	// cleanup old events
+	g.Go(func() error {
+		return b.cleanup(ctx)
+	})
+
+	// check for new events
+	g.Go(func() error {
+		for {
+			notification, err := conn.Conn().WaitForNotification(ctx)
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					// parent has decided to shutdown so exit without error
+					return nil
+				default:
+					b.Error(err, "waiting for postgres notification")
+					return err
+				}
 			}
+			row := b.conn.Query(ctx, `
+SELECT *
+FROM events
+WHERE id = $1
+`, notification.Payload)
+			event, err := pgx.CollectOneRow(row, pgx.RowToStructByName[Event])
+			if err != nil {
+				return fmt.Errorf("retrieving events: %w", err)
+			}
+			if err := json.Unmarshal([]byte(event.Record), &event); err != nil {
+				b.Error(err, "unmarshaling postgres event")
+				continue
+			}
+			forwarder, ok := b.forwarders[string(event.Table)]
+			if !ok {
+				b.Error(nil, "no event forwarder found", "table", event.Table)
+				continue
+			}
+			forwarder(event)
 		}
-		var event Event
-		if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
-			b.Error(err, "unmarshaling postgres notification")
-			continue
-		}
-		forwarder, ok := b.forwarders[string(event.Table)]
-		if !ok {
-			b.Error(nil, "no event forwarder found", "table", event.Table)
-			continue
-		}
-		forwarder(event)
-	}
+	})
+	return g.Wait()
 }
 
-func (b *Listener) Started() <-chan struct{} {
-	return b.islistening
+func (b *Listener) cleanup(ctx context.Context) error {
+	ticker := time.NewTicker(time.Minute)
+	for {
+		// delete events older than one minute
+		_, err := b.conn.conn(ctx).Exec(ctx, `DELETE FROM events WHERE time < (current_timestamp - interval '1 minute')`)
+		if err != nil {
+			return fmt.Errorf("cleaning up old events: %w", err)
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+		}
+	}
+
 }
 
 // Event is a postgres event triggered by a database change.
 type Event struct {
-	Table  string          `json:"table"`  // pg table associated with change
-	Action Action          `json:"action"` // INSERT/UPDATE/DELETE
-	Record json.RawMessage `json:"record"` // the changed row
-	Time   time.Time       `json:"time"`   // time at which event occured
+	ID     int             `db:"id"`
+	Table  string          `db:"_table"` // pg table associated with change
+	Action Action          // INSERT/UPDATE/DELETE
+	Record json.RawMessage // the changed row
+	Time   time.Time       // time at which event occured
 }
 
-func (v *Event) LogValue() slog.Value {
+func (v Event) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("action", string(v.Action)),
 		slog.String("table", v.Table),

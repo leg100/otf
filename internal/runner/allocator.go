@@ -78,20 +78,16 @@ func (a *allocator) Start(ctx context.Context) error {
 				}
 				a.addRunner(runner)
 			case pubsub.UpdatedEvent:
-				switch event.Payload.Status {
-				case RunnerExited, RunnerErrored:
-					// Delete runners in a terminal state.
-					a.deleteRunner(event.Payload.ID)
-				default:
-					// Update runner status
-					runner, ok := a.runners[event.Payload.ID]
-					if !ok {
-						// No runner could be found; ignore
-						continue
-					}
-					runner.Status = event.Payload.Status
-					a.runners[event.Payload.ID] = runner
+				// Update runner status
+				runner, ok := a.runners[event.Payload.ID]
+				if !ok {
+					// Should never happen, but return an error, which
+					// restarts the allocator, and it can re-seed with
+					// existing runners.
+					return fmt.Errorf("existing runner not found: %s", event.Payload.ID)
 				}
+				runner.Status = event.Payload.Status
+				a.runners[event.Payload.ID] = runner
 			case pubsub.DeletedEvent:
 				a.deleteRunner(event.Payload.ID)
 			}
@@ -117,7 +113,13 @@ func (a *allocator) Start(ctx context.Context) error {
 				}
 				a.jobs[event.Payload.ID] = job
 			case pubsub.UpdatedEvent:
-				job := a.jobs[event.Payload.ID]
+				job, ok := a.jobs[event.Payload.ID]
+				if !ok {
+					// Should never happen, but return an error, which
+					// restarts the allocator, and it can re-seed with
+					// existing jobs.
+					return fmt.Errorf("existing job not found: %s", event.Payload.ID)
+				}
 				job.Status = event.Payload.Status
 				a.jobs[event.Payload.ID] = job
 			}
@@ -256,11 +258,6 @@ func (a *allocator) allocate(ctx context.Context, job *Job) error {
 }
 
 func (a *allocator) addRunner(runner *RunnerMeta) {
-	// don't add runners in a terminal state (exited, errored)
-	switch runner.Status {
-	case RunnerExited, RunnerErrored:
-		return
-	}
 	a.runners[runner.ID] = runner
 	a.currentJobs[runner.ID] = runner.CurrentJobs
 	currentJobsMetric.WithLabelValues(runner.ID.String()).Set(float64(runner.CurrentJobs))

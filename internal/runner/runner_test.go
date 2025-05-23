@@ -32,8 +32,9 @@ func TestRunner(t *testing.T) {
 		startErr <- r.Start(ctx)
 	}()
 
-	// Test that runner registers itself
-	assert.Equal(t, &RunnerMeta{ID: wantID}, <-r.registered)
+	// Test that the runner registers itself
+	<-r.registered
+	assert.Equal(t, wantID, r.ID)
 	// Terminate runner
 	cancel()
 	// Test that runner sends final status update

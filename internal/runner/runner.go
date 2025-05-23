@@ -35,7 +35,7 @@ type (
 
 		client     client
 		spawner    operationSpawner
-		registered chan *RunnerMeta
+		registered chan struct{}
 
 		logger logr.Logger // logger that logs messages regardless of whether runner is a pool runner or not.
 		v      int         // logger verbosity
@@ -56,7 +56,7 @@ func newRunner(
 			MaxJobs: cfg.MaxJobs,
 		},
 		client:     client,
-		registered: make(chan *RunnerMeta),
+		registered: make(chan struct{}),
 		logger:     logger,
 		spawner:    spawner,
 	}
@@ -112,17 +112,17 @@ func (r *Runner) Start(ctx context.Context) error {
 		return fmt.Errorf("registering runner: %w", err)
 	}
 	r.logger.V(r.v).Info("registered successfully", "runner", registrationMetadata)
-	// send registered runner to channel, letting caller know runner has
-	// registered.
-	go func() {
-		r.registered <- registrationMetadata
-	}()
 
 	// Update metadata with metadata from server, which includes unique ID.
 	r.RunnerMeta = registrationMetadata
 	// Add metadata to the context in all calls, which is needed to authorize a
 	// server runner with service endpoints.
 	ctx = authz.AddSubjectToContext(ctx, registrationMetadata)
+
+	// send notification to channel, letting caller know runner has registered.
+	go func() {
+		r.registered <- struct{}{}
+	}()
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() (err error) {
@@ -242,8 +242,6 @@ func (r *Runner) Start(ctx context.Context) error {
 	return g.Wait()
 }
 
-// Registered returns the daemon's corresponding runner on a channel once it has
-// successfully registered.
-func (r *Runner) Registered() <-chan *RunnerMeta {
+func (r *Runner) Started() <-chan struct{} {
 	return r.registered
 }
