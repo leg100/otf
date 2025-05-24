@@ -18,7 +18,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const headlessEnvVar = "OTF_E2E_HEADLESS"
+const (
+	headlessEnvVar = "OTF_E2E_HEADLESS"
+	tracesDir      = "traces"
+)
 
 var poolSize = runtime.GOMAXPROCS(0)
 
@@ -30,6 +33,8 @@ type Pool struct {
 	pool chan playwright.BrowserContext
 	// service for creating new session in browser
 	tokens *tokens.Service
+	// keep a record of tests using this pool
+	tests map[*testing.T]int
 }
 
 func NewPool(secret []byte) (*Pool, func(), error) {
@@ -49,6 +54,9 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		}
 	}
 
+	// Remove previous traces
+	os.RemoveAll(tracesDir)
+
 	pw, err := playwright.Run()
 	if err != nil {
 		return nil, nil, fmt.Errorf("running playwright: %w", err)
@@ -64,6 +72,7 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		pool:    make(chan playwright.BrowserContext, poolSize),
 		tokens:  tokensService,
 		browser: browser,
+		tests:   make(map[*testing.T]int),
 	}
 	for i := 0; i < poolSize; i++ {
 		p.pool <- nil
@@ -103,6 +112,19 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 	}()
 	defer browserCtx.Close()
 
+	// Setup tracing for debugging purposes.
+	browserCtx.Tracing().Start(playwright.TracingStartOptions{
+		Screenshots: playwright.Bool(true),
+		Snapshots:   playwright.Bool(true),
+	})
+	defer func() {
+		// Save trace to a unique path for each call of this func
+		dir := fmt.Sprintf("%s_%d", t.Name(), p.tests[t])
+		p.tests[t]++
+		path := filepath.Join(tracesDir, dir, "trace.zip")
+		browserCtx.Tracing().Stop(path)
+	}()
+
 	err = browserCtx.GrantPermissions([]string{
 		"clipboard-read",
 		"clipboard-write",
@@ -117,24 +139,6 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 	defer func() {
 		err := page.Close()
 		require.NoError(t, err)
-	}()
-
-	// In the event of a failure take a screenshot for debugging purposes.
-	defer func() {
-		if t.Failed() {
-			fname := fmt.Sprintf("%s_failure.png", t.Name())
-			path := filepath.Join("screenshots", fname)
-
-			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-				t.Logf("failed to make screenshots directory: %s", err.Error())
-				return
-			}
-
-			_, err = page.Screenshot(playwright.PageScreenshotOptions{Path: &path})
-			if err != nil {
-				t.Logf("failed to take screenshot: %s", err.Error())
-			}
-		}
 	}()
 
 	// Click OK on any browser javascript dialog boxes that pop up
@@ -163,12 +167,5 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 		require.NoError(t, err)
 	}
 
-	browserCtx.Tracing().Start(playwright.TracingStartOptions{
-		Screenshots: playwright.Bool(true),
-		Snapshots:   playwright.Bool(true),
-	})
-
-	browserCtx.Tracing().StartChunk()
 	fn(page)
-	browserCtx.Tracing().Stop("trace.zip")
 }

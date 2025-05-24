@@ -42,14 +42,12 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           OTF_INTEGRATION_TEST_ENABLE_LOGGER: true
         run: go test ./internal/integration -v -failfast -count 100 -run TestIntegration_RunListUI
-      - name: Archive browser screenshots
+      - name: Archive browser traces
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-screenshots
-          path: |
-            internal/integration/screenshots
-            internal/integration/trace.zip
+          name: traces
+          path: internal/integration/traces
   release-please:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
