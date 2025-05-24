@@ -63,9 +63,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// filter by planned&finished
-		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Check(playwright.LocatorCheckOptions{
-			Force: playwright.Bool(true),
-		})
+		err = page.Locator(`//label[@for='filter-item-planned_and_finished']`).Click()
 		require.NoError(t, err)
 
 		// should only show two runs
@@ -87,9 +85,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// filter by planned&finished
-		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Check(playwright.LocatorCheckOptions{
-			Force: playwright.Bool(true),
-		})
+		err = page.Locator(`//label[@for='filter-item-planned_and_finished']`).Click()
 		require.NoError(t, err)
 
 		// should only show two runs
