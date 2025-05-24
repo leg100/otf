@@ -63,7 +63,12 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// filter by planned&finished
-		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Click()
+		//
+		// NOTE: Evaluate() is used in place of Click() because the latter is
+		// notoriously flaky when used with customized checkboxes:
+		//
+		// https://github.com/microsoft/playwright/issues/13470
+		_, err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Evaluate(`el => el.click()`, nil)
 		require.NoError(t, err)
 
 		// should only show two runs
@@ -85,7 +90,12 @@ func TestIntegration_RunListUI(t *testing.T) {
 		require.NoError(t, err)
 
 		// filter by planned&finished
-		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Click()
+		//
+		// NOTE: Evaluate() is used in place of Click() because the latter is
+		// notoriously flaky when used with customized checkboxes:
+		//
+		// https://github.com/microsoft/playwright/issues/13470
+		_, err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Evaluate(`el => el.click()`, nil)
 		require.NoError(t, err)
 
 		// should only show two runs

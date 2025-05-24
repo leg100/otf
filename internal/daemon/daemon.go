@@ -73,12 +73,7 @@ type (
 
 		handlers []internal.Handlers
 		listener *sql.Listener
-		runner   runnerDaemon
-	}
-
-	runnerDaemon interface {
-		Start(context.Context) error
-		Started() <-chan struct{}
+		runner   *runner.Runner
 	}
 )
 

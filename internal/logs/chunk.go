@@ -37,8 +37,8 @@ type (
 	}
 
 	GetChunkOptions struct {
-		RunID  resource.TfeID     `schema:"run_id"`
-		Phase  internal.PhaseType `schema:"phase"`
+		RunID  resource.TfeID     `schema:"run_id,required"`
+		Phase  internal.PhaseType `schema:"phase,required"`
 		Limit  int                `schema:"limit"`  // size of the chunk to retrieve
 		Offset int                `schema:"offset"` // position in overall data to seek from.
 	}
