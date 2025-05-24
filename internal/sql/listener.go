@@ -45,9 +45,10 @@ type (
 
 func NewListener(logger logr.Logger, conn *DB) *Listener {
 	return &Listener{
-		Logger:     logger.WithValues("component", "listener"),
-		conn:       conn,
-		forwarders: make(map[string]ForwardFunc),
+		Logger:      logger.WithValues("component", "listener"),
+		conn:        conn,
+		islistening: make(chan struct{}),
+		forwarders:  make(map[string]ForwardFunc),
 	}
 }
 
@@ -65,8 +66,6 @@ func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
 // started listening; from this point onwards published messages will be
 // forwarded.
 func (b *Listener) Start(ctx context.Context) error {
-	b.islistening = make(chan struct{})
-
 	conn, err := b.conn.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -77,7 +76,10 @@ func (b *Listener) Start(ctx context.Context) error {
 		return err
 	}
 	b.V(2).Info("listening for events")
-	close(b.islistening) // close semaphore to indicate broker is now listening
+	go func() {
+		// close semaphore to indicate broker is now listening
+		b.islistening <- struct{}{}
+	}()
 
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -122,6 +124,10 @@ WHERE id = $1
 		}
 	})
 	return g.Wait()
+}
+
+func (b *Listener) Started() <-chan struct{} {
+	return b.islistening
 }
 
 func (b *Listener) cleanup(ctx context.Context) error {
