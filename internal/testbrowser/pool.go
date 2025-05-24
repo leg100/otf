@@ -163,6 +163,12 @@ func (p *Pool) New(t *testing.T, user context.Context, fn func(playwright.Page))
 		require.NoError(t, err)
 	}
 
-	fn(page)
+	browserCtx.Tracing().Start(playwright.TracingStartOptions{
+		Screenshots: playwright.Bool(true),
+		Snapshots:   playwright.Bool(true),
+	})
 
+	browserCtx.Tracing().StartChunk()
+	fn(page)
+	browserCtx.Tracing().Stop("trace.zip")
 }
