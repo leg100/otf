@@ -1,3 +1,5 @@
+# playwright browser traces
+/internal/integration/traces
 # provider mirror for e2e tests
 /mirror/registry.*
 # templ watch mode generated files
