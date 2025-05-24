@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/engine"
+	"github.com/leg100/otf/internal/forgejo"
 	"github.com/leg100/otf/internal/ghapphandler"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
@@ -172,6 +173,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:           responder,
 		HostnameService:     hostnameService,
 		GithubAppService:    githubAppService,
+		ForgejoHostname:     cfg.ForgejoHostname,
 		GithubHostname:      cfg.GithubHostname,
 		GitlabHostname:      cfg.GitlabHostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
@@ -186,6 +188,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		GithubAppService:    githubAppService,
 		VCSEventBroker:      vcsEventBroker,
 	})
+	repoService.RegisterCloudHandler(vcs.ForgejoKind, forgejo.HandleEvent)
 	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
 	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
 

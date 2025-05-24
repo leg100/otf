@@ -1,10 +1,11 @@
 # VCS Providers
 
-To connect workspaces and modules to git repositories containing Terraform configurations, you need to provide OTF with access to your VCS provider. You have a choice of three providers:
+To connect workspaces and modules to git repositories containing Terraform configurations, you need to provide OTF with access to your VCS provider. You have a choice of four providers:
 
 * [Github app](github_app.md)
 * Github personal access token
 * Gitlab personal access token
+* [Forgejo personal access token](forgejo_setup.md)
 
 ## Walkthrough
 
