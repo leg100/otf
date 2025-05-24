@@ -30,18 +30,20 @@ templ Badge(runID resource.TfeID, status Status) {
 }
 
 templ Filter(selected []Status, visible bool) {
-	@components.Filter(components.FilterProps[Status]{
-		Title:            "Filter by status",
-		All:              All(),
-		Selected:         selected,
-		ParamName:        "search[status]",
-		Visible:          visible,
-		VisibleParamName: "status_filter_visible",
-		Label:            FilterLabel,
-		CheckboxClass: func(status Status) string {
-			return "checkbox-" + string(status)
-		},
-	})
+	<div id="run-status-filter">
+		@components.Filter(components.FilterProps[Status]{
+			Title:            "Filter by status",
+			All:              All(),
+			Selected:         selected,
+			ParamName:        "search[status]",
+			Visible:          visible,
+			VisibleParamName: "status_filter_visible",
+			Label:            FilterLabel,
+			CheckboxClass: func(status Status) string {
+				return "checkbox-" + string(status)
+			},
+		})
+	</div>
 }
 
 templ FilterLabel(status Status) {
