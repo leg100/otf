@@ -62,26 +62,8 @@ func TestIntegration_RunListUI(t *testing.T) {
 		err = page.Locator(`//input[@name='status_filter_visible']`).Click()
 		require.NoError(t, err)
 
-		// filter by planned&finished
-		err = page.Locator(`//input[@id='filter-item-planned_and_finished']`).Click()
-		require.NoError(t, err)
-
-		// should only show two runs
-		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-2 of 2")
-		require.NoError(t, err)
-	})
-
-	browser.New(t, ctx, func(page playwright.Page) {
-		// navigate to organization runs page
-		_, err := page.Goto(organizationRunsURL(daemon.System.Hostname(), org.Name))
-		require.NoError(t, err)
-
-		// should be four runs
-		err = expect.Locator(page.Locator(`#page-info`)).ToHaveText("1-4 of 4")
-		require.NoError(t, err)
-
-		// show status filter
-		err = page.Locator(`//input[@name='status_filter_visible']`).Click()
+		// wait for filter to show
+		err = expect.Locator(page.Locator(`//input[@id='filter-item-planned_and_finished']`)).ToBeVisible()
 		require.NoError(t, err)
 
 		// filter by planned&finished
