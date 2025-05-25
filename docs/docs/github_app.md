@@ -58,4 +58,4 @@ Click the **Install** button and you'll be re-directed back to OTF. The installa
 
 ![github app installation listing](images/github_app_install_list.png){.screenshot}
 
-You can create a [VCS provider](vcs_providers.md) from the installation.
+You can create a [VCS provider](./vcs_providers/index.md) from the installation.

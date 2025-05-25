@@ -58,7 +58,9 @@ nav:
   - Topics:
     - engines.md
     - rbac.md
-    - vcs_providers.md
+    - VCS Providers:
+        - vcs_providers/index.md
+        - vcs_providers/forgejo.md
     - github_app.md
     - runners.md
     - registry.md
