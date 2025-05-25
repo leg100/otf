@@ -1,6 +1,6 @@
 -- Migrate from sending events containing info about a changed row, to instead inserting events to a table.
 CREATE TABLE events (
-	id SERIAL,
+	id SERIAL PRIMARY KEY,
 	action TEXT NOT NULL,
 	_table TEXT NOT NULL,
 	record JSON NOT NULL,
