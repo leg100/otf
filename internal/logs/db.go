@@ -90,11 +90,9 @@ AND   phase  = @phase
 func (db *pgdb) getChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	// Sanitize options. If the limit is 0 then interpret this to mean
 	// limitless. In order to keep the SQL query below a hardcoded string we
-	// interpret limitless to be the max field size in postgres, which reading
-	// around appears to be 1GB. If there are logs for a run greater than that
-	// then god help us.
+	// interpret limitless to be the max int4 value in postgres.
 	if opts.Limit == 0 {
-		opts.Limit = 1024 ^ 4
+		opts.Limit = 2_147_483_647
 	}
 	rows := db.Query(ctx, `
 SELECT
