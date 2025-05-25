@@ -60,7 +60,7 @@ func consent() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, ", <span><span class=\"bg-gray-200\">terraform</span> is requesting access to your OTF user account.</span><form class=\"flex gap-4\" method=\"POST\"><button class=\"btn btn-outline btn-error\" name=\"consented\" value=\"false\">Decline</button> <button class=\"btn\" name=\"consented\" value=\"true\">Accept</button></form></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, ", <span><span class=\"bg-base-300\">terraform</span> is requesting access to your OTF user account.</span><form class=\"flex gap-4\" method=\"POST\"><button class=\"btn btn-outline btn-error\" name=\"consented\" value=\"false\">Decline</button> <button class=\"btn\" name=\"consented\" value=\"true\">Accept</button></form></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
