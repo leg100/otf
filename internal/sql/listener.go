@@ -33,14 +33,13 @@ type (
 		logr.Logger
 
 		conn        *DB           // pool from which to acquire a dedicated connection to postgres
-		islistening chan struct{} // semaphore that's closed once broker is listening
+		islistening chan struct{} // semaphore for stating when listener is actually listening or not.
 
-		mu         sync.Mutex             // sync access to maps
-		forwarders map[string]ForwardFunc // maps table name to event forwarder
+		// subscriptions: keyed by table name, and each table can have many
+		// subscriptions
+		subs map[string]map[chan Event]struct{}
+		mu   sync.Mutex // sync access to maps
 	}
-
-	// ForwardFunc forwards an event to a client
-	ForwardFunc func(event Event)
 )
 
 func NewListener(logger logr.Logger, conn *DB) *Listener {
@@ -48,17 +47,36 @@ func NewListener(logger logr.Logger, conn *DB) *Listener {
 		Logger:      logger.WithValues("component", "listener"),
 		conn:        conn,
 		islistening: make(chan struct{}),
-		forwarders:  make(map[string]ForwardFunc),
+		subs:        make(map[string]map[chan Event]struct{}),
 	}
 }
 
-// RegisterTable maps a table to an event forwarding function: the function
-// henceforth is called with events triggered on the table.
-func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
+func (b *Listener) Subscribe(ctx context.Context, table string) (<-chan Event, func()) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.forwarders[table] = forwarder
+	sub := make(chan Event, 100)
+	b.subs[table][sub] = struct{}{}
+
+	// when the context is canceled remove the subscriber
+	go func() {
+		<-ctx.Done()
+		b.unsubscribe(table, sub)
+	}()
+
+	return sub, func() { b.unsubscribe(table, sub) }
+}
+
+func (b *Listener) unsubscribe(table string, sub chan Event) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if _, ok := b.subs[table][sub]; !ok {
+		// already unsubscribed
+		return
+	}
+	close(sub)
+	delete(b.subs[table], sub)
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
@@ -66,6 +84,8 @@ func (b *Listener) RegisterTable(table string, forwarder ForwardFunc) {
 // started listening; from this point onwards published messages will be
 // forwarded.
 func (b *Listener) Start(ctx context.Context) error {
+	// Obtain lock to prevent subscriptions *before* listening for events.
+
 	conn, err := b.conn.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -76,9 +96,19 @@ func (b *Listener) Start(ctx context.Context) error {
 		return err
 	}
 	b.V(2).Info("listening for events")
-	go func() {
-		// close semaphore to indicate broker is now listening
-		b.islistening <- struct{}{}
+
+	// Release lock to now permit subscriptions
+	b.islistening <- struct{}{}
+
+	defer func() {
+		// No longer listening
+		<-b.islistening
+		// Close all subscriptions.
+		for table, subs := range b.subs {
+			for sub := range subs {
+				b.unsubscribe(table, sub)
+			}
+		}
 	}()
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -115,12 +145,27 @@ WHERE id = $1
 				b.Error(err, "unmarshaling postgres event")
 				continue
 			}
-			forwarder, ok := b.forwarders[string(event.Table)]
-			if !ok {
-				b.Error(nil, "no event forwarder found", "table", event.Table)
-				continue
+
+			var fullSubscribers []chan Event
+
+			b.mu.Lock()
+			for sub := range b.subs[string(event.Table)] {
+				select {
+				case sub <- event:
+					continue
+				default:
+					// could not publish event to subscriber because their buffer is
+					// full, so add them to a list for action below
+					fullSubscribers = append(fullSubscribers, sub)
+				}
 			}
-			forwarder(event)
+			b.mu.Unlock()
+
+			// forceably unsubscribe full subscribers and leave it them to re-subscribe
+			for _, name := range fullSubscribers {
+				b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", 100)
+				b.unsubscribe(event.Table, name)
+			}
 		}
 	})
 	return g.Wait()
