@@ -69,6 +69,7 @@ func NewService(opts Options) *Service {
 		HostnameService: opts.HostnameService,
 		GithubHostname:  opts.GithubHostname,
 		GitlabHostname:  opts.GitlabHostname,
+		ForgejoHostname: opts.ForgejoHostname,
 		client:          &svc,
 		githubApps:      opts.GithubAppService,
 	}
